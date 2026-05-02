@@ -1,0 +1,559 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:var(--color-background-primary);
+  --bg2:var(--color-background-secondary);
+  --bg3:var(--color-background-tertiary);
+  --txt:var(--color-text-primary);
+  --txt2:var(--color-text-secondary);
+  --txt3:var(--color-text-tertiary);
+  --border:var(--color-border-tertiary);
+  --border2:var(--color-border-secondary);
+  --accent:#1D9E75;
+  --accent2:#185FA5;
+  --warn:#BA7517;
+  --danger:#A32D2D;
+  --gold:#EF9F27;
+}
+body{font-family:var(--font-sans);color:var(--txt);background:transparent;padding:0}
+.shell{display:grid;grid-template-columns:220px 1fr;min-height:600px;border:0.5px solid var(--border2);border-radius:var(--border-radius-lg);overflow:hidden}
+.nav{background:var(--bg2);border-right:0.5px solid var(--border2);padding:1.25rem 0;display:flex;flex-direction:column;gap:2px}
+.nav-header{padding:0 1rem 1rem;border-bottom:0.5px solid var(--border);margin-bottom:0.5rem}
+.nav-header .title{font-size:11px;font-weight:500;color:var(--txt3);letter-spacing:.08em;text-transform:uppercase}
+.nav-header .sub{font-size:13px;font-weight:500;color:var(--txt);margin-top:2px}
+.nav-section{font-size:10px;font-weight:500;color:var(--txt3);letter-spacing:.08em;text-transform:uppercase;padding:0.75rem 1rem 0.25rem}
+.nav-item{display:flex;align-items:center;gap:8px;padding:6px 1rem;font-size:13px;color:var(--txt2);cursor:pointer;border-radius:0;border-left:2px solid transparent;transition:background .15s,color .15s,border-color .15s}
+.nav-item:hover{background:var(--bg3);color:var(--txt)}
+.nav-item.active{background:var(--bg3);color:var(--txt);border-left-color:var(--accent);font-weight:500}
+.nav-item .dot{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.5;flex-shrink:0}
+.nav-item.active .dot{opacity:1}
+.nav-item .badge{margin-left:auto;font-size:10px;padding:1px 6px;border-radius:8px;background:var(--bg3);color:var(--txt3)}
+.nav-item.active .badge{background:var(--accent);color:#fff}
+.content{background:var(--bg);overflow-y:auto;max-height:700px}
+.slide{display:none;padding:2rem}
+.slide.active{display:block}
+.slide-eyebrow{font-size:10px;font-weight:500;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:0.4rem}
+.slide-title{font-size:20px;font-weight:500;color:var(--txt);margin-bottom:0.25rem;line-height:1.3}
+.slide-sub{font-size:14px;color:var(--txt2);margin-bottom:1.5rem;line-height:1.6}
+.divider{height:0.5px;background:var(--border);margin:1.25rem 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--border-radius-md);padding:1rem}
+.card-label{font-size:10px;font-weight:500;color:var(--txt3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+.card-title{font-size:14px;font-weight:500;color:var(--txt);margin-bottom:4px}
+.card-body{font-size:12px;color:var(--txt2);line-height:1.6}
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:4px;margin:2px 2px 2px 0}
+.tag-green{background:#EAF3DE;color:#3B6D11}
+.tag-blue{background:#E6F1FB;color:#185FA5}
+.tag-amber{background:#FAEEDA;color:#854F0B}
+.tag-red{background:#FCEBEB;color:#A32D2D}
+.tag-gray{background:var(--bg3);color:var(--txt2)}
+.tag-teal{background:#E1F5EE;color:#0F6E56}
+.tier-row{display:flex;align-items:stretch;gap:10px;margin-bottom:10px}
+.tier-card{flex:1;border-radius:var(--border-radius-md);padding:0.85rem;border:0.5px solid var(--border)}
+.tier-watch{background:#F1EFE8;border-color:#B4B2A9}
+.tier-prime{background:#FAEEDA;border-color:#EF9F27}
+.tier-elite{background:#E6F1FB;border-color:#185FA5}
+.tier-name{font-size:12px;font-weight:500;letter-spacing:.06em;text-transform:uppercase}
+.tier-watch .tier-name{color:#444441}
+.tier-prime .tier-name{color:#854F0B}
+.tier-elite .tier-name{color:#185FA5}
+.tier-score{font-size:20px;font-weight:500;margin:4px 0}
+.tier-watch .tier-score{color:#2C2C2A}
+.tier-prime .tier-score{color:#633806}
+.tier-elite .tier-score{color:#0C447C}
+.tier-reqs{font-size:11px;line-height:1.7}
+.tier-watch .tier-reqs{color:#5F5E5A}
+.tier-prime .tier-reqs{color:#854F0B}
+.tier-elite .tier-reqs{color:#185FA5}
+.score-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.score-label{font-size:12px;color:var(--txt2);min-width:120px}
+.score-bar-wrap{flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.score-bar{height:100%;border-radius:3px}
+.score-pts{font-size:12px;font-weight:500;color:var(--txt);min-width:28px;text-align:right}
+.signal-flow{display:flex;align-items:center;gap:0;flex-wrap:wrap;margin:1rem 0}
+.sf-step{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--border-radius-md);padding:0.5rem 0.75rem;font-size:12px;font-weight:500;color:var(--txt);white-space:nowrap}
+.sf-arrow{font-size:14px;color:var(--txt3);padding:0 4px}
+.sf-step.highlight{background:#E1F5EE;border-color:#1D9E75;color:#0F6E56}
+.legend-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:0.5px solid var(--border);font-size:13px;color:var(--txt)}
+.legend-row:last-child{border-bottom:none}
+.legend-color{width:12px;height:12px;border-radius:2px;flex-shrink:0}
+.legend-name{font-weight:500;min-width:100px}
+.legend-desc{color:var(--txt2);font-size:12px}
+.alert-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border)}
+.alert-row:last-child{border-bottom:none}
+.alert-icon{width:28px;height:28px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:1px}
+.alert-title{font-size:13px;font-weight:500;color:var(--txt)}
+.alert-desc{font-size:12px;color:var(--txt2);margin-top:2px;line-height:1.5}
+.nav-progress{padding:1rem;margin-top:auto;border-top:0.5px solid var(--border)}
+.prog-label{font-size:11px;color:var(--txt3);margin-bottom:6px}
+.prog-bar-wrap{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.prog-bar{height:100%;background:var(--accent);border-radius:2px;transition:width .3s}
+.next-btn{margin-top:1rem;width:100%;padding:8px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--border-radius-md);background:transparent;color:var(--txt);cursor:pointer}
+.next-btn:hover{background:var(--bg3)}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:10px;border:0.5px solid var(--border);color:var(--txt2);background:var(--bg2);margin-right:4px;margin-bottom:4px}
+.checklist{list-style:none;padding:0}
+.checklist li{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:13px;color:var(--txt);line-height:1.5;border-bottom:0.5px solid var(--border)}
+.checklist li:last-child{border-bottom:none}
+.check-icon{flex-shrink:0;margin-top:2px;width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700}
+.ci-green{background:#EAF3DE;color:#3B6D11}
+.ci-amber{background:#FAEEDA;color:#854F0B}
+.ci-red{background:#FCEBEB;color:#A32D2D}
+</style>
+
+<h2 class="sr-only">USME v3.1 Presentation Plan — interactive slide navigator for a daytrader class</h2>
+
+<div class="shell">
+  <nav class="nav" id="nav">
+    <div class="nav-header">
+      <div class="title">Presentation</div>
+      <div class="sub">USME v3.1 Signal Guide</div>
+    </div>
+
+    <div class="nav-section">Overview</div>
+    <div class="nav-item active" data-slide="0"><span class="dot"></span> What USME is <span class="badge">1</span></div>
+    <div class="nav-item" data-slide="1"><span class="dot"></span> Engine architecture <span class="badge">2</span></div>
+
+    <div class="nav-section">ICT Concepts</div>
+    <div class="nav-item" data-slide="2"><span class="dot"></span> Market structure <span class="badge">3</span></div>
+    <div class="nav-item" data-slide="3"><span class="dot"></span> Liquidity & sweeps <span class="badge">4</span></div>
+    <div class="nav-item" data-slide="4"><span class="dot"></span> FVG & order blocks <span class="badge">5</span></div>
+    <div class="nav-item" data-slide="5"><span class="dot"></span> Premium / discount <span class="badge">6</span></div>
+    <div class="nav-item" data-slide="6"><span class="dot"></span> Killzones & SMT <span class="badge">7</span></div>
+
+    <div class="nav-section">Algorithm Layers</div>
+    <div class="nav-item" data-slide="7"><span class="dot"></span> Smart Money Score <span class="badge">8</span></div>
+    <div class="nav-item" data-slide="8"><span class="dot"></span> Signal logic <span class="badge">9</span></div>
+    <div class="nav-item" data-slide="9"><span class="dot"></span> SOTD tiers <span class="badge">10</span></div>
+
+    <div class="nav-section">Reading Signals</div>
+    <div class="nav-item" data-slide="10"><span class="dot"></span> Dashboard decoded <span class="badge">11</span></div>
+    <div class="nav-item" data-slide="11"><span class="dot"></span> Trade checklist <span class="badge">12</span></div>
+    <div class="nav-item" data-slide="12"><span class="dot"></span> Alerts & workflow <span class="badge">13</span></div>
+
+    <div class="nav-progress">
+      <div class="prog-label" id="prog-label">Slide 1 of 13</div>
+      <div class="prog-bar-wrap"><div class="prog-bar" id="prog-bar" style="width:7.7%"></div></div>
+      <button class="next-btn" id="next-btn">Next slide</button>
+    </div>
+  </nav>
+
+  <main class="content">
+
+    <!-- SLIDE 0 -->
+    <div class="slide active" id="slide-0">
+      <div class="slide-eyebrow">Module 1 — Overview</div>
+      <div class="slide-title">What is the Unified Smart Money Engine?</div>
+      <div class="slide-sub">A single ThinkScript study that merges ICT/SMC manual analysis into an automated, scored, multi-tier signal system.</div>
+      <div class="divider"></div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-label">What it is</div>
+          <div class="card-title">A multi-layer confluence engine</div>
+          <div class="card-body">USME monitors 7 distinct Smart Money conditions simultaneously and converts them into a single numeric score. Signals only fire when enough conditions align — eliminating low-quality setups by design.</div>
+        </div>
+        <div class="card">
+          <div class="card-label">What it is not</div>
+          <div class="card-title">Not a standalone buy/sell bot</div>
+          <div class="card-body">The engine does not place trades. It surfaces confluences, assigns conviction tiers, and alerts. The trader still applies context, selects entries, and manages risk. USME accelerates analysis — it does not replace it.</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="card-label" style="margin-bottom:8px">Core capabilities</div>
+      <div>
+        <span class="tag tag-teal">BOS / CHoCH detection</span>
+        <span class="tag tag-blue">Multi-TF bias (W / 4H / 1H)</span>
+        <span class="tag tag-green">FVG with mitigation clouds</span>
+        <span class="tag tag-amber">Order block zones</span>
+        <span class="tag tag-red">Liquidity sweep detection</span>
+        <span class="tag tag-gray">Killzone gating</span>
+        <span class="tag tag-teal">SMT divergence</span>
+        <span class="tag tag-blue">Smart Money Score 0–100</span>
+        <span class="tag tag-amber">SOTD 3-tier signal engine</span>
+        <span class="tag tag-gray">ATR stop / target projection</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 1 -->
+    <div class="slide" id="slide-1">
+      <div class="slide-eyebrow">Module 2 — Architecture</div>
+      <div class="slide-title">How the engine is layered</div>
+      <div class="slide-sub">Six stacked processing layers run on every bar close. Each layer feeds the next. Signals emerge only when the stack aligns.</div>
+      <div class="divider"></div>
+      <div class="signal-flow">
+        <div class="sf-step">Raw price<br><span style="font-weight:400;font-size:11px;color:var(--txt2)">OHLCV</span></div>
+        <div class="sf-arrow">→</div>
+        <div class="sf-step">Base indicators<br><span style="font-weight:400;font-size:11px;color:var(--txt2)">ATR · EMAs · RSI · MACD</span></div>
+        <div class="sf-arrow">→</div>
+        <div class="sf-step">ICT detection<br><span style="font-weight:400;font-size:11px;color:var(--txt2)">BOS · FVG · OB · Sweep</span></div>
+        <div class="sf-arrow">→</div>
+        <div class="sf-step highlight">Score engine<br><span style="font-weight:400;font-size:11px;color:#0F6E56">0–100 points</span></div>
+        <div class="sf-arrow">→</div>
+        <div class="sf-step">Signal gates<br><span style="font-weight:400;font-size:11px;color:var(--txt2)">BUY · SELL</span></div>
+        <div class="sf-arrow">→</div>
+        <div class="sf-step">SOTD tiers<br><span style="font-weight:400;font-size:11px;color:var(--txt2)">WATCH · PRIME · ELITE</span></div>
+      </div>
+      <div class="divider"></div>
+      <div class="grid3">
+        <div class="card">
+          <div class="card-label">Layer 1–2</div>
+          <div class="card-title">Baseline filters</div>
+          <div class="card-body">ATR measures volatility. EMAs establish trend. RSI and MACD gate momentum. Volume confirms displacement. These filter noise before any ICT logic runs.</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Layer 3</div>
+          <div class="card-title">ICT concept detection</div>
+          <div class="card-body">Pure price-action logic. Each concept (BOS, FVG, OB, sweep) is evaluated independently. Results feed the score AND the signal gates.</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Layer 4–6</div>
+          <div class="card-title">Scoring + SOTD</div>
+          <div class="card-body">The score aggregates all active concepts. BUY/SELL signals require score ≥ threshold. SOTD tiers then re-evaluate those signals against progressively stricter HTF requirements.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 2 -->
+    <div class="slide" id="slide-2">
+      <div class="slide-eyebrow">ICT Concepts — Module 3</div>
+      <div class="slide-title">Market structure: BOS and CHoCH</div>
+      <div class="slide-sub">The engine's structural backbone. Every signal tier requires either a Break of Structure or a Change of Character to have occurred.</div>
+      <div class="divider"></div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-label">Break of Structure (BOS)</div>
+          <div class="card-title">Continuation signal</div>
+          <div class="card-body">Price closes beyond the swing high (bull) or swing low (bear) of the last <strong>bosLen</strong> bars, with a candle range exceeding ATR × obDispMult. Represented by green (bull) or red (bear) arrows. The <strong>trendState</strong> variable carries this forward to all downstream logic.</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Change of Character (CHoCH)</div>
+          <div class="card-title">Reversal signal — highest weight</div>
+          <div class="card-body">A BOS that occurs against the prior trend direction. If trendState was bearish (-1) and a bullBOS fires, that is a CHoCH. Worth 25 points — the single heaviest component in the score. CHoCH is required for a PRIME-tier SOTD.</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="card">
+        <div class="card-label">Sponsoring candle (SC bubble)</div>
+        <div class="card-body">On every BOS bar, a small "SC" bubble appears above or below the candle. The sponsoring candle is the displacement bar that drove structure — it often marks where institutional orders were executed, and is the origin candle for any resulting FVG or OB zone.</div>
+      </div>
+    </div>
+
+    <!-- SLIDE 3 -->
+    <div class="slide" id="slide-3">
+      <div class="slide-eyebrow">ICT Concepts — Module 4</div>
+      <div class="slide-title">Liquidity sweeps & equal highs/lows</div>
+      <div class="slide-sub">ICT theory: institutions need to fill large orders at price levels where retail stops cluster. The engine identifies these sweeps and flags them as potential reversal triggers.</div>
+      <div class="divider"></div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-label">Sweep detection — 3 conditions</div>
+          <div class="card-title">Any one of these triggers a sweep</div>
+          <div class="card-body">
+            1. Wick exceeds the prior <strong>sweepLen</strong>-bar swing high/low but closes back inside it.<br><br>
+            2. Wick exceeds the previous day's high or low but closes back inside it (PDH/PDL sweep).<br><br>
+            3. Single-bar wick above prior bar's high (or below prior low) with close reversal.
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">Equal highs / equal lows</div>
+          <div class="card-title">Liquidity ladder (yellow dots)</div>
+          <div class="card-body">Three consecutive bars with highs (or lows) within 2 ticks of each other form a liquidity cluster. These yellow dots flag where buy-side or sell-side stop orders are stacked — prime sweep targets. When price approaches, watch for a sweep + reversal setup.</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="card">
+        <div class="card-label">Signal weighting</div>
+        <div class="card-body">A confirmed sweep adds <strong>20 points</strong> to the score. A sweep combined with a CHoCH is the classic ICT "sweep and reverse" setup — together they account for 45 of 100 possible score points. The engine requires sweepL (for longs) or sweepH (for shorts) within the confirmation window for a master signal to fire.</div>
+      </div>
+    </div>
+
+    <!-- SLIDE 4 -->
+    <div class="slide" id="slide-4">
+      <div class="slide-eyebrow">ICT Concepts — Module 5</div>
+      <div class="slide-title">Fair Value Gaps and Order Blocks</div>
+      <div class="slide-sub">Two complementary concepts that identify where price is likely to retrace for institutional order fill. The engine paints them as clouds that disappear on mitigation.</div>
+      <div class="divider"></div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-label">Fair Value Gap (FVG)</div>
+          <div class="card-title">Three-candle imbalance</div>
+          <div class="card-body">A bull FVG forms when candle[-1]'s low is above candle[-2]'s high — gap of unfilled price. Only valid when the middle candle's range exceeds ATR × fvgDispMult (displacement filter). Green cloud persists until price returns to fill it. The iFVG bubble fires when price enters the zone but closes back above it — a failed fill that inverts the zone into support.</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Order Block (OB)</div>
+          <div class="card-title">Last opposing candle before BOS</div>
+          <div class="card-body">A bull OB looks back obLen bars for a bearish candle (close &lt; open) that preceded a bullBOS. It marks where institutional buy orders were placed. Dark green cloud persists until price trades below the OB low. The "big candle" alternate path fires when a single candle exceeds 1.5× ATR body — flagging an order block from a single aggressive institutional print.</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="card">
+        <div class="card-label">iFVG — inversion fair value gap</div>
+        <div class="card-body">When price enters an active FVG zone (touches fvgBullLow) but then closes back above it, the zone has "inverted" — supply has been absorbed and it now acts as demand. The cyan "iFVG" bubble marks this event. It is a high-precision entry trigger when it occurs within the PRIME/ELITE signal context.</div>
+      </div>
+    </div>
+
+    <!-- SLIDE 5 -->
+    <div class="slide" id="slide-5">
+      <div class="slide-eyebrow">ICT Concepts — Module 6</div>
+      <div class="slide-title">Premium & discount zones</div>
+      <div class="slide-sub">ICT's core principle: buy in discount, sell in premium. The engine quantifies this with a dynamic equilibrium line and shaded clouds.</div>
+      <div class="divider"></div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-label">Equilibrium (EQ line — gray dashed)</div>
+          <div class="card-title">50% of the 50-bar range</div>
+          <div class="card-body">The midpoint between the 50-bar high and low. Price above EQ = premium territory; price below = discount. Long setups require inDisc (price below EQ). Short setups require inPrem (price above EQ). Displayed on the dashboard as PREMIUM (red) or DISCOUNT (green).</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Range clouds</div>
+          <div class="card-title">60-bar macro range context</div>
+          <div class="card-body">The red cloud above midRange marks the premium zone of the extLen (60-bar) range. The green cloud below marks discount. These provide a broader visual context than the EQ line alone — useful for identifying when price is at an extreme of a larger consolidation range.</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="card">
+        <div class="card-label">How this gates master signals</div>
+        <div class="card-body">bullSetup explicitly requires <strong>inDisc</strong> — the engine will not generate a long master signal if price is in premium. bearSetup requires <strong>inPrem</strong>. This single rule eliminates the most common retail mistake: buying extended moves into resistance. At PRIME tier, this condition is re-evaluated as part of the full SMC stack.</div>
+      </div>
+    </div>
+
+    <!-- SLIDE 6 -->
+    <div class="slide" id="slide-6">
+      <div class="slide-eyebrow">ICT Concepts — Module 7</div>
+      <div class="slide-title">Killzones & SMT divergence</div>
+      <div class="slide-sub">Time and correlation filters — two of ICT's most powerful but least-automated concepts. USME implements both.</div>
+      <div class="divider"></div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-label">Session killzones</div>
+          <div class="card-title">London 02:00–05:00 · NY 09:30–12:00</div>
+          <div class="card-body">ICT identifies these windows as high-probability reversal periods when institutional order flow is at its peak. Vertical dashed lines mark the open of each session. The inKZ flag is used optionally (sotdRequireKZ) to restrict WATCH-tier signals to killzone bars only. The SCORE adds 10 points for any signal during a killzone.</div>
+        </div>
+        <div class="card">
+          <div class="card-label">SMT divergence</div>
+          <div class="card-title">Correlated pair confirmation</div>
+          <div class="card-body">Compares the primary chart to smtSym (default: NQ). A bearish SMT fires when the primary chart makes a new high above PDH but NQ fails to confirm it — institutional distribution in one leg while the correlated instrument diverges. smtBull / smtBear add context to alerts and are optional gates at ELITE tier via sotdRequireSMT.</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="card">
+        <div class="card-label">Multi-timeframe bias stack</div>
+        <div class="card-body">HTFtrend tracks 1H swing structure (higher highs = 1). htfBull confirms 4H close direction. wkBull/wkBear captures weekly close direction. All three are labeled on the dashboard. For ELITE signals, both HTFtrend and htfBull must align with the trade direction — this is the hardest filter in the entire engine.</div>
+      </div>
+    </div>
+
+    <!-- SLIDE 7 -->
+    <div class="slide" id="slide-7">
+      <div class="slide-eyebrow">Algorithm Layer — Module 8</div>
+      <div class="slide-title">The Smart Money Score</div>
+      <div class="slide-sub">A 0–100 point system that replaces subjective confluence counting with an objective numeric output. Each concept contributes fixed points when detected.</div>
+      <div class="divider"></div>
+      <div class="score-row"><div class="score-label">CHoCH / structure flip</div><div class="score-bar-wrap"><div class="score-bar" style="width:25%;background:#1D9E75"></div></div><div class="score-pts">25 pts</div></div>
+      <div class="score-row"><div class="score-label">Liquidity sweep</div><div class="score-bar-wrap"><div class="score-bar" style="width:20%;background:#185FA5"></div></div><div class="score-pts">20 pts</div></div>
+      <div class="score-row"><div class="score-label">FVG present</div><div class="score-bar-wrap"><div class="score-bar" style="width:15%;background:#BA7517"></div></div><div class="score-pts">15 pts</div></div>
+      <div class="score-row"><div class="score-label">Order block present</div><div class="score-bar-wrap"><div class="score-bar" style="width:15%;background:#BA7517"></div></div><div class="score-pts">15 pts</div></div>
+      <div class="score-row"><div class="score-label">Volume spike (1.2× avg)</div><div class="score-bar-wrap"><div class="score-bar" style="width:10%;background:#639922"></div></div><div class="score-pts">10 pts</div></div>
+      <div class="score-row"><div class="score-label">In killzone session</div><div class="score-bar-wrap"><div class="score-bar" style="width:10%;background:#639922"></div></div><div class="score-pts">10 pts</div></div>
+      <div class="score-row"><div class="score-label">Daily bias confirmed</div><div class="score-bar-wrap"><div class="score-bar" style="width:5%;background:#888780"></div></div><div class="score-pts">5 pts</div></div>
+      <div class="divider"></div>
+      <div class="grid3">
+        <div class="card"><div class="card-label">Gray / below 50</div><div class="card-title">No signal</div><div class="card-body">Insufficient confluence. Engine monitors but does not alert.</div></div>
+        <div class="card"><div class="card-label">Yellow / 50–69</div><div class="card-title">Watch zone</div><div class="card-body">EMA pullback signals may fire at scoreThresh − 10. WATCH SOTD eligible.</div></div>
+        <div class="card"><div class="card-label">Green / 70+</div><div class="card-title">High conviction</div><div class="card-body">Full master signal eligible. PRIME and ELITE SOTD possible.</div></div>
+      </div>
+    </div>
+
+    <!-- SLIDE 8 -->
+    <div class="slide" id="slide-8">
+      <div class="slide-eyebrow">Algorithm Layer — Module 9</div>
+      <div class="slide-title">How BUY and SELL signals are generated</div>
+      <div class="slide-sub">Two distinct signal paths exist. The master setup path and the EMA pullback path. Both require a score gate — they differ in which ICT conditions they require.</div>
+      <div class="divider"></div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-label">Path A — Master setup (SMC stack)</div>
+          <div class="card-title">All 4 conditions within confirmBars (5)</div>
+          <div class="card-body">
+            1. Liquidity sweep (sweepL for long / sweepH for short)<br>
+            2. BOS in trade direction<br>
+            3. CHoCH in trade direction<br>
+            4. FVG or OB confirmation<br>
+            + Price in discount (long) or premium (short)<br>
+            + Score ≥ scoreThresh (default 60)<br><br>
+            The 5-bar window means all 4 events must cluster together — spread-out confluences do not fire.
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">Path B — EMA pullback (momentum)</div>
+          <div class="card-title">Trend + pullback + filters</div>
+          <div class="card-body">
+            1. EMAs stacked bullish (9 > 14 > 21)<br>
+            2. Low touches or breaches EMA21 (within 0.2%)<br>
+            3. Close recovers above EMA21<br>
+            4. Edge detected (bar first time)<br>
+            + Volume OK · RSI 30–70 · MACD bullish<br>
+            + Score ≥ scoreThresh − 10<br><br>
+            This path fires in trending conditions between structural events — catches continuation moves.
+          </div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="card">
+        <div class="card-label">ATR projections on signal bars</div>
+        <div class="card-body">On every BUY or SELL bar, two dashed lines plot: Stop at 2× ATR from close, Target at 3× ATR from close. This gives an automatic 1.5R minimum target-to-stop ratio. These are starting points — adjust to local structure (OB/FVG levels, PDH/PDL) before entry.</div>
+      </div>
+    </div>
+
+    <!-- SLIDE 9 -->
+    <div class="slide" id="slide-9">
+      <div class="slide-eyebrow">Algorithm Layer — Module 10</div>
+      <div class="slide-title">SOTD — Signal of the Day tiers</div>
+      <div class="slide-sub">The SOTD engine runs above the base signal layer. It fires once per day per tier, escalating conviction level as more conditions stack. Think of it as a confidence certificate for the setup.</div>
+      <div class="divider"></div>
+      <div class="tier-row">
+        <div class="tier-card tier-watch">
+          <div class="tier-name">Watch ◈</div>
+          <div class="tier-score">Score ≥ 50</div>
+          <div class="tier-reqs">
+            BUY or SELL signal fired<br>
+            trendState aligned to direction<br>
+            Optional: must be in killzone
+          </div>
+        </div>
+        <div class="tier-card tier-prime">
+          <div class="tier-name">Prime ★</div>
+          <div class="tier-score">Score ≥ 70</div>
+          <div class="tier-reqs">
+            Full SMC stack: CHoCH + sweep +<br>
+            FVG or OB + premium/discount<br>
+            BUY or SELL signal confirmed
+          </div>
+        </div>
+        <div class="tier-card tier-elite">
+          <div class="tier-name">Elite ⚡</div>
+          <div class="tier-score">Score ≥ 70</div>
+          <div class="tier-reqs">
+            All PRIME conditions<br>
+            1H trend + 4H direction aligned<br>
+            Optional: SMT divergence confirmed
+          </div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-label">Once-per-day locking</div>
+          <div class="card-body">Each tier fires at most once per day. After firing, the engine ignores further signals of that tier until midnight reset. This prevents alert fatigue from repeating conditions in sideways price action.</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Bubble stacking on the chart</div>
+          <div class="card-body">WATCH bubble appears 0.5× ATR from the bar. PRIME appears 1.2× ATR. ELITE appears 2.0× ATR. Three separate bubbles can appear on the same bar when all tiers fire simultaneously — the stacked layout makes tier escalation visually clear.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 10 -->
+    <div class="slide" id="slide-10">
+      <div class="slide-eyebrow">Reading Signals — Module 11</div>
+      <div class="slide-title">Dashboard label decoder</div>
+      <div class="slide-sub">The label strip across the top of the chart is a real-time state readout. Read it left to right — it tells the full story before you look at a candle.</div>
+      <div class="divider"></div>
+      <div class="legend-row"><div class="legend-color" style="background:#EAF3DE;border:1px solid #639922"></div><div class="legend-name">Trend: ▲ / ▼</div><div class="legend-desc">EMA 9/14/21 stack direction. Green = bullish stack, red = bearish. Flat dash = mixed.</div></div>
+      <div class="legend-row"><div class="legend-color" style="background:#E6F1FB;border:1px solid #185FA5"></div><div class="legend-name">STRUCT: UP/DN</div><div class="legend-desc">Last confirmed BOS direction. Persists until a BOS in the opposite direction fires.</div></div>
+      <div class="legend-row"><div class="legend-color" style="background:#E6F1FB;border:1px solid #185FA5"></div><div class="legend-name">1H: BULL / BEAR</div><div class="legend-desc">1-hour swing structure direction based on HH/LL comparison of hourly bars.</div></div>
+      <div class="legend-row"><div class="legend-color" style="background:#E6F1FB;border:1px solid #185FA5"></div><div class="legend-name">4H: BULL / BEAR</div><div class="legend-desc">4-hour close direction. Both 1H and 4H must agree for ELITE tier eligibility.</div></div>
+      <div class="legend-row"><div class="legend-color" style="background:#EAF3DE;border:1px solid #639922"></div><div class="legend-name">W: BULL / BEAR</div><div class="legend-desc">Weekly close vs prior weekly close. Macro backdrop — not a signal gate, but informs bias.</div></div>
+      <div class="legend-row"><div class="legend-color" style="background:#FAEEDA;border:1px solid #EF9F27"></div><div class="legend-name">RSI: [value]</div><div class="legend-desc">Current RSI reading. Green &lt;30, red &gt;70. Signals require RSI between 30–70 (not exhausted).</div></div>
+      <div class="legend-row"><div class="legend-color" style="background:#EAF3DE;border:1px solid #639922"></div><div class="legend-name">Vol: ✔ / ✘</div><div class="legend-desc">Volume above 1.5× 20-bar average. Required for EMA pullback path; adds 10 pts to score.</div></div>
+      <div class="legend-row"><div class="legend-color" style="background:#FCEBEB;border:1px solid #A32D2D"></div><div class="legend-name">PREMIUM / DISCOUNT</div><div class="legend-desc">Current price position relative to the 50-bar equilibrium line.</div></div>
+      <div class="legend-row"><div class="legend-color" style="background:#FAEEDA;border:1px solid #EF9F27"></div><div class="legend-name">SMT: BULL / BEAR</div><div class="legend-desc">SMT divergence active. NQ failed to confirm a new high/low on the primary chart.</div></div>
+      <div class="legend-row"><div class="legend-color" style="background:#E1F5EE;border:1px solid #1D9E75"></div><div class="legend-name">SCORE: [n]%</div><div class="legend-desc">Live Smart Money Score. Green ≥ 70, yellow 50–69, gray below 50.</div></div>
+      <div class="legend-row"><div class="legend-color" style="background:#E6F1FB;border:1px solid #185FA5"></div><div class="legend-name">SOTD: tier label</div><div class="legend-desc">Highest SOTD tier reached today. Persists all day once fired.</div></div>
+      <div class="legend-row"><div class="legend-color" style="background:#E1F5EE;border:1px solid #1D9E75"></div><div class="legend-name">HTF: ALIGNED</div><div class="legend-desc">1H and 4H both agree on direction. Required for ELITE. Green when aligned, gray when split.</div></div>
+    </div>
+
+    <!-- SLIDE 11 -->
+    <div class="slide" id="slide-11">
+      <div class="slide-eyebrow">Reading Signals — Module 12</div>
+      <div class="slide-title">Pre-trade signal checklist</div>
+      <div class="slide-sub">Use this decision tree every time a BUY or SELL bubble appears. Work top to bottom — a single red item means you wait.</div>
+      <div class="divider"></div>
+      <ul class="checklist">
+        <li><div class="check-icon ci-green">1</div><div><strong>Score ≥ 60?</strong> — Displayed on SCORE label. Below 60 is noise. If EMA pullback path fired, check score ≥ 50 still holds.</div></li>
+        <li><div class="check-icon ci-green">2</div><div><strong>Structural alignment?</strong> — STRUCT label matches trade direction. A BUY in STRUCT:DN is a counter-trend entry — size down or skip.</div></li>
+        <li><div class="check-icon ci-green">3</div><div><strong>HTF agreement?</strong> — HTF:ALIGNED label is green, AND 1H and 4H labels match direction. Disagreement between 1H and 4H is a warning.</div></li>
+        <li><div class="check-icon ci-amber">4</div><div><strong>Price in correct zone?</strong> — BUY requires DISCOUNT label (green). SELL requires PREMIUM label (red). Engine enforces this in master path but not EMA path.</div></li>
+        <li><div class="check-icon ci-amber">5</div><div><strong>Killzone active?</strong> — Not mandatory, but LONDON or NY KZ label significantly improves signal quality. Off-session BUY/SELL signals have lower follow-through historically.</div></li>
+        <li><div class="check-icon ci-amber">6</div><div><strong>FVG or OB cloud nearby?</strong> — The ideal entry is a limit order into an active FVG or OB cloud zone, not a market order at the signal bar close.</div></li>
+        <li><div class="check-icon ci-red">7</div><div><strong>SMT confirms?</strong> — If SMT:BEAR shows on a SELL and NQ diverged, that is high-conviction confirmation. If SMT is neutral, the trade is still valid — just lower conviction.</div></li>
+        <li><div class="check-icon ci-red">8</div><div><strong>Stop placement valid?</strong> — Engine projects stop at 2× ATR. Check that the auto-stop is beyond the nearest swing point or OB cloud. If not, widen manually.</div></li>
+      </ul>
+    </div>
+
+    <!-- SLIDE 12 -->
+    <div class="slide" id="slide-12">
+      <div class="slide-eyebrow">Reading Signals — Module 13</div>
+      <div class="slide-title">Alerts, sounds, and workflow</div>
+      <div class="slide-sub">USME fires five alert types with distinct sounds. Knowing what each sound means lets you triage without looking at the screen.</div>
+      <div class="divider"></div>
+      <div class="alert-row">
+        <div class="alert-icon" style="background:#EAF3DE;color:#3B6D11;font-weight:500">B</div>
+        <div><div class="alert-title">Bell — Base BUY signal</div><div class="alert-desc">Master setup or EMA pullback path fired long. Score appended. Requires immediate chart review.</div></div>
+      </div>
+      <div class="alert-row">
+        <div class="alert-icon" style="background:#FCEBEB;color:#A32D2D;font-weight:500">C</div>
+        <div><div class="alert-title">Chimes — Base SELL signal or SOTD PRIME</div><div class="alert-desc">SELL signal fired, OR a PRIME SOTD trigger occurred. Same sound — check dashboard for SOTD label to distinguish. PRIME alert includes "Full SMC Stack" in message text.</div></div>
+      </div>
+      <div class="alert-row">
+        <div class="alert-icon" style="background:#E6F1FB;color:#185FA5;font-weight:500">R</div>
+        <div><div class="alert-title">Ring — SOTD ELITE</div><div class="alert-desc">Highest conviction signal of the day. Full SMC stack + HTF aligned. Check SMT and weekly bias in alert message. These are the setups to size into.</div></div>
+      </div>
+      <div class="alert-row">
+        <div class="alert-icon" style="background:#F1EFE8;color:#444441;font-weight:500">W</div>
+        <div><div class="alert-title">Bell (soft) — SOTD WATCH</div><div class="alert-desc">Fires only when WATCH fires but PRIME does not. Score 50–69 range. Use as a pre-alert to get eyes on the chart — not an entry signal by itself.</div></div>
+      </div>
+      <div class="alert-row">
+        <div class="alert-icon" style="background:#FAEEDA;color:#854F0B;font-weight:500">D</div>
+        <div><div class="alert-title">Ding — Momentum fade (△ Fade bubble)</div><div class="alert-desc">An active EMA pullback signal has lost momentum (EMA9 crossed back below EMA14). If in a trade from that signal, this is a partial-exit or stop-tighten trigger. Not a reversal entry signal.</div></div>
+      </div>
+      <div class="divider"></div>
+      <div class="card">
+        <div class="card-label">Recommended workflow</div>
+        <div class="card-body">
+          1. Pre-market: note PDH, PDL, weekly bias, daily bias on labels.<br>
+          2. At killzone open: watch for WATCH or PRIME alert. Get chart on screen.<br>
+          3. On Bell/Chimes/Ring: read all dashboard labels top-to-bottom. Run the checklist.<br>
+          4. If 6 of 8 checklist items pass: assess entry into nearest FVG/OB cloud with auto-stop as baseline.<br>
+          5. On Ding: consider tightening stop or scaling out if in profit.
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const items = document.querySelectorAll('.nav-item');
+const slides = document.querySelectorAll('.slide');
+const progBar = document.getElementById('prog-bar');
+const progLabel = document.getElementById('prog-label');
+const nextBtn = document.getElementById('next-btn');
+let current = 0;
+const total = slides.length;
+
+function goTo(n){
+  items[current].classList.remove('active');
+  slides[current].classList.remove('active');
+  current = n;
+  items[current].classList.add('active');
+  slides[current].classList.add('active');
+  progBar.style.width = ((current+1)/total*100).toFixed(1)+'%';
+  progLabel.textContent = 'Slide '+(current+1)+' of '+total;
+  nextBtn.textContent = current === total-1 ? 'Back to start' : 'Next slide';
+  document.querySelector('.content').scrollTop = 0;
+}
+
+items.forEach((item,i)=>item.addEventListener('click',()=>goTo(i)));
+nextBtn.addEventListener('click',()=>goTo(current===total-1?0:current+1));
+</script>

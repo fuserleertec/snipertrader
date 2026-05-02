@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Habit Guardrails — TraderEdge Psych OS | SniperTrader</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Space+Mono:wght@400;700&family=Syne:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --obs:#020408;--obs2:#06090F;--obs3:#0A1018;--obs4:#111820;
+  --teal:#00C9A7;--teal2:#00A38A;--teal-dim:rgba(0,201,167,0.10);
+  --cyan:#00D4FF;--cyan-dim:rgba(0,212,255,0.09);
+  --gold:#F0C040;--gold-dim:rgba(240,192,64,0.09);
+  --red:#FF4455;--red-dim:rgba(255,68,85,0.09);
+  --green:#00FF88;--green-dim:rgba(0,255,136,0.08);
+  --amber:#FF9F43;--amber-dim:rgba(255,159,67,0.09);
+  --text:#FFFFFF;--text2:#E2EEF8;--text3:#A8C4D8;--text4:#5A7A90;
+  --border:rgba(0,201,167,0.14);--border2:rgba(0,201,167,0.28);
+  --gold-border:rgba(240,192,64,0.18);
+}
+body.light-mode{
+  --obs:#EEF3F8;--obs2:#E2EBF4;--obs3:#D6E3EE;--obs4:#C8D8E8;
+  --teal:#007A65;--teal2:#005A4A;--teal-dim:rgba(0,122,101,0.10);
+  --cyan:#0088AA;--cyan-dim:rgba(0,136,170,0.09);
+  --gold:#B07800;--gold-dim:rgba(176,120,0,0.09);
+  --red:#CC2233;--red-dim:rgba(204,34,51,0.09);
+  --amber:#CC6600;--amber-dim:rgba(204,102,0,0.09);
+  --text:#0A1420;--text2:#1A2C3C;--text3:#2A4050;--text4:#6080A0;
+  --border:rgba(0,122,101,0.20);--border2:rgba(0,122,101,0.38);
+  --gold-border:rgba(176,120,0,0.22);
+}
+body.light-mode #cur{background:var(--teal);}
+body.light-mode #cur-ring{border-color:rgba(0,122,101,.4);}
+body.light-mode::before{opacity:.15;}
+body.light-mode .hero-glass{background:linear-gradient(145deg,#C8D8E8,#B8CCE0);border-color:rgba(0,122,101,.22);}
+body.light-mode .hg-topbar{background:rgba(200,216,232,.97);}
+body.light-mode #themeToggle{background:var(--gold-dim);border-color:var(--gold-border);color:var(--gold);}
+
+/* Light mode: override all hardcoded #fff text to dark */
+body.light-mode .nav-links a:hover,
+body.light-mode .hero-h1,
+body.light-mode .hero-sub strong,
+body.light-mode .hero-ring-state,
+body.light-mode .sec-h2,
+body.light-mode .g-card-title,
+body.light-mode .ict-title,
+body.light-mode .dg-title,
+body.light-mode .streak-title,
+body.light-mode .ai-name,
+body.light-mode .ai-resp,
+body.light-mode .edu-title,
+body.light-mode .icc-title,
+body.light-mode .quote-text,
+body.light-mode .dl-h2,
+body.light-mode .sbt-name,
+body.light-mode .hg-ready { color:var(--text); }
+
+body.light-mode .ai-inp { background:var(--obs3); color:var(--text); }
+body.light-mode .ai-resp { background:rgba(200,216,232,.7); border-color:var(--border); }
+
+/* gradient text in light mode — swap to solid dark teal */
+body.light-mode .hero-h1 .acc,
+body.light-mode .sec-h2 span,
+body.light-mode .dl-h2 span { background:none; -webkit-background-clip:unset; -webkit-text-fill-color:var(--teal); background-clip:unset; color:var(--teal); }
+
+/* inline strong color:#fff overrides */
+body.light-mode strong[style*="color:#fff"],
+body.light-mode strong[style*='color:#fff'] { color:var(--text) !important; }
+
+/* store button names */
+body.light-mode .sbt-name { color:var(--text); }
+body.light-mode nav { background:rgba(220,232,244,.96); }
+body.light-mode .mod-strip { background:var(--obs2); }
+body.light-mode .store-btn.android { background:var(--teal-dim); }
+
+/* quote block */
+body.light-mode .quote-block { background:rgba(0,122,101,.04); border-color:rgba(0,122,101,.18); }
+
+/* sidebar inline styles with color:#fff */
+body.light-mode [style*="color:#fff"] { color:var(--text) !important; }
+body.light-mode [style*='color:#fff'] { color:var(--text) !important; }
+
+html{scroll-behavior:smooth;}
+body{background:var(--obs);color:var(--text);font-family:'Syne',sans-serif;overflow-x:hidden;cursor:none;}
+
+#cur{position:fixed;width:10px;height:10px;background:var(--teal);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);mix-blend-mode:screen;transition:background .15s,transform .1s;}
+#cur-ring{position:fixed;width:34px;height:34px;border:1px solid rgba(0,201,167,.5);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:width .2s,height .2s;}
+body:has(button:hover,a:hover) #cur{background:var(--gold);transform:translate(-50%,-50%) scale(1.6);}
+body:has(button:hover,a:hover) #cur-ring{width:52px;height:52px;border-color:rgba(240,192,64,.35);}
+#pc{position:fixed;inset:0;pointer-events:none;z-index:0;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");pointer-events:none;z-index:1;opacity:.45;}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;padding:16px 48px;display:flex;align-items:center;justify-content:space-between;background:rgba(2,4,8,.94);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+.nav-logo{font-family:'Orbitron',monospace;font-size:13px;font-weight:900;letter-spacing:3px;color:var(--cyan);text-decoration:none;}
+.nav-logo span{color:var(--gold);}
+.nav-links{display:flex;gap:28px;align-items:center;}
+.nav-links a{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--text3);text-decoration:none;text-transform:uppercase;transition:color .2s;}
+.nav-links a:hover{color:#fff;}
+.nav-pill{background:var(--teal-dim);border:1px solid var(--border2);color:var(--teal)!important;padding:7px 16px;border-radius:20px;font-family:'Orbitron',monospace!important;font-size:9px!important;font-weight:700;letter-spacing:1.5px;}
+.nav-cta{background:var(--gold);color:#000!important;padding:9px 20px;border-radius:4px;font-family:'Orbitron',monospace!important;font-size:9px!important;font-weight:700;transition:background .2s,transform .2s!important;}
+.nav-cta:hover{background:#FFD040!important;transform:translateY(-1px)!important;}
+
+/* MODULE STRIP */
+.mod-strip{background:var(--obs2);border-bottom:1px solid var(--border);padding:0 48px;position:relative;z-index:2;margin-top:57px;}
+.mod-strip-inner{max-width:1600px;margin:0 auto;display:flex;overflow-x:auto;scrollbar-width:none;}
+.mod-strip-inner::-webkit-scrollbar{display:none;}
+.mod-tab{padding:14px 20px;font-family:'Orbitron',monospace;font-size:8.5px;font-weight:600;letter-spacing:1.5px;color:var(--text4);text-decoration:none;white-space:nowrap;border-bottom:2px solid transparent;transition:all .2s;text-transform:uppercase;}
+.mod-tab:hover{color:var(--text2);}
+.mod-tab.active{color:var(--teal);border-bottom-color:var(--teal);}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;align-items:center;position:relative;overflow:hidden;z-index:2;padding-top:40px;}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,201,167,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,201,167,.02) 1px,transparent 1px);background-size:58px 58px;mask-image:radial-gradient(ellipse 90% 70% at 50% 50%,black 20%,transparent 100%);}
+.orb1{position:absolute;width:650px;height:650px;background:radial-gradient(circle,rgba(0,201,167,.08) 0%,transparent 65%);top:-180px;left:-100px;pointer-events:none;animation:od1 15s ease-in-out infinite;}
+.orb2{position:absolute;width:500px;height:500px;background:radial-gradient(circle,rgba(0,212,255,.05) 0%,transparent 65%);bottom:-100px;right:-80px;pointer-events:none;animation:od2 20s ease-in-out infinite;}
+.orb3{position:absolute;width:350px;height:350px;background:radial-gradient(circle,rgba(240,192,64,.04) 0%,transparent 65%);top:40%;right:22%;pointer-events:none;animation:od3 13s ease-in-out infinite;}
+@keyframes od1{0%,100%{transform:translate(0,0);}50%{transform:translate(28px,-22px);}}
+@keyframes od2{0%,100%{transform:translate(0,0);}50%{transform:translate(-22px,32px);}}
+@keyframes od3{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(18px,-14px) scale(1.09);}}
+
+.hero-inner{position:relative;z-index:3;max-width:1400px;width:100%;margin:0 auto;padding:60px 48px;display:grid;grid-template-columns:1fr 1.15fr;gap:64px;align-items:center;}
+
+.hero-bc{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2.5px;color:var(--text3);text-transform:uppercase;margin-bottom:18px;}
+.hero-bc em{color:var(--teal);font-style:normal;}
+.hero-modnum{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:var(--text4);letter-spacing:3px;margin-bottom:12px;}
+.hero-h1{font-family:'Orbitron',monospace;font-size:clamp(28px,4vw,56px);font-weight:900;line-height:1.0;color:#fff;margin-bottom:10px;}
+.hero-h1 .acc{display:block;background:linear-gradient(90deg,var(--teal),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-sub{font-size:15px;color:var(--text2);line-height:1.8;margin-bottom:28px;font-weight:300;max-width:500px;}
+.hero-sub strong{color:#fff;font-weight:600;}
+.htags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:30px;}
+.htag{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;padding:5px 12px;border-radius:3px;text-transform:uppercase;}
+.htag.t{background:var(--teal-dim);border:1px solid rgba(0,201,167,.28);color:var(--teal);}
+.htag.c{background:var(--cyan-dim);border:1px solid rgba(0,212,255,.25);color:var(--cyan);}
+.htag.g{background:var(--gold-dim);border:1px solid rgba(240,192,64,.25);color:var(--gold);}
+.htag.r{background:var(--red-dim);border:1px solid rgba(255,68,85,.25);color:var(--red);}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(0,201,167,.06);border:1px solid rgba(0,201,167,.22);border-radius:40px;padding:9px 18px;font-family:'Space Mono',monospace;font-size:10px;color:var(--teal);letter-spacing:1.5px;}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--teal);animation:pls 2s infinite;}
+@keyframes pls{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.8);}}
+
+/* HERO GLASS CARD */
+.hero-card-wrap{perspective:1400px;}
+.card-3d{transform-style:preserve-3d;transition:transform .08s ease-out;}
+.hero-glass{background:linear-gradient(145deg,#0A1820,#050D16);border:1px solid rgba(0,201,167,.22);border-radius:20px;overflow:hidden;box-shadow:0 0 80px rgba(0,201,167,.07),0 40px 80px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.04);}
+.hg-topbar{background:rgba(5,13,22,.97);padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.hg-logo{font-family:'Orbitron',monospace;font-size:9px;font-weight:700;color:var(--teal);letter-spacing:2px;}
+.hg-ready{font-family:'Space Mono',monospace;font-size:8px;color:var(--text3);}
+.hg-body{padding:16px;}
+
+/* HERO READINESS RING */
+.hero-ring-row{display:flex;align-items:center;gap:16px;margin-bottom:14px;}
+.hero-ring-info{flex:1;}
+.hero-ring-state{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;color:#fff;margin-bottom:3px;}
+.hero-ring-sub{font-size:9px;color:var(--teal);font-family:'Space Mono',monospace;}
+
+/* HERO CHECKLIST MINI */
+.hg-checks{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
+.hg-check{display:flex;align-items:center;gap:8px;background:rgba(17,24,32,.9);border:1px solid var(--border);border-radius:6px;padding:7px 9px;font-size:9px;color:var(--text2);font-family:'Space Mono',monospace;}
+.hg-check.done{border-color:rgba(0,201,167,.35);background:rgba(0,201,167,.05);color:var(--teal);}
+.hg-check.pending{border-color:rgba(255,159,67,.25);color:var(--amber);}
+.hg-chk{width:14px;height:14px;border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;}
+.hg-check.done .hg-chk{background:var(--teal);color:#000;}
+.hg-check:not(.done):not(.pending) .hg-chk{border:1.5px solid var(--text4);}
+.hg-check.pending .hg-chk{border:1.5px solid var(--amber);}
+
+/* HERO SCORE */
+.hg-score-row{display:flex;justify-content:space-between;align-items:center;background:rgba(0,201,167,.05);border:1px solid rgba(0,201,167,.2);border-radius:8px;padding:10px 14px;}
+.hg-score-label{font-family:'Orbitron',monospace;font-size:8px;color:var(--teal);letter-spacing:2px;text-transform:uppercase;}
+.hg-score-val{font-family:'Orbitron',monospace;font-size:24px;font-weight:900;color:var(--teal);}
+.hg-score-max{font-size:12px;color:var(--text3);}
+
+/* SCROLL HINT */
+.scroll-hint{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;animation:flt 3s ease-in-out infinite;z-index:3;}
+@keyframes flt{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(-7px);}}
+.scroll-line{width:1px;height:28px;background:linear-gradient(to bottom,var(--teal),transparent);}
+.scroll-txt{font-family:'Space Mono',monospace;font-size:8px;color:var(--text4);letter-spacing:2px;text-transform:uppercase;}
+
+/* SECTION */
+.sec{position:relative;z-index:2;}
+.sec-inner{max-width:1400px;margin:0 auto;padding:80px 48px;}
+.eyebrow{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--teal);text-transform:uppercase;margin-bottom:12px;}
+.sec-line{width:48px;height:2px;background:linear-gradient(90deg,var(--teal),transparent);margin-bottom:16px;}
+.sec-h2{font-family:'Orbitron',monospace;font-size:clamp(24px,3.5vw,44px);font-weight:900;color:#fff;line-height:1.1;margin-bottom:12px;}
+.sec-h2 span{background:linear-gradient(90deg,var(--teal),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.sec-lead{font-size:15px;color:var(--text2);line-height:1.8;max-width:600px;}
+
+/* GUARDRAILS WORKSTATION */
+.ws-layout{display:grid;grid-template-columns:1fr 380px;gap:28px;margin-top:48px;align-items:start;}
+.ws-main{display:flex;flex-direction:column;gap:22px;}
+.ws-sidebar{display:flex;flex-direction:column;gap:18px;position:sticky;top:90px;}
+
+/* GLASS CARD */
+.g-card{background:var(--obs3);border:1px solid var(--border);border-radius:16px;padding:28px;position:relative;overflow:hidden;transition:border-color .3s;}
+.g-card:hover{border-color:var(--border2);}
+.g-card::after{content:'';position:absolute;inset:0;background:conic-gradient(transparent 0deg,rgba(0,201,167,.012) 90deg,transparent 180deg);animation:cspin 14s linear infinite;pointer-events:none;}
+@keyframes cspin{to{transform:rotate(360deg);}}
+.g-card-hdr{display:flex;align-items:center;gap:12px;margin-bottom:22px;}
+.g-card-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.g-card-icon.t{background:var(--teal-dim);border:1px solid rgba(0,201,167,.2);}
+.g-card-icon.c{background:var(--cyan-dim);border:1px solid rgba(0,212,255,.2);}
+.g-card-icon.g{background:var(--gold-dim);border:1px solid rgba(240,192,64,.2);}
+.g-card-icon.r{background:var(--red-dim);border:1px solid rgba(255,68,85,.2);}
+.g-card-icon.gr{background:var(--green-dim);border:1px solid rgba(0,255,136,.15);}
+.g-card-step{font-family:'Orbitron',monospace;font-size:9px;font-weight:700;color:var(--text4);letter-spacing:2px;}
+.g-card-title{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:#fff;}
+.g-label{font-family:'Orbitron',monospace;font-size:8.5px;color:var(--teal);letter-spacing:2px;text-transform:uppercase;margin-bottom:9px;display:block;}
+.g-desc{font-size:12px;color:var(--text3);margin-bottom:18px;line-height:1.6;font-family:'Space Mono',monospace;}
+
+/* ICT ENTRY CHECKLIST */
+.ict-checklist{display:flex;flex-direction:column;gap:10px;}
+.ict-item{background:var(--obs4);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:none;transition:all .22s;}
+.ict-item:hover{border-color:var(--border2);}
+.ict-item.passed{border-color:rgba(0,201,167,.4);background:rgba(0,201,167,.04);}
+.ict-item.failed{border-color:rgba(255,68,85,.35);background:rgba(255,68,85,.04);}
+.ict-row{display:flex;align-items:center;gap:12px;padding:14px 16px;}
+.ict-toggle{display:flex;gap:5px;margin-left:auto;flex-shrink:0;}
+.ict-yes,.ict-no{font-family:'Orbitron',monospace;font-size:7.5px;font-weight:700;padding:4px 11px;border-radius:3px;letter-spacing:1px;cursor:none;transition:all .2s;}
+.ict-yes{background:var(--teal-dim);border:1px solid rgba(0,201,167,.25);color:var(--teal);}
+.ict-yes:hover,.ict-item.passed .ict-yes{background:var(--teal);color:#000;border-color:var(--teal);}
+.ict-no{background:var(--red-dim);border:1px solid rgba(255,68,85,.2);color:#FF8899;}
+.ict-no:hover,.ict-item.failed .ict-no{background:var(--red);color:#fff;border-color:var(--red);}
+.ict-marker{width:20px;height:20px;border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;}
+.ict-item.passed .ict-marker{background:var(--teal);color:#000;}
+.ict-item.failed .ict-marker{background:var(--red);color:#fff;}
+.ict-item:not(.passed):not(.failed) .ict-marker{border:1.5px solid var(--text4);}
+.ict-content{flex:1;min-width:0;}
+.ict-title{font-size:12px;color:#fff;font-weight:600;margin-bottom:2px;}
+.ict-sub{font-size:10px;color:var(--text3);font-family:'Space Mono',monospace;}
+.ict-edu-toggle{display:flex;align-items:center;justify-content:space-between;padding:0 16px 12px;cursor:none;}
+.ict-edu-label{font-family:'Orbitron',monospace;font-size:8px;color:var(--teal);letter-spacing:2px;text-transform:uppercase;opacity:.6;}
+.ict-edu-arrow{font-size:10px;color:var(--text4);transition:transform .2s;}
+.ict-edu-body{padding:0 16px 14px;border-top:1px solid rgba(0,201,167,.08);display:none;}
+.ict-item.edu-open .ict-edu-body{display:block;}
+.ict-item.edu-open .ict-edu-arrow{transform:rotate(180deg);}
+.ict-edu-text{font-size:11px;color:var(--text2);line-height:1.7;padding-top:10px;}
+.ict-edu-example{background:rgba(0,201,167,.04);border-left:2px solid rgba(0,201,167,.3);padding:8px 12px;margin-top:8px;border-radius:0 6px 6px 0;}
+.ict-edu-example-label{font-family:'Orbitron',monospace;font-size:8px;color:var(--teal);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;opacity:.7;}
+.ict-edu-example-text{font-size:11px;color:var(--text2);line-height:1.6;font-style:italic;}
+
+/* DISCIPLINE GUARDS */
+.disc-guards{display:flex;flex-direction:column;gap:10px;}
+.dg-item{background:var(--obs4);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:flex-start;gap:12px;cursor:none;transition:all .22s;}
+.dg-item:hover{border-color:var(--border2);}
+.dg-item.active{border-color:rgba(255,68,85,.4);background:rgba(255,68,85,.05);}
+.dg-item.safe{border-color:rgba(0,201,167,.35);background:rgba(0,201,167,.04);}
+.dg-indicator{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px;transition:all .3s;}
+.dg-item.active .dg-indicator{background:var(--red);box-shadow:0 0 8px rgba(255,68,85,.5);}
+.dg-item.safe .dg-indicator{background:var(--teal);box-shadow:0 0 8px rgba(0,201,167,.4);}
+.dg-item:not(.active):not(.safe) .dg-indicator{background:var(--text4);}
+.dg-content{flex:1;}
+.dg-title{font-size:12px;color:#fff;font-weight:600;margin-bottom:2px;}
+.dg-sub{font-size:10px;color:var(--text3);font-family:'Space Mono',monospace;margin-bottom:6px;}
+.dg-actions{display:flex;gap:6px;flex-wrap:wrap;}
+.dg-btn{font-family:'Orbitron',monospace;font-size:7.5px;font-weight:700;padding:4px 12px;border-radius:3px;cursor:none;letter-spacing:1px;transition:all .2s;text-transform:uppercase;}
+.dg-btn.safe-btn{background:var(--teal-dim);border:1px solid rgba(0,201,167,.25);color:var(--teal);}
+.dg-btn.safe-btn:hover,.dg-item.safe .dg-btn.safe-btn{background:var(--teal);color:#000;border-color:var(--teal);}
+.dg-btn.risk-btn{background:var(--red-dim);border:1px solid rgba(255,68,85,.2);color:#FF8899;}
+.dg-btn.risk-btn:hover,.dg-item.active .dg-btn.risk-btn{background:var(--red);color:#fff;border-color:var(--red);}
+
+/* STREAK SYSTEM */
+.streak-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.streak-title{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:#fff;}
+.streak-count{font-family:'Orbitron',monospace;font-size:28px;font-weight:900;color:var(--teal);}
+.streak-count-label{font-size:9px;color:var(--text3);font-family:'Space Mono',monospace;margin-top:2px;}
+.streak-grid-wrap{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:12px;}
+.streak-day-label{font-family:'Space Mono',monospace;font-size:8px;color:var(--text4);text-align:center;margin-bottom:4px;}
+.streak-cell{aspect-ratio:1;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:8.5px;font-family:'Space Mono',monospace;cursor:none;transition:all .2s;position:relative;}
+.streak-cell:hover{transform:scale(1.1);}
+.streak-cell.perfect{background:linear-gradient(135deg,rgba(0,201,167,.3),rgba(0,212,255,.2));border:1px solid rgba(0,201,167,.5);color:var(--teal);}
+.streak-cell.perfect::after{content:'★';position:absolute;top:-3px;right:-3px;font-size:7px;color:var(--gold);}
+.streak-cell.done{background:var(--teal-dim);border:1px solid rgba(0,201,167,.3);color:var(--teal);}
+.streak-cell.partial{background:var(--amber-dim);border:1px solid rgba(255,159,67,.3);color:var(--amber);}
+.streak-cell.miss{background:var(--red-dim);border:1px solid rgba(255,68,85,.2);color:#FF8899;}
+.streak-cell.empty{background:var(--obs4);border:1px solid var(--border);color:var(--text4);}
+.streak-cell.today{box-shadow:0 0 10px rgba(0,201,167,.35);}
+.streak-legend{display:flex;gap:14px;flex-wrap:wrap;}
+.sl-item{display:flex;align-items:center;gap:5px;font-family:'Space Mono',monospace;font-size:8.5px;color:var(--text3);}
+.sl-dot{width:8px;height:8px;border-radius:50%;}
+
+/* LIVE SCORE SIDEBAR */
+.live-score-card{background:var(--obs3);border:1px solid var(--border2);border-radius:16px;padding:24px;text-align:center;position:relative;overflow:hidden;}
+.live-score-card::after{content:'';position:absolute;inset:0;background:conic-gradient(transparent 0deg,rgba(0,201,167,.015) 90deg,transparent 180deg);animation:cspin 10s linear infinite;pointer-events:none;}
+.ls-ring-wrap{display:flex;justify-content:center;margin-bottom:14px;}
+.ls-score{font-family:'Orbitron',monospace;font-size:56px;font-weight:900;line-height:1;transition:all .4s;}
+.ls-label{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;transition:color .4s;}
+.ls-msg{font-size:11px;color:var(--text3);font-family:'Space Mono',monospace;line-height:1.5;}
+
+/* PROGRESS BARS SIDEBAR */
+.progress-bars{display:flex;flex-direction:column;gap:10px;margin-top:4px;}
+.pb-row{display:flex;flex-direction:column;gap:4px;}
+.pb-header{display:flex;justify-content:space-between;align-items:center;}
+.pb-name{font-size:10px;color:var(--text3);font-family:'Space Mono',monospace;}
+.pb-val{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;}
+.pb-track{height:4px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden;}
+.pb-fill{height:100%;border-radius:2px;transition:width .6s ease;}
+
+/* STATS SIDEBAR */
+.side-stat{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.side-stat:last-child{border-bottom:none;}
+.ss-name{font-size:11px;color:var(--text3);font-family:'Space Mono',monospace;}
+.ss-val{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;}
+
+/* SUBMIT */
+.submit-btn{width:100%;background:linear-gradient(90deg,var(--teal),var(--cyan));color:#000;border:none;border-radius:10px;padding:16px 24px;font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:2px;cursor:none;transition:all .3s;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 0 30px rgba(0,201,167,.2);}
+.submit-btn:hover{transform:translateY(-2px);box-shadow:0 0 50px rgba(0,201,167,.3);}
+
+/* BREACH ALERT */
+.breach-alert{background:rgba(255,68,85,.06);border:1px solid rgba(255,68,85,.3);border-radius:12px;padding:18px 20px;display:flex;align-items:flex-start;gap:14px;animation:alertPulse 3s ease-in-out infinite;display:none;}
+@keyframes alertPulse{0%,100%{border-color:rgba(255,68,85,.3);}50%{border-color:rgba(255,68,85,.6);box-shadow:0 0 20px rgba(255,68,85,.15);}}
+.breach-alert.show{display:flex;}
+.ba-icon{font-size:24px;flex-shrink:0;}
+.ba-title{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--red);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;}
+.ba-msg{font-size:12px;color:var(--text2);line-height:1.5;}
+
+/* AI COACH */
+.ai-section{background:var(--obs2);}
+.ai-panel{background:var(--obs3);border:1px solid rgba(0,201,167,.2);border-radius:20px;padding:32px;margin-top:48px;}
+.ai-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;gap:16px;flex-wrap:wrap;}
+.ai-title-row{display:flex;align-items:center;gap:14px;}
+.ai-icon-box{width:44px;height:44px;background:var(--teal-dim);border:1px solid rgba(0,201,167,.25);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;}
+.ai-name{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:#fff;}
+.ai-sub{font-size:11px;color:var(--text3);font-family:'Space Mono',monospace;margin-top:2px;}
+.ai-presets{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.preset-pill{background:var(--obs4);border:1px solid var(--border);border-radius:20px;padding:7px 16px;font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);cursor:none;transition:all .2s;}
+.preset-pill:hover{border-color:var(--teal);color:var(--teal);}
+.ai-input-row{display:flex;gap:10px;margin-bottom:14px;}
+.ai-inp{flex:1;background:var(--obs4);border:1px solid var(--border);border-radius:8px;padding:12px 16px;color:#fff;font-family:'Syne',sans-serif;font-size:13px;outline:none;transition:border-color .2s;}
+.ai-inp:focus{border-color:var(--teal);}
+.ai-inp::placeholder{color:var(--text4);}
+.ask-btn{display:flex;align-items:center;gap:8px;background:linear-gradient(90deg,var(--teal),var(--cyan));color:#000;border:none;border-radius:8px;padding:12px 22px;font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:1.5px;cursor:none;transition:all .2s;white-space:nowrap;text-transform:uppercase;}
+.ask-btn:hover{opacity:.9;transform:translateY(-1px);}
+.ai-resp{background:rgba(10,16,24,.8);border:1px solid var(--border);border-radius:12px;padding:22px;min-height:90px;font-size:13px;color:#fff;line-height:1.8;}
+.ai-resp-tag{font-family:'Orbitron',monospace;font-size:8px;color:var(--teal);letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:10px;opacity:.7;}
+.spin{display:inline-block;animation:spn .7s linear infinite;}
+@keyframes spn{to{transform:rotate(360deg);}}
+
+/* EDUCATION */
+.edu-section{background:linear-gradient(180deg,var(--obs) 0%,var(--obs2) 50%,var(--obs) 100%);}
+.edu-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:20px;overflow:hidden;margin-top:48px;}
+.edu-card{background:var(--obs2);padding:36px 28px;position:relative;overflow:hidden;transition:background .3s;}
+.edu-card:hover{background:var(--obs3);}
+.edu-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--teal),transparent);opacity:0;transition:opacity .3s;}
+.edu-card:hover::before{opacity:1;}
+.edu-num{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:var(--text4);letter-spacing:2px;margin-bottom:14px;}
+.edu-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:18px;font-size:22px;}
+.edu-icon.t{background:var(--teal-dim);border:1px solid rgba(0,201,167,.2);}
+.edu-icon.c{background:var(--cyan-dim);border:1px solid rgba(0,212,255,.2);}
+.edu-icon.g{background:var(--gold-dim);border:1px solid rgba(240,192,64,.2);}
+.edu-title{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:#fff;margin-bottom:10px;}
+.edu-desc{font-size:12px;color:var(--text2);line-height:1.7;}
+
+/* ICT CONCEPT CARDS */
+.ict-concepts{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:48px;}
+.ict-concept-card{background:var(--obs3);border:1px solid var(--border);border-radius:14px;padding:24px;position:relative;overflow:hidden;transition:all .3s;}
+.ict-concept-card:hover{border-color:var(--border2);transform:translateY(-2px);}
+.ict-concept-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--teal),transparent);opacity:0;transition:opacity .3s;}
+.ict-concept-card:hover::before{opacity:1;}
+.icc-badge{font-family:'Orbitron',monospace;font-size:8px;font-weight:700;letter-spacing:2px;padding:3px 12px;border-radius:3px;text-transform:uppercase;display:inline-block;margin-bottom:12px;}
+.icc-badge.t{background:var(--teal-dim);border:1px solid rgba(0,201,167,.25);color:var(--teal);}
+.icc-badge.c{background:var(--cyan-dim);border:1px solid rgba(0,212,255,.22);color:var(--cyan);}
+.icc-badge.g{background:var(--gold-dim);border:1px solid rgba(240,192,64,.22강);color:var(--gold);}
+.icc-badge.r{background:var(--red-dim);border:1px solid rgba(255,68,85,.22);color:var(--red);}
+.icc-title{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:#fff;margin-bottom:8px;}
+.icc-text{font-size:12px;color:var(--text2);line-height:1.7;}
+.icc-example{margin-top:10px;background:rgba(0,201,167,.04);border-left:2px solid rgba(0,201,167,.3);padding:8px 12px;border-radius:0 6px 6px 0;}
+.icc-ex-label{font-family:'Orbitron',monospace;font-size:7.5px;color:var(--teal);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;opacity:.7;}
+.icc-ex-text{font-size:11px;color:var(--text2);line-height:1.6;font-style:italic;}
+
+/* QUOTE */
+.quote-block{background:rgba(0,201,167,.03);border:1px solid rgba(0,201,167,.15);border-radius:20px;padding:48px;position:relative;overflow:hidden;margin-top:48px;}
+.quote-block::before{content:'"';position:absolute;top:-20px;left:28px;font-family:'Orbitron',monospace;font-size:160px;font-weight:900;color:rgba(0,201,167,.04);line-height:1;pointer-events:none;}
+.quote-text{font-family:'Syne',sans-serif;font-size:clamp(16px,2.2vw,22px);color:#fff;line-height:1.65;font-weight:300;font-style:italic;position:relative;z-index:1;margin-bottom:18px;}
+.quote-attr{font-family:'Space Mono',monospace;font-size:11px;color:var(--teal);letter-spacing:2px;text-transform:uppercase;}
+
+/* DOWNLOAD */
+.dl-section{position:relative;overflow:hidden;z-index:2;}
+.dl-bg{position:absolute;inset:0;background:radial-gradient(ellipse 100% 80% at 50% 50%,rgba(0,201,167,.06) 0%,transparent 70%);}
+.dl-inner{max-width:900px;margin:0 auto;padding:110px 48px;text-align:center;position:relative;z-index:2;}
+.dl-h2{font-family:'Orbitron',monospace;font-size:clamp(28px,4vw,52px);font-weight:900;line-height:1.1;color:#fff;margin-bottom:14px;}
+.dl-h2 span{background:linear-gradient(90deg,var(--teal),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.dl-sub{font-size:15px;color:var(--text2);line-height:1.7;max-width:480px;margin:0 auto 44px;}
+.store-btns{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-bottom:24px;}
+.store-btn{display:flex;align-items:center;gap:14px;padding:18px 30px;border-radius:12px;text-decoration:none;transition:all .3s;min-width:210px;}
+.store-btn.ios{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.18);}
+.store-btn.ios:hover{background:rgba(255,255,255,.09);transform:translateY(-3px);}
+.store-btn.android{background:var(--teal-dim);border:1px solid var(--border2);}
+.store-btn.android:hover{background:rgba(0,201,167,.15);border-color:var(--teal);transform:translateY(-3px);}
+.sbi{font-size:32px;line-height:1;}
+.sbt{text-align:left;}
+.sbt-label{display:block;font-size:10px;color:var(--text3);font-family:'Space Mono',monospace;letter-spacing:1px;text-transform:uppercase;}
+.sbt-name{display:block;font-family:'Orbitron',monospace;font-size:15px;font-weight:700;color:#fff;margin-top:2px;}
+.sbt-sub{display:block;font-size:10px;color:var(--text3);margin-top:2px;font-family:'Space Mono',monospace;}
+.dl-disc{font-family:'Space Mono',monospace;font-size:9px;color:var(--text4);letter-spacing:1px;}
+
+footer{background:var(--obs2);border-top:1px solid var(--border);padding:60px 48px 32px;}
+.ft-inner{max-width:1400px;margin:0 auto;}
+.ft-top{display:grid;grid-template-columns:260px 1fr;gap:48px;margin-bottom:48px;align-items:start;}
+.ft-brand{}
+.ft-logo{font-family:'Orbitron',monospace;font-size:16px;font-weight:900;letter-spacing:2px;color:var(--cyan);margin-bottom:10px;}
+.ft-logo span{color:var(--gold);}
+.ft-tagline{font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:1px;line-height:1.6;}
+.ft-cols{display:grid;grid-template-columns:repeat(4,1fr);gap:32px;}
+.ft-col{}
+.ft-col-head{font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:2.5px;color:var(--teal);text-transform:uppercase;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.ft-col a{display:block;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.5px;color:var(--text3);text-decoration:none;margin-bottom:9px;transition:color .2s;}
+.ft-col a:hover{color:var(--text);}
+.ft-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding-top:24px;border-top:1px solid var(--border);}
+.ft-copy{font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:.5px;}
+.ft-disc{font-family:'Space Mono',monospace;font-size:9px;color:var(--text4);letter-spacing:.5px;}
+@media(max-width:1100px){.ft-top{grid-template-columns:1fr;gap:32px;}.ft-cols{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:700px){.ft-cols{grid-template-columns:1fr 1fr;}.ft-bottom{flex-direction:column;text-align:center;}}
+
+.fu{opacity:0;transform:translateY(26px);transition:opacity .65s ease,transform .65s ease;}
+.fu.v{opacity:1;transform:translateY(0);}
+.d1{transition-delay:.1s;}.d2{transition-delay:.2s;}.d3{transition-delay:.3s;}.d4{transition-delay:.4s;}.d5{transition-delay:.5s;}
+
+@media(max-width:1100px){.hero-inner{grid-template-columns:1fr;}.ws-layout{grid-template-columns:1fr;}.ws-sidebar{position:static;}.edu-grid{grid-template-columns:1fr 1fr;}.ict-concepts{grid-template-columns:1fr;}}
+@media(max-width:700px){.edu-grid{grid-template-columns:1fr;}.sec-inner,.hero-inner{padding:60px 20px;}.nav{padding:14px 20px;}.mod-strip{padding:0 20px;}}
+</style>
+</head>
+<body>
+
+<div id="cur"></div>
+<div id="cur-ring"></div>
+<canvas id="pc"></canvas>
+
+<!-- NAV -->
+<nav>
+  <a href="traderedge_landing.html" class="nav-logo">SNIPER<span>TRADER</span></a>
+  <div class="nav-links">
+    <a href="traderedge_baseline.html">Baseline</a>
+    <a href="#" class="nav-pill">⬡ Guardrails</a>
+    <a href="traderedge_reviewloop.html">Review Loop</a>
+    <a href="traderedge_sentiment.html">Ai Sentiment</a>
+    <a href="traderedge_chartai.html">Ai Chart Analyzer</a>
+    <a href="traderedge_propfirms.html">Prop Firm Center</a>
+    <button id="themeToggle" onclick="toggleTheme()" style="background:var(--teal-dim);border:1px solid var(--border2);color:var(--teal);padding:7px 14px;border-radius:20px;font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s;" title="Toggle light/dark mode">☀ LIGHT</button>
+    <a href="#download" class="nav-cta">Get The App</a>
+  </div>
+</nav>
+
+<!-- MODULE STRIP -->
+<div class="mod-strip">
+  <div class="mod-strip-inner">
+    <a class="mod-tab" href="traderedge_baseline.html">01 · Baseline</a>
+    <a class="mod-tab active" href="#">02 · Guardrails</a>
+    <a class="mod-tab" href="traderedge_reviewloop.html">03 · Review Loop</a>
+    <a class="mod-tab" href="traderedge_sentiment.html">04 · Ai Sentiment</a>
+    <a class="mod-tab" href="traderedge_chartai.html">05 · Ai Chart Analyzer</a>
+    <a class="mod-tab" href="traderedge_propfirms.html">06 · Prop Firm Center</a>
+  </div>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="orb1"></div><div class="orb2"></div><div class="orb3"></div>
+  <div class="hero-inner">
+    <div class="hero-text">
+      <div class="hero-bc">TraderEdge Psych OS <em>/ Module 02</em></div>
+      <div class="hero-modnum">MODULE 02 · DISCIPLINE ENFORCEMENT</div>
+      <h1 class="hero-h1">Habit<br>Guardrails<br><span class="acc">System</span></h1>
+      <p class="hero-sub">Nine gates stand between your emotion and your execution. <strong>Every single one must be green</strong> before you place a trade. This is the ICT/SMC discipline engine that separates funded traders from blown accounts.</p>
+      <div class="htags">
+        <span class="htag t">ICT Methodology</span>
+        <span class="htag c">SMC Framework</span>
+        <span class="htag g">9-Gate System</span>
+        <span class="htag r">Breach Prevention</span>
+      </div>
+      <div class="hero-badge"><span class="pulse"></span>Live Readiness Engine · Discipline Scoring · Streak Rewards</div>
+    </div>
+
+    <!-- HERO 3D CARD -->
+    <div class="hero-card-wrap">
+      <div class="card-3d" id="card3d">
+        <div class="hero-glass">
+          <div class="hg-topbar">
+            <div class="hg-logo">⬡ HABIT GUARDRAILS · LIVE</div>
+            <div class="hg-ready" id="heroScore">READINESS: 6 / 9</div>
+          </div>
+          <div class="hg-body">
+            <!-- Readiness ring -->
+            <div class="hero-ring-row">
+              <svg width="72" height="72" viewBox="0 0 72 72">
+                <circle cx="36" cy="36" r="29" fill="none" stroke="rgba(0,201,167,0.1)" stroke-width="5"/>
+                <circle cx="36" cy="36" r="29" fill="none" stroke="url(#tg)" stroke-width="5" stroke-linecap="round" stroke-dasharray="182" stroke-dashoffset="61" transform="rotate(-90 36 36)">
+                  <animate attributeName="stroke-dashoffset" from="182" to="61" dur="1.5s" fill="freeze"/>
+                </circle>
+                <defs><linearGradient id="tg" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#00C9A7"/><stop offset="100%" stop-color="#00D4FF"/></linearGradient></defs>
+                <text x="36" y="32" text-anchor="middle" font-family="Orbitron,monospace" font-size="12" font-weight="700" fill="#FFFFFF">6/9</text>
+                <text x="36" y="46" text-anchor="middle" font-family="Space Mono,monospace" font-size="6" fill="rgba(120,153,170,0.8)">GATES</text>
+              </svg>
+              <div class="hero-ring-info">
+                <div class="hero-ring-state">3 GATES LEFT</div>
+                <div class="hero-ring-sub">▲ Almost locked — verify remaining criteria</div>
+              </div>
+            </div>
+
+            <!-- Mini checklist -->
+            <div class="hg-checks">
+              <div class="hg-check done"><div class="hg-chk">✓</div>LEVEL — OB/FVG/OTE at entry zone</div>
+              <div class="hg-check done"><div class="hg-chk">✓</div>LIQUIDITY — BSL/SSL swept confirmed</div>
+              <div class="hg-check done"><div class="hg-chk">✓</div>THE DOJI — Wick 2× body size present</div>
+              <div class="hg-check done"><div class="hg-chk">✓</div>KILLZONE — London/NY open window active</div>
+              <div class="hg-check done"><div class="hg-chk">✓</div>BOS — Structure shift confirmed on HTF</div>
+              <div class="hg-check done"><div class="hg-chk">✓</div>RISK — Position size at max 0.5%</div>
+              <div class="hg-check pending"><div class="hg-chk">○</div>THE CLOSE — Waiting for candle close</div>
+              <div class="hg-check"><div class="hg-chk"></div>THE ENTRY — Break of wick pending</div>
+              <div class="hg-check"><div class="hg-chk"></div>DRAWDOWN — Daily limit check</div>
+            </div>
+
+            <!-- Score bar -->
+            <div class="hg-score-row">
+              <div><div class="hg-score-label">READINESS SCORE</div></div>
+              <div style="display:flex;align-items:baseline;gap:3px;">
+                <span class="hg-score-val">6</span>
+                <span class="hg-score-max">/ 9</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-hint"><div class="scroll-line"></div><div class="scroll-txt">Lock in your gates</div></div>
+</section>
+
+<!-- GUARDRAILS WORKSTATION -->
+<section class="sec" id="guardrails">
+  <div class="sec-inner">
+    <div class="fu">
+      <div class="eyebrow">Guardrail System</div>
+      <div class="sec-line"></div>
+      <h2 class="sec-h2">Nine gates. <span>Zero exceptions.</span></h2>
+      <p class="sec-lead">Each gate represents a non-negotiable ICT/SMC criterion. Toggle each one as you verify it on your chart. The system calculates your readiness score live. You do not enter until 9/9.</p>
+    </div>
+
+    <!-- BREACH ALERT (shown when danger flags) -->
+    <div class="breach-alert" id="breachAlert">
+      <div class="ba-icon">⚠</div>
+      <div>
+        <div class="ba-title">DISCIPLINE BREACH RISK DETECTED</div>
+        <div class="ba-msg" id="breachMsg">A discipline guard has been flagged. Review the warning before proceeding.</div>
+      </div>
+    </div>
+
+    <div class="ws-layout">
+      <!-- MAIN -->
+      <div class="ws-main">
+
+        <!-- ENTRY CRITERIA CHECKLIST -->
+        <div class="g-card fu d1">
+          <div class="g-card-hdr">
+            <div class="g-card-icon t">🎯</div>
+            <div>
+              <div class="g-card-step">GATES 01–06 · ENTRY CRITERIA</div>
+              <div class="g-card-title">ICT/SMC Entry Checklist</div>
+            </div>
+          </div>
+          <p class="g-desc">These six gates verify your setup meets full institutional criteria. Each has an educational deep-dive — tap the ▼ to learn the concept in detail.</p>
+
+          <div class="ict-checklist" id="ictChecklist">
+
+            <div class="ict-item" id="gate-level">
+              <div class="ict-row">
+                <div class="ict-marker"></div>
+                <div class="ict-content">
+                  <div class="ict-title">GATE 01 — LEVEL: Price at OB, FVG, or OTE</div>
+                  <div class="ict-sub">Order Block / Fair Value Gap / Optimal Trade Entry confirmed</div>
+                </div>
+                <div class="ict-toggle">
+                  <div class="ict-yes" onclick="passGate('gate-level','LEVEL')">YES</div>
+                  <div class="ict-no" onclick="failGate('gate-level','LEVEL')">NO</div>
+                </div>
+              </div>
+              <div class="ict-edu-toggle" onclick="toggleEdu('gate-level')">
+                <span class="ict-edu-label">⬡ LEARN THIS CONCEPT</span>
+                <span class="ict-edu-arrow">▼</span>
+              </div>
+              <div class="ict-edu-body">
+                <div class="ict-edu-text">An <strong>Order Block (OB)</strong> is the last opposing candle before an impulsive move away from a price zone — where institutional orders were placed. A <strong>Fair Value Gap (FVG)</strong> is a 3-candle imbalance where the market moved so fast it left inefficiency that price will return to fill. The <strong>Optimal Trade Entry (OTE)</strong> is the 0.618–0.79 Fibonacci retracement into a premium/discount zone. You only enter when price reaches one of these three institutional locations — never in the middle of a range.</div>
+                <div class="ict-edu-example">
+                  <div class="ict-edu-example-label">Real Example</div>
+                  <div class="ict-edu-example-text">"Price on NQ 15M tapped back into the 4H bullish OB at 19,180–19,220. I marked this zone pre-session. Price is now at the OB — Gate 01 passes."</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="ict-item" id="gate-liquidity">
+              <div class="ict-row">
+                <div class="ict-marker"></div>
+                <div class="ict-content">
+                  <div class="ict-title">GATE 02 — LIQUIDITY: BSL or SSL Swept</div>
+                  <div class="ict-sub">Buy-Side or Sell-Side Liquidity sweep confirmed before entry</div>
+                </div>
+                <div class="ict-toggle">
+                  <div class="ict-yes" onclick="passGate('gate-liquidity','LIQUIDITY')">YES</div>
+                  <div class="ict-no" onclick="failGate('gate-liquidity','LIQUIDITY')">NO</div>
+                </div>
+              </div>
+              <div class="ict-edu-toggle" onclick="toggleEdu('gate-liquidity')">
+                <span class="ict-edu-label">⬡ LEARN THIS CONCEPT</span>
+                <span class="ict-edu-arrow">▼</span>
+              </div>
+              <div class="ict-edu-body">
+                <div class="ict-edu-text"><strong>Buy-Side Liquidity (BSL)</strong> pools above swing highs where retail stop-losses and breakout orders cluster. <strong>Sell-Side Liquidity (SSL)</strong> pools below swing lows. Smart Money sweeps these pools to collect orders before the real move. Without a liquidity sweep, you are entering before the institutional move has been initiated — you're fighting the flow instead of following it.</div>
+                <div class="ict-edu-example">
+                  <div class="ict-edu-example-label">Real Example</div>
+                  <div class="ict-edu-example-text">"Before my long entry, price swept the SSL below the previous 1H low by 4 ticks then violently reversed — confirming institutional accumulation. Gate 02 passes."</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="ict-item" id="gate-doji">
+              <div class="ict-row">
+                <div class="ict-marker"></div>
+                <div class="ict-content">
+                  <div class="ict-title">GATE 03 — THE DOJI: Wick ≥ 2× Body Size</div>
+                  <div class="ict-sub">Institutional rejection candle with significant wick confirmed</div>
+                </div>
+                <div class="ict-toggle">
+                  <div class="ict-yes" onclick="passGate('gate-doji','DOJI')">YES</div>
+                  <div class="ict-no" onclick="failGate('gate-doji','DOJI')">NO</div>
+                </div>
+              </div>
+              <div class="ict-edu-toggle" onclick="toggleEdu('gate-doji')">
+                <span class="ict-edu-label">⬡ LEARN THIS CONCEPT</span>
+                <span class="ict-edu-arrow">▼</span>
+              </div>
+              <div class="ict-edu-body">
+                <div class="ict-edu-text">The institutional rejection candle — often called a <strong>Doji, Hammer, or Pin Bar</strong> in ICT methodology — shows strong rejection at the zone. The wick represents price probing the level and being violently rejected by institutional order flow. The wick must be at least 2× the size of the candle body to confirm meaningful institutional presence. A small wick shows weak conviction; a long wick shows strong rejection.</div>
+                <div class="ict-edu-example">
+                  <div class="ict-edu-example-label">Real Example</div>
+                  <div class="ict-edu-example-text">"At the OB, a 15M candle printed with a 12-tick wick below and only a 4-tick body — wick is 3× the body. Institutional rejection confirmed. Gate 03 passes."</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="ict-item" id="gate-close">
+              <div class="ict-row">
+                <div class="ict-marker"></div>
+                <div class="ict-content">
+                  <div class="ict-title">GATE 04 — THE CLOSE: Candle Fully Formed</div>
+                  <div class="ict-sub">Never trade a developing candle — wait for the confirmed close</div>
+                </div>
+                <div class="ict-toggle">
+                  <div class="ict-yes" onclick="passGate('gate-close','CLOSE')">YES</div>
+                  <div class="ict-no" onclick="failGate('gate-close','CLOSE')">NO</div>
+                </div>
+              </div>
+              <div class="ict-edu-toggle" onclick="toggleEdu('gate-close')">
+                <span class="ict-edu-label">⬡ LEARN THIS CONCEPT</span>
+                <span class="ict-edu-arrow">▼</span>
+              </div>
+              <div class="ict-edu-body">
+                <div class="ict-edu-text">A developing candle has not yet confirmed its structure. The wick you see right now may close as the body — destroying the setup. Trading a developing wick is one of the most common rule violations in ICT methodology and a significant source of unnecessary losses. <strong>Wait for the candle to close before making any decision.</strong> The few seconds of impatience cost more than the setup is worth.</div>
+                <div class="ict-edu-example">
+                  <div class="ict-edu-example-label">Real Example</div>
+                  <div class="ict-edu-example-text">"I watched the 15M candle close with a confirmed wick at the OB — the candle is fully formed, the structure is locked. Gate 04 passes."</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="ict-item" id="gate-entry">
+              <div class="ict-row">
+                <div class="ict-marker"></div>
+                <div class="ict-content">
+                  <div class="ict-title">GATE 05 — THE ENTRY: Break of Wick (Limit Only)</div>
+                  <div class="ict-sub">Entry on break of the rejection wick — never a market order at zone</div>
+                </div>
+                <div class="ict-toggle">
+                  <div class="ict-yes" onclick="passGate('gate-entry','ENTRY')">YES</div>
+                  <div class="ict-no" onclick="failGate('gate-entry','ENTRY')">NO</div>
+                </div>
+              </div>
+              <div class="ict-edu-toggle" onclick="toggleEdu('gate-entry')">
+                <span class="ict-edu-label">⬡ LEARN THIS CONCEPT</span>
+                <span class="ict-edu-arrow">▼</span>
+              </div>
+              <div class="ict-edu-body">
+                <div class="ict-edu-text">After the rejection candle closes, you place a <strong>limit order at the break of the wick's high</strong> (for longs) or low (for shorts). This confirms that price has accepted the rejection and is moving in your intended direction. Using a market order at the zone means entering before confirmation — you're paying a premium for uncertainty. The break-of-wick entry gives you confirmation and a tighter stop.</div>
+                <div class="ict-edu-example">
+                  <div class="ict-edu-example-label">Real Example</div>
+                  <div class="ict-edu-example-text">"The rejection candle wick high is at 19,192. I place a limit buy at 19,193 — one tick above the wick. If triggered, I have confirmation of acceptance. Gate 05 passes."</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="ict-item" id="gate-bos">
+              <div class="ict-row">
+                <div class="ict-marker"></div>
+                <div class="ict-content">
+                  <div class="ict-title">GATE 06 — STRUCTURE: BOS or CHoCH on Higher Timeframe</div>
+                  <div class="ict-sub">Break of Structure or Change of Character confirms directional bias</div>
+                </div>
+                <div class="ict-toggle">
+                  <div class="ict-yes" onclick="passGate('gate-bos','BOS')">YES</div>
+                  <div class="ict-no" onclick="failGate('gate-bos','BOS')">NO</div>
+                </div>
+              </div>
+              <div class="ict-edu-toggle" onclick="toggleEdu('gate-bos')">
+                <span class="ict-edu-label">⬡ LEARN THIS CONCEPT</span>
+                <span class="ict-edu-arrow">▼</span>
+              </div>
+              <div class="ict-edu-body">
+                <div class="ict-edu-text">A <strong>Break of Structure (BOS)</strong> confirms the continuation of trend — price breaks the previous swing high (bullish) or swing low (bearish). A <strong>Change of Character (CHoCH)</strong> signals a potential trend reversal. Your entry direction must align with the higher timeframe structure. Trading against the HTF BOS/CHoCH is trading counter to institutional flow — the setup may work once, but the expectancy is negative over time.</div>
+                <div class="ict-edu-example">
+                  <div class="ict-edu-example-label">Real Example</div>
+                  <div class="ict-edu-example-text">"4H chart shows a BOS above the last swing high — bullish structure confirmed. My 15M long setup aligns with the HTF direction. Gate 06 passes."</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- DISCIPLINE GUARDS -->
+        <div class="g-card fu d2">
+          <div class="g-card-hdr">
+            <div class="g-card-icon r">🛡</div>
+            <div>
+              <div class="g-card-step">GATES 07–09 · DISCIPLINE GUARDS</div>
+              <div class="g-card-title">Account Protection Gates</div>
+            </div>
+          </div>
+          <p class="g-desc">These three guards protect your funded account from emotional rule violations. A breach on any of these stops trading immediately.</p>
+
+          <div class="disc-guards" id="discGuards">
+
+            <div class="dg-item" id="dg-stoploss">
+              <div class="dg-indicator"></div>
+              <div class="dg-content">
+                <div class="dg-title">GATE 07 — Stop-Loss Set and Never Moved Wider</div>
+                <div class="dg-sub">Hard rule: SL placed at entry confirmation, never adjusted to avoid loss</div>
+                <div class="dg-actions">
+                  <div class="dg-btn safe-btn" onclick="setGuard('dg-stoploss','safe','STOP-LOSS set and LOCKED')">✓ SL SET &amp; LOCKED</div>
+                  <div class="dg-btn risk-btn" onclick="setGuard('dg-stoploss','risk','STOP-LOSS was moved wider — discipline breach')">✕ MOVED MY SL</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="dg-item" id="dg-drawdown">
+              <div class="dg-indicator"></div>
+              <div class="dg-content">
+                <div class="dg-title">GATE 08 — Daily Drawdown Limit Not Breached</div>
+                <div class="dg-sub">Confirm today's losses have not hit the daily max — stop trading if hit</div>
+                <div class="dg-actions">
+                  <div class="dg-btn safe-btn" onclick="setGuard('dg-drawdown','safe','DRAWDOWN within daily limit')">✓ WITHIN LIMIT</div>
+                  <div class="dg-btn risk-btn" onclick="setGuard('dg-drawdown','risk','DAILY DRAWDOWN LIMIT HIT — stop trading immediately')">✕ LIMIT HIT</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="dg-item" id="dg-revenge">
+              <div class="dg-indicator"></div>
+              <div class="dg-content">
+                <div class="dg-title">GATE 09 — No Revenge Trading (Max 2 Consecutive Losses)</div>
+                <div class="dg-sub">After 2 consecutive losses, mandatory session pause before next entry</div>
+                <div class="dg-actions">
+                  <div class="dg-btn safe-btn" onclick="setGuard('dg-revenge','safe','EMOTIONAL STATE clear — no revenge risk')">✓ CLEAR STATE</div>
+                  <div class="dg-btn risk-btn" onclick="setGuard('dg-revenge','risk','REVENGE TRADING risk detected — pause required')">✕ 2+ LOSSES</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- STREAK SYSTEM -->
+        <div class="g-card fu d3">
+          <div class="g-card-hdr">
+            <div class="g-card-icon g">🔥</div>
+            <div>
+              <div class="g-card-step">STREAK SYSTEM</div>
+              <div class="g-card-title">Discipline Streak Tracker</div>
+            </div>
+          </div>
+          <p class="g-desc">Streaks reward the right behavior — following your rules — not winning trades. A perfect session means all 9 gates were confirmed before every entry.</p>
+          <div class="streak-header">
+            <div class="streak-title">28-Day Discipline Streak</div>
+            <div style="text-align:right;">
+              <div class="streak-count">14</div>
+              <div class="streak-count-label">CURRENT STREAK</div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+            <div class="streak-day-label">MON</div><div class="streak-day-label">TUE</div><div class="streak-day-label">WED</div><div class="streak-day-label">THU</div><div class="streak-day-label">FRI</div><div class="streak-day-label">SAT</div><div class="streak-day-label">SUN</div>
+          </div>
+          <div class="streak-grid-wrap" id="streakGrid"></div>
+          <div class="streak-legend">
+            <div class="sl-item"><div class="sl-dot" style="background:var(--teal);"></div>All 9 gates</div>
+            <div class="sl-item"><div class="sl-dot" style="background:var(--gold);"></div>★ Perfect session</div>
+            <div class="sl-item"><div class="sl-dot" style="background:var(--amber);"></div>Partial (6–8)</div>
+            <div class="sl-item"><div class="sl-dot" style="background:var(--red);"></div>Skipped / breach</div>
+            <div class="sl-item"><div class="sl-dot" style="background:var(--text4);"></div>Rest day</div>
+          </div>
+        </div>
+
+        <!-- SUBMIT -->
+        <div class="fu d4">
+          <button class="submit-btn" id="submitBtn" onclick="submitGuardrails()">
+            <span id="submitIcon">▶</span> CONFIRM GUARDRAILS & ENTER THE MARKET
+          </button>
+        </div>
+
+      </div>
+
+      <!-- SIDEBAR -->
+      <div class="ws-sidebar fu d2">
+
+        <!-- LIVE SCORE -->
+        <div class="live-score-card">
+          <div class="ls-ring-wrap">
+            <svg width="110" height="110" viewBox="0 0 110 110">
+              <circle cx="55" cy="55" r="46" fill="none" stroke="rgba(0,201,167,0.08)" stroke-width="7"/>
+              <circle cx="55" cy="55" r="46" fill="none" stroke="url(#lsg)" stroke-width="7" stroke-linecap="round" id="lsRing"
+                stroke-dasharray="289" stroke-dashoffset="289" transform="rotate(-90 55 55)"/>
+              <defs><linearGradient id="lsg" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#00C9A7"/><stop offset="100%" stop-color="#00D4FF"/></linearGradient></defs>
+            </svg>
+          </div>
+          <div class="ls-score" id="lsScore" style="color:var(--text4);">0/9</div>
+          <div class="ls-label" id="lsLabel" style="color:var(--text4);">GATES CLEARED</div>
+          <div class="ls-msg" id="lsMsg">Verify each gate on your chart before proceeding</div>
+        </div>
+
+        <!-- GATE PROGRESS -->
+        <div class="g-card" style="padding:20px;">
+          <div style="font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:#fff;margin-bottom:14px;">⬡ Gate Progress</div>
+          <div class="progress-bars" id="progressBars">
+            <div class="pb-row"><div class="pb-header"><span class="pb-name">Entry Criteria</span><span class="pb-val" id="pb-entry-val" style="color:var(--text3);">0/6</span></div><div class="pb-track"><div class="pb-fill" id="pb-entry" style="width:0%;background:var(--teal);"></div></div></div>
+            <div class="pb-row"><div class="pb-header"><span class="pb-name">Discipline Guards</span><span class="pb-val" id="pb-disc-val" style="color:var(--text3);">0/3</span></div><div class="pb-track"><div class="pb-fill" id="pb-disc" style="width:0%;background:var(--cyan);"></div></div></div>
+          </div>
+        </div>
+
+        <!-- SESSION STATS -->
+        <div class="g-card" style="padding:20px;">
+          <div style="font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:#fff;margin-bottom:14px;">⬡ 30-Day Stats</div>
+          <div class="side-stat"><span class="ss-name">Avg Gates Cleared</span><span class="ss-val" style="color:var(--teal);">8.2</span></div>
+          <div class="side-stat"><span class="ss-name">Gate Follow Rate</span><span class="ss-val" style="color:var(--green);">91%</span></div>
+          <div class="side-stat"><span class="ss-name">Most Missed Gate</span><span class="ss-val" style="color:var(--amber);font-size:10px;">CLOSE</span></div>
+          <div class="side-stat"><span class="ss-name">Discipline Streak</span><span class="ss-val" style="color:var(--cyan);">14</span></div>
+          <div class="side-stat"><span class="ss-name">Perfect Sessions</span><span class="ss-val" style="color:var(--gold);">9</span></div>
+          <div class="side-stat"><span class="ss-name">Breach Events (30d)</span><span class="ss-val" style="color:var(--red);">2</span></div>
+        </div>
+
+        <!-- INSIGHT -->
+        <div class="g-card" style="padding:20px;background:rgba(0,201,167,.04);border-color:rgba(0,201,167,.2);">
+          <div style="font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--teal);margin-bottom:10px;">💡 Gate Insight</div>
+          <p style="font-size:12px;color:var(--text2);line-height:1.7;">Win rate with all 9 gates confirmed: <strong style="color:var(--green);">71%</strong>. Win rate when skipping Gate 04 (candle close): <strong style="color:var(--red);">38%</strong>. The close gate alone accounts for a <strong style="color:#fff;">33-point swing</strong> in win rate.</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- AI DISCIPLINE COACH -->
+<section class="sec ai-section" id="ai">
+  <div class="sec-inner">
+    <div class="fu">
+      <div class="eyebrow">AI Discipline Coach</div>
+      <div class="sec-line"></div>
+      <h2 class="sec-h2">Your AI coach enforces <span>every gate.</span></h2>
+      <p class="sec-lead">Ask the AI Discipline Coach anything about ICT/SMC methodology, gate criteria, setup quality, or why a specific rule exists. The AI explains the institutional reasoning behind every guardrail.</p>
+    </div>
+    <div class="ai-panel fu d1">
+      <div class="ai-head">
+        <div class="ai-title-row">
+          <div class="ai-icon-box">⚔️</div>
+          <div>
+            <div class="ai-name">AI Discipline Coach</div>
+            <div class="ai-sub">ICT/SMC methodology · Gate enforcement · Setup validation</div>
+          </div>
+        </div>
+        <button class="ask-btn" onclick="analyzeSetup()"><span id="analyzeIcon">⬡</span> VALIDATE MY SETUP</button>
+      </div>
+      <div class="ai-presets">
+        <button class="preset-pill" onclick="setQ(this,'Explain exactly what makes a valid ICT Order Block and how to identify one on a chart.')">What is a valid OB?</button>
+        <button class="preset-pill" onclick="setQ(this,'I keep entering before liquidity is swept. Why is this a problem and how do I fix it?')">Liquidity patience</button>
+        <button class="preset-pill" onclick="setQ(this,'What is the difference between a BOS and a CHoCH and when should I trade each?')">BOS vs CHoCH</button>
+        <button class="preset-pill" onclick="setQ(this,'I moved my stop-loss wider during a trade. What is the psychological pattern and how do I stop it?')">Stop-loss discipline</button>
+        <button class="preset-pill" onclick="setQ(this,'How do killzones (London/NY) affect which ICT setups are highest probability?')">Killzone setups</button>
+        <button class="preset-pill" onclick="setQ(this,'Give me the complete ICT 9-gate checklist rationale — why each gate exists.')">Why 9 gates?</button>
+      </div>
+      <div class="ai-input-row">
+        <input class="ai-inp" id="aiQ" type="text" placeholder="Ask about ICT/SMC methodology, gate criteria, setup validation, or discipline enforcement..." />
+        <button class="ask-btn" onclick="askCoach()"><span>▶</span></button>
+      </div>
+      <div class="ai-resp" id="aiResp">
+        <span style="color:var(--text4);font-family:'Space Mono',monospace;font-size:11px;display:block;text-align:center;padding:16px;">Confirm your gates or ask the AI Discipline Coach any question about ICT/SMC criteria and why each guardrail exists.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EDUCATION: ICT CONCEPTS -->
+<section class="sec edu-section" id="education">
+  <div class="sec-inner">
+    <div class="fu">
+      <div class="eyebrow">ICT/SMC Education</div>
+      <div class="sec-line"></div>
+      <h2 class="sec-h2">The institutional <span>concepts behind</span> every gate.</h2>
+      <p class="sec-lead">Each guardrail exists because of how institutional money actually moves markets. Understanding the why makes the rules automatic — not a cage, but a framework for seeing what retail traders can't.</p>
+    </div>
+
+    <div class="ict-concepts fu d1">
+      <div class="ict-concept-card">
+        <span class="icc-badge t">Order Blocks</span>
+        <div class="icc-title">Where Institutions Left Their Orders</div>
+        <div class="icc-text">Order Blocks are price zones where large institutional participants placed their buy or sell orders. These zones act as magnets — price returns to them because unfilled institutional orders remain there. The OB is defined by the last opposing candle before an impulsive displacement move.</div>
+        <div class="icc-example">
+          <div class="icc-ex-label">Key Rule</div>
+          <div class="icc-ex-text">"Only trade at OBs that caused a significant displacement (3+ candles of consecutive movement). Weak displacement = weak institutional presence."</div>
+        </div>
+      </div>
+      <div class="ict-concept-card">
+        <span class="icc-badge c">Fair Value Gaps</span>
+        <div class="icc-title">Imbalances the Market Must Fill</div>
+        <div class="icc-text">A Fair Value Gap occurs when price moves so violently that a 3-candle gap is created — the wicks of candles 1 and 3 do not overlap. This represents market inefficiency. Smart Money uses FVGs as entry points because price statistically returns to fill these imbalances before continuing in the original direction.</div>
+        <div class="icc-example">
+          <div class="icc-ex-label">Key Rule</div>
+          <div class="icc-ex-text">"An FVG within a larger OB is called a 'nested FVG' — the highest probability entry in the ICT model. Always check for OB+FVG confluence."</div>
+        </div>
+      </div>
+      <div class="ict-concept-card">
+        <span class="icc-badge g">Liquidity Sweeps</span>
+        <div class="icc-title">Why Smart Money Hunts Stop-Losses</div>
+        <div class="icc-text">Institutional traders need liquidity — they cannot fill massive orders at a single price without moving the market against themselves. They deliberately drive price above swing highs (BSL) or below swing lows (SSL) to trigger retail stop-losses and breakout orders, which become the liquidity they need to fill their actual positions.</div>
+        <div class="icc-example">
+          <div class="icc-ex-label">Key Rule</div>
+          <div class="icc-ex-text">"Never enter before the sweep. The sweep IS the signal. If you enter before liquidity is taken, you are the liquidity being taken."</div>
+        </div>
+      </div>
+      <div class="ict-concept-card">
+        <span class="icc-badge r">Market Structure</span>
+        <div class="icc-title">BOS and CHoCH — Reading Intent</div>
+        <div class="icc-text">Market structure is the sequence of highs and lows that defines whether an asset is in an uptrend (higher highs, higher lows) or downtrend. A Break of Structure (BOS) confirms trend continuation — a new high in a bull trend. A Change of Character (CHoCH) signals potential reversal — a new low during what was a bull trend.</div>
+        <div class="icc-example">
+          <div class="icc-ex-label">Key Rule</div>
+          <div class="icc-ex-text">"Always identify BOS/CHoCH on the 4H or 1H before trading the 15M. You need to know which direction the institutional hand is pointing."</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="quote-block fu d2">
+      <p class="quote-text">"Discipline in trading is not about following rules because someone told you to. It's about understanding why institutional price delivery works the way it does — and then never deviating from what you know to be true about the market structure."</p>
+      <div class="quote-attr">— SniperTrader · ICT/SMC Methodology Framework</div>
+    </div>
+
+    <div class="edu-grid fu d3" style="margin-top:48px;">
+      <div class="edu-card">
+        <div class="edu-num">01</div>
+        <div class="edu-icon t">🔒</div>
+        <div class="edu-title">Rules Without Understanding Break</div>
+        <div class="edu-desc">Traders who follow rules without knowing why abandon them under pressure. The Guardrails system teaches the institutional reasoning behind every gate so the rules become instinct, not effort.</div>
+      </div>
+      <div class="edu-card">
+        <div class="edu-num">02</div>
+        <div class="edu-icon c">📊</div>
+        <div class="edu-title">Confluence is Probability</div>
+        <div class="edu-desc">Each additional gate that passes adds confluence — the overlap of multiple institutional signals. A setup with 9/9 gates confirmed is not 9× a 1-gate setup. It's exponentially higher probability due to the convergence of independent signals.</div>
+      </div>
+      <div class="edu-card">
+        <div class="edu-num">03</div>
+        <div class="edu-icon g">🔥</div>
+        <div class="edu-title">Streaks Build Neural Pathways</div>
+        <div class="edu-desc">Neuroscience research shows it takes 21–66 days of consistent repetition to form an automatic behavior pathway. The streak system exists to make disciplined gate-checking a reflex — not a choice you make under emotional pressure.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DOWNLOAD -->
+<section id="download" class="dl-section">
+  <div class="dl-bg"></div>
+  <div class="dl-inner">
+    <div class="fu">
+      <div class="eyebrow" style="display:flex;justify-content:center;">Available Now</div>
+      <h2 class="dl-h2">Nine gates.<br><span>Zero exceptions.</span></h2>
+      <p class="dl-sub">The desktop experience goes deep into every concept. The mobile app keeps the guardrail system live at your desk — check gates, see breach warnings, and protect your funded account every session.</p>
+    </div>
+    <div class="store-btns fu d1">
+      <a href="#" class="store-btn ios"><div class="sbi">🍎</div><div class="sbt"><span class="sbt-label">Download on the</span><span class="sbt-name">App Store</span><span class="sbt-sub">iOS 16.0 or later · Free</span></div></a>
+      <a href="#" class="store-btn android"><div class="sbi">▶</div><div class="sbt"><span class="sbt-label">Get it on</span><span class="sbt-name">Google Play</span><span class="sbt-sub">Android 9.0 or later · Free</span></div></a>
+    </div>
+    <div class="dl-disc fu d2">SNIPERTRADER.AI · TRADEREDGE PSYCH OS · ICT/SMC METHODOLOGY · NOT FINANCIAL ADVICE</div>
+  </div>
+</section>
+
+<footer>
+  <div class="ft-inner">
+    <div class="ft-top">
+      <div class="ft-brand">
+        <div class="ft-logo">SNIPER<span>TRADER</span></div>
+        <div class="ft-tagline">Intelligence Platform for Disciplined Traders</div>
+      </div>
+      <div class="ft-cols">
+        <div class="ft-col">
+          <div class="ft-col-head">Tools</div>
+          <a href="#">USME Algo</a>
+          <a href="traderedge_baseline.html">Pre-Market Baseline</a>
+          <a href="#">Habit Guardrails</a>
+          <a href="traderedge_reviewloop.html">Post-Market Review Loop</a>
+          <a href="traderedge_sentiment.html">Ai Sentiment Engine</a>
+          <a href="traderedge_chartai.html">Ai Chart Analyzer</a>
+          <a href="traderedge_propfirms.html">Prop Firm Command Center</a>
+        </div>
+        <div class="ft-col">
+          <div class="ft-col-head">Ecosystem</div>
+          <a href="#">Ai Smart Glasses</a>
+          <a href="#">Prop Master Plan</a>
+          <a href="#">30-Day Funded Challenge</a>
+          <a href="#">ICT Discipline Engine</a>
+        </div>
+        <div class="ft-col">
+          <div class="ft-col-head">Resources</div>
+          <a href="#">Affiliate Program</a>
+          <a href="#">Trader's Couch</a>
+          <a href="#">Ebook</a>
+          <a href="#">Prop Firm Master Plan</a>
+          <a href="#">30 Days Funded Challenge</a>
+          <a href="#">Shop</a>
+        </div>
+        <div class="ft-col">
+          <div class="ft-col-head">Company</div>
+          <a href="#">About</a>
+          <a href="#">Docs</a>
+          <a href="#">Terms</a>
+          <a href="#">Disclaimer</a>
+          <a href="#">Privacy</a>
+        </div>
+      </div>
+    </div>
+    <div class="ft-bottom">
+      <div class="ft-copy">© 2026 SniperTrader.ai Intelligence Platform — All rights reserved.</div>
+      <div class="ft-disc">Not financial advice. ICT/SMC Methodology Framework.</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+// CURSOR
+const cur=document.getElementById('cur'),ring=document.getElementById('cur-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px';});
+(function ar(){rx+=(mx-rx)*.1;ry+=(my-ry)*.1;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(ar);})();
+
+// PARTICLES
+const pc=document.getElementById('pc'),ctx=pc.getContext('2d');
+pc.width=window.innerWidth;pc.height=window.innerHeight;
+window.addEventListener('resize',()=>{pc.width=window.innerWidth;pc.height=window.innerHeight;});
+const pts=[];
+const pCols=['0,201,167','0,212,255','240,192,64'];
+for(let i=0;i<88;i++) pts.push({x:Math.random()*pc.width,y:Math.random()*pc.height,vx:(Math.random()-.5)*.22,vy:(Math.random()-.5)*.22,r:Math.random()*1.4+.3,a:Math.random()*.27+.07,col:pCols[Math.floor(Math.random()*pCols.length)]});
+let pmx=pc.width/2,pmy=pc.height/2;
+document.addEventListener('mousemove',e=>{pmx=e.clientX;pmy=e.clientY;});
+(function dp(){
+  ctx.clearRect(0,0,pc.width,pc.height);
+  for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){
+    const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);
+    if(d<125){ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.strokeStyle=`rgba(0,201,167,${(1-d/125)*.048})`;ctx.lineWidth=.5;ctx.stroke();}
+  }
+  pts.forEach(p=>{
+    const dx=pmx-p.x,dy=pmy-p.y,d=Math.sqrt(dx*dx+dy*dy);
+    if(d<200){p.vx+=dx/d*.007;p.vy+=dy/d*.007;}
+    p.vx*=.99;p.vy*=.99;p.x+=p.vx;p.y+=p.vy;
+    if(p.x<0)p.x=pc.width;if(p.x>pc.width)p.x=0;
+    if(p.y<0)p.y=pc.height;if(p.y>pc.height)p.y=0;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=`rgba(${p.col},${p.a})`;ctx.fill();
+  });
+  requestAnimationFrame(dp);
+})();
+
+// 3D TILT
+const card3d=document.getElementById('card3d');
+document.addEventListener('mousemove',e=>{
+  const cx=window.innerWidth/2,cy=window.innerHeight/2;
+  const dx=(e.clientX-cx)/cx,dy=(e.clientY-cy)/cy;
+  card3d.style.transform=`rotateY(${dx*10}deg) rotateX(${-dy*7}deg)`;
+});
+
+// SCROLL OBSERVER
+const so=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('v');}),{threshold:.06});
+document.querySelectorAll('.fu').forEach(el=>so.observe(el));
+
+// GATE STATE
+const gateState={};
+const guardState={};
+let entryPassed=0;let discPassed=0;
+
+function passGate(id,name){
+  const el=document.getElementById(id);
+  el.classList.remove('failed');
+  el.classList.add('passed');
+  el.querySelector('.ict-marker').textContent='✓';
+  gateState[id]='passed';
+  updateScore();
+}
+function failGate(id,name){
+  const el=document.getElementById(id);
+  el.classList.remove('passed');
+  el.classList.add('failed');
+  el.querySelector('.ict-marker').textContent='✕';
+  gateState[id]='failed';
+  updateScore();
+}
+function setGuard(id,type,msg){
+  const el=document.getElementById(id);
+  el.classList.remove('active','safe');
+  el.classList.add(type==='safe'?'safe':'active');
+  guardState[id]=type;
+  if(type==='risk'){
+    const alert=document.getElementById('breachAlert');
+    document.getElementById('breachMsg').textContent=msg;
+    alert.classList.add('show');
+    setTimeout(()=>alert.scrollIntoView({behavior:'smooth',block:'nearest'}),100);
+  }
+  updateScore();
+}
+
+function updateScore(){
+  const entryGates=['gate-level','gate-liquidity','gate-doji','gate-close','gate-entry','gate-bos'];
+  const discGates=['dg-stoploss','dg-drawdown','dg-revenge'];
+  entryPassed=entryGates.filter(g=>gateState[g]==='passed').length;
+  const discPassedCount=discGates.filter(g=>guardState[g]==='safe').length;
+  const discRisk=discGates.some(g=>guardState[g]==='risk');
+  const total=entryPassed+discPassedCount;
+
+  // Update rings
+  const ring=document.getElementById('lsRing');
+  const offset=289-(289*total/9);
+  ring.style.strokeDashoffset=offset;
+  ring.style.transition='stroke-dashoffset .5s ease';
+
+  const scoreEl=document.getElementById('lsScore');
+  const labelEl=document.getElementById('lsLabel');
+  const msgEl=document.getElementById('lsMsg');
+  scoreEl.textContent=total+'/9';
+  if(discRisk){
+    scoreEl.style.color='var(--red)';labelEl.style.color='var(--red)';
+    labelEl.textContent='BREACH RISK';msgEl.textContent='Discipline guard flagged — do not enter.';
+  } else if(total===9){
+    scoreEl.style.color='var(--teal)';labelEl.style.color='var(--teal)';
+    labelEl.textContent='ALL GATES CLEAR';msgEl.textContent='✓ Full clearance — execute with precision.';
+  } else if(total>=6){
+    scoreEl.style.color='var(--cyan)';labelEl.style.color='var(--cyan)';
+    labelEl.textContent='GATES CLEARED';msgEl.textContent='Almost there — verify remaining gates.';
+  } else if(total>=3){
+    scoreEl.style.color='var(--amber)';labelEl.style.color='var(--amber)';
+    labelEl.textContent='GATES CLEARED';msgEl.textContent='Continue verifying — do not rush.';
+  } else {
+    scoreEl.style.color='var(--text4)';labelEl.style.color='var(--text4)';
+    labelEl.textContent='GATES CLEARED';msgEl.textContent='Verify each gate on your chart.';
+  }
+
+  // Progress bars
+  document.getElementById('pb-entry').style.width=(entryPassed/6*100)+'%';
+  document.getElementById('pb-entry-val').textContent=entryPassed+'/6';
+  document.getElementById('pb-entry-val').style.color=entryPassed===6?'var(--teal)':'var(--text3)';
+  document.getElementById('pb-disc').style.width=(discPassedCount/3*100)+'%';
+  document.getElementById('pb-disc-val').textContent=discPassedCount+'/3';
+  document.getElementById('pb-disc-val').style.color=discPassedCount===3?'var(--cyan)':'var(--text3)';
+}
+
+function toggleEdu(id){
+  const el=document.getElementById(id);
+  el.classList.toggle('edu-open');
+}
+
+// STREAK GRID
+(function(){
+  const grid=document.getElementById('streakGrid');
+  const types=['perfect','done','done','done','miss','empty','empty','perfect','done','done','done','done','empty','empty','done','done','perfect','done','done','empty','empty','done','done','done','partial','done','today','empty'];
+  types.forEach((t,i)=>{
+    const d=document.createElement('div');
+    d.className='streak-cell '+(t==='today'?'done today':t);
+    d.textContent=i+1;
+    grid.appendChild(d);
+  });
+})();
+
+// SUBMIT
+async function submitGuardrails(){
+  const btn=document.getElementById('submitBtn');
+  const icon=document.getElementById('submitIcon');
+  const total=parseInt(document.getElementById('lsScore').textContent)||0;
+  const discRisk=Object.values(guardState).some(v=>v==='risk');
+  if(discRisk){
+    alert('⚠ A discipline guard is flagged. You cannot proceed until it is resolved.');return;
+  }
+  if(total<9){
+    const proceed=confirm(`You have ${total}/9 gates confirmed. Proceeding with incomplete gates is a risk. Are you sure?`);
+    if(!proceed) return;
+  }
+  btn.style.opacity='.6';icon.innerHTML='<span class="spin">◌</span>';
+  document.getElementById('aiQ').value=`All ${total} guardrail gates confirmed. Entry criteria passed: ${entryPassed}/6. Discipline guards confirmed: ${Object.values(guardState).filter(v=>v==='safe').length}/3. Please validate this setup and give me a brief ICT/SMC pre-entry checklist confirmation.`;
+  await askCoach();
+  btn.style.opacity='1';
+  if(total===9){
+    btn.innerHTML='<span>✓</span> ALL 9 GATES LOCKED — ENTER WITH PRECISION';
+    btn.style.background='linear-gradient(90deg,rgba(0,255,136,.8),rgba(0,201,167,.8))';
+    setTimeout(()=>{btn.innerHTML='<span>▶</span> CONFIRM GUARDRAILS & ENTER THE MARKET';btn.style.background='';},4000);
+  } else {
+    icon.innerHTML='▶';
+  }
+  document.getElementById('ai').scrollIntoView({behavior:'smooth'});
+}
+
+// AI
+async function askCoach(){
+  const q=document.getElementById('aiQ').value.trim();if(!q)return;
+  const icon=document.getElementById('analyzeIcon');
+  const resp=document.getElementById('aiResp');
+  if(icon) icon.innerHTML='<span class="spin">◌</span>';
+  resp.innerHTML='<span style="color:var(--text3);font-family:\'Space Mono\',monospace;font-size:11px;display:block;text-align:center;padding:16px;"><span class="spin">◌</span> Discipline Coach is analyzing your setup...</span>';
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',max_tokens:700,
+        system:`You are an expert ICT (Inner Circle Trader) and Smart Money Concepts (SMC) trading coach and discipline enforcer. You deeply understand Order Blocks, Fair Value Gaps, Liquidity Sweeps, BOS/CHoCH, OTE zones, killzones, and the full ICT methodology. You also understand prop firm rules and funded account trading. Your role is to educate traders on WHY each guardrail exists from an institutional perspective, validate setups, and enforce discipline. Be direct, educational, and specific. Reference ICT/SMC concepts precisely. Keep responses under 220 words. Format clearly.`,
+        messages:[{role:'user',content:q}]
+      })
+    });
+    const d=await res.json();
+    const text=d.content.filter(x=>x.type==='text').map(x=>x.text).join('');
+    resp.innerHTML=`<span class="ai-resp-tag">⬡ AI DISCIPLINE COACH</span>${text.replace(/\*\*(.*?)\*\*/g,'<strong style="color:var(--text);">$1</strong>').replace(/\n/g,'<br>')}`;
+  }catch(e){
+    resp.innerHTML=`<span style="color:var(--red);font-family:'Space Mono',monospace;font-size:11px;display:block;text-align:center;padding:16px;">Connection failed. Check API key in app settings.</span>`;
+  }
+  if(icon) icon.innerHTML='⬡';
+}
+function analyzeSetup(){
+  const total=document.getElementById('lsScore').textContent||'0/9';
+  document.getElementById('aiQ').value=`Validate my current ICT/SMC setup. Gates confirmed: ${total}. Entry criteria: ${entryPassed}/6. Discipline guards: ${Object.values(guardState).filter(v=>v==='safe').length}/3. What is the institutional quality of this setup and what should I check before executing?`;
+  askCoach();
+}
+function setQ(btn,text){
+  document.getElementById('aiQ').value=text;
+  document.querySelectorAll('.preset-pill').forEach(b=>{b.style.borderColor='';b.style.color='';});
+  btn.style.borderColor='var(--teal)';btn.style.color='var(--teal)';
+}
+// THEME TOGGLE
+function toggleTheme(){
+  const isLight=document.body.classList.toggle('light-mode');
+  const btn=document.getElementById('themeToggle');
+  if(isLight){
+    btn.innerHTML='🌙 DARK';
+    btn.style.background='var(--gold-dim)';
+    btn.style.borderColor='var(--gold-border)';
+    btn.style.color='var(--gold)';
+    localStorage.setItem('st-theme','light');
+  } else {
+    btn.innerHTML='☀ LIGHT';
+    btn.style.background='var(--teal-dim)';
+    btn.style.borderColor='var(--border2)';
+    btn.style.color='var(--teal)';
+    localStorage.setItem('st-theme','dark');
+  }
+}
+// Apply saved theme on load
+(function(){
+  const saved=localStorage.getItem('st-theme');
+  if(saved==='light'){
+    document.body.classList.add('light-mode');
+    const btn=document.getElementById('themeToggle');
+    if(btn){btn.innerHTML='🌙 DARK';btn.style.background='var(--gold-dim)';btn.style.borderColor='var(--gold-border)';btn.style.color='var(--gold)';}
+  }
+})();
+document.getElementById('aiQ').addEventListener('keydown',e=>{if(e.key==='Enter')askCoach();});
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{
+    const t=document.querySelector(a.getAttribute('href'));
+    if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'});}
+  });
+});
+</script>
+</body>
+</html>

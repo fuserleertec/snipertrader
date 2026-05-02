@@ -1,0 +1,582 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);color:var(--color-text-primary);background:transparent}
+.app{display:grid;grid-template-columns:240px 1fr;min-height:700px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-lg);overflow:hidden}
+.sidebar{background:var(--color-background-secondary);border-right:0.5px solid var(--color-border-tertiary);display:flex;flex-direction:column;padding:0}
+.sidebar-top{padding:1.25rem 1rem 1rem;border-bottom:0.5px solid var(--color-border-tertiary)}
+.sidebar-course{font-size:10px;font-weight:500;color:var(--color-text-tertiary);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px}
+.sidebar-title{font-size:14px;font-weight:500;color:var(--color-text-primary);line-height:1.3}
+.xp-row{display:flex;align-items:center;gap:8px;margin-top:10px}
+.xp-label{font-size:11px;color:var(--color-text-tertiary);min-width:30px}
+.xp-track{flex:1;height:4px;background:var(--color-background-tertiary);border-radius:2px;overflow:hidden}
+.xp-fill{height:100%;background:#1D9E75;border-radius:2px;transition:width .4s}
+.xp-val{font-size:11px;font-weight:500;color:#0F6E56;min-width:40px;text-align:right}
+.unit-list{flex:1;overflow-y:auto;padding:0.5rem 0}
+.unit-header{font-size:10px;font-weight:500;color:var(--color-text-tertiary);letter-spacing:.07em;text-transform:uppercase;padding:0.75rem 1rem 0.3rem}
+.lesson-item{display:flex;align-items:center;gap:8px;padding:7px 1rem;cursor:pointer;border-left:2px solid transparent;transition:background .12s,border-color .12s}
+.lesson-item:hover{background:var(--color-background-tertiary)}
+.lesson-item.active{background:var(--color-background-tertiary);border-left-color:#1D9E75}
+.lesson-item.done{opacity:.7}
+.l-icon{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:500;flex-shrink:0}
+.l-icon.locked{background:var(--color-background-tertiary);color:var(--color-text-tertiary);border:0.5px solid var(--color-border-tertiary)}
+.l-icon.open{background:#E1F5EE;color:#0F6E56;border:0.5px solid #5DCAA5}
+.l-icon.active-ic{background:#1D9E75;color:#fff}
+.l-icon.done-ic{background:#EAF3DE;color:#3B6D11}
+.l-name{font-size:12px;color:var(--color-text-secondary);line-height:1.3;flex:1}
+.lesson-item.active .l-name{color:var(--color-text-primary);font-weight:500}
+.l-xp{font-size:10px;color:var(--color-text-tertiary)}
+.main{background:var(--color-background-primary);display:flex;flex-direction:column;overflow-y:auto;max-height:700px}
+.topbar{display:flex;align-items:center;gap:10px;padding:1rem 1.5rem;border-bottom:0.5px solid var(--color-border-tertiary)}
+.tb-unit{font-size:11px;color:var(--color-text-tertiary)}
+.tb-sep{color:var(--color-border-secondary);font-size:12px}
+.tb-lesson{font-size:13px;font-weight:500;color:var(--color-text-primary);flex:1}
+.tb-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:500}
+.badge-theory{background:#E6F1FB;color:#185FA5}
+.badge-practice{background:#FAEEDA;color:#854F0B}
+.badge-quiz{background:#EAF3DE;color:#3B6D11}
+.badge-lab{background:#EEEDFE;color:#534AB7}
+.lesson-body{padding:1.5rem;flex:1}
+.eyebrow{font-size:10px;font-weight:500;color:#1D9E75;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.lesson-h{font-size:19px;font-weight:500;color:var(--color-text-primary);line-height:1.3;margin-bottom:6px}
+.lesson-intro{font-size:14px;color:var(--color-text-secondary);line-height:1.7;margin-bottom:1.25rem}
+.divider{height:0.5px;background:var(--color-border-tertiary);margin:1.25rem 0}
+.concept-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem}
+.concept-card{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:0.85rem}
+.cc-tag{font-size:9px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;margin-bottom:4px}
+.cc-title{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:4px}
+.cc-body{font-size:12px;color:var(--color-text-secondary);line-height:1.6}
+.signal-sim{background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-lg);padding:1.25rem;margin:1rem 0}
+.sim-title{font-size:12px;font-weight:500;color:var(--color-text-secondary);margin-bottom:1rem}
+.chart-mock{position:relative;height:160px;background:var(--color-background-tertiary);border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);overflow:hidden;margin-bottom:1rem}
+.dashboard-strip{display:flex;flex-wrap:wrap;gap:4px;padding:0.75rem;background:var(--color-background-secondary);border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);margin-bottom:0.75rem}
+.db-pill{font-size:10px;font-weight:500;padding:3px 7px;border-radius:4px}
+.db-green{background:#EAF3DE;color:#3B6D11}
+.db-blue{background:#E6F1FB;color:#185FA5}
+.db-amber{background:#FAEEDA;color:#854F0B}
+.db-red{background:#FCEBEB;color:#A32D2D}
+.db-gray{background:#F1EFE8;color:#5F5E5A}
+.db-teal{background:#E1F5EE;color:#0F6E56}
+.db-cyan{background:#E6F1FB;color:#0C447C}
+.quiz-block{margin:1rem 0}
+.quiz-q{font-size:14px;font-weight:500;color:var(--color-text-primary);margin-bottom:0.85rem;line-height:1.5}
+.quiz-options{display:grid;grid-template-columns:1fr;gap:6px}
+.quiz-opt{padding:10px 14px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:13px;color:var(--color-text-primary);cursor:pointer;background:var(--color-background-primary);text-align:left;transition:background .12s,border-color .12s}
+.quiz-opt:hover{background:var(--color-background-secondary)}
+.quiz-opt.correct{background:#EAF3DE;border-color:#639922;color:#27500A}
+.quiz-opt.wrong{background:#FCEBEB;border-color:#A32D2D;color:#791F1F}
+.quiz-feedback{font-size:13px;line-height:1.6;padding:10px 14px;border-radius:var(--border-radius-md);margin-top:8px;display:none}
+.fb-correct{background:#EAF3DE;color:#27500A}
+.fb-wrong{background:#FCEBEB;color:#791F1F}
+.key-points{list-style:none;padding:0;margin:0.75rem 0}
+.kp-item{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-size:13px;color:var(--color-text-primary);line-height:1.5}
+.kp-item:last-child{border-bottom:none}
+.kp-dot{width:6px;height:6px;border-radius:50%;background:#1D9E75;margin-top:6px;flex-shrink:0}
+.score-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.sc-label{font-size:12px;color:var(--color-text-secondary);min-width:130px}
+.sc-bar{flex:1;height:5px;background:var(--color-background-tertiary);border-radius:3px;overflow:hidden}
+.sc-fill{height:100%;border-radius:3px}
+.sc-pts{font-size:12px;font-weight:500;color:var(--color-text-primary);min-width:30px;text-align:right}
+.tier-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:1rem 0}
+.tier-c{border-radius:var(--border-radius-md);padding:0.85rem;border:0.5px solid var(--color-border-tertiary)}
+.t-w{background:#F1EFE8;border-color:#B4B2A9}
+.t-p{background:#FAEEDA;border-color:#EF9F27}
+.t-e{background:#E6F1FB;border-color:#185FA5}
+.tier-label{font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase}
+.t-w .tier-label{color:#444441}
+.t-p .tier-label{color:#854F0B}
+.t-e .tier-label{color:#0C447C}
+.tier-pts{font-size:18px;font-weight:500;margin:3px 0}
+.t-w .tier-pts{color:#2C2C2A}
+.t-p .tier-pts{color:#633806}
+.t-e .tier-pts{color:#0C447C}
+.tier-desc{font-size:11px;line-height:1.5}
+.t-w .tier-desc{color:#5F5E5A}
+.t-p .tier-desc{color:#854F0B}
+.t-e .tier-desc{color:#185FA5}
+.nav-footer{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;border-top:0.5px solid var(--color-border-tertiary);margin-top:auto}
+.nf-info{font-size:12px;color:var(--color-text-tertiary)}
+.nf-btns{display:flex;gap:8px}
+.btn-prev{padding:7px 16px;font-size:13px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:transparent;color:var(--color-text-secondary);cursor:pointer}
+.btn-prev:hover{background:var(--color-background-secondary)}
+.btn-next{padding:7px 18px;font-size:13px;border:0.5px solid #1D9E75;border-radius:var(--border-radius-md);background:#1D9E75;color:#fff;cursor:pointer;font-weight:500}
+.btn-next:hover{background:#0F6E56}
+.btn-next:disabled{background:var(--color-background-secondary);border-color:var(--color-border-tertiary);color:var(--color-text-tertiary);cursor:default}
+.checklist-block{margin:1rem 0}
+.cl-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--color-border-tertiary);font-size:13px;color:var(--color-text-primary);line-height:1.5}
+.cl-item:last-child{border-bottom:none}
+.cl-num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;flex-shrink:0;margin-top:1px}
+.cn-green{background:#EAF3DE;color:#3B6D11}
+.cn-amber{background:#FAEEDA;color:#854F0B}
+.cn-red{background:#FCEBEB;color:#A32D2D}
+.highlight-box{background:var(--color-background-info);border-left:2px solid var(--color-border-info);padding:0.85rem 1rem;border-radius:0 var(--border-radius-md) var(--border-radius-md) 0;margin:0.75rem 0;font-size:13px;color:var(--color-text-info);line-height:1.6}
+.rule-box{background:#E1F5EE;border-left:2px solid #1D9E75;padding:0.85rem 1rem;border-radius:0 var(--border-radius-md) var(--border-radius-md) 0;margin:0.75rem 0;font-size:13px;color:#085041;line-height:1.6}
+.warn-box{background:#FAEEDA;border-left:2px solid #EF9F27;padding:0.85rem 1rem;border-radius:0 var(--border-radius-md) var(--border-radius-md) 0;margin:0.75rem 0;font-size:13px;color:#633806;line-height:1.6}
+.ask-btn{padding:8px 14px;font-size:12px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-secondary);color:var(--color-text-secondary);cursor:pointer;margin:4px 4px 4px 0}
+.ask-btn:hover{background:var(--color-background-tertiary);color:var(--color-text-primary)}
+.flow-row{display:flex;align-items:center;flex-wrap:wrap;gap:0;margin:1rem 0}
+.flow-step{background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:6px 10px;font-size:12px;font-weight:500;color:var(--color-text-primary)}
+.flow-step.hl{background:#E1F5EE;border-color:#1D9E75;color:#085041}
+.flow-arr{font-size:13px;color:var(--color-text-tertiary);padding:0 5px}
+</style>
+
+<h2 class="sr-only">USME v3.1 interactive learning course — navigate lessons with the sidebar</h2>
+
+<div class="app">
+<nav class="sidebar">
+  <div class="sidebar-top">
+    <div class="sidebar-course">Course</div>
+    <div class="sidebar-title">Reading USME v3.1 Signals</div>
+    <div class="xp-row">
+      <span class="xp-label">XP</span>
+      <div class="xp-track"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
+      <span class="xp-val" id="xp-val">0 / 300</span>
+    </div>
+  </div>
+  <div class="unit-list" id="unit-list"></div>
+</nav>
+
+<div class="main">
+  <div class="topbar">
+    <span class="tb-unit" id="tb-unit">Unit 1</span>
+    <span class="tb-sep">›</span>
+    <span class="tb-lesson" id="tb-lesson">Introduction</span>
+    <span class="tb-badge" id="tb-badge"></span>
+  </div>
+  <div class="lesson-body" id="lesson-body"></div>
+  <div class="nav-footer">
+    <span class="nf-info" id="nf-info"></span>
+    <div class="nf-btns">
+      <button class="btn-prev" id="btn-prev">Back</button>
+      <button class="btn-next" id="btn-next">Continue</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+const LESSONS = [
+{unit:"Unit 1 — Foundations",name:"What USME does",type:"theory",xp:15,content:`
+<div class="eyebrow">Unit 1 · Lesson 1</div>
+<div class="lesson-h">What USME does — and what it does not do</div>
+<div class="lesson-intro">Before reading a single signal, you need the right mental model. Most misreads come from expecting the tool to do something it was never built for.</div>
+<div class="concept-grid">
+<div class="concept-card"><div class="cc-tag" style="color:#0F6E56">What it does</div><div class="cc-title">Aggregates confluence</div><div class="cc-body">USME watches 7 ICT/SMC conditions simultaneously, scores them 0–100, and only surfaces a signal when enough conditions align. It compresses hours of manual analysis into a label strip and a bubble.</div></div>
+<div class="concept-card"><div class="cc-tag" style="color:#A32D2D">What it does not do</div><div class="cc-title">It does not trade for you</div><div class="cc-body">No entries, no exits, no position sizing. The engine identifies the setup — you still decide whether to act, where to enter within the zone, and how much to risk. Treating bubbles as automatic entries is the most common mistake.</div></div>
+</div>
+<div class="rule-box">Core rule: USME is a confluence filter, not a signal service. Your job is to confirm the story the dashboard is telling before you touch the order ticket.</div>
+<ul class="key-points">
+<li class="kp-item"><span class="kp-dot"></span>A BUY bubble means "this bar has enough alignment to consider a long setup" — not "buy here at market."</li>
+<li class="kp-item"><span class="kp-dot"></span>The score number is the most important single output. Below 60: ignore signals. 60–70: caution. 70+: full attention.</li>
+<li class="kp-item"><span class="kp-dot"></span>The dashboard labels tell you the current state of the market across every dimension the engine tracks. Read them before looking at candles.</li>
+</ul>
+<div style="margin-top:1rem"><div style="font-size:12px;font-weight:500;color:var(--color-text-secondary);margin-bottom:8px">Ask a follow-up question</div>
+<button class="ask-btn" onclick="sendPrompt('In USME, what is the difference between the master setup path and the EMA pullback path?')">What are the two signal paths? ↗</button>
+<button class="ask-btn" onclick="sendPrompt('How should I think about the Smart Money Score threshold when deciding to trade a USME signal?')">How do I use the score threshold? ↗</button>
+</div>`},
+
+{unit:"Unit 1 — Foundations",name:"The dashboard strip",type:"theory",xp:20,content:`
+<div class="eyebrow">Unit 1 · Lesson 2</div>
+<div class="lesson-h">Reading the dashboard strip — top to bottom</div>
+<div class="lesson-intro">The label strip is your real-time market readout. Every signal analysis starts here — not on the candles. Here is a sample strip and what each label means.</div>
+<div class="sim-title">Sample dashboard — bullish alignment scenario</div>
+<div class="dashboard-strip">
+<span class="db-pill db-green">Trend: ▲</span>
+<span class="db-pill db-green">STRUCT:UP</span>
+<span class="db-pill db-green">1H:BULL</span>
+<span class="db-pill db-green">4H:BULL</span>
+<span class="db-pill db-green">W:BULL</span>
+<span class="db-pill db-amber">RSI:52.4</span>
+<span class="db-pill db-green">Vol: ✔</span>
+<span class="db-pill db-amber">MACD: ▲</span>
+<span class="db-pill db-green">DISCOUNT</span>
+<span class="db-pill db-cyan">NY KZ</span>
+<span class="db-pill db-teal">SMT:BULL</span>
+<span class="db-pill db-gray">D:BULL</span>
+<span class="db-pill db-teal">CHoCH:▲</span>
+<span class="db-pill db-green">SCORE:75%</span>
+<span class="db-pill db-teal">SOTD:PRIME★</span>
+<span class="db-pill db-green">HTF:ALIGNED</span>
+</div>
+<ul class="key-points">
+<li class="kp-item"><span class="kp-dot"></span><strong>Trend / STRUCT / 1H / 4H / W</strong> — five timeframe layers. All five green in the same direction is the strongest possible alignment. Mixed = wait.</li>
+<li class="kp-item"><span class="kp-dot"></span><strong>RSI 30–70 + Vol ✔ + MACD ▲</strong> — the three momentum filters. All three must pass for the EMA pullback signal path.</li>
+<li class="kp-item"><span class="kp-dot"></span><strong>DISCOUNT / PREMIUM</strong> — buy setups require DISCOUNT (green). Sell setups require PREMIUM (red). If these don't match the bubble direction, it's a lower quality setup.</li>
+<li class="kp-item"><span class="kp-dot"></span><strong>SCORE: 75%</strong> — green means high conviction. This is the gate you check first.</li>
+<li class="kp-item"><span class="kp-dot"></span><strong>SOTD: PRIME★</strong> — today's best signal reached PRIME tier. This persists all day once fired.</li>
+<li class="kp-item"><span class="kp-dot"></span><strong>HTF:ALIGNED</strong> — 1H and 4H both agree. Required for ELITE tier. Green = they agree.</li>
+</ul>
+<div class="warn-box">If SCORE is gray or below 50, stop reading — there is no tradeable setup regardless of what the candles look like.</div>`},
+
+{unit:"Unit 1 — Foundations",name:"Quiz: Dashboard basics",type:"quiz",xp:25,content:`
+<div class="eyebrow">Unit 1 · Quiz</div>
+<div class="lesson-h">Check your understanding</div>
+<div class="lesson-intro">Answer the questions below. These cover the core concepts from Lessons 1 and 2.</div>
+<div class="quiz-block" id="q1-block">
+<div class="quiz-q">1. You see a BUY bubble appear on the chart. The dashboard shows SCORE:48%. What should you do?</div>
+<div class="quiz-options">
+<button class="quiz-opt" data-q="1" data-idx="0">Enter long — the BUY bubble is the signal</button>
+<button class="quiz-opt" data-q="1" data-idx="1">Wait — score below 60 means insufficient confluence</button>
+<button class="quiz-opt" data-q="1" data-idx="2">Check RSI and enter if RSI is above 50</button>
+<button class="quiz-opt" data-q="1" data-idx="3">Switch to a lower timeframe to confirm</button>
+</div>
+<div class="quiz-feedback" id="fb1"></div>
+</div>
+<div class="divider"></div>
+<div class="quiz-block" id="q2-block">
+<div class="quiz-q">2. The dashboard shows: STRUCT:UP, 1H:BULL, 4H:BEAR, SCORE:72%, DISCOUNT. A BUY bubble appears. What is the main concern?</div>
+<div class="quiz-options">
+<button class="quiz-opt" data-q="2" data-idx="0">The score is too low to trade</button>
+<button class="quiz-opt" data-q="2" data-idx="1">1H and 4H are split — HTF:ALIGNED will be gray, reducing conviction</button>
+<button class="quiz-opt" data-q="2" data-idx="2">Price is in discount so there is no concern</button>
+<button class="quiz-opt" data-q="2" data-idx="3">The dashboard labels don't matter once a BUY bubble fires</button>
+</div>
+<div class="quiz-feedback" id="fb2"></div>
+</div>
+<div class="divider"></div>
+<div class="quiz-block" id="q3-block">
+<div class="quiz-q">3. A SELL bubble appears with the dashboard showing DISCOUNT and SCORE:78%. Should you short?</div>
+<div class="quiz-options">
+<button class="quiz-opt" data-q="3" data-idx="0">Yes — score is high so the signal is valid</button>
+<button class="quiz-opt" data-q="3" data-idx="1">No — SELL signals require PREMIUM, not DISCOUNT</button>
+<button class="quiz-opt" data-q="3" data-idx="2">Yes — DISCOUNT means the market is cheap and will go down</button>
+<button class="quiz-opt" data-q="3" data-idx="3">Only if RSI is above 70</button>
+</div>
+<div class="quiz-feedback" id="fb3"></div>
+</div>`},
+
+{unit:"Unit 2 — ICT Concepts in USME",name:"BOS and CHoCH",type:"theory",xp:20,content:`
+<div class="eyebrow">Unit 2 · Lesson 4</div>
+<div class="lesson-h">Break of Structure and Change of Character</div>
+<div class="lesson-intro">Structure is the engine's backbone. Every signal tier requires a structural event. Understanding the difference between BOS and CHoCH tells you whether a signal is continuation or reversal.</div>
+<div class="concept-grid">
+<div class="concept-card"><div class="cc-tag" style="color:#185FA5">BOS — continuation</div><div class="cc-title">Break of Structure</div><div class="cc-body">Price closes beyond the last 5-bar swing high (bull BOS) or swing low (bear BOS) with a candle range greater than 1× ATR. A green arrow appears below the bar. STRUCT label updates to UP. This means the current trend is extending.</div></div>
+<div class="concept-card"><div class="cc-tag" style="color:#1D9E75">CHoCH — reversal (25 pts)</div><div class="cc-title">Change of Character</div><div class="cc-body">A BOS that fires against the prior trend direction. If STRUCT was DN and a bull BOS fires — that is a CHoCH. Worth 25 points — the heaviest single component in the score. The CHoCH:▲ label confirms it. CHoCH is required for PRIME tier.</div></div>
+</div>
+<div class="rule-box">The "SC" bubble on BOS bars marks the Sponsoring Candle — the institutional displacement bar that drove structure. This is your anchor for where order flow entered the market.</div>
+<div class="highlight-box">Practical read: if you see a CHoCH:▲ label turn green + STRUCT:UP flip simultaneously, a significant structural event just occurred. This is the moment to look for a pullback into the nearest FVG or OB cloud.</div>
+<div class="flow-row">
+<div class="flow-step">Prior trend: bearish<br><span style="font-size:11px;font-weight:400;color:var(--color-text-secondary)">STRUCT:DN</span></div>
+<div class="flow-arr">→</div>
+<div class="flow-step">Bull BOS fires<br><span style="font-size:11px;font-weight:400;color:var(--color-text-secondary)">Green arrow + SC</span></div>
+<div class="flow-arr">→</div>
+<div class="flow-step hl">CHoCH detected<br><span style="font-size:11px;font-weight:400;color:#085041">+25 pts score</span></div>
+<div class="flow-arr">→</div>
+<div class="flow-step">STRUCT:UP + CHoCH:▲<br><span style="font-size:11px;font-weight:400;color:var(--color-text-secondary)">Dashboard updates</span></div>
+</div>
+<ul class="key-points">
+<li class="kp-item"><span class="kp-dot"></span>A plain BOS (same direction as prior trend) updates structure but adds 0 points to the score by itself — only a CHoCH earns the 25 pts.</li>
+<li class="kp-item"><span class="kp-dot"></span>Multiple consecutive BOS arrows in the same direction = strong trend. A lone CHoCH after a long downtrend is your earliest long signal.</li>
+<li class="kp-item"><span class="kp-dot"></span>The 5-bar confirmation window means CHoCH, sweep, FVG, and OB must all appear within 5 bars of each other for a master signal to fire.</li>
+</ul>`},
+
+{unit:"Unit 2 — ICT Concepts in USME",name:"Liquidity sweeps",type:"theory",xp:20,content:`
+<div class="eyebrow">Unit 2 · Lesson 5</div>
+<div class="lesson-h">Liquidity sweeps and equal highs/lows</div>
+<div class="lesson-intro">In ICT theory, institutions need liquidity pools to fill large orders. Those pools sit above equal highs and below equal lows, where retail traders place their stops. The sweep is the hunting event.</div>
+<div class="concept-grid">
+<div class="concept-card"><div class="cc-tag" style="color:#854F0B">Sweep high (bearish setup)</div><div class="cc-title">Magenta arrow-down</div><div class="cc-body">Wick pierces above the prior swing high, PDH, or prior bar high — then closes back below it. Buy-side stops above that level were triggered. The engine now looks for a bearish reversal confluence. Score adds +20 points.</div></div>
+<div class="concept-card"><div class="cc-tag" style="color:#0F6E56">Sweep low (bullish setup)</div><div class="cc-title">Cyan arrow-up</div><div class="cc-body">Wick pierces below prior swing low, PDL, or prior bar low — then closes back above it. Sell-side stops were triggered. Engine looks for bullish reversal confluence. Score adds +20 points. Combining sweep + CHoCH = 45 of 100 possible points.</div></div>
+</div>
+<div class="warn-box">Yellow dots (equal highs/lows) mark liquidity ladder targets — 3 consecutive bars within 2 ticks of each other. These are where the NEXT sweep is likely to happen. Use them to anticipate, not confirm.</div>
+<ul class="key-points">
+<li class="kp-item"><span class="kp-dot"></span>The sweep must close back inside the range — a simple breakout with a strong close is not a sweep, it is a BOS.</li>
+<li class="kp-item"><span class="kp-dot"></span>PDH/PDL sweeps (sweeping the prior day high or low) are the highest quality because they represent an entire day's accumulated stop orders being cleared.</li>
+<li class="kp-item"><span class="kp-dot"></span>When you see yellow equal-high dots forming, mentally note: "the next sweep target is up there." Watch for the sweep + reversal candle combination when price approaches.</li>
+</ul>
+<div class="rule-box">The ideal ICT setup sequence: price approaches equal highs (yellow dots) → wick pierces those levels (sweep, magenta arrow) → closes back inside → CHoCH fires (green arrow) → BUY bubble appears. That entire sequence can happen in 2–3 bars.</div>`},
+
+{unit:"Unit 2 — ICT Concepts in USME",name:"FVG and Order Blocks",type:"theory",xp:20,content:`
+<div class="eyebrow">Unit 2 · Lesson 6</div>
+<div class="lesson-h">Fair Value Gaps and Order Blocks — the entry zones</div>
+<div class="lesson-intro">FVGs and OBs are where you actually execute. They are not confirmation signals — they are the price levels you wait for after a signal fires.</div>
+<div class="concept-grid">
+<div class="concept-card"><div class="cc-tag" style="color:#185FA5">FVG — green or red cloud</div><div class="cc-title">Three-candle price imbalance</div><div class="cc-body">Bull FVG: candle[-1] low is above candle[-2] high — gap of untested price. Green cloud persists until price fills it. Only paints when the middle candle's range exceeds 1.2× ATR (displacement filter). The iFVG bubble fires if price enters the zone but rejects back out — the zone "inverts" to support.</div></div>
+<div class="concept-card"><div class="cc-tag" style="color:#0F6E56">OB — dark green or dark red cloud</div><div class="cc-title">Last opposing candle before BOS</div><div class="cc-body">Bull OB: the last bearish candle before a bull BOS. Dark green cloud from that candle's high to low, persists until price closes below the low. This is where institutional buy orders were placed. The ideal entry is a limit order at the top of the OB cloud.</div></div>
+</div>
+<div class="highlight-box">Key workflow: wait for a BUY bubble, then look for the nearest active green FVG or dark-green OB cloud above current price. Set a limit order at the top edge of that cloud. Stop goes below the cloud low (or auto-stop at 2× ATR, whichever is tighter).</div>
+<ul class="key-points">
+<li class="kp-item"><span class="kp-dot"></span>FVG clouds disappear when price fills them (closes inside) — a filled FVG is "mitigated" and no longer acts as support/resistance.</li>
+<li class="kp-item"><span class="kp-dot"></span>iFVG (cyan bubble) means the zone tried to fill but rejected — this is now a high-confidence support level, especially inside a PRIME signal context.</li>
+<li class="kp-item"><span class="kp-dot"></span>When both an FVG cloud and an OB cloud overlap at the same price — that is a "POI stack" (Point of Interest stack). Entries from those zones have the highest historical success rate.</li>
+<li class="kp-item"><span class="kp-dot"></span>If price gaps through an FVG cloud without pausing, the zone failed. Do not chase — wait for the next cloud.</li>
+</ul>
+<button class="ask-btn" onclick="sendPrompt('Explain the difference between an FVG and an OB in USME and when I should prefer entering at one versus the other.')">When to use FVG vs OB for entry? ↗</button>`},
+
+{unit:"Unit 2 — ICT Concepts in USME",name:"Quiz: ICT concepts",type:"quiz",xp:30,content:`
+<div class="eyebrow">Unit 2 · Quiz</div>
+<div class="lesson-h">ICT concepts in USME — check your understanding</div>
+<div class="lesson-intro">Four questions covering structure, sweeps, FVGs, and order blocks as they operate inside the engine.</div>
+<div class="quiz-block">
+<div class="quiz-q">1. A cyan sweep arrow appears below a bar, then two bars later a green BOS arrow fires and CHoCH:▲ appears on the dashboard. The score jumps to 72%. What has just happened?</div>
+<div class="quiz-options">
+<button class="quiz-opt" data-q="4" data-idx="0">A failed breakdown that should be shorted</button>
+<button class="quiz-opt" data-q="4" data-idx="1">A classic sweep-and-reverse: sell-side liquidity was taken, then structure flipped bullish — 45 points of the score are already accounted for</button>
+<button class="quiz-opt" data-q="4" data-idx="2">A continuation of the prior bearish trend</button>
+<button class="quiz-opt" data-q="4" data-idx="3">An iFVG inversion event</button>
+</div>
+<div class="quiz-feedback" id="fb4"></div>
+</div>
+<div class="divider"></div>
+<div class="quiz-block">
+<div class="quiz-q">2. After a BUY bubble, you see a dark-green OB cloud sitting 8 ticks above the current price. Where is the ideal entry?</div>
+<div class="quiz-options">
+<button class="quiz-opt" data-q="5" data-idx="0">Market buy immediately at the BUY bubble bar</button>
+<button class="quiz-opt" data-q="5" data-idx="1">Limit order at the top edge of the OB cloud, with stop below the cloud low</button>
+<button class="quiz-opt" data-q="5" data-idx="2">Wait for price to close above the OB cloud before entering</button>
+<button class="quiz-opt" data-q="5" data-idx="3">Enter only if an iFVG bubble also appears</button>
+</div>
+<div class="quiz-feedback" id="fb5"></div>
+</div>
+<div class="divider"></div>
+<div class="quiz-block">
+<div class="quiz-q">3. A green FVG cloud was painted 10 bars ago. Price just closed inside the cloud. What does this mean for that cloud?</div>
+<div class="quiz-options">
+<button class="quiz-opt" data-q="6" data-idx="0">The cloud is now stronger support than before</button>
+<button class="quiz-opt" data-q="6" data-idx="1">The FVG is mitigated — the cloud disappears and that zone is no longer valid</button>
+<button class="quiz-opt" data-q="6" data-idx="2">An iFVG signal will fire on the same bar</button>
+<button class="quiz-opt" data-q="6" data-idx="3">Nothing changes — clouds are permanent</button>
+</div>
+<div class="quiz-feedback" id="fb6"></div>
+</div>`},
+
+{unit:"Unit 3 — The Score & Signal Logic",name:"How the score builds",type:"theory",xp:20,content:`
+<div class="eyebrow">Unit 3 · Lesson 8</div>
+<div class="lesson-h">How the Smart Money Score builds — point by point</div>
+<div class="lesson-intro">The score is not a mystery. It is deterministic arithmetic. Once you know the components, you can estimate the score before looking at the label — and understand exactly what is missing to get to the next tier.</div>
+<div class="score-row"><div class="sc-label">CHoCH / structure flip</div><div class="sc-bar"><div class="sc-fill" style="width:25%;background:#1D9E75"></div></div><div class="sc-pts">25 pts</div></div>
+<div class="score-row"><div class="sc-label">Liquidity sweep</div><div class="sc-bar"><div class="sc-fill" style="width:20%;background:#185FA5"></div></div><div class="sc-pts">20 pts</div></div>
+<div class="score-row"><div class="sc-label">FVG present</div><div class="sc-bar"><div class="sc-fill" style="width:15%;background:#BA7517"></div></div><div class="sc-pts">15 pts</div></div>
+<div class="score-row"><div class="sc-label">Order block present</div><div class="sc-bar"><div class="sc-fill" style="width:15%;background:#BA7517"></div></div><div class="sc-pts">15 pts</div></div>
+<div class="score-row"><div class="sc-label">Volume spike (1.2× avg)</div><div class="sc-bar"><div class="sc-fill" style="width:10%;background:#639922"></div></div><div class="sc-pts">10 pts</div></div>
+<div class="score-row"><div class="sc-label">In killzone (London/NY)</div><div class="sc-bar"><div class="sc-fill" style="width:10%;background:#639922"></div></div><div class="sc-pts">10 pts</div></div>
+<div class="score-row"><div class="sc-label">Daily bias confirmed</div><div class="sc-bar"><div class="sc-fill" style="width:5%;background:#888780"></div></div><div class="sc-pts">5 pts</div></div>
+<div class="rule-box">The minimum score for a full master signal is 60 (scoreThresh). The most common path to 60: CHoCH (25) + sweep (20) + either FVG or OB (15) = 60. Volume and session are bonuses that push you toward 70+ for PRIME.</div>
+<ul class="key-points">
+<li class="kp-item"><span class="kp-dot"></span>You can reach 60 without being in a killzone — but a killzone adds 10 free points, pushing a marginal 50-pt setup to 60.</li>
+<li class="kp-item"><span class="kp-dot"></span>The maximum possible score is 100. Achieving 100 requires all 7 components active simultaneously — rare, but it does happen on high-volatility news-adjacent sessions.</li>
+<li class="kp-item"><span class="kp-dot"></span>A score that stays at 25–45 for multiple bars means the market has structure but no sweep and no FVG/OB confluence. That is a trend environment — wait for a pullback to activate the other components.</li>
+</ul>
+<button class="ask-btn" onclick="sendPrompt('Walk me through a real example of how the USME score builds from 0 to 75 on a bullish setup, step by step.')">Show me a step-by-step score build example ↗</button>`},
+
+{unit:"Unit 3 — The Score & Signal Logic",name:"SOTD tiers explained",type:"theory",xp:20,content:`
+<div class="eyebrow">Unit 3 · Lesson 9</div>
+<div class="lesson-h">SOTD tiers — conviction levels for the day</div>
+<div class="lesson-intro">The Signal-of-the-Day engine runs on top of the base signals. Think of it as a certification system — each tier represents a progressively harder test of confluence. Higher tier = more data confirming the same direction.</div>
+<div class="tier-grid">
+<div class="tier-c t-w"><div class="tier-label">Watch ◈</div><div class="tier-pts">Score ≥ 50</div><div class="tier-desc">BUY/SELL + trend aligned. Minimum bar to pay attention. Not an entry signal — it means "get eyes on the chart."</div></div>
+<div class="tier-c t-p"><div class="tier-label">Prime ★</div><div class="tier-pts">Score ≥ 70</div><div class="tier-desc">Full SMC stack: CHoCH + sweep + FVG/OB + correct zone. This is a tradeable signal for experienced users.</div></div>
+<div class="tier-c t-e"><div class="tier-label">Elite ⚡</div><div class="tier-pts">Score ≥ 70</div><div class="tier-desc">PRIME + 1H and 4H both aligned. HTF:ALIGNED must be green. Maximum conviction. Size appropriately.</div></div>
+</div>
+<div class="warn-box">Each tier fires once per day. After it fires, the SOTD label persists on the dashboard all day — it tells you the highest tier the market produced today, not whether conditions are currently active.</div>
+<ul class="key-points">
+<li class="kp-item"><span class="kp-dot"></span>WATCH fires first — then PRIME — then ELITE. You will often see WATCH fire at London open, followed by PRIME 30–60 minutes later when full confirmation arrives.</li>
+<li class="kp-item"><span class="kp-dot"></span>If only WATCH fires for the day, treat it as context — the market had a directional signal but lacked full confluence. Reduce size or skip.</li>
+<li class="kp-item"><span class="kp-dot"></span>ELITE is the setup you size into. When the Ring alert fires, run your full checklist immediately — these do not come every day.</li>
+<li class="kp-item"><span class="kp-dot"></span>The once-per-day lock prevents the same tier from firing repeatedly during choppy conditions. If PRIME fired at 9:45 AM and conditions reset and re-trigger at 11:00 AM, no second PRIME fires. The first one counts.</div>
+</ul>`},
+
+{unit:"Unit 3 — The Score & Signal Logic",name:"The pre-trade checklist",type:"practice",xp:25,content:`
+<div class="eyebrow">Unit 3 · Lesson 10</div>
+<div class="lesson-h">The pre-trade checklist — 8 gates before entry</div>
+<div class="lesson-intro">Run this checklist every time a BUY or SELL bubble appears. Top to bottom, no skipping. A single red item means you either reduce size significantly or skip the trade.</div>
+<div class="checklist-block">
+<div class="cl-item"><div class="cl-num cn-red">1</div><div><strong>Score ≥ 60?</strong> — Check the SCORE label. This is the hard gate. Below 60, do not proceed. For EMA pullback path: score ≥ 50 is acceptable but size half.</div></div>
+<div class="cl-item"><div class="cl-num cn-red">2</div><div><strong>STRUCT aligned to trade direction?</strong> — BUY requires STRUCT:UP. SELL requires STRUCT:DN. A bubble against structure is counter-trend — only experienced traders take these, at reduced size.</div></div>
+<div class="cl-item"><div class="cl-num cn-amber">3</div><div><strong>1H and 4H agree?</strong> — HTF:ALIGNED should be green. If 1H:BULL but 4H:BEAR, you are trading against the larger flow. This is not a disqualifier but reduces conviction significantly.</div></div>
+<div class="cl-item"><div class="cl-num cn-amber">4</div><div><strong>Correct zone? (DISCOUNT for longs, PREMIUM for shorts)</strong> — Engine enforces this on master signals but not EMA pullback. Verify manually.</div></div>
+<div class="cl-item"><div class="cl-num cn-amber">5</div><div><strong>Killzone active?</strong> — LONDON or NY KZ label showing. Off-session signals have lower follow-through. Not a disqualifier, but factor it into size.</div></div>
+<div class="cl-item"><div class="cl-num cn-green">6</div><div><strong>FVG or OB cloud nearby?</strong> — If no active cloud is within 1× ATR of current price, you are entering into open space. Wait for price to retrace to the nearest cloud before entry.</div></div>
+<div class="cl-item"><div class="cl-num cn-green">7</div><div><strong>Stop placement clear?</strong> — Auto-stop is 2× ATR below close. Verify it clears the nearest swing low (for longs). If the auto-stop is inside a candle's wick, move it below that wick.</div></div>
+<div class="cl-item"><div class="cl-num cn-green">8</div><div><strong>Target to stop ratio ≥ 1.5R?</strong> — Auto-target is 3× ATR (1.5R minimum). If the nearest resistance (OB cloud, PDH, equal highs) is closer than 1.5R, either skip or target the next level.</div></div>
+</div>
+<div class="rule-box">Items 1–2 are hard gates (red). Items 3–5 are soft gates (amber) — they reduce confidence. Items 6–8 are execution details (green). A trade with all 8 passing is a full-size position. 5–7 passing: half size. Below 5: skip.</div>
+<button class="ask-btn" onclick="sendPrompt('Give me a practice scenario where I have to run the USME pre-trade checklist on a BUY signal, with mixed dashboard conditions.')">Practice checklist with a scenario ↗</button>`},
+
+{unit:"Unit 4 — Alerts & Live Reading",name:"Alert sounds and what they mean",type:"theory",xp:15,content:`
+<div class="eyebrow">Unit 4 · Lesson 11</div>
+<div class="lesson-h">Alerts — five sounds, five meanings</div>
+<div class="lesson-intro">You should be able to triage any USME alert without looking at the screen. Each sound maps to a specific action priority.</div>
+<div class="concept-grid">
+<div class="concept-card"><div class="cc-tag" style="color:#3B6D11">Bell — base BUY</div><div class="cc-title">Immediate action</div><div class="cc-body">Master setup or EMA pullback long signal. Get to your chart and run the checklist. Alert text shows the score.</div></div>
+<div class="concept-card"><div class="cc-tag" style="color:#A32D2D">Chimes — base SELL or PRIME</div><div class="cc-title">Immediate action</div><div class="cc-body">SELL signal fired, or PRIME SOTD triggered. Check the alert message — "Full SMC Stack" means it's PRIME, not just a base SELL.</div></div>
+</div>
+<div class="concept-grid" style="margin-top:8px">
+<div class="concept-card"><div class="cc-tag" style="color:#0C447C">Ring — ELITE</div><div class="cc-title">Highest priority</div><div class="cc-body">Best signal of the day. HTF fully aligned. Full SMC stack confirmed. This is the signal you size into. Alert includes SMT and weekly bias data.</div></div>
+<div class="concept-card"><div class="cc-tag" style="color:#854F0B">Ding — momentum fade</div><div class="cc-title">In-trade management</div><div class="cc-body">An active EMA pullback signal has lost momentum. If in a trade from that signal: tighten stop or scale out partial. Not a reversal entry signal.</div></div>
+</div>
+<div class="rule-box">The soft Bell for WATCH fires only when WATCH fires but PRIME did not. It is a pre-alert — "setup forming, get ready." Do not act on WATCH alone.</div>
+<ul class="key-points">
+<li class="kp-item"><span class="kp-dot"></span>Bell and Chimes can fire on the same bar if a SELL signal and a PRIME SOTD fire simultaneously — read both alert messages.</li>
+<li class="kp-item"><span class="kp-dot"></span>If you hear a Ring, the alert message contains SMT (Yes/No) and Weekly direction. If SMT=Yes and Weekly matches trade direction, that is maximum conviction for the day.</li>
+<li class="kp-item"><span class="kp-dot"></span>Ding mid-trade is your cue to move stop to breakeven if you haven't already. It does not mean exit immediately — it means protect the position.</li>
+</ul>`},
+
+{unit:"Unit 4 — Alerts & Live Reading",name:"Live reading workflow",type:"practice",xp:20,content:`
+<div class="eyebrow">Unit 4 · Lesson 12</div>
+<div class="lesson-h">The live reading workflow — session by session</div>
+<div class="lesson-intro">Knowing how to structure your attention across the trading day is as important as knowing what the signals mean. USME generates different types of information at different times.</div>
+<div class="flow-row">
+<div class="flow-step">Pre-market<br><span style="font-size:11px;font-weight:400;color:var(--color-text-secondary)">7:00–9:00 AM</span></div>
+<div class="flow-arr">→</div>
+<div class="flow-step">London KZ<br><span style="font-size:11px;font-weight:400;color:var(--color-text-secondary)">9:00–12:00 UTC</span></div>
+<div class="flow-arr">→</div>
+<div class="flow-step hl">NY KZ<br><span style="font-size:11px;font-weight:400;color:#085041">9:30–12:00 ET</span></div>
+<div class="flow-arr">→</div>
+<div class="flow-step">Post-KZ drift<br><span style="font-size:11px;font-weight:400;color:var(--color-text-secondary)">12:00 PM+</span></div>
+</div>
+<div class="divider"></div>
+<div class="checklist-block">
+<div class="cl-item"><div class="cl-num cn-green">Pre</div><div><strong>Pre-market setup.</strong> Note the PH/PL levels (orange dashed lines) — these are your prior day high and low. Note the weekly bias (W label). Identify any active FVG or OB clouds near current price. This is your context before any signal fires.</div></div>
+<div class="cl-item"><div class="cl-num cn-green">LDN</div><div><strong>London killzone (yellow vertical line).</strong> This is when the first WATCH or PRIME alert is most likely to fire. Watch for sweep of overnight highs/lows (yellow dots or cyan/magenta arrows). If a sweep fires here + CHoCH, get ready for a PRIME alert.</div></div>
+<div class="cl-item"><div class="cl-num cn-amber">NY</div><div><strong>NY open killzone (cyan vertical line).</strong> Highest probability window. If a PRIME or ELITE fires here, run the full checklist immediately. The 9:30–10:30 AM ET window is the primary target zone for most setups. Score tends to peak here because killzone pts + volume spike align.</div></div>
+<div class="cl-item"><div class="cl-num cn-amber">LDN close</div><div><strong>London close (magenta line, 11:00–12:00 ET).</strong> Often a reversal or continuation decision point. If SOTD:PRIME already fired in the morning, this is where you manage the trade — not where you enter new ones.</div></div>
+<div class="cl-item"><div class="cl-num cn-red">Post</div><div><strong>Post-killzone (after 12 PM ET).</strong> Signals are valid but volume drops. sessionScore component = 0 because you are outside both KZ windows. Treat any BUY/SELL here as reduced-conviction unless the score is ≥75 from structure alone.</div></div>
+</div>
+<button class="ask-btn" onclick="sendPrompt('Create a realistic step-by-step scenario of USME signals firing during an NY killzone session, from the first sweep arrow to the ELITE alert, and walk me through how to read and respond to each event.')">Walk me through a full NY session scenario ↗</button>`},
+
+{unit:"Unit 4 — Alerts & Live Reading",name:"Final assessment",type:"quiz",xp:50,content:`
+<div class="eyebrow">Unit 4 · Final Assessment</div>
+<div class="lesson-h">Comprehensive signal reading assessment</div>
+<div class="lesson-intro">Three scenarios. Read the dashboard conditions and select the correct interpretation and action. These mirror real situations you will encounter.</div>
+<div class="quiz-block">
+<div class="quiz-q">Scenario 1. Dashboard: STRUCT:UP · 1H:BULL · 4H:BULL · W:BULL · DISCOUNT · Vol:✔ · MACD:▲ · RSI:58 · CHoCH:▲ · SCORE:80% · SOTD:ELITE⚡ · HTF:ALIGNED. A BUY bubble + ELITE bubble appear. What is the correct read?</div>
+<div class="quiz-options">
+<button class="quiz-opt" data-q="7" data-idx="0">Marginal setup — only 4H aligns but weekly does not confirm</button>
+<button class="quiz-opt" data-q="7" data-idx="1">Maximum conviction long setup — all 5 timeframe layers bullish, full SMC stack, in discount, ELITE fired. Size fully, enter on nearest FVG/OB cloud pullback.</button>
+<button class="quiz-opt" data-q="7" data-idx="2">Valid setup but requires SMT confirmation before entry</button>
+<button class="quiz-opt" data-q="7" data-idx="3">Wait — SCORE needs to be above 85% for an ELITE setup to be reliable</button>
+</div>
+<div class="quiz-feedback" id="fb7"></div>
+</div>
+<div class="divider"></div>
+<div class="quiz-block">
+<div class="quiz-q">Scenario 2. Dashboard: STRUCT:DN · 1H:BEAR · 4H:BULL · DISCOUNT · SCORE:65% · SOTD:WATCH◈ · HTF:-- (gray). A BUY bubble appears. What do you do?</div>
+<div class="quiz-options">
+<button class="quiz-opt" data-q="8" data-idx="0">Full-size long — score is 65% and a BUY bubble fired</button>
+<button class="quiz-opt" data-q="8" data-idx="1">Skip or half-size only: 1H and 4H are split (HTF gray), STRUCT is still down, only WATCH fired. This is a low-conviction counter-trend attempt.</button>
+<button class="quiz-opt" data-q="8" data-idx="2">Short instead — STRUCT:DN means short is the right trade</button>
+<button class="quiz-opt" data-q="8" data-idx="3">Wait for SCORE to reach 70% before deciding</button>
+</div>
+<div class="quiz-feedback" id="fb8"></div>
+</div>
+<div class="divider"></div>
+<div class="quiz-block">
+<div class="quiz-q">Scenario 3. You are in a long trade from a PRIME setup at 9:45 AM. At 11:30 AM, a Ding alert fires (△ Fade bubble appears). SCORE is now 55%. What is the correct action?</div>
+<div class="quiz-options">
+<button class="quiz-opt" data-q="9" data-idx="0">Exit the entire trade — the Ding means the setup failed</button>
+<button class="quiz-opt" data-q="9" data-idx="1">Move stop to breakeven and consider scaling out partial profit — the Ding signals fading momentum, not a reversal. Protect the trade, don't abandon it.</button>
+<button class="quiz-opt" data-q="9" data-idx="2">Add to the position — the Ding means the pullback is over</button>
+<button class="quiz-opt" data-q="9" data-idx="3">Do nothing — wait for a new BUY bubble to fire</button>
+</div>
+<div class="quiz-feedback" id="fb9"></div>
+</div>`}
+];
+
+const ANSWERS = {1:1,2:1,3:1,4:1,5:1,6:1,7:1,8:1,9:1};
+const FEEDBACK = {
+1:["Incorrect. The BUY bubble alone is not sufficient. SCORE:48% is below the 60-point threshold — there is not enough confluence. No signal should be acted on below 60.","Correct. The score threshold of 60 is the first hard gate. A BUY bubble with score below 60 means the engine detected some conditions but not enough to justify a trade.","Incorrect. RSI is not the primary gate — the score is. Even if RSI looks fine, a score of 48% means structural, sweep, and FVG conditions are largely absent.","Incorrect. Switching timeframes after a low-score signal often leads to overtrading. The score being low is the answer."],
+2:["Incorrect. SCORE:72% is above the 60% threshold and is actionable — this is not the main concern.","Correct. When 1H and 4H disagree, HTF:ALIGNED will show gray, not green. This means the setup cannot reach ELITE tier and has lower follow-through probability. The BUY is still valid but at reduced conviction.","Incorrect. Being in discount is a positive condition for longs — it is not a concern. The concern is the HTF split.","Incorrect. Dashboard labels are exactly what you use to evaluate signal quality. They are the primary analysis tool."],
+3:["Incorrect. A high score validates the setup quality, but it does not override the zone requirement. SELL signals require price to be in premium territory.","Correct. ICT rule: sell in premium, buy in discount. A SELL bubble with price in DISCOUNT means price is at a potential support level — exactly the wrong place to short. The engine enforces this on master signals but EMA pullback shorts can still fire in discount. In either case, the setup quality is degraded.","Incorrect. DISCOUNT means price is below the equilibrium line — this is where buyers typically emerge, not where shorts should be initiated.","Incorrect. RSI above 70 would support a short, but it does not override the premium/discount zone requirement."],
+4:["Incorrect. A sweep of sell-side liquidity (cyan arrow below) followed by a bullish CHoCH is the opposite of a short setup — it is the core ICT long pattern.","Correct. Sell-side sweep (cyan) = 20 pts. CHoCH (structural flip from bearish to bullish) = 25 pts. That is 45 of 100 points in two events. Score of 72% suggests FVG or OB and possibly killzone/volume also confirmed.","Incorrect. A CHoCH specifically means the prior trend direction has been broken — it cannot be continuation of a bearish trend.","Incorrect. An iFVG is when price enters an FVG zone and rejects. This describes a sweep + CHoCH sequence."],
+5:["Incorrect. Market-buying at the bubble bar means chasing price into open space. Institutions fill orders at demand zones — not at random bars.","Correct. The OB cloud top edge is where institutional buy orders were originally placed. A limit there gets you the same fill price as smart money, with the cloud low as a natural invalidation point for your stop.","Incorrect. Waiting for price to close above the OB means you missed the entire zone — you would be entering as the move extends away from the support.","Incorrect. iFVG confirmation adds conviction but is not required for OB entry. The OB itself is the entry level."],
+6:["Incorrect. A filled FVG is a used, mitigated zone. Its significance as a support/resistance level is gone once price closes inside it.","Correct. FVG mitigation occurs when price closes inside the gap. The cloud disappears. The zone has been filled and is no longer a valid supply/demand area. A new FVG would need to form for a new entry zone.","Incorrect. iFVG fires when price enters the zone but CLOSES BACK OUTSIDE it (rejection). A close inside the zone is mitigation, not inversion.","Incorrect. FVG clouds are designed to disappear on mitigation — this is a feature, not a bug, preventing you from entering at a zone that has already been filled."],
+7:["Incorrect. W:BULL is explicitly shown in the scenario — all 5 timeframes align bullishly.","Correct. This is the ideal USME setup: every single layer confirms the same direction. ELITE fired, full SMC stack confirmed, price in discount. The correct action is to set a limit at the nearest FVG/OB cloud, with stop at 2× ATR, and size to your full risk allocation.","Incorrect. SMT is optional (sotdRequireSMT=no by default). The setup described already has maximum conviction without SMT.","Incorrect. There is no 85% requirement. 70+ is the PRIME/ELITE threshold. The score at 80% is well within the high-conviction range."],
+8:["Incorrect. Score of 65% is above threshold but that is not the complete picture. HTF alignment, structure direction, and tier level all matter equally.","Correct. Three concerns stack here: (1) STRUCT:DN means the most recent structural event was bearish, (2) 1H and 4H disagree making HTF:ALIGNED gray, (3) Only WATCH fired — not PRIME. Any one of these alone warrants reducing size; all three together mean skip or extreme caution.","Incorrect. A BUY bubble means the engine sees bullish confluence. Shorting against a BUY signal and CHoCH attempt is not indicated by this dashboard.","Incorrect. Waiting for score improvement is passive. The correct action is to evaluate the current conditions and decide based on multiple factors, not score alone."],
+9:["Incorrect. The Ding (△ Fade) signals fading momentum on the EMA pullback component — it is a management signal, not an exit signal. Exiting a PRIME setup trade because of a Ding means leaving potential profit on the table.","Correct. Ding = momentum fading. The correct response in an active trade is: (1) move stop to breakeven to protect capital, (2) consider taking partial profits if at a reasonable gain. It does not mean the trade is over — it means protect what you have.","Incorrect. Adding to a position when momentum is signaling weakness increases risk at exactly the wrong moment.","Incorrect. Doing nothing when a management signal fires leaves you exposed. The Ding exists specifically to trigger protective action."]
+};
+
+const TOTAL_XP = LESSONS.reduce((s,l)=>s+l.xp,0);
+let currentLesson = 0;
+let earnedXP = 0;
+const completedLessons = new Set();
+const quizAnswered = {};
+
+function buildSidebar(){
+  const ul = document.getElementById('unit-list');
+  ul.innerHTML='';
+  let lastUnit='';
+  LESSONS.forEach((l,i)=>{
+    if(l.unit!==lastUnit){
+      lastUnit=l.unit;
+      const h=document.createElement('div');
+      h.className='unit-header';
+      h.textContent=l.unit;
+      ul.appendChild(h);
+    }
+    const item=document.createElement('div');
+    item.className='lesson-item'+(i===currentLesson?' active':'')+(completedLessons.has(i)?' done':'');
+    const iconCls=i===currentLesson?'active-ic':completedLessons.has(i)?'done-ic':'open';
+    item.innerHTML=`<div class="l-icon ${iconCls}">${completedLessons.has(i)?'✓':(i+1)}</div><div class="l-name">${l.name}</div><div class="l-xp">+${l.xp}</div>`;
+    item.addEventListener('click',()=>{goTo(i);});
+    ul.appendChild(item);
+  });
+}
+
+function goTo(idx){
+  currentLesson=idx;
+  const l=LESSONS[idx];
+  document.getElementById('lesson-body').innerHTML=l.content;
+  document.getElementById('tb-unit').textContent=l.unit.split('—')[0].trim();
+  document.getElementById('tb-lesson').textContent=l.name;
+  const badge=document.getElementById('tb-badge');
+  const bmap={theory:'badge-theory',practice:'badge-practice',quiz:'badge-quiz',lab:'badge-lab'};
+  badge.className='tb-badge '+(bmap[l.type]||'badge-theory');
+  badge.textContent=l.type;
+  document.getElementById('nf-info').textContent=`Lesson ${idx+1} of ${LESSONS.length}`;
+  document.getElementById('btn-prev').disabled=idx===0;
+  document.getElementById('btn-next').textContent=idx===LESSONS.length-1?'Complete course':'Continue';
+  buildSidebar();
+  document.querySelector('.main').scrollTop=0;
+  if(l.type==='quiz') bindQuiz();
+}
+
+function bindQuiz(){
+  document.querySelectorAll('.quiz-opt').forEach(btn=>{
+    btn.addEventListener('click',function(){
+      const q=parseInt(this.dataset.q);
+      const idx=parseInt(this.dataset.idx);
+      if(quizAnswered[q]) return;
+      quizAnswered[q]=true;
+      const correct=ANSWERS[q]===idx;
+      this.classList.add(correct?'correct':'wrong');
+      if(!correct){
+        const opts=document.querySelectorAll(`.quiz-opt[data-q="${q}"]`);
+        opts[ANSWERS[q]].classList.add('correct');
+      }
+      const fb=document.getElementById('fb'+q);
+      if(fb){
+        fb.style.display='block';
+        fb.className='quiz-feedback '+(correct?'fb-correct':'fb-wrong');
+        fb.textContent=FEEDBACK[q][idx];
+      }
+      if(correct && !completedLessons.has(currentLesson)){
+        earnedXP+=Math.round(LESSONS[currentLesson].xp/3);
+        updateXP();
+      }
+    });
+  });
+}
+
+function updateXP(){
+  const pct=Math.round(earnedXP/TOTAL_XP*100);
+  document.getElementById('xp-fill').style.width=pct+'%';
+  document.getElementById('xp-val').textContent=earnedXP+' / '+TOTAL_XP;
+}
+
+document.getElementById('btn-next').addEventListener('click',()=>{
+  if(!completedLessons.has(currentLesson)){
+    completedLessons.add(currentLesson);
+    earnedXP+=LESSONS[currentLesson].xp;
+    if(LESSONS[currentLesson].type==='quiz') earnedXP=Math.min(earnedXP,TOTAL_XP);
+    earnedXP=Math.min(earnedXP,TOTAL_XP);
+    updateXP();
+  }
+  if(currentLesson<LESSONS.length-1) goTo(currentLesson+1);
+});
+document.getElementById('btn-prev').addEventListener('click',()=>{
+  if(currentLesson>0) goTo(currentLesson-1);
+});
+
+goTo(0);
+</script>

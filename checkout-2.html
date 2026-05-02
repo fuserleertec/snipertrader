@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Secure Checkout — SniperTrader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════════════════
+   VARIABLES
+═══════════════════════════════════════════════════ */
+:root {
+  --obsidian:     #0a0b0e;
+  --obsidian-2:   #0e1016;
+  --glass-bg:     #12151c;
+  --glass-bg-2:   #0d1018;
+  --glass-border: rgba(0,229,255,0.13);
+  --glass-hover:  rgba(0,229,255,0.24);
+  --cyan:         #00e5ff;
+  --cyan-dim:     #00b8d4;
+  --cyan-ghost:   rgba(0,229,255,0.08);
+  --cyan-glow:    rgba(0,229,255,0.35);
+  --gold:         #ffc107;
+  --gold-ghost:   rgba(255,193,7,0.08);
+  --gold-glow:    rgba(255,193,7,0.35);
+  --emerald:      #00e5a0;
+  --emerald-ghost:rgba(0,229,160,0.08);
+  --emerald-glow: rgba(0,229,160,0.3);
+  --red:          #ff3d5a;
+  --red-ghost:    rgba(255,61,90,0.08);
+  --white:        #f5f8ff;
+  --white-dim:    rgba(245,248,255,0.85);
+  --white-muted:  rgba(245,248,255,0.58);
+  --nav-h:        64px;
+}
+
+/* ═══════════════════════════════════════════════════
+   LIGHT MODE OVERRIDES
+═══════════════════════════════════════════════════ */
+body.light-mode {
+  --obsidian:     #f0f3f8;
+  --obsidian-2:   #e8ecf4;
+  --glass-bg:     #ffffff;
+  --glass-bg-2:   #f4f6fb;
+  --glass-border: rgba(0,140,200,0.18);
+  --glass-hover:  rgba(0,140,200,0.32);
+  --cyan:         #0077aa;
+  --cyan-dim:     #005f8a;
+  --cyan-ghost:   rgba(0,119,170,0.1);
+  --cyan-glow:    rgba(0,119,170,0.3);
+  --white:        #0d1117;
+  --white-dim:    rgba(13,17,23,0.82);
+  --white-muted:  rgba(13,17,23,0.52);
+  background:var(--obsidian);
+  color:var(--white);
+}
+body.light-mode .nav-logo{
+  background:linear-gradient(135deg,#0077aa 0%,#cc8800 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+body.light-mode nav.topnav{
+  background:rgba(240,243,248,0.95);
+  border-bottom:1px solid rgba(0,119,170,0.15);
+}
+body.light-mode .grid-overlay{
+  background-image:
+    linear-gradient(rgba(0,119,170,0.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,119,170,0.04) 1px,transparent 1px);
+}
+body.light-mode .panel{
+  background:var(--glass-bg);
+  box-shadow:0 2px 20px rgba(0,0,0,0.06);
+}
+body.light-mode .product-option{background:rgba(0,0,0,0.02);}
+body.light-mode .product-option:hover{background:rgba(0,119,170,0.05);}
+body.light-mode .product-option.selected{background:rgba(0,119,170,0.07);}
+body.light-mode .form-input{background:rgba(0,119,170,0.05);color:var(--white);}
+body.light-mode .form-input:focus{background:rgba(0,119,170,0.08);}
+body.light-mode .promo-input{background:rgba(0,119,170,0.05);color:var(--white);}
+body.light-mode .order-summary-box{background:var(--glass-bg-2);}
+body.light-mode .tab-switcher{background:rgba(0,119,170,0.06);}
+body.light-mode .pay-tab.active{background:rgba(0,119,170,0.12);color:var(--cyan);}
+body.light-mode .trust-item{background:rgba(0,119,170,0.04);}
+body.light-mode .scanlines{display:none;}
+body.light-mode #particle-canvas{opacity:0.15;}
+body.light-mode .success-overlay{background:var(--obsidian);}
+
+/* ── Theme toggle button ── */
+.theme-toggle{
+  display:flex;align-items:center;gap:7px;
+  padding:6px 13px;
+  background:rgba(0,229,255,0.06);
+  border:1px solid rgba(0,229,255,0.2);border-radius:20px;
+  cursor:none;font-family:'Space Mono',monospace;font-size:.58rem;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--white-dim);
+  transition:all .25s;user-select:none;
+}
+.theme-toggle:hover{border-color:rgba(0,229,255,0.4);color:var(--cyan);}
+body.light-mode .theme-toggle{
+  background:rgba(0,119,170,0.08);
+  border-color:rgba(0,119,170,0.25);
+  color:var(--white-dim);
+}
+.toggle-icon{font-size:.85rem;line-height:1;}
+
+/* ═══════════════════════════════════════════════════
+   RESET
+═══════════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--obsidian);
+  color:var(--white);
+  font-family:'Syne',sans-serif;
+  font-size:15px;
+  line-height:1.6;
+  min-height:100vh;
+  overflow-x:hidden;
+  cursor:none;
+}
+
+/* ═══════════════════════════════════════════════════
+   CURSOR
+═══════════════════════════════════════════════════ */
+.cursor-dot{
+  position:fixed;width:6px;height:6px;
+  background:var(--cyan);border-radius:50%;
+  pointer-events:none;z-index:9999;
+  transform:translate(-50%,-50%);
+  box-shadow:0 0 10px var(--cyan),0 0 22px var(--cyan-glow);
+}
+.cursor-ring{
+  position:fixed;width:30px;height:30px;
+  border:1px solid rgba(0,229,255,0.45);border-radius:50%;
+  pointer-events:none;z-index:9998;
+  transform:translate(-50%,-50%);
+  transition:width .18s,height .18s,border-color .18s,opacity .18s;
+}
+.cursor-ring.hover{width:46px;height:46px;border-color:var(--gold);}
+.cursor-ring.clicking{width:22px;height:22px;border-color:var(--emerald);}
+
+/* ═══════════════════════════════════════════════════
+   CANVAS + ATMOSPHERE
+═══════════════════════════════════════════════════ */
+#particle-canvas{
+  position:fixed;inset:0;z-index:0;
+  pointer-events:none;opacity:0.45;
+}
+.grid-overlay{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(0,229,255,0.018) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,229,255,0.018) 1px,transparent 1px);
+  background-size:60px 60px;
+  mask-image:radial-gradient(ellipse 100% 100% at 50% 0%,black 40%,transparent 100%);
+}
+.scanlines{
+  position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,
+    rgba(0,0,0,0.022) 2px,rgba(0,0,0,0.022) 4px);
+}
+
+/* ═══════════════════════════════════════════════════
+   SCROLL PROGRESS
+═══════════════════════════════════════════════════ */
+.scroll-progress{
+  position:fixed;top:0;left:0;height:2px;
+  background:linear-gradient(90deg,var(--cyan),var(--emerald),var(--gold));
+  z-index:300;box-shadow:0 0 8px var(--cyan-glow);
+  transition:width .1s linear;
+}
+
+/* ═══════════════════════════════════════════════════
+   NAV
+═══════════════════════════════════════════════════ */
+nav.topnav{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  height:var(--nav-h);padding:0 40px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(10,11,14,0.92);backdrop-filter:blur(24px);
+  border-bottom:1px solid rgba(0,229,255,0.1);
+}
+.nav-logo{
+  font-family:'Orbitron',sans-serif;font-weight:900;font-size:1rem;
+  letter-spacing:.12em;text-decoration:none;
+  background:linear-gradient(135deg,var(--cyan) 0%,var(--gold) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.nav-secure{
+  display:flex;align-items:center;gap:8px;
+  font-family:'Space Mono',monospace;font-size:.6rem;
+  letter-spacing:.12em;text-transform:uppercase;
+  color:var(--emerald);
+}
+.nav-secure .lock-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--emerald);box-shadow:0 0 8px var(--emerald-glow);
+  animation:pulseGlow 2s ease infinite;
+}
+.nav-back{
+  font-family:'Space Mono',monospace;font-size:.6rem;
+  letter-spacing:.1em;text-transform:uppercase;
+  color:var(--white-muted);text-decoration:none;
+  display:flex;align-items:center;gap:7px;
+  padding:6px 14px;border:1px solid rgba(0,229,255,0.15);border-radius:6px;
+  transition:color .2s,border-color .2s,box-shadow .2s;
+}
+.nav-back:hover{color:var(--cyan);border-color:rgba(0,229,255,0.35);box-shadow:0 0 14px var(--cyan-ghost);}
+
+/* ═══════════════════════════════════════════════════
+   PAGE LAYOUT
+═══════════════════════════════════════════════════ */
+.checkout-wrap{
+  position:relative;z-index:2;
+  padding-top:var(--nav-h);
+  min-height:100vh;
+}
+
+/* ── Hero strip ── */
+.checkout-hero{
+  text-align:center;
+  padding:44px 20px 36px;
+  position:relative;overflow:hidden;
+}
+.checkout-hero::before{
+  content:'';position:absolute;top:0;left:50%;
+  transform:translateX(-50%);
+  width:600px;height:300px;
+  background:radial-gradient(ellipse,rgba(0,229,255,0.06) 0%,transparent 65%);
+  pointer-events:none;
+}
+.checkout-hero-eyebrow{
+  font-family:'Space Mono',monospace;font-size:.6rem;
+  letter-spacing:.3em;text-transform:uppercase;color:var(--cyan);
+  margin-bottom:10px;animation:fadeUp .7s ease both;
+}
+.checkout-hero-title{
+  font-family:'Orbitron',sans-serif;font-weight:900;
+  font-size:clamp(1.6rem,4vw,2.5rem);letter-spacing:.04em;
+  background:linear-gradient(135deg,#fff 30%,var(--cyan) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  animation:fadeUp .7s .08s ease both;
+}
+.checkout-hero-sub{
+  margin-top:8px;font-family:'Space Mono',monospace;font-size:.65rem;
+  color:var(--white-muted);letter-spacing:.1em;
+  animation:fadeUp .7s .16s ease both;
+}
+.checkout-hero-divider{
+  margin-top:28px;height:1px;max-width:800px;margin-left:auto;margin-right:auto;
+  background:linear-gradient(90deg,transparent,var(--cyan-dim),transparent);
+}
+
+/* ── Two column grid ── */
+.checkout-grid{
+  display:grid;
+  grid-template-columns:1fr 460px;
+  gap:28px;
+  max-width:1080px;
+  margin:0 auto;
+  padding:32px 28px 80px;
+}
+
+/* ═══════════════════════════════════════════════════
+   PANEL BASE
+═══════════════════════════════════════════════════ */
+.panel{
+  background:var(--glass-bg);
+  border:1px solid var(--glass-border);
+  border-radius:18px;
+  overflow:hidden;
+  position:relative;
+  transition:border-color .3s,box-shadow .3s;
+}
+.panel:hover{
+  border-color:var(--glass-hover);
+  box-shadow:0 0 40px rgba(0,229,255,0.05);
+}
+.panel-header{
+  padding:22px 28px 0;
+  display:flex;align-items:center;gap:10px;
+}
+.panel-eyebrow{
+  font-family:'Space Mono',monospace;font-size:.58rem;
+  letter-spacing:.22em;text-transform:uppercase;color:var(--cyan);
+}
+.panel-header-line{
+  flex:1;height:1px;
+  background:linear-gradient(90deg,rgba(0,229,255,0.3),transparent);
+}
+.panel-body{padding:24px 28px 28px;}
+
+/* ═══════════════════════════════════════════════════
+   LEFT PANEL — PRODUCTS
+═══════════════════════════════════════════════════ */
+.panel-left{}
+
+/* Product options */
+.product-list{display:flex;flex-direction:column;gap:10px;margin-bottom:28px;}
+
+.product-option{
+  display:flex;align-items:center;gap:16px;
+  padding:16px 18px;
+  background:rgba(255,255,255,0.02);
+  border:1px solid rgba(0,229,255,0.1);
+  border-radius:13px;cursor:none;
+  transition:border-color .22s,background .22s,transform .2s,box-shadow .2s;
+  user-select:none;position:relative;overflow:hidden;
+  will-change:transform;
+}
+.product-option::before{
+  content:'';position:absolute;inset:0;border-radius:inherit;
+  background:radial-gradient(500px circle at var(--mx,50%) var(--my,50%),
+    rgba(0,229,255,0.04),transparent 65%);
+  opacity:0;transition:opacity .3s;pointer-events:none;
+}
+.product-option:hover{
+  border-color:rgba(0,229,255,0.25);background:rgba(0,229,255,0.03);
+}
+.product-option:hover::before{opacity:1;}
+.product-option.selected{
+  border-color:rgba(0,229,255,0.45);
+  background:rgba(0,229,255,0.06);
+  box-shadow:0 0 24px rgba(0,229,255,0.07),inset 0 1px 0 rgba(0,229,255,0.1);
+}
+.product-option input[type="radio"]{display:none;}
+
+/* Radio indicator */
+.radio-shell{
+  width:18px;height:18px;border-radius:50%;
+  border:1.5px solid rgba(0,229,255,0.3);
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  transition:border-color .2s,box-shadow .2s;
+}
+.product-option.selected .radio-shell{
+  border-color:var(--cyan);
+  box-shadow:0 0 10px var(--cyan-glow);
+}
+.radio-pip{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--cyan);box-shadow:0 0 6px var(--cyan);
+  opacity:0;transform:scale(0);
+  transition:opacity .2s,transform .2s;
+}
+.product-option.selected .radio-pip{opacity:1;transform:scale(1);}
+
+/* Product info */
+.po-meta{flex:1;min-width:0;}
+.po-name{
+  font-family:'Syne',sans-serif;font-weight:700;font-size:.88rem;
+  color:var(--white);margin-bottom:3px;
+  display:flex;align-items:center;gap:7px;flex-wrap:wrap;
+}
+.po-desc{font-family:'Space Mono',monospace;font-size:.62rem;color:var(--white-muted);letter-spacing:.03em;}
+
+.po-price-col{text-align:right;flex-shrink:0;}
+.po-price{
+  font-family:'Orbitron',sans-serif;font-weight:800;font-size:1.05rem;
+  color:var(--white);letter-spacing:.02em;white-space:nowrap;
+}
+.po-price-sub{
+  font-family:'Space Mono',monospace;font-size:.55rem;
+  color:var(--white-muted);letter-spacing:.08em;margin-top:1px;
+}
+
+/* Tier badge */
+.tier-badge{
+  display:inline-block;padding:2px 8px;border-radius:4px;
+  font-family:'Orbitron',monospace;font-size:.5rem;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;flex-shrink:0;
+}
+.tb-pdf   {background:rgba(0,229,255,0.1); color:var(--cyan);   border:1px solid rgba(0,229,255,0.22);}
+.tb-month {background:rgba(0,229,160,0.1); color:var(--emerald);border:1px solid rgba(0,229,160,0.22);}
+.tb-life  {background:rgba(255,193,7,0.1); color:var(--gold);   border:1px solid rgba(255,193,7,0.22);}
+.tb-best  {background:rgba(0,229,160,0.1); color:var(--emerald);border:1px solid rgba(0,229,160,0.22);}
+.tb-blue  {background:rgba(100,180,255,0.1);color:#64b4ff;      border:1px solid rgba(100,180,255,0.22);}
+
+/* ── Order summary box ── */
+.order-summary-box{
+  margin-bottom:24px;padding:20px 22px;
+  background:var(--glass-bg-2);
+  border:1px solid rgba(0,229,255,0.1);border-radius:12px;
+}
+.order-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.04);
+  font-size:.85rem;
+}
+.order-row:last-of-type{border-bottom:none;}
+.order-row .lbl{color:var(--white-muted);font-family:'Space Mono',monospace;font-size:.72rem;letter-spacing:.05em;}
+.order-row .val{color:var(--white);font-weight:600;}
+.order-total-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px 0 0;margin-top:10px;
+  border-top:1px solid rgba(0,229,255,0.15);
+}
+.order-total-row .lbl{
+  font-family:'Space Mono',monospace;font-size:.7rem;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--white-dim);
+}
+.order-total-row .val{
+  font-family:'Orbitron',sans-serif;font-weight:900;font-size:1.6rem;
+  background:linear-gradient(135deg,var(--white),var(--cyan));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  letter-spacing:.02em;
+}
+
+/* ── Promo ── */
+.promo-section{margin-bottom:28px;}
+.promo-label{
+  font-family:'Space Mono',monospace;font-size:.6rem;
+  letter-spacing:.18em;text-transform:uppercase;
+  color:var(--white-muted);margin-bottom:8px;display:block;
+}
+.promo-row{display:flex;gap:8px;}
+.promo-input{
+  flex:1;padding:11px 16px;
+  background:rgba(0,229,255,0.04);
+  border:1px solid rgba(0,229,255,0.15);border-radius:9px;
+  color:var(--white);font-family:'Space Mono',monospace;font-size:.75rem;
+  letter-spacing:.12em;text-transform:uppercase;outline:none;
+  transition:border-color .2s,box-shadow .2s;
+}
+.promo-input:focus{border-color:rgba(0,229,255,0.4);box-shadow:0 0 14px var(--cyan-ghost);}
+.promo-input::placeholder{color:var(--white-muted);text-transform:uppercase;}
+.promo-apply-btn{
+  padding:11px 20px;
+  background:rgba(0,229,255,0.08);
+  border:1px solid rgba(0,229,255,0.25);border-radius:9px;
+  color:var(--cyan);font-family:'Space Mono',monospace;font-size:.68rem;
+  font-weight:700;letter-spacing:.1em;cursor:none;white-space:nowrap;
+  transition:background .2s,border-color .2s,box-shadow .2s;
+}
+.promo-apply-btn:hover{background:rgba(0,229,255,0.14);border-color:var(--cyan);box-shadow:0 0 14px var(--cyan-ghost);}
+.promo-msg{
+  font-family:'Space Mono',monospace;font-size:.65rem;
+  margin-top:7px;display:none;letter-spacing:.05em;
+}
+.promo-msg.ok{color:var(--emerald);}
+.promo-msg.err{color:var(--red);}
+
+/* ── Trust badges ── */
+.trust-strip{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:10px;padding-top:22px;
+  border-top:1px solid rgba(0,229,255,0.07);
+}
+.trust-item{
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  padding:10px 6px;
+  background:rgba(0,229,255,0.03);
+  border:1px solid rgba(0,229,255,0.08);border-radius:10px;
+  transition:border-color .2s,transform .2s;
+}
+.trust-item:hover{border-color:rgba(0,229,255,0.2);transform:translateY(-2px);}
+.trust-icon{font-size:1.1rem;}
+.trust-label{font-family:'Space Mono',monospace;font-size:.55rem;letter-spacing:.08em;color:var(--white-muted);text-align:center;line-height:1.3;}
+
+/* ═══════════════════════════════════════════════════
+   RIGHT PANEL — PAYMENT
+═══════════════════════════════════════════════════ */
+.panel-right{
+  position:sticky;top:calc(var(--nav-h) + 20px);
+  align-self:start;
+}
+
+/* ── Tab switcher ── */
+.tab-switcher{
+  display:flex;gap:6px;margin-bottom:24px;
+  padding:5px;background:rgba(0,229,255,0.04);
+  border:1px solid rgba(0,229,255,0.1);border-radius:12px;
+}
+.pay-tab{
+  flex:1;padding:9px 6px;
+  background:transparent;border:1px solid transparent;border-radius:8px;
+  font-family:'Space Mono',monospace;font-size:.65rem;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--white-muted);
+  cursor:none;transition:all .2s;
+}
+.pay-tab:hover{color:var(--white-dim);}
+.pay-tab.active{
+  background:rgba(0,229,255,0.09);
+  border-color:rgba(0,229,255,0.25);
+  color:var(--cyan);box-shadow:0 0 12px var(--cyan-ghost);
+}
+
+/* ── Tab contents ── */
+.tab-pane{display:none;}
+.tab-pane.active{display:block;animation:fadeUp .3s ease both;}
+
+/* ── Form fields ── */
+.form-group{margin-bottom:16px;}
+.form-lbl{
+  display:block;margin-bottom:7px;
+  font-family:'Space Mono',monospace;font-size:.6rem;
+  letter-spacing:.15em;text-transform:uppercase;color:var(--white-muted);
+}
+.form-input{
+  width:100%;padding:12px 16px;
+  background:rgba(0,229,255,0.04);
+  border:1px solid rgba(0,229,255,0.13);border-radius:10px;
+  color:var(--white);font-family:'Syne',sans-serif;font-size:.88rem;
+  outline:none;transition:border-color .2s,box-shadow .2s,background .2s;
+}
+.form-input::placeholder{color:var(--white-muted);}
+.form-input:focus{
+  border-color:rgba(0,229,255,0.45);
+  box-shadow:0 0 16px rgba(0,229,255,0.08);
+  background:rgba(0,229,255,0.06);
+}
+.form-input.error{border-color:rgba(255,61,90,0.6);box-shadow:0 0 14px rgba(255,61,90,0.1);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+/* Card number with brand icons */
+.card-wrap{position:relative;}
+.card-brand-icons{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  display:flex;gap:5px;pointer-events:none;
+}
+.cbrand{
+  height:20px;width:32px;border-radius:3px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Orbitron',monospace;font-size:.45rem;font-weight:700;
+  letter-spacing:.05em;
+}
+.cb-visa{background:#1a1f71;color:#fff;}
+.cb-mc{background:#eb001b;color:#fff;position:relative;overflow:visible;}
+.cb-mc::after{content:'';position:absolute;left:12px;top:0;bottom:0;width:20px;border-radius:3px;background:#f79e1b;mix-blend-mode:screen;}
+.cb-amex{background:#007bc1;color:#fff;font-size:.4rem;}
+
+/* ── Submit CTA button ── */
+.cta-btn{
+  width:100%;margin-top:20px;
+  padding:16px 20px;
+  background:linear-gradient(135deg,var(--cyan) 0%,var(--cyan-dim) 100%);
+  border:none;border-radius:12px;cursor:none;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  font-family:'Orbitron',sans-serif;font-weight:800;font-size:.85rem;
+  letter-spacing:.1em;text-transform:uppercase;color:#000;
+  box-shadow:0 0 32px var(--cyan-glow);
+  transition:transform .2s,box-shadow .2s,filter .2s;
+  position:relative;overflow:hidden;
+}
+.cta-btn::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,0.15),transparent);
+  opacity:0;transition:opacity .2s;
+}
+.cta-btn:hover{
+  transform:translateY(-3px);
+  box-shadow:0 8px 40px var(--cyan-glow);
+  filter:brightness(1.06);
+}
+.cta-btn:hover::before{opacity:1;}
+.cta-btn:active{transform:scale(0.98);}
+.cta-lock{font-size:.9rem;}
+
+/* ── Apple / PayPal alt buttons ── */
+.alt-pay-btn{
+  width:100%;padding:15px;border:none;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  font-size:.9rem;font-weight:700;cursor:none;
+  transition:transform .2s,box-shadow .2s,filter .2s;
+}
+.alt-pay-btn:hover{transform:translateY(-2px);filter:brightness(1.05);}
+.alt-pay-btn:active{transform:scale(0.98);}
+.btn-apple-pay{background:#fff;color:#000;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:1rem;}
+.btn-paypal-pay{background:#003087;color:#fff;}
+.pp-logo{display:flex;align-items:center;gap:2px;font-size:.95rem;font-weight:800;font-style:italic;}
+.pp-p1{color:#009cde;}.pp-p2{color:#fff;}
+
+/* ── Express payment panels ── */
+.express-note{
+  text-align:center;margin-bottom:16px;
+  font-family:'Space Mono',monospace;font-size:.6rem;
+  letter-spacing:.1em;color:var(--white-muted);
+}
+.alt-total-badge{
+  text-align:center;margin-bottom:24px;
+  padding:12px 16px;
+  background:rgba(0,229,255,0.04);
+  border:1px solid rgba(0,229,255,0.1);border-radius:8px;
+  font-family:'Space Mono',monospace;font-size:.7rem;
+  color:var(--white-muted);letter-spacing:.05em;
+}
+.alt-total-badge strong{color:var(--cyan);font-size:.85rem;}
+.alt-subtitle{
+  text-align:center;font-family:'Space Mono',monospace;font-size:.62rem;
+  color:var(--white-muted);line-height:1.6;margin-bottom:24px;letter-spacing:.04em;
+  padding:0 12px;
+}
+.alt-emoji{font-size:2.8rem;text-align:center;margin-bottom:14px;display:block;}
+.alt-title{
+  font-family:'Orbitron',sans-serif;font-weight:800;font-size:1.1rem;
+  text-align:center;letter-spacing:.06em;color:var(--white);
+  margin-bottom:10px;
+}
+
+/* ── Secure note ── */
+.secure-note{
+  margin-top:16px;
+  font-family:'Space Mono',monospace;font-size:.58rem;
+  letter-spacing:.1em;color:var(--white-muted);
+  text-align:center;display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.s-dot{width:5px;height:5px;border-radius:50%;background:var(--emerald);box-shadow:0 0 6px var(--emerald-glow);}
+
+/* ── Payment brand row ── */
+.brand-row{
+  display:flex;justify-content:center;gap:8px;
+  margin-top:18px;flex-wrap:wrap;
+}
+.brand-pill{
+  height:24px;padding:0 10px;border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Orbitron',monospace;font-size:.48rem;font-weight:700;
+  letter-spacing:.05em;border:1px solid rgba(255,255,255,0.08);
+}
+
+/* ─────────────────────────────────────────────────
+   SUCCESS OVERLAY
+───────────────────────────────────────────────── */
+.success-overlay{
+  display:none;position:fixed;inset:0;
+  background:var(--obsidian);z-index:1000;
+  flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:40px;
+}
+.success-overlay.show{display:flex;animation:fadeUp .5s ease both;}
+
+.success-ring{
+  position:relative;width:90px;height:90px;margin:0 auto 28px;
+}
+.success-ring svg{
+  width:90px;height:90px;
+  animation:drawRing .8s ease both;
+}
+.success-ring circle{
+  fill:none;stroke:var(--emerald);stroke-width:2.5;
+  stroke-dasharray:251;stroke-dashoffset:251;
+  stroke-linecap:round;
+  animation:drawCircle .7s .1s ease forwards;
+}
+.success-ring .check{
+  stroke:var(--emerald);stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:40;stroke-dashoffset:40;
+  animation:drawCheck .4s .7s ease forwards;
+}
+.success-glow{
+  position:absolute;inset:-12px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,229,160,0.15),transparent 65%);
+  animation:pulseGlow 2.5s ease infinite;
+}
+@keyframes drawCircle{to{stroke-dashoffset:0;}}
+@keyframes drawCheck{to{stroke-dashoffset:0;}}
+
+.success-title{
+  font-family:'Orbitron',sans-serif;font-weight:900;
+  font-size:clamp(2rem,5vw,3rem);letter-spacing:.04em;
+  background:linear-gradient(135deg,#fff 30%,var(--emerald) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:14px;animation:fadeUp .5s .3s ease both;
+}
+.success-sub{
+  font-size:.9rem;color:var(--white-dim);
+  max-width:420px;line-height:1.75;margin-bottom:28px;
+  animation:fadeUp .5s .4s ease both;
+}
+.success-email-box{
+  padding:14px 24px;
+  background:var(--glass-bg);border:1px solid rgba(0,229,160,0.25);border-radius:12px;
+  font-family:'Space Mono',monospace;font-size:.72rem;color:var(--white-muted);
+  letter-spacing:.05em;margin-bottom:32px;
+  animation:fadeUp .5s .5s ease both;
+}
+.success-email-box strong{color:var(--emerald);}
+.success-back{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:13px 28px;
+  background:linear-gradient(135deg,var(--cyan),var(--cyan-dim));
+  border:none;border-radius:10px;cursor:none;
+  font-family:'Orbitron',sans-serif;font-weight:800;font-size:.78rem;
+  letter-spacing:.1em;text-transform:uppercase;color:#000;
+  text-decoration:none;box-shadow:0 0 28px var(--cyan-glow);
+  transition:transform .2s,box-shadow .2s;
+  animation:fadeUp .5s .6s ease both;
+}
+.success-back:hover{transform:translateY(-3px);box-shadow:0 8px 36px var(--cyan-glow);}
+
+/* ─────────────────────────────────────────────────
+   KEYFRAMES
+───────────────────────────────────────────────── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+@keyframes pulseGlow{0%,100%{opacity:1;}50%{opacity:.45;}}
+
+/* ─────────────────────────────────────────────────
+   RESPONSIVE
+───────────────────────────────────────────────── */
+@media(max-width:860px){
+  .checkout-grid{grid-template-columns:1fr;gap:20px;padding:20px 16px 60px;}
+  .panel-right{position:static;}
+  nav.topnav{padding:0 20px;}
+  .trust-strip{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:480px){
+  .form-row{grid-template-columns:1fr;}
+  .trust-strip{grid-template-columns:repeat(2,1fr);}
+  .checkout-hero-title{font-size:1.5rem;}
+}
+</style>
+</head>
+<body>
+
+<!-- Cursor -->
+<div class="cursor-dot" id="cursorDot"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- Atmosphere -->
+<canvas id="particle-canvas"></canvas>
+<div class="grid-overlay"></div>
+<div class="scanlines"></div>
+
+<!-- Scroll progress -->
+<div class="scroll-progress" id="scrollBar"></div>
+
+<!-- ══════════════════ NAV ══════════════════ -->
+<nav class="topnav">
+  <a href="index.html" class="nav-logo">SNIPERTRADER</a>
+  <div class="nav-secure">
+    <span class="lock-dot"></span>
+    SECURE CHECKOUT · SSL ENCRYPTED
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">
+      <span class="toggle-icon" id="toggleIcon">☀️</span>
+      <span id="toggleLabel">LIGHT</span>
+    </button>
+    <a href="index.html" class="nav-back">← BACK TO SITE</a>
+  </div>
+</nav>
+
+<!-- ══════════════════ WRAP ══════════════════ -->
+<div class="checkout-wrap">
+
+  <!-- Hero strip -->
+  <div class="checkout-hero">
+    <p class="checkout-hero-eyebrow">// SECURE TRANSACTION — POWERED BY STRIPE</p>
+    <h1 class="checkout-hero-title">COMPLETE YOUR ORDER</h1>
+    <p class="checkout-hero-sub">256-BIT SSL · PCI-DSS COMPLIANT · INSTANT DELIVERY</p>
+    <div class="checkout-hero-divider"></div>
+  </div>
+
+  <!-- Grid -->
+  <div class="checkout-grid">
+
+    <!-- ══════ LEFT: ORDER SUMMARY ══════ -->
+    <div class="panel panel-left">
+      <div class="panel-header">
+        <span class="panel-eyebrow">// SELECT YOUR PRODUCT</span>
+        <div class="panel-header-line"></div>
+      </div>
+      <div class="panel-body">
+
+        <!-- Product selector -->
+        <div class="product-list" id="productSelect">
+
+          <!-- eBook -->
+          <label class="product-option selected" onclick="selectProduct(this,19,'eBook: From Broke to Funded','one-time')">
+            <input type="radio" name="product" checked/>
+            <div class="radio-shell"><div class="radio-pip"></div></div>
+            <div class="po-meta">
+              <div class="po-name">
+                📖 From Broke to Funded
+                <span class="tier-badge tb-pdf">PDF</span>
+              </div>
+              <div class="po-desc">200+ pages · ICT/SMC Playbook · Instant download</div>
+            </div>
+            <div class="po-price-col">
+              <div class="po-price">$19</div>
+              <div class="po-price-sub">ONE-TIME</div>
+            </div>
+          </label>
+
+          <!-- ThinkScript Monthly -->
+          <label class="product-option" onclick="selectProduct(this,147,'ThinkScript Edition (Monthly)','per month')">
+            <input type="radio" name="product"/>
+            <div class="radio-shell"><div class="radio-pip"></div></div>
+            <div class="po-meta">
+              <div class="po-name">
+                ⚡ USME ThinkScript
+                <span class="tier-badge tb-month">MONTHLY</span>
+              </div>
+              <div class="po-desc">USME v2.0 · ThinkorSwim · ICT Order Blocks + SOTD Alerts</div>
+            </div>
+            <div class="po-price-col">
+              <div class="po-price">$147</div>
+              <div class="po-price-sub">PER MONTH</div>
+            </div>
+          </label>
+
+          <!-- ThinkScript Lifetime -->
+          <label class="product-option" onclick="selectProduct(this,997,'ThinkScript Edition (Lifetime)','one-time')">
+            <input type="radio" name="product"/>
+            <div class="radio-shell"><div class="radio-pip"></div></div>
+            <div class="po-meta">
+              <div class="po-name">
+                ⚡ USME ThinkScript
+                <span class="tier-badge tb-life">LIFETIME</span>
+              </div>
+              <div class="po-desc">USME v2.0 · ThinkorSwim · Pay once, own forever</div>
+            </div>
+            <div class="po-price-col">
+              <div class="po-price">$997</div>
+              <div class="po-price-sub">ONE-TIME</div>
+            </div>
+          </label>
+
+          <!-- Pine Script Monthly -->
+          <label class="product-option" onclick="selectProduct(this,127,'TradingView Edition (Monthly)','per month')">
+            <input type="radio" name="product"/>
+            <div class="radio-shell"><div class="radio-pip"></div></div>
+            <div class="po-meta">
+              <div class="po-name">
+                ◆ USME TradingView
+                <span class="tier-badge tb-month">MONTHLY</span>
+              </div>
+              <div class="po-desc">Pine Script v5 · MTF confluence · Webhook alerts</div>
+            </div>
+            <div class="po-price-col">
+              <div class="po-price">$127</div>
+              <div class="po-price-sub">PER MONTH</div>
+            </div>
+          </label>
+
+          <!-- Pine Script Lifetime -->
+          <label class="product-option" onclick="selectProduct(this,897,'TradingView Edition (Lifetime)','one-time')">
+            <input type="radio" name="product"/>
+            <div class="radio-shell"><div class="radio-pip"></div></div>
+            <div class="po-meta">
+              <div class="po-name">
+                ◆ USME TradingView
+                <span class="tier-badge tb-life">LIFETIME</span>
+              </div>
+              <div class="po-desc">Pine Script v5 · TradingView · Pay once, own forever</div>
+            </div>
+            <div class="po-price-col">
+              <div class="po-price">$897</div>
+              <div class="po-price-sub">ONE-TIME</div>
+            </div>
+          </label>
+
+          <!-- Full Suite Bundle -->
+          <label class="product-option" onclick="selectProduct(this,247,'Full Suite Bundle','one-time')">
+            <input type="radio" name="product"/>
+            <div class="radio-shell"><div class="radio-pip"></div></div>
+            <div class="po-meta">
+              <div class="po-name">
+                🚀 Full Suite Bundle
+                <span class="tier-badge tb-best">BEST VALUE</span>
+              </div>
+              <div class="po-desc">ThinkScript + TradingView + 3 mo Journal · saves $647</div>
+            </div>
+            <div class="po-price-col">
+              <div class="po-price">$247</div>
+              <div class="po-price-sub">ONE-TIME</div>
+            </div>
+          </label>
+
+          <!-- Journal Monthly -->
+          <label class="product-option" onclick="selectProduct(this,29,'SMC Trade Journal (Monthly)','per month')">
+            <input type="radio" name="product"/>
+            <div class="radio-shell"><div class="radio-pip"></div></div>
+            <div class="po-meta">
+              <div class="po-name">
+                ▣ SMC Trade Journal
+                <span class="tier-badge tb-blue">MONTHLY</span>
+              </div>
+              <div class="po-desc">AI-powered day trading tracker · 7-day free trial</div>
+            </div>
+            <div class="po-price-col">
+              <div class="po-price">$29</div>
+              <div class="po-price-sub">PER MONTH</div>
+            </div>
+          </label>
+
+        </div><!-- /product-list -->
+
+        <!-- Order summary box -->
+        <div class="order-summary-box">
+          <div class="order-row">
+            <span class="lbl" id="itemLabel">eBook: From Broke to Funded</span>
+            <span class="val" id="itemPrice">$19.00</span>
+          </div>
+          <div class="order-row">
+            <span class="lbl">Promo Discount</span>
+            <span class="val" id="discountVal" style="color:var(--emerald);">—</span>
+          </div>
+          <div class="order-total-row">
+            <span class="lbl">TOTAL DUE</span>
+            <span class="val" id="totalVal">$19.00</span>
+          </div>
+        </div>
+
+        <!-- Promo code -->
+        <div class="promo-section">
+          <span class="promo-label">Promo Code</span>
+          <div class="promo-row">
+            <input class="promo-input" type="text" id="promoInput" placeholder="SNIPER10" autocomplete="off"/>
+            <button class="promo-apply-btn" onclick="applyPromo()">APPLY</button>
+          </div>
+          <div class="promo-msg ok" id="promoSuccess">✓ 10% discount applied!</div>
+        </div>
+
+        <!-- Trust badges -->
+        <div class="trust-strip">
+          <div class="trust-item">
+            <span class="trust-icon">🔒</span>
+            <span class="trust-label">SSL<br>Encrypted</span>
+          </div>
+          <div class="trust-item">
+            <span class="trust-icon">↩</span>
+            <span class="trust-label">7-Day<br>Guarantee</span>
+          </div>
+          <div class="trust-item">
+            <span class="trust-icon">⚡</span>
+            <span class="trust-label">Instant<br>Delivery</span>
+          </div>
+          <div class="trust-item">
+            <span class="trust-icon">🛡</span>
+            <span class="trust-label">PCI<br>Compliant</span>
+          </div>
+        </div>
+
+      </div><!-- /panel-body -->
+    </div><!-- /panel-left -->
+
+    <!-- ══════ RIGHT: PAYMENT ══════ -->
+    <div class="panel panel-right">
+      <div class="panel-header">
+        <span class="panel-eyebrow">// PAYMENT METHOD</span>
+        <div class="panel-header-line"></div>
+      </div>
+      <div class="panel-body">
+
+        <!-- Tab switcher -->
+        <div class="tab-switcher">
+          <button class="pay-tab active" onclick="switchPayTab('card',this)">💳 CARD</button>
+          <button class="pay-tab" onclick="switchPayTab('apple',this)">🍎 APPLE</button>
+          <button class="pay-tab" onclick="switchPayTab('paypal',this)">PAYPAL</button>
+        </div>
+
+        <!-- ─── CARD TAB ─── -->
+        <div class="tab-pane active" id="tab-card">
+          <div class="form-group">
+            <label class="form-lbl">Email Address</label>
+            <input class="form-input" type="email" id="emailInput" placeholder="you@example.com"/>
+          </div>
+          <div class="form-group">
+            <label class="form-lbl">Cardholder Name</label>
+            <input class="form-input" type="text" placeholder="Full name on card"/>
+          </div>
+          <div class="form-group">
+            <label class="form-lbl">Card Number</label>
+            <div class="card-wrap">
+              <input class="form-input" type="text" id="cardNum" placeholder="1234 5678 9012 3456" maxlength="19" oninput="formatCard(this)" style="padding-right:108px;"/>
+              <div class="card-brand-icons">
+                <div class="cbrand cb-visa">VISA</div>
+                <div class="cbrand cb-mc"></div>
+                <div class="cbrand cb-amex">AMEX</div>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-lbl">Expiry</label>
+              <input class="form-input" type="text" placeholder="MM / YY" maxlength="7" oninput="formatExpiry(this)"/>
+            </div>
+            <div class="form-group">
+              <label class="form-lbl">CVC</label>
+              <input class="form-input" type="text" placeholder="•••" maxlength="4" oninput="this.value=this.value.replace(/\D/g,'')"/>
+            </div>
+          </div>
+
+          <button class="cta-btn" onclick="submitPayment('card')">
+            <span class="cta-lock">🔒</span>
+            COMPLETE PURCHASE — <span id="btnTotal">$19</span>
+          </button>
+        </div>
+
+        <!-- ─── APPLE PAY TAB ─── -->
+        <div class="tab-pane" id="tab-apple">
+          <span class="alt-emoji">🍎</span>
+          <div class="alt-title">Apple Pay</div>
+          <p class="alt-subtitle">Use Face ID, Touch ID, or your Apple Watch for a fast, secure one-tap checkout experience.</p>
+          <div class="alt-total-badge">
+            Order total: <strong id="appleTotal">$19.00</strong>
+          </div>
+          <button class="alt-pay-btn btn-apple-pay" onclick="submitPayment('apple')">
+            &#xf8ff; Pay with Apple Pay
+          </button>
+          <p style="text-align:center;font-family:'Space Mono',monospace;font-size:.58rem;color:var(--white-muted);margin-top:12px;letter-spacing:.06em;">Available on Safari · iOS · macOS</p>
+        </div>
+
+        <!-- ─── PAYPAL TAB ─── -->
+        <div class="tab-pane" id="tab-paypal">
+          <span class="alt-emoji">💙</span>
+          <div class="alt-title">Pay with PayPal</div>
+          <p class="alt-subtitle">You'll be redirected to PayPal to complete your payment securely. Return here instantly after checkout.</p>
+          <div class="alt-total-badge">
+            Order total: <strong id="paypalTotal">$19.00</strong>
+          </div>
+          <button class="alt-pay-btn btn-paypal-pay" onclick="submitPayment('paypal')">
+            <span class="pp-logo"><span class="pp-p1">Pay</span><span class="pp-p2">Pal</span></span>
+            &nbsp;Continue with PayPal
+          </button>
+          <p style="text-align:center;font-family:'Space Mono',monospace;font-size:.58rem;color:var(--white-muted);margin-top:12px;letter-spacing:.06em;">Supports PayPal balance · Venmo · Credit &amp; debit</p>
+        </div>
+
+        <!-- Secure note -->
+        <div class="secure-note">
+          <span class="s-dot"></span>
+          256-BIT SSL · PCI-DSS · DATA NEVER STORED
+        </div>
+
+        <!-- Brand pills -->
+        <div class="brand-row">
+          <div class="brand-pill" style="background:#1a1f71;color:#fff;">VISA</div>
+          <div class="brand-pill" style="background:#eb001b;color:#fff;">MC</div>
+          <div class="brand-pill" style="background:#007bc1;color:#fff;">AMEX</div>
+          <div class="brand-pill" style="background:#003087;color:#fff;font-style:italic;">PayPal</div>
+          <div class="brand-pill" style="background:#fff;color:#000;">PAY</div>
+        </div>
+
+      </div><!-- /panel-body -->
+    </div><!-- /panel-right -->
+
+  </div><!-- /checkout-grid -->
+</div><!-- /checkout-wrap -->
+
+<!-- ══════════════════ SUCCESS OVERLAY ══════════════════ -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-ring">
+    <div class="success-glow"></div>
+    <svg viewBox="0 0 80 80">
+      <circle cx="40" cy="40" r="36"/>
+      <polyline class="check" points="24,40 34,52 56,28"/>
+    </svg>
+  </div>
+  <h2 class="success-title">ORDER CONFIRMED</h2>
+  <p class="success-sub" id="successMsg">Your order is confirmed. Check your email for the download link — it arrives within 60 seconds.</p>
+  <div class="success-email-box">📧 Delivery sent to &nbsp;<strong id="successEmail">your email</strong></div>
+  <a href="index.html" class="success-back">← BACK TO SNIPERTRADER</a>
+</div>
+
+<!-- ══════════════════ JAVASCRIPT ══════════════════ -->
+<script>
+/* ── State ────────────────────────────────────────────── */
+let currentPrice=19, currentItem='eBook: From Broke to Funded';
+let currentBilling='one-time', promoApplied=false;
+
+/* ── Cursor ───────────────────────────────────────────── */
+const dot=document.getElementById('cursorDot');
+const ring=document.getElementById('cursorRing');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{
+  mx=e.clientX;my=e.clientY;
+  dot.style.left=mx+'px';dot.style.top=my+'px';
+});
+(function loop(){
+  rx+=(mx-rx)*.13;ry+=(my-ry)*.13;
+  ring.style.left=rx+'px';ring.style.top=ry+'px';
+  requestAnimationFrame(loop);
+})();
+document.querySelectorAll('a,button,.product-option,.trust-item,.pay-tab,.promo-apply-btn').forEach(el=>{
+  el.addEventListener('mouseenter',()=>ring.classList.add('hover'));
+  el.addEventListener('mouseleave',()=>ring.classList.remove('hover'));
+  el.addEventListener('mousedown',()=>ring.classList.add('clicking'));
+  el.addEventListener('mouseup',()=>ring.classList.remove('clicking'));
+});
+
+/* ── Scroll Progress ──────────────────────────────────── */
+const bar=document.getElementById('scrollBar');
+window.addEventListener('scroll',()=>{
+  const pct=scrollY/(document.body.scrollHeight-innerHeight)*100;
+  bar.style.width=pct+'%';
+});
+
+/* ── Product 3D hover tilt ────────────────────────────── */
+document.querySelectorAll('.product-option').forEach(card=>{
+  card.addEventListener('mousemove',e=>{
+    const r=card.getBoundingClientRect();
+    const dx=e.clientX-(r.left+r.width/2);
+    const dy=e.clientY-(r.top+r.height/2);
+    card.style.transform=`perspective(700px) rotateX(${-(dy/(r.height/2))*3}deg) rotateY(${(dx/(r.width/2))*3}deg) translateZ(2px)`;
+    card.style.setProperty('--mx',((e.clientX-r.left)/r.width*100).toFixed(1)+'%');
+    card.style.setProperty('--my',((e.clientY-r.top)/r.height*100).toFixed(1)+'%');
+  });
+  card.addEventListener('mouseleave',()=>{card.style.transform='';});
+});
+
+/* ── Product Logic ────────────────────────────────────── */
+function selectProduct(el,price,name,billing){
+  document.querySelectorAll('.product-option').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+  currentPrice=price;currentItem=name;currentBilling=billing;
+  promoApplied=false;
+  document.getElementById('promoSuccess').style.display='none';
+  document.getElementById('promoInput').value='';
+  updateTotals();
+}
+
+function updateTotals(){
+  const disc=promoApplied?Math.round(currentPrice*.1):0;
+  const total=currentPrice-disc;
+  const sfx=currentBilling!=='one-time'?' '+currentBilling:'';
+  document.getElementById('itemLabel').textContent=currentItem;
+  document.getElementById('itemPrice').textContent='$'+currentPrice.toFixed(2)+(sfx?sfx:'');
+  document.getElementById('discountVal').textContent=disc>0?'-$'+disc.toFixed(2):'—';
+  document.getElementById('totalVal').textContent='$'+total.toFixed(2)+(sfx?sfx:'');
+  document.getElementById('btnTotal').textContent='$'+total+(sfx?sfx:'');
+  document.getElementById('appleTotal').textContent='$'+total.toFixed(2)+(sfx?sfx:'');
+  document.getElementById('paypalTotal').textContent='$'+total.toFixed(2)+(sfx?sfx:'');
+}
+
+/* ── Promo Code ───────────────────────────────────────── */
+function applyPromo(){
+  const code=document.getElementById('promoInput').value.trim().toUpperCase();
+  const msg=document.getElementById('promoSuccess');
+  if(code==='SNIPER10'||code==='TRADESMARTER'){
+    promoApplied=true;
+    msg.textContent='✓ 10% discount applied!';
+    msg.className='promo-msg ok';
+    msg.style.display='block';
+    updateTotals();
+  } else {
+    promoApplied=false;
+    msg.textContent='✗ Invalid code. Try SNIPER10';
+    msg.className='promo-msg err';
+    msg.style.display='block';
+    setTimeout(()=>{msg.style.display='none';},2500);
+    updateTotals();
+  }
+}
+document.getElementById('promoInput').addEventListener('keydown',e=>{if(e.key==='Enter')applyPromo();});
+
+/* ── Pay Tab Switcher ─────────────────────────────────── */
+function switchPayTab(id,btn){
+  document.querySelectorAll('.pay-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+}
+
+/* ── Card Formatters ──────────────────────────────────── */
+function formatCard(inp){
+  let v=inp.value.replace(/\D/g,'').substring(0,16);
+  inp.value=v.replace(/(.{4})/g,'$1 ').trim();
+}
+function formatExpiry(inp){
+  let v=inp.value.replace(/\D/g,'').substring(0,4);
+  if(v.length>=3)v=v.substring(0,2)+' / '+v.substring(2);
+  inp.value=v;
+}
+
+/* ── Submit ───────────────────────────────────────────── */
+function submitPayment(method){
+  if(method==='card'){
+    const c=document.getElementById('cardNum').value.replace(/\s/g,'');
+    if(c.length<16){
+      const inp=document.getElementById('cardNum');
+      inp.classList.add('error');
+      inp.focus();
+      setTimeout(()=>inp.classList.remove('error'),2200);
+      return;
+    }
+  }
+  const email=document.getElementById('emailInput')?.value||'your email';
+  document.getElementById('successEmail').textContent=email;
+  const isEbook=currentItem.includes('eBook')||currentItem.includes('Broke');
+  const isJournal=currentItem.includes('Journal');
+  if(isEbook){
+    document.getElementById('successMsg').textContent='Your eBook is ready! Check your email for the PDF download link — delivered instantly.';
+  } else if(isJournal){
+    document.getElementById('successMsg').textContent='Your Trade Journal trial has started. Check your email for your login link.';
+  } else {
+    document.getElementById('successMsg').textContent='Your USME indicator file and setup guide are on their way. You\'ll receive them within 60 seconds.';
+  }
+  document.getElementById('successOverlay').classList.add('show');
+  window.scrollTo(0,0);
+}
+
+/* ── Particle System ──────────────────────────────────── */
+const canvas=document.getElementById('particle-canvas');
+const ctx=canvas.getContext('2d');
+let W,H;
+const mouse={x:-9999,y:-9999};
+function resize(){W=canvas.width=innerWidth;H=canvas.height=innerHeight;}
+resize();window.addEventListener('resize',resize);
+document.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY;});
+
+const COLS=['#00e5ff','#00b8d4','#ffc107','#00e5a0','#ffffff'];
+
+class Particle{
+  constructor(){this.reset(true);}
+  reset(init){
+    this.x=init?Math.random()*W:Math.random()<0.5?0:W;
+    this.y=Math.random()*H;
+    this.vx=(Math.random()-.5)*.28;this.vy=(Math.random()-.5)*.28;
+    this.r=Math.random()*1.2+.25;this.a=Math.random()*.4+.08;
+    this.col=COLS[Math.floor(Math.random()*COLS.length)];
+    this.life=Math.random()*260+120;this.age=0;
+  }
+  update(){
+    this.age++;if(this.age>this.life){this.reset(false);return;}
+    const dx=this.x-mouse.x,dy=this.y-mouse.y,d=Math.hypot(dx,dy);
+    if(d<100){const f=(100-d)/100*.28;this.vx+=dx/d*f;this.vy+=dy/d*f;}
+    this.vx*=.979;this.vy*=.979;
+    this.x+=this.vx;this.y+=this.vy;
+    if(this.x<0)this.x=W;if(this.x>W)this.x=0;
+    if(this.y<0)this.y=H;if(this.y>H)this.y=0;
+  }
+  draw(){
+    const f=this.age<30?this.age/30:this.age>this.life-30?(this.life-this.age)/30:1;
+    ctx.globalAlpha=this.a*f;ctx.fillStyle=this.col;
+    ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);ctx.fill();
+  }
+}
+
+const particles=Array.from({length:180},()=>new Particle());
+
+function drawLines(){
+  ctx.lineWidth=.28;
+  for(let i=0;i<particles.length;i++){
+    for(let j=i+1;j<particles.length;j++){
+      const d=Math.hypot(particles[i].x-particles[j].x,particles[i].y-particles[j].y);
+      if(d<80){
+        ctx.globalAlpha=(1-d/80)*.08;
+        ctx.strokeStyle='#00e5ff';
+        ctx.beginPath();
+        ctx.moveTo(particles[i].x,particles[i].y);
+        ctx.lineTo(particles[j].x,particles[j].y);
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+function animate(){
+  ctx.clearRect(0,0,W,H);
+  drawLines();
+  particles.forEach(p=>{p.update();p.draw();});
+  ctx.globalAlpha=1;
+  requestAnimationFrame(animate);
+}
+animate();
+
+/* ── Theme Toggle ──────────────────────────────────── */
+function toggleTheme(){
+  const isLight=document.body.classList.toggle('light-mode');
+  document.getElementById('toggleIcon').textContent=isLight?'🌙':'☀️';
+  document.getElementById('toggleLabel').textContent=isLight?'DARK':'LIGHT';
+  try{localStorage.setItem('snipertrader-theme',isLight?'light':'dark');}catch(e){}
+}
+(function(){
+  try{
+    const saved=localStorage.getItem('snipertrader-theme');
+    if(saved==='light'){
+      document.body.classList.add('light-mode');
+      document.getElementById('toggleIcon').textContent='🌙';
+      document.getElementById('toggleLabel').textContent='DARK';
+    }
+  }catch(e){}
+})();
+</script>
+</body>
+</html>

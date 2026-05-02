@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Post-Market Review Loop — TraderEdge Psych OS | SniperTrader</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Space+Mono:wght@400;700&family=Syne:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --obs:#020408;--obs2:#06090F;--obs3:#0A1018;--obs4:#111820;--obs5:#1A2230;
+  --cyan:#00D4FF;--cyan-dim:rgba(0,212,255,0.09);
+  --gold:#F0C040;--gold2:#C9A84C;--gold-dim:rgba(240,192,64,0.09);
+  --red:#FF4455;--red-dim:rgba(255,68,85,0.09);
+  --green:#00FF88;--green-dim:rgba(0,255,136,0.07);
+  --violet:#9B6DFF;--violet-dim:rgba(155,109,255,0.09);
+  --text:#FFFFFF;--text2:#E8F0F8;--text3:#A8C4D8;--text4:#6A8898;
+  --border:rgba(155,109,255,0.14);--border2:rgba(155,109,255,0.28);
+  --border-cyan:rgba(0,212,255,0.14);
+  --gold-border:rgba(240,192,64,0.18);
+}
+body.light-mode{
+  --obs:#F0F4F8;--obs2:#E4EAF0;--obs3:#D8E0EA;--obs4:#C8D4E0;--obs5:#B8C8D8;
+  --text:#0A0E14;--text2:#1A2A3A;--text3:#2A4A5A;--text4:#4A6A7A;
+  --border:rgba(155,109,255,0.22);--border2:rgba(155,109,255,0.4);
+  --cyan-dim:rgba(0,180,220,0.12);--gold-dim:rgba(200,150,20,0.12);
+  --red-dim:rgba(200,40,60,0.1);--green-dim:rgba(0,180,100,0.1);
+  --violet-dim:rgba(120,80,220,0.12);
+}
+body.light-mode nav{background:rgba(240,244,248,.95);}
+body.light-mode .ai-resp{background:rgba(200,210,225,.7);color:var(--text);}
+body.light-mode .r-textarea,body.light-mode .r-input,body.light-mode .ai-inp{background:var(--obs3);color:var(--text);}
+body.light-mode .r-textarea::placeholder,body.light-mode .r-input::placeholder,body.light-mode .ai-inp::placeholder{color:var(--text3);}
+body.light-mode .nav-links a:hover{color:var(--text)!important;}
+body.light-mode .hero-h1{color:var(--text);}
+body.light-mode .hero-sub strong{color:var(--text);}
+body.light-mode .sec-h2{color:var(--text);}
+body.light-mode .r-card-title{color:var(--text);}
+body.light-mode .r-check-text{color:var(--text);}
+body.light-mode .side-card-title{color:var(--text);}
+body.light-mode .ai-name{color:var(--text);}
+body.light-mode .ht-market{color:var(--text);}
+body.light-mode .cc-label{color:var(--text);}
+body.light-mode .dl-h2{color:var(--text);}
+body.light-mode .sbt-name{color:var(--text);}
+body.light-mode .jg-field-text{color:var(--text2);}
+body.light-mode .jg-lesson-text{color:var(--text2);}
+body.light-mode .history-table td{color:var(--text2);}
+body.light-mode .cc-desc{color:var(--text2);}
+body.light-mode .dl-sub{color:var(--text2);}
+body.light-mode .sec-lead{color:var(--text2);}
+body.light-mode .hero-sub{color:var(--text2);}
+body.light-mode .loop-node-desc{color:var(--text3);}
+body.light-mode .journal-glass{background:linear-gradient(145deg,#e0e8f4,#d0dcea);}
+body.light-mode .jg-topbar{background:rgba(210,220,235,.97);}
+body.light-mode .jg-field{background:rgba(220,228,240,.9);}
+body.light-mode .r-card{background:var(--obs3);}
+body.light-mode .side-card{background:var(--obs3);}
+body.light-mode .ai-panel{background:var(--obs3);}
+body.light-mode .compound-card{background:var(--obs3);}
+body.light-mode .history-table th{color:var(--text3);}
+body.light-mode .score-label{color:var(--text3);}
+body.light-mode .sbt-label{color:var(--text3);}
+body.light-mode .sbt-sub{color:var(--text3);}
+body.light-mode strong{color:var(--text);}
+body.light-mode .store-btn.ios{background:rgba(0,0,0,.06);border-color:rgba(0,0,0,.15);}
+body.light-mode .store-btn.ios:hover{background:rgba(0,0,0,.1);}
+body.light-mode .ft-col-links a{color:var(--text3);}
+body.light-mode .ft-col-links a:hover{color:var(--text);}
+body.light-mode .ft-copy{color:var(--text4);}
+body.light-mode .mod-tab:hover{color:var(--text2);}
+body.light-mode .side-stat-name{color:var(--text3);}
+
+/* THEME TOGGLE */
+.theme-toggle{background:var(--obs4);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-family:'Orbitron',monospace;font-size:8px;font-weight:700;letter-spacing:1.5px;color:var(--text3);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px;}
+.theme-toggle:hover{border-color:var(--violet);color:var(--violet);}
+.toggle-icon{font-size:13px;transition:transform .3s;}
+body.light-mode .toggle-icon{transform:rotate(180deg);}
+html{scroll-behavior:smooth;}
+body{background:var(--obs);color:var(--text);font-family:'Syne',sans-serif;overflow-x:hidden;cursor:none;}
+
+/* CURSOR */
+#cur{position:fixed;width:10px;height:10px;background:var(--violet);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);mix-blend-mode:screen;transition:background .15s,transform .1s;}
+#cur-ring{position:fixed;width:34px;height:34px;border:1px solid rgba(155,109,255,.5);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:width .2s,height .2s;}
+body:has(button:hover,a:hover,textarea:hover,input:hover) #cur{background:var(--gold);transform:translate(-50%,-50%) scale(1.5);}
+body:has(button:hover,a:hover) #cur-ring{width:52px;height:52px;border-color:rgba(240,192,64,.35);}
+
+#pc{position:fixed;inset:0;pointer-events:none;z-index:0;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");pointer-events:none;z-index:1;opacity:.45;}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;padding:16px 48px;display:flex;align-items:center;justify-content:space-between;background:rgba(2,4,8,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);}
+.nav-logo{font-family:'Orbitron',monospace;font-size:13px;font-weight:900;letter-spacing:3px;color:var(--cyan);text-decoration:none;}
+.nav-logo span{color:var(--gold);}
+.nav-links{display:flex;gap:28px;align-items:center;}
+.nav-links a{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--text3);text-decoration:none;text-transform:uppercase;transition:color .2s;}
+.nav-links a:hover{color:#fff;}
+.nav-pill{background:var(--violet-dim);border:1px solid var(--border2);color:var(--violet)!important;padding:7px 16px;border-radius:20px;font-family:'Orbitron',monospace!important;font-size:9px!important;font-weight:700;letter-spacing:1.5px;}
+.nav-cta{background:var(--gold);color:#000!important;padding:9px 20px;border-radius:4px;font-family:'Orbitron',monospace!important;font-size:9px!important;font-weight:700;transition:background .2s,transform .2s!important;}
+.nav-cta:hover{background:#FFD040!important;transform:translateY(-1px)!important;}
+
+/* MODULE STRIP */
+.mod-strip{background:var(--obs2);border-bottom:1px solid var(--border);padding:0 48px;position:relative;z-index:2;margin-top:57px;}
+.mod-strip-inner{max-width:1400px;margin:0 auto;display:flex;overflow-x:auto;scrollbar-width:none;}
+.mod-strip-inner::-webkit-scrollbar{display:none;}
+.mod-tab{padding:14px 20px;font-family:'Orbitron',monospace;font-size:8.5px;font-weight:600;letter-spacing:1.5px;color:var(--text4);text-decoration:none;white-space:nowrap;border-bottom:2px solid transparent;transition:all .2s;text-transform:uppercase;}
+.mod-tab:hover{color:var(--text2);}
+.mod-tab.active{color:var(--violet);border-bottom-color:var(--violet);}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;align-items:center;position:relative;overflow:hidden;z-index:2;padding-top:40px;}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(155,109,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(155,109,255,.02) 1px,transparent 1px);background-size:58px 58px;mask-image:radial-gradient(ellipse 90% 70% at 50% 50%,black 20%,transparent 100%);}
+.orb1{position:absolute;width:650px;height:650px;background:radial-gradient(circle,rgba(155,109,255,.07) 0%,transparent 65%);top:-180px;left:-100px;pointer-events:none;animation:od1 15s ease-in-out infinite;}
+.orb2{position:absolute;width:500px;height:500px;background:radial-gradient(circle,rgba(0,212,255,.05) 0%,transparent 65%);bottom:-80px;right:-80px;pointer-events:none;animation:od2 20s ease-in-out infinite;}
+.orb3{position:absolute;width:300px;height:300px;background:radial-gradient(circle,rgba(240,192,64,.04) 0%,transparent 65%);top:50%;right:20%;pointer-events:none;animation:od3 12s ease-in-out infinite;}
+@keyframes od1{0%,100%{transform:translate(0,0);}50%{transform:translate(30px,-20px);}}
+@keyframes od2{0%,100%{transform:translate(0,0);}50%{transform:translate(-20px,30px);}}
+@keyframes od3{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(15px,-15px) scale(1.1);}}
+
+.hero-inner{position:relative;z-index:3;max-width:1400px;width:100%;margin:0 auto;padding:60px 48px;display:grid;grid-template-columns:1fr 1.1fr;gap:72px;align-items:center;}
+
+.hero-bc{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2.5px;color:var(--text3);text-transform:uppercase;margin-bottom:18px;}
+.hero-bc em{color:var(--violet);font-style:normal;}
+.hero-modnum{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:var(--text4);letter-spacing:3px;margin-bottom:12px;}
+.hero-h1{font-family:'Orbitron',monospace;font-size:clamp(28px,4vw,54px);font-weight:900;line-height:1.0;color:#fff;margin-bottom:10px;}
+.hero-h1 .acc{display:block;background:linear-gradient(90deg,var(--violet),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-sub{font-size:15px;color:var(--text2);line-height:1.8;margin-bottom:28px;font-weight:300;max-width:500px;}
+.hero-sub strong{color:#fff;font-weight:600;}
+.htags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:30px;}
+.htag{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;padding:5px 12px;border-radius:3px;text-transform:uppercase;}
+.htag.v{background:var(--violet-dim);border:1px solid rgba(155,109,255,.3);color:var(--violet);}
+.htag.c{background:var(--cyan-dim);border:1px solid rgba(0,212,255,.25);color:var(--cyan);}
+.htag.g{background:var(--gold-dim);border:1px solid rgba(240,192,64,.25);color:var(--gold);}
+.htag.gr{background:var(--green-dim);border:1px solid rgba(0,255,136,.2);color:var(--green);}
+.loop-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(155,109,255,.06);border:1px solid rgba(155,109,255,.22);border-radius:40px;padding:9px 18px;font-family:'Space Mono',monospace;font-size:10px;color:var(--violet);letter-spacing:1.5px;}
+.loop-dot{width:7px;height:7px;border-radius:50%;background:var(--violet);animation:pls 2s infinite;}
+@keyframes pls{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.8);}}
+
+/* HERO JOURNAL CARD */
+.hero-journal{perspective:1400px;}
+.journal-3d{transform-style:preserve-3d;transition:transform .08s ease-out;}
+.journal-glass{background:linear-gradient(145deg,#0D1020,#070A18);border:1px solid rgba(155,109,255,.22);border-radius:20px;overflow:hidden;box-shadow:0 0 80px rgba(155,109,255,.07),0 40px 80px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.04);}
+.jg-topbar{background:rgba(7,10,24,.97);padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.jg-logo{font-family:'Orbitron',monospace;font-size:9px;font-weight:700;color:var(--violet);letter-spacing:2px;}
+.jg-session{font-family:'Space Mono',monospace;font-size:8px;color:var(--text3);}
+.jg-body{padding:16px;}
+.jg-section-label{font-family:'Orbitron',monospace;font-size:7.5px;color:var(--violet);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:8px;opacity:.7;}
+.jg-gap-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.jg-field{background:rgba(17,20,40,.9);border:1px solid var(--border);border-radius:7px;padding:9px 10px;}
+.jg-field-label{font-family:'Orbitron',monospace;font-size:7px;color:var(--violet);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;opacity:.6;}
+.jg-field-text{font-size:9px;color:var(--text2);line-height:1.5;}
+.jg-field.wide{grid-column:1/-1;border-color:rgba(155,109,255,.25);}
+.jg-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;}
+.jg-tag{font-family:'Space Mono',monospace;font-size:7.5px;padding:3px 8px;border-radius:3px;}
+.jg-tag.v{background:rgba(155,109,255,.12);border:1px solid rgba(155,109,255,.25);color:var(--violet);}
+.jg-tag.r{background:var(--red-dim);border:1px solid rgba(255,68,85,.2);color:#FF8899;}
+.jg-tag.g{background:var(--gold-dim);border:1px solid rgba(240,192,64,.2);color:var(--gold);}
+.jg-score-row{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:10px;}
+.jg-score{background:rgba(17,20,40,.9);border:1px solid var(--border);border-radius:5px;padding:6px 4px;text-align:center;}
+.jg-score.active{background:rgba(0,255,136,.06);border-color:rgba(0,255,136,.3);}
+.jg-score-num{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;display:block;margin-bottom:1px;}
+.jg-score-label{font-size:6.5px;color:var(--text3);font-family:'Space Mono',monospace;}
+.jg-lesson{background:rgba(155,109,255,.05);border:1px solid rgba(155,109,255,.2);border-radius:7px;padding:9px 10px;}
+.jg-lesson-label{font-family:'Orbitron',monospace;font-size:7px;color:var(--violet);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;}
+.jg-lesson-text{font-size:9px;color:var(--text2);line-height:1.5;font-style:italic;}
+
+/* SCROLL HINT */
+.scroll-hint{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;animation:flt 3s ease-in-out infinite;z-index:3;}
+@keyframes flt{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(-7px);}}
+.scroll-line{width:1px;height:28px;background:linear-gradient(to bottom,var(--violet),transparent);}
+.scroll-txt{font-family:'Space Mono',monospace;font-size:8px;color:var(--text4);letter-spacing:2px;text-transform:uppercase;}
+
+/* SECTION */
+.sec{position:relative;z-index:2;}
+.sec-inner{max-width:1400px;margin:0 auto;padding:80px 48px;}
+.eyebrow{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--violet);text-transform:uppercase;margin-bottom:12px;}
+.sec-line{width:48px;height:2px;background:linear-gradient(90deg,var(--violet),transparent);margin-bottom:16px;}
+.sec-h2{font-family:'Orbitron',monospace;font-size:clamp(24px,3.5vw,44px);font-weight:900;color:#fff;line-height:1.1;margin-bottom:12px;}
+.sec-h2 span{background:linear-gradient(90deg,var(--violet),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.sec-lead{font-size:15px;color:var(--text2);line-height:1.8;max-width:580px;}
+
+/* LOOP DIAGRAM */
+.loop-section{background:linear-gradient(180deg,var(--obs) 0%,var(--obs2) 50%,var(--obs) 100%);}
+.loop-diagram{display:flex;align-items:center;justify-content:center;gap:0;margin-top:60px;flex-wrap:nowrap;overflow-x:auto;}
+.loop-step{display:flex;flex-direction:column;align-items:center;flex-shrink:0;}
+.loop-node{width:120px;height:120px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;transition:transform .3s;}
+.loop-node:hover{transform:scale(1.08);}
+.loop-node::before{content:'';position:absolute;inset:-3px;border-radius:50%;border:1px solid transparent;animation:nodePulse 3s ease-in-out infinite;}
+.loop-node.v{background:radial-gradient(circle at 40% 40%,rgba(155,109,255,.25),rgba(155,109,255,.05));border:1px solid rgba(155,109,255,.35);}
+.loop-node.v::before{border-color:rgba(155,109,255,.2);animation-delay:0s;}
+.loop-node.c{background:radial-gradient(circle at 40% 40%,rgba(0,212,255,.2),rgba(0,212,255,.04));border:1px solid rgba(0,212,255,.3);}
+.loop-node.c::before{border-color:rgba(0,212,255,.15);animation-delay:.75s;}
+.loop-node.g{background:radial-gradient(circle at 40% 40%,rgba(240,192,64,.2),rgba(240,192,64,.04));border:1px solid rgba(240,192,64,.3);}
+.loop-node.g::before{border-color:rgba(240,192,64,.15);animation-delay:1.5s;}
+.loop-node.gr{background:radial-gradient(circle at 40% 40%,rgba(0,255,136,.18),rgba(0,255,136,.04));border:1px solid rgba(0,255,136,.28);}
+.loop-node.gr::before{border-color:rgba(0,255,136,.12);animation-delay:2.25s;}
+@keyframes nodePulse{0%,100%{transform:scale(1);opacity:.5;}50%{transform:scale(1.08);opacity:1;}}
+.loop-node-icon{font-size:28px;margin-bottom:6px;}
+.loop-node-label{font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;}
+.loop-connector{width:60px;height:2px;background:linear-gradient(90deg,rgba(155,109,255,.3),rgba(155,109,255,.1));position:relative;flex-shrink:0;margin-top:-50px;}
+.loop-connector::after{content:'▶';position:absolute;right:-6px;top:50%;transform:translateY(-50%);font-size:10px;color:rgba(155,109,255,.5);}
+.loop-node-desc{font-size:11px;color:var(--text3);text-align:center;margin-top:14px;max-width:110px;line-height:1.5;font-family:'Space Mono',monospace;}
+
+/* THE REVIEW FORM */
+.review-section{}
+.review-layout{display:grid;grid-template-columns:1fr 360px;gap:32px;margin-top:48px;align-items:start;}
+.review-main{display:flex;flex-direction:column;gap:20px;}
+.review-sidebar{display:flex;flex-direction:column;gap:16px;position:sticky;top:90px;}
+
+.r-card{background:var(--obs3);border:1px solid var(--border);border-radius:16px;padding:28px;position:relative;overflow:hidden;transition:border-color .3s;}
+.r-card:hover{border-color:var(--border2);}
+.r-card::after{content:'';position:absolute;inset:0;background:conic-gradient(transparent 0deg,rgba(155,109,255,.015) 90deg,transparent 180deg);animation:cspin 12s linear infinite;pointer-events:none;}
+@keyframes cspin{to{transform:rotate(360deg);}}
+.r-card-header{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
+.r-card-num{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:var(--text4);letter-spacing:2px;}
+.r-card-title{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:#fff;}
+.r-card-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.r-card-icon.v{background:var(--violet-dim);border:1px solid rgba(155,109,255,.2);}
+.r-card-icon.c{background:var(--cyan-dim);border:1px solid rgba(0,212,255,.2);}
+.r-card-icon.g{background:var(--gold-dim);border:1px solid rgba(240,192,64,.2);}
+.r-card-icon.gr{background:var(--green-dim);border:1px solid rgba(0,255,136,.15);}
+.r-label{font-family:'Orbitron',monospace;font-size:8.5px;color:var(--violet);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;display:block;}
+.r-textarea{width:100%;background:var(--obs4);border:1px solid var(--border);border-radius:8px;padding:14px 16px;color:#fff;font-family:'Syne',sans-serif;font-size:13px;line-height:1.7;resize:vertical;outline:none;min-height:90px;transition:border-color .2s;margin-bottom:14px;}
+.r-textarea:focus{border-color:var(--violet);}
+.r-textarea::placeholder{color:var(--text4);}
+.r-input{width:100%;background:var(--obs4);border:1px solid var(--border);border-radius:8px;padding:11px 14px;color:#fff;font-family:'Syne',sans-serif;font-size:13px;outline:none;transition:border-color .2s;margin-bottom:10px;}
+.r-input:focus{border-color:var(--violet);}
+.r-input::placeholder{color:var(--text4);}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+
+/* MARKET SELECTOR */
+.market-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.market-pill{background:var(--obs4);border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:1.5px;color:var(--text3);cursor:none;transition:all .2s;text-transform:uppercase;}
+.market-pill:hover{border-color:var(--violet);color:var(--violet);}
+.market-pill.active{background:var(--violet-dim);border-color:var(--violet);color:var(--violet);}
+
+/* SCORE SELECTOR */
+.score-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px;}
+.score-btn{background:var(--obs4);border:1px solid var(--border);border-radius:8px;padding:12px 6px;text-align:center;cursor:none;transition:all .2s;}
+.score-btn:hover{border-color:var(--violet);}
+.score-btn.active{border-color:var(--green);background:var(--green-dim);}
+.score-num{font-family:'Orbitron',monospace;font-size:18px;font-weight:700;display:block;margin-bottom:3px;}
+.score-label{font-size:8px;color:var(--text3);font-family:'Space Mono',monospace;text-transform:uppercase;}
+
+/* TRIGGER TAGS */
+.trigger-pool{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.trigger-tag{font-family:'Space Mono',monospace;font-size:9px;padding:4px 12px;border-radius:3px;cursor:none;transition:all .2s;}
+.trigger-tag.v{background:var(--violet-dim);border:1px solid rgba(155,109,255,.3);color:var(--violet);}
+.trigger-tag.r{background:var(--red-dim);border:1px solid rgba(255,68,85,.25);color:#FF8899;}
+.trigger-tag.g{background:var(--gold-dim);border:1px solid rgba(240,192,64,.25);color:var(--gold);}
+.trigger-tag.c{background:var(--cyan-dim);border:1px solid rgba(0,212,255,.2);color:var(--cyan);}
+.trigger-tag.inactive{background:var(--obs4);border:1px solid var(--border);color:var(--text4);}
+.trigger-tag.inactive:hover{border-color:var(--violet);color:var(--violet);}
+.trigger-tag-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+
+/* CHECKLIST ITEMS */
+.r-checklist{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+.r-check{display:flex;align-items:flex-start;gap:10px;background:var(--obs4);border:1px solid var(--border);border-radius:8px;padding:11px 13px;cursor:none;transition:all .2s;}
+.r-check:hover{border-color:var(--violet);}
+.r-check.yes{border-color:rgba(0,255,136,.3);background:var(--green-dim);}
+.r-check.no{border-color:rgba(255,68,85,.3);background:var(--red-dim);}
+.r-check-box{width:18px;height:18px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;border:1.5px solid var(--text4);transition:all .2s;margin-top:1px;}
+.r-check.yes .r-check-box{background:var(--green);border-color:var(--green);color:#000;}
+.r-check.no .r-check-box{background:var(--red);border-color:var(--red);color:#fff;}
+.r-check-text{font-size:12px;color:#fff;flex:1;}
+.r-check-sub{font-size:10px;color:var(--text3);font-family:'Space Mono',monospace;margin-top:2px;}
+.r-check-actions{display:flex;gap:5px;margin-left:auto;flex-shrink:0;}
+.r-yes-btn,.r-no-btn{font-family:'Orbitron',monospace;font-size:7px;font-weight:700;padding:3px 8px;border-radius:3px;cursor:none;letter-spacing:1px;}
+.r-yes-btn{background:var(--green-dim);border:1px solid rgba(0,255,136,.2);color:var(--green);}
+.r-no-btn{background:var(--red-dim);border:1px solid rgba(255,68,85,.2);color:#FF8899;}
+
+/* SUBMIT BTN */
+.submit-btn{width:100%;background:linear-gradient(90deg,var(--violet),var(--cyan));color:#000;border:none;border-radius:10px;padding:16px 24px;font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:2px;cursor:none;transition:all .3s;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 0 30px rgba(155,109,255,.2);}
+.submit-btn:hover{transform:translateY(-2px);box-shadow:0 0 50px rgba(155,109,255,.3);}
+
+/* SIDEBAR CARDS */
+.side-card{background:var(--obs3);border:1px solid var(--border);border-radius:14px;padding:20px;}
+.side-card-title{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:#fff;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.side-stat-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.side-stat-row:last-child{border-bottom:none;}
+.side-stat-name{font-size:11px;color:var(--text3);font-family:'Space Mono',monospace;}
+.side-stat-val{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;}
+.streak-row{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;}
+.streak-day{width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:8px;font-family:'Space Mono',monospace;cursor:default;}
+.streak-day.win{background:var(--green-dim);border:1px solid rgba(0,255,136,.25);color:var(--green);}
+.streak-day.loss{background:var(--red-dim);border:1px solid rgba(255,68,85,.2);color:#FF8899;}
+.streak-day.flat{background:var(--obs4);border:1px solid var(--border);color:var(--text4);}
+.streak-day.today{border-color:var(--violet);box-shadow:0 0 8px rgba(155,109,255,.3);}
+
+/* AI FEEDBACK */
+.ai-section{background:var(--obs2);}
+.ai-panel{background:var(--obs3);border:1px solid rgba(155,109,255,.22);border-radius:20px;padding:32px;}
+.ai-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;gap:16px;flex-wrap:wrap;}
+.ai-title-row{display:flex;align-items:center;gap:14px;}
+.ai-icon-box{width:44px;height:44px;background:var(--violet-dim);border:1px solid rgba(155,109,255,.25);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;}
+.ai-name{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:#fff;}
+.ai-sub{font-size:11px;color:var(--text3);font-family:'Space Mono',monospace;margin-top:2px;}
+.ai-presets{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.preset-pill{background:var(--obs4);border:1px solid var(--border);border-radius:20px;padding:7px 16px;font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);cursor:none;transition:all .2s;}
+.preset-pill:hover{border-color:var(--violet);color:var(--violet);}
+.ai-input-row{display:flex;gap:10px;margin-bottom:14px;}
+.ai-inp{flex:1;background:var(--obs4);border:1px solid var(--border);border-radius:8px;padding:12px 16px;color:#fff;font-family:'Syne',sans-serif;font-size:13px;outline:none;transition:border-color .2s;}
+.ai-inp:focus{border-color:var(--violet);}
+.ai-inp::placeholder{color:var(--text4);}
+.ask-btn{display:flex;align-items:center;gap:8px;background:linear-gradient(90deg,var(--violet),var(--cyan));color:#000;border:none;border-radius:8px;padding:12px 22px;font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:1.5px;cursor:none;transition:all .2s;white-space:nowrap;text-transform:uppercase;}
+.ask-btn:hover{opacity:.9;transform:translateY(-1px);}
+.ai-resp{background:rgba(17,20,40,.8);border:1px solid var(--border);border-radius:12px;padding:22px;min-height:90px;font-size:13px;color:#fff;line-height:1.8;}
+.ai-resp-tag{font-family:'Orbitron',monospace;font-size:8px;color:var(--violet);letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:10px;opacity:.7;}
+.spin{display:inline-block;animation:spn .7s linear infinite;}
+@keyframes spn{to{transform:rotate(360deg);}}
+
+/* HISTORY TABLE */
+.history-section{}
+.history-table{width:100%;border-collapse:collapse;margin-top:24px;}
+.history-table th{font-family:'Orbitron',monospace;font-size:8px;letter-spacing:2px;color:var(--text4);text-transform:uppercase;text-align:left;padding:12px 16px;border-bottom:1px solid var(--border);}
+.history-table td{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px;color:var(--text2);}
+.history-table tr:hover td{background:rgba(155,109,255,.02);}
+.ht-date{font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);}
+.ht-market{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:#fff;}
+.ht-pnl{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;}
+.ht-pnl.pos{color:var(--green);}
+.ht-pnl.neg{color:var(--red);}
+.ht-score{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:10px;font-weight:700;}
+.ht-score.high{background:var(--green-dim);border:1px solid rgba(0,255,136,.3);color:var(--green);}
+.ht-score.mid{background:var(--gold-dim);border:1px solid rgba(240,192,64,.3);color:var(--gold);}
+.ht-score.low{background:var(--red-dim);border:1px solid rgba(255,68,85,.25);color:#FF8899;}
+.ht-gap{font-size:11px;color:var(--text2);max-width:200px;}
+.ht-lesson{font-size:11px;color:var(--violet);font-style:italic;max-width:220px;}
+.view-all-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--obs4);border:1px solid var(--border);border-radius:8px;padding:13px;font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:1.5px;color:var(--text3);cursor:none;transition:all .2s;text-transform:uppercase;margin-top:16px;}
+.view-all-btn:hover{border-color:var(--violet);color:var(--violet);}
+
+/* EDGE COMPOUND VISUAL */
+.compound-section{}
+.compound-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-top:48px;}
+.compound-card{background:var(--obs3);border:1px solid var(--border);border-radius:16px;padding:28px;text-align:center;position:relative;overflow:hidden;transition:all .3s;}
+.compound-card:hover{border-color:var(--border2);transform:translateY(-3px);}
+.compound-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--violet),transparent);opacity:0;transition:opacity .3s;}
+.compound-card:hover::before{opacity:1;}
+.cc-icon{font-size:36px;display:block;margin-bottom:16px;}
+.cc-num{font-family:'Orbitron',monospace;font-size:42px;font-weight:900;background:linear-gradient(135deg,var(--violet),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px;}
+.cc-label{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:#fff;margin-bottom:8px;}
+.cc-desc{font-size:12px;color:var(--text2);line-height:1.6;}
+
+/* DOWNLOAD */
+.dl-section{position:relative;overflow:hidden;z-index:2;}
+.dl-bg{position:absolute;inset:0;background:radial-gradient(ellipse 100% 80% at 50% 50%,rgba(155,109,255,.06) 0%,transparent 70%);}
+.dl-inner{max-width:900px;margin:0 auto;padding:110px 48px;text-align:center;position:relative;z-index:2;}
+.dl-h2{font-family:'Orbitron',monospace;font-size:clamp(28px,4vw,52px);font-weight:900;line-height:1.1;color:#fff;margin-bottom:14px;}
+.dl-h2 span{background:linear-gradient(90deg,var(--violet),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.dl-sub{font-size:15px;color:var(--text2);line-height:1.7;max-width:480px;margin:0 auto 44px;}
+.store-btns{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-bottom:24px;}
+.store-btn{display:flex;align-items:center;gap:14px;padding:18px 30px;border-radius:12px;text-decoration:none;transition:all .3s;min-width:210px;}
+.store-btn.ios{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.18);}
+.store-btn.ios:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.35);transform:translateY(-3px);}
+.store-btn.android{background:var(--violet-dim);border:1px solid var(--border2);}
+.store-btn.android:hover{background:rgba(155,109,255,.15);border-color:var(--violet);transform:translateY(-3px);}
+.sbi{font-size:32px;line-height:1;}
+.sbt{text-align:left;}
+.sbt-label{display:block;font-size:10px;color:var(--text3);font-family:'Space Mono',monospace;letter-spacing:1px;text-transform:uppercase;}
+.sbt-name{display:block;font-family:'Orbitron',monospace;font-size:15px;font-weight:700;color:#fff;margin-top:2px;}
+.sbt-sub{display:block;font-size:10px;color:var(--text3);margin-top:2px;font-family:'Space Mono',monospace;}
+.dl-disc{font-family:'Space Mono',monospace;font-size:9px;color:var(--text4);letter-spacing:1px;}
+
+footer{background:var(--obs2);border-top:1px solid var(--border);padding:60px 48px 36px;}
+.ft-inner{max-width:1400px;margin:0 auto;}
+.ft-top{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:40px;margin-bottom:48px;}
+.ft-col-title{font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:2.5px;color:var(--violet);text-transform:uppercase;margin-bottom:16px;}
+.ft-col-links{display:flex;flex-direction:column;gap:9px;}
+.ft-col-links a{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--text3);text-decoration:none;text-transform:uppercase;transition:color .2s;}
+.ft-col-links a:hover{color:var(--text);}
+.ft-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;border-top:1px solid var(--border);padding-top:24px;}
+.ft-logo{font-family:'Orbitron',monospace;font-size:12px;font-weight:900;letter-spacing:2px;color:var(--cyan);}
+.ft-logo span{color:var(--gold);}
+.ft-copy{font-family:'Space Mono',monospace;font-size:9px;color:var(--text4);}
+@media(max-width:900px){.ft-top{grid-template-columns:1fr 1fr;}}
+
+/* FADE UP */
+.fu{opacity:0;transform:translateY(26px);transition:opacity .65s ease,transform .65s ease;}
+.fu.v{opacity:1;transform:translateY(0);}
+.d1{transition-delay:.1s;}.d2{transition-delay:.2s;}.d3{transition-delay:.3s;}.d4{transition-delay:.4s;}.d5{transition-delay:.5s;}
+
+@media(max-width:1100px){
+  .hero-inner{grid-template-columns:1fr;}
+  .review-layout{grid-template-columns:1fr;}
+  .review-sidebar{position:static;}
+  .compound-grid{grid-template-columns:1fr 1fr;}
+  .loop-diagram{gap:0;overflow-x:auto;padding-bottom:16px;}
+}
+@media(max-width:700px){
+  .compound-grid{grid-template-columns:1fr;}
+  .sec-inner,.hero-inner{padding:60px 20px;}
+  nav{padding:14px 20px;}
+  .mod-strip{padding:0 20px;}
+  .two-col,.three-col{grid-template-columns:1fr;}
+  .score-grid{grid-template-columns:repeat(5,1fr);}
+  .history-table{display:block;overflow-x:auto;}
+}
+</style>
+</head>
+<body>
+
+<div id="cur"></div>
+<div id="cur-ring"></div>
+<canvas id="pc"></canvas>
+
+<!-- NAV -->
+<nav>
+  <a href="traderedge_landing.html" class="nav-logo">SNIPER<span>TRADER</span></a>
+  <div class="nav-links">
+    <a href="#">Baseline</a>
+    <a href="#">Guardrails</a>
+    <a href="#" class="nav-pill">⬡ Review Loop</a>
+    <a href="traderedge_sentiment.html">Ai Sentiment</a>
+    <a href="#">Ai Chart Analyzer</a>
+    <a href="traderedge_propfirms.html">Prop Firm Center</a>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode"><span class="toggle-icon">☾</span> <span id="themeLabel">DARK</span></button>
+    <a href="#download" class="nav-cta">Get The App</a>
+  </div>
+</nav>
+
+<!-- MODULE STRIP -->
+<div class="mod-strip">
+  <div class="mod-strip-inner">
+    <a class="mod-tab" href="#">Baseline</a>
+    <a class="mod-tab" href="#">Guardrails</a>
+    <a class="mod-tab active" href="#">Review Loop</a>
+    <a class="mod-tab" href="traderedge_sentiment.html">Ai Sentiment</a>
+    <a class="mod-tab" href="#">Ai Chart Analyzer</a>
+    <a class="mod-tab" href="traderedge_propfirms.html">Prop Firm Center</a>
+  </div>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="orb1"></div>
+  <div class="orb2"></div>
+  <div class="orb3"></div>
+  <div class="hero-inner">
+    <div class="hero-text">
+      <div class="hero-bc">TraderEdge Psych OS <em>/ Module 03</em></div>
+      <div class="hero-modnum">MODULE 03 · PERFORMANCE INTELLIGENCE</div>
+      <h1 class="hero-h1">Post-Market<br>Review<br><span class="acc">Loop</span></h1>
+      <p class="hero-sub">The gap between <strong>what you planned and what you executed</strong> is where your edge lives — or dies. Close the loop every session. Your edge compounds every time you do.</p>
+      <div class="htags">
+        <span class="htag v">Plan vs Execution</span>
+        <span class="htag c">Trigger Logs</span>
+        <span class="htag g">Performance Score</span>
+        <span class="htag gr">Edge Compounding</span>
+      </div>
+      <div class="loop-badge">
+        <span class="loop-dot"></span>
+        Steenbarger Performance Loop · Adaptive AI Feedback
+      </div>
+    </div>
+
+    <!-- JOURNAL PREVIEW CARD -->
+    <div class="hero-journal">
+      <div class="journal-3d" id="jnl3d">
+        <div class="journal-glass">
+          <div class="jg-topbar">
+            <div class="jg-logo">⬡ POST-MARKET REVIEW LOOP</div>
+            <div class="jg-session">Apr 08 · NQ · Session 24</div>
+          </div>
+          <div class="jg-body">
+            <div class="jg-section-label">Execution Gap Analysis</div>
+            <div class="jg-gap-row">
+              <div class="jg-field">
+                <div class="jg-field-label">My Plan</div>
+                <div class="jg-field-text">Enter long at 4H OB after SSL sweep. Risk 0.5% on NQ. Target 3R at previous BSL.</div>
+              </div>
+              <div class="jg-field">
+                <div class="jg-field-label">What I Did</div>
+                <div class="jg-field-text">Entered early on market order before wick fully closed. Moved stop wider after initial drawdown.</div>
+              </div>
+              <div class="jg-field wide">
+                <div class="jg-field-label">The Gap — Why plan ≠ execution</div>
+                <div class="jg-field-text">FOMO triggered when price approached OB. Anxious about missing the move. Violated two rules simultaneously.</div>
+              </div>
+            </div>
+            <div class="jg-section-label">Emotional Triggers</div>
+            <div class="jg-tags">
+              <span class="jg-tag r">FOMO</span>
+              <span class="jg-tag r">EARLY ENTRY</span>
+              <span class="jg-tag g">SL MOVED</span>
+              <span class="jg-tag v">IMPATIENCE</span>
+            </div>
+            <div class="jg-section-label">Execution Score</div>
+            <div class="jg-score-row">
+              <div class="jg-score"><span class="jg-score-num" style="color:var(--red);">1</span><span class="jg-score-label">BLOWN</span></div>
+              <div class="jg-score"><span class="jg-score-num" style="color:var(--red);">3</span><span class="jg-score-label">POOR</span></div>
+              <div class="jg-score active"><span class="jg-score-num" style="color:var(--green);">5</span><span class="jg-score-label">OK</span></div>
+              <div class="jg-score"><span class="jg-score-num" style="color:var(--cyan);">7</span><span class="jg-score-label">SOLID</span></div>
+              <div class="jg-score"><span class="jg-score-num" style="color:var(--green);">9</span><span class="jg-score-label">ELITE</span></div>
+            </div>
+            <div class="jg-lesson">
+              <div class="jg-lesson-label">⬡ Key Lesson</div>
+              <div class="jg-lesson-text">"Next session: wait for the candle to FULLY close before entering. No market orders at institutional levels — ever."</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-hint"><div class="scroll-line"></div><div class="scroll-txt">Close the loop</div></div>
+</section>
+
+<!-- LOOP DIAGRAM -->
+<section class="sec loop-section">
+  <div class="sec-inner">
+    <div class="fu" style="text-align:center;">
+      <div class="eyebrow">The Framework</div>
+      <div class="sec-line" style="margin:0 auto 16px;"></div>
+      <h2 class="sec-h2">Brett Steenbarger's <span>Performance Loop</span></h2>
+      <p class="sec-lead" style="margin:0 auto;text-align:center;">Every session feeds the next. Consistent review transforms individual trades into cumulative psychological mastery.</p>
+    </div>
+    <div class="loop-diagram fu d1">
+      <div class="loop-step">
+        <div class="loop-node v">
+          <span class="loop-node-icon">📋</span>
+          <span class="loop-node-label" style="color:var(--violet);">PLAN</span>
+        </div>
+        <div class="loop-node-desc">Define setup, entry criteria, emotional baseline before the open</div>
+      </div>
+      <div class="loop-connector"></div>
+      <div class="loop-step">
+        <div class="loop-node c">
+          <span class="loop-node-icon">⚡</span>
+          <span class="loop-node-label" style="color:var(--cyan);">EXECUTE</span>
+        </div>
+        <div class="loop-node-desc">Trade within guardrails. Log emotional state during the session</div>
+      </div>
+      <div class="loop-connector" style="background:linear-gradient(90deg,rgba(0,212,255,.3),rgba(240,192,64,.2));">
+        <span style="position:absolute;right:-6px;top:50%;transform:translateY(-50%);font-size:10px;color:rgba(0,212,255,.5);">▶</span>
+      </div>
+      <div class="loop-step">
+        <div class="loop-node g">
+          <span class="loop-node-icon">🔍</span>
+          <span class="loop-node-label" style="color:var(--gold);">REVIEW</span>
+        </div>
+        <div class="loop-node-desc">Analyze the gap between plan and execution. Score discipline</div>
+      </div>
+      <div class="loop-connector" style="background:linear-gradient(90deg,rgba(240,192,64,.3),rgba(0,255,136,.2));">
+        <span style="position:absolute;right:-6px;top:50%;transform:translateY(-50%);font-size:10px;color:rgba(240,192,64,.5);">▶</span>
+      </div>
+      <div class="loop-step">
+        <div class="loop-node gr">
+          <span class="loop-node-icon">📈</span>
+          <span class="loop-node-label" style="color:var(--green);">COMPOUND</span>
+        </div>
+        <div class="loop-node-desc">Each review builds pattern awareness that sharpens the next plan</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- THE REVIEW FORM -->
+<section class="sec review-section" id="review">
+  <div class="sec-inner">
+    <div class="fu">
+      <div class="eyebrow">Post-Market Review</div>
+      <div class="sec-line"></div>
+      <h2 class="sec-h2">Today's session. <span>Full review.</span></h2>
+      <p class="sec-lead">Complete this review every session — on desktop for the full experience, on mobile with the app. The AI will coach you through your patterns and give you a concrete lesson for tomorrow.</p>
+    </div>
+
+    <div class="review-layout">
+      <!-- MAIN REVIEW FORM -->
+      <div class="review-main">
+
+        <!-- STEP 1: SESSION CONTEXT -->
+        <div class="r-card fu d1">
+          <div class="r-card-header">
+            <div class="r-card-icon v">📅</div>
+            <div>
+              <div class="r-card-num">STEP 01</div>
+              <div class="r-card-title">Session Context</div>
+            </div>
+          </div>
+          <div class="two-col">
+            <div>
+              <span class="r-label">Date</span>
+              <input class="r-input" type="date" id="reviewDate">
+            </div>
+            <div>
+              <span class="r-label">Session P&L</span>
+              <input class="r-input" type="text" id="sessionPnl" placeholder="e.g. +$420 or -$180">
+            </div>
+          </div>
+          <span class="r-label">Market Traded</span>
+          <div class="market-pills" id="marketPills">
+            <div class="market-pill active" onclick="selectMarket(this)">NQ</div>
+            <div class="market-pill" onclick="selectMarket(this)">ES</div>
+            <div class="market-pill" onclick="selectMarket(this)">GC</div>
+            <div class="market-pill" onclick="selectMarket(this)">CL</div>
+            <div class="market-pill" onclick="selectMarket(this)">BTC</div>
+            <div class="market-pill" onclick="selectMarket(this)">FOREX</div>
+            <div class="market-pill" onclick="selectMarket(this)">OTHER</div>
+          </div>
+          <div class="three-col">
+            <div>
+              <span class="r-label">Trades Taken</span>
+              <input class="r-input" type="number" id="tradeCount" placeholder="e.g. 3">
+            </div>
+            <div>
+              <span class="r-label">Winners</span>
+              <input class="r-input" type="number" id="winners" placeholder="e.g. 2">
+            </div>
+            <div>
+              <span class="r-label">Losers</span>
+              <input class="r-input" type="number" id="losers" placeholder="e.g. 1">
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2: GAP ANALYSIS -->
+        <div class="r-card fu d1">
+          <div class="r-card-header">
+            <div class="r-card-icon c">🎯</div>
+            <div>
+              <div class="r-card-num">STEP 02</div>
+              <div class="r-card-title">Execution Gap Analysis</div>
+            </div>
+          </div>
+          <span class="r-label">What was my pre-session plan?</span>
+          <textarea class="r-textarea" id="myPlan" placeholder="Describe your setup criteria, entry plan, target levels, and risk parameters you committed to before the open..."></textarea>
+          <span class="r-label">What did I actually do?</span>
+          <textarea class="r-textarea" id="whatDid" placeholder="Be brutally honest. Describe exactly what happened — where you deviated, what you did differently, any impulsive decisions..."></textarea>
+          <span class="r-label">Why did plan ≠ execution?</span>
+          <textarea class="r-textarea" id="theGap" placeholder="Identify the psychological root cause. FOMO? Impatience? Revenge? Overconfidence? Fear of missing? Name it precisely..."></textarea>
+        </div>
+
+        <!-- STEP 3: RULE AUDIT -->
+        <div class="r-card fu d2">
+          <div class="r-card-header">
+            <div class="r-card-icon g">☑</div>
+            <div>
+              <div class="r-card-num">STEP 03</div>
+              <div class="r-card-title">Rule Audit</div>
+            </div>
+          </div>
+          <p style="font-size:12px;color:var(--text3);margin-bottom:16px;font-family:'Space Mono',monospace;">Mark each rule honestly. This is the most important data you'll collect.</p>
+          <div class="r-checklist" id="ruleChecklist">
+            <div class="r-check" data-rule="entry" onclick="cycleCheck(this)">
+              <div class="r-check-box"></div>
+              <div style="flex:1;">
+                <div class="r-check-text">Followed entry rules without deviation</div>
+                <div class="r-check-sub">OB / FVG / OTE confirmed before entry</div>
+              </div>
+            </div>
+            <div class="r-check" data-rule="stoploss" onclick="cycleCheck(this)">
+              <div class="r-check-box"></div>
+              <div style="flex:1;">
+                <div class="r-check-text">Stop-loss was set and never moved wider</div>
+                <div class="r-check-sub">No stop-loss adjustments after entry confirmation</div>
+              </div>
+            </div>
+            <div class="r-check" data-rule="size" onclick="cycleCheck(this)">
+              <div class="r-check-box"></div>
+              <div style="flex:1;">
+                <div class="r-check-text">Position sizing matched my risk plan</div>
+                <div class="r-check-sub">No oversizing or adding to losing positions</div>
+              </div>
+            </div>
+            <div class="r-check" data-rule="drawdown" onclick="cycleCheck(this)">
+              <div class="r-check-box"></div>
+              <div style="flex:1;">
+                <div class="r-check-text">Stopped after hitting daily drawdown limit</div>
+                <div class="r-check-sub">Respected the hard stop — no revenge trading</div>
+              </div>
+            </div>
+            <div class="r-check" data-rule="liquidity" onclick="cycleCheck(this)">
+              <div class="r-check-box"></div>
+              <div style="flex:1;">
+                <div class="r-check-text">Waited for liquidity confirmation (BSL/SSL swept)</div>
+                <div class="r-check-sub">Never entered before institutional liquidity grab</div>
+              </div>
+            </div>
+            <div class="r-check" data-rule="close" onclick="cycleCheck(this)">
+              <div class="r-check-box"></div>
+              <div style="flex:1;">
+                <div class="r-check-text">Waited for candle close — no developing wicks</div>
+                <div class="r-check-sub">Only traded confirmed, fully-formed candles</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 4: TRIGGER LOG -->
+        <div class="r-card fu d2">
+          <div class="r-card-header">
+            <div class="r-card-icon v">⚡</div>
+            <div>
+              <div class="r-card-num">STEP 04</div>
+              <div class="r-card-title">Emotional Trigger Log</div>
+            </div>
+          </div>
+          <p style="font-size:12px;color:var(--text3);margin-bottom:14px;font-family:'Space Mono',monospace;">Select every trigger that was active during this session. Tap to add to your log.</p>
+          <div class="trigger-pool">
+            <span class="trigger-tag inactive" onclick="toggleTrigger(this)">FOMO</span>
+            <span class="trigger-tag inactive" onclick="toggleTrigger(this)">REVENGE</span>
+            <span class="trigger-tag inactive" onclick="toggleTrigger(this)">IMPATIENCE</span>
+            <span class="trigger-tag inactive" onclick="toggleTrigger(this)">OVERCONFIDENCE</span>
+            <span class="trigger-tag inactive" onclick="toggleTrigger(this)">FEAR OF LOSS</span>
+            <span class="trigger-tag inactive" onclick="toggleTrigger(this)">EARLY ENTRY</span>
+            <span class="trigger-tag inactive" onclick="toggleTrigger(this)">LATE EXIT</span>
+            <span class="trigger-tag inactive" onclick="toggleTrigger(this)">MOVED STOP</span>
+            <span class="trigger-tag inactive" onclick="toggleTrigger(this)">SIZED UP</span>
+            <span class="trigger-tag inactive" onclick="toggleTrigger(this)">CHASED ENTRY</span>
+            <span class="trigger-tag inactive" onclick="toggleTrigger(this)">BROKE PLAN</span>
+            <span class="trigger-tag inactive" onclick="toggleTrigger(this)">UNDISCIPLINED</span>
+            <span class="trigger-tag inactive" onclick="toggleTrigger(this)">TRADED NEWS</span>
+            <span class="trigger-tag inactive" onclick="toggleTrigger(this)">MARKET ORDER</span>
+            <span class="trigger-tag inactive" onclick="toggleTrigger(this)">HESITATION</span>
+          </div>
+          <span class="r-label">Active Triggers This Session</span>
+          <div class="trigger-tag-row" id="activeTriggers">
+            <span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--text4);">Tap triggers above to log them here...</span>
+          </div>
+          <span class="r-label" style="margin-top:8px;">Add custom trigger</span>
+          <div style="display:flex;gap:8px;">
+            <input class="r-input" type="text" id="customTrigger" placeholder="Custom trigger name..." style="margin:0;flex:1;">
+            <button style="background:var(--violet-dim);border:1px solid rgba(155,109,255,.3);border-radius:8px;padding:11px 18px;font-family:'Orbitron',monospace;font-size:9px;font-weight:700;color:var(--violet);cursor:none;letter-spacing:1px;" onclick="addCustomTrigger()">ADD</button>
+          </div>
+        </div>
+
+        <!-- STEP 5: DISCIPLINE SCORE -->
+        <div class="r-card fu d3">
+          <div class="r-card-header">
+            <div class="r-card-icon gr">🏆</div>
+            <div>
+              <div class="r-card-num">STEP 05</div>
+              <div class="r-card-title">Execution Discipline Score</div>
+            </div>
+          </div>
+          <p style="font-size:12px;color:var(--text3);margin-bottom:16px;font-family:'Space Mono',monospace;">Rate your discipline — <strong style="color:#fff;">not your P&L.</strong> A losing trade with perfect execution is a 9. A winning trade from revenge is a 1.</p>
+          <div class="score-grid" id="scoreGrid">
+            <div class="score-btn" onclick="setScore(this,1)"><span class="score-num" style="color:var(--red);">1</span><span class="score-label">BLOWN</span></div>
+            <div class="score-btn" onclick="setScore(this,3)"><span class="score-num" style="color:var(--red);">3</span><span class="score-label">POOR</span></div>
+            <div class="score-btn" onclick="setScore(this,5)"><span class="score-num" style="color:var(--gold);">5</span><span class="score-label">OK</span></div>
+            <div class="score-btn" onclick="setScore(this,7)"><span class="score-num" style="color:var(--cyan);">7</span><span class="score-label">SOLID</span></div>
+            <div class="score-btn" onclick="setScore(this,9)"><span class="score-num" style="color:var(--green);">9</span><span class="score-label">ELITE</span></div>
+          </div>
+          <span class="r-label">One key lesson for next session (one sentence)</span>
+          <textarea class="r-textarea" id="keyLesson" placeholder="Tomorrow I will... (be specific and actionable. Not 'be more disciplined' — write the exact behavior change you commit to.)" style="min-height:70px;"></textarea>
+        </div>
+
+        <!-- SUBMIT -->
+        <div class="fu d3">
+          <button class="submit-btn" onclick="submitReview()">
+            <span id="submitIcon">▶</span> CLOSE THE LOOP & COMPOUND EDGE
+          </button>
+        </div>
+
+      </div><!-- /review-main -->
+
+      <!-- SIDEBAR -->
+      <div class="review-sidebar fu d2">
+
+        <div class="side-card">
+          <div class="side-card-title">⬡ Session Stats</div>
+          <div class="side-stat-row"><span class="side-stat-name">Avg Score (30d)</span><span class="side-stat-val" style="color:var(--violet);">6.4</span></div>
+          <div class="side-stat-row"><span class="side-stat-name">Win Rate (30d)</span><span class="side-stat-val" style="color:var(--green);">67%</span></div>
+          <div class="side-stat-row"><span class="side-stat-name">Reviews Logged</span><span class="side-stat-val" style="color:var(--cyan);">23</span></div>
+          <div class="side-stat-row"><span class="side-stat-name">Rule Follow Rate</span><span class="side-stat-val" style="color:var(--gold);">78%</span></div>
+          <div class="side-stat-row"><span class="side-stat-name">Top Trigger</span><span class="side-stat-val" style="color:var(--red);font-size:10px;">FOMO</span></div>
+        </div>
+
+        <div class="side-card">
+          <div class="side-card-title">⬡ 14-Day Streak</div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:10px;font-family:'Space Mono',monospace;">Green = reviewed · Red = skipped</div>
+          <div class="streak-row" id="streakRow"></div>
+        </div>
+
+        <div class="side-card" style="border-color:rgba(155,109,255,.22);">
+          <div class="side-card-title">⬡ Top Triggers (30d)</div>
+          <div id="triggerChart"></div>
+        </div>
+
+        <div class="side-card" style="background:rgba(155,109,255,.04);border-color:rgba(155,109,255,.2);">
+          <div class="side-card-title" style="color:var(--violet);">💡 Today's Reminder</div>
+          <p style="font-size:12px;color:var(--text2);line-height:1.7;font-style:italic;">"Your last lesson: Wait for the full candle close before entering. Review your entries from Apr 05 where this exact rule saved a trade."</p>
+          <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);margin-top:10px;">— Carried from Apr 07 review</div>
+        </div>
+
+      </div><!-- /sidebar -->
+    </div>
+
+  </div>
+</section>
+
+<!-- AI COACH -->
+<section class="sec ai-section" id="ai">
+  <div class="sec-inner">
+    <div class="fu">
+      <div class="eyebrow">AI Performance Coach</div>
+      <div class="sec-line"></div>
+      <h2 class="sec-h2">Your AI coach reads <span>every session.</span></h2>
+      <p class="sec-lead">After each review, the AI Performance Coach identifies your pattern, names the psychological root cause, and gives you a concrete behavioral adjustment for tomorrow.</p>
+    </div>
+    <div class="ai-panel fu d1">
+      <div class="ai-head">
+        <div class="ai-title-row">
+          <div class="ai-icon-box">🧠</div>
+          <div>
+            <div class="ai-name">AI Performance Coach</div>
+            <div class="ai-sub">Trained on Steenbarger's methodology · Reads your session data</div>
+          </div>
+        </div>
+        <button class="ask-btn" onclick="analyzeSession()"><span id="analyzeIcon">⬡</span> ANALYZE MY SESSION</button>
+      </div>
+      <div class="ai-presets">
+        <button class="preset-pill" onclick="setQ(this,'What psychological pattern do I keep repeating and how do I break it?')">Recurring Pattern</button>
+        <button class="preset-pill" onclick="setQ(this,'I keep entering early before liquidity is swept. What is causing this and give me a concrete fix.')">Early Entry Fix</button>
+        <button class="preset-pill" onclick="setQ(this,'My FOMO keeps overriding my plan. What Steenbarger technique can help with this?')">FOMO Technique</button>
+        <button class="preset-pill" onclick="setQ(this,'How do I build a pre-session ritual that prevents emotional trading?')">Pre-Session Ritual</button>
+        <button class="preset-pill" onclick="setQ(this,'My discipline score dropped from 7 to 3 this week. What happened and what should I do?')">Score Dropped</button>
+        <button class="preset-pill" onclick="setQ(this,'Give me a micro-routine to do when I feel the urge to revenge trade.')">Revenge Trading Fix</button>
+      </div>
+      <div class="ai-input-row">
+        <input class="ai-inp" id="aiQ" type="text" placeholder="Ask the AI coach about your patterns, psychology, or trading behavior..." />
+        <button class="ask-btn" onclick="askCoach()"><span>▶</span></button>
+      </div>
+      <div class="ai-resp" id="aiResp">
+        <span style="color:var(--text4);font-family:'Space Mono',monospace;font-size:11px;display:block;text-align:center;padding:16px;">Complete today's review and click Analyze, or ask the coach any question about trading psychology and performance.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- REVIEW HISTORY -->
+<section class="sec history-section" id="history">
+  <div class="sec-inner">
+    <div class="fu">
+      <div class="eyebrow">Review History</div>
+      <div class="sec-line"></div>
+      <h2 class="sec-h2">Your pattern <span>over time.</span></h2>
+      <p class="sec-lead">Every logged review becomes a data point. The system tracks your discipline score, rule follow rate, and trigger patterns to surface the one or two things costing you the most.</p>
+    </div>
+    <div class="fu d1">
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Market</th>
+            <th>Session P&L</th>
+            <th>Score</th>
+            <th>Primary Gap</th>
+            <th>Key Lesson</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="ht-date">Apr 08</td>
+            <td class="ht-market">NQ</td>
+            <td class="ht-pnl pos">+$520</td>
+            <td><span class="ht-score high">9</span></td>
+            <td class="ht-gap">None — full plan execution</td>
+            <td class="ht-lesson">Perfect session. Patience paid off.</td>
+          </tr>
+          <tr>
+            <td class="ht-date">Apr 07</td>
+            <td class="ht-market">ES</td>
+            <td class="ht-pnl neg">-$310</td>
+            <td><span class="ht-score mid">5</span></td>
+            <td class="ht-gap">Entered before candle closed on 2nd trade</td>
+            <td class="ht-lesson">Wait for the close — no exceptions</td>
+          </tr>
+          <tr>
+            <td class="ht-date">Apr 04</td>
+            <td class="ht-market">NQ</td>
+            <td class="ht-pnl pos">+$1,240</td>
+            <td><span class="ht-score high">8</span></td>
+            <td class="ht-gap">Slight position size overrun (+0.2%)</td>
+            <td class="ht-lesson">Trust the 0.5% risk and be patient</td>
+          </tr>
+          <tr>
+            <td class="ht-date">Apr 03</td>
+            <td class="ht-market">GC</td>
+            <td class="ht-pnl neg">-$680</td>
+            <td><span class="ht-score low">2</span></td>
+            <td class="ht-gap">3 revenge trades after initial -$200 loss</td>
+            <td class="ht-lesson">Stop after 2 losses. No exceptions.</td>
+          </tr>
+          <tr>
+            <td class="ht-date">Apr 02</td>
+            <td class="ht-market">NQ</td>
+            <td class="ht-pnl pos">+$780</td>
+            <td><span class="ht-score high">7</span></td>
+            <td class="ht-gap">Exited 1R early due to fear</td>
+            <td class="ht-lesson">Let winners run to target. Trust the plan.</td>
+          </tr>
+          <tr>
+            <td class="ht-date">Apr 01</td>
+            <td class="ht-market">CL</td>
+            <td class="ht-pnl neg">-$145</td>
+            <td><span class="ht-score mid">6</span></td>
+            <td class="ht-gap">FOMO entry 4 ticks ahead of OB</td>
+            <td class="ht-lesson">Zone entries only — not premature</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="view-all-btn">⬡ VIEW FULL REVIEW HISTORY (23 sessions)</div>
+    </div>
+  </div>
+</section>
+
+<!-- EDGE COMPOUNDS -->
+<section class="sec compound-section">
+  <div class="sec-inner">
+    <div class="fu" style="text-align:center;">
+      <div class="eyebrow" style="text-align:center;">Why It Works</div>
+      <div class="sec-line" style="margin:0 auto 16px;"></div>
+      <h2 class="sec-h2" style="text-align:center;">The review loop <span>compounds.</span></h2>
+    </div>
+    <div class="compound-grid">
+      <div class="compound-card fu d1">
+        <span class="cc-icon">🧠</span>
+        <div class="cc-num">23×</div>
+        <div class="cc-label">Reviewed Sessions</div>
+        <div class="cc-desc">Each review is a data point in your psychological equity curve. 23 reviews means 23 compounding loops of insight.</div>
+      </div>
+      <div class="compound-card fu d2">
+        <span class="cc-icon">📉</span>
+        <div class="cc-num">-64%</div>
+        <div class="cc-label">Rule Violations (30d)</div>
+        <div class="cc-desc">Traders who complete daily reviews reduce their rule violations by an average of 64% within 30 days.</div>
+      </div>
+      <div class="compound-card fu d3">
+        <span class="cc-icon">⚡</span>
+        <div class="cc-num">3.2×</div>
+        <div class="cc-label">Pattern Recognition Speed</div>
+        <div class="cc-desc">After 20 reviews, traders identify their emotional triggers 3× faster mid-session — before they execute the bad trade.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DOWNLOAD -->
+<section id="download" class="dl-section">
+  <div class="dl-bg"></div>
+  <div class="dl-inner">
+    <div class="fu">
+      <div class="eyebrow" style="display:flex;justify-content:center;">Available Now</div>
+      <h2 class="dl-h2">Close the loop<br>on <span>every session.</span></h2>
+      <p class="dl-sub">The desktop experience goes deep. The mobile app keeps the loop alive when you're away from the desk — log triggers, record lessons, and review anywhere.</p>
+    </div>
+    <div class="store-btns fu d1">
+      <a href="#" class="store-btn ios">
+        <div class="sbi">🍎</div>
+        <div class="sbt"><span class="sbt-label">Download on the</span><span class="sbt-name">App Store</span><span class="sbt-sub">iOS 16.0 or later · Free</span></div>
+      </a>
+      <a href="#" class="store-btn android">
+        <div class="sbi">▶</div>
+        <div class="sbt"><span class="sbt-label">Get it on</span><span class="sbt-name">Google Play</span><span class="sbt-sub">Android 9.0 or later · Free</span></div>
+      </a>
+    </div>
+    <div class="dl-disc fu d2">SNIPERTRADER · TRADEREDGE PSYCH OS · STEENBARGER PERFORMANCE LOOP · NOT FINANCIAL ADVICE</div>
+  </div>
+</section>
+
+<footer>
+  <div class="ft-inner">
+    <div class="ft-top">
+      <div>
+        <div class="ft-col-title">Tools</div>
+        <div class="ft-col-links">
+          <a href="#">USME Algo</a>
+          <a href="#">Pre-Market Baseline</a>
+          <a href="#">Habit Guardrails</a>
+          <a href="#">Post-Market Review Loop</a>
+          <a href="traderedge_sentiment.html">Ai Sentiment Engine</a>
+          <a href="#">Ai Chart Analyzer</a>
+          <a href="traderedge_propfirms.html">Prop Firm Command Center</a>
+        </div>
+      </div>
+      <div>
+        <div class="ft-col-title">Ecosystem</div>
+        <div class="ft-col-links">
+          <a href="#">Ai Smart Glasses</a>
+          <a href="#">Prop Master Plan</a>
+          <a href="#">30-Day Funded Challenge</a>
+          <a href="#">ICT Discipline Engine</a>
+        </div>
+      </div>
+      <div>
+        <div class="ft-col-title">Resources</div>
+        <div class="ft-col-links">
+          <a href="#">Affiliate Program</a>
+          <a href="#">Trader's Couch</a>
+          <a href="#">Ebook</a>
+          <a href="#">Prop Firm Master Plan</a>
+          <a href="#">30 Days Funded Challenge</a>
+          <a href="#">Shop</a>
+        </div>
+      </div>
+      <div>
+        <div class="ft-col-title">Company</div>
+        <div class="ft-col-links">
+          <a href="#">About</a>
+          <a href="#">Docs</a>
+          <a href="#">Terms</a>
+          <a href="#">Disclaimer</a>
+          <a href="#">Privacy</a>
+        </div>
+      </div>
+    </div>
+    <div class="ft-bottom">
+      <div class="ft-logo">SNIPER<span>TRADER</span>.AI</div>
+      <div class="ft-copy">© 2026 SniperTrader.ai Intelligence Platform — All rights reserved.</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+// CURSOR
+const cur=document.getElementById('cur'),ring=document.getElementById('cur-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px';});
+(function ar(){rx+=(mx-rx)*.1;ry+=(my-ry)*.1;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(ar);})();
+
+// PARTICLES — violet/cyan mix
+const pc=document.getElementById('pc'),c2=pc.getContext('2d');
+pc.width=window.innerWidth;pc.height=window.innerHeight;
+window.addEventListener('resize',()=>{pc.width=window.innerWidth;pc.height=window.innerHeight;});
+const pts=[];
+const colors=['155,109,255','0,212,255','240,192,64'];
+for(let i=0;i<90;i++) pts.push({
+  x:Math.random()*pc.width,y:Math.random()*pc.height,
+  vx:(Math.random()-.5)*.22,vy:(Math.random()-.5)*.22,
+  r:Math.random()*1.4+.3,a:Math.random()*.28+.07,
+  col:colors[Math.floor(Math.random()*colors.length)]
+});
+let pmx=pc.width/2,pmy=pc.height/2;
+document.addEventListener('mousemove',e=>{pmx=e.clientX;pmy=e.clientY;});
+(function dp(){
+  c2.clearRect(0,0,pc.width,pc.height);
+  for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){
+    const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);
+    if(d<125){c2.beginPath();c2.moveTo(pts[i].x,pts[i].y);c2.lineTo(pts[j].x,pts[j].y);c2.strokeStyle=`rgba(155,109,255,${(1-d/125)*.05})`;c2.lineWidth=.5;c2.stroke();}
+  }
+  pts.forEach(p=>{
+    const dx=pmx-p.x,dy=pmy-p.y,d=Math.sqrt(dx*dx+dy*dy);
+    if(d<200){p.vx+=dx/d*.007;p.vy+=dy/d*.007;}
+    p.vx*=.99;p.vy*=.99;p.x+=p.vx;p.y+=p.vy;
+    if(p.x<0)p.x=pc.width;if(p.x>pc.width)p.x=0;
+    if(p.y<0)p.y=pc.height;if(p.y>pc.height)p.y=0;
+    c2.beginPath();c2.arc(p.x,p.y,p.r,0,Math.PI*2);c2.fillStyle=`rgba(${p.col},${p.a})`;c2.fill();
+  });
+  requestAnimationFrame(dp);
+})();
+
+// 3D TILT
+const jnl=document.getElementById('jnl3d');
+document.addEventListener('mousemove',e=>{
+  const cx=window.innerWidth/2,cy=window.innerHeight/2;
+  const dx=(e.clientX-cx)/cx,dy=(e.clientY-cy)/cy;
+  jnl.style.transform=`rotateY(${dx*10}deg) rotateX(${-dy*7}deg)`;
+});
+
+// SCROLL OBSERVER
+const so=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('v');}),{threshold:.06});
+document.querySelectorAll('.fu').forEach(el=>so.observe(el));
+
+// SET DATE
+document.getElementById('reviewDate').valueAsDate=new Date();
+
+// MARKET SELECT
+function selectMarket(el){
+  document.querySelectorAll('.market-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// RULE CHECKLIST CYCLE
+function cycleCheck(el){
+  if(!el.classList.contains('yes')&&!el.classList.contains('no')){
+    el.classList.add('yes');
+    el.querySelector('.r-check-box').textContent='✓';
+  } else if(el.classList.contains('yes')){
+    el.classList.remove('yes');el.classList.add('no');
+    el.querySelector('.r-check-box').textContent='✕';
+  } else {
+    el.classList.remove('no');
+    el.querySelector('.r-check-box').textContent='';
+  }
+}
+
+// TRIGGER TOGGLE
+const activeTriggerSet=new Set();
+function toggleTrigger(el){
+  const name=el.textContent;
+  if(activeTriggerSet.has(name)){
+    activeTriggerSet.delete(name);
+    el.className='trigger-tag inactive';
+  } else {
+    activeTriggerSet.add(name);
+    const riskTriggers=['FOMO','REVENGE','MOVED STOP','SIZED UP','BROKE PLAN','UNDISCIPLINED'];
+    const goldTriggers=['IMPATIENCE','OVERCONFIDENCE','CHASED ENTRY','LATE EXIT'];
+    if(riskTriggers.includes(name)) el.className='trigger-tag r';
+    else if(goldTriggers.includes(name)) el.className='trigger-tag g';
+    else el.className='trigger-tag v';
+  }
+  updateActiveTriggers();
+}
+function updateActiveTriggers(){
+  const div=document.getElementById('activeTriggers');
+  if(activeTriggerSet.size===0){
+    div.innerHTML='<span style="font-family:\'Space Mono\',monospace;font-size:10px;color:var(--text4);">No triggers selected yet...</span>';
+    return;
+  }
+  div.innerHTML='';
+  activeTriggerSet.forEach(name=>{
+    const riskTriggers=['FOMO','REVENGE','MOVED STOP','SIZED UP','BROKE PLAN','UNDISCIPLINED'];
+    const goldTriggers=['IMPATIENCE','OVERCONFIDENCE','CHASED ENTRY','LATE EXIT'];
+    let cls='v';
+    if(riskTriggers.includes(name)) cls='r';
+    else if(goldTriggers.includes(name)) cls='g';
+    const t=document.createElement('span');
+    t.className=`trigger-tag ${cls}`;t.textContent=name;div.appendChild(t);
+  });
+}
+function addCustomTrigger(){
+  const inp=document.getElementById('customTrigger');
+  const val=inp.value.trim().toUpperCase();
+  if(!val) return;
+  activeTriggerSet.add(val);
+  updateActiveTriggers();
+  inp.value='';
+}
+
+// SCORE
+let selectedScore=null;
+function setScore(el,score){
+  document.querySelectorAll('.score-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  selectedScore=score;
+}
+
+// BUILD STREAK
+(function(){
+  const row=document.getElementById('streakRow');
+  const states=['win','win','loss','win','flat','win','win','loss','win','win','win','loss','win','today'];
+  states.forEach((s,i)=>{
+    const d=document.createElement('div');
+    d.className='streak-day '+(s==='today'?'win today':s);
+    d.textContent=14-i;
+    row.appendChild(d);
+  });
+})();
+
+// TRIGGER CHART BARS
+(function(){
+  const data=[{name:'FOMO',count:14,cls:'r'},{name:'IMPATIENCE',count:9,cls:'g'},{name:'EARLY ENTRY',count:8,cls:'r'},{name:'MOVED STOP',count:5,cls:'r'},{name:'OVERCONF.',count:4,cls:'g'}];
+  const div=document.getElementById('triggerChart');
+  data.forEach(d=>{
+    const row=document.createElement('div');
+    row.style.cssText='margin-bottom:8px;';
+    row.innerHTML=`<div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="font-family:Space Mono,monospace;font-size:9px;color:var(--text3);">${d.name}</span><span style="font-family:Orbitron,monospace;font-size:9px;font-weight:700;color:var(--${d.cls==='r'?'red':d.cls==='g'?'gold':'violet'});">${d.count}</span></div><div style="height:3px;background:rgba(255,255,255,.04);border-radius:2px;overflow:hidden;"><div style="width:${Math.round(d.count/14*100)}%;height:100%;background:var(--${d.cls==='r'?'red':d.cls==='g'?'gold':'violet'});border-radius:2px;"></div></div>`;
+    div.appendChild(row);
+  });
+})();
+
+// SUBMIT REVIEW
+async function submitReview(){
+  const btn=document.querySelector('.submit-btn');
+  const icon=document.getElementById('submitIcon');
+  const plan=document.getElementById('myPlan').value.trim();
+  const did=document.getElementById('whatDid').value.trim();
+  const gap=document.getElementById('theGap').value.trim();
+  const lesson=document.getElementById('keyLesson').value.trim();
+  if(!plan&&!did&&!gap){
+    alert('Please fill in the gap analysis before submitting.');return;
+  }
+  btn.style.opacity='.6';icon.innerHTML='<span class="spin">◌</span>';
+  // Auto-fill AI analysis
+  document.getElementById('aiQ').value=`I just completed my post-market review. My plan was: "${plan.substring(0,100)}". What I actually did: "${did.substring(0,100)}". The gap was: "${gap.substring(0,100)}". Score: ${selectedScore||'not set'}. Active triggers: ${[...activeTriggerSet].join(', ')||'none'}. Key lesson: "${lesson}". Analyze my session patterns and give me a specific coaching insight.`;
+  await askCoach();
+  btn.style.opacity='1';icon.innerHTML='▶ SAVED ✓';
+  btn.style.background='linear-gradient(90deg,rgba(0,255,136,.8),rgba(0,212,255,.8))';
+  setTimeout(()=>{icon.innerHTML='▶ CLOSE THE LOOP & COMPOUND EDGE';btn.style.background='';},3000);
+  document.getElementById('ai').scrollIntoView({behavior:'smooth'});
+}
+
+// ASK COACH
+async function askCoach(){
+  const q=document.getElementById('aiQ').value.trim();
+  if(!q) return;
+  const icon=document.getElementById('analyzeIcon');
+  const resp=document.getElementById('aiResp');
+  if(icon) icon.innerHTML='<span class="spin">◌</span>';
+  resp.innerHTML='<span style="color:var(--text3);font-family:\'Space Mono\',monospace;font-size:11px;display:block;text-align:center;padding:16px;"><span class="spin">◌</span> AI Performance Coach is analyzing your session...</span>';
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',max_tokens:700,
+        system:`You are a trading performance coach deeply versed in Brett Steenbarger's methodology from "The Psychology of Trading." You understand ICT/SMC methodology and prop firm trading pressures. Your job is to identify the exact psychological pattern at play, name it precisely, and give the trader 2-3 concrete behavioral action steps — not vague advice. Be direct, warm, and specific. Reference Steenbarger's frameworks where relevant (performance loops, self-monitoring, emotional data). Keep responses under 220 words. Format with clear structure.`,
+        messages:[{role:'user',content:q}]
+      })
+    });
+    const d=await res.json();
+    const text=d.content.filter(x=>x.type==='text').map(x=>x.text).join('');
+    resp.innerHTML=`<span class="ai-resp-tag">⬡ AI PERFORMANCE COACH</span>${text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}`;
+  }catch(e){
+    resp.innerHTML=`<span style="color:var(--red);font-family:'Space Mono',monospace;font-size:11px;display:block;text-align:center;padding:16px;">Connection failed. Check API key in app settings.</span>`;
+  }
+  if(icon) icon.innerHTML='⬡';
+}
+
+function analyzeSession(){
+  const plan=document.getElementById('myPlan').value||'Not filled in yet';
+  const did=document.getElementById('whatDid').value||'Not filled in yet';
+  const gap=document.getElementById('theGap').value||'Not filled in yet';
+  document.getElementById('aiQ').value=`Analyze my session. Plan: "${plan.substring(0,120)}". Execution: "${did.substring(0,120)}". Gap: "${gap.substring(0,120)}". Score: ${selectedScore||'not scored yet'}. Triggers: ${[...activeTriggerSet].join(', ')||'none logged'}. What pattern do you see?`;
+  askCoach();
+}
+
+function setQ(btn,text){
+  document.getElementById('aiQ').value=text;
+  document.querySelectorAll('.preset-pill').forEach(b=>{b.style.borderColor='';b.style.color='';});
+  btn.style.borderColor='var(--violet)';btn.style.color='var(--violet)';
+}
+
+document.getElementById('aiQ').addEventListener('keydown',e=>{if(e.key==='Enter')askCoach();});
+
+// THEME TOGGLE
+function toggleTheme(){
+  document.body.classList.toggle('light-mode');
+  const isLight=document.body.classList.contains('light-mode');
+  document.getElementById('themeLabel').textContent=isLight?'LIGHT':'DARK';
+  document.querySelector('.toggle-icon').textContent=isLight?'☀':'☾';
+  localStorage.setItem('snipertrader-theme',isLight?'light':'dark');
+}
+(function(){
+  const saved=localStorage.getItem('snipertrader-theme');
+  if(saved==='light'){
+    document.body.classList.add('light-mode');
+    document.getElementById('themeLabel').textContent='LIGHT';
+    document.querySelector('.toggle-icon').textContent='☀';
+  }
+})();
+
+// SMOOTH SCROLL
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{
+    const t=document.querySelector(a.getAttribute('href'));
+    if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'});}
+  });
+});
+</script>
+</body>
+</html>

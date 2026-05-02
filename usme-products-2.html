@@ -1,0 +1,1652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SniperTrader — The USME Suite</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&family=Syne:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════
+   ROOT — exact homepage tokens
+══════════════════════════════════════ */
+:root {
+  --obsidian:   #06080f;
+  --obsidian-2: #0b0e1a;
+  --obsidian-3: #101425;
+  --cyan:       #00e5ff;
+  --cyan-dim:   #00b4cc;
+  --cyan-glow:  rgba(0,229,255,0.15);
+  --gold:       #c9a84c;
+  --gold-dim:   #a07a2a;
+  --gold-glow:  rgba(201,168,76,0.15);
+  --green:      #00e5a0;
+  --red:        #ff5050;
+  --white:      #f0f4ff;
+  --muted:      #8090b8;
+  --glass:      rgba(255,255,255,0.05);
+  --glass-border: rgba(0,229,255,0.15);
+  --font-display: 'Orbitron', monospace;
+  --font-mono:    'Space Mono', monospace;
+  --font-body:    'Syne', sans-serif;
+}
+
+/* ── LIGHT MODE ── */
+body.light-mode {
+  --obsidian:   #f0f4ff;
+  --obsidian-2: #e4e9f7;
+  --obsidian-3: #d8dff0;
+  --white:      #0d1128;
+  --muted:      #4a5580;
+  --glass:      rgba(0,0,0,0.04);
+  --glass-border: rgba(0,100,180,0.18);
+  --cyan:       #007acc;
+  --cyan-dim:   #0060aa;
+  --gold:       #8a6200;
+  --gold-dim:   #6a4a00;
+  --green:      #007a4a;
+  --red:        #cc2020;
+}
+body.light-mode #cursor { background: var(--cyan); box-shadow: 0 0 16px var(--cyan); }
+body.light-mode #cursor-ring { border-color: rgba(0,120,200,0.4); }
+body.light-mode nav { background: linear-gradient(180deg, rgba(240,244,255,0.97) 0%, transparent 100%); border-bottom-color: rgba(0,100,180,0.1); }
+body.light-mode .ticker-wrap { background: rgba(200,210,235,0.5); border-color: rgba(0,100,180,0.1); }
+body.light-mode .section-divider { background: linear-gradient(90deg, transparent, rgba(0,100,180,0.2), rgba(140,120,0,0.2), transparent); }
+body.light-mode .glass-card { background: rgba(255,255,255,0.7); border-color: rgba(0,100,180,0.15); }
+body.light-mode .glass-card::before { background: linear-gradient(90deg, transparent, rgba(0,100,180,0.25), transparent); }
+body.light-mode .faq-item { background: rgba(255,255,255,0.6); border-color: rgba(0,100,180,0.08); }
+body.light-mode .pricing-cell { background: #e4e9f7; }
+body.light-mode #theme-toggle { background: rgba(0,100,180,0.1); }
+body.light-mode .footer-disclaimer { color: #5a6a90; }
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--obsidian);
+  color: var(--white);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* ══════════════════════════════════════
+   CUSTOM CURSOR — exact homepage
+══════════════════════════════════════ */
+#cursor {
+  position: fixed; top:0; left:0; pointer-events:none; z-index:9999;
+  width:12px; height:12px;
+  background: var(--cyan);
+  border-radius: 50%;
+  transform: translate(-50%,-50%);
+  transition: transform 0.08s ease, width 0.2s, height 0.2s, background 0.2s;
+  box-shadow: 0 0 16px var(--cyan), 0 0 40px rgba(0,229,255,0.3);
+}
+#cursor-ring {
+  position: fixed; top:0; left:0; pointer-events:none; z-index:9998;
+  width:40px; height:40px;
+  border: 1px solid rgba(0,229,255,0.5);
+  border-radius: 50%;
+  transform: translate(-50%,-50%);
+  transition: transform 0.25s ease, width 0.2s, height 0.2s;
+}
+
+/* ══════════════════════════════════════
+   NAV — exact homepage
+══════════════════════════════════════ */
+nav {
+  position: fixed; top:0; left:0; right:0; z-index:100;
+  padding: 20px 60px;
+  display: flex; align-items:center; justify-content:space-between;
+  background: linear-gradient(180deg, rgba(6,8,15,0.95) 0%, transparent 100%);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(0,229,255,0.06);
+}
+.nav-logo {
+  font-family: var(--font-display);
+  font-size: 1.1rem; font-weight:900;
+  color: var(--white); letter-spacing: 0.15em;
+  text-decoration: none;
+}
+.nav-logo span { color: var(--cyan); }
+.nav-links { display:flex; gap:36px; list-style:none; }
+.nav-links a {
+  font-family: var(--font-mono);
+  font-size: 0.7rem; color: var(--muted);
+  text-decoration: none; letter-spacing: 0.12em;
+  text-transform: uppercase; transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--cyan); }
+.nav-cta {
+  font-family: var(--font-mono); font-size: 0.7rem;
+  padding: 10px 22px; border-radius: 3px;
+  background: transparent;
+  border: 1px solid var(--cyan);
+  color: var(--cyan); cursor: none;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.nav-cta:hover { background: rgba(0,229,255,0.1); box-shadow: 0 0 20px rgba(0,229,255,0.2); }
+
+/* ══════════════════════════════════════
+   TICKER — exact homepage
+══════════════════════════════════════ */
+.ticker-wrap {
+  background: rgba(0,0,0,0.4);
+  border-top: 1px solid rgba(0,229,255,0.08);
+  border-bottom: 1px solid rgba(0,229,255,0.08);
+  overflow: hidden; padding:12px 0;
+}
+.ticker-inner { display:flex; gap:60px; animation: ticker 22s linear infinite; width:max-content; }
+@keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+.tick-item {
+  font-family: var(--font-mono); font-size:0.65rem;
+  letter-spacing:0.1em; display:flex; gap:10px;
+  align-items:center; white-space:nowrap;
+}
+.tick-sym   { color: var(--muted); }
+.tick-up    { color: var(--green); }
+.tick-down  { color: var(--red); }
+.tick-price { color: var(--white); }
+
+/* ══════════════════════════════════════
+   BUTTONS — exact homepage
+══════════════════════════════════════ */
+.btn-primary {
+  font-family: var(--font-mono); font-size:0.75rem; letter-spacing:0.12em;
+  text-transform: uppercase; padding:16px 36px; border-radius:3px;
+  background: linear-gradient(135deg, var(--cyan) 0%, var(--cyan-dim) 100%);
+  color: var(--obsidian); border:none; cursor:none;
+  font-weight:700; position:relative; overflow:hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 0 30px rgba(0,229,255,0.3);
+  text-decoration: none; display:inline-flex; align-items:center; gap:8px;
+}
+.btn-primary::before {
+  content:''; position:absolute; inset:0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
+  opacity:0; transition: opacity 0.2s;
+}
+.btn-primary:hover { transform:translateY(-2px); box-shadow: 0 0 50px rgba(0,229,255,0.5); }
+.btn-primary:hover::before { opacity:1; }
+
+.btn-secondary {
+  font-family: var(--font-mono); font-size:0.75rem; letter-spacing:0.12em;
+  text-transform: uppercase; padding:15px 36px; border-radius:3px;
+  background: transparent; color: var(--white);
+  border: 1px solid rgba(232,237,245,0.2); cursor:none;
+  transition: border-color 0.2s, color 0.2s, box-shadow 0.2s;
+  text-decoration: none; display:inline-flex; align-items:center; gap:8px;
+}
+.btn-secondary:hover { border-color:var(--gold); color:var(--gold); box-shadow: 0 0 30px var(--gold-glow); }
+
+.btn-gold {
+  font-family: var(--font-mono); font-size:0.75rem; letter-spacing:0.12em;
+  text-transform: uppercase; padding:16px 36px; border-radius:3px;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dim) 100%);
+  color: var(--obsidian); border:none; cursor:none;
+  font-weight:700; position:relative; overflow:hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 0 30px rgba(201,168,76,0.3);
+  text-decoration: none; display:inline-flex; align-items:center; gap:8px;
+}
+.btn-gold:hover { transform:translateY(-2px); box-shadow: 0 0 50px rgba(201,168,76,0.5); }
+
+/* ══════════════════════════════════════
+   SECTIONS — exact homepage structure
+══════════════════════════════════════ */
+section {
+  position:relative; padding:120px 60px;
+  max-width:1400px; margin:0 auto;
+}
+.section-label {
+  font-family: var(--font-mono); font-size:0.6rem; letter-spacing:0.3em;
+  color: var(--cyan); text-transform:uppercase; margin-bottom:16px;
+  display:flex; align-items:center; gap:12px;
+}
+.section-label::before {
+  content:''; display:inline-block; width:30px; height:1px; background:var(--cyan);
+}
+h2 {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight:900; line-height:1.1; letter-spacing:-0.02em;
+  margin-bottom:24px;
+}
+h2 .accent { color: var(--cyan); }
+h2 .gold   { color: var(--gold); }
+p.lead {
+  font-size:1.05rem; color:rgba(240,244,255,0.85);
+  line-height:1.8; font-weight:300; max-width:600px;
+}
+
+/* Glass card — exact homepage */
+.glass-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  backdrop-filter: blur(20px);
+  padding:40px;
+  position:relative; overflow:hidden;
+  transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
+}
+.glass-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:1px;
+  background: linear-gradient(90deg, transparent, rgba(0,229,255,0.4), transparent);
+}
+.glass-card:hover {
+  border-color: rgba(0,229,255,0.3);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(0,229,255,0.08);
+  transform: translateY(-4px);
+}
+.glass-card.gold-card {
+  border-color: rgba(201,168,76,0.15);
+}
+.glass-card.gold-card::before {
+  background: linear-gradient(90deg, transparent, rgba(201,168,76,0.4), transparent);
+}
+.glass-card.gold-card:hover {
+  border-color: rgba(201,168,76,0.35);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(201,168,76,0.08);
+}
+
+/* Divider */
+.section-divider {
+  width:100%; height:1px;
+  background: linear-gradient(90deg, transparent, rgba(0,229,255,0.2), rgba(201,168,76,0.2), transparent);
+}
+
+/* Grid bg */
+.grid-bg {
+  position:absolute; inset:0; pointer-events:none; overflow:hidden;
+  background-image:
+    linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black, transparent);
+}
+
+/* Scroll reveal */
+.reveal { opacity:0; transform:translateY(30px); transition: opacity 0.8s ease, transform 0.8s ease; }
+.reveal.visible { opacity:1; transform:translateY(0); }
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+.reveal-delay-4 { transition-delay: 0.4s; }
+
+/* ══════════════════════════════════════
+   HERO — scoped to products
+══════════════════════════════════════ */
+#hero {
+  position:relative; height:100vh; min-height:700px;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  overflow:hidden; max-width:100%; padding:0; margin:0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 50%, rgba(0,229,255,0.04) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 80% 20%, rgba(201,168,76,0.03) 0%, transparent 60%),
+    var(--obsidian);
+}
+#stars {
+  position:absolute; inset:0; pointer-events:none;
+  background-image:
+    radial-gradient(1px 1px at 8%  18%, rgba(255,255,255,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 27% 68%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 53% 12%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 73% 83%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 91% 43%, rgba(255,255,255,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 18% 52%, rgba(0,229,255,0.5)  0%, transparent 100%),
+    radial-gradient(1px 1px at 63% 32%, rgba(201,168,76,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 40% 88%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 83%  8%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 47% 60%, rgba(0,229,255,0.3)  0%, transparent 100%),
+    radial-gradient(1px 1px at 36% 35%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 78% 55%, rgba(201,168,76,0.3) 0%, transparent 100%);
+  animation: starsPulse 8s ease-in-out infinite alternate;
+}
+@keyframes starsPulse { from{opacity:0.6} to{opacity:1} }
+
+/* Holographic chart BG */
+#holo-chart {
+  position:absolute; bottom:0; left:0; right:0;
+  height:55%; pointer-events:none; opacity:0.18; overflow:hidden;
+}
+.chart-svg { width:100%; height:100%; }
+
+/* Scope reticle — exact homepage */
+#scope {
+  position:absolute;
+  width:320px; height:320px; pointer-events:none;
+  transform:translate(-50%,-50%);
+  transition: left 0.15s ease, top 0.15s ease;
+  will-change: left,top;
+}
+.scope-ring {
+  position:absolute; border-radius:50%;
+  border:1px solid rgba(0,229,255,0.5);
+  animation: scopePulse 3s ease-in-out infinite;
+}
+.scope-ring.r1 { inset:0; border-color:rgba(0,229,255,0.4); }
+.scope-ring.r2 { inset:30px; border-color:rgba(0,229,255,0.25); border-style:dashed; border-width:1px; }
+.scope-ring.r3 { inset:70px; border-color:rgba(201,168,76,0.5); }
+@keyframes scopePulse { 0%,100%{opacity:0.7;transform:scale(1)} 50%{opacity:1;transform:scale(1.03)} }
+.scope-crosshair { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+.scope-h {
+  position:absolute; top:50%; left:0; right:0; height:1px;
+  background: linear-gradient(90deg, transparent, rgba(0,229,255,0.6) 30%, rgba(0,229,255,0.6) 70%, transparent);
+  transform:translateY(-50%);
+}
+.scope-v {
+  position:absolute; left:50%; top:0; bottom:0; width:1px;
+  background: linear-gradient(180deg, transparent, rgba(0,229,255,0.6) 30%, rgba(0,229,255,0.6) 70%, transparent);
+  transform:translateX(-50%);
+}
+.scope-center {
+  width:8px; height:8px; border-radius:50%;
+  background: var(--cyan);
+  box-shadow: 0 0 12px var(--cyan), 0 0 30px rgba(0,229,255,0.5);
+  position:relative; z-index:1;
+  animation: centerPulse 1.5s ease-in-out infinite;
+}
+@keyframes centerPulse {
+  0%,100% { box-shadow: 0 0 12px var(--cyan), 0 0 30px rgba(0,229,255,0.5); }
+  50%      { box-shadow: 0 0 20px var(--cyan), 0 0 60px rgba(0,229,255,0.7); }
+}
+.scope-tick { position:absolute; background:rgba(0,229,255,0.5); }
+.scope-tick.top    { top:60px; left:50%; width:1px; height:20px; transform:translateX(-50%); }
+.scope-tick.bottom { bottom:60px; left:50%; width:1px; height:20px; transform:translateX(-50%); }
+.scope-tick.left   { left:60px; top:50%; height:1px; width:20px; transform:translateY(-50%); }
+.scope-tick.right  { right:60px; top:50%; height:1px; width:20px; transform:translateY(-50%); }
+.scope-label { position:absolute; font-family:var(--font-mono); font-size:0.55rem; color:rgba(0,229,255,0.6); letter-spacing:0.1em; }
+.scope-label.tl { top:12px; left:12px; }
+.scope-label.tr { top:12px; right:12px; }
+.scope-label.bl { bottom:12px; left:12px; }
+.scope-label.br { bottom:12px; right:12px; }
+
+/* Hero copy */
+.hero-content {
+  position:relative; z-index:10; text-align:center; padding:0 20px;
+}
+.hero-eyebrow {
+  font-family:var(--font-mono); font-size:0.65rem; letter-spacing:0.3em;
+  color:var(--cyan); text-transform:uppercase; margin-bottom:20px;
+  opacity:0; animation: fadeUp 0.8s 0.3s forwards;
+}
+.hero-headline {
+  font-family:var(--font-display); font-size:clamp(2.5rem,6vw,5.5rem);
+  font-weight:900; line-height:1.05; letter-spacing:-0.02em; margin-bottom:24px;
+  opacity:0; animation: fadeUp 0.8s 0.5s forwards;
+}
+.hero-headline em {
+  font-style:normal;
+  background: linear-gradient(135deg, var(--cyan) 0%, var(--gold) 100%);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+}
+.hero-sub {
+  font-size:1.05rem; color:rgba(232,237,245,0.6);
+  max-width:560px; margin:0 auto 44px;
+  line-height:1.7; font-weight:300;
+  opacity:0; animation: fadeUp 0.8s 0.7s forwards;
+}
+.hero-ctas {
+  display:flex; gap:16px; justify-content:center; flex-wrap:wrap;
+  opacity:0; animation: fadeUp 0.8s 0.9s forwards;
+}
+@keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+/* Scroll hint */
+.scroll-hint {
+  position:absolute; bottom:36px; left:50%; transform:translateX(-50%);
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+  font-family:var(--font-mono); font-size:0.55rem; letter-spacing:0.2em;
+  color:var(--muted); text-transform:uppercase;
+  opacity:0; animation: fadeUp 1s 1.3s forwards;
+}
+.scroll-line {
+  width:1px; height:40px;
+  background: linear-gradient(180deg, var(--cyan), transparent);
+  animation: scrollLine 2s ease-in-out infinite;
+}
+@keyframes scrollLine { 0%,100%{opacity:0.3;transform:scaleY(0.5) translateY(-10px)} 50%{opacity:1;transform:scaleY(1) translateY(0)} }
+
+/* ══════════════════════════════════════
+   HERO STAT BAR
+══════════════════════════════════════ */
+.hero-stats-bar {
+  position:absolute; bottom:0; left:0; right:0;
+  display:flex; justify-content:center;
+  border-top: 1px solid rgba(0,229,255,0.08);
+  background: rgba(6,8,15,0.7); backdrop-filter:blur(8px);
+  opacity:0; animation: fadeUp 0.8s 1.1s forwards;
+  z-index:10;
+}
+.hstat {
+  flex:1; max-width:220px;
+  padding:18px 0; text-align:center;
+  border-right: 1px solid rgba(0,229,255,0.06);
+}
+.hstat:last-child { border-right:none; }
+.hstat-n {
+  font-family:var(--font-display); font-size:1.6rem; font-weight:900;
+  color:var(--cyan); letter-spacing:-0.02em; line-height:1;
+}
+.hstat-n.gold { color:var(--gold); }
+.hstat-l {
+  font-family:var(--font-mono); font-size:0.5rem; color:var(--muted);
+  letter-spacing:0.15em; text-transform:uppercase; margin-top:5px;
+}
+
+/* ══════════════════════════════════════
+   PRODUCT FEATURE ITEMS — homepage style
+══════════════════════════════════════ */
+.feature-item {
+  display:flex; gap:20px; align-items:flex-start; padding:24px;
+  background:var(--glass); border:1px solid rgba(0,229,255,0.08); border-radius:8px;
+  transition: border-color 0.3s, background 0.3s;
+}
+.feature-item:hover { border-color:rgba(0,229,255,0.25); background:rgba(0,229,255,0.04); }
+.feature-item.gold-item { border-color:rgba(201,168,76,0.08); }
+.feature-item.gold-item:hover { border-color:rgba(201,168,76,0.25); background:rgba(201,168,76,0.04); }
+.feature-icon {
+  width:40px; height:40px; border-radius:8px; flex-shrink:0;
+  background:rgba(0,229,255,0.1); border:1px solid rgba(0,229,255,0.2);
+  display:flex; align-items:center; justify-content:center; font-size:1rem;
+}
+.feature-icon.gold-icon { background:rgba(201,168,76,0.1); border-color:rgba(201,168,76,0.2); }
+.feature-title { font-family:var(--font-mono); font-size:0.75rem; color:var(--cyan); margin-bottom:6px; letter-spacing:0.08em; }
+.feature-title.gold { color:var(--gold); }
+.feature-desc { font-size:0.85rem; color:rgba(232,237,245,0.6); line-height:1.6; }
+
+/* ══════════════════════════════════════
+   ENGINE VISUAL — adapted from homepage
+══════════════════════════════════════ */
+.usme-engine {
+  position:relative; height:420px;
+  display:flex; align-items:center; justify-content:center;
+}
+.engine-core {
+  width:180px; height:180px; border-radius:50%; position:relative;
+  background: radial-gradient(circle, rgba(0,229,255,0.2) 0%, rgba(0,229,255,0.05) 50%, transparent 70%);
+  border:1px solid rgba(0,229,255,0.4);
+  display:flex; align-items:center; justify-content:center;
+  animation: enginePulse 2.5s ease-in-out infinite;
+  box-shadow: 0 0 60px rgba(0,229,255,0.15), inset 0 0 40px rgba(0,229,255,0.08);
+}
+@keyframes enginePulse {
+  0%,100% { box-shadow: 0 0 60px rgba(0,229,255,0.15), inset 0 0 40px rgba(0,229,255,0.08); }
+  50%      { box-shadow: 0 0 100px rgba(0,229,255,0.3), inset 0 0 60px rgba(0,229,255,0.15); }
+}
+.engine-inner {
+  width:90px; height:90px; border-radius:50%;
+  background: radial-gradient(circle, rgba(0,229,255,0.5) 0%, rgba(0,229,255,0.1) 100%);
+  border:1px solid var(--cyan);
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-display); font-size:0.6rem; font-weight:700;
+  color:var(--cyan); letter-spacing:0.1em; text-align:center; line-height:1.6;
+}
+.engine-orbit {
+  position:absolute; border-radius:50%; border:1px dashed rgba(0,229,255,0.2);
+  animation: orbit linear infinite;
+}
+.engine-orbit.o1 { width:260px; height:260px; animation-duration:6s; }
+.engine-orbit.o2 { width:340px; height:340px; animation-duration:10s; animation-direction:reverse; border-color:rgba(201,168,76,0.15); }
+.engine-orbit.o3 { width:400px; height:400px; animation-duration:15s; }
+@keyframes orbit { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+.orbit-dot {
+  position:absolute; width:6px; height:6px; border-radius:50%; top:-3px; left:50%;
+  transform:translateX(-50%);
+}
+.orbit-dot.cyan { background:var(--cyan); box-shadow:0 0 10px var(--cyan); }
+.orbit-dot.gold { background:var(--gold); box-shadow:0 0 10px var(--gold); }
+
+/* Gold engine variant */
+.engine-core.gold-core {
+  background: radial-gradient(circle, rgba(201,168,76,0.2) 0%, rgba(201,168,76,0.05) 50%, transparent 70%);
+  border-color:rgba(201,168,76,0.4);
+  animation: enginePulseGold 2.5s ease-in-out infinite;
+  box-shadow: 0 0 60px rgba(201,168,76,0.15), inset 0 0 40px rgba(201,168,76,0.08);
+}
+@keyframes enginePulseGold {
+  0%,100% { box-shadow: 0 0 60px rgba(201,168,76,0.15), inset 0 0 40px rgba(201,168,76,0.08); }
+  50%      { box-shadow: 0 0 100px rgba(201,168,76,0.3), inset 0 0 60px rgba(201,168,76,0.15); }
+}
+.engine-inner.gold-inner {
+  background: radial-gradient(circle, rgba(201,168,76,0.5) 0%, rgba(201,168,76,0.1) 100%);
+  border-color:var(--gold); color:var(--gold);
+}
+.engine-orbit.gold-orbit { border-color:rgba(201,168,76,0.2); }
+.engine-orbit.gold-orbit.o2 { border-color:rgba(0,229,255,0.1); }
+
+/* ══════════════════════════════════════
+   3D CARD TILT  (mouse tracking)
+══════════════════════════════════════ */
+.tilt-card {
+  transform-style: preserve-3d;
+  transition: transform 0.05s ease, box-shadow 0.3s;
+  will-change: transform;
+}
+
+/* ══════════════════════════════════════
+   SIGNAL TABLE — styled like eco-table
+══════════════════════════════════════ */
+.signal-table { width:100%; border-collapse:collapse; }
+.signal-table th {
+  font-family:var(--font-mono); font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase;
+  color:var(--muted); padding:14px 20px; text-align:left;
+  border-bottom:1px solid rgba(0,229,255,0.1);
+}
+.signal-table td {
+  padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.04);
+  font-size:0.85rem; line-height:1.5; transition:background 0.2s;
+}
+.signal-table tr:last-child td { border-bottom:none; }
+.signal-table tr:hover td { background:rgba(0,229,255,0.03); }
+.signal-table td:first-child {
+  font-family:var(--font-display); font-size:0.8rem; font-weight:700; letter-spacing:0.05em;
+}
+.signal-table td:nth-child(2) { color:rgba(232,237,245,0.7); }
+.tier-badge {
+  display:inline-flex; align-items:center; gap:6px;
+  font-family:var(--font-mono); font-size:0.55rem; padding:4px 10px; border-radius:3px;
+  letter-spacing:0.1em; text-transform:uppercase;
+}
+.tier-watch { background:rgba(0,229,255,0.08); border:1px solid rgba(0,229,255,0.2); color:var(--cyan); }
+.tier-prime { background:rgba(201,168,76,0.08); border:1px solid rgba(201,168,76,0.2); color:var(--gold); }
+.tier-elite { background:rgba(0,229,160,0.1); border:1px solid rgba(0,229,160,0.3); color:var(--green); }
+
+/* ══════════════════════════════════════
+   PSYCH-STYLE STATS (for pricing cards)
+══════════════════════════════════════ */
+.psych-stat {
+  display:flex; flex-direction:column; gap:6px; padding:20px;
+  background:var(--glass); border:1px solid rgba(201,168,76,0.1); border-radius:8px;
+  transition:border-color 0.3s;
+}
+.psych-stat:hover { border-color:rgba(201,168,76,0.3); }
+.stat-num { font-family:var(--font-display); font-size:2rem; font-weight:900; color:var(--gold); }
+.stat-num.cyan { color:var(--cyan); }
+.stat-label { font-family:var(--font-mono); font-size:0.65rem; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; }
+.stat-desc { font-size:0.85rem; color:rgba(240,244,255,0.75); line-height:1.5; }
+
+/* ══════════════════════════════════════
+   PRICING CARDS
+══════════════════════════════════════ */
+.pricing-grid {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:2px;
+  margin-top:60px; border:1px solid rgba(0,229,255,0.08);
+  border-radius:4px; overflow:hidden;
+}
+.pricing-cell {
+  padding:48px 36px; background:var(--obsidian-3);
+  position:relative; overflow:hidden;
+  transition: background 0.2s;
+}
+.pricing-cell::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:1px;
+  background: linear-gradient(90deg, transparent, rgba(0,229,255,0.3), transparent);
+}
+.pricing-cell:hover { background:rgba(16,20,37,0.8); }
+.pricing-cell.featured {
+  background: linear-gradient(180deg, rgba(0,229,255,0.05) 0%, var(--obsidian-3) 60%);
+  border-left:1px solid rgba(0,229,255,0.15);
+  border-right:1px solid rgba(0,229,255,0.15);
+}
+.pricing-cell.featured::before {
+  background: linear-gradient(90deg, transparent, rgba(0,229,255,0.5), transparent);
+  height:2px;
+}
+.price-tag {
+  font-family:var(--font-mono); font-size:0.55rem; letter-spacing:0.2em;
+  text-transform:uppercase; padding:4px 10px; border-radius:3px;
+  display:inline-block; margin-bottom:24px;
+}
+.tag-cyan   { background:rgba(0,229,255,0.08); border:1px solid rgba(0,229,255,0.2); color:var(--cyan); }
+.tag-gold   { background:rgba(201,168,76,0.08); border:1px solid rgba(201,168,76,0.2); color:var(--gold); }
+.tag-bundle { background:rgba(0,229,160,0.08); border:1px solid rgba(0,229,160,0.25); color:var(--green); }
+.pricing-name { font-family:var(--font-display); font-size:1rem; font-weight:900; letter-spacing:0.05em; margin-bottom:8px; }
+.pricing-desc { font-family:var(--font-mono); font-size:0.65rem; color:var(--muted); letter-spacing:0.05em; margin-bottom:32px; line-height:1.6; }
+.price-amount {
+  font-family:var(--font-display); font-size:3rem; font-weight:900;
+  letter-spacing:-0.02em; line-height:1; margin-bottom:4px;
+}
+.price-period { font-family:var(--font-mono); font-size:0.6rem; color:var(--muted); letter-spacing:0.1em; margin-bottom:32px; }
+.price-divider { height:1px; background:rgba(0,229,255,0.08); margin-bottom:28px; }
+.price-features { list-style:none; display:flex; flex-direction:column; gap:12px; margin-bottom:36px; flex:1; }
+.price-features li {
+  display:flex; align-items:flex-start; gap:10px;
+  font-size:0.85rem; color:rgba(240,244,255,0.82); line-height:1.5;
+}
+.price-features li .chk { color:var(--cyan); font-family:var(--font-mono); flex-shrink:0; font-size:0.8rem; }
+.price-features li .chk.gold { color:var(--gold); }
+.price-features li .chk.off  { color:var(--muted); }
+
+/* ══════════════════════════════════════
+   FAQ — styled as glass list
+══════════════════════════════════════ */
+.faq-list { margin-top:60px; display:flex; flex-direction:column; gap:2px; }
+.faq-item {
+  background:var(--glass); border:1px solid rgba(0,229,255,0.06);
+  border-radius:4px; overflow:hidden; transition:border-color 0.2s;
+}
+.faq-item.open { border-color:rgba(0,229,255,0.2); }
+.faq-q {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:22px 28px; cursor:none;
+  font-family:var(--font-body); font-size:0.95rem; font-weight:600; color:var(--white);
+  user-select:none; transition:background 0.2s;
+}
+.faq-q:hover { background:rgba(0,229,255,0.03); }
+.faq-icon {
+  font-family:var(--font-mono); font-size:1rem; color:var(--cyan);
+  flex-shrink:0; transition:transform 0.3s;
+}
+.faq-item.open .faq-icon { transform:rotate(45deg); }
+.faq-a {
+  display:none; padding:0 28px 22px;
+  font-size:0.9rem; color:rgba(240,244,255,0.75); line-height:1.8;
+  border-top:1px solid rgba(0,229,255,0.06); padding-top:18px; font-weight:300;
+}
+.faq-item.open .faq-a { display:block; }
+
+/* ══════════════════════════════════════
+   MEMBER CARD — exact homepage
+══════════════════════════════════════ */
+.member-card {
+  width:280px; height:170px; border-radius:12px; margin:0 auto 60px;
+  background: linear-gradient(135deg, rgba(16,20,37,0.95) 0%, rgba(11,14,26,0.98) 100%);
+  border:1px solid rgba(0,229,255,0.3);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.5), 0 0 60px rgba(0,229,255,0.08);
+  display:flex; flex-direction:column; align-items:flex-start; justify-content:space-between; padding:28px;
+  position:relative; overflow:hidden;
+  animation: cardSpin 8s ease-in-out infinite;
+}
+@keyframes cardSpin {
+  0%,100% { transform:rotateY(-10deg) rotateX(5deg); }
+  25%      { transform:rotateY(5deg)  rotateX(-3deg); }
+  50%      { transform:rotateY(10deg) rotateX(3deg); }
+  75%      { transform:rotateY(-5deg) rotateX(-5deg); }
+}
+.member-card::before {
+  content:''; position:absolute; inset:0;
+  background: linear-gradient(135deg, rgba(0,229,255,0.06) 0%, transparent 50%);
+}
+.card-chip { width:36px; height:28px; border-radius:4px; background:linear-gradient(135deg,var(--gold),var(--gold-dim)); box-shadow:0 2px 8px rgba(0,0,0,0.3); }
+.card-logo { font-family:var(--font-display); font-size:0.75rem; font-weight:900; color:var(--white); letter-spacing:0.15em; }
+.card-logo span { color:var(--cyan); }
+.card-bottom { display:flex; justify-content:space-between; width:100%; align-items:flex-end; }
+.card-num  { font-family:var(--font-mono); font-size:0.65rem; color:rgba(240,244,255,0.6); letter-spacing:0.15em; }
+.card-tier { font-family:var(--font-mono); font-size:0.55rem; color:var(--gold); letter-spacing:0.2em; text-transform:uppercase; }
+
+/* Closing CTA */
+.closing-bg {
+  position:absolute; inset:0;
+  background: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(0,229,255,0.05), transparent 70%),
+              radial-gradient(ellipse 50% 40% at 80% 30%, rgba(201,168,76,0.04), transparent);
+}
+.closing-tagline {
+  font-family:var(--font-display); font-size:clamp(1.8rem,4vw,3rem); font-weight:900;
+  line-height:1.2; margin-bottom:16px;
+}
+.closing-sub { font-size:1rem; color:rgba(240,244,255,0.75); max-width:480px; margin:0 auto 40px; line-height:1.7; }
+.closing-cta { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
+
+/* Community badges */
+.badge {
+  font-family:var(--font-mono); font-size:0.6rem; padding:8px 18px; border-radius:100px;
+  border:1px solid rgba(0,229,255,0.2); color:rgba(0,229,255,0.8); background:rgba(0,229,255,0.05);
+  letter-spacing:0.1em; text-transform:uppercase;
+}
+
+/* Footer */
+footer {
+  border-top:1px solid rgba(0,229,255,0.08);
+  padding:48px 60px; display:flex; align-items:center; justify-content:space-between;
+  flex-wrap:wrap; gap:20px; max-width:1400px; margin:0 auto;
+}
+.footer-logo { font-family:var(--font-display); font-size:0.85rem; font-weight:900; color:var(--white); letter-spacing:0.15em; }
+.footer-logo span { color:var(--cyan); }
+.footer-links { display:flex; gap:24px; flex-wrap:wrap; }
+.footer-links a {
+  font-family:var(--font-mono); font-size:0.6rem; color:var(--muted);
+  text-decoration:none; letter-spacing:0.1em; text-transform:uppercase; transition:color 0.2s;
+}
+.footer-links a:hover { color:var(--cyan); }
+.footer-copy { font-family:var(--font-mono); font-size:0.55rem; color:var(--muted); letter-spacing:0.1em; }
+.footer-disclaimer {
+  font-family:var(--font-mono); font-size:0.5rem; color:var(--muted); letter-spacing:0.05em; line-height:1.7;
+  max-width:1400px; margin:0 auto; padding:20px 60px 32px;
+  border-top:1px solid rgba(0,229,255,0.04);
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════ */
+@media (max-width:900px) {
+  nav { padding:16px 24px; }
+  .nav-links { display:none; }
+  section { padding:80px 24px; }
+  .usme-grid, .pine-grid { grid-template-columns:1fr !important; }
+  .usme-engine { height:280px; }
+  .pricing-grid { grid-template-columns:1fr; }
+  footer { flex-direction:column; padding:40px 24px; }
+  .footer-disclaimer { padding:20px 24px 32px; }
+  .hero-stats-bar { display:none; }
+}
+/* Footer column links */
+.footer-col-link {
+  font-family: var(--font-mono); font-size:0.65rem; color:var(--muted);
+  text-decoration:none; letter-spacing:0.08em; transition: color 0.2s;
+}
+.footer-col-link:hover { color: var(--cyan); }
+
+/* Footer responsive */
+@media (max-width:900px) {
+  footer > div[style*="grid-template-columns:repeat(4"] { grid-template-columns:1fr 1fr !important; gap:32px !important; }
+}
+@media (max-width:600px) {
+  footer > div[style*="grid-template-columns:repeat(4"] { grid-template-columns:1fr !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- CURSORS -->
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo">SNIPER<span>TRADER</span></a>
+  <ul class="nav-links">
+    <li><a href="#baseline">Baseline</a></li>
+    <li><a href="#guardrails">Guardrails</a></li>
+    <li><a href="#review-loop">Review Loop</a></li>
+    <li><a href="#ai-sentiment">Ai Sentiment</a></li>
+    <li><a href="#ai-chart">Ai Chart Analyzer</a></li>
+    <li><a href="#prop-firm">Prop Firm Center</a></li>
+  </ul>
+  <div style="display:flex;align-items:center;gap:12px">
+    <button id="theme-toggle" class="nav-cta" onclick="toggleTheme()" title="Toggle light/dark mode" style="padding:10px 14px;font-size:1rem;line-height:1">☀</button>
+    <button class="nav-cta" onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'})">Access Suite</button>
+  </div>
+</nav>
+
+<!-- FIXED TICKER -->
+<div class="ticker-wrap" style="position:fixed;top:0;left:0;right:0;z-index:99;margin-top:64px">
+  <div class="ticker-inner" id="ticker"></div>
+</div>
+
+<!-- ══════════════════════ HERO ══════════════════════ -->
+<section id="hero" style="max-width:100%;padding:0;margin:0;height:100vh">
+  <div id="stars"></div>
+  <div class="grid-bg"></div>
+
+  <!-- Holographic chart -->
+  <div id="holo-chart">
+    <svg class="chart-svg" viewBox="0 0 1400 400" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stop-color="#00e5ff" stop-opacity="0.4"/>
+          <stop offset="100%" stop-color="#00e5ff" stop-opacity="0"/>
+        </linearGradient>
+        <filter id="chartGlow">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <path id="chartArea" fill="url(#chartGrad)" opacity="0.3"/>
+      <path id="chartLine" fill="none" stroke="#00e5ff" stroke-width="1.5" filter="url(#chartGlow)" opacity="0.7"/>
+      <g id="volBars" opacity="0.2"></g>
+      <g id="signals"></g>
+    </svg>
+  </div>
+
+  <!-- Scope reticle -->
+  <div id="scope">
+    <div class="scope-ring r1"></div>
+    <div class="scope-ring r2"></div>
+    <div class="scope-ring r3"></div>
+    <div class="scope-h"></div>
+    <div class="scope-v"></div>
+    <div class="scope-tick top"></div>
+    <div class="scope-tick bottom"></div>
+    <div class="scope-tick left"></div>
+    <div class="scope-tick right"></div>
+    <div class="scope-crosshair"><div class="scope-center"></div></div>
+    <span class="scope-label tl">OB+</span>
+    <span class="scope-label tr">FVG</span>
+    <span class="scope-label bl">BOS</span>
+    <span class="scope-label br">CHoCH</span>
+  </div>
+
+  <div class="hero-content">
+    <p class="hero-eyebrow">ThinkScript · Pine Script · SMC Journal · ICT/SMC</p>
+    <h1 class="hero-headline">The Full<br><em>Sniper Suite.</em></h1>
+    <p class="hero-sub">Every product in the SniperTrader ecosystem — built on one engine, one methodology, one mission: institutional precision at retail speed.</p>
+    <div class="hero-ctas">
+      <button class="btn-primary" onclick="document.getElementById('thinkscript').scrollIntoView({behavior:'smooth'})">Explore the Suite</button>
+      <button class="btn-secondary" onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'})">View Pricing →</button>
+    </div>
+  </div>
+
+  <div class="hero-stats-bar">
+    <div class="hstat"><div class="hstat-n">2,500+</div><div class="hstat-l">Active Traders</div></div>
+    <div class="hstat"><div class="hstat-n gold">4.9★</div><div class="hstat-l">Avg Rating</div></div>
+    <div class="hstat"><div class="hstat-n">0%</div><div class="hstat-l">Repaint · Zero</div></div>
+    <div class="hstat"><div class="hstat-n gold">7-Day</div><div class="hstat-l">Money-Back</div></div>
+  </div>
+
+  <div class="scroll-hint"><div class="scroll-line"></div><span>Scroll</span></div>
+</section>
+
+<div style="height:64px"></div>
+<div class="section-divider"></div>
+
+<!-- ══════════════════════ 01 — THINKSCRIPT ══════════════════════ -->
+<div style="background:var(--obsidian-2);width:100%">
+<section id="thinkscript" style="max-width:1400px">
+  <div class="section-label reveal">01 — ThinkorSwim Edition</div>
+  <h2 class="reveal reveal-delay-1">USME <span class="accent">ThinkScript</span><br>Edition v2.0</h2>
+
+  <div class="usme-grid reveal reveal-delay-2" style="display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;margin-top:60px">
+
+    <!-- Engine visual -->
+    <div class="usme-engine">
+      <div class="engine-orbit o1"><div class="orbit-dot cyan"></div></div>
+      <div class="engine-orbit o2"><div class="orbit-dot gold"></div></div>
+      <div class="engine-orbit o3"><div class="orbit-dot cyan"></div></div>
+      <div class="engine-core">
+        <div class="engine-inner">USME<br>v2.0<br>TOS</div>
+      </div>
+      <!-- Floating signal labels -->
+      <div style="position:absolute;top:16%;left:12%;font-family:var(--font-mono);font-size:0.5rem;color:var(--cyan);letter-spacing:0.1em;animation:fadeUp 0.8s 0.5s both">BOS ✓</div>
+      <div style="position:absolute;top:22%;right:10%;font-family:var(--font-mono);font-size:0.5rem;color:var(--gold);letter-spacing:0.1em;animation:fadeUp 0.8s 0.7s both">OB CONFIRMED</div>
+      <div style="position:absolute;bottom:22%;left:8%;font-family:var(--font-mono);font-size:0.5rem;color:var(--green);letter-spacing:0.1em;animation:fadeUp 0.8s 0.9s both">ELITE SIGNAL</div>
+      <div style="position:absolute;bottom:18%;right:12%;font-family:var(--font-mono);font-size:0.5rem;color:rgba(255,80,80,0.8);letter-spacing:0.1em;animation:fadeUp 0.8s 1.1s both">LIQ SWEEP</div>
+    </div>
+
+    <!-- Features -->
+    <div style="display:flex;flex-direction:column;gap:24px">
+      <div>
+        <p style="font-family:var(--font-mono);font-size:0.7rem;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px">The Institutional Engine — ThinkorSwim / Schwab</p>
+        <p class="lead" style="margin-bottom:12px">The only ICT/SMC indicator suite built natively for ThinkorSwim. Institutional order flow decoded in real time — zero repaint, zero noise, four-step signal confirmation before a single alert fires.</p>
+        <div style="display:flex;align-items:baseline;gap:10px;margin:20px 0 4px">
+          <span style="font-family:var(--font-display);font-size:3rem;font-weight:900;letter-spacing:-0.02em;color:var(--white)">$97</span>
+          <span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--muted);letter-spacing:0.1em">ONE-TIME · LIFETIME LICENSE</span>
+        </div>
+        <p style="font-family:var(--font-mono);font-size:0.55rem;color:var(--muted);letter-spacing:0.08em;margin-bottom:24px">Works on paperMoney · unlimited symbols · lifetime updates</p>
+      </div>
+
+      <div class="feature-item glass-card reveal reveal-delay-1">
+        <div class="feature-icon">🎯</div>
+        <div>
+          <div class="feature-title">Liquidity Sweep + BOS Engine</div>
+          <div class="feature-desc">Identifies institutional stop hunts at equal highs/lows then confirms the resulting Break of Structure — the foundational two-step ICT sequence before anything fires.</div>
+        </div>
+      </div>
+      <div class="feature-item glass-card reveal reveal-delay-2">
+        <div class="feature-icon">🔷</div>
+        <div>
+          <div class="feature-title">FVG & Order Block Confluence</div>
+          <div class="feature-desc">After BOS, price retracing into a Fair Value Gap or Order Block within the displacement leg triggers the third condition — defining the premium/discount entry zone precisely.</div>
+        </div>
+      </div>
+      <div class="feature-item glass-card reveal reveal-delay-3">
+        <div class="feature-icon">⚡</div>
+        <div>
+          <div class="feature-title">3-Tier SOTD Alerts: WATCH / PRIME / ELITE</div>
+          <div class="feature-desc">Only when all four conditions align does the Setup of the Day alert fire. Each tier reflects confidence level — ELITE only fires once per session inside a kill zone. ATR-based targets pre-calculated on every signal.</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;margin-top:8px" class="reveal">
+        <a href="checkout.html" class="btn-primary" style="flex:1;justify-content:center">Buy Now — $97</a>
+        <button class="btn-secondary" onclick="document.getElementById('signal-logic').scrollIntoView({behavior:'smooth'})">See Signal Logic →</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Signal tier table -->
+  <div id="signal-logic" style="margin-top:80px;overflow-x:auto" class="reveal">
+    <div style="font-family:var(--font-mono);font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:16px">/ Signal Tier Reference</div>
+    <table class="signal-table">
+      <thead>
+        <tr>
+          <th>Tier</th>
+          <th>Conditions Required</th>
+          <th>Fires Per Session</th>
+          <th>Typical Target</th>
+          <th>Alert</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="color:var(--cyan)">WATCH</td>
+          <td>Liq Sweep + BOS detected</td>
+          <td style="font-family:var(--font-mono);font-size:0.8rem;color:rgba(240,244,255,0.7)">Unlimited</td>
+          <td style="font-family:var(--font-mono);font-size:0.8rem;color:var(--gold)">1.5–2R</td>
+          <td><span class="tier-badge tier-watch">WATCH</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--gold)">PRIME</td>
+          <td>Sweep + BOS + FVG or OB tap confirmed</td>
+          <td style="font-family:var(--font-mono);font-size:0.8rem;color:rgba(240,244,255,0.7)">2–3 per day</td>
+          <td style="font-family:var(--font-mono);font-size:0.8rem;color:var(--gold)">2–3R</td>
+          <td><span class="tier-badge tier-prime">PRIME</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--green)">ELITE</td>
+          <td>All 4 steps + kill zone timing + HTF alignment</td>
+          <td style="font-family:var(--font-mono);font-size:0.8rem;color:rgba(240,244,255,0.7)">Once per session</td>
+          <td style="font-family:var(--font-mono);font-size:0.8rem;color:var(--gold)">3–5R</td>
+          <td><span class="tier-badge tier-elite">ELITE</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</section>
+</div>
+
+<div class="section-divider"></div>
+
+<!-- ══════════════════════ 02 — PINE SCRIPT ══════════════════════ -->
+<section id="pinescript" style="max-width:1400px">
+  <div class="section-label reveal">02 — TradingView Edition</div>
+  <h2 class="reveal reveal-delay-1">USME <span class="gold">Pine Script</span><br>Edition v2.0</h2>
+
+  <div class="pine-grid reveal reveal-delay-2" style="display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;margin-top:60px">
+
+    <!-- Features LEFT -->
+    <div style="display:flex;flex-direction:column;gap:24px">
+      <div>
+        <p style="font-family:var(--font-mono);font-size:0.7rem;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px">Pine Script v5 · TradingView · All Plans</p>
+        <p class="lead" style="margin-bottom:12px">Full USME power on TradingView — with multi-timeframe security() confluence, HTF Order Block layers, and native TV alert integration. The same four-step institutional logic, rebuilt in Pine v5 from the ground up.</p>
+        <div style="display:flex;align-items:baseline;gap:10px;margin:20px 0 4px">
+          <span style="font-family:var(--font-display);font-size:3rem;font-weight:900;letter-spacing:-0.02em;color:var(--white)">$97</span>
+          <span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--muted);letter-spacing:0.1em">ONE-TIME · LIFETIME LICENSE</span>
+        </div>
+        <p style="font-family:var(--font-mono);font-size:0.55rem;color:var(--muted);letter-spacing:0.08em;margin-bottom:24px">Basic through Premium compatible · Forex · Futures · Crypto</p>
+      </div>
+
+      <div class="feature-item gold-item glass-card reveal reveal-delay-1">
+        <div class="feature-icon gold-icon">📐</div>
+        <div>
+          <div class="feature-title gold">Multi-Timeframe HTF Confluence</div>
+          <div class="feature-desc">security() calls pull higher-timeframe structure into your execution chart — USME only fires when HTF and LTF institutional levels align, dramatically reducing false signals.</div>
+        </div>
+      </div>
+      <div class="feature-item gold-item glass-card reveal reveal-delay-2">
+        <div class="feature-icon gold-icon">📊</div>
+        <div>
+          <div class="feature-title gold">Native TradingView Alerts</div>
+          <div class="feature-desc">Full alert.() integration — set WATCH, PRIME, or ELITE alerts to fire to email, SMS, Telegram, or webhook. No third-party bridge needed. Works with TradingView's native mobile push notifications.</div>
+        </div>
+      </div>
+      <div class="feature-item gold-item glass-card reveal reveal-delay-3">
+        <div class="feature-icon gold-icon">🌐</div>
+        <div>
+          <div class="feature-title gold">Premium Dashboard Panel</div>
+          <div class="feature-desc">On-chart dashboard shows active kill zone, session P&L, HTF bias, current signal tier, and ATR-based SL/TP levels — all without leaving your chart.</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;margin-top:8px" class="reveal">
+        <a href="checkout.html" class="btn-gold" style="flex:1;justify-content:center">Buy Now — $97</a>
+        <button class="btn-secondary" onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'})">View Bundle →</button>
+      </div>
+    </div>
+
+    <!-- Gold engine visual RIGHT -->
+    <div class="usme-engine">
+      <div class="engine-orbit o1 gold-orbit"><div class="orbit-dot gold"></div></div>
+      <div class="engine-orbit o2 gold-orbit"><div class="orbit-dot cyan"></div></div>
+      <div class="engine-orbit o3 gold-orbit"><div class="orbit-dot gold"></div></div>
+      <div class="engine-core gold-core">
+        <div class="engine-inner gold-inner">USME<br>v2.0<br>TV</div>
+      </div>
+      <div style="position:absolute;top:14%;right:10%;font-family:var(--font-mono);font-size:0.5rem;color:var(--gold);letter-spacing:0.1em;animation:fadeUp 0.8s 0.5s both">HTF OB ✓</div>
+      <div style="position:absolute;top:24%;left:8%;font-family:var(--font-mono);font-size:0.5rem;color:var(--cyan);letter-spacing:0.1em;animation:fadeUp 0.8s 0.7s both">CHoCH DETECTED</div>
+      <div style="position:absolute;bottom:20%;right:8%;font-family:var(--font-mono);font-size:0.5rem;color:var(--green);letter-spacing:0.1em;animation:fadeUp 0.8s 0.9s both">ELITE · 3.1R TARGET</div>
+      <div style="position:absolute;bottom:16%;left:10%;font-family:var(--font-mono);font-size:0.5rem;color:var(--gold);letter-spacing:0.1em;animation:fadeUp 0.8s 1.1s both">KILL ZONE ACTIVE</div>
+    </div>
+
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ══════════════════════ 03 — SMC JOURNAL ══════════════════════ -->
+<div style="background:var(--obsidian-2);width:100%">
+<section id="journal" style="max-width:1400px">
+  <div class="section-label reveal">03 — Analytics Platform</div>
+  <h2 class="reveal reveal-delay-1">SMC Trade <span class="accent">Journal</span><br><span style="font-size:0.6em;color:rgba(240,244,255,0.7)">TraderEdge Performance OS</span></h2>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:start;margin-top:60px" class="reveal reveal-delay-2">
+
+    <div style="display:flex;flex-direction:column;gap:24px">
+      <div>
+        <p style="font-family:var(--font-mono);font-size:0.7rem;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px">The Only Journal Built for ICT Traders</p>
+        <p class="lead" style="margin-bottom:12px">Log every setup by type, track your kill zone edge, analyze session P&L, and let AI auto-tag your trades. Stop guessing what's working — start knowing.</p>
+        <div style="display:flex;align-items:baseline;gap:10px;margin:20px 0 4px">
+          <span style="font-family:var(--font-display);font-size:2.4rem;font-weight:900;letter-spacing:-0.02em;color:var(--white)">$19</span>
+          <span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--muted);letter-spacing:0.1em">/ MONTH · 7-DAY FREE TRIAL</span>
+        </div>
+        <p style="font-family:var(--font-mono);font-size:0.55rem;color:var(--muted);letter-spacing:0.08em;margin-bottom:24px">Cancel anytime · iOS + Android + Web</p>
+      </div>
+
+      <div class="feature-item glass-card reveal reveal-delay-1">
+        <div class="feature-icon">🧠</div>
+        <div>
+          <div class="feature-title">AI ICT Setup Auto-Tagging</div>
+          <div class="feature-desc">Import a trade from CSV and the AI classifies it: Order Block Retest, FVG Fill, Silver Bullet, Sweep & Reverse — mapped against your entry time and symbol automatically.</div>
+        </div>
+      </div>
+      <div class="feature-item glass-card reveal reveal-delay-2">
+        <div class="feature-icon">📊</div>
+        <div>
+          <div class="feature-title">Kill Zone Edge Analytics</div>
+          <div class="feature-desc">See exactly which session window makes you money and which bleeds your account. Asia, London, NY AM, NY PM — broken down by setup type, direction, and instrument.</div>
+        </div>
+      </div>
+      <div class="feature-item glass-card reveal reveal-delay-3">
+        <div class="feature-icon">📸</div>
+        <div>
+          <div class="feature-title">Screenshot Vault + CSV Import</div>
+          <div class="feature-desc">Annotate charts directly in-app. Import from Tradovate, IBKR, Webull, Schwab, or generic CSV. Every trade timestamped, tagged, and searchable.</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;margin-top:8px" class="reveal">
+        <a href="#" class="btn-primary" style="flex:1;justify-content:center">Start Free Trial</a>
+        <button class="btn-secondary">Learn More →</button>
+      </div>
+    </div>
+
+    <!-- Journal mock dashboard -->
+    <div style="display:flex;flex-direction:column;gap:16px" class="reveal reveal-delay-2">
+      <!-- Stats row -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px;border:1px solid rgba(0,229,255,0.08);border-radius:4px;overflow:hidden">
+        <div style="background:var(--obsidian-3);padding:20px;text-align:center;border-right:1px solid rgba(0,229,255,0.06)">
+          <div style="font-family:var(--font-display);font-size:1.5rem;font-weight:900;color:var(--green)">+$1,700</div>
+          <div style="font-family:var(--font-mono);font-size:0.5rem;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-top:4px">Week P&amp;L</div>
+        </div>
+        <div style="background:var(--obsidian-3);padding:20px;text-align:center;border-right:1px solid rgba(0,229,255,0.06)">
+          <div style="font-family:var(--font-display);font-size:1.5rem;font-weight:900;color:var(--cyan)">67%</div>
+          <div style="font-family:var(--font-mono);font-size:0.5rem;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-top:4px">Win Rate</div>
+        </div>
+        <div style="background:var(--obsidian-3);padding:20px;text-align:center">
+          <div style="font-family:var(--font-display);font-size:1.5rem;font-weight:900;color:var(--gold)">2.8R</div>
+          <div style="font-family:var(--font-mono);font-size:0.5rem;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-top:4px">Avg R:R</div>
+        </div>
+      </div>
+
+      <!-- Trade rows -->
+      <div class="glass-card" style="padding:0;overflow:hidden">
+        <div style="padding:14px 20px;border-bottom:1px solid rgba(0,229,255,0.06);font-family:var(--font-mono);font-size:0.55rem;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase">/ Recent Trades</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.03);transition:background 0.2s" onmouseover="this.style.background='rgba(0,229,255,0.03)'" onmouseout="this.style.background='transparent'">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:34px;height:34px;border-radius:3px;background:rgba(0,229,160,0.12);border:1px solid rgba(0,229,160,0.2);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:0.6rem;color:var(--green)">NQ</div>
+            <div><div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--white)">/NQ · Long</div><div style="font-family:var(--font-mono);font-size:0.55rem;color:var(--muted);margin-top:3px">FVG Retest · NY AM · ELITE</div></div>
+          </div>
+          <div style="text-align:right"><div style="font-family:var(--font-mono);font-size:0.8rem;color:var(--green)">+$1,240</div><div style="font-family:var(--font-mono);font-size:0.55rem;color:var(--muted);margin-top:3px">3.1R</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.03);transition:background 0.2s" onmouseover="this.style.background='rgba(0,229,255,0.03)'" onmouseout="this.style.background='transparent'">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:34px;height:34px;border-radius:3px;background:rgba(255,80,80,0.12);border:1px solid rgba(255,80,80,0.2);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:0.6rem;color:var(--red)">ES</div>
+            <div><div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--white)">/ES · Short</div><div style="font-family:var(--font-mono);font-size:0.55rem;color:var(--muted);margin-top:3px">OB Rejection · London · WATCH</div></div>
+          </div>
+          <div style="text-align:right"><div style="font-family:var(--font-mono);font-size:0.8rem;color:var(--red)">−$320</div><div style="font-family:var(--font-mono);font-size:0.55rem;color:var(--muted);margin-top:3px">−1R</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;transition:background 0.2s" onmouseover="this.style.background='rgba(0,229,255,0.03)'" onmouseout="this.style.background='transparent'">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:34px;height:34px;border-radius:3px;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.2);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:0.6rem;color:var(--gold)">GC</div>
+            <div><div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--white)">/GC · Long</div><div style="font-family:var(--font-mono);font-size:0.55rem;color:var(--muted);margin-top:3px">Sweep + BOS · NY AM · PRIME</div></div>
+          </div>
+          <div style="text-align:right"><div style="font-family:var(--font-mono);font-size:0.8rem;color:var(--green)">+$780</div><div style="font-family:var(--font-mono);font-size:0.55rem;color:var(--muted);margin-top:3px">2.4R</div></div>
+        </div>
+      </div>
+
+      <!-- Kill zone chart -->
+      <div class="glass-card" style="padding:24px">
+        <div style="font-family:var(--font-mono);font-size:0.55rem;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:16px">/ Kill Zone Edge Breakdown</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="font-family:var(--font-mono);font-size:0.6rem;color:var(--muted);width:80px;flex-shrink:0">London</div>
+            <div style="flex:1;height:6px;background:rgba(255,255,255,0.05);border-radius:2px;overflow:hidden"><div style="height:100%;width:78%;background:linear-gradient(90deg,var(--green),var(--cyan));border-radius:2px"></div></div>
+            <div style="font-family:var(--font-mono);font-size:0.6rem;color:var(--green);width:36px;text-align:right">78%</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="font-family:var(--font-mono);font-size:0.6rem;color:var(--muted);width:80px;flex-shrink:0">NY AM</div>
+            <div style="flex:1;height:6px;background:rgba(255,255,255,0.05);border-radius:2px;overflow:hidden"><div style="height:100%;width:66%;background:linear-gradient(90deg,var(--cyan),var(--gold));border-radius:2px"></div></div>
+            <div style="font-family:var(--font-mono);font-size:0.6rem;color:var(--cyan);width:36px;text-align:right">66%</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="font-family:var(--font-mono);font-size:0.6rem;color:var(--muted);width:80px;flex-shrink:0">Asia</div>
+            <div style="flex:1;height:6px;background:rgba(255,255,255,0.05);border-radius:2px;overflow:hidden"><div style="height:100%;width:44%;background:linear-gradient(90deg,var(--gold),var(--gold-dim));border-radius:2px"></div></div>
+            <div style="font-family:var(--font-mono);font-size:0.6rem;color:var(--gold);width:36px;text-align:right">44%</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="font-family:var(--font-mono);font-size:0.6rem;color:var(--muted);width:80px;flex-shrink:0">NY PM</div>
+            <div style="flex:1;height:6px;background:rgba(255,255,255,0.05);border-radius:2px;overflow:hidden"><div style="height:100%;width:28%;background:linear-gradient(90deg,rgba(255,80,80,0.8),rgba(255,80,80,0.4));border-radius:2px"></div></div>
+            <div style="font-family:var(--font-mono);font-size:0.6rem;color:var(--red);width:36px;text-align:right">28%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+</div>
+
+<div class="section-divider"></div>
+
+<!-- ══════════════════════ 04 — eBOOK ══════════════════════ -->
+<section id="ebook" style="max-width:1400px;text-align:center">
+  <div class="section-label reveal" style="justify-content:center">04 — Digital Blueprint</div>
+  <h2 class="reveal reveal-delay-1">From Broke <span class="gold">to Funded.</span></h2>
+  <p class="lead reveal reveal-delay-2" style="text-align:center;margin:0 auto 60px">200+ pages. First-person narrative. Real NQ, ES, and GC trade walkthroughs. The complete ICT/SMC prop firm playbook — instant PDF download.</p>
+
+  <div style="display:flex;gap:48px;justify-content:center;align-items:center;flex-wrap:wrap" class="reveal reveal-delay-2">
+
+    <!-- 3D book -->
+    <div style="perspective:1000px">
+      <div class="tilt-card" id="bookCard" style="width:180px;height:240px;border-radius:8px;background:linear-gradient(160deg,rgba(60,20,0,0.97),rgba(25,8,0,0.99));border:1px solid rgba(201,168,76,0.4);box-shadow:0 0 40px rgba(201,168,76,0.15),0 40px 80px rgba(0,0,0,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:28px;animation:bookFloat 5s ease-in-out infinite;position:relative;overflow:hidden">
+        <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(201,168,76,0.08) 0%,transparent 50%);pointer-events:none"></div>
+        <div style="font-size:2.2rem">📈</div>
+        <div style="font-family:var(--font-mono);font-size:0.5rem;color:rgba(201,168,76,0.6);letter-spacing:0.2em;text-transform:uppercase">SniperTrader</div>
+        <div style="font-family:var(--font-display);font-size:0.65rem;font-weight:700;color:var(--white);text-align:center;line-height:1.5;letter-spacing:0.05em">FROM BROKE<br>TO FUNDED</div>
+        <div style="font-family:var(--font-mono);font-size:0.45rem;color:rgba(201,168,76,0.5);letter-spacing:0.15em;text-transform:uppercase">ICT/SMC Playbook</div>
+        <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent)"></div>
+      </div>
+    </div>
+    @keyframes bookFloat { 0%,100%{transform:rotateY(-12deg) translateY(0)} 50%{transform:rotateY(-12deg) translateY(-10px)} }
+
+    <!-- Book details -->
+    <div style="text-align:left;max-width:480px;display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;align-items:baseline;gap:10px">
+        <span style="font-family:var(--font-display);font-size:3rem;font-weight:900;letter-spacing:-0.02em;color:var(--gold)">$19</span>
+        <span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--muted);letter-spacing:0.1em">ONE-TIME · INSTANT DOWNLOAD</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="psych-stat" style="border-color:rgba(201,168,76,0.1)">
+          <div class="stat-num" style="font-size:1.4rem">200+</div>
+          <div class="stat-label">Pages</div>
+        </div>
+        <div class="psych-stat" style="border-color:rgba(201,168,76,0.1)">
+          <div class="stat-num" style="font-size:1.4rem">Real</div>
+          <div class="stat-label">Trade Walkthroughs</div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="feature-item gold-item" style="border-radius:3px;padding:12px 16px">
+          <div style="font-size:0.8rem">✓</div>
+          <div style="font-size:0.85rem;color:rgba(232,237,245,0.7)">ICT/SMC A–Z methodology with visual diagrams</div>
+        </div>
+        <div class="feature-item gold-item" style="border-radius:3px;padding:12px 16px">
+          <div style="font-size:0.8rem">✓</div>
+          <div style="font-size:0.85rem;color:rgba(232,237,245,0.7)">Prop firm evaluation blueprint — Apex, FTMO, TopStep</div>
+        </div>
+        <div class="feature-item gold-item" style="border-radius:3px;padding:12px 16px">
+          <div style="font-size:0.8rem">✓</div>
+          <div style="font-size:0.85rem;color:rgba(232,237,245,0.7)">Killzone &amp; Silver Bullet setup reference guide</div>
+        </div>
+        <div class="feature-item gold-item" style="border-radius:3px;padding:12px 16px">
+          <div style="font-size:0.8rem">✓</div>
+          <div style="font-size:0.85rem;color:rgba(232,237,245,0.7)">Mindset, risk management, and recovery chapters</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px">
+        <a href="checkout.html" class="btn-gold" style="flex:1;justify-content:center">Buy Now — $19</a>
+        <a href="ebook.html" class="btn-secondary" style="justify-content:center">Read Preview →</a>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ══════════════════════ 05 — PRICING ══════════════════════ -->
+<div style="background:var(--obsidian-2);width:100%">
+<section id="pricing" style="max-width:1400px">
+  <div class="section-label reveal">05 — Pricing</div>
+  <h2 class="reveal reveal-delay-1">Institutional Edge.<br><span class="accent">Independent Price.</span></h2>
+  <p class="lead reveal reveal-delay-2">Every plan includes a 7-day money-back guarantee. No subscriptions unless you want the journal.</p>
+
+  <div class="pricing-grid reveal" style="margin-top:60px">
+
+    <!-- ThinkScript -->
+    <div class="pricing-cell">
+      <div class="price-tag tag-cyan">ThinkScript Edition</div>
+      <div class="pricing-name">USME TOS v2.0</div>
+      <div class="pricing-desc">Full indicator suite for ThinkorSwim / Schwab platforms</div>
+      <div class="price-amount" style="color:var(--cyan)">$97</div>
+      <div class="price-period">ONE-TIME · LIFETIME ACCESS</div>
+      <div class="price-divider"></div>
+      <ul class="price-features">
+        <li><span class="chk">✓</span> Complete USME v2.0 engine</li>
+        <li><span class="chk">✓</span> 3-tier SOTD alerts (WATCH/PRIME/ELITE)</li>
+        <li><span class="chk">✓</span> ATR-based targets + risk levels</li>
+        <li><span class="chk">✓</span> Kill zone timing layer</li>
+        <li><span class="chk">✓</span> IPDA range dashboard</li>
+        <li><span class="chk">✓</span> Liquidity sweep + BOS engine</li>
+        <li><span class="chk">✓</span> Lifetime license + updates</li>
+        <li><span class="chk">✓</span> 7-day money-back guarantee</li>
+      </ul>
+      <a href="checkout.html" class="btn-primary" style="width:100%;justify-content:center;font-size:0.7rem">Buy Now — $97</a>
+    </div>
+
+    <!-- Bundle — featured -->
+    <div class="pricing-cell featured">
+      <div class="price-tag tag-bundle">⭐ Most Popular</div>
+      <div class="pricing-name" style="color:var(--cyan)">Full Suite Bundle</div>
+      <div class="pricing-desc">Both indicators + Journal — the complete institutional toolkit</div>
+      <div class="price-amount" style="color:var(--cyan)">$213</div>
+      <div class="price-period">ONE-TIME + $19/MO JOURNAL · SAVE $20</div>
+      <div class="price-divider"></div>
+      <ul class="price-features">
+        <li><span class="chk">✓</span> USME ThinkScript Edition</li>
+        <li><span class="chk">✓</span> USME Pine Script Edition</li>
+        <li><span class="chk">✓</span> SMC Trade Journal (1 month free)</li>
+        <li><span class="chk">✓</span> Priority support channel</li>
+        <li><span class="chk">✓</span> All 3-tier alert systems</li>
+        <li><span class="chk">✓</span> Masterclass PDF guide included</li>
+        <li><span class="chk">✓</span> Lifetime indicator licenses</li>
+        <li><span class="chk">✓</span> 7-day money-back guarantee</li>
+      </ul>
+      <a href="checkout.html" class="btn-primary" style="width:100%;justify-content:center;font-size:0.7rem">Get the Bundle →</a>
+    </div>
+
+    <!-- Pine Script -->
+    <div class="pricing-cell">
+      <div class="price-tag tag-gold">Pine Script Edition</div>
+      <div class="pricing-name" style="color:var(--gold)">USME TV v2.0</div>
+      <div class="pricing-desc">Full indicator suite for TradingView — Pine Script v5</div>
+      <div class="price-amount" style="color:var(--gold)">$97</div>
+      <div class="price-period">ONE-TIME · LIFETIME ACCESS</div>
+      <div class="price-divider"></div>
+      <ul class="price-features">
+        <li><span class="chk gold">✓</span> Complete USME v2.0 engine</li>
+        <li><span class="chk gold">✓</span> Multi-timeframe HTF confluence</li>
+        <li><span class="chk gold">✓</span> Native TradingView alerts</li>
+        <li><span class="chk gold">✓</span> Premium on-chart dashboard</li>
+        <li><span class="chk gold">✓</span> Forex · Futures · Crypto</li>
+        <li><span class="chk gold">✓</span> BOS · CHoCH · FVG · OB layers</li>
+        <li><span class="chk gold">✓</span> Lifetime license + updates</li>
+        <li><span class="chk gold">✓</span> 7-day money-back guarantee</li>
+      </ul>
+      <a href="checkout.html" class="btn-gold" style="width:100%;justify-content:center;font-size:0.7rem">Buy Now — $97</a>
+    </div>
+
+  </div>
+
+  <!-- Journal + eBook add-on strip -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-top:2px;border:1px solid rgba(0,229,255,0.08);border-top:none;border-radius:0 0 4px 4px;overflow:hidden" class="reveal">
+    <div class="pricing-cell" style="border-top:1px solid rgba(0,229,255,0.06)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px">
+        <div>
+          <div class="price-tag tag-cyan" style="margin-bottom:12px">SMC Trade Journal</div>
+          <div class="pricing-name" style="font-size:0.85rem">TraderEdge Performance OS</div>
+          <div class="pricing-desc" style="margin-bottom:16px">Analytics platform for ICT traders · 7-day free trial</div>
+          <ul class="price-features" style="margin-bottom:20px">
+            <li><span class="chk">✓</span> Unlimited trade logs + AI setup tagging</li>
+            <li><span class="chk">✓</span> Kill zone &amp; session edge analytics</li>
+            <li><span class="chk">✓</span> CSV import · Screenshot vault</li>
+            <li><span class="chk off">—</span> Indicator files not included</li>
+          </ul>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-family:var(--font-display);font-size:1.8rem;font-weight:900;color:var(--cyan)">$19</div>
+          <div style="font-family:var(--font-mono);font-size:0.5rem;color:var(--muted);letter-spacing:0.1em">/month</div>
+        </div>
+      </div>
+      <a href="#" class="btn-secondary" style="width:100%;justify-content:center;font-size:0.7rem">Start Free Trial</a>
+    </div>
+    <div class="pricing-cell" style="border-top:1px solid rgba(201,168,76,0.08);border-left:1px solid rgba(201,168,76,0.06)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px">
+        <div>
+          <div class="price-tag tag-gold" style="margin-bottom:12px">📖 eBook</div>
+          <div class="pricing-name" style="font-size:0.85rem;color:var(--gold)">From Broke to Funded</div>
+          <div class="pricing-desc" style="margin-bottom:16px">200+ page ICT/SMC prop firm playbook · Instant PDF</div>
+          <ul class="price-features" style="margin-bottom:20px">
+            <li><span class="chk gold">✓</span> Full ICT/SMC methodology reference</li>
+            <li><span class="chk gold">✓</span> Real NQ, ES, GC walkthroughs</li>
+            <li><span class="chk gold">✓</span> Prop firm eval blueprint</li>
+            <li><span class="chk gold">✓</span> Mindset + risk management</li>
+          </ul>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-family:var(--font-display);font-size:1.8rem;font-weight:900;color:var(--gold)">$19</div>
+          <div style="font-family:var(--font-mono);font-size:0.5rem;color:var(--muted);letter-spacing:0.1em">one-time</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <a href="checkout.html" class="btn-gold" style="flex:1;justify-content:center;font-size:0.7rem">Buy — $19</a>
+        <a href="ebook.html" class="btn-secondary" style="justify-content:center;padding:15px 20px;font-size:0.7rem">Preview →</a>
+      </div>
+    </div>
+  </div>
+
+</section>
+</div>
+
+<div class="section-divider"></div>
+
+<!-- ══════════════════════ 06 — FAQ ══════════════════════ -->
+<section id="faq" style="max-width:1400px">
+  <div class="section-label reveal">06 — FAQ</div>
+  <h2 class="reveal reveal-delay-1">Common <span class="accent">Questions.</span></h2>
+
+  <div class="faq-list">
+    <div class="faq-item reveal">
+      <div class="faq-q" onclick="toggleFaq(this)">Do the ThinkScript indicators repaint?<span class="faq-icon">+</span></div>
+      <div class="faq-a">No. The Unified Smart Money Engine v2.0 is built entirely on confirmed candle data. Signals only appear on the close of the confirmation candle and are never modified or removed retroactively. What you see on a historical chart is exactly what would have appeared in real-time when that candle closed.</div>
+    </div>
+    <div class="faq-item reveal reveal-delay-1">
+      <div class="faq-q" onclick="toggleFaq(this)">Which ThinkorSwim and TradingView plans are required?<span class="faq-icon">+</span></div>
+      <div class="faq-a">The ThinkScript edition works on any ThinkorSwim account including the free paperMoney platform — no paid tier required. The TradingView edition is compatible from Basic through Premium, though multi-timeframe security() calls perform best on Essential or Plus for full simultaneous indicator counts.</div>
+    </div>
+    <div class="faq-item reveal reveal-delay-2">
+      <div class="faq-q" onclick="toggleFaq(this)">What markets do the indicators work on?<span class="faq-icon">+</span></div>
+      <div class="faq-a">Both editions are tuned primarily for CME Micro and full-size Futures (ES, NQ, YM, GC, CL). The Pine Script edition also performs well on major Forex pairs (EUR/USD, GBP/USD, USD/JPY), crypto (BTC, ETH), and high-float equities. The ThinkScript edition works across all Schwab instruments including equities and futures.</div>
+    </div>
+    <div class="faq-item reveal">
+      <div class="faq-q" onclick="toggleFaq(this)">Is this based on official ICT / Inner Circle Trader methodology?<span class="faq-icon">+</span></div>
+      <div class="faq-a">Yes. The indicators are coded interpretations of publicly-taught ICT concepts including Order Blocks, Fair Value Gaps, Break of Structure, CHoCH, Inducement, Liquidity Pools, IPDA ranges, and Killzone timing. This is an independent product and is not affiliated with, endorsed by, or produced by ICT or The Inner Circle Trader. All concepts are applied as taught in publicly available educational content.</div>
+    </div>
+    <div class="faq-item reveal reveal-delay-1">
+      <div class="faq-q" onclick="toggleFaq(this)">Can I import trades from my broker into the Trade Journal?<span class="faq-icon">+</span></div>
+      <div class="faq-a">Yes. The Trade Journal supports CSV import from Tradovate, Interactive Brokers (IBKR), Webull, TD Ameritrade/Schwab, and generic CSV. After import, the AI setup-tagger will automatically classify each trade by ICT setup type based on entry time and symbol, which you can then confirm or override manually.</div>
+    </div>
+    <div class="faq-item reveal reveal-delay-2">
+      <div class="faq-q" onclick="toggleFaq(this)">What is your refund policy?<span class="faq-icon">+</span></div>
+      <div class="faq-a">We offer a 7-day money-back guarantee on the ThinkScript and TradingView editions — no questions asked. If the indicators don't load correctly on your platform or you're not satisfied within 7 days of purchase, contact support for a full refund. The Trade Journal subscription can be cancelled anytime and includes a 7-day free trial before any billing begins.</div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ══════════════════════ CLOSING CTA ══════════════════════ -->
+<section id="closing" style="max-width:100%;padding:0;margin:0">
+  <div class="closing-bg"></div>
+  <div style="max-width:1400px;margin:0 auto;padding:160px 60px;text-align:center;position:relative;z-index:1">
+
+    <div class="member-card reveal">
+      <div class="card-chip"></div>
+      <div class="card-logo">SNIPER<span>TRADER</span></div>
+      <div class="card-bottom">
+        <div class="card-num">•••• •••• •••• ELITE</div>
+        <div class="card-tier">⭐ Sniper Tier</div>
+      </div>
+    </div>
+
+    <h2 class="closing-tagline reveal reveal-delay-1">
+      Stop Chasing.<br>Start <span style="color:var(--cyan)">Engineering.</span>
+    </h2>
+    <p class="closing-sub reveal reveal-delay-2">Join 2,500+ traders using the USME suite to trade with institutional precision — not prediction. 7-day guarantee on every indicator.</p>
+    <div class="closing-cta reveal reveal-delay-3">
+      <button class="btn-primary" style="padding:20px 48px;font-size:0.85rem" onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'})">⚡ Access the Suite Today</button>
+      <button class="btn-secondary" onclick="document.getElementById('thinkscript').scrollIntoView({behavior:'smooth'})">Explore Products →</button>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer style="display:block;padding:64px 60px 40px;border-top:1px solid rgba(0,229,255,0.08);max-width:1400px;margin:0 auto">
+  <!-- Logo row -->
+  <div style="margin-bottom:48px">
+    <div class="footer-logo" style="font-size:1rem;margin-bottom:8px">SNIPER<span>TRADER</span></div>
+    <div style="font-family:var(--font-mono);font-size:0.55rem;color:var(--muted);letter-spacing:0.1em">SniperTrader.ai Intelligence Platform</div>
+  </div>
+
+  <!-- 4-column grid -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:48px;margin-bottom:48px">
+
+    <!-- Col 1: Tools -->
+    <div>
+      <div style="font-family:var(--font-mono);font-size:0.55rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--cyan);margin-bottom:20px">Tools</div>
+      <ul style="list-style:none;display:flex;flex-direction:column;gap:10px">
+        <li><a href="#" class="footer-col-link">USME Algo</a></li>
+        <li><a href="#baseline" class="footer-col-link">Pre-Market Baseline</a></li>
+        <li><a href="#guardrails" class="footer-col-link">Habit Guardrails</a></li>
+        <li><a href="#review-loop" class="footer-col-link">Post-Market Review Loop</a></li>
+        <li><a href="#ai-sentiment" class="footer-col-link">Ai Sentiment Engine</a></li>
+        <li><a href="#ai-chart" class="footer-col-link">Ai Chart Analyzer</a></li>
+        <li><a href="#prop-firm" class="footer-col-link">Prop Firm Command Center</a></li>
+      </ul>
+    </div>
+
+    <!-- Col 2: Ecosystem -->
+    <div>
+      <div style="font-family:var(--font-mono);font-size:0.55rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--cyan);margin-bottom:20px">Ecosystem</div>
+      <ul style="list-style:none;display:flex;flex-direction:column;gap:10px">
+        <li><a href="#" class="footer-col-link">Ai Smart Glasses</a></li>
+        <li><a href="#" class="footer-col-link">Prop Master Plan</a></li>
+        <li><a href="#" class="footer-col-link">30-Day Funded Challenge</a></li>
+        <li><a href="#" class="footer-col-link">ICT Discipline Engine</a></li>
+      </ul>
+    </div>
+
+    <!-- Col 3: Resources -->
+    <div>
+      <div style="font-family:var(--font-mono);font-size:0.55rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--cyan);margin-bottom:20px">Resources</div>
+      <ul style="list-style:none;display:flex;flex-direction:column;gap:10px">
+        <li><a href="#" class="footer-col-link">Affiliate Program</a></li>
+        <li><a href="#" class="footer-col-link">Trader's Couch</a></li>
+        <li><a href="ebook.html" class="footer-col-link">Ebook</a></li>
+        <li><a href="#" class="footer-col-link">Prop Firm Master Plan</a></li>
+        <li><a href="#" class="footer-col-link">30 Days Funded Challenge</a></li>
+        <li><a href="#" class="footer-col-link">Shop</a></li>
+      </ul>
+    </div>
+
+    <!-- Col 4: Company -->
+    <div>
+      <div style="font-family:var(--font-mono);font-size:0.55rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--cyan);margin-bottom:20px">Company</div>
+      <ul style="list-style:none;display:flex;flex-direction:column;gap:10px">
+        <li><a href="#" class="footer-col-link">About</a></li>
+        <li><a href="#" class="footer-col-link">Docs</a></li>
+        <li><a href="#" class="footer-col-link">Terms</a></li>
+        <li><a href="#" class="footer-col-link">Disclaimer</a></li>
+        <li><a href="#" class="footer-col-link">Privacy</a></li>
+      </ul>
+    </div>
+
+  </div>
+
+  <!-- Bottom bar -->
+  <div style="border-top:1px solid rgba(0,229,255,0.06);padding-top:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+    <div class="footer-copy">© 2026 SniperTrader.ai Intelligence Platform — All rights reserved.</div>
+  </div>
+</footer>
+<div class="footer-disclaimer">
+  ⚠ Risk Disclaimer: Trading futures, forex, and equities involves substantial risk of loss. Past performance is not indicative of future results. SniperTrader.ai indicators and tools are for educational and analytical purposes only and do not constitute financial advice. All signals and trade ideas should be used in conjunction with your own analysis and risk management plan. You are solely responsible for your trading decisions. Not affiliated with or endorsed by ICT / The Inner Circle Trader.
+</div>
+
+<!-- ══════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════ -->
+<script>
+/* ── CURSOR — exact homepage ── */
+const cursor = document.getElementById('cursor');
+const ring   = document.getElementById('cursor-ring');
+let mx = window.innerWidth/2, my = window.innerHeight/2;
+let rx = mx, ry = my;
+
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  cursor.style.left = mx + 'px';
+  cursor.style.top  = my + 'px';
+});
+(function animRing() {
+  rx += (mx - rx) * 0.12;
+  ry += (my - ry) * 0.12;
+  ring.style.left = rx + 'px';
+  ring.style.top  = ry + 'px';
+  requestAnimationFrame(animRing);
+})();
+
+document.querySelectorAll('button, a, .glass-card, .faq-q').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    cursor.style.transform = 'translate(-50%,-50%) scale(2.5)';
+    cursor.style.background = 'var(--gold)';
+    ring.style.width = '60px'; ring.style.height = '60px';
+  });
+  el.addEventListener('mouseleave', () => {
+    cursor.style.transform = 'translate(-50%,-50%) scale(1)';
+    cursor.style.background = 'var(--cyan)';
+    ring.style.width = '40px'; ring.style.height = '40px';
+  });
+});
+
+/* ── SCOPE TRACKING — exact homepage ── */
+const scope = document.getElementById('scope');
+let scopeX = window.innerWidth/2, scopeY = window.innerHeight/2;
+let targetX = scopeX, targetY = scopeY;
+
+document.addEventListener('mousemove', e => {
+  if (e.clientY < window.innerHeight) { targetX = e.clientX; targetY = e.clientY; }
+});
+(function animScope() {
+  scopeX += (targetX - scopeX) * 0.06;
+  scopeY += (targetY - scopeY) * 0.06;
+  scope.style.left = scopeX + 'px';
+  scope.style.top  = scopeY + 'px';
+  requestAnimationFrame(animScope);
+})();
+window.addEventListener('scroll', () => {
+  const scrolled = window.scrollY > window.innerHeight * 0.85;
+  scope.style.opacity = scrolled ? '0' : '1';
+  scope.style.transition = 'opacity 0.5s';
+});
+
+/* ── HOLOGRAPHIC CHART — exact homepage ── */
+function buildChart() {
+  const w = 1400, h = 400;
+  const points = [];
+  let y = 280;
+  for (let i = 0; i <= 60; i++) {
+    y += (Math.random() - 0.44) * 28;
+    y = Math.max(80, Math.min(360, y));
+    points.push({ x: (i/60)*w, y });
+  }
+  const pathD = points.map((p,i) => (i===0?`M${p.x},${p.y}`:`L${p.x},${p.y}`)).join(' ');
+  const areaD = `${pathD} L${w},${h} L0,${h} Z`;
+  document.getElementById('chartLine').setAttribute('d', pathD);
+  document.getElementById('chartArea').setAttribute('d', areaD);
+
+  const volG = document.getElementById('volBars');
+  for (let i = 0; i < 50; i++) {
+    const x = (i/50)*w; const bh = 20 + Math.random()*80;
+    const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('x',x); rect.setAttribute('y',h-bh);
+    rect.setAttribute('width',w/55); rect.setAttribute('height',bh);
+    rect.setAttribute('fill', Math.random()>0.45?'#00e5ff':'#ff5050');
+    volG.appendChild(rect);
+  }
+  const sigG = document.getElementById('signals');
+  [12, 24, 38, 50].forEach(idx => {
+    const p = points[idx]; const isBuy = Math.random()>0.4;
+    const tri = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    const s = 8;
+    const pts = isBuy
+      ? `${p.x},${p.y-s*2} ${p.x-s},${p.y-s*0.5} ${p.x+s},${p.y-s*0.5}`
+      : `${p.x},${p.y+s*2} ${p.x-s},${p.y+s*0.5} ${p.x+s},${p.y+s*0.5}`;
+    tri.setAttribute('points',pts);
+    tri.setAttribute('fill', isBuy?'#00e5a0':'#ff5050');
+    tri.setAttribute('filter','url(#chartGlow)');
+    sigG.appendChild(tri);
+  });
+}
+buildChart();
+
+/* ── TICKER — exact homepage ── */
+const tickers = [
+  {sym:'ES/NQ',price:'21,847.25',chg:'+0.34%',up:true},
+  {sym:'NQ1!',price:'20,448.50',chg:'+0.62%',up:true},
+  {sym:'GC1!',price:'3,042.80',chg:'+0.18%',up:true},
+  {sym:'CL1!',price:'79.14',chg:'-0.42%',up:false},
+  {sym:'EURUSD',price:'1.0841',chg:'+0.11%',up:true},
+  {sym:'BTCUSD',price:'82,441',chg:'+2.14%',up:true},
+  {sym:'DXY',price:'103.92',chg:'-0.08%',up:false},
+  {sym:'VIX',price:'14.22',chg:'-3.1%',up:false},
+  {sym:'USME ELITE',price:'ACTIVE',chg:'KILL ZONE',up:true},
+  {sym:'/MNQ',price:'20,451.00',chg:'+0.63%',up:true},
+];
+const tickerEl = document.getElementById('ticker');
+const doubled  = [...tickers,...tickers];
+doubled.forEach(t => {
+  const el = document.createElement('div');
+  el.className = 'tick-item';
+  el.innerHTML = `<span class="tick-sym">${t.sym}</span><span class="tick-price">${t.price}</span><span class="${t.up?'tick-up':'tick-down'}">${t.chg}</span>`;
+  tickerEl.appendChild(el);
+});
+
+/* ── SCROLL REVEAL — exact homepage ── */
+const revealObserver = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.08 });
+document.querySelectorAll('.reveal').forEach(r => revealObserver.observe(r));
+
+/* ── 3D CARD TILT — mouse tracking ── */
+document.querySelectorAll('.tilt-card, .glass-card').forEach(card => {
+  card.addEventListener('mousemove', e => {
+    const r  = card.getBoundingClientRect();
+    const cx = r.left + r.width  / 2;
+    const cy = r.top  + r.height / 2;
+    const dx = (e.clientX - cx) / (r.width  / 2);
+    const dy = (e.clientY - cy) / (r.height / 2);
+    card.style.transform = `perspective(900px) rotateX(${dy*-4}deg) rotateY(${dx*4}deg) translateZ(4px)`;
+    card.style.transition = 'transform 0.05s ease';
+  });
+  card.addEventListener('mouseleave', () => {
+    card.style.transform = '';
+    card.style.transition = 'transform 0.6s cubic-bezier(0.23,1,0.32,1), border-color 0.3s, box-shadow 0.3s';
+  });
+});
+
+/* ── FAQ ── */
+function toggleFaq(el) {
+  const item = el.parentElement;
+  const wasOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+  if (!wasOpen) item.classList.add('open');
+}
+
+/* ── SMOOTH SCROLL ── */
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const t = document.querySelector(a.getAttribute('href'));
+    if (t) { e.preventDefault(); t.scrollIntoView({ behavior:'smooth', block:'start' }); }
+  });
+});
+
+/* ── THEME TOGGLE ── */
+function toggleTheme() {
+  const body = document.body;
+  const btn = document.getElementById('theme-toggle');
+  body.classList.toggle('light-mode');
+  const isLight = body.classList.contains('light-mode');
+  btn.textContent = isLight ? '🌙' : '☀';
+  btn.title = isLight ? 'Switch to dark mode' : 'Switch to light mode';
+  try { localStorage.setItem('st-theme', isLight ? 'light' : 'dark'); } catch(e){}
+}
+// Restore saved preference
+(function() {
+  try {
+    const saved = localStorage.getItem('st-theme');
+    if (saved === 'light') {
+      document.body.classList.add('light-mode');
+      const btn = document.getElementById('theme-toggle');
+      if (btn) { btn.textContent = '🌙'; btn.title = 'Switch to dark mode'; }
+    }
+  } catch(e) {}
+})();
+</script>
+</body>
+</html>
