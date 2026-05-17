@@ -1,0 +1,1763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SniperTrader — USME Prop Firm Master Plan</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   RESET & ROOT
+============================================================ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  /* Brand palette — obsidian / cyan / gold */
+  --obsidian:   #03070d;
+  --deep:       #060e1a;
+  --panel:      #0a1628;
+  --panel2:     #0d1e34;
+  --glass:      rgba(8,18,36,0.72);
+  --glass2:     rgba(8,18,36,0.45);
+
+  --cyan:       #00e5ff;
+  --cyan-dim:   rgba(0,229,255,0.12);
+  --cyan-glow:  rgba(0,229,255,0.35);
+  --gold:       #f5c518;
+  --gold-dim:   rgba(245,197,24,0.12);
+  --gold-glow:  rgba(245,197,24,0.3);
+  --red:        #ff2d55;
+  --red-dim:    rgba(255,45,85,0.12);
+  --green:      #00ff9d;
+  --green-dim:  rgba(0,255,157,0.1);
+
+  --border-c:   rgba(0,229,255,0.18);
+  --border-h:   rgba(0,229,255,0.45);
+  --text:       #d8ecf8;
+  --text-bright:#f4faff;
+  --muted:      #7aadcc;
+  --white:      #f8fdff;
+
+  /* theme tokens */
+  --bg:         #03070d;
+  --bg-nav:     rgba(3,7,13,0.9);
+  --bg-card:    rgba(8,18,36,0.72);
+  --body-text:  #d8ecf8;
+}
+
+/* ── LIGHT MODE ── */
+html.light{
+  --bg:         #eef4f8;
+  --bg-nav:     rgba(238,244,248,0.95);
+  --bg-card:    rgba(255,255,255,0.80);
+  --body-text:  #0d1e34;
+  --text:       #1a3550;
+  --text-bright:#0a1e32;
+  --muted:      #3a6885;
+  --white:      #0a1e32;
+  --border-c:   rgba(0,150,200,0.2);
+  --border-h:   rgba(0,150,200,0.5);
+  --glass:      rgba(255,255,255,0.80);
+  --glass2:     rgba(255,255,255,0.55);
+  --obsidian:   #eef4f8;
+  --panel:      #dde8f0;
+  --panel2:     #ccd8e4;
+  --cyan:       #007aaa;
+  --gold:       #c8900a;
+  --green:      #008a50;
+  --red:        #cc1133;
+}
+
+html{scroll-behavior:smooth;overflow-x:hidden}
+body{
+  background:var(--bg);
+  color:var(--body-text);
+  font-family:'Syne',sans-serif;
+  overflow-x:hidden;
+  cursor:none;
+  transition:background .4s ease,color .4s ease;
+}
+
+/* ============================================================
+   CUSTOM CURSOR
+============================================================ */
+#cursor-dot{
+  position:fixed;width:8px;height:8px;
+  background:var(--cyan);border-radius:50%;
+  pointer-events:none;z-index:10000;
+  transform:translate(-50%,-50%);
+  box-shadow:0 0 12px var(--cyan),0 0 24px rgba(0,229,255,0.4);
+  transition:width .15s,height .15s,background .2s;
+}
+#cursor-ring{
+  position:fixed;width:40px;height:40px;
+  border:1px solid rgba(0,229,255,0.5);border-radius:50%;
+  pointer-events:none;z-index:9999;
+  transform:translate(-50%,-50%);
+  transition:width .25s,height .25s,border-color .2s,opacity .2s;
+}
+#cursor-dot.hov{width:16px;height:16px;background:var(--gold)}
+#cursor-ring.hov{width:60px;height:60px;border-color:rgba(245,197,24,0.5)}
+
+/* ============================================================
+   PARTICLE CANVAS
+============================================================ */
+#particle-canvas{
+  position:fixed;inset:0;
+  pointer-events:none;z-index:1;
+}
+
+/* ============================================================
+   MOUSE GLOW ORBS
+============================================================ */
+#mouse-glow{
+  position:fixed;
+  width:700px;height:700px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,229,255,0.042) 0%,transparent 65%);
+  pointer-events:none;z-index:2;
+  transform:translate(-50%,-50%);
+  transition:left .7s cubic-bezier(.25,.46,.45,.94),
+             top  .7s cubic-bezier(.25,.46,.45,.94);
+  will-change:left,top;
+}
+
+/* ============================================================
+   SCENE LAYERS — grid, scanlines, vignette
+============================================================ */
+.scene-grid{
+  position:fixed;inset:0;z-index:0;
+  background-image:
+    linear-gradient(rgba(0,229,255,0.028) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,229,255,0.028) 1px,transparent 1px);
+  background-size:64px 64px;
+  mask-image:radial-gradient(ellipse 90% 90% at 50% 50%,black 40%,transparent 100%);
+}
+.scene-glow-top{
+  position:fixed;top:0;left:0;right:0;height:50vh;
+  background:radial-gradient(ellipse 80% 100% at 50% 0%,rgba(0,229,255,0.04) 0%,transparent 70%);
+  pointer-events:none;z-index:1;
+}
+.scene-scanlines{
+  position:fixed;inset:0;z-index:3;pointer-events:none;
+  background:repeating-linear-gradient(
+    0deg,transparent,transparent 3px,rgba(0,0,0,0.018) 3px,rgba(0,0,0,0.018) 4px
+  );
+}
+.scene-vignette{
+  position:fixed;inset:0;z-index:3;pointer-events:none;
+  background:radial-gradient(ellipse 100% 100% at 50% 50%,transparent 50%,rgba(3,7,13,0.7) 100%);
+}
+
+/* ============================================================
+   PAGE WRAPPER
+============================================================ */
+.page{
+  position:relative;z-index:10;
+  max-width:1120px;margin:0 auto;
+  padding:0 40px 140px;
+}
+
+/* ============================================================
+   NAV BAR
+============================================================ */
+.nav{
+  position:fixed;top:0;left:0;right:0;z-index:500;
+  padding:20px 40px;
+  display:flex;justify-content:space-between;align-items:center;
+  background:linear-gradient(to bottom,var(--bg-nav),transparent);
+  backdrop-filter:blur(8px);
+}
+.nav-brand{
+  font-family:'Orbitron',sans-serif;
+  font-size:16px;font-weight:800;
+  letter-spacing:3px;color:var(--white);
+  text-transform:uppercase;
+}
+.nav-brand span{color:var(--cyan)}
+.nav-links{
+  display:flex;align-items:center;gap:28px;
+}
+.nav-link{
+  font-family:'Space Mono',monospace;
+  font-size:9px;letter-spacing:3px;
+  text-transform:uppercase;
+  color:var(--muted);
+  text-decoration:none;
+  transition:color .2s;
+}
+.nav-link:hover{color:var(--cyan)}
+.nav-pill{
+  font-family:'Space Mono',monospace;
+  font-size:9px;letter-spacing:3px;
+  text-transform:uppercase;
+  background:rgba(0,229,255,0.08);
+  border:1px solid rgba(0,229,255,0.25);
+  color:var(--cyan);padding:6px 16px;border-radius:2px;
+}
+
+/* ============================================================
+   HERO
+============================================================ */
+.hero{
+  min-height:100vh;
+  display:flex;flex-direction:column;
+  justify-content:center;
+  padding:120px 0 80px;
+  position:relative;
+}
+
+/* Animated crosshair reticle behind title */
+.hero-reticle{
+  position:absolute;right:5%;top:50%;
+  transform:translateY(-50%);
+  width:380px;height:380px;
+  opacity:.06;
+  pointer-events:none;
+}
+.hero-reticle circle{
+  fill:none;stroke:var(--cyan);stroke-width:.8;
+  transform-origin:center;
+}
+.hero-reticle .r1{animation:spin 30s linear infinite}
+.hero-reticle .r2{animation:spin 18s linear infinite reverse}
+.hero-reticle .r3{animation:spin 8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.hero-eyebrow{
+  font-family:'Space Mono',monospace;
+  font-size:10px;letter-spacing:5px;
+  text-transform:uppercase;color:var(--cyan);
+  margin-bottom:28px;
+  display:flex;align-items:center;gap:14px;
+  opacity:0;animation:riseIn .9s .15s forwards;
+}
+.hero-eyebrow::before{
+  content:'';width:48px;height:1px;
+  background:linear-gradient(to right,transparent,var(--cyan));
+  flex-shrink:0;
+}
+.live-dot{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:9px;letter-spacing:2px;color:var(--cyan);
+}
+.live-dot::before{
+  content:'';display:block;
+  width:5px;height:5px;background:var(--cyan);border-radius:50%;
+  animation:livePulse 1.8s infinite;
+  box-shadow:0 0 8px var(--cyan);
+}
+@keyframes livePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.5)}}
+
+.hero-title{
+  font-family:'Orbitron',sans-serif;
+  font-weight:900;
+  font-size:clamp(56px,8.5vw,118px);
+  line-height:.88;letter-spacing:-1px;
+  color:var(--white);
+  opacity:0;animation:riseIn .9s .3s forwards;
+}
+.hero-title .line-cyan{
+  color:transparent;
+  -webkit-text-stroke:2px var(--cyan);
+  filter:drop-shadow(0 0 18px rgba(0,229,255,0.5));
+}
+.hero-title .line-glow{
+  color:var(--cyan);
+  text-shadow:0 0 40px rgba(0,229,255,0.6),0 0 80px rgba(0,229,255,0.25);
+  animation:titlePulse 4s ease-in-out infinite;
+}
+@keyframes titlePulse{
+  0%,100%{text-shadow:0 0 40px rgba(0,229,255,0.6),0 0 80px rgba(0,229,255,0.25)}
+  50%{text-shadow:0 0 60px rgba(0,229,255,0.9),0 0 120px rgba(0,229,255,0.4)}
+}
+
+.hero-sub{
+  max-width:620px;margin-top:32px;
+  font-family:'Syne',sans-serif;
+  font-size:17px;font-weight:400;
+  line-height:1.75;color:var(--muted);
+  opacity:0;animation:riseIn .9s .48s forwards;
+}
+.hero-sub em{font-style:normal;color:var(--text-bright);font-weight:600}
+
+/* Hero stat bar */
+.hero-stats{
+  display:flex;flex-wrap:wrap;gap:0;
+  margin-top:60px;
+  opacity:0;animation:riseIn .9s .65s forwards;
+  border-top:1px solid var(--border-c);
+  border-bottom:1px solid var(--border-c);
+}
+.hstat{
+  padding:24px 48px 24px 0;
+  margin-right:48px;
+  border-right:1px solid var(--border-c);
+  position:relative;
+}
+.hstat:last-child{border-right:none;margin-right:0;padding-right:0}
+.hstat-num{
+  font-family:'Orbitron',sans-serif;
+  font-size:42px;font-weight:900;
+  line-height:1;display:block;
+  color:var(--cyan);
+  text-shadow:0 0 24px rgba(0,229,255,0.5);
+}
+.hstat-num.gold{color:var(--gold);text-shadow:0 0 24px rgba(245,197,24,0.4)}
+.hstat-num.green{color:var(--green);text-shadow:0 0 24px rgba(0,255,157,0.4)}
+.hstat-lbl{
+  font-family:'Space Mono',monospace;
+  font-size:9px;letter-spacing:2.5px;
+  text-transform:uppercase;color:var(--muted);
+  margin-top:5px;display:block;
+}
+
+/* Hero scroll cue */
+.hero-scroll{
+  position:absolute;bottom:40px;left:0;
+  display:flex;align-items:center;gap:12px;
+  font-family:'Space Mono',monospace;
+  font-size:9px;letter-spacing:3px;
+  text-transform:uppercase;color:var(--muted);
+  opacity:0;animation:riseIn .9s .9s forwards;
+}
+.scroll-track{
+  width:1px;height:40px;
+  background:linear-gradient(to bottom,var(--cyan),transparent);
+  animation:scrollDrop 2s infinite;
+}
+@keyframes scrollDrop{
+  0%{transform:scaleY(0);transform-origin:top}
+  50%{transform:scaleY(1);transform-origin:top}
+  51%{transform:scaleY(1);transform-origin:bottom}
+  100%{transform:scaleY(0);transform-origin:bottom}
+}
+
+/* ============================================================
+   SECTION WRAPPER (scroll reveal)
+============================================================ */
+.section{
+  margin-bottom:100px;
+  opacity:0;transform:translateY(36px);
+  transition:opacity .8s cubic-bezier(.25,.46,.45,.94),
+             transform .8s cubic-bezier(.25,.46,.45,.94);
+}
+.section.revealed{opacity:1;transform:none}
+
+/* Stagger children */
+.stagger-children>*{
+  opacity:0;transform:translateY(20px);
+  transition:opacity .6s ease,transform .6s ease;
+}
+.stagger-children.revealed>*:nth-child(1){opacity:1;transform:none;transition-delay:.05s}
+.stagger-children.revealed>*:nth-child(2){opacity:1;transform:none;transition-delay:.14s}
+.stagger-children.revealed>*:nth-child(3){opacity:1;transform:none;transition-delay:.23s}
+.stagger-children.revealed>*:nth-child(4){opacity:1;transform:none;transition-delay:.32s}
+.stagger-children.revealed>*:nth-child(5){opacity:1;transform:none;transition-delay:.41s}
+.stagger-children.revealed>*:nth-child(6){opacity:1;transform:none;transition-delay:.50s}
+
+/* ============================================================
+   SECTION LABELS
+============================================================ */
+.sec-label{
+  font-family:'Space Mono',monospace;
+  font-size:10px;font-weight:700;letter-spacing:5px;
+  text-transform:uppercase;color:var(--cyan);
+  margin-bottom:14px;
+  display:flex;align-items:center;gap:14px;
+}
+.sec-label::before{
+  content:'';display:block;
+  width:28px;height:1px;
+  background:var(--cyan);flex-shrink:0;
+}
+.sec-label::after{
+  content:'';flex:1;height:1px;
+  background:linear-gradient(to right,rgba(0,229,255,0.2),transparent);
+  display:block;
+}
+.sec-counter{
+  font-family:'Orbitron',sans-serif;
+  font-size:11px;font-weight:600;
+  color:rgba(0,229,255,0.35);
+  margin-right:4px;
+}
+.sec-title{
+  font-family:'Orbitron',sans-serif;
+  font-size:clamp(26px,3.2vw,44px);
+  font-weight:800;letter-spacing:.5px;
+  line-height:1.05;
+  color:var(--white);
+  margin-bottom:28px;
+}
+.sec-title .c{color:var(--cyan)}
+.sec-title .g{color:var(--gold)}
+
+/* ============================================================
+   GLASS CARDS (3D tilt target)
+============================================================ */
+.gcard{
+  background:var(--glass);
+  border:1px solid var(--border-c);
+  border-radius:12px;
+  padding:30px 34px;
+  position:relative;overflow:hidden;
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+  transform-style:preserve-3d;
+  transition:transform .35s ease,box-shadow .35s,border-color .3s;
+  will-change:transform;
+}
+.gcard::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(0,229,255,0.025) 0%,transparent 60%);
+  pointer-events:none;border-radius:inherit;
+}
+/* Left accent bar */
+.gcard::after{
+  content:'';position:absolute;top:0;left:0;
+  width:2px;height:100%;
+  background:linear-gradient(to bottom,var(--cyan) 0%,rgba(0,229,255,0.1) 100%);
+}
+.gcard.gc::after{background:linear-gradient(to bottom,var(--gold),rgba(245,197,24,0.1))}
+.gcard.gr::after{background:linear-gradient(to bottom,var(--red),rgba(255,45,85,0.1))}
+.gcard.gg::after{background:linear-gradient(to bottom,var(--green),rgba(0,255,157,0.1))}
+
+/* Hover states */
+.gcard:hover{
+  border-color:var(--border-h);
+  box-shadow:
+    0 0 0 1px rgba(0,229,255,0.08),
+    0 20px 60px rgba(0,0,0,0.5),
+    0 0 40px rgba(0,229,255,0.07),
+    inset 0 0 30px rgba(0,229,255,0.02);
+}
+.gcard.gc:hover{border-color:rgba(245,197,24,0.35);box-shadow:0 20px 60px rgba(0,0,0,0.5),0 0 40px rgba(245,197,24,0.07)}
+.gcard.gr:hover{border-color:rgba(255,45,85,0.35);box-shadow:0 20px 60px rgba(0,0,0,0.5),0 0 40px rgba(255,45,85,0.07)}
+
+/* Top-right corner shimmer */
+.gcard .shine{
+  position:absolute;top:-1px;right:-1px;
+  width:100px;height:100px;
+  background:radial-gradient(circle at top right,rgba(0,229,255,0.12),transparent 70%);
+  pointer-events:none;border-radius:0 12px 0 0;
+}
+.gcard.gc .shine{background:radial-gradient(circle at top right,rgba(245,197,24,0.1),transparent 70%)}
+.gcard.gr .shine{background:radial-gradient(circle at top right,rgba(255,45,85,0.1),transparent 70%)}
+
+/* ============================================================
+   GRID LAYOUTS
+============================================================ */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:22px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media(max-width:900px){
+  .grid-3{grid-template-columns:1fr 1fr}
+  .grid-4{grid-template-columns:1fr 1fr}
+}
+@media(max-width:620px){
+  .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
+  .hero-stats{flex-direction:column}
+  .hstat{border-right:none;margin-right:0;padding-right:0;border-bottom:1px solid var(--border-c);margin-bottom:0;padding-bottom:20px}
+  .hstat:last-child{border-bottom:none}
+}
+
+/* ============================================================
+   STAT BOXES
+============================================================ */
+.stat-box{
+  background:var(--glass);
+  border:1px solid var(--border-c);
+  border-radius:10px;padding:28px 20px;
+  text-align:center;
+  backdrop-filter:blur(16px);
+  position:relative;overflow:hidden;
+  transition:transform .3s,border-color .3s,box-shadow .3s;
+}
+.stat-box::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 100% 60% at 50% 0%,rgba(0,229,255,0.05),transparent 60%);
+  pointer-events:none;
+}
+.stat-box:hover{
+  transform:translateY(-5px);
+  border-color:rgba(0,229,255,0.3);
+  box-shadow:0 16px 48px rgba(0,0,0,0.4),0 0 30px rgba(0,229,255,0.08);
+}
+.stat-num{
+  font-family:'Orbitron',sans-serif;
+  font-size:50px;font-weight:900;
+  line-height:1;display:block;margin-bottom:8px;
+  color:var(--cyan);
+  text-shadow:0 0 30px rgba(0,229,255,0.5);
+}
+.stat-num.gold{color:var(--gold);text-shadow:0 0 30px rgba(245,197,24,0.45)}
+.stat-num.green{color:var(--green);text-shadow:0 0 30px rgba(0,255,157,0.45)}
+.stat-lbl{
+  font-family:'Space Mono',monospace;
+  font-size:9px;letter-spacing:2.5px;
+  text-transform:uppercase;color:var(--muted);
+}
+
+/* ============================================================
+   BODY TEXT
+============================================================ */
+.body-text{
+  font-family:'Syne',sans-serif;
+  font-size:16px;font-weight:400;
+  line-height:1.85;color:var(--text);
+  margin-bottom:24px;
+}
+.body-text em{font-style:normal;color:var(--text-bright);font-weight:700}
+
+/* ============================================================
+   DIVIDER
+============================================================ */
+.divider{
+  height:1px;margin:80px 0;
+  background:linear-gradient(90deg,transparent 0%,rgba(0,229,255,0.2) 20%,rgba(0,229,255,0.4) 50%,rgba(0,229,255,0.2) 80%,transparent 100%);
+  position:relative;
+}
+.divider::after{
+  content:'◈';
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  color:var(--cyan);font-size:10px;
+  background:var(--obsidian);
+  padding:0 16px;letter-spacing:0;
+}
+
+/* ============================================================
+   LIST ITEMS (research findings, laws)
+============================================================ */
+.list-item{
+  display:flex;gap:20px;align-items:flex-start;
+  padding:22px 0;
+  border-bottom:1px solid rgba(0,229,255,0.06);
+  position:relative;
+}
+.list-item:last-child{border-bottom:none;padding-bottom:0}
+.list-item:first-child{padding-top:0}
+.item-icon{
+  font-size:22px;flex-shrink:0;
+  margin-top:1px;line-height:1;
+}
+.item-title{
+  font-family:'Syne',sans-serif;
+  font-size:17px;font-weight:700;
+  color:var(--text-bright);margin-bottom:7px;line-height:1.2;
+}
+.item-desc{
+  font-family:'Syne',sans-serif;
+  font-size:14px;line-height:1.8;
+  color:var(--muted);font-weight:400;
+}
+.item-tag{
+  display:inline-block;margin-top:9px;
+  font-family:'Space Mono',monospace;
+  font-size:8px;letter-spacing:2px;
+  text-transform:uppercase;
+  padding:3px 10px;border-radius:2px;
+  border:1px solid;
+}
+.tag-cyan{background:var(--cyan-dim);color:var(--cyan);border-color:rgba(0,229,255,0.3)}
+.tag-gold{background:var(--gold-dim);color:var(--gold);border-color:rgba(245,197,24,0.3)}
+.tag-red {background:var(--red-dim); color:var(--red); border-color:rgba(255,45,85,0.3)}
+.tag-mute{background:rgba(58,88,112,0.15);color:var(--muted);border-color:rgba(58,88,112,0.25)}
+.tag-green{background:var(--green-dim);color:var(--green);border-color:rgba(0,255,157,0.3)}
+
+/* ============================================================
+   USME FEATURE MATRIX
+============================================================ */
+.matrix-wrap{
+  position:relative;border-radius:14px;
+  background:var(--glass);
+  border:1px solid rgba(0,229,255,0.22);
+  padding:40px;
+  backdrop-filter:blur(28px);overflow:hidden;
+}
+.matrix-wrap::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 60% 50% at 0% 100%,rgba(0,229,255,0.04),transparent),
+    radial-gradient(ellipse 40% 60% at 100% 0%,rgba(245,197,24,0.03),transparent);
+  pointer-events:none;
+}
+.matrix-bg-text{
+  position:absolute;right:-16px;bottom:-20px;
+  font-family:'Orbitron',sans-serif;
+  font-weight:900;font-size:130px;
+  color:rgba(0,229,255,0.022);
+  pointer-events:none;user-select:none;
+  line-height:1;letter-spacing:-4px;
+}
+
+.matrix-table{width:100%;border-collapse:collapse}
+.matrix-table th{
+  text-align:left;padding:13px 18px;
+  font-family:'Space Mono',monospace;
+  font-size:9px;letter-spacing:3px;text-transform:uppercase;
+  color:var(--cyan);
+  background:rgba(0,229,255,0.04);
+  border-bottom:1px solid rgba(0,229,255,0.2);
+}
+.matrix-table th:first-child{border-radius:6px 0 0 0}
+.matrix-table th:last-child{border-radius:0 6px 0 0}
+.matrix-table td{
+  padding:14px 18px;
+  border-bottom:1px solid rgba(0,229,255,0.05);
+  color:var(--muted);
+  font-family:'Syne',sans-serif;
+  font-size:14px;font-weight:400;line-height:1.5;
+}
+.matrix-table td:first-child{
+  color:var(--text-bright);font-weight:700;
+  font-size:14px;
+}
+.matrix-table tr:last-child td{border-bottom:none}
+.matrix-table tr{transition:background .2s}
+.matrix-table tr:hover td{background:rgba(0,229,255,0.025)}
+
+/* ============================================================
+   SESSION TABLE
+============================================================ */
+.session-table{width:100%;border-collapse:collapse}
+.session-table th{
+  text-align:left;padding:12px 16px;
+  font-family:'Space Mono',monospace;
+  font-size:9px;letter-spacing:2.5px;text-transform:uppercase;
+  color:rgba(0,229,255,0.6);
+  background:rgba(0,229,255,0.03);
+  border-bottom:1px solid rgba(0,229,255,0.12);
+}
+.session-table td{
+  padding:13px 16px;
+  border-bottom:1px solid rgba(0,229,255,0.05);
+  font-family:'Syne',sans-serif;
+  font-size:13px;color:var(--muted);font-weight:400;
+}
+.session-table td:first-child{
+  font-family:'Space Mono',monospace;
+  font-size:11px;color:var(--text);font-weight:700;
+}
+.session-table tr:last-child td{border-bottom:none}
+.session-table tr.active td{background:rgba(0,229,255,0.04)}
+.session-table tr.active td:first-child{color:var(--cyan)}
+
+/* ============================================================
+   PHASE TIMELINE
+============================================================ */
+.timeline{
+  position:relative;
+  padding-left:56px;
+}
+.timeline::before{
+  content:'';position:absolute;
+  left:19px;top:28px;bottom:28px;
+  width:2px;
+  background:linear-gradient(
+    to bottom,
+    var(--cyan)    0%,
+    var(--gold)   33%,
+    #4488ff       66%,
+    var(--red)   100%
+  );
+  opacity:.22;
+}
+
+.phase-item{
+  position:relative;
+  margin-bottom:56px;
+  opacity:0;transform:translateX(-24px);
+  transition:opacity .65s ease,transform .65s ease;
+}
+.phase-item.revealed{opacity:1;transform:none}
+.phase-item:last-child{margin-bottom:0}
+
+.phase-node{
+  position:absolute;left:-56px;top:0;
+  width:40px;height:40px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Orbitron',sans-serif;
+  font-size:14px;font-weight:800;
+  border:2px solid var(--cyan);
+  background:var(--deep);color:var(--cyan);
+  box-shadow:0 0 0 4px rgba(0,229,255,0.05),0 0 20px rgba(0,229,255,0.2);
+}
+.phase-node.n-gold{border-color:var(--gold);color:var(--gold);box-shadow:0 0 0 4px rgba(245,197,24,0.05),0 0 20px rgba(245,197,24,0.2)}
+.phase-node.n-blue{border-color:#4488ff;color:#4488ff;box-shadow:0 0 0 4px rgba(68,136,255,0.05),0 0 20px rgba(68,136,255,0.2)}
+.phase-node.n-red{border-color:var(--red);color:var(--red);box-shadow:0 0 0 4px rgba(255,45,85,0.05),0 0 20px rgba(255,45,85,0.2)}
+
+.phase-kicker{
+  font-family:'Space Mono',monospace;
+  font-size:9px;letter-spacing:3px;text-transform:uppercase;
+  color:var(--cyan);margin-bottom:7px;
+}
+.phase-kicker.k-gold{color:var(--gold)}
+.phase-kicker.k-blue{color:#4488ff}
+.phase-kicker.k-red{color:var(--red)}
+.phase-title{
+  font-family:'Orbitron',sans-serif;
+  font-size:22px;font-weight:800;letter-spacing:.3px;
+  color:var(--white);margin-bottom:12px;
+}
+.phase-body{
+  font-size:14px;line-height:1.8;
+  color:var(--muted);font-weight:400;margin-bottom:14px;
+}
+.phase-bullets{list-style:none;margin-bottom:14px}
+.phase-bullets li{
+  font-size:13px;color:var(--muted);
+  padding:4px 0 4px 18px;
+  position:relative;line-height:1.65;
+}
+.phase-bullets li::before{
+  content:'›';position:absolute;left:0;
+  color:var(--cyan);font-size:16px;font-weight:700;line-height:1.3;
+}
+.tag-row{display:flex;flex-wrap:wrap;gap:7px}
+
+/* ============================================================
+   PROJECTION TABLE
+============================================================ */
+.proj-card{
+  background:var(--glass);
+  border:1px solid rgba(245,197,24,0.18);
+  border-radius:12px;padding:36px;
+  backdrop-filter:blur(24px);
+  position:relative;overflow:hidden;
+}
+.proj-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--gold) 40%,var(--cyan) 60%,transparent);
+}
+.proj-card::after{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 70% 50% at 50% 0%,rgba(245,197,24,0.03),transparent 55%);
+  pointer-events:none;
+}
+.proj-table{width:100%;border-collapse:collapse}
+.proj-table th{
+  text-align:center;padding:12px 16px;
+  font-family:'Space Mono',monospace;
+  font-size:9px;letter-spacing:2.5px;text-transform:uppercase;
+  color:var(--gold);
+  background:rgba(245,197,24,0.04);
+  border-bottom:1px solid rgba(245,197,24,0.15);
+}
+.proj-table th:first-child{text-align:left}
+.proj-table td{
+  padding:14px 16px;text-align:center;
+  border-bottom:1px solid rgba(255,255,255,0.04);
+  font-family:'Syne',sans-serif;
+  font-size:14px;color:var(--muted);font-weight:400;
+}
+.proj-table td:first-child{text-align:left;color:var(--text);font-weight:700}
+.proj-table tr:last-child td{border-bottom:none}
+.proj-table tr.peak-row td{background:rgba(0,255,157,0.035)}
+.proj-table tr.peak-row td:last-child{
+  color:var(--green);font-weight:800;
+  font-family:'Orbitron',sans-serif;
+  text-shadow:0 0 16px rgba(0,255,157,0.4);
+}
+.proj-table tr:hover td{background:rgba(255,255,255,0.015)}
+.proj-note{
+  font-family:'Space Mono',monospace;
+  font-size:10px;line-height:1.8;color:var(--muted);
+  margin-top:20px;padding-top:20px;
+  border-top:1px solid rgba(255,255,255,0.05);
+}
+
+/* ============================================================
+   LAW ITEMS
+============================================================ */
+.law-item{
+  display:flex;gap:22px;align-items:flex-start;
+  padding:24px 0;
+  border-bottom:1px solid rgba(255,45,85,0.07);
+}
+.law-item:first-child{padding-top:0}
+.law-item:last-child{border-bottom:none;padding-bottom:0}
+.law-num{
+  font-family:'Orbitron',sans-serif;
+  font-size:30px;font-weight:900;
+  color:rgba(255,45,85,0.15);
+  flex-shrink:0;width:44px;line-height:1;
+  transition:color .3s,text-shadow .3s;
+}
+.law-item:hover .law-num{
+  color:var(--red);
+  text-shadow:0 0 20px rgba(255,45,85,0.5);
+}
+.law-title{
+  font-family:'Syne',sans-serif;
+  font-size:16px;font-weight:700;
+  color:var(--text-bright);margin-bottom:7px;
+}
+.law-desc{
+  font-size:14px;line-height:1.8;
+  color:var(--muted);font-weight:400;
+}
+
+/* ============================================================
+   TF PROTOCOL CARDS
+============================================================ */
+.tf-title{
+  font-family:'Orbitron',sans-serif;
+  font-size:18px;font-weight:800;letter-spacing:.5px;
+  color:var(--white);margin-bottom:12px;
+}
+.tf-desc{
+  font-size:14px;line-height:1.8;
+  color:var(--muted);font-weight:400;
+  margin-bottom:14px;
+}
+
+/* ============================================================
+   FIRM CARDS
+============================================================ */
+.firm-name{
+  font-family:'Orbitron',sans-serif;
+  font-size:20px;font-weight:800;letter-spacing:.5px;
+  color:var(--white);margin-bottom:10px;
+}
+.firm-desc{
+  font-size:14px;line-height:1.8;
+  color:var(--muted);font-weight:400;
+}
+
+/* ============================================================
+   ECO CARDS
+============================================================ */
+.eco-icon{font-size:32px;display:block;margin-bottom:14px}
+.eco-title{
+  font-family:'Orbitron',sans-serif;
+  font-size:16px;font-weight:800;
+  color:var(--white);margin-bottom:10px;
+}
+.eco-desc{
+  font-size:13px;line-height:1.8;
+  color:var(--muted);font-weight:400;
+}
+
+/* ============================================================
+   FOOTER
+============================================================ */
+.footer{
+  position:relative;
+  margin-top:120px;padding:70px 0 50px;
+  border-top:1px solid var(--border-c);
+}
+.footer::before{
+  content:'';position:absolute;
+  top:0;left:10%;right:10%;height:1px;
+  background:linear-gradient(90deg,transparent,var(--cyan) 40%,var(--gold) 60%,transparent);
+}
+.footer-top{
+  display:flex;justify-content:space-between;
+  align-items:flex-start;flex-wrap:wrap;gap:48px;
+  margin-bottom:60px;
+}
+.footer-brand-col{}
+.footer-brand{
+  font-family:'Orbitron',sans-serif;
+  font-size:28px;font-weight:900;
+  letter-spacing:2px;color:var(--white);
+}
+.footer-brand span{color:var(--cyan)}
+.footer-tagline{
+  font-family:'Space Mono',monospace;
+  font-size:10px;letter-spacing:2.5px;
+  text-transform:uppercase;color:var(--muted);
+  margin-top:8px;
+}
+.footer-cols{
+  display:flex;gap:56px;flex-wrap:wrap;
+}
+.footer-col-title{
+  font-family:'Orbitron',sans-serif;
+  font-size:10px;font-weight:800;letter-spacing:3px;
+  text-transform:uppercase;color:var(--cyan);
+  margin-bottom:16px;
+}
+.footer-col ul{
+  list-style:none;display:flex;flex-direction:column;gap:10px;
+}
+.footer-col ul li a{
+  font-family:'Space Mono',monospace;
+  font-size:9px;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--muted);
+  text-decoration:none;transition:color .2s;
+}
+.footer-col ul li a:hover{color:var(--cyan)}
+.footer-bottom{
+  border-top:1px solid rgba(0,229,255,0.07);
+  padding-top:28px;
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;
+}
+.footer-copy{
+  font-family:'Space Mono',monospace;
+  font-size:9px;letter-spacing:2px;
+  text-transform:uppercase;color:var(--muted);
+}
+.footer-meta{
+  text-align:right;
+  font-family:'Space Mono',monospace;
+  font-size:9px;letter-spacing:2px;
+  text-transform:uppercase;color:var(--muted);
+  line-height:2.2;
+}
+.footer-meta .accent{color:var(--cyan)}
+
+/* ============================================================
+   ANIMATIONS
+============================================================ */
+@keyframes riseIn{
+  from{opacity:0;transform:translateY(28px)}
+  to{opacity:1;transform:none}
+}
+@keyframes glowPulse{
+  0%,100%{box-shadow:0 0 12px var(--cyan),0 0 24px rgba(0,229,255,0.4)}
+  50%{box-shadow:0 0 20px var(--cyan),0 0 48px rgba(0,229,255,0.7)}
+}
+
+/* ── THEME TOGGLE ── */
+#theme-toggle{
+  position:fixed;bottom:28px;right:28px;z-index:600;
+  width:48px;height:48px;border-radius:50%;
+  border:1px solid var(--border-c);
+  background:var(--bg-card);
+  backdrop-filter:blur(16px);
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.3);
+  transition:border-color .3s,box-shadow .3s,background .4s;
+  line-height:1;
+}
+#theme-toggle:hover{
+  border-color:var(--border-h);
+  box-shadow:0 4px 28px rgba(0,229,255,0.2);
+}
+html.light #theme-toggle:hover{
+  box-shadow:0 4px 28px rgba(0,120,180,0.2);
+}
+/* light mode: hide particles/grid/scanlines for cleaner look */
+html.light #particle-canvas,
+html.light .scene-scanlines,
+html.light .scene-vignette{opacity:0;transition:opacity .4s}
+html.light .scene-grid{opacity:0.4}
+html.light .scene-glow-top{opacity:0.3}
+</style>
+</head>
+<body>
+
+<!-- ── INFRASTRUCTURE ────────────────── -->
+<div id="cursor-dot"></div>
+<div id="cursor-ring"></div>
+<div id="mouse-glow"></div>
+<canvas id="particle-canvas"></canvas>
+<div class="scene-grid"></div>
+<div class="scene-glow-top"></div>
+<div class="scene-scanlines"></div>
+<div class="scene-vignette"></div>
+<button id="theme-toggle" title="Toggle light/dark mode">🌙</button>
+
+<!-- ── NAV ──────────────────────────── -->
+<nav class="nav">
+  <div class="nav-brand">Sniper<span>Trader</span></div>
+  <div class="nav-links">
+    <a href="#" class="nav-link">USME algo</a>
+    <a href="#" class="nav-link">Psych App</a>
+    <a href="#" class="nav-link">Ecosystem</a>
+    <a href="#" class="nav-link">Community</a>
+  </div>
+  <div class="nav-pill">USME Master Plan</div>
+</nav>
+
+<div class="page">
+
+<!-- ════════════════════════════════════
+     HERO
+════════════════════════════════════ -->
+<section class="hero">
+
+  <!-- SVG reticle -->
+  <svg class="hero-reticle" viewBox="0 0 380 380">
+    <circle class="r1" cx="190" cy="190" r="170" stroke-dasharray="8 12"/>
+    <circle class="r2" cx="190" cy="190" r="140" stroke-dasharray="4 20"/>
+    <circle class="r3" cx="190" cy="190" r="100" stroke-dasharray="2 8"/>
+    <line x1="190" y1="10"  x2="190" y2="60"  stroke="rgba(0,229,255,0.4)" stroke-width=".8"/>
+    <line x1="190" y1="320" x2="190" y2="370" stroke="rgba(0,229,255,0.4)" stroke-width=".8"/>
+    <line x1="10"  y1="190" x2="60"  y2="190" stroke="rgba(0,229,255,0.4)" stroke-width=".8"/>
+    <line x1="320" y1="190" x2="370" y2="190" stroke="rgba(0,229,255,0.4)" stroke-width=".8"/>
+    <circle cx="190" cy="190" r="4" fill="none" stroke="rgba(0,229,255,0.6)" stroke-width="1"/>
+  </svg>
+
+  <div class="hero-eyebrow">
+    <span class="live-dot">Live Intelligence</span>
+    &nbsp;·&nbsp; SniperTrader &nbsp;·&nbsp; 2026
+  </div>
+
+  <h1 class="hero-title">
+    USME<br>
+    <span class="line-cyan">PROP FIRM</span><br>
+    <span class="line-glow">MASTER PLAN</span>
+  </h1>
+
+  <p class="hero-sub">
+    Deploy the <em>Unified Smart Money Engine</em> across multiple funded prop accounts to engineer a systematic, scalable income architecture — powered by institutional ICT/SMC methodology.
+  </p>
+
+  <div class="hero-stats">
+    <div class="hstat">
+      <span class="hstat-num">80–90%</span>
+      <span class="hstat-lbl">Avg Profit Split</span>
+    </div>
+    <div class="hstat">
+      <span class="hstat-num gold">$4M+</span>
+      <span class="hstat-lbl">Max Capital Access</span>
+    </div>
+    <div class="hstat">
+      <span class="hstat-num green">10</span>
+      <span class="hstat-lbl">Max Accounts · Apex</span>
+    </div>
+    <div class="hstat">
+      <span class="hstat-num" style="color:#4488ff;text-shadow:0 0 24px rgba(68,136,255,0.4)">4</span>
+      <span class="hstat-lbl">Growth Phases</span>
+    </div>
+  </div>
+
+  <div class="hero-scroll">
+    <span class="scroll-track"></span>
+    Scroll to begin
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════
+     01  OVERVIEW
+════════════════════════════════════ -->
+<div class="divider"></div>
+<section class="section" id="s1">
+  <div class="sec-label"><span class="sec-counter">01</span> Overview</div>
+  <h2 class="sec-title">The <span class="c">Prop Firm</span> Opportunity</h2>
+  <p class="body-text">
+    Prop firms give skilled traders access to institutional-scale capital without risking personal funds beyond the challenge fee. The game is simple — survive the evaluation rules, get funded, extract profits, scale accounts. With the <em>Unified Smart Money Engine</em> as your core edge — Order Blocks, FVGs, BOS/CHoCH, multi-timeframe bias, killzones, and ATR-calibrated risk — you hold the most institutionally-aligned methodology in retail trading. This plan converts USME into a systematic income machine across multiple funded accounts.
+  </p>
+  <div class="grid-3 stagger-children">
+    <div class="stat-box">
+      <span class="stat-num">80–90%</span>
+      <span class="stat-lbl">Avg Profit Split</span>
+    </div>
+    <div class="stat-box">
+      <span class="stat-num gold">$4M+</span>
+      <span class="stat-lbl">Max Scaling — Top Firms</span>
+    </div>
+    <div class="stat-box">
+      <span class="stat-num green">10</span>
+      <span class="stat-lbl">Simultaneous Accounts</span>
+    </div>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════
+     02  RESEARCH — WINNING STRATEGIES
+════════════════════════════════════ -->
+<div class="divider"></div>
+<section class="section" id="s2">
+  <div class="sec-label"><span class="sec-counter">02</span> Research Findings</div>
+  <h2 class="sec-title">What Actually <span class="c">Wins</span> in Prop Firms</h2>
+  <div class="gcard">
+    <div class="shine"></div>
+    <div class="list-item">
+      <div class="item-icon">🎯</div>
+      <div>
+        <div class="item-title">Quality Over Quantity — Max 2–3 Setups Per Day</div>
+        <div class="item-desc">Elite prop traders strictly cap at 2–3 high-conviction trades daily. Overtrading is the #1 account killer — spreads and commissions compound against you while decision fatigue degrades execution quality. USME's AI scoring system filters this automatically.</div>
+        <span class="item-tag tag-mute">Critical Rule</span>
+      </div>
+    </div>
+    <div class="list-item">
+      <div class="item-icon">📐</div>
+      <div>
+        <div class="item-title">Risk 0.25–1% Per Trade, Stop at 2–3% Daily Loss</div>
+        <div class="item-desc">Most firms permit 5% daily drawdown, but elite traders self-impose a 2–3% personal ceiling. Risk per trade scales down after two consecutive red days — reduce sizing by 50% automatically to preserve account longevity.</div>
+        <span class="item-tag tag-mute">Risk Management</span>
+      </div>
+    </div>
+    <div class="list-item">
+      <div class="item-icon">⏰</div>
+      <div>
+        <div class="item-title">Trade Killzones Only — London Open &amp; New York Open</div>
+        <div class="item-desc">ICT/SMC setups have peak win rates during the 2:00–5:00 AM EST London Open and 7:00–10:00 AM EST NY Open windows. These windows align USME's FVGs, Order Blocks, and BOS signals with genuine institutional order flow — the highest-probability execution environment.</div>
+        <span class="item-tag tag-cyan">USME Native</span>
+      </div>
+    </div>
+    <div class="list-item">
+      <div class="item-icon">📊</div>
+      <div>
+        <div class="item-title">Minimum 1:2 Risk-Reward — Never Accept Below 1:1.5</div>
+        <div class="item-desc">A 40–45% win rate at 1:2 RR mathematically outperforms a 60% win rate at 1:1. USME's ATR-based stops and dynamic targets are engineered for this. The objective is never to be right — it's to extract asymmetric payouts when you are.</div>
+        <span class="item-tag tag-gold">Math-Based Edge</span>
+      </div>
+    </div>
+    <div class="list-item">
+      <div class="item-icon">🧠</div>
+      <div>
+        <div class="item-title">Never Chase the Profit Target — Distribute Across Days</div>
+        <div class="item-desc">Most firms enforce a consistency rule where no single day can exceed 30–40% of total profits toward a payout. Aim for 0.5–1% per session on evaluation accounts — surgical and repeatable, not heroic.</div>
+        <span class="item-tag tag-mute">Consistency Rule</span>
+      </div>
+    </div>
+    <div class="list-item">
+      <div class="item-icon">📰</div>
+      <div>
+        <div class="item-title">Avoid News Events Unless the Firm Explicitly Permits It</div>
+        <div class="item-desc">Trading NFP, CPI, FOMC on prop accounts has terminated thousands of funded positions. Spread widening and volatility spikes blow through daily loss limits in seconds. Close all positions 2 minutes before any red-folder event — no exceptions.</div>
+        <span class="item-tag tag-red">Risk Warning</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════
+     03  USME INTEGRATION MATRIX
+════════════════════════════════════ -->
+<div class="divider"></div>
+<section class="section" id="s3">
+  <div class="sec-label"><span class="sec-counter">03</span> Tool Integration</div>
+  <h2 class="sec-title">How <span class="c">USME</span> Enforces Prop Firm Discipline</h2>
+  <div class="matrix-wrap">
+    <div class="matrix-bg-text">USME</div>
+    <p class="body-text" style="margin-bottom:32px">
+      The Unified Smart Money Engine isn't simply an indicator — in the prop firm context it functions as a <em>compliance engine</em>: pre-trade checklist, entry filter, and risk calculator unified. Every module maps directly to a funded account rule:
+    </p>
+    <table class="matrix-table">
+      <thead>
+        <tr>
+          <th>USME Module</th>
+          <th>Prop Firm Rule Enforced</th>
+          <th>Operational Benefit</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>AI Scoring System</td><td>Quality filter — max 2–3 trades/day</td><td>Trade only when score ≥ 70. Hard guard against emotional entries.</td></tr>
+        <tr><td>Killzone Filter</td><td>Session compliance + news avoidance</td><td>Entries auto-restricted to London/NY windows when real volume flows.</td></tr>
+        <tr><td>ATR Stops &amp; Targets</td><td>Minimum 1:2 RR enforcement</td><td>Dynamic sizing — volatility-calibrated stops across every session.</td></tr>
+        <tr><td>Multi-Timeframe Bias</td><td>Trend alignment; prevent counter-trend</td><td>H4/Daily bias layer prevents fading institutional momentum.</td></tr>
+        <tr><td>Order Blocks + FVGs</td><td>Institutional-level entry precision</td><td>Premium/discount zone entries maximize RR from the moment of entry.</td></tr>
+        <tr><td>BOS / CHoCH Detection</td><td>Structural confirmation requirement</td><td>Zero mid-range entries — only confirmed structural disruptions.</td></tr>
+        <tr><td>SMT Divergence</td><td>Multi-pair confirmation gate</td><td>Cross-pair institutional intent validation before any live execution.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════
+     04  TIMEFRAME PROTOCOL
+════════════════════════════════════ -->
+<div class="divider"></div>
+<section class="section" id="s4">
+  <div class="sec-label"><span class="sec-counter">04</span> Execution Framework</div>
+  <h2 class="sec-title">USME Timeframe <span class="c">Protocol</span></h2>
+  <div class="grid-2 stagger-children" style="margin-bottom:22px">
+    <div class="gcard bc">
+      <div class="shine" style="background:radial-gradient(circle at top right,rgba(68,136,255,0.12),transparent 70%)"></div>
+      <div class="tf-title">🔭 HTF Bias — H4 / Daily</div>
+      <div class="tf-desc">Establish directional bias using USME's multi-timeframe engine on H4 and Daily before the session opens. Mark premium/discount ranges, key Order Blocks, and weekly FVGs. Never execute against confirmed H4 structure — the HTF is the filter, the LTF is the trigger.</div>
+      <div class="tag-row">
+        <span class="item-tag tag-cyan" style="margin-top:0">H4 Order Blocks</span>
+        <span class="item-tag tag-cyan" style="margin-top:0">Daily BOS</span>
+        <span class="item-tag tag-cyan" style="margin-top:0">HTF FVGs</span>
+      </div>
+    </div>
+    <div class="gcard gc">
+      <div class="shine" style="background:radial-gradient(circle at top right,rgba(245,197,24,0.1),transparent 70%)"></div>
+      <div class="tf-title">🎯 Entry TF — 15M / 5M</div>
+      <div class="tf-desc">During active killzone windows, drop to 15M then 5M for the precision entry trigger. Confirm CHoCH at the HTF OB/FVG level. Enter on the 5M displacement candle with USME's ATR-calculated stop placed below the structure — never before CHoCH confirmation.</div>
+      <div class="tag-row">
+        <span class="item-tag tag-gold" style="margin-top:0">15M CHoCH</span>
+        <span class="item-tag tag-gold" style="margin-top:0">5M Trigger</span>
+        <span class="item-tag tag-gold" style="margin-top:0">ATR Stop</span>
+      </div>
+    </div>
+  </div>
+  <div class="gcard">
+    <div class="shine"></div>
+    <div style="font-family:'Orbitron',sans-serif;font-size:16px;font-weight:800;color:var(--white);margin-bottom:20px;letter-spacing:.5px">
+      ⚡ Daily Session Clock
+    </div>
+    <table class="session-table">
+      <thead>
+        <tr><th>Window (EST)</th><th>Action</th><th>USME Mode</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Midnight – 1:45 AM</td><td>Prep session — mark HTF OBs, FVGs, directional bias</td><td>H4 + Daily review</td></tr>
+        <tr class="active"><td>2:00 – 5:00 AM</td><td>🟢 London Open Killzone — Primary execution window</td><td>15M/5M live entries</td></tr>
+        <tr><td>5:00 – 7:00 AM</td><td>Dead zone — zero new entries permitted</td><td>Open trade management only</td></tr>
+        <tr class="active"><td>7:00 – 10:00 AM</td><td>🟢 NY Open Killzone — Secondary execution window</td><td>15M/5M live entries</td></tr>
+        <tr><td>10:00 AM onwards</td><td>Session closed — flat or manage existing only</td><td>Journal · Review · Reset</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════
+     05  PHASE MASTER PLAN
+════════════════════════════════════ -->
+<div class="divider"></div>
+<section class="section" id="s5">
+  <div class="sec-label"><span class="sec-counter">05</span> Master Plan</div>
+  <h2 class="sec-title">Phase-by-Phase <span class="c">Scale Architecture</span></h2>
+  <p class="body-text" style="margin-bottom:56px">
+    Multiple funded accounts deploying the same proven edge is how you compound income without compounding risk. The USME signal fires every morning — as each phase completes, you simply deploy it across more capital. This is the operational blueprint.
+  </p>
+
+  <div class="timeline">
+
+    <div class="phase-item" id="ph1">
+      <div class="phase-node">1</div>
+      <div class="phase-kicker">Months 0–3 · Foundation Phase</div>
+      <div class="phase-title">Master One Account. Prove the System.</div>
+      <div class="phase-body">Before any scaling, USME must be battle-tested on a single prop account through a full market cycle. Select a firm with clean, transparent rules — no trailing drawdown, clear consistency policy, reliable payouts.</div>
+      <ul class="phase-bullets">
+        <li>Open one $50K–$100K evaluation — FTMO, FundedNext, or Apex Trader Funding</li>
+        <li>Trade London + NY killzones exclusively with USME — maximum 2 entries per day</li>
+        <li>Risk protocol: 0.5% per trade, personal daily loss ceiling at 2%</li>
+        <li>Success benchmark: Pass evaluation, receive 2+ consecutive payouts, 60+ trading days logged</li>
+        <li>Document every trade in TraderEdge Performance OS — no exceptions</li>
+      </ul>
+      <div class="tag-row">
+        <span class="item-tag tag-cyan">1 Account</span>
+        <span class="item-tag tag-mute">0.5% Risk/Trade</span>
+        <span class="item-tag tag-mute">Pass + 2 Payouts First</span>
+      </div>
+    </div>
+
+    <div class="phase-item" id="ph2">
+      <div class="phase-node n-gold">2</div>
+      <div class="phase-kicker k-gold">Months 3–6 · Duplication Phase</div>
+      <div class="phase-title">Clone the System to 2–3 Accounts</div>
+      <div class="phase-body">Use payouts from Account #1 to fund challenge fees for Accounts #2 and #3. Identical USME configuration, identical risk parameters — zero experimentation on new accounts. You are duplicating a proven system, not building a new one.</div>
+      <ul class="phase-bullets">
+        <li>Add Account #2 at the same firm, same size — lowest-friction duplication path</li>
+        <li>Add Account #3 at a second firm — diversification hedge against firm-level risk</li>
+        <li>Rotation schedule: Account A on Mon/Wed, Account B on Tue/Thu, Account C on Fri</li>
+        <li>Portfolio risk view: treat all positions collectively — split sizing, never stack identical trades</li>
+        <li>Target: 3 funded accounts generating independent monthly payouts</li>
+      </ul>
+      <div class="tag-row">
+        <span class="item-tag tag-gold">3 Accounts</span>
+        <span class="item-tag tag-mute">2 Firms</span>
+        <span class="item-tag tag-mute">Rotation Protocol Active</span>
+      </div>
+    </div>
+
+    <div class="phase-item" id="ph3">
+      <div class="phase-node n-blue">3</div>
+      <div class="phase-kicker k-blue">Months 6–12 · Scale Phase</div>
+      <div class="phase-title">Expand to 5–6 Accounts Across 3 Firms</div>
+      <div class="phase-body">Reinvest challenge fees into larger-capital accounts ($100K–$200K) to amplify the identical edge. Deploy trade copier infrastructure to execute USME signals simultaneously across all accounts the instant they trigger.</div>
+      <ul class="phase-bullets">
+        <li>2× $100K accounts at Firm A — FTMO supports up to $400K per trader via multiples</li>
+        <li>2× $100K accounts at Firm B — FundedNext scales to $4M with internal milestones</li>
+        <li>1× $200K account at Firm C — concentrated position in a single high-RR trade</li>
+        <li>Activate internal scaling programs at each firm — capital growth without new challenge fees</li>
+        <li>Deploy PickMyTrade or MT4/MT5 copier for simultaneous cross-account execution</li>
+      </ul>
+      <div class="tag-row">
+        <span class="item-tag tag-cyan" style="margin-top:0">5–6 Accounts</span>
+        <span class="item-tag tag-mute" style="margin-top:0">3 Firms</span>
+        <span class="item-tag tag-cyan" style="margin-top:0">Trade Copier Deployed</span>
+      </div>
+    </div>
+
+    <div class="phase-item" id="ph4">
+      <div class="phase-node n-red">4</div>
+      <div class="phase-kicker k-red">Month 12+ · Empire Phase</div>
+      <div class="phase-title">8–10 Accounts · Full Income Architecture</div>
+      <div class="phase-body">At peak scale you operate a portfolio of funded accounts as a micro-fund. USME generates the signal — the copier executes across every account simultaneously. Monthly income is a function of total capital deployed, not additional work.</div>
+      <ul class="phase-bullets">
+        <li>Apex Trader Funding: up to 10 simultaneous funded futures accounts</li>
+        <li>FTMO: up to $2M total exposure across multiple accounts — 80–90% profit split</li>
+        <li>The5ers: automatic doubles to $4M ceiling with 100% profit at top tier</li>
+        <li>Withdraw on schedule every month — never leave unnecessary capital exposed in accounts</li>
+        <li>Establish LLC or trading entity for tax optimization at this capital level</li>
+        <li>TraderEdge OS becomes the central performance dashboard across the entire portfolio</li>
+      </ul>
+      <div class="tag-row">
+        <span class="item-tag tag-red">8–10 Accounts</span>
+        <span class="item-tag tag-gold">$1M+ Deployed Capital</span>
+        <span class="item-tag tag-mute">Tax Entity Recommended</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════
+     06  INCOME PROJECTIONS
+════════════════════════════════════ -->
+<div class="divider"></div>
+<section class="section" id="s6">
+  <div class="sec-label"><span class="sec-counter">06</span> Income Model</div>
+  <h2 class="sec-title">Monthly Payout <span class="g">Projections</span></h2>
+  <p class="body-text" style="margin-bottom:32px">
+    Conservative modeling at 3–5% monthly return on funded capital with 80% profit split. These figures represent disciplined, consistent execution — not best-case performance.
+  </p>
+  <div class="proj-card">
+    <table class="proj-table">
+      <thead>
+        <tr>
+          <th>Phase</th>
+          <th>Accounts</th>
+          <th>Total Capital</th>
+          <th>Monthly Return</th>
+          <th>Your Payout (80%)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Phase 1 — Foundation</td><td>1</td><td>$100,000</td>
+          <td>$3,000–$5,000</td><td>$2,400–$4,000</td>
+        </tr>
+        <tr>
+          <td>Phase 2 — Duplication</td><td>3</td><td>$300,000</td>
+          <td>$9,000–$15,000</td><td>$7,200–$12,000</td>
+        </tr>
+        <tr>
+          <td>Phase 3 — Scale</td><td>5–6</td><td>$600,000</td>
+          <td>$18,000–$30,000</td><td>$14,400–$24,000</td>
+        </tr>
+        <tr class="peak-row">
+          <td>Phase 4 — Empire</td><td>8–10</td><td>$1,000,000+</td>
+          <td>$30,000–$50,000</td><td>$24,000–$40,000+</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="proj-note">
+      ⚠ Projections model 3–5% monthly return on total funded capital. Conservative, consistent execution assumed. Favorable market conditions, higher RR setups, and compounding can significantly exceed these figures. Past strategy performance does not guarantee future results. These figures are for planning purposes only.
+    </div>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════
+     07  RECOMMENDED FIRMS
+════════════════════════════════════ -->
+<div class="divider"></div>
+<section class="section" id="s7">
+  <div class="sec-label"><span class="sec-counter">07</span> Firm Selection</div>
+  <h2 class="sec-title">Recommended Firms for <span class="c">USME</span> Traders</h2>
+  <div class="grid-2 stagger-children">
+    <div class="gcard">
+      <div class="shine"></div>
+      <div class="firm-name">🥇 FTMO</div>
+      <div class="firm-desc">Industry benchmark. Up to $400K per trader / $2M via multiple accounts. 80–90% split. Full ICT/SMC compatibility. Strict but transparent rules. Optimal for experienced traders prioritizing brand reliability and maximum capital depth.</div>
+      <div class="tag-row" style="margin-top:14px">
+        <span class="item-tag tag-cyan" style="margin-top:0">Forex &amp; Indices</span>
+        <span class="item-tag tag-mute" style="margin-top:0">$400K Cap</span>
+        <span class="item-tag tag-mute" style="margin-top:0">Multi-Account</span>
+      </div>
+    </div>
+    <div class="gcard gc">
+      <div class="shine" style="background:radial-gradient(circle at top right,rgba(245,197,24,0.1),transparent 70%)"></div>
+      <div class="firm-name">⚡ Apex Trader Funding</div>
+      <div class="firm-desc">Up to 10 funded accounts simultaneously. No consistency rules. Futures-focused (/NQ, /ES, CL). The definitive firm for maximum account volume — purpose-built for trade copier deployment across a full USME portfolio.</div>
+      <div class="tag-row" style="margin-top:14px">
+        <span class="item-tag tag-gold" style="margin-top:0">Futures</span>
+        <span class="item-tag tag-gold" style="margin-top:0">10 Concurrent Accounts</span>
+      </div>
+    </div>
+    <div class="gcard" style="--border-c:rgba(68,136,255,0.14)">
+      <div class="shine" style="background:radial-gradient(circle at top right,rgba(68,136,255,0.1),transparent 70%)"></div>
+      <div class="firm-name">🚀 FundedNext</div>
+      <div class="firm-desc">Scales to $4M. Fast payouts. Forex and futures supported. Weekly payout cadence. Best suited for Phase 2–3 scaling — rapid reinvestment of profits into progressively larger accounts without friction.</div>
+      <div class="tag-row" style="margin-top:14px">
+        <span class="item-tag tag-cyan" style="margin-top:0;border-color:rgba(68,136,255,0.3);color:#4488ff">Forex + Futures</span>
+        <span class="item-tag tag-mute" style="margin-top:0">$4M Scale</span>
+      </div>
+    </div>
+    <div class="gcard gg">
+      <div class="shine" style="background:radial-gradient(circle at top right,rgba(0,255,157,0.08),transparent 70%)"></div>
+      <div class="firm-name">🏔️ The5ers</div>
+      <div class="firm-desc">Account doubles at every profit milestone. Scales to $4M with 100% profit split at peak tier. Optimal as the long-term compounding vehicle — set USME, let it grow, avoid the pressure of frequent withdrawals.</div>
+      <div class="tag-row" style="margin-top:14px">
+        <span class="item-tag tag-green" style="margin-top:0">100% Profit Split</span>
+        <span class="item-tag tag-mute" style="margin-top:0">$4M Scale</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════
+     08  7 LAWS
+════════════════════════════════════ -->
+<div class="divider"></div>
+<section class="section" id="s8">
+  <div class="sec-label"><span class="sec-counter">08</span> Non-Negotiables</div>
+  <h2 class="sec-title">The 7 Laws of <span class="c">USME</span> Prop Trading</h2>
+  <div class="gcard gr">
+    <div class="shine" style="background:radial-gradient(circle at top right,rgba(255,45,85,0.1),transparent 70%)"></div>
+    <div class="law-item">
+      <div class="law-num">01</div>
+      <div>
+        <div class="law-title">Never Risk More Than 1% Per Trade on Funded Accounts</div>
+        <div class="law-desc">Your edge is statistical — it requires volume to manifest. A single oversized position can breach the daily drawdown ceiling and erase weeks of progress. USME's ATR-calibrated stop sizing at 1% per trade is non-negotiable.</div>
+      </div>
+    </div>
+    <div class="law-item">
+      <div class="law-num">02</div>
+      <div>
+        <div class="law-title">Stop Trading After 2% Daily Loss. Platform Closed. Session Over.</div>
+        <div class="law-desc">Two bad trades do not become three. Close the platform. Revenge trading inside prop firm loss-limit structures is irreversible — it's the mechanism by which otherwise-profitable funded accounts are terminated in a single session.</div>
+      </div>
+    </div>
+    <div class="law-item">
+      <div class="law-num">03</div>
+      <div>
+        <div class="law-title">Only Execute During Killzone Windows</div>
+        <div class="law-desc">USME signal quality degrades materially outside London and NY Open. Boredom-driven entries during dead market hours systematically convert profitable funded accounts into losing ones through accumulated commission drag and low-quality fills.</div>
+      </div>
+    </div>
+    <div class="law-item">
+      <div class="law-num">04</div>
+      <div>
+        <div class="law-title">Never Scale Before Demonstrating Consistency</div>
+        <div class="law-desc">Opening a second account before Account #1 has 2+ consecutive profitable months with documented payouts is premature. You are not scaling an edge — you are scaling an unvalidated process. Master it, then duplicate it.</div>
+      </div>
+    </div>
+    <div class="law-item">
+      <div class="law-num">05</div>
+      <div>
+        <div class="law-title">Never Hold Through News Events on Restricted Accounts</div>
+        <div class="law-desc">Verify each firm's news policy before every session. Close all positions at least 2 minutes ahead of any red-folder event on restricted accounts. The potential upside is never proportionate to the risk of account termination.</div>
+      </div>
+    </div>
+    <div class="law-item">
+      <div class="law-num">06</div>
+      <div>
+        <div class="law-title">Withdraw Profits on a Regular, Scheduled Cadence</div>
+        <div class="law-desc">Accumulating unrealized profits inside funded accounts inflates exposure and breeds overconfidence. Withdraw on a fixed schedule. Reinvest only into new evaluations and scaling tiers. Protect what has already been earned.</div>
+      </div>
+    </div>
+    <div class="law-item">
+      <div class="law-num">07</div>
+      <div>
+        <div class="law-title">Log Every Trade in TraderEdge Performance OS</div>
+        <div class="law-desc">Pattern recognition across multiple accounts is impossible without systematic journaling. TraderEdge isolates which USME setup types outperform by firm, session, pair, and market condition. That performance data is your second edge — and it compounds over time.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════
+     09  ECOSYSTEM
+════════════════════════════════════ -->
+<div class="divider"></div>
+<section class="section" id="s9">
+  <div class="sec-label"><span class="sec-counter">09</span> Ecosystem</div>
+  <h2 class="sec-title">SniperTrader <span class="c">Stack</span> Integration</h2>
+  <p class="body-text" style="margin-bottom:32px">
+    Every product in the SniperTrader ecosystem has a defined operational role in the prop firm architecture:
+  </p>
+  <div class="grid-2 stagger-children">
+    <div class="gcard">
+      <div class="shine"></div>
+      <span class="eco-icon">📡</span>
+      <div class="eco-title">USME — ThinkScript + Pine Script</div>
+      <div class="eco-desc">The core edge engine. Runs on ThinkorSwim for futures and equity-based prop accounts, and TradingView for forex accounts. The AI confluence scoring system serves as real-time execution gatekeeper. One unified tool — deployed across every platform and account simultaneously.</div>
+    </div>
+    <div class="gcard gc">
+      <div class="shine" style="background:radial-gradient(circle at top right,rgba(245,197,24,0.1),transparent 70%)"></div>
+      <span class="eco-icon">📓</span>
+      <div class="eco-title">SMC Trade Journal App</div>
+      <div class="eco-desc">Track every funded account as an independent performance stream. Tag by USME setup type — OB entry, FVG fill, CHoCH trigger. Win rate stratified by setup type, firm, and session window compounds into an irreplaceable performance intelligence database.</div>
+    </div>
+    <div class="gcard" style="--border-c:rgba(68,136,255,0.14)">
+      <div class="shine" style="background:radial-gradient(circle at top right,rgba(68,136,255,0.1),transparent 70%)"></div>
+      <span class="eco-icon">📱</span>
+      <div class="eco-title">TraderEdge — Performance OS</div>
+      <div class="eco-desc">Pre-trade checklist, habit loops, and daily psychology journal across the full account portfolio. The Claude API sentiment analysis module identifies degraded mental states before session open — a sit-out signal that has saved more funded accounts than any indicator.</div>
+    </div>
+    <div class="gcard gg">
+      <div class="shine" style="background:radial-gradient(circle at top right,rgba(0,255,157,0.08),transparent 70%)"></div>
+      <span class="eco-icon">📖</span>
+      <div class="eco-title">ICT/SMC eBook — From Broke to Funded</div>
+      <div class="eco-desc">The conceptual foundation beneath every USME signal. Institutional mechanics, prop firm risk protocols, liquidity theory, and full USME integration guide. Theory → Tool → Execution → Scale is the complete operational loop.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ────────────────────────── -->
+<footer class="footer">
+  <div class="footer-top">
+    <div class="footer-brand-col">
+      <div class="footer-brand">Sniper<span>Trader</span></div>
+      <div class="footer-tagline">Institutional-Grade Intelligence for Independent Traders</div>
+    </div>
+    <div class="footer-cols">
+
+      <div class="footer-col">
+        <div class="footer-col-title">Tools</div>
+        <ul>
+          <li><a href="#">USME Algo</a></li>
+          <li><a href="#">Pre-Market Baseline</a></li>
+          <li><a href="#">Habit Guardrails</a></li>
+          <li><a href="#">Post-Market Review Loop</a></li>
+          <li><a href="#">AI Sentiment Engine</a></li>
+          <li><a href="#">AI Chart Analyzer</a></li>
+          <li><a href="#">Prop Firm Command Center</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <div class="footer-col-title">Ecosystem</div>
+        <ul>
+          <li><a href="#">AI Smart Glasses</a></li>
+          <li><a href="#">Prop Master Plan</a></li>
+          <li><a href="#">30-Day Funded Challenge</a></li>
+          <li><a href="#">ICT Discipline Engine</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <div class="footer-col-title">Resources</div>
+        <ul>
+          <li><a href="#">Affiliate Program</a></li>
+          <li><a href="#">Trader's Couch</a></li>
+          <li><a href="#">Ebook</a></li>
+          <li><a href="#">PropFirm Match</a></li>
+          <li><a href="#">Shop</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <div class="footer-col-title">Company</div>
+        <ul>
+          <li><a href="#">About</a></li>
+          <li><a href="#">Docs</a></li>
+          <li><a href="#">Terms</a></li>
+          <li><a href="#">Disclaimer</a></li>
+          <li><a href="#">Privacy</a></li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="footer-copy">© 2026 SniperTrader.ai Intelligence Platform — All rights reserved.</div>
+    <div class="footer-meta">
+      USME Prop Firm Master Plan · Intelligence Report · 2026<br>
+      <span class="accent">snipertrader.ai</span>
+    </div>
+  </div>
+</footer>
+
+</div><!-- /page -->
+
+<!-- ════════════════════════════════════
+     JAVASCRIPT — Cursor · Particles · 3D Tilt · Scroll Reveal
+════════════════════════════════════ -->
+<script>
+(function(){
+'use strict';
+
+/* ── CURSOR ──────────────────────────── */
+const dot  = document.getElementById('cursor-dot');
+const ring = document.getElementById('cursor-ring');
+const glow = document.getElementById('mouse-glow');
+let mx=window.innerWidth/2, my=window.innerHeight/2;
+let rx=mx, ry=my;
+
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  dot.style.left  = mx + 'px';
+  dot.style.top   = my + 'px';
+  glow.style.left = mx + 'px';
+  glow.style.top  = my + 'px';
+});
+
+// Smooth ring lag
+(function lerpRing(){
+  rx += (mx - rx) * 0.1;
+  ry += (my - ry) * 0.1;
+  ring.style.left = rx + 'px';
+  ring.style.top  = ry + 'px';
+  requestAnimationFrame(lerpRing);
+})();
+
+// Hover grow
+const hoverEls = document.querySelectorAll('.gcard,.stat-box,.phase-node,a,button,.nav-pill');
+hoverEls.forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    dot.classList.add('hov'); ring.classList.add('hov');
+  });
+  el.addEventListener('mouseleave', () => {
+    dot.classList.remove('hov'); ring.classList.remove('hov');
+  });
+});
+
+/* ── PARTICLE SYSTEM ─────────────────── */
+const canvas = document.getElementById('particle-canvas');
+const ctx    = canvas.getContext('2d');
+let W, H;
+
+function resize(){
+  W = canvas.width  = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// Color palette: cyan · gold · soft blue
+const COLORS = [
+  [0, 229, 255],
+  [245, 197, 24],
+  [68, 136, 255],
+  [0, 255, 157],
+];
+
+class Particle {
+  constructor(){ this.init(); }
+  init(){
+    this.x    = Math.random() * W;
+    this.y    = Math.random() * H;
+    this.vx   = (Math.random() - 0.5) * 0.45;
+    this.vy   = (Math.random() - 0.5) * 0.45 - 0.12;
+    this.r    = Math.random() * 1.8 + 0.3;
+    this.life = Math.random() * 0.5 + 0.5;
+    this.fade = Math.random() * 0.002 + 0.0007;
+    this.col  = COLORS[Math.floor(Math.random() * COLORS.length)];
+  }
+  update(){
+    this.x    += this.vx;
+    this.y    += this.vy;
+    this.life -= this.fade;
+    if (this.life <= 0 || this.y < -20 || this.x < -20 || this.x > W + 20) this.init();
+  }
+  draw(){
+    const [r,g,b] = this.col;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${r},${g},${b},${this.life * 0.7})`;
+    ctx.fill();
+  }
+}
+
+const NUM_PARTICLES = 220;
+const particles = Array.from({ length: NUM_PARTICLES }, () => new Particle());
+
+function drawConnections(){
+  const MAX_DIST = 88;
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const dx   = particles[i].x - particles[j].x;
+      const dy   = particles[i].y - particles[j].y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < MAX_DIST) {
+        const alpha = (1 - dist/MAX_DIST) * 0.1 * Math.min(particles[i].life, particles[j].life);
+        ctx.beginPath();
+        ctx.moveTo(particles[i].x, particles[i].y);
+        ctx.lineTo(particles[j].x, particles[j].y);
+        ctx.strokeStyle = `rgba(0,229,255,${alpha})`;
+        ctx.lineWidth   = 0.5;
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+(function animParticles(){
+  ctx.clearRect(0, 0, W, H);
+  particles.forEach(p => { p.update(); p.draw(); });
+  drawConnections();
+  requestAnimationFrame(animParticles);
+})();
+
+/* ── 3D TILT (mouse tracking) ────────── */
+function applyTilt(cards, maxRotX, maxRotY, scaleVal){
+  cards.forEach(card => {
+    card.addEventListener('mousemove', e => {
+      const rect = card.getBoundingClientRect();
+      const cx   = rect.left + rect.width  / 2;
+      const cy   = rect.top  + rect.height / 2;
+      const dx   = (e.clientX - cx) / (rect.width  / 2);
+      const dy   = (e.clientY - cy) / (rect.height / 2);
+      card.style.transform =
+        `perspective(1000px) rotateX(${dy * -maxRotX}deg) rotateY(${dx * maxRotY}deg) scale(${scaleVal})`;
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(1)';
+    });
+  });
+}
+
+applyTilt(document.querySelectorAll('.gcard'),  6, 8, 1.018);
+applyTilt(document.querySelectorAll('.stat-box'), 5, 5, 1.025);
+applyTilt(document.querySelectorAll('.proj-card'), 4, 4, 1.01);
+
+/* ── SCROLL REVEAL ───────────────────── */
+const IO_OPTIONS = { threshold: 0.07 };
+
+const sectionObserver = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('revealed');
+      // Also trigger stagger on children if present
+      const sc = e.target.querySelector('.stagger-children');
+      if (sc) sc.classList.add('revealed');
+    }
+  });
+}, IO_OPTIONS);
+
+document.querySelectorAll('.section').forEach(s => sectionObserver.observe(s));
+
+// Phase items get staggered independent observer
+const phaseObserver = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting){
+      // stagger by phase index
+      const idx = parseInt(e.target.id.replace('ph','')) || 1;
+      setTimeout(() => e.target.classList.add('revealed'), (idx-1) * 120);
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.phase-item').forEach(p => phaseObserver.observe(p));
+
+// Nav background on scroll
+const nav = document.querySelector('.nav');
+window.addEventListener('scroll', () => {
+  if (window.scrollY > 60){
+    nav.style.background = getComputedStyle(document.documentElement).getPropertyValue('--bg-nav').trim() || 'rgba(3,7,13,0.95)';
+    nav.style.borderBottom = '1px solid rgba(0,229,255,0.08)';
+  } else {
+    nav.style.background = 'linear-gradient(to bottom,var(--bg-nav),transparent)';
+    nav.style.borderBottom = 'none';
+  }
+}, { passive: true });
+
+})();
+
+/* ── THEME TOGGLE JS ── */
+(function(){
+  const btn = document.getElementById('theme-toggle');
+  const html = document.documentElement;
+  const stored = localStorage.getItem('st-theme');
+  if(stored === 'light'){ html.classList.add('light'); btn.textContent = '☀️'; }
+  btn.addEventListener('click', () => {
+    const isLight = html.classList.toggle('light');
+    btn.textContent = isLight ? '☀️' : '🌙';
+    localStorage.setItem('st-theme', isLight ? 'light' : 'dark');
+  });
+})();
+</script>
+</body>
+</html>
