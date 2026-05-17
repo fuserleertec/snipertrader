@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>USME ICT Foundation — Smart Money Intelligence | TOS · PINE · NINJA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ══ RESET & ROOT DARK (DEFAULT) ═══════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --black:   #040609;
+  --deep:    #070b12;
+  --panel:   #0c1220;
+  --surface: #111827;
+  --border:  rgba(0,229,255,0.10);
+  --cyan:    #00e5ff;
+  --cyan2:   #00b8cc;
+  --gold:    #f0c040;
+  --gold2:   #b8882a;
+  --green:   #00e5a0;
+  --red:     #ff4d6a;
+  --white:   #edf2fb;
+  --sub:     rgba(237,242,251,0.72);
+  --muted:   rgba(237,242,251,0.42);
+  --ff-disp: 'Orbitron', monospace;
+  --ff-mono: 'Space Mono', monospace;
+  --ff-body: 'Syne', sans-serif;
+  --bg-grid-line: rgba(0,229,255,0.03);
+  --hero-glow: radial-gradient(ellipse,rgba(0,229,255,.06) 0%,transparent 65%);
+  --hero-glow2: radial-gradient(ellipse,rgba(240,192,64,.04) 0%,transparent 70%);
+  --card-shadow: 0 0 60px rgba(0,229,255,.05), 0 24px 64px rgba(0,0,0,.4);
+}
+body{
+  background: var(--black);
+  color: var(--white);
+  font-family: var(--ff-body);
+  overflow-x: hidden;
+  cursor: none;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+/* Light mode override */
+body.light-mode {
+  --black: #f8fafc;
+  --deep: #eef2f5;
+  --panel: #ffffff;
+  --surface: #f1f5f9;
+  --border: rgba(0,100,120,0.12);
+  --cyan: #0077b6;
+  --cyan2: #0096c7;
+  --gold: #c47e2e;
+  --gold2: #a5682a;
+  --green: #2e7d32;
+  --red: #c62828;
+  --white: #0f172a;
+  --sub: rgba(15,23,42,0.75);
+  --muted: rgba(15,23,42,0.55);
+  --bg-grid-line: rgba(0,119,182,0.08);
+  --hero-glow: radial-gradient(ellipse,rgba(0,119,182,.06) 0%,transparent 65%);
+  --hero-glow2: radial-gradient(ellipse,rgba(196,126,46,.05) 0%,transparent 70%);
+  --card-shadow: 0 0 30px rgba(0,119,182,.08), 0 12px 40px rgba(0,0,0,.08);
+}
+/* Custom cursor also adapts in light mode */
+body.light-mode #cur{ background: var(--cyan); box-shadow:0 0 12px var(--cyan),0 0 30px rgba(0,119,182,.35);}
+body.light-mode #cur-ring{ border-color: rgba(0,119,182,.5);}
+body.light-mode .grid-bg{
+  background-image: linear-gradient(var(--bg-grid-line) 1px,transparent 1px),
+                    linear-gradient(90deg,var(--bg-grid-line) 1px,transparent 1px);
+}
+#cur{position:fixed;width:8px;height:8px;background:var(--cyan);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);box-shadow:0 0 12px var(--cyan),0 0 30px rgba(0,229,255,.35);transition:width .15s,height .15s}
+#cur-ring{position:fixed;width:32px;height:32px;border:1px solid rgba(0,229,255,.4);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:transform .08s ease,width .2s,height .2s}
+body:has(a:hover) #cur{width:14px;height:14px}
+body:has(button:hover) #cur{background:var(--gold);box-shadow:0 0 14px var(--gold)}
+.grid-bg{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image: linear-gradient(var(--bg-grid-line) 1px,transparent 1px),
+                    linear-gradient(90deg,var(--bg-grid-line) 1px,transparent 1px);
+  background-size:60px 60px;
+  mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black 30%,transparent 100%);
+}
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  padding:18px 60px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(180deg, rgba(var(--black-rgb),0.96) 0%, transparent 100%);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  background-color: rgba(0,0,0,0.6);
+}
+body.light-mode nav{
+  background: rgba(255,255,255,0.92);
+  border-bottom:1px solid rgba(0,0,0,0.08);
+}
+.nav-logo{ font-family:var(--ff-disp);font-size:.85rem;font-weight:900;color:var(--white);letter-spacing:.18em;text-decoration:none;}
+.nav-logo span{color:var(--cyan)}
+.nav-badge{ font-family:var(--ff-mono);font-size:.5rem;letter-spacing:.2em;color:var(--cyan);background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.2);border-radius:3px;padding:3px 7px;margin-left:10px;vertical-align:middle;}
+.nav-links{list-style:none;display:flex;gap:32px}
+.nav-links a{ font-family:var(--ff-mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--sub);text-decoration:none;transition:color .2s;}
+.nav-links a:hover{color:var(--cyan)}
+.nav-cta{ font-family:var(--ff-mono);font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;padding:11px 22px;background:linear-gradient(135deg,var(--cyan),var(--cyan2));color:#000;border:none;border-radius:4px;cursor:none;font-weight:700;transition:opacity .2s,transform .15s;}
+.nav-cta:hover{opacity:.85;transform:translateY(-1px)}
+.theme-toggle{
+  background: transparent;
+  border:1px solid var(--border);
+  border-radius: 40px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: none;
+  font-size: 1.2rem;
+  transition: all 0.2s;
+  color: var(--cyan);
+}
+.theme-toggle:hover{
+  transform: scale(0.96);
+  background: rgba(0,229,255,0.08);
+}
+/* ===== NEW BANNER (multi-product announcement) ===== */
+.platform-banner {
+  position: relative;
+  z-index: 150;
+  background: linear-gradient(135deg, rgba(0,229,255,0.12), rgba(240,192,64,0.08));
+  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  padding: 12px 20px;
+  text-align: center;
+  font-family: var(--ff-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  backdrop-filter: blur(8px);
+  margin-top: 72px; /* nav height compensation */
+}
+body.light-mode .platform-banner {
+  background: linear-gradient(135deg, rgba(0,119,182,0.08), rgba(196,126,46,0.05));
+}
+.banner-content {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 28px;
+  align-items: baseline;
+}
+.banner-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.badge-platform {
+  background: rgba(0,229,255,0.2);
+  border-radius: 40px;
+  padding: 4px 12px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--cyan);
+  font-family: var(--ff-mono);
+}
+.badge-vwap {
+  background: rgba(240,192,64,0.2);
+  color: var(--gold);
+  border-radius: 40px;
+  padding: 4px 12px;
+  font-size: 0.6rem;
+}
+.banner-text {
+  font-weight: 500;
+  color: var(--white);
+  letter-spacing: 0.05em;
+}
+body.light-mode .banner-text { color: #0f172a; }
+.banner-sep {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin: 0 4px;
+}
+@media (max-width: 768px) {
+  .platform-banner { margin-top: 68px; padding: 8px 12px; }
+  .banner-item { gap: 8px; }
+  .banner-text { font-size: 0.65rem; }
+}
+#hero{
+  min-height:100vh;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  text-align:center;padding:120px 60px 80px;
+  position:relative;overflow:hidden;
+}
+.hero-glow{ position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:900px;height:900px;border-radius:50%;background:var(--hero-glow);pointer-events:none;}
+.hero-glow2{ position:absolute;top:30%;left:20%;width:400px;height:400px;border-radius:50%;background:var(--hero-glow2);pointer-events:none;}
+.version-pill{ display:inline-flex;align-items:center;gap:8px;font-family:var(--ff-mono);font-size:.55rem;letter-spacing:.25em;text-transform:uppercase;background:rgba(0,229,255,.07);border:1px solid rgba(0,229,255,.18);border-radius:40px;padding:7px 18px;margin-bottom:28px;color:var(--cyan);opacity:0;animation:fadeUp .7s .1s forwards;}
+.version-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+.hero-eyebrow{ font-family:var(--ff-mono);font-size:.6rem;letter-spacing:.3em;text-transform:uppercase;color:var(--muted);margin-bottom:16px;opacity:0;animation:fadeUp .7s .25s forwards;}
+h1.hero-title{ font-family:var(--ff-disp);font-size:clamp(2.8rem,6vw,5.5rem);font-weight:900;line-height:1.05;letter-spacing:.04em;margin-bottom:12px;opacity:0;animation:fadeUp .8s .35s forwards;}
+h1.hero-title .accent{color:var(--cyan)}
+h1.hero-title .v-num{ font-size:.45em;vertical-align:middle;color:var(--gold);letter-spacing:.1em;}
+.hero-sub-title{ font-family:var(--ff-body);font-size:1.1rem;color:var(--sub);font-weight:300;margin-bottom:20px;max-width:640px;line-height:1.7;opacity:0;animation:fadeUp .8s .5s forwards;}
+.hero-course-tag{ font-family:var(--ff-mono);font-size:.58rem;letter-spacing:.15em;color:var(--gold);text-transform:uppercase;margin-bottom:40px;opacity:0;animation:fadeUp .7s .6s forwards;}
+.hero-ctas{ display:flex;gap:16px;justify-content:center;flex-wrap:wrap;opacity:0;animation:fadeUp .8s .7s forwards;margin-bottom:60px;}
+.btn-primary{ font-family:var(--ff-mono);font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;padding:16px 36px;background:linear-gradient(135deg,var(--cyan) 0%,var(--cyan2) 100%);color:#000;border:none;border-radius:5px;cursor:none;font-weight:700;transition:transform .15s,box-shadow .2s;text-decoration:none;display:inline-flex;align-items:center;gap:8px;}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,229,255,.3)}
+.btn-secondary{ font-family:var(--ff-mono);font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;padding:15px 28px;background:transparent;color:var(--white);border:1px solid rgba(237,242,251,.2);border-radius:5px;cursor:none;transition:border-color .2s,transform .15s;text-decoration:none;display:inline-flex;align-items:center;gap:8px;}
+.btn-secondary:hover{border-color:var(--cyan);transform:translateY(-2px)}
+.trial-badge{ display:inline-flex;align-items:center;gap:10px;font-family:var(--ff-mono);font-size:.55rem;letter-spacing:.1em;color:var(--green);background:rgba(0,229,160,.07);border:1px solid rgba(0,229,160,.2);border-radius:4px;padding:8px 16px;opacity:0;animation:fadeUp .7s .85s forwards;}
+.hero-stats{ display:flex;gap:48px;justify-content:center;flex-wrap:wrap;padding:28px 0 0;border-top:1px solid var(--border);opacity:0;animation:fadeUp .8s 1s forwards;}
+.hstat{text-align:center}
+.hstat-n{font-family:var(--ff-disp);font-size:1.6rem;font-weight:900;color:var(--cyan);letter-spacing:.05em}
+.hstat-l{font-family:var(--ff-mono);font-size:.5rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.scroll-arrow{ position:absolute;bottom:32px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--muted);font-family:var(--ff-mono);font-size:.5rem;letter-spacing:.18em;animation:scrollPulse 2.5s ease-in-out infinite;opacity:0;animation:fadeIn 1s 1.4s forwards, scrollPulse 2.5s 2.4s ease-in-out infinite;}
+section{position:relative;z-index:1;max-width:1320px;margin:0 auto;padding:100px 60px}
+.section-label{ font-family:var(--ff-mono);font-size:.52rem;letter-spacing:.28em;text-transform:uppercase;color:var(--cyan);margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.section-label::before{content:'';display:block;width:28px;height:1px;background:var(--cyan)}
+h2.section-title{ font-family:var(--ff-disp);font-size:clamp(1.8rem,3.5vw,3rem);font-weight:900;line-height:1.1;letter-spacing:.04em;margin-bottom:16px;}
+h2.section-title em{font-style:normal;color:var(--cyan)}
+h2.section-title .gold{color:var(--gold)}
+p.section-sub{ font-size:1rem;color:var(--sub);line-height:1.8;font-weight:300;max-width:560px;}
+.divider{ height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);max-width:1320px;margin:0 auto;}
+.what-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;margin-top:56px}
+.what-text p{font-size:.95rem;color:var(--sub);line-height:1.9;margin-bottom:20px;font-weight:300}
+.what-text p strong{color:var(--white);font-weight:600}
+.engine-visual{ background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:36px;overflow:hidden;position:relative;}
+.ev-title{font-family:var(--ff-disp);font-size:.65rem;letter-spacing:.2em;color:var(--cyan);margin-bottom:24px;text-transform:uppercase}
+.subsystem{display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);}
+.subsystem:last-child{border-bottom:none}
+.ss-icon{ width:36px;height:36px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1rem;}
+.ss-icon.c{background:rgba(0,229,255,.1)}
+.ss-icon.g{background:rgba(240,192,64,.1)}
+.ss-name{font-family:var(--ff-mono);font-size:.6rem;font-weight:700;letter-spacing:.1em;color:var(--white);text-transform:uppercase;margin-bottom:4px}
+.ss-desc{font-size:.8rem;color:var(--sub);line-height:1.5}
+#modules{background:linear-gradient(180deg,transparent 0%,rgba(0,229,255,.02) 50%,transparent 100%)}
+.module-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.mod-card{ background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:24px 22px;transition:border-color .25s,transform .2s;cursor:none;}
+.mod-card:hover{border-color:rgba(0,229,255,.28);transform:translateY(-3px)}
+.mod-num{font-family:var(--ff-disp);font-size:.55rem;letter-spacing:.2em;color:var(--muted);margin-bottom:10px}
+.mod-title{font-family:var(--ff-body);font-size:.95rem;font-weight:700;color:var(--white);margin-bottom:8px}
+.mod-time{font-family:var(--ff-mono);font-size:.52rem;letter-spacing:.1em;color:var(--cyan);margin-bottom:12px}
+.mod-desc{font-size:.82rem;color:var(--sub);line-height:1.6}
+.mod-tag{display:inline-block;margin-top:12px;font-family:var(--ff-mono);font-size:.48rem;letter-spacing:.15em;text-transform:uppercase;padding:3px 8px;border-radius:3px}
+.mod-tag.new{background:rgba(0,229,255,.1);color:var(--cyan);border:1px solid rgba(0,229,255,.2)}
+.mod-tag.core{background:rgba(240,192,64,.08);color:var(--gold);border:1px solid rgba(240,192,64,.2)}
+#sotd-engine{background:linear-gradient(135deg,rgba(0,229,255,.03) 0%,transparent 50%,rgba(240,192,64,.02) 100%)}
+.sotd-wrap{display:grid;grid-template-columns:1.1fr 1fr;gap:64px;align-items:center;margin-top:56px}
+.tier-stack{display:flex;flex-direction:column;gap:14px}
+.tier-card{ border-radius:10px;padding:20px 24px;display:flex;align-items:center;gap:18px;border:1px solid;transition:transform .2s;cursor:none;position:relative;}
+.tier-card:hover{transform:translateX(4px)}
+.tier-card.elite{background:rgba(240,192,64,.05);border-color:rgba(240,192,64,.2)}
+.tier-card.prime{background:rgba(0,229,255,.05);border-color:rgba(0,229,255,.2)}
+.tier-card.standard{background:rgba(237,242,251,.03);border-color:rgba(237,242,251,.1)}
+.tier-icon{font-size:1.6rem;flex-shrink:0}
+.tier-name{font-family:var(--ff-disp);font-size:.7rem;font-weight:900;letter-spacing:.15em;text-transform:uppercase;margin-bottom:4px}
+.tier-name.elite{color:var(--gold)}
+.tier-name.prime{color:var(--cyan)}
+.tier-name.standard{color:var(--sub)}
+.tier-score{font-family:var(--ff-mono);font-size:.55rem;letter-spacing:.1em;color:var(--muted);margin-bottom:6px}
+.tier-desc{font-size:.82rem;color:var(--sub);line-height:1.5}
+.tbadge{ font-family:var(--ff-mono);font-size:.45rem;letter-spacing:.12em;text-transform:uppercase;padding:2px 7px;border-radius:3px;}
+.tbadge.gold{background:rgba(240,192,64,.1);color:var(--gold);border:1px solid rgba(240,192,64,.2)}
+.tbadge.cyan{background:rgba(0,229,255,.1);color:var(--cyan);border:1px solid rgba(0,229,255,.2)}
+.sotd-info{display:flex;flex-direction:column;gap:24px}
+.sotd-kv{border-left:2px solid var(--border);padding-left:18px}
+.sotd-kv-label{font-family:var(--ff-mono);font-size:.52rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.sotd-kv-val{font-size:.95rem;color:var(--sub);line-height:1.7;font-weight:300}
+.score-bar{height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden;margin:12px 0}
+.score-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--cyan),var(--cyan2));width:0%;transition:width 1.5s ease}
+.wf-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin-top:56px;position:relative}
+.wf-step{display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 12px}
+.wf-circle{ width:56px;height:56px;border-radius:50%;background:var(--panel);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--ff-disp);font-size:.6rem;font-weight:900;color:var(--cyan);margin-bottom:16px;}
+.wf-name{font-size:.88rem;font-weight:700;color:var(--white);margin-bottom:6px}
+.wf-desc{font-size:.78rem;color:var(--sub);line-height:1.5}
+.vs-wrap{margin-top:50px;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.vs-header{display:grid;grid-template-columns:1fr 1fr 1fr;background:var(--panel);padding:20px 28px}
+.vs-row{display:grid;grid-template-columns:1fr 1fr 1fr;padding:16px 28px;border-bottom:1px solid var(--border)}
+.vs-feature{font-size:.88rem;color:var(--sub);display:flex;align-items:center;gap:8px}
+.vs-val{text-align:center;font-family:var(--ff-mono);font-size:.72rem}
+.vs-val .check{color:var(--green)}
+.vs-val .cross{color:var(--red)}
+.price-cards{display:flex;flex-wrap:wrap;justify-content:center;gap:32px;margin-top:48px}
+.price-card{ background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:40px 32px;max-width:380px;width:100%;transition:transform .2s;}
+.price-card:hover{transform:translateY(-5px);border-color:rgba(0,229,255,.4)}
+.price-name{font-family:var(--ff-disp);font-size:1.2rem;font-weight:900;letter-spacing:.08em;margin-bottom:12px}
+.price-amount{font-family:var(--ff-disp);font-size:2.6rem;font-weight:900;color:var(--cyan);line-height:1;margin:16px 0 8px}
+.price-amount small{font-size:1rem}
+.price-features{list-style:none;margin:24px 0;text-align:left;}
+.price-features li{display:flex;gap:10px;font-size:.8rem;color:var(--sub);margin-bottom:10px}
+.price-cta-block{margin-top:20px;width:100%;padding:14px;background:linear-gradient(135deg,var(--cyan),var(--cyan2));border:none;border-radius:6px;font-family:var(--ff-mono);font-weight:700;cursor:none;color:#000;}
+.faq-list{max-width:760px;margin:48px auto 0;display:flex;flex-direction:column;gap:10px}
+.faq-item{background:var(--panel);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.faq-q{padding:20px 24px;display:flex;justify-content:space-between;align-items:center;font-weight:600;color:var(--white);cursor:pointer}
+.faq-icon{color:var(--cyan);transition:transform .2s}
+.faq-item.open .faq-icon{transform:rotate(45deg)}
+.faq-a{display:none;padding:0 24px 20px;font-size:.88rem;color:var(--sub);border-top:1px solid var(--border);padding-top:16px}
+.faq-item.open .faq-a{display:block}
+#ctaband{text-align:center;padding:100px 60px;background:radial-gradient(ellipse 70% 60% at 50% 50%, rgba(0,229,255,.05), transparent 70%);}
+footer{border-top:1px solid var(--border);padding:60px 60px 32px;max-width:1320px;margin:0 auto}
+.footer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:40px;margin-bottom:48px}
+.footer-col-title{font-family:var(--ff-mono);font-size:.52rem;letter-spacing:.25em;color:var(--cyan);margin-bottom:14px}
+.footer-col a{display:block;font-size:.82rem;color:var(--sub);text-decoration:none;padding:4px 0}
+.footer-col a:hover{color:var(--white)}
+.footer-disclaimer{font-family:var(--ff-mono);font-size:.48rem;color:var(--muted);margin-top:20px}
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes scrollPulse{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(6px)}}
+.ticker-wrap{ background:var(--panel);border-top:1px solid var(--border);border-bottom:1px solid var(--border);overflow:hidden;padding:10px 0;position:sticky;top:72px;z-index:100;backdrop-filter:blur(8px);}
+.ticker{display:flex;white-space:nowrap;animation:ticker 30s linear infinite}
+.ticker-item{font-family:var(--ff-mono);font-size:.55rem;color:var(--sub);padding:0 36px;display:inline-flex;gap:8px}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media(max-width:1024px){.what-grid,.sotd-wrap{grid-template-columns:1fr}.module-grid{grid-template-columns:repeat(2,1fr)}.wf-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:768px){nav{padding:14px 24px}.nav-links{display:none}section{padding:80px 24px}.module-grid{grid-template-columns:1fr}.price-cards{flex-direction:column;align-items:center}.footer-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div id="cur"></div><div id="cur-ring"></div><div class="grid-bg"></div>
+<nav><a href="#" class="nav-logo">SNIPER<span>TRADER</span><span class="nav-badge">ICT Foundation</span></a>
+  <ul class="nav-links"><li><a href="#what">Overview</a></li><li><a href="#modules">Course</a></li><li><a href="#sotd-engine">SOTD Engine</a></li><li><a href="#pricing">Pricing</a></li><li><a href="#faq">FAQ</a></li></ul>
+  <div style="display: flex; gap: 12px; align-items: center;">
+    <button class="theme-toggle" id="themeToggleBtn" aria-label="Dark/Light mode">🌙</button>
+    <button class="nav-cta" onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'})">Start Free Trial</button>
+  </div>
+</nav>
+<!-- NEW BANNER: ICT Foundation + VWAP ELITE multi-platform announcement -->
+<div class="platform-banner">
+  <div class="banner-content">
+    <div class="banner-item">
+      <span class="badge-platform">⚡ ICT Foundation</span>
+      <span class="banner-text">TOS · PINE (TradingView) · NINJA</span>
+    </div>
+    <span class="banner-sep">|</span>
+    <div class="banner-item">
+      <span class="badge-vwap">📊 VWAP ELITE</span>
+      <span class="banner-text">Institutional Edge · TOS · PINE · NINJA</span>
+    </div>
+  </div>
+</div>
+<div class="ticker-wrap"><div class="ticker"><span class="ticker-item"><span class="t-acc">◈</span> USME ICT Foundation — Smart Money Core</span><span class="ticker-item"><span class="t-gold">◈</span> SOTD Tier System: ELITE · PRIME · STANDARD</span><span class="ticker-item"><span class="t-green">◈</span> 2-Week Free Trial — $199/mo or $1999/year</span><span class="ticker-item"><span class="t-acc">◈</span> Bias Cascade + SMT Divergence</span><span class="ticker-item"><span class="t-gold">◈</span> Non-Repainting Signals | ICT/SMC Aligned</span><span class="ticker-item"><span class="t-green">◈</span> ThinkorSwim + TradingView + NinjaTrader ready</span><span class="ticker-item"><span class="t-acc">◈</span> VWAP ELITE also available — multi-platform</span></div></div>
+<section id="hero"><div class="hero-glow"></div><div class="hero-glow2"></div>
+  <div class="version-pill"><span class="version-dot"></span>Foundational Release — Institutional Concepts</div>
+  <p class="hero-eyebrow">SniperTrader | ICT Methodology Core</p>
+  <h1 class="hero-title">USME <span class="v-num">ICT Foundation</span><br><span class="accent">Smart Money Structure.</span><br>Signal Certainty.</h1>
+  <p class="hero-sub-title">Learn to read liquidity, displacement, and order flow through the Unified Smart Money Engine — bias cascade, SOTD tier scoring, and non-repainting signals. Compatible with ThinkorSwim, TradingView (Pine), and NinjaTrader.</p>
+  <p class="hero-course-tag">The Complete ICT Foundation & Signal Mastery</p>
+  <div class="hero-ctas"><a href="#pricing" class="btn-primary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>Start 2-Week Free Trial</a><a href="#modules" class="btn-secondary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>Explore Foundation Course</a></div>
+  <div class="trial-badge">✓ &nbsp;2 weeks free · then $199/month or $1999/year · cancel anytime</div>
+  <div class="hero-stats"><div class="hstat"><div class="hstat-n">5</div><div class="hstat-l">TF Bias Layers</div></div><div class="hstat"><div class="hstat-n">3</div><div class="hstat-l">Signal Tiers</div></div><div class="hstat"><div class="hstat-n">6</div><div class="hstat-l">Core Modules</div></div><div class="hstat"><div class="hstat-n">SOTD™</div><div class="hstat-l">Scoring Engine</div></div></div>
+  <div class="scroll-arrow"><span>SCROLL</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div>
+</section>
+<div class="divider"></div>
+<section id="what"><div class="section-label">Core Architecture</div><div class="what-grid"><div class="what-text"><h2 class="section-title">The Engine Behind<br><em>Institutional Framework</em></h2><p>The USME ICT Foundation is built on pure ICT & Smart Money Concepts: liquidity voids, market structure shifts, optimal trade entry zones. It reads price action through a multi-timeframe lens and provides real-time <strong>SOTD scoring</strong> from 65% to 100%.</p><p>You no longer guess if a setup is valid. The engine grades ELITE, PRIME, or STANDARD with distinct alerts. This course teaches you the what, why, and how behind each label. Available for <strong>ThinkorSwim, TradingView (Pine Script), and NinjaTrader</strong> — same logic, seamless workflow.</p></div><div class="engine-visual"><div class="ev-title">USME ICT Foundation — Core Subsystems</div><div class="subsystem"><div class="ss-icon c">🧠</div><div><div class="ss-name">Multi‑TF Bias Engine</div><div class="ss-desc">Weekly → Daily bias gate, 4H primary trend.</div></div></div><div class="subsystem"><div class="ss-icon g">⚡</div><div><div class="ss-name">SOTD Scoring Engine</div><div class="ss-desc">Real‑time confluence score (0–100%). ELITE ≥90% · PRIME 80-89% · STANDARD 65-79%.</div></div></div></div></div></section>
+<div class="divider"></div>
+<section id="sotd-engine"><div class="section-label">Flagship — SOTD™</div><h2 class="section-title">Signal‑of‑the‑Day Engine<br><em>Tier Scoring System</em> <span class="gold">Foundation v3.1</span></h2><div class="sotd-wrap reveal"><div class="tier-stack"><div class="tier-card elite"><div class="tier-icon">👑</div><div><div class="tier-name elite">ELITE</div><div class="tier-score">Score ≥90% · Gold Chimes · Max Confluence</div><div class="tier-desc">Full SMC stack: CHoCH + sweep + FVG/OB + HTF alignment.</div></div></div><div class="tier-card prime"><div class="tier-icon">⚡</div><div><div class="tier-name prime">PRIME</div><div class="tier-score">Score 80–89% · Ring Alert · Strong Edge</div><div class="tier-desc">Standard requirements plus extra confluence layers.</div></div></div><div class="tier-card standard"><div class="tier-icon">🔔</div><div><div class="tier-name standard">STANDARD</div><div class="tier-score">Score 65–79% · Bell Alert · Valid Setup</div><div class="tier-desc">Minimum conditions met. Reduce size if below 70%.</div></div></div></div><div class="sotd-info"><div class="sotd-kv"><div class="sotd-kv-label">Score Composition</div><div class="sotd-kv-val">5 confluence factors: bias, liquidity sweep, FVG/OB, session filter, SMT divergence.</div><div class="score-bar"><div class="score-fill" id="scoreDemoFill" style="width:0%"></div><div style="font-size:.65rem;margin-top:4px">Example: 86% (PRIME)</div></div></div><div class="sotd-kv"><div class="sotd-kv-label">Critical Rule</div><div class="sotd-kv-val">Signals confirmed only on closed bars — no mid-candle entries.</div></div></div></div></section>
+<div class="divider"></div>
+<section id="pricing"><div class="section-label">Access Plans</div><h2 class="section-title" style="text-align:center">One Engine.<br><em>Two Commitments.</em></h2><div class="price-cards reveal"><div class="price-card"><div class="price-name">MONTHLY FLEX</div><div class="price-amount"><sup>$</sup>199<small>/mo</small></div><div class="price-cadence">billed monthly · cancel anytime</div><ul class="price-features"><li><span class="chk">✓</span> Full indicator + course</li><li><span class="chk">✓</span> SOTD ELITE/PRIME/STANDARD</li><li><span class="chk">✓</span> Community access</li></ul><button class="price-cta-block" onclick="alert('2-week trial activated')">Start Free Trial →</button></div><div class="price-card"><div class="price-name">YEARLY ELITE</div><div class="price-amount"><sup>$</sup>1999<small>/year</small></div><div class="price-cadence">save 16% · 2 weeks trial</div><ul class="price-features"><li><span class="chk">✓</span> All monthly features + priority support</li><li><span class="chk">✓</span> Annual webinars & updates</li></ul><button class="price-cta-block" style="background:linear-gradient(135deg,var(--gold),#b8882a);" onclick="alert('14-day free trial for yearly')">Start Annual Trial →</button></div></div></section>
+<div class="divider"></div>
+<footer><div class="footer-logo">SNIPER<span>TRADER</span></div><div class="footer-grid"><div class="footer-col"><div class="footer-col-title">ICT Foundation</div><a href="#">SOTD Engine</a><a href="#">Bias Dashboard</a><a href="#">TOS · PINE · NINJA</a></div><div class="footer-col"><div class="footer-col-title">Resources</div><a href="#">Affiliate</a><a href="#">Trade Recorder</a><a href="#">VWAP Elite Suite</a></div><div class="footer-col"><div class="footer-col-title">Legal</div><a href="#">Terms</a><a href="#">Privacy</a></div></div><p class="footer-disclaimer">Trading involves substantial risk. Educational tool — not financial advice. USME ICT Foundation and VWAP Elite are available for ThinkorSwim, TradingView (Pine), and NinjaTrader.</p></footer>
+<script>
+// theme toggle
+const toggleBtn = document.getElementById('themeToggleBtn');
+const body = document.body;
+function setTheme(theme) {
+  if(theme === 'light') {
+    body.classList.add('light-mode');
+    toggleBtn.innerHTML = '☀️';
+    localStorage.setItem('usmeTheme', 'light');
+  } else {
+    body.classList.remove('light-mode');
+    toggleBtn.innerHTML = '🌙';
+    localStorage.setItem('usmeTheme', 'dark');
+  }
+}
+const savedTheme = localStorage.getItem('usmeTheme');
+if(savedTheme === 'light') setTheme('light');
+else setTheme('dark');
+toggleBtn.addEventListener('click', () => {
+  if(body.classList.contains('light-mode')) setTheme('dark');
+  else setTheme('light');
+});
+// reveal & score bar
+const revEls = document.querySelectorAll('.reveal');
+const io = new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');io.unobserve(e.target)}})},{threshold:0.12});
+revEls.forEach(el=>io.observe(el));
+const sbFill = document.getElementById('scoreDemoFill');
+if(sbFill){ const obs = new IntersectionObserver(e=>{if(e[0].isIntersecting){sbFill.style.width='86%';obs.disconnect()}},{threshold:.3}); obs.observe(sbFill.closest('.sotd-wrap')) }
+document.querySelectorAll('.faq-item').forEach(item=>{item.querySelector('.faq-q')?.addEventListener('click',()=>{const open=item.classList.contains('open');document.querySelectorAll('.faq-item').forEach(i=>i.classList.remove('open'));if(!open) item.classList.add('open');})});
+document.querySelectorAll('a[href^="#"]').forEach(anchor=>{anchor.addEventListener('click',function(e){const target=document.querySelector(this.getAttribute('href'));if(target){e.preventDefault();target.scrollIntoView({behavior:'smooth',block:'start'})}})});
+</script>
+</body>
+</html>
