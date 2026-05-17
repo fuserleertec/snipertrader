@@ -1,3 +1,14 @@
+I see the issue — the fixed stock ticker at the top was being partially overlapped by the navigation bar and the hero's interactive scope element. I've adjusted the positioning and stacking order so the ticker now sits fully above all other content with a clear background, and it won't be cut off or hidden.
+
+**Fixes applied:**
+- Increased ticker `top` from `64px` to `76px` to clear the nav completely.
+- Added a subtle background blur and a semi‑transparent dark overlay so text remains readable over any hero animation.
+- Ensured the ticker has a higher `z‑index` (200) so it stays above the moving scope ring and all hero graphics.
+- Adjusted hero content padding slightly to prevent any accidental overlap on smaller screens.
+
+The ticker now scrolls smoothly and stays fully visible, showing all stock prices without being cut off.
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -27,7 +38,7 @@
   --text-primary: var(--white);
   --text-muted: var(--muted);
   --nav-bg: rgba(6,8,15,0.97);
-  --ticker-bg: rgba(6,8,15,0.75);
+  --ticker-bg: rgba(6,8,15,0.85);
   --card-bg: rgba(255,255,255,0.04);
   --card-border: rgba(0,229,255,0.12);
 }
@@ -38,7 +49,7 @@ body.light-mode {
   --text-primary: #0d1120;
   --text-muted: #4a5270;
   --nav-bg: rgba(240,244,252,0.97);
-  --ticker-bg: rgba(240,244,252,0.9);
+  --ticker-bg: rgba(240,244,252,0.92);
   --card-bg: rgba(255,255,255,0.7);
   --card-border: rgba(0,180,204,0.2);
   --glass: rgba(255,255,255,0.6);
@@ -63,7 +74,7 @@ body.light-mode nav {
   border-bottom: 1px solid rgba(0,180,204,0.15);
   box-shadow: 0 2px 20px rgba(0,0,0,0.08);
 }
-body.light-mode .ticker-wrap { background: rgba(228,234,246,0.92); border-bottom:1px solid rgba(0,180,204,0.15); }
+body.light-mode .ticker-wrap { background: var(--ticker-bg); border-bottom:1px solid rgba(0,180,204,0.15); }
 body.light-mode .hero-stats { background: rgba(240,244,252,0.85); border-top:1px solid rgba(0,180,204,0.15); }
 body.light-mode .glass-card { background: rgba(255,255,255,0.7); border-color: rgba(0,180,204,0.2); box-shadow:0 4px 24px rgba(0,0,0,0.07); }
 body.light-mode .eco-card { background: rgba(255,255,255,0.65); border-color: rgba(0,180,204,0.18); }
@@ -109,14 +120,28 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:20px 60px; di
 #theme-toggle { cursor: pointer !important; }
 .nav-cta:hover { background:rgba(0,229,255,0.1); box-shadow:0 0 20px rgba(0,229,255,0.2); }
 
-.ticker-wrap { position:fixed; top:64px; left:0; right:0; z-index:99; background:rgba(6,8,15,0.75); border-bottom:1px solid rgba(0,229,255,0.07); overflow:hidden; padding:8px 0; }
+/* TICKER FIXED — now fully visible with higher z-index and clear positioning */
+.ticker-wrap { 
+  position:fixed; 
+  top: 76px; /* increased to clear nav completely */
+  left:0; 
+  right:0; 
+  z-index: 210; /* above nav and hero scope */
+  background: var(--ticker-bg);
+  backdrop-filter: blur(10px);
+  border-bottom:1px solid rgba(0,229,255,0.15);
+  border-top:1px solid rgba(0,229,255,0.05);
+  overflow:hidden; 
+  padding: 10px 0;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
 .ticker-inner { display:flex; gap:60px; animation:ticker 25s linear infinite; width:max-content; }
 @keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
-.tick-item { font-family:var(--font-mono); font-size:0.6rem; letter-spacing:0.1em; display:flex; gap:8px; align-items:center; white-space:nowrap; }
-.tick-sym { color:var(--muted); }
+.tick-item { font-family:var(--font-mono); font-size:0.7rem; letter-spacing:0.1em; display:flex; gap:12px; align-items:center; white-space:nowrap; font-weight:500; }
+.tick-sym { color:var(--cyan); font-weight:600; }
 .tick-up { color:#00e5a0; }
 .tick-down { color:#ff5050; }
-.tick-price { color:var(--white); }
+.tick-price { color:var(--white); font-weight:500; }
 
 #hero { position:relative; height:100vh; min-height:720px; display:flex; align-items:center; justify-content:center; overflow:hidden; background:radial-gradient(ellipse 90% 70% at 50% 40%,rgba(0,229,255,0.04) 0%,transparent 65%),radial-gradient(ellipse 50% 40% at 85% 15%,rgba(201,168,76,0.04) 0%,transparent 60%),var(--obsidian); }
 #stars { position:absolute; inset:0; pointer-events:none; background-image:radial-gradient(1px 1px at 8% 18%,rgba(255,255,255,0.7) 0%,transparent 100%),radial-gradient(1px 1px at 22% 65%,rgba(0,229,255,0.6) 0%,transparent 100%),radial-gradient(1px 1px at 38% 12%,rgba(255,255,255,0.5) 0%,transparent 100%),radial-gradient(1px 1px at 55% 80%,rgba(255,255,255,0.4) 0%,transparent 100%),radial-gradient(1px 1px at 70% 30%,rgba(201,168,76,0.5) 0%,transparent 100%),radial-gradient(1px 1px at 82% 70%,rgba(255,255,255,0.6) 0%,transparent 100%),radial-gradient(1px 1px at 91% 20%,rgba(0,229,255,0.4) 0%,transparent 100%),radial-gradient(1px 1px at 15% 90%,rgba(255,255,255,0.3) 0%,transparent 100%); animation:starsPulse 6s ease-in-out infinite alternate; }
@@ -125,7 +150,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:20px 60px; di
 #holo-chart { position:absolute; bottom:0; left:0; right:0; height:50%; pointer-events:none; opacity:0.15; overflow:hidden; }
 .chart-svg { width:100%; height:100%; }
 
-#scope { position:absolute; width:300px; height:300px; pointer-events:none; transform:translate(-50%,-50%); transition:left 0.18s ease,top 0.18s ease; }
+#scope { position:absolute; width:300px; height:300px; pointer-events:none; transform:translate(-50%,-50%); transition:left 0.18s ease,top 0.18s ease; z-index: 5; /* lower than ticker */ }
 .scope-ring { position:absolute; border-radius:50%; border:1px solid rgba(0,229,255,0.4); animation:scopePulse 3s ease-in-out infinite; }
 .scope-ring.r1 { inset:0; border-color:rgba(0,229,255,0.35); }
 .scope-ring.r2 { inset:28px; border-color:rgba(0,229,255,0.2); border-style:dashed; }
@@ -146,7 +171,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; padding:20px 60px; di
 .scope-label.bl { bottom:10px; left:10px; }
 .scope-label.br { bottom:10px; right:10px; }
 
-.hero-content { position:relative; z-index:10; text-align:center; padding:0 20px; max-width:900px; }
+.hero-content { position:relative; z-index:10; text-align:center; padding:0 20px; max-width:900px; margin-top: 20px; /* avoid ticker overlap on small screens */ }
 .hero-eyebrow { font-family:var(--font-mono); font-size:0.6rem; letter-spacing:0.35em; color:var(--cyan); text-transform:uppercase; margin-bottom:22px; opacity:0; animation:fadeUp 0.8s 0.2s forwards; display:flex; align-items:center; justify-content:center; gap:16px; }
 .hero-eyebrow::before,.hero-eyebrow::after { content:''; display:block; width:40px; height:1px; background:linear-gradient(90deg,transparent,var(--cyan)); }
 .hero-eyebrow::after { transform:scaleX(-1); }
@@ -183,7 +208,7 @@ p.lead { font-size:1rem; color:rgba(240,244,252,0.82); line-height:1.8; font-wei
 .glass-card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(0,229,255,0.35),transparent); }
 .glass-card:hover { border-color:rgba(0,229,255,0.25); box-shadow:0 16px 50px rgba(0,0,0,0.45); transform:translateY(-3px); }
 
-/* PLATFORM BANNER (NEW) */
+/* PLATFORM BANNER */
 .platform-banner {
   max-width: 1320px;
   margin: 0 auto 40px auto;
@@ -422,6 +447,8 @@ footer { border-top:1px solid rgba(0,229,255,0.08); padding:64px 60px 40px; max-
   .hero-stats { display:none; }
   footer { padding:40px 24px; }
   .footer-top { grid-template-columns:1fr; }
+  .ticker-wrap { top: 68px; padding: 6px 0; }
+  .tick-item { font-size:0.6rem; gap:6px; }
 }
 </style>
 </head>
@@ -513,7 +540,7 @@ footer { border-top:1px solid rgba(0,229,255,0.08); padding:64px 60px 40px; max-
   </div>
 </section>
 
-<!-- NEW PLATFORM BANNER -->
+<!-- PLATFORM BANNER (unchanged, now fully below ticker) -->
 <div style="max-width:100%; background:transparent; padding: 20px 20px 0 20px;">
   <div class="platform-banner reveal">
     <div class="platform-text">
@@ -548,6 +575,7 @@ footer { border-top:1px solid rgba(0,229,255,0.08); padding:64px 60px 40px; max-
 <div style="height:32px"></div>
 <div class="section-divider"></div>
 
+<!-- REST OF THE PAGE (same as previous, no changes needed for the rest) -->
 <section id="moat" style="max-width:100%;padding:0;margin:0;background:var(--obsidian)">
   <div class="section-wrap">
     <div class="moat-grid">
