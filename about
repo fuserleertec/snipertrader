@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>About | SniperTrader — Built by a Trader, for Traders</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --obsidian: #080c10;
+    --obsidian-2: #0d1318;
+    --obsidian-3: #111820;
+    --obsidian-4: #161f28;
+    --cyan: #00d4ff;
+    --cyan-dim: #00a8cc;
+    --cyan-glow: rgba(0, 212, 255, 0.15);
+    --gold: #f0c040;
+    --gold-dim: #c9a030;
+    --gold-glow: rgba(240, 192, 64, 0.15);
+    --crimson: #ff3a5c;
+    --white: #f0f4f8;
+    --muted: #8090a0;
+    --glass: #0f1820;
+    --glass-border: rgba(0, 212, 255, 0.12);
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--obsidian);
+    color: var(--white);
+    font-family: 'Syne', sans-serif;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* ── CUSTOM CURSOR ── */
+  #cursor-dot {
+    width: 6px; height: 6px;
+    background: var(--cyan);
+    border-radius: 50%;
+    position: fixed; top: 0; left: 0;
+    pointer-events: none; z-index: 9999;
+    transition: transform 0.1s ease;
+    box-shadow: 0 0 10px var(--cyan), 0 0 20px var(--cyan);
+  }
+  #cursor-ring {
+    width: 36px; height: 36px;
+    border: 1.5px solid rgba(0, 212, 255, 0.5);
+    border-radius: 50%;
+    position: fixed; top: 0; left: 0;
+    pointer-events: none; z-index: 9998;
+    transition: transform 0.12s ease, width 0.2s, height 0.2s, border-color 0.2s;
+  }
+  body:has(a:hover) #cursor-ring,
+  body:has(button:hover) #cursor-ring {
+    width: 52px; height: 52px;
+    border-color: var(--gold);
+    border-width: 2px;
+  }
+
+  /* ── PARTICLE CANVAS ── */
+  #particles { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+  /* ── NAVIGATION ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 20px 60px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: linear-gradient(to bottom, rgba(8,12,16,0.95) 0%, transparent 100%);
+    backdrop-filter: blur(8px);
+  }
+  .nav-logo {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.1rem; font-weight: 900;
+    letter-spacing: 0.12em; color: var(--white);
+    text-decoration: none;
+  }
+  .nav-logo span { color: var(--cyan); }
+  .nav-links { display: flex; gap: 40px; list-style: none; }
+  .nav-links a {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem; letter-spacing: 0.15em;
+    color: var(--muted); text-decoration: none;
+    text-transform: uppercase;
+    transition: color 0.3s;
+  }
+  .nav-links a:hover { color: var(--cyan); }
+  .nav-links a.active { color: var(--cyan); }
+  .nav-cta {
+    background: transparent;
+    border: 1.5px solid var(--cyan);
+    color: var(--cyan);
+    font-family: 'Orbitron', monospace;
+    font-size: 0.7rem; font-weight: 700;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    padding: 10px 22px; border-radius: 2px;
+    cursor: none; text-decoration: none;
+    transition: background 0.3s, box-shadow 0.3s;
+    position: relative; overflow: hidden;
+  }
+  .nav-cta:hover {
+    background: rgba(0,212,255,0.1);
+    box-shadow: 0 0 20px rgba(0,212,255,0.3);
+  }
+
+  /* ── BANNER (NEW) ── */
+  .platform-banner {
+    position: relative;
+    z-index: 99;
+    background: linear-gradient(95deg, #0a1118 0%, #0b1a24 100%);
+    border-bottom: 1px solid rgba(0,212,255,0.3);
+    border-top: 1px solid rgba(0,212,255,0.2);
+    padding: 12px 20px;
+    text-align: center;
+    margin-top: 70px;
+    backdrop-filter: blur(4px);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    color: var(--gold);
+    text-transform: uppercase;
+    box-shadow: 0 0 15px rgba(0,212,255,0.1);
+  }
+  .platform-banner span {
+    color: var(--cyan);
+    font-weight: bold;
+  }
+  .platform-banner .separator {
+    margin: 0 20px;
+    color: rgba(240,244,248,0.3);
+  }
+  @media (max-width: 700px) {
+    .platform-banner { font-size: 0.6rem; padding: 10px 12px; letter-spacing: 0.08em; }
+    .platform-banner .separator { margin: 0 8px; }
+  }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative; min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; z-index: 1;
+  }
+  .hero-bg-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 30%, transparent 100%);
+  }
+  .hero-glow-orb {
+    position: absolute;
+    width: 700px; height: 700px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,212,255,0.08) 0%, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  .hero-content {
+    position: relative; z-index: 2;
+    text-align: center; max-width: 900px; padding: 0 40px;
+  }
+  .hero-eyebrow {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem; letter-spacing: 0.3em;
+    color: var(--cyan); text-transform: uppercase;
+    margin-bottom: 28px;
+    opacity: 0; animation: fadeUp 0.8s 0.3s forwards;
+  }
+  .hero-eyebrow::before {
+    content: ''; display: inline-block;
+    width: 40px; height: 1px;
+    background: var(--cyan);
+    vertical-align: middle; margin-right: 16px;
+  }
+  .hero-eyebrow::after {
+    content: ''; display: inline-block;
+    width: 40px; height: 1px;
+    background: var(--cyan);
+    vertical-align: middle; margin-left: 16px;
+  }
+  .hero-title {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(2.8rem, 6vw, 5.5rem);
+    font-weight: 900; line-height: 1.05;
+    letter-spacing: 0.04em;
+    margin-bottom: 28px;
+    opacity: 0; animation: fadeUp 0.9s 0.5s forwards;
+  }
+  .hero-title .line-1 { display: block; color: var(--white); }
+  .hero-title .line-2 {
+    display: block;
+    background: linear-gradient(90deg, var(--cyan) 0%, var(--gold) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-sub {
+    font-size: 1.05rem; line-height: 1.8;
+    color: rgba(240,244,248,0.65);
+    max-width: 620px; margin: 0 auto 48px;
+    opacity: 0; animation: fadeUp 0.9s 0.7s forwards;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 100px; padding: 10px 22px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem; color: var(--gold);
+    letter-spacing: 0.1em;
+    opacity: 0; animation: fadeUp 0.9s 0.9s forwards;
+    box-shadow: 0 0 20px rgba(240,192,64,0.1);
+  }
+  .hero-badge::before {
+    content: ''; width: 7px; height: 7px;
+    background: var(--gold); border-radius: 50%;
+    box-shadow: 0 0 8px var(--gold), 0 0 16px var(--gold);
+    animation: pulse-dot 2s infinite;
+  }
+  .hero-scroll-indicator {
+    position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    opacity: 0; animation: fadeIn 1s 1.5s forwards;
+  }
+  .scroll-line {
+    width: 1px; height: 50px;
+    background: linear-gradient(to bottom, var(--cyan), transparent);
+    animation: scroll-pulse 2s infinite;
+  }
+  .scroll-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem; letter-spacing: 0.2em;
+    color: var(--muted); text-transform: uppercase;
+  }
+
+  /* ── SECTION COMMON ── */
+  section { position: relative; z-index: 1; }
+  .section-inner { max-width: 1200px; margin: 0 auto; padding: 120px 60px; }
+  .section-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.68rem; letter-spacing: 0.25em;
+    color: var(--cyan); text-transform: uppercase;
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 20px;
+  }
+  .section-tag::after {
+    content: ''; flex: 0 0 50px; height: 1px;
+    background: var(--cyan); opacity: 0.5;
+  }
+  .section-title {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+    font-weight: 900; letter-spacing: 0.04em;
+    line-height: 1.15; margin-bottom: 20px;
+  }
+  .section-lead {
+    font-size: 1.05rem; line-height: 1.8;
+    color: rgba(240,244,248,0.65);
+    max-width: 700px;
+  }
+
+  /* ── ORIGIN STORY ── */
+  .origin {
+    background: linear-gradient(180deg, var(--obsidian) 0%, var(--obsidian-2) 100%);
+  }
+  .origin-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 80px; align-items: center;
+  }
+  .origin-visual {
+    position: relative;
+  }
+  .origin-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px; padding: 48px;
+    position: relative; overflow: hidden;
+    transform-style: preserve-3d;
+    transition: transform 0.15s ease, box-shadow 0.3s;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .origin-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  }
+  .origin-card-glow {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 30% 20%, rgba(0,212,255,0.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .origin-stat {
+    display: flex; flex-direction: column; gap: 4px;
+    margin-bottom: 32px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid rgba(0,212,255,0.1);
+  }
+  .origin-stat:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+  .stat-number {
+    font-family: 'Orbitron', monospace;
+    font-size: 2.4rem; font-weight: 900;
+    color: var(--cyan);
+    line-height: 1;
+  }
+  .stat-number.gold { color: var(--gold); }
+  .stat-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem; color: var(--muted);
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .stat-desc {
+    font-size: 0.88rem; color: rgba(240,244,248,0.55);
+    margin-top: 4px;
+  }
+  .origin-text { display: flex; flex-direction: column; gap: 24px; }
+  .origin-text p {
+    font-size: 1.0rem; line-height: 1.85;
+    color: rgba(240,244,248,0.75);
+  }
+  .origin-text p strong { color: var(--white); font-weight: 700; }
+  .origin-text p .highlight-cyan { color: var(--cyan); font-weight: 600; }
+  .origin-text p .highlight-gold { color: var(--gold); font-weight: 600; }
+  .origin-quote {
+    margin-top: 8px;
+    padding: 24px 28px;
+    background: rgba(0,212,255,0.04);
+    border-left: 3px solid var(--cyan);
+    border-radius: 0 4px 4px 0;
+    font-family: 'Space Mono', monospace;
+    font-style: italic; font-size: 0.88rem;
+    color: rgba(240,244,248,0.8);
+    line-height: 1.7;
+  }
+
+  /* ── MISSION ── */
+  .mission {
+    background: var(--obsidian-2);
+    overflow: hidden;
+  }
+  .mission-inner { position: relative; }
+  .mission-line {
+    position: absolute;
+    left: 50%; top: 0; bottom: 0; width: 1px;
+    background: linear-gradient(to bottom, transparent, var(--cyan-dim), transparent);
+    opacity: 0.2;
+  }
+  .mission-pillars {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 2px; margin-top: 60px;
+  }
+  .pillar {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    padding: 48px 36px;
+    position: relative; overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s;
+    cursor: default;
+  }
+  .pillar:first-child { border-radius: 6px 0 0 6px; }
+  .pillar:last-child { border-radius: 0 6px 6px 0; }
+  .pillar:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.4), 0 0 40px rgba(0,212,255,0.08);
+    border-color: rgba(0,212,255,0.3);
+    z-index: 2;
+  }
+  .pillar::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(0,212,255,0.06) 0%, transparent 60%);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .pillar:hover::after { opacity: 1; }
+  .pillar-number {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.65rem; font-weight: 700;
+    letter-spacing: 0.2em; color: var(--cyan);
+    opacity: 0.5; margin-bottom: 20px;
+  }
+  .pillar-icon {
+    font-size: 2rem; margin-bottom: 20px;
+    line-height: 1;
+  }
+  .pillar-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.0rem; font-weight: 700;
+    letter-spacing: 0.05em; color: var(--white);
+    margin-bottom: 16px;
+  }
+  .pillar-body {
+    font-size: 0.9rem; line-height: 1.75;
+    color: rgba(240,244,248,0.6);
+  }
+
+  /* ── CHALLENGES ── */
+  .challenges {
+    background: linear-gradient(180deg, var(--obsidian-2) 0%, var(--obsidian-3) 100%);
+  }
+  .challenge-list {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 24px; margin-top: 60px;
+  }
+  .challenge-item {
+    background: var(--glass);
+    border: 1px solid rgba(255,58,92,0.12);
+    border-radius: 6px; padding: 36px;
+    display: grid; grid-template-columns: auto 1fr;
+    gap: 24px; align-items: start;
+    position: relative; overflow: hidden;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .challenge-item:hover {
+    border-color: rgba(255,58,92,0.3);
+    box-shadow: 0 8px 30px rgba(255,58,92,0.08);
+  }
+  .challenge-item::before {
+    content: '';
+    position: absolute; top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: linear-gradient(to bottom, var(--crimson), transparent);
+  }
+  .challenge-icon-wrap {
+    width: 48px; height: 48px;
+    background: rgba(255,58,92,0.08);
+    border: 1px solid rgba(255,58,92,0.2);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+  }
+  .challenge-content {}
+  .challenge-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.85rem; font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--white); margin-bottom: 10px;
+  }
+  .challenge-desc {
+    font-size: 0.88rem; line-height: 1.7;
+    color: rgba(240,244,248,0.55);
+  }
+  .challenge-solution-bridge {
+    display: flex; align-items: center; justify-content: center;
+    gap: 20px; margin: 60px 0 10px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem; letter-spacing: 0.2em;
+    color: var(--muted); text-transform: uppercase;
+  }
+  .bridge-line { flex: 1; height: 1px; background: rgba(240,192,64,0.2); }
+  .bridge-text { color: var(--gold); }
+
+  /* ── TOOLS ── */
+  .tools {
+    background: var(--obsidian-3);
+  }
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2px;
+    margin-top: 60px;
+  }
+  .tool-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    padding: 52px 44px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.25s ease, box-shadow 0.3s, border-color 0.3s;
+    transform-style: preserve-3d;
+    border-radius: 6px;
+  }
+  .tool-card:hover {
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.4), 0 0 50px rgba(0,212,255,0.08);
+    border-color: rgba(0,212,255,0.25);
+    z-index: 2;
+  }
+  .tool-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan) 50%, transparent);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .tool-card:hover::before { opacity: 1; }
+  .tool-card-bg {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 80% 80%, rgba(0,212,255,0.05) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .tool-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(0,212,255,0.08);
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 100px; padding: 5px 14px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem; color: var(--cyan);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+  .tool-badge.gold {
+    background: rgba(240,192,64,0.08);
+    border-color: rgba(240,192,64,0.2);
+    color: var(--gold);
+  }
+  .tool-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.25rem; font-weight: 900;
+    letter-spacing: 0.06em; color: var(--white);
+    margin-bottom: 16px; line-height: 1.3;
+  }
+  .tool-desc {
+    font-size: 0.92rem; line-height: 1.8;
+    color: rgba(240,244,248,0.6); margin-bottom: 32px;
+  }
+  .tool-features {
+    display: flex; flex-direction: column; gap: 10px;
+    margin-bottom: 36px;
+  }
+  .tool-feature {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 0.85rem; color: rgba(240,244,248,0.7);
+  }
+  .tool-feature::before {
+    content: '▸';
+    color: var(--cyan); font-size: 0.7rem;
+    flex-shrink: 0;
+  }
+  .tool-feature.gold::before { color: var(--gold); }
+  .tool-link {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem; letter-spacing: 0.12em;
+    color: var(--cyan); text-decoration: none;
+    text-transform: uppercase;
+    transition: gap 0.2s, color 0.2s;
+  }
+  .tool-link:hover { gap: 16px; color: var(--white); }
+  .tool-link .arrow { font-size: 1rem; }
+  .tool-link.gold { color: var(--gold); }
+  .tool-link.gold:hover { color: var(--white); }
+
+  /* scanline */
+  .tool-card::after {
+    content: '';
+    position: absolute; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0,212,255,0.1), transparent);
+    animation: scanline 6s linear infinite;
+    pointer-events: none;
+    bottom: auto;
+    top: -2px;
+  }
+  @keyframes scanline {
+    0% { top: -2px; }
+    100% { top: 100%; }
+  }
+
+  /* ── PHILOSOPHY / CTA / FOOTER ── */
+  .philosophy {
+    background: linear-gradient(180deg, var(--obsidian-3) 0%, var(--obsidian-4) 100%);
+    overflow: hidden;
+  }
+  .philosophy-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+  .philosophy-text { display: flex; flex-direction: column; gap: 28px; }
+  .philosophy-text p {
+    font-size: 1.0rem; line-height: 1.85;
+    color: rgba(240,244,248,0.7);
+  }
+  .philosophy-manifesto {
+    margin-top: 12px;
+  }
+  .manifesto-item {
+    display: flex; align-items: flex-start; gap: 20px;
+    padding: 20px 0;
+    border-bottom: 1px solid rgba(0,212,255,0.08);
+  }
+  .manifesto-item:last-child { border-bottom: none; }
+  .manifesto-num {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.65rem; color: var(--cyan);
+    letter-spacing: 0.15em;
+    padding-top: 3px;
+    flex-shrink: 0;
+  }
+  .manifesto-text {
+    font-size: 0.95rem; line-height: 1.7;
+    color: rgba(240,244,248,0.75);
+  }
+  .manifesto-text strong { color: var(--white); }
+  .philosophy-visual {
+    position: relative; height: 520px;
+  }
+  .philo-card {
+    position: absolute;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px; padding: 32px;
+    transition: transform 0.15s ease, box-shadow 0.3s;
+    transform-style: preserve-3d;
+  }
+  .philo-card-1 {
+    top: 0; left: 0; right: 60px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+  }
+  .philo-card-1::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--cyan), var(--gold));
+  }
+  .philo-card-2 {
+    bottom: 0; right: 0; left: 60px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+  }
+  .philo-card-2::before {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--gold), var(--cyan));
+  }
+  .philo-card-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem; letter-spacing: 0.2em;
+    color: var(--muted); text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .philo-card-value {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.6rem; font-weight: 900;
+    line-height: 1.2; color: var(--white);
+    margin-bottom: 12px;
+  }
+  .philo-card-value em {
+    font-style: normal;
+    background: linear-gradient(90deg, var(--cyan), var(--gold));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .philo-card-body {
+    font-size: 0.85rem; line-height: 1.65;
+    color: rgba(240,244,248,0.55);
+  }
+
+  .cta-section {
+    background: var(--obsidian-4);
+    overflow: hidden;
+  }
+  .cta-inner {
+    text-align: center; padding: 140px 60px;
+    max-width: 900px; margin: 0 auto;
+    position: relative;
+  }
+  .cta-glow {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px; height: 300px;
+    background: radial-gradient(ellipse, rgba(0,212,255,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .cta-eyebrow {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem; letter-spacing: 0.3em;
+    color: var(--gold); text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .cta-title {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    font-weight: 900; letter-spacing: 0.04em;
+    line-height: 1.1; margin-bottom: 24px;
+  }
+  .cta-title em {
+    font-style: normal;
+    background: linear-gradient(90deg, var(--cyan) 0%, var(--gold) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .cta-sub {
+    font-size: 1.0rem; line-height: 1.8;
+    color: rgba(240,244,248,0.6);
+    max-width: 560px; margin: 0 auto 48px;
+  }
+  .btn-primary, .btn-secondary { cursor: none; }
+  footer {
+    background: var(--obsidian);
+    border-top: 1px solid rgba(0,212,255,0.08);
+    position: relative; z-index: 1;
+  }
+  .footer-inner {
+    max-width: 1200px; margin: 0 auto;
+    padding: 80px 60px 60px;
+    display: grid;
+    grid-template-columns: 1.6fr 1.4fr 1.4fr 1fr;
+    gap: 60px;
+  }
+  .footer-brand { display: flex; flex-direction: column; gap: 16px; }
+  .footer-tagline {
+    font-size: 0.88rem; line-height: 1.6;
+    color: rgba(240,244,248,0.45);
+    margin-top: 4px;
+  }
+  .footer-copy {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.62rem; color: rgba(128,144,160,0.6);
+    letter-spacing: 0.08em;
+  }
+  .footer-col { display: flex; flex-direction: column; gap: 0; }
+  .footer-col-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.65rem; font-weight: 700;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 18px;
+  }
+  .footer-col-links { list-style: none; display: flex; flex-direction: column; gap: 11px; }
+  .footer-col-links a {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.85rem; color: rgba(240,244,248,0.5);
+    text-decoration: none;
+    transition: color 0.2s, padding-left 0.2s;
+  }
+  .footer-col-links a:hover { color: var(--white); padding-left: 6px; }
+  .footer-col-links a.footer-active { color: var(--cyan); }
+  .footer-bottom {
+    max-width: 1200px; margin: 0 auto;
+    padding: 0 60px 36px;
+  }
+  .footer-bottom-line {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,212,255,0.15), transparent);
+    margin-bottom: 24px;
+  }
+  .footer-bottom-inner {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .footer-bottom-text {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.62rem; letter-spacing: 0.15em;
+    color: rgba(128,144,160,0.5); text-transform: uppercase;
+  }
+  .footer-bottom-nav { display: flex; gap: 28px; }
+  .footer-bottom-nav a {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.62rem; color: rgba(128,144,160,0.5);
+    text-decoration: none;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .footer-bottom-nav a:hover { color: var(--cyan); }
+  .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.8s ease, transform 0.8s ease; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
+  @keyframes scroll-pulse { 0% { transform: scaleY(0); transform-origin: top; } 50% { transform: scaleY(1); transform-origin: top; } 51% { transform: scaleY(1); transform-origin: bottom; } 100% { transform: scaleY(0); transform-origin: bottom; } }
+  @media (max-width: 900px) {
+    nav { padding: 20px 24px; }
+    .nav-links { display: none; }
+    .section-inner { padding: 80px 24px; }
+    .origin-grid, .philosophy-inner { grid-template-columns: 1fr; gap: 40px; }
+    .mission-pillars { grid-template-columns: 1fr; }
+    .challenge-list, .tools-grid { grid-template-columns: 1fr; }
+    .tool-card { border-radius: 4px !important; }
+    .philosophy-visual { display: none; }
+    .footer-inner { grid-template-columns: 1fr; gap: 36px; padding: 60px 24px 40px; }
+    .footer-bottom-inner { flex-direction: column; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+<div id="cursor-dot"></div><div id="cursor-ring"></div>
+<canvas id="particles"></canvas>
+
+<nav>
+  <a href="/" class="nav-logo">SniperTrader</a>
+  <ul class="nav-links">
+    <li><a href="/usme-algo">USME Algo</a></li>
+    <li><a href="/psych-app">Psych App</a></li>
+    <li><a href="/ecosystem">Ecosystem</a></li>
+    <li><a href="/community">Community</a></li>
+    <li><a href="/about" class="active">About</a></li>
+  </ul>
+  <a href="/usme-algo" class="nav-cta">Get Started</a>
+</nav>
+
+<!-- BANNER: Platform announcement -->
+<div class="platform-banner">
+  🔥 <span>ICT foundation</span> — TOS · PINE · NINJA <span class="separator">|</span> 
+  <span>VWAP ELITE - Institutional Edge</span> — TOS · PINE · NINJA
+</div>
+
+<section class="hero"><div class="hero-bg-grid"></div><div class="hero-glow-orb"></div><div class="hero-content"><div class="hero-eyebrow">The Origin. The Mission. The Weapons.</div><h1 class="hero-title"><span class="line-1">NOT BUILT BY</span><span class="line-2">DEVELOPERS.</span></h1><p class="hero-sub">SniperTrader was forged inside the markets — by a trader who lost accounts, studied the institutions, and rebuilt with precision. Every tool here was demanded by necessity before it was designed.</p><div class="hero-badge">⚡ Built on ICT / Smart Money Concepts</div></div><div class="hero-scroll-indicator"><div class="scroll-line"></div><div class="scroll-label">Scroll</div></div></section>
+
+<section class="origin"><div class="section-inner"><div class="origin-grid"><div class="origin-visual reveal"><div class="origin-card tilt-card" id="origin-tilt"><div class="origin-card-glow"></div><div class="tilt-inner"><div class="origin-stat"><div class="stat-number">$0</div><div class="stat-label">How every trader starts</div><div class="stat-desc">No edge. No framework. Just charts and hope.</div></div><div class="origin-stat"><div class="stat-number gold">5+</div><div class="stat-label">Years studying ICT methodology</div><div class="stat-desc">Orderblocks, FVGs, killzones, SMT divergence, liquidity sweeps.</div></div><div class="origin-stat"><div class="stat-number">USME</div><div class="stat-label">The result — not a product idea</div><div class="stat-desc">A suite I needed to trade. I built it because nothing else existed.</div></div></div></div></div><div class="origin-text reveal reveal-delay-2"><div><div class="section-tag">Origin Story</div><h2 class="section-title">Failure Was The <br>First Blueprint</h2></div><p>I didn't start SniperTrader because I saw a market opportunity. I started it because I <strong>needed these tools to survive in the markets</strong>. Every blown account, every missed entry, every 4am session at the charts — it all demanded something better.</p><p>After years grinding through ICT's methodology — learning how Smart Money operates — I realized the tooling didn't match the knowledge. So I built what I needed. <span class="highlight-gold">USME ICT Foundation wasn't designed. It was demanded.</span> Every tool follows the same principle: if it doesn't make a real trader more dangerous in the markets, it doesn't ship.</p><div class="origin-quote">"The edge isn't in seeing more. It's in seeing clearly — and executing without hesitation. SniperTrader exists to give you that clarity."</div></div></div></div></section>
+
+<section class="mission"><div class="section-inner mission-inner"><div class="mission-line"></div><div class="reveal"><div class="section-tag">Mission</div><h2 class="section-title">What We're<br>Actually Building</h2><p class="section-lead">SniperTrader exists to close the gap between institutional-level market knowledge and the tools a serious retail trader uses every day.</p></div><div class="mission-pillars"><div class="pillar reveal"><div class="pillar-number">01 ——</div><div class="pillar-icon">🎯</div><div class="pillar-title">Precision Over Noise</div><p class="pillar-body">The markets don't reward reaction. They reward the trader who waits for their setup, executes at structure, and holds the line. Every tool we build is designed to cut noise and surface conviction.</p></div><div class="pillar reveal"><div class="pillar-number">02 ——</div><div class="pillar-icon">🧠</div><div class="pillar-title">Psychology as Infrastructure</div><p class="pillar-body">Technical edge without psychological discipline is a funded account waiting to blow. We treat trader psychology as a first-class system — not an afterthought.</p></div><div class="pillar reveal"><div class="pillar-number">03 ——</div><div class="pillar-icon">⚡</div><div class="pillar-title">Institutional Knowledge, Retail Accessible</div><p class="pillar-body">ICT / Smart Money Concepts reveal how the market actually moves. We make that knowledge operational — embedded directly in your charts, your journal, your decision-making framework.</p></div></div></div></section>
+
+<section class="tools"><div class="section-inner"><div class="reveal"><div class="section-tag">The Arsenal</div><h2 class="section-title">Four Weapons.<br>One Ecosystem.</h2><p class="section-lead">Each tool in the SniperTrader ecosystem was designed to solve a specific, critical failure point in the serious trader's workflow.</p></div>
+<div class="tools-grid">
+  <div class="tool-card tilt-card reveal reveal-delay-1" data-tilt>
+    <div class="tool-card-bg"></div>
+    <div class="tool-badge">ICT Foundation · TOS · PINE · NINJA</div>
+    <div class="tool-title">USME ICT Foundation Algo</div>
+    <p class="tool-desc">The complete ICT/Smart Money indicator suite with built-in NoRepainting Pivot detection. Order blocks, FVGs, BOS/CHoCH, SMT divergence, killzones — all engineered for non-repainting precision. Trade with clarity across ThinkorSwim, TradingView (Pine) & NinjaTrader.</p>
+    <div class="tool-features">
+      <div class="tool-feature">⚡ <strong>NoRepainting Pivot indicator</strong> — true swing highs/lows, support/resistance that never repaints</div>
+      <div class="tool-feature">ICT-native order block & FVG detection with confluence scoring</div>
+      <div class="tool-feature">BOS / CHoCH structural break alerts</div>
+      <div class="tool-feature">Session killzone state tracking & SOTD firing gates</div>
+      <div class="tool-feature">WATCH / PRIME / ELITE alert tiers</div>
+    </div>
+    <a href="/tools#usme" class="tool-link">Explore USME ICT Foundation →</a>
+  </div>
+
+  <div class="tool-card tilt-card reveal reveal-delay-2" data-tilt><div class="tool-card-bg"></div><div class="tool-badge gold">App · AI-Powered</div><div class="tool-title">TraderEdge Psych OS</div><p class="tool-desc">A full-featured trading psychology operating system. Six cognitive modules, real-time prop firm account monitoring, AI-powered session analysis, and killswitch protection — all in one dashboard.</p><div class="tool-features"><div class="tool-feature gold">Pre-session priming & mental calibration</div><div class="tool-feature gold">Live prop firm drawdown dashboard</div><div class="tool-feature gold">AI session debrief (Claude API powered)</div><div class="tool-feature gold">Emotional state tagging per trade</div></div><a href="/psych" class="tool-link gold">Explore Psych OS →</a></div>
+
+  <div class="tool-card tilt-card reveal reveal-delay-3" data-tilt><div class="tool-card-bg"></div><div class="tool-badge">Trade Journal · SMC-Native</div><div class="tool-title">SMC Trade Journal</div><p class="tool-desc">The first trade journal designed specifically around ICT/Smart Money structure. Tag trades by session, order block quality, liquidity sweep, and HTF bias — then watch patterns emerge.</p><div class="tool-features"><div class="tool-feature">ICT setup taxonomy & tagging</div><div class="tool-feature">Kill zone session performance splits</div><div class="tool-feature">HTF bias vs. execution alignment scores</div></div><a href="/journal" class="tool-link">Explore Journal →</a></div>
+
+  <!-- VWAP ELITE with explicit TOS · PINE · NINJA badge and description -->
+  <div class="tool-card tilt-card reveal reveal-delay-4" data-tilt>
+    <div class="tool-card-bg"></div>
+    <div class="tool-badge gold">VWAP ELITE · TOS · PINE · NINJA</div>
+    <div class="tool-title">USME VWAP ELITE Suite Algo</div>
+    <p class="tool-desc">Professional-grade VWAP suite for institutional order flow analysis. Multiple anchored VWAPs, deviation bands, rolling volume-weighted profiles, and session breakdowns — engineered for precise entries on ThinkorSwim, TradingView & NinjaTrader.</p>
+    <div class="tool-features">
+      <div class="tool-feature gold">Anchored VWAP to key economic events & session starts</div>
+      <div class="tool-feature gold">1–3 standard deviation bands (dynamic support/resistance)</div>
+      <div class="tool-feature gold">Rolling VWAP + MTF confluence matrix</div>
+      <div class="tool-feature gold">VWAP crossover & rejection alerts</div>
+      <div class="tool-feature gold">Session-specific VWAP zones (London, NY, Asia)</div>
+    </div>
+    <a href="/vwap-elite" class="tool-link gold">Explore VWAP ELITE →</a>
+  </div>
+</div></div></section>
+
+<section class="philosophy"><div class="section-inner"><div class="philosophy-inner"><div class="philosophy-text reveal"><div><div class="section-tag">Build Philosophy</div><h2 class="section-title">The Code We<br>Build By</h2></div><p>Every decision at SniperTrader runs through one filter: <strong>does this make a serious trader better?</strong> Not easier. Not more comfortable. Better. There's a difference.</p><div class="philosophy-manifesto"><div class="manifesto-item"><div class="manifesto-num">01</div><div class="manifesto-text"><strong>Trader-first, always.</strong> Every feature, every design choice, every alert tier — built by someone who has to pass prop firm evaluations, manage live drawdown, and execute under pressure.</div></div><div class="manifesto-item"><div class="manifesto-num">02</div><div class="manifesto-text"><strong>No false signals. No repainting.</strong> USME ICT Foundation's NoRepainting Pivot ensures honesty — structure that appears stays. Alerts that fire, fire clean.</div></div><div class="manifesto-item"><div class="manifesto-num">03</div><div class="manifesto-text"><strong>Edge is earned in the process.</strong> Our tools give you the framework, accountability, and clarity to develop a repeatable, scalable edge.</div></div></div></div><div class="philosophy-visual reveal reveal-delay-2"><div class="philo-card philo-card-1 tilt-card" id="philo-tilt-1"><div class="philo-card-label">The Standard</div><div class="philo-card-value">Institutional <em>Precision.</em><br>Retail <em>Access.</em></div><p class="philo-card-body">The same order flow principles that move trillion-dollar portfolios — made operational for the trader sizing $50K funded accounts in the NY killzone.</p></div><div class="philo-card philo-card-2 tilt-card" id="philo-tilt-2"><div class="philo-card-label">The Result</div><div class="philo-card-value"><em>Fewer</em> Decisions.<br><em>Better</em> Execution.</div><p class="philo-card-body">The best traders aren't the ones who see the most. They're the ones who wait for the right structure — and pull the trigger without hesitation when it appears.</p></div></div></div></div></section>
+
+<section class="cta-section"><div class="cta-inner reveal"><div class="cta-glow"></div><div class="cta-eyebrow">Ready to Trade Like the Institutions</div><h2 class="cta-title">Stop Fighting the<br><em>Smart Money.</em></h2><p class="cta-sub">Get the full SniperTrader toolkit — engineered for prop firm traders who are done leaving money in the market.</p><div class="cta-buttons"><a href="/tools" class="btn-primary">⚡ Explore the Arsenal</a><a href="/ebook" class="btn-secondary">Get the eBook →</a></div></div></section>
+
+<footer><div class="footer-inner"><div class="footer-brand"><p class="footer-tagline">Built by a trader.<br>Weaponized for traders.</p><p class="footer-copy">© 2025 SniperTrader — All rights reserved.</p></div><div class="footer-col"><div class="footer-col-title">Tools</div><ul class="footer-col-links"><li><a href="/usme-algo">USME Algo</a></li><li><a href="/pre-market-baseline">Pre-Market Baseline</a></li><li><a href="/habit-guardrails">Habit Guardrails</a></li><li><a href="/prop-firm-command">Prop Firm Command Center</a></li></ul></div><div class="footer-col"><div class="footer-col-title">Ecosystem</div><ul class="footer-col-links"><li><a href="/smart-glasses">AI Smart Glasses</a></li><li><a href="/prop-master-plan">Prop Master Plan</a></li><li><a href="/30-day-funded">30-Day Funded Challenge</a></li></ul></div><div class="footer-col"><div class="footer-col-title">Company</div><ul class="footer-col-links"><li><a href="/about" class="footer-active">About</a></li><li><a href="/docs">Docs</a></li><li><a href="/terms">Terms</a></li><li><a href="/privacy">Privacy</a></li></ul></div></div><div class="footer-bottom"><div class="footer-bottom-line"></div><div class="footer-bottom-inner"><span class="footer-bottom-text">SniperTrader — Precision. Psychology. Edge.</span><div class="footer-bottom-nav"><a href="/terms">Terms</a><a href="/disclaimer">Disclaimer</a><a href="/privacy">Privacy</a></div></div></div></footer>
+
+<script>
+  // Cursor, particles, tilt, reveal (identical robust functionality)
+  const dot = document.getElementById('cursor-dot'), ring = document.getElementById('cursor-ring');
+  let mx=0,my=0,rx=0,ry=0;
+  document.addEventListener('mousemove',e=>{ mx=e.clientX; my=e.clientY; });
+  function animateCursor(){ dot.style.transform=`translate(${mx-3}px,${my-3}px)`; rx+=(mx-rx)*0.12; ry+=(my-ry)*0.12; ring.style.transform=`translate(${rx-18}px,${ry-18}px)`; requestAnimationFrame(animateCursor); } animateCursor();
+  const canvas = document.getElementById('particles'), ctx = canvas.getContext('2d'); let W,H,particles=[];
+  function resizeCanvas(){ W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight; } resizeCanvas(); window.addEventListener('resize',resizeCanvas);
+  class Particle { constructor(){ this.reset(); } reset(){ this.x=Math.random()*W; this.y=Math.random()*H; this.size=Math.random()*1.5+0.3; this.sx=(Math.random()-0.5)*0.3; this.sy=(Math.random()-0.5)*0.3; this.op=Math.random()*0.5+0.1; this.color=Math.random()>0.7?'#f0c040':'#00d4ff'; this.pulse=Math.random()*Math.PI*2; } update(){ this.x+=this.sx; this.y+=this.sy; this.pulse+=0.02; if(this.x<0||this.x>W||this.y<0||this.y>H) this.reset(); } draw(){ ctx.save(); ctx.globalAlpha=this.op*(0.7+0.3*Math.sin(this.pulse)); ctx.fillStyle=this.color; ctx.shadowBlur=6; ctx.shadowColor=this.color; ctx.beginPath(); ctx.arc(this.x,this.y,this.size,0,Math.PI*2); ctx.fill(); ctx.restore(); } }
+  for(let i=0;i<100;i++) particles.push(new Particle());
+  function drawParticles(){ ctx.clearRect(0,0,W,H); for(let p of particles){ p.update(); p.draw(); } requestAnimationFrame(drawParticles); } drawParticles();
+  function initTilt(el,intensity=12){ if(!el) return; el.addEventListener('mousemove',e=>{ const r=el.getBoundingClientRect(); const cx=r.left+r.width/2, cy=r.top+r.height/2; const rx=((e.clientY-cy)/(r.height/2))*-intensity; const ry=((e.clientX-cx)/(r.width/2))*intensity; el.style.transform=`perspective(800px) rotateX(${rx}deg) rotateY(${ry}deg)`; el.style.boxShadow=`${-ry*1.5}px ${rx*1.5}px 40px rgba(0,0,0,0.5), 0 0 40px rgba(0,212,255,0.12)`; }); el.addEventListener('mouseleave',()=>{ el.style.transform='perspective(800px) rotateX(0) rotateY(0)'; el.style.boxShadow=''; }); }
+  initTilt(document.getElementById('origin-tilt'),8); initTilt(document.getElementById('philo-tilt-1'),6); initTilt(document.getElementById('philo-tilt-2'),6); document.querySelectorAll('[data-tilt]').forEach(el=>initTilt(el,6));
+  const observer = new IntersectionObserver(entries=>{ entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('visible'); observer.unobserve(e.target); } }); },{threshold:0.1}); document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+  document.addEventListener('mousemove',e=>{ const dx=(e.clientX-window.innerWidth/2)/(window.innerWidth/2); const dy=(e.clientY-window.innerHeight/2)/(window.innerHeight/2); document.querySelectorAll('.hero-glow-orb').forEach(el=>el.style.transform=`translate(calc(-50% + ${dx*30}px), calc(-50% + ${dy*20}px))`); document.querySelectorAll('.cta-glow').forEach(el=>el.style.transform=`translate(calc(-50% + ${dx*20}px), calc(-50% + ${dy*15}px))`); });
+</script>
+</body>
+</html>
