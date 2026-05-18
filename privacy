@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Privacy Policy — SniperTrader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+/* ============================================================
+   CSS VARIABLES — SniperTrader Brand System
+   ============================================================ */
+:root {
+  --obsidian:     #0a0b0e;
+  --obsidian-2:   #0f1014;
+  --obsidian-3:   #13151a;
+  --glass-bg:     #12151c;
+  --glass-border: rgba(0,229,255,0.14);
+  --glass-hover:  rgba(0,229,255,0.22);
+  --cyan:         #00e5ff;
+  --cyan-dim:     #00b8d4;
+  --cyan-ghost:   rgba(0,229,255,0.08);
+  --cyan-glow:    rgba(0,229,255,0.35);
+  --gold:         #ffc107;
+  --gold-ghost:   rgba(255,193,7,0.08);
+  --gold-glow:    rgba(255,193,7,0.35);
+  --violet:       #a78bfa;
+  --violet-dim:   #7c5cbf;
+  --violet-ghost: rgba(167,139,250,0.08);
+  --violet-glow:  rgba(167,139,250,0.3);
+  --red:          #ff3d5a;
+  --red-ghost:    rgba(255,61,90,0.08);
+  --white:        #f0f4f8;
+  --white-dim:    rgba(240,244,248,0.90);
+  --white-muted:  rgba(240,244,248,0.65);
+}
+
+/* ============================================================
+   LIGHT MODE VARIABLES
+   ============================================================ */
+body.light-mode {
+  --obsidian:     #f0f2f7;
+  --obsidian-2:   #e8eaf2;
+  --obsidian-3:   #dfe2ed;
+  --glass-bg:     #ffffff;
+  --glass-border: rgba(0,150,180,0.18);
+  --glass-hover:  rgba(0,150,180,0.28);
+  --cyan:         #0088aa;
+  --cyan-dim:     #006688;
+  --cyan-ghost:   rgba(0,150,180,0.10);
+  --cyan-glow:    rgba(0,150,180,0.30);
+  --violet:       #6d4fc2;
+  --violet-dim:   #5a3fa8;
+  --violet-ghost: rgba(109,79,194,0.10);
+  --violet-glow:  rgba(109,79,194,0.25);
+  --gold:         #c08000;
+  --gold-ghost:   rgba(192,128,0,0.10);
+  --gold-glow:    rgba(192,128,0,0.30);
+  --red:          #cc2244;
+  --red-ghost:    rgba(204,34,68,0.08);
+  --white:        #1a1c2e;
+  --white-dim:    rgba(20,22,40,0.90);
+  --white-muted:  rgba(20,22,40,0.65);
+  color: #1a1c2e;
+}
+body.light-mode { background: var(--obsidian); }
+body.light-mode nav { background: rgba(240,242,247,0.92); border-bottom: 1px solid rgba(109,79,194,0.12); }
+body.light-mode .section-card { background: #ffffff; border-color: rgba(109,79,194,0.14); }
+body.light-mode .card-gold { background: #fffbf0; border-color: rgba(192,128,0,0.2); }
+body.light-mode .toc-pill,
+body.light-mode .commit-item { background: #ffffff; border-color: rgba(109,79,194,0.14); }
+body.light-mode footer { border-top-color: rgba(109,79,194,0.12); background: #f0f2f7; }
+body.light-mode .effective-banner { background: rgba(109,79,194,0.05); border-color: rgba(109,79,194,0.15); }
+body.light-mode .right-item { background: rgba(109,79,194,0.05); border-color: rgba(109,79,194,0.14); }
+body.light-mode .data-table th { background: rgba(109,79,194,0.08); }
+body.light-mode .data-table td { border-bottom-color: rgba(20,22,40,0.07); }
+body.light-mode .aurora { background: radial-gradient(ellipse, rgba(109,79,194,0.07) 0%, rgba(0,150,180,0.03) 45%, transparent 70%); }
+body.light-mode .grid-overlay { background-image: linear-gradient(rgba(109,79,194,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(109,79,194,0.04) 1px, transparent 1px); }
+body.light-mode code { background: rgba(109,79,194,0.08); border-color: rgba(109,79,194,0.2); }
+body.light-mode strong { color: #1a1c2e; }
+body.light-mode #particle-canvas { opacity: 0.3; }
+body.light-mode .back-top { background: #ffffff; border-color: rgba(109,79,194,0.2); }
+
+/* ============================================================
+   THEME TOGGLE BUTTON
+   ============================================================ */
+.theme-toggle {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--glass-bg); border: 1px solid var(--glass-border);
+  border-radius: 20px; padding: 5px 12px 5px 8px;
+  cursor: pointer; font-family: 'Space Mono', monospace;
+  font-size: 0.6rem; letter-spacing: 0.1em; color: var(--white-muted);
+  transition: border-color 0.2s, box-shadow 0.2s, color 0.2s;
+}
+.theme-toggle:hover { border-color: var(--violet); color: var(--violet); box-shadow: 0 0 16px var(--violet-glow); }
+.theme-toggle-track {
+  width: 28px; height: 15px; border-radius: 8px;
+  background: rgba(167,139,250,0.2); border: 1px solid rgba(167,139,250,0.3);
+  position: relative; transition: background 0.3s;
+  flex-shrink: 0;
+}
+body.light-mode .theme-toggle-track { background: rgba(109,79,194,0.3); }
+.theme-toggle-thumb {
+  position: absolute; top: 2px; left: 2px;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--violet); transition: transform 0.3s, background 0.3s;
+}
+body.light-mode .theme-toggle-thumb { transform: translateX(13px); background: var(--gold); }
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--obsidian);
+  color: var(--white);
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* ============================================================
+   CURSOR
+   ============================================================ */
+.cursor-dot {
+  position: fixed; width: 6px; height: 6px;
+  background: var(--violet); border-radius: 50%;
+  pointer-events: none; z-index: 9999;
+  transform: translate(-50%,-50%);
+  box-shadow: 0 0 10px var(--violet), 0 0 20px var(--violet-glow);
+  transition: background 0.2s;
+}
+.cursor-ring {
+  position: fixed; width: 32px; height: 32px;
+  border: 1px solid rgba(167,139,250,0.5); border-radius: 50%;
+  pointer-events: none; z-index: 9998;
+  transform: translate(-50%,-50%);
+  transition: width 0.2s, height 0.2s, border-color 0.2s;
+}
+.cursor-ring.hover { width: 48px; height: 48px; border-color: var(--cyan); }
+
+/* ============================================================
+   PARTICLE CANVAS
+   ============================================================ */
+#particle-canvas {
+  position: fixed; inset: 0; z-index: 0;
+  pointer-events: none; opacity: 0.55;
+}
+
+/* ============================================================
+   ATMOSPHERE
+   ============================================================ */
+.grid-overlay {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(167,139,250,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(167,139,250,0.02) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 100% 100% at 50% 0%, black 40%, transparent 100%);
+}
+.scanlines {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px,
+    rgba(0,0,0,0.025) 2px, rgba(0,0,0,0.025) 4px);
+}
+.aurora {
+  position: fixed; top: -200px; left: 50%; transform: translateX(-50%);
+  width: 1000px; height: 520px; pointer-events: none; z-index: 0;
+  background: radial-gradient(ellipse,
+    rgba(167,139,250,0.07) 0%,
+    rgba(0,229,255,0.035) 45%,
+    transparent 70%);
+  animation: auroraPulse 9s ease-in-out infinite;
+}
+@keyframes auroraPulse {
+  0%,100% { opacity: 0.7; transform: translateX(-50%) scaleX(1); }
+  50%      { opacity: 1;   transform: translateX(-50%) scaleX(1.1); }
+}
+
+/* ============================================================
+   SCROLL PROGRESS
+   ============================================================ */
+.scroll-progress {
+  position: fixed; top: 0; left: 0; height: 2px;
+  background: linear-gradient(90deg, var(--violet), var(--cyan), var(--gold));
+  z-index: 200; box-shadow: 0 0 10px var(--violet-glow);
+}
+
+/* ============================================================
+   NAV
+   ============================================================ */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 0 40px; height: 64px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(10,11,14,0.88); backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(167,139,250,0.1);
+}
+.nav-logo {
+  font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 1.1rem;
+  letter-spacing: 0.12em; text-decoration: none;
+  background: linear-gradient(135deg, var(--cyan) 0%, var(--gold) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.nav-badge {
+  font-family: 'Space Mono', monospace; font-size: 0.65rem;
+  color: var(--white-muted); letter-spacing: 0.15em; text-transform: uppercase;
+}
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.hero {
+  position: relative; z-index: 2; min-height: 360px;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  padding: 140px 40px 64px; text-align: center; overflow: hidden;
+}
+.hero::before {
+  content: ''; position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-58%);
+  width: 700px; height: 420px;
+  background: radial-gradient(ellipse, rgba(167,139,250,0.08) 0%, transparent 65%);
+  pointer-events: none;
+}
+.hero-eyebrow {
+  font-family: 'Space Mono', monospace; font-size: 0.65rem;
+  letter-spacing: 0.3em; text-transform: uppercase; color: var(--violet);
+  margin-bottom: 16px; animation: fadeUp 0.8s ease both;
+}
+.hero-title {
+  font-family: 'Orbitron', sans-serif; font-weight: 900;
+  font-size: clamp(2.2rem, 5vw, 3.8rem); letter-spacing: 0.04em; line-height: 1.1;
+  background: linear-gradient(135deg, #fff 25%, var(--violet) 75%, var(--cyan) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  animation: fadeUp 0.8s 0.1s ease both;
+}
+.hero-sub {
+  margin-top: 18px; font-family: 'Space Mono', monospace; font-size: 0.72rem;
+  color: var(--white-muted); letter-spacing: 0.12em;
+  animation: fadeUp 0.8s 0.2s ease both;
+}
+.hero-divider {
+  margin-top: 44px; width: 100%; max-width: 960px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--violet), var(--cyan-dim), transparent);
+  animation: fadeUp 0.8s 0.3s ease both;
+}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.page-wrap {
+  position: relative; z-index: 2;
+  max-width: 960px; margin: 0 auto; padding: 0 40px 120px;
+}
+
+/* ============================================================
+   EFFECTIVE BANNER
+   ============================================================ */
+.effective-banner {
+  margin: 48px 0 40px; padding: 14px 24px;
+  background: rgba(167,139,250,0.04); border: 1px solid rgba(167,139,250,0.15);
+  border-radius: 8px; display: flex; align-items: center; gap: 14px;
+  font-family: 'Space Mono', monospace; font-size: 0.68rem;
+  color: var(--white-muted); letter-spacing: 0.1em;
+  animation: fadeUp 0.8s 0.35s ease both;
+}
+.effective-banner .dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--violet); box-shadow: 0 0 10px var(--violet-glow);
+  flex-shrink: 0; animation: pulse 2.5s ease infinite;
+}
+
+/* ============================================================
+   COMMITMENT STRIP
+   ============================================================ */
+.commitment-strip {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 16px;
+  margin-bottom: 52px; animation: fadeUp 0.8s 0.45s ease both;
+}
+.commit-item {
+  padding: 22px 20px; background: var(--glass-bg);
+  border: 1px solid rgba(167,139,250,0.12); border-radius: 12px;
+  text-align: center;
+  transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
+}
+.commit-item:hover {
+  border-color: rgba(167,139,250,0.32); transform: translateY(-3px);
+  box-shadow: 0 6px 28px rgba(167,139,250,0.08);
+}
+.commit-icon { font-size: 1.5rem; margin-bottom: 10px; }
+.commit-label {
+  font-family: 'Orbitron', sans-serif; font-size: 0.6rem; font-weight: 700;
+  letter-spacing: 0.15em; color: var(--violet); text-transform: uppercase; margin-bottom: 6px;
+}
+.commit-desc {
+  font-family: 'Space Mono', monospace; font-size: 0.63rem;
+  color: var(--white-muted); line-height: 1.55;
+}
+
+/* ============================================================
+   TOC PILL
+   ============================================================ */
+.toc-pill {
+  margin-bottom: 56px; padding: 24px 28px;
+  background: var(--glass-bg); border: 1px solid rgba(167,139,250,0.14);
+  border-radius: 14px; backdrop-filter: blur(12px);
+  animation: fadeUp 0.8s 0.5s ease both;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.toc-pill:hover { border-color: rgba(167,139,250,0.28); box-shadow: 0 0 32px rgba(167,139,250,0.05); }
+.toc-label {
+  font-family: 'Space Mono', monospace; font-size: 0.6rem;
+  letter-spacing: 0.25em; text-transform: uppercase; color: var(--violet); margin-bottom: 14px;
+}
+.toc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px,1fr)); gap: 5px 16px; }
+.toc-grid a {
+  font-family: 'Space Mono', monospace; font-size: 0.7rem;
+  color: var(--white-dim); text-decoration: none; padding: 4px 0;
+  letter-spacing: 0.04em; display: flex; align-items: center; gap: 8px; transition: color 0.2s;
+}
+.toc-grid a::before { content: '→'; color: var(--violet); font-size: 0.65rem; opacity: 0.6; transition: opacity 0.2s, transform 0.2s; }
+.toc-grid a:hover { color: var(--violet); }
+.toc-grid a:hover::before { opacity: 1; transform: translateX(3px); }
+
+/* ============================================================
+   SECTION CARDS
+   ============================================================ */
+.section-card {
+  position: relative; margin-bottom: 24px; padding: 36px 40px;
+  background: var(--glass-bg); border: 1px solid rgba(167,139,250,0.14);
+  border-radius: 16px; backdrop-filter: blur(16px);
+  transition: border-color 0.3s, box-shadow 0.3s;
+  will-change: transform; overflow: hidden;
+}
+.section-card::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit;
+  background: radial-gradient(600px circle at var(--mx,50%) var(--my,50%),
+    rgba(167,139,250,0.04), transparent 60%);
+  pointer-events: none; opacity: 0; transition: opacity 0.3s;
+}
+.section-card:hover::before { opacity: 1; }
+.section-card:hover {
+  border-color: rgba(167,139,250,0.28);
+  box-shadow: 0 8px 48px rgba(167,139,250,0.07), 0 2px 0 inset rgba(167,139,250,0.04);
+}
+.section-card::after {
+  content: ''; position: absolute; left: 0; top: 20%; bottom: 20%; width: 2px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, transparent, var(--violet), transparent);
+  opacity: 0; transition: opacity 0.3s;
+}
+.section-card:hover::after { opacity: 1; }
+
+/* ── cyan variant ── */
+.card-cyan { border-color: rgba(0,229,255,0.14); }
+.card-cyan::after { background: linear-gradient(180deg, transparent, var(--cyan), transparent); }
+.card-cyan::before { background: radial-gradient(600px circle at var(--mx,50%) var(--my,50%), rgba(0,229,255,0.04), transparent 60%); }
+.card-cyan:hover { border-color: var(--glass-hover); box-shadow: 0 8px 48px rgba(0,229,255,0.07); }
+.card-cyan h2 { color: var(--cyan); }
+.card-cyan h2 .icon { background: var(--cyan-ghost); border-color: rgba(0,229,255,0.2); }
+.card-cyan .section-num { color: rgba(0,229,255,0.2); }
+.card-cyan ul li::before { color: var(--cyan); }
+
+/* ── gold variant ── */
+.card-gold { background: #141209; border-color: rgba(255,193,7,0.18); }
+.card-gold::after { background: linear-gradient(180deg, transparent, var(--gold), transparent); }
+.card-gold::before { background: radial-gradient(600px circle at var(--mx,50%) var(--my,50%), rgba(255,193,7,0.04), transparent 60%); }
+.card-gold:hover { border-color: rgba(255,193,7,0.38); box-shadow: 0 8px 48px rgba(255,193,7,0.06); }
+.card-gold h2 { color: var(--gold); }
+.card-gold h2 .icon { background: var(--gold-ghost); border-color: rgba(255,193,7,0.2); }
+.card-gold .section-num { color: rgba(255,193,7,0.2); }
+.card-gold ul li::before { color: var(--gold); }
+
+.section-num {
+  position: absolute; top: 22px; right: 28px;
+  font-family: 'Orbitron', monospace; font-size: 0.6rem; font-weight: 700;
+  color: rgba(167,139,250,0.2); letter-spacing: 0.2em;
+}
+.section-card h2 {
+  font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 0.95rem;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--violet);
+  margin-bottom: 16px; display: flex; align-items: center; gap: 12px;
+}
+.section-card h2 .icon {
+  width: 28px; height: 28px; border-radius: 6px;
+  background: var(--violet-ghost); border: 1px solid rgba(167,139,250,0.2);
+  display: flex; align-items: center; justify-content: center; font-size: 0.75rem; flex-shrink: 0;
+}
+.section-card p { color: var(--white-dim); font-size: 0.88rem; line-height: 1.8; margin-bottom: 12px; }
+.section-card p:last-child { margin-bottom: 0; }
+.section-card ul { list-style: none; margin: 12px 0; }
+.section-card ul li {
+  position: relative; padding-left: 20px;
+  color: var(--white-dim); font-size: 0.88rem; line-height: 1.8; margin-bottom: 4px;
+}
+.section-card ul li::before { content: '▸'; position: absolute; left: 0; color: var(--violet); font-size: 0.65rem; top: 5px; }
+
+strong { color: var(--white); font-weight: 600; }
+.hl-v { color: var(--violet); font-weight: 600; }
+.hl-c { color: var(--cyan);   font-weight: 600; }
+.hl-g { color: var(--gold);   font-weight: 600; }
+.hl-r { color: var(--red);    font-weight: 600; }
+
+code {
+  font-family: 'Space Mono', monospace; font-size: 0.75rem;
+  background: rgba(167,139,250,0.08); border: 1px solid rgba(167,139,250,0.18);
+  padding: 2px 7px; border-radius: 4px; color: var(--violet);
+}
+
+/* ============================================================
+   DATA TABLE
+   ============================================================ */
+.data-table {
+  width: 100%; border-collapse: collapse; margin: 16px 0;
+  font-family: 'Space Mono', monospace; font-size: 0.72rem;
+}
+.data-table th {
+  text-align: left; padding: 10px 14px;
+  background: rgba(167,139,250,0.08); border-bottom: 1px solid rgba(167,139,250,0.2);
+  color: var(--violet); letter-spacing: 0.1em; text-transform: uppercase;
+}
+.data-table td {
+  padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: var(--white-dim); vertical-align: top;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: rgba(167,139,250,0.03); }
+.tag {
+  display: inline-block; padding: 2px 8px; border-radius: 4px;
+  font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700;
+}
+.tag-yes { background: rgba(0,229,255,0.1);  color: var(--cyan); border: 1px solid rgba(0,229,255,0.2); }
+.tag-no  { background: rgba(255,61,90,0.08); color: var(--red);  border: 1px solid rgba(255,61,90,0.2); }
+.tag-min { background: rgba(255,193,7,0.08); color: var(--gold); border: 1px solid rgba(255,193,7,0.2); }
+
+/* ============================================================
+   YOUR RIGHTS GRID
+   ============================================================ */
+.rights-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr));
+  gap: 12px; margin: 16px 0;
+}
+.right-item {
+  padding: 16px 18px; background: rgba(167,139,250,0.05);
+  border: 1px solid rgba(167,139,250,0.12); border-radius: 10px;
+  transition: border-color 0.25s, transform 0.25s;
+}
+.right-item:hover { border-color: rgba(167,139,250,0.32); transform: translateY(-2px); }
+.right-title {
+  font-family: 'Orbitron', sans-serif; font-size: 0.62rem; font-weight: 700;
+  letter-spacing: 0.12em; color: var(--violet); text-transform: uppercase; margin-bottom: 6px;
+}
+.right-desc { font-family: 'Space Mono', monospace; font-size: 0.63rem; color: var(--white-muted); line-height: 1.55; }
+
+/* ============================================================
+   BACK TO TOP + FOOTER
+   ============================================================ */
+.back-top {
+  position: fixed; bottom: 32px; right: 32px; z-index: 50;
+  width: 44px; height: 44px; background: var(--glass-bg);
+  border: 1px solid rgba(167,139,250,0.2); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: none; font-size: 0.85rem; color: var(--violet);
+  opacity: 0; transform: translateY(12px);
+  transition: opacity 0.3s, transform 0.3s, border-color 0.2s, box-shadow 0.2s;
+  text-decoration: none;
+}
+.back-top.visible { opacity: 1; transform: translateY(0); }
+.back-top:hover { border-color: var(--violet); box-shadow: 0 0 20px var(--violet-glow); }
+
+footer {
+  position: relative; z-index: 2;
+  border-top: 1px solid rgba(167,139,250,0.08);
+  padding: 40px; display: flex; flex-wrap: wrap;
+  gap: 12px; align-items: center; justify-content: space-between;
+}
+.footer-brand {
+  font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 0.85rem; letter-spacing: 0.15em;
+  background: linear-gradient(135deg, var(--cyan), var(--gold));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.footer-copy { font-family: 'Space Mono', monospace; font-size: 0.62rem; color: var(--white-muted); letter-spacing: 0.1em; }
+.footer-links { display: flex; gap: 24px; }
+.footer-links a {
+  font-family: 'Space Mono', monospace; font-size: 0.62rem;
+  color: var(--white-muted); text-decoration: none; letter-spacing: 0.08em; transition: color 0.2s;
+}
+.footer-links a:hover { color: var(--violet); }
+
+/* ============================================================
+   KEYFRAMES
+   ============================================================ */
+@keyframes fadeUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
+@keyframes pulse  { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.4; transform:scale(1.5); } }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 640px) {
+  nav { padding: 0 20px; }
+  .hero { padding: 110px 20px 50px; }
+  .page-wrap { padding: 0 20px 80px; }
+  .section-card { padding: 28px 22px; }
+  .toc-grid { grid-template-columns: 1fr 1fr; }
+  .commitment-strip { grid-template-columns: 1fr; }
+  .rights-grid { grid-template-columns: 1fr 1fr; }
+  .data-table { font-size: 0.65rem; }
+  footer { padding: 28px 20px; flex-direction: column; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+
+<!-- Cursor -->
+<div class="cursor-dot" id="cursorDot"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- Canvas -->
+<canvas id="particle-canvas"></canvas>
+
+<!-- Atmosphere -->
+<div class="aurora"></div>
+<div class="grid-overlay"></div>
+<div class="scanlines"></div>
+
+<!-- Progress bar -->
+<div class="scroll-progress" id="scrollBar"></div>
+
+<!-- Back to top -->
+<a href="#top" class="back-top" id="backTop">↑</a>
+
+<!-- ============================================================ NAV -->
+<nav id="top">
+  <a href="index.html" class="nav-logo">SNIPERTRADER</a>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <span class="nav-badge">LEGAL // PRIVACY POLICY</span>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle light/dark mode">
+      <div class="theme-toggle-track"><div class="theme-toggle-thumb"></div></div>
+      <span id="themeLabel">LIGHT</span>
+    </button>
+  </div>
+</nav>
+
+<!-- ============================================================ HERO -->
+<section class="hero">
+  <p class="hero-eyebrow">// DATA PROTECTION FRAMEWORK — DOCUMENT v2.0</p>
+  <h1 class="hero-title">PRIVACY POLICY</h1>
+  <p class="hero-sub">LAST UPDATED: JUNE 1, 2025 &nbsp;·&nbsp; EFFECTIVE FOR ALL USERS AND PRODUCT LICENSEES</p>
+  <div class="hero-divider"></div>
+</section>
+
+<!-- ============================================================ MAIN -->
+<main class="page-wrap">
+
+  <div class="effective-banner">
+    <span class="dot"></span>
+    THIS POLICY EXPLAINS HOW SNIPERTRADER COLLECTS, USES, AND PROTECTS YOUR INFORMATION WHEN YOU USE OUR PRODUCTS OR VISIT OUR WEBSITE
+  </div>
+
+  <!-- Commitment strip -->
+  <div class="commitment-strip">
+    <div class="commit-item">
+      <div class="commit-icon">🔒</div>
+      <div class="commit-label">No Data Sales</div>
+      <div class="commit-desc">We never sell your personal information to third parties. Ever.</div>
+    </div>
+    <div class="commit-item">
+      <div class="commit-icon">⚡</div>
+      <div class="commit-label">Minimal Collection</div>
+      <div class="commit-desc">We only collect what's necessary to deliver and protect your license.</div>
+    </div>
+    <div class="commit-item">
+      <div class="commit-icon">🛡</div>
+      <div class="commit-label">Your Rights</div>
+      <div class="commit-desc">Access, correct, or delete your data at any time by request.</div>
+    </div>
+  </div>
+
+  <!-- TOC -->
+  <div class="toc-pill">
+    <p class="toc-label">// Quick Navigation</p>
+    <div class="toc-grid">
+      <a href="#overview">01 — Overview</a>
+      <a href="#collection">02 — What We Collect</a>
+      <a href="#how-we-use">03 — How We Use It</a>
+      <a href="#license-validation">04 — License Validation</a>
+      <a href="#sharing">05 — Data Sharing</a>
+      <a href="#cookies">06 — Cookies &amp; Tracking</a>
+      <a href="#retention">07 — Data Retention</a>
+      <a href="#security">08 — Security</a>
+      <a href="#rights">09 — Your Rights</a>
+      <a href="#children">10 — Children's Privacy</a>
+      <a href="#changes">11 — Policy Changes</a>
+      <a href="#contact">12 — Contact</a>
+    </div>
+  </div>
+
+  <!-- 01 OVERVIEW -->
+  <div class="section-card" id="overview">
+    <span class="section-num">01</span>
+    <h2><span class="icon">◈</span>Overview</h2>
+    <p>
+      SniperTrader (<strong>"we," "us," or "our"</strong>) is committed to protecting the privacy
+      of every individual who visits <code>snipertrader</code>, purchases our products, or uses any
+      SniperTrader software or service.
+    </p>
+    <p>
+      This Privacy Policy describes what information we collect, why we collect it, how it is used and
+      stored, with whom it may be shared, and what rights you have. It applies to all SniperTrader
+      products including the <span class="hl-c">Unified Smart Money Engine (USME)</span> indicator suite,
+      <span class="hl-v">TraderEdge Performance OS</span>, the <span class="hl-g">"From Broke to Funded"</span>
+      eBook, and all future products and services.
+    </p>
+    <p>
+      By accessing our website or using any of our products, you acknowledge that you have read and
+      understood this Privacy Policy. If you disagree with any part of this policy, please discontinue
+      use and contact us at <code>privacy@snipertrader</code>.
+    </p>
+  </div>
+
+  <!-- 02 COLLECTION -->
+  <div class="section-card card-cyan" id="collection">
+    <span class="section-num">02</span>
+    <h2><span class="icon">⊡</span>What We Collect</h2>
+    <p>We collect information in the following categories depending on how you interact with us:</p>
+    <table class="data-table">
+      <thead>
+        <tr><th>Data Type</th><th>What We Collect</th><th>Collected?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Identity</strong></td><td>Name, email address provided at checkout</td><td><span class="tag tag-yes">Yes</span></td></tr>
+        <tr><td><strong>Transaction</strong></td><td>Order ID, product purchased, purchase date, amount</td><td><span class="tag tag-yes">Yes</span></td></tr>
+        <tr><td><strong>Device / Machine</strong></td><td>Anonymous hardware fingerprint for license validation only</td><td><span class="tag tag-min">Limited</span></td></tr>
+        <tr><td><strong>Platform Account</strong></td><td>TradingView or ThinkorSwim username (if provided for delivery)</td><td><span class="tag tag-min">Optional</span></td></tr>
+        <tr><td><strong>Usage / Analytics</strong></td><td>Anonymized website visit data (pages, duration)</td><td><span class="tag tag-min">Anonymized</span></td></tr>
+        <tr><td><strong>Payment Details</strong></td><td>Card numbers, bank details — handled entirely by Stripe</td><td><span class="tag tag-no">Never</span></td></tr>
+        <tr><td><strong>Trading Data</strong></td><td>Your positions, account balances, trade history</td><td><span class="tag tag-no">Never</span></td></tr>
+        <tr><td><strong>Sensitive PII</strong></td><td>Government IDs, social security numbers, biometrics</td><td><span class="tag tag-no">Never</span></td></tr>
+      </tbody>
+    </table>
+    <p>
+      Information is collected directly from you (checkout forms, support emails), automatically
+      (device fingerprint during license activation), or via third-party processors (Stripe for payments).
+    </p>
+  </div>
+
+  <!-- 03 HOW WE USE IT -->
+  <div class="section-card" id="how-we-use">
+    <span class="section-num">03</span>
+    <h2><span class="icon">⚙</span>How We Use Your Information</h2>
+    <p>We use the information we collect exclusively for the following legitimate purposes:</p>
+    <ul>
+      <li><strong>Order Fulfillment:</strong> Processing your purchase and delivering your licensed product — indicator scripts, download links, and access credentials.</li>
+      <li><strong>License Enforcement:</strong> Validating that your license is active, has not been shared, and is being used within permitted seat limits.</li>
+      <li><strong>Customer Support:</strong> Responding to support requests, troubleshooting product issues, and processing refund requests.</li>
+      <li><strong>Product Updates:</strong> Notifying you of updates, bug fixes, and new versions of products you have purchased.</li>
+      <li><strong>Security:</strong> Detecting and preventing fraudulent purchases, license abuse, and unauthorized redistribution.</li>
+      <li><strong>Legal Compliance:</strong> Meeting obligations under applicable laws and responding to lawful requests from authorities.</li>
+      <li><strong>Communications:</strong> Sending relevant product announcements and educational content, with the ability to opt out at any time.</li>
+    </ul>
+    <p>
+      We do <span class="hl-r">not</span> use your personal information for targeted advertising,
+      profiling, automated decision-making that produces legal effects, or any purpose incompatible
+      with the above list.
+    </p>
+  </div>
+
+  <!-- 04 LICENSE VALIDATION -->
+  <div class="section-card" id="license-validation">
+    <span class="section-num">04</span>
+    <h2><span class="icon">🔑</span>License Validation &amp; Machine Fingerprinting</h2>
+    <p>
+      To protect our intellectual property and prevent unauthorized redistribution of our indicator
+      products, SniperTrader uses a <strong>license key validation and machine fingerprinting</strong>
+      system. Here is exactly what this means for your privacy:
+    </p>
+    <ul>
+      <li><strong>What is collected:</strong> When you activate a USME license, a one-way cryptographic hash is generated from non-sensitive hardware attributes on your device (e.g., CPU identifier, OS version). This hash is anonymous and cannot be reversed to recover personal information.</li>
+      <li><strong>What is NOT collected:</strong> We do not access your files, browsing history, trading data, clipboard, account credentials, or any personally identifiable hardware serial numbers.</li>
+      <li><strong>Purpose:</strong> The fingerprint is stored alongside your license key to enforce the two-seat limit and to detect if a license key has been shared with unauthorized parties.</li>
+      <li><strong>Transmission:</strong> The fingerprint is transmitted over encrypted HTTPS to our license server only during activation and periodic validation checks. It is never shared with third parties.</li>
+      <li><strong>Retention:</strong> Fingerprint records are retained for the duration of your active license plus 12 months, then permanently deleted.</li>
+    </ul>
+  </div>
+
+  <!-- 05 SHARING -->
+  <div class="section-card card-gold" id="sharing">
+    <span class="section-num">05</span>
+    <h2><span class="icon">↔</span>Data Sharing &amp; Third Parties</h2>
+    <p>
+      <span class="hl-g">We do not sell, rent, or trade your personal information.</span>
+      We share data with third parties only in the following limited, necessary circumstances:
+    </p>
+    <ul>
+      <li><strong>Stripe (Payment Processing):</strong> Your payment information is handled entirely by Stripe, Inc. under their Privacy Policy. We receive only a transaction confirmation and order metadata — never your card details.</li>
+      <li><strong>Email Delivery:</strong> Your email address may be processed by our transactional email provider solely to deliver order confirmations, license keys, and product updates. These providers are contractually prohibited from using your data for any other purpose.</li>
+      <li><strong>Analytics (Anonymized):</strong> We may use analytics tools with IP anonymization enabled to understand aggregate site usage. No personal identifiers are included in analytics data.</li>
+      <li><strong>Legal Requirements:</strong> We may disclose your information if required by law, court order, or governmental authority, or to protect the rights, property, or safety of SniperTrader or its users.</li>
+    </ul>
+    <p>
+      All third-party processors are bound by data processing agreements consistent with applicable
+      privacy law. We do not use your data to create targeted advertising profiles on any platform.
+    </p>
+  </div>
+
+  <!-- 06 COOKIES -->
+  <div class="section-card" id="cookies">
+    <span class="section-num">06</span>
+    <h2><span class="icon">◉</span>Cookies &amp; Tracking Technologies</h2>
+    <p>
+      Our website uses a minimal set of cookies and similar technologies. We do not use intrusive
+      advertising trackers or cross-site behavioral profiling.
+    </p>
+    <ul>
+      <li><strong>Essential Cookies:</strong> Required for site functionality — session management, cart state, and checkout flow. These cannot be disabled without breaking core functionality.</li>
+      <li><strong>Analytics Cookies:</strong> Anonymized visit data (pages viewed, time on site, referral source) to help us improve the site. No personal identifiers. You may opt out via your browser settings.</li>
+      <li><strong>No Ad Cookies:</strong> We do not embed Facebook Pixel, Google Ads retargeting tags, or any other advertising network trackers on our site.</li>
+    </ul>
+    <p>
+      You can control cookies through your browser settings. Note that disabling all cookies may
+      affect checkout and product delivery flows. Most modern browsers support per-site cookie management.
+    </p>
+  </div>
+
+  <!-- 07 RETENTION -->
+  <div class="section-card" id="retention">
+    <span class="section-num">07</span>
+    <h2><span class="icon">⏱</span>Data Retention</h2>
+    <p>
+      We retain personal data only for as long as necessary to fulfill the purposes described in
+      this policy, comply with legal obligations, and enforce our agreements:
+    </p>
+    <ul>
+      <li><strong>Purchase / Identity records:</strong> Retained for 7 years from purchase date to comply with tax and accounting regulations, then permanently deleted.</li>
+      <li><strong>Active license records (including fingerprint):</strong> Retained for the life of the active license plus 12 months after expiry or termination.</li>
+      <li><strong>Support communications:</strong> Retained for 3 years from the date of resolution, then deleted.</li>
+      <li><strong>Marketing email list (opt-in):</strong> Retained until you unsubscribe or request deletion. Every email includes a one-click unsubscribe link.</li>
+      <li><strong>Anonymized analytics:</strong> Retained indefinitely in aggregate form with no personal identifiers.</li>
+    </ul>
+    <p>
+      Upon license termination for cause (license violation), records may be retained longer
+      to support any legal proceedings.
+    </p>
+  </div>
+
+  <!-- 08 SECURITY -->
+  <div class="section-card" id="security">
+    <span class="section-num">08</span>
+    <h2><span class="icon">🛡</span>Security Measures</h2>
+    <p>
+      We implement industry-standard technical and organizational measures to protect your personal
+      information against unauthorized access, loss, destruction, or alteration:
+    </p>
+    <ul>
+      <li><strong>TLS Encryption:</strong> All data transmitted between your browser and our servers is encrypted via TLS 1.2+ (HTTPS). License validation calls are similarly encrypted.</li>
+      <li><strong>Hashed Fingerprints:</strong> Machine fingerprints are stored as one-way cryptographic hashes and cannot be reversed to expose hardware information.</li>
+      <li><strong>Access Controls:</strong> Customer data is accessible only to authorized personnel on a need-to-know basis, protected by multi-factor authentication.</li>
+      <li><strong>Payment Security:</strong> We do not store payment card data. All payment processing is handled by Stripe, which is PCI DSS Level 1 certified.</li>
+      <li><strong>Secure Credential Storage:</strong> All passwords are stored as salted cryptographic hashes using bcrypt or equivalent — never in plaintext.</li>
+    </ul>
+    <p>
+      While we take every reasonable precaution, no transmission over the internet can be guaranteed
+      100% secure. In the event of a data breach affecting your personal information, we will notify
+      you within 72 hours as required by applicable law.
+    </p>
+  </div>
+
+  <!-- 09 YOUR RIGHTS -->
+  <div class="section-card" id="rights">
+    <span class="section-num">09</span>
+    <h2><span class="icon">⊛</span>Your Privacy Rights</h2>
+    <p>
+      We honor the following rights for all users, regardless of jurisdiction:
+    </p>
+    <div class="rights-grid">
+      <div class="right-item">
+        <div class="right-title">Access</div>
+        <div class="right-desc">Request a copy of all personal data we hold about you.</div>
+      </div>
+      <div class="right-item">
+        <div class="right-title">Correction</div>
+        <div class="right-desc">Request correction of inaccurate or incomplete data.</div>
+      </div>
+      <div class="right-item">
+        <div class="right-title">Deletion</div>
+        <div class="right-desc">Request erasure of your data (subject to legal retention obligations).</div>
+      </div>
+      <div class="right-item">
+        <div class="right-title">Portability</div>
+        <div class="right-desc">Receive your data in a structured, machine-readable format.</div>
+      </div>
+      <div class="right-item">
+        <div class="right-title">Objection</div>
+        <div class="right-desc">Object to processing of your data for marketing purposes.</div>
+      </div>
+      <div class="right-item">
+        <div class="right-title">Restriction</div>
+        <div class="right-desc">Request that we limit processing in certain circumstances.</div>
+      </div>
+    </div>
+    <p>
+      To exercise any right, send a written request to <code>privacy@snipertrader</code> with your
+      name, email on file, and the specific right you wish to exercise. We will respond within
+      <strong>30 days</strong>. Identity verification may be required before fulfilling certain requests.
+    </p>
+  </div>
+
+  <!-- 10 CHILDREN -->
+  <div class="section-card" id="children">
+    <span class="section-num">10</span>
+    <h2><span class="icon">◻</span>Children's Privacy</h2>
+    <p>
+      SniperTrader products are designed for and directed exclusively at adults aged
+      <strong>18 years and older</strong>. Trading financial instruments carries substantial financial
+      risk and is not appropriate for minors.
+    </p>
+    <p>
+      We do not knowingly collect any personal information from individuals under 18. If you are a
+      parent or guardian and believe your child has provided us with personal information, please
+      contact us immediately at <code>privacy@snipertrader</code> and we will promptly delete such
+      information from our records.
+    </p>
+  </div>
+
+  <!-- 11 CHANGES -->
+  <div class="section-card card-gold" id="changes">
+    <span class="section-num">11</span>
+    <h2><span class="icon">↻</span>Policy Changes</h2>
+    <p>
+      We reserve the right to update this Privacy Policy at any time. When we make material changes, we will:
+    </p>
+    <ul>
+      <li>Update the <strong>"Last Updated"</strong> date at the top of this page.</li>
+      <li>Send an email notification to active licensees if changes materially affect how we handle their data.</li>
+      <li>Post a prominent notice on our website for at least 30 days following any significant update.</li>
+    </ul>
+    <p>
+      Your continued use of our products following notice of changes constitutes acceptance of the
+      revised Privacy Policy. Previous versions are available upon request.
+    </p>
+  </div>
+
+  <!-- 12 CONTACT -->
+  <div class="section-card" id="contact">
+    <span class="section-num">12</span>
+    <h2><span class="icon">✉</span>Contact &amp; Data Requests</h2>
+    <p>
+      For all privacy-related inquiries, data subject access requests, data deletion requests, or
+      concerns about this policy, please contact our privacy team directly:
+    </p>
+    <ul>
+      <li><strong>Privacy Inquiries:</strong> <code>privacy@snipertrader</code></li>
+      <li><strong>General Support:</strong> <code>support@snipertrader</code></li>
+      <li><strong>Legal:</strong> <code>legal@snipertrader</code></li>
+      <li><strong>Website:</strong> <code>snipertrader</code></li>
+    </ul>
+    <p>
+      We acknowledge all privacy requests within <strong>48 hours</strong> and resolve them within
+      30 days. For complex requests requiring identity verification, we will communicate any necessary
+      extension within the initial 30-day window.
+    </p>
+  </div>
+
+</main>
+
+<!-- ============================================================ FOOTER -->
+<footer>
+  <span class="footer-brand">SNIPERTRADER</span>
+  <div class="footer-links">
+    <a href="index.html">Home</a>
+    <a href="terms.html">Terms of Service</a>
+    <a href="privacy.html">Privacy Policy</a>
+    <a href="mailto:support@snipertrader">Contact</a>
+  </div>
+  <span class="footer-copy">© 2025 SNIPERTRADER — ALL RIGHTS RESERVED</span>
+</footer>
+
+<!-- ============================================================ JS -->
+<script>
+/* ── Cursor ──────────────────────────────────────────────── */
+const dot  = document.getElementById('cursorDot');
+const ring = document.getElementById('cursorRing');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{ mx=e.clientX;my=e.clientY; dot.style.left=mx+'px';dot.style.top=my+'px'; });
+(function loop(){ rx+=(mx-rx)*0.13;ry+=(my-ry)*0.13; ring.style.left=rx+'px';ring.style.top=ry+'px'; requestAnimationFrame(loop); })();
+document.querySelectorAll('a,button,.section-card,.commit-item,.right-item').forEach(el=>{
+  el.addEventListener('mouseenter',()=>ring.classList.add('hover'));
+  el.addEventListener('mouseleave',()=>ring.classList.remove('hover'));
+});
+
+/* ── Scroll Progress ─────────────────────────────────────── */
+const bar=document.getElementById('scrollBar');
+window.addEventListener('scroll',()=>{ bar.style.width=(scrollY/(document.body.scrollHeight-innerHeight)*100)+'%'; });
+
+/* ── Back To Top ─────────────────────────────────────────── */
+const bt=document.getElementById('backTop');
+window.addEventListener('scroll',()=>bt.classList.toggle('visible',scrollY>400));
+bt.addEventListener('click',e=>{ e.preventDefault();scrollTo({top:0,behavior:'smooth'}); });
+
+/* ── 3D Card Tilt ────────────────────────────────────────── */
+document.querySelectorAll('.section-card').forEach(card=>{
+  card.addEventListener('mousemove',e=>{
+    const r=card.getBoundingClientRect();
+    const dx=e.clientX-(r.left+r.width/2), dy=e.clientY-(r.top+r.height/2);
+    card.style.transform=`perspective(900px) rotateX(${-(dy/(r.height/2))*3.5}deg) rotateY(${(dx/(r.width/2))*3.5}deg) translateZ(4px)`;
+    card.style.setProperty('--mx',((e.clientX-r.left)/r.width*100).toFixed(1)+'%');
+    card.style.setProperty('--my',((e.clientY-r.top)/r.height*100).toFixed(1)+'%');
+  });
+  card.addEventListener('mouseleave',()=>{ card.style.transform=''; });
+});
+
+/* ── Particle System ─────────────────────────────────────── */
+const canvas=document.getElementById('particle-canvas');
+const ctx=canvas.getContext('2d');
+let W,H;
+const mouse={x:-9999,y:-9999};
+function resize(){ W=canvas.width=innerWidth;H=canvas.height=innerHeight; }
+resize();window.addEventListener('resize',resize);
+document.addEventListener('mousemove',e=>{ mouse.x=e.clientX;mouse.y=e.clientY; });
+
+const COLORS=['#a78bfa','#c4b5fd','#7c5cbf','#00e5ff','#ffc107','#ffffff'];
+
+class Particle {
+  constructor(){ this.reset(true); }
+  reset(init){
+    this.x=init?Math.random()*W:Math.random()<0.5?0:W;
+    this.y=Math.random()*H;
+    this.vx=(Math.random()-0.5)*0.32; this.vy=(Math.random()-0.5)*0.32;
+    this.r=Math.random()*1.3+0.3; this.a=Math.random()*0.5+0.1;
+    this.col=COLORS[Math.floor(Math.random()*COLORS.length)];
+    this.life=Math.random()*280+140; this.age=0;
+  }
+  update(){
+    this.age++;
+    if(this.age>this.life){ this.reset(false);return; }
+    const dx=this.x-mouse.x, dy=this.y-mouse.y, d=Math.hypot(dx,dy);
+    if(d<110){ const f=(110-d)/110*0.35; this.vx+=dx/d*f;this.vy+=dy/d*f; }
+    this.vx*=0.979;this.vy*=0.979;
+    this.x+=this.vx;this.y+=this.vy;
+    if(this.x<0)this.x=W;if(this.x>W)this.x=0;
+    if(this.y<0)this.y=H;if(this.y>H)this.y=0;
+  }
+  draw(){
+    const f=this.age<30?this.age/30:this.age>this.life-30?(this.life-this.age)/30:1;
+    ctx.globalAlpha=this.a*f; ctx.fillStyle=this.col;
+    ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);ctx.fill();
+  }
+}
+
+const particles=Array.from({length:220},()=>new Particle());
+
+function drawConnections(){
+  ctx.lineWidth=0.35;
+  for(let i=0;i<particles.length;i++){
+    for(let j=i+1;j<particles.length;j++){
+      const d=Math.hypot(particles[i].x-particles[j].x,particles[i].y-particles[j].y);
+      if(d<85){ ctx.globalAlpha=(1-d/85)*0.09;ctx.strokeStyle='#a78bfa';ctx.beginPath();ctx.moveTo(particles[i].x,particles[i].y);ctx.lineTo(particles[j].x,particles[j].y);ctx.stroke(); }
+    }
+  }
+}
+
+function animate(){
+  ctx.clearRect(0,0,W,H);
+  drawConnections();
+  particles.forEach(p=>{ p.update();p.draw(); });
+  ctx.globalAlpha=1;
+  requestAnimationFrame(animate);
+}
+animate();
+
+/* ── Theme Toggle ────────────────────────────────────────── */
+const themeBtn = document.getElementById('themeToggle');
+const themeLabel = document.getElementById('themeLabel');
+const savedTheme = localStorage.getItem('snipertrader-theme');
+if(savedTheme === 'light'){ document.body.classList.add('light-mode'); themeLabel.textContent='DARK'; }
+themeBtn.addEventListener('click', () => {
+  document.body.classList.toggle('light-mode');
+  const isLight = document.body.classList.contains('light-mode');
+  themeLabel.textContent = isLight ? 'DARK' : 'LIGHT';
+  localStorage.setItem('snipertrader-theme', isLight ? 'light' : 'dark');
+});
+
+/* ── Scroll Reveal ───────────────────────────────────────── */
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{ if(e.isIntersecting){ e.target.style.opacity='1';e.target.style.transform='';obs.unobserve(e.target); } });
+},{threshold:0.07});
+document.querySelectorAll('.section-card').forEach((el,i)=>{
+  el.style.opacity='0'; el.style.transform='translateY(28px)';
+  el.style.transition=`opacity 0.55s ${i*0.04}s ease,transform 0.55s ${i*0.04}s ease,border-color 0.3s,box-shadow 0.3s`;
+  obs.observe(el);
+});
+</script>
+</body>
+</html>
