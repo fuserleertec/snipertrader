@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Market Sentiment Engine — TraderEdge Psych OS | SniperTrader.ai</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Space+Mono:wght@400;700&family=Syne:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --obs:#020408;--obs2:#06090F;--obs3:#0A1018;--obs4:#111820;--obs5:#1A2230;
+  --cyan:#00D4FF;--cyan2:#00A8CC;--cyan-dim:rgba(0,212,255,0.10);
+  --gold:#F0C040;--gold2:#C9A84C;--gold-dim:rgba(240,192,64,0.10);
+  --red:#FF4455;--red-dim:rgba(255,68,85,0.10);
+  --green:#00FF88;--green-dim:rgba(0,255,136,0.08);
+  --orange:#FF8C42;
+  --text:#FFFFFF;--text2:#E8F2FA;--text3:#A8C4D4;--text4:#6A8898;
+  --border:rgba(0,212,255,0.12);--border2:rgba(0,212,255,0.22);
+  --gold-border:rgba(240,192,64,0.18);
+  --nav-bg:rgba(2,4,8,.92);
+}
+body.light-mode{
+  --obs:#F0F4F8;--obs2:#E4ECF2;--obs3:#D8E4EE;--obs4:#C8D8E8;--obs5:#B8CCD8;
+  --text:#0A1828;--text2:#1A3448;--text3:#2A5070;--text4:#6888A0;
+  --border:rgba(0,150,200,0.2);--border2:rgba(0,150,200,0.35);
+  --gold-border:rgba(180,140,20,0.25);
+  --cyan:#0088BB;--cyan-dim:rgba(0,136,187,0.12);
+  --gold:#C08800;--gold-dim:rgba(192,136,0,0.10);
+  --green:#007744;--green-dim:rgba(0,119,68,0.1);
+  --red:#CC2233;--red-dim:rgba(204,34,51,0.1);
+  --nav-bg:rgba(240,244,248,.95);
+}
+.theme-toggle{position:relative;width:48px;height:26px;border-radius:13px;border:1px solid var(--border2);background:var(--obs4);cursor:pointer;transition:all .3s;flex-shrink:0;outline:none;display:flex;align-items:center;}
+.theme-toggle-label{position:absolute;width:100%;height:100%;border-radius:13px;overflow:hidden;}
+.theme-toggle::before{content:'☀';position:absolute;left:5px;top:50%;transform:translateY(-50%);font-size:11px;opacity:0;transition:opacity .3s;pointer-events:none;}
+.theme-toggle::after{content:'🌙';position:absolute;right:5px;top:50%;transform:translateY(-50%);font-size:10px;opacity:1;transition:opacity .3s;pointer-events:none;}
+body.light-mode .theme-toggle::before{opacity:1;}
+body.light-mode .theme-toggle::after{opacity:0;}
+.toggle-thumb{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--cyan);transition:transform .3s;pointer-events:none;}
+body.light-mode .toggle-thumb{transform:translateX(22px);}
+body.light-mode .theme-toggle{background:rgba(0,136,187,.15);border-color:var(--cyan);}
+body.light-mode nav{background:var(--nav-bg)!important;border-bottom-color:var(--border);}
+body.light-mode footer{background:var(--obs2);}
+body.light-mode .module-strip{background:var(--obs2);}
+body.light-mode .dash-outer{background:linear-gradient(145deg,#D8E4EE,#C8D8E8);}
+body.light-mode .dash-topbar{background:rgba(200,216,232,.95);}
+body.light-mode .step-card{background:var(--obs2);}
+body.light-mode .step-card:hover{background:var(--obs3);}
+body.light-mode .mkt-card{background:var(--obs3);}
+body.light-mode .corr-panel,body.light-mode .ai-panel,body.light-mode .chart-wrap{background:var(--obs3);}
+body.light-mode .dash-mcard,body.light-mode .corr-narrative,body.light-mode .mkt-outlook{background:rgba(200,216,232,.8);}
+body.light-mode .hero{background:linear-gradient(135deg,#E8F0F8,#D0E0EE);}
+body.light-mode #pc{opacity:.4;}
+body.light-mode body::before{opacity:.2;}
+
+/* ── LIGHT MODE: FULL TEXT OVERRIDES ── */
+
+/* Headings & titles — hardcoded #fff → deep navy */
+body.light-mode .hero-h1,
+body.light-mode .section-h2,
+body.light-mode .dl-h2,
+body.light-mode .trend-title,
+body.light-mode .ai-panel-name,
+body.light-mode .step-title,
+body.light-mode .sbt-name,
+body.light-mode .cn-label,
+body.light-mode .corr-side-label{color:#0A1828!important;}
+
+/* Strong text inside paragraphs */
+body.light-mode .hero-sub strong{color:#1A3448!important;}
+
+/* Nav links hover & active */
+body.light-mode .nav-links a:hover,
+body.light-mode .nav-links a.active{color:#0A1828!important;}
+
+/* Body copy — text2/text3 vars now resolve dark, but pill/tag/label overrides */
+body.light-mode .hero-sub,
+body.light-mode .section-lead,
+body.light-mode .dash-corr-text,
+body.light-mode .mkt-cat-item,
+body.light-mode .mkt-outlook-text,
+body.light-mode .cn-text,
+body.light-mode .ai-panel-sub,
+body.light-mode .step-body,
+body.light-mode .dl-sub{color:#1A3448!important;}
+
+/* Smaller labels, meta text */
+body.light-mode .hero-breadcrumb,
+body.light-mode .hero-module-num,
+body.light-mode .scroll-txt,
+body.light-mode .tl-item,
+body.light-mode .mkt-pair,
+body.light-mode .mkt-gauge-labels,
+body.light-mode .mkt-cats-label,
+body.light-mode .dmk-cat,
+body.light-mode .preset-btn,
+body.light-mode .ctrl-btn,
+body.light-mode .nav-links a{color:#2A5070!important;}
+
+/* Ctrl button hover */
+body.light-mode .ctrl-btn:hover{color:#0A1828!important;border-color:var(--cyan);}
+body.light-mode .ctrl-btn.active{color:var(--cyan)!important;}
+body.light-mode .ctrl-btn.gold.active{color:var(--gold)!important;}
+
+/* AI panel input & response */
+body.light-mode .ai-input{color:#0A1828!important;background:#E4ECF2;border-color:var(--border2);}
+body.light-mode .ai-input::placeholder{color:#6888A0!important;}
+body.light-mode .ai-response{color:#1A3448!important;background:rgba(200,216,232,.6);}
+
+/* Store button (iOS glass style) */
+body.light-mode .store-btn.ios{background:rgba(10,24,40,.06);border-color:rgba(10,24,40,.18);}
+body.light-mode .store-btn.ios:hover{background:rgba(10,24,40,.12);border-color:rgba(10,24,40,.35);}
+body.light-mode .sbt-store{color:#2A5070!important;}
+body.light-mode .dl-disclaimer{color:#6888A0!important;}
+
+/* Dashboard card backgrounds & track bars */
+body.light-mode .dash-outer{background:linear-gradient(145deg,#D8E4EE,#C8D8E8);box-shadow:0 0 40px rgba(0,136,187,.08),0 20px 40px rgba(0,0,0,.12);}
+body.light-mode .dmk-bar{background:rgba(10,24,40,.1);}
+body.light-mode .mkt-gauge-track{background:rgba(10,24,40,.1);}
+body.light-mode .mkt-gauge-zero{background:rgba(10,24,40,.25);}
+body.light-mode .corr-cell{background:#D0DCE8;}
+body.light-mode .corr-matrix{background:rgba(10,24,40,.15);}
+
+/* Footer links */
+body.light-mode .ft-links a{color:#2A5070!important;}
+body.light-mode .ft-links a:hover{color:#0A1828!important;}
+body.light-mode .ft-copy{color:#6888A0!important;}
+html{scroll-behavior:smooth;}
+body{background:var(--obs);color:var(--text);font-family:'Syne',sans-serif;overflow-x:hidden;cursor:none;transition:background .3s,color .3s;}
+
+/* CURSOR */
+#cur{position:fixed;width:10px;height:10px;background:var(--cyan);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);mix-blend-mode:screen;transition:background .15s,transform .1s;}
+#cur-ring{position:fixed;width:34px;height:34px;border:1px solid rgba(0,212,255,.45);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:width .2s,height .2s;}
+body:has(button:hover,a:hover) #cur{background:var(--gold);transform:translate(-50%,-50%) scale(1.6);}
+body:has(button:hover,a:hover) #cur-ring{width:52px;height:52px;border-color:rgba(240,192,64,.35);}
+
+/* CANVAS */
+#pc{position:fixed;inset:0;pointer-events:none;z-index:0;}
+
+/* GRAIN */
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");pointer-events:none;z-index:1;opacity:.5;}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;padding:16px 48px;display:flex;align-items:center;justify-content:space-between;background:var(--nav-bg);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);transition:background .3s,border-color .3s;}
+.nav-logo{font-family:'Orbitron',monospace;font-size:13px;font-weight:900;letter-spacing:3px;color:var(--cyan);text-decoration:none;}
+.nav-logo span{color:var(--gold);}
+.nav-links{display:flex;gap:28px;align-items:center;}
+.nav-links a{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--text3);text-decoration:none;text-transform:uppercase;transition:color .2s;}
+.nav-links a:hover,.nav-links a.active{color:var(--text);}
+.nav-pill{background:var(--cyan-dim);border:1px solid var(--border2);color:var(--cyan)!important;padding:7px 16px;border-radius:20px;font-family:'Orbitron',monospace!important;font-size:9px!important;font-weight:700;letter-spacing:1.5px;}
+.nav-cta{background:var(--gold);color:#000!important;padding:9px 20px;border-radius:4px;font-family:'Orbitron',monospace!important;font-size:9px!important;font-weight:700;letter-spacing:1.5px;transition:background .2s,transform .2s!important;}
+.nav-cta:hover{background:#FFD040!important;transform:translateY(-1px)!important;}
+
+/* ── HERO ── */
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;z-index:2;padding-top:80px;}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,212,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.025) 1px,transparent 1px);background-size:56px 56px;mask-image:radial-gradient(ellipse 90% 70% at 50% 50%,black 20%,transparent 100%);}
+.hero-orb1{position:absolute;width:700px;height:700px;background:radial-gradient(circle,rgba(0,212,255,.07) 0%,transparent 65%);top:-200px;left:-150px;pointer-events:none;animation:driftOrb1 14s ease-in-out infinite;}
+.hero-orb2{position:absolute;width:550px;height:550px;background:radial-gradient(circle,rgba(240,192,64,.05) 0%,transparent 65%);bottom:-150px;right:-100px;pointer-events:none;animation:driftOrb2 18s ease-in-out infinite;}
+@keyframes driftOrb1{0%,100%{transform:translate(0,0);}50%{transform:translate(40px,-30px);}}
+@keyframes driftOrb2{0%,100%{transform:translate(0,0);}50%{transform:translate(-30px,40px);}}
+
+.hero-inner{position:relative;z-index:3;max-width:1200px;width:100%;padding:0 48px;display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;}
+
+.hero-text{}
+.hero-breadcrumb{display:inline-flex;align-items:center;gap:8px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2.5px;color:var(--text3);text-transform:uppercase;margin-bottom:20px;}
+.hero-breadcrumb span{color:var(--cyan);}
+.hero-module-num{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--text4);letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;}
+.hero-h1{font-family:'Orbitron',monospace;font-size:clamp(32px,4.5vw,58px);font-weight:900;line-height:1.0;color:var(--text);margin-bottom:10px;}
+.hero-h1 .accent{display:block;background:linear-gradient(90deg,var(--cyan),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-sub{font-size:15px;color:var(--text2);line-height:1.8;margin-bottom:28px;font-weight:300;max-width:480px;}
+.hero-sub strong{color:var(--text);font-weight:600;}
+.hero-tags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:32px;}
+.htag{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;padding:5px 12px;border-radius:3px;text-transform:uppercase;}
+.htag.c{background:var(--cyan-dim);border:1px solid rgba(0,212,255,.25);color:var(--cyan);}
+.htag.g{background:var(--gold-dim);border:1px solid rgba(240,192,64,.25);color:var(--gold);}
+.htag.gr{background:var(--green-dim);border:1px solid rgba(0,255,136,.2);color:var(--green);}
+.hero-live-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.2);border-radius:40px;padding:8px 16px;font-family:'Space Mono',monospace;font-size:10px;color:var(--green);letter-spacing:1.5px;}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.8);}}
+
+/* ── HERO DASHBOARD ── */
+.hero-dashboard{perspective:1200px;}
+.dash-3d{transform-style:preserve-3d;transition:transform .08s ease-out;}
+.dash-outer{background:linear-gradient(145deg,#0D1824,#060D16);border:1px solid var(--border2);border-radius:20px;overflow:hidden;box-shadow:0 0 80px rgba(0,212,255,.08),0 40px 80px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.04);}
+.dash-topbar{background:rgba(10,16,24,.95);padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.dash-logo{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:var(--cyan);letter-spacing:2px;}
+.dash-logo em{color:var(--gold);font-style:normal;}
+.dash-status{display:flex;align-items:center;gap:6px;font-family:'Space Mono',monospace;font-size:9px;color:var(--green);}
+.dash-body{padding:16px;}
+.dash-module-label{font-family:'Orbitron',monospace;font-size:8px;color:var(--cyan);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:12px;opacity:.7;}
+.dash-market-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.dash-mcard{background:rgba(17,24,32,.9);border:1px solid var(--border);border-radius:10px;padding:10px 12px;position:relative;overflow:hidden;}
+.dash-mcard::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;opacity:0;transition:opacity .3s;}
+.dash-mcard:hover::before{opacity:1;}
+.dash-mcard.bull::before{background:linear-gradient(90deg,transparent,var(--green),transparent);}
+.dash-mcard.bear::before{background:linear-gradient(90deg,transparent,var(--red),transparent);}
+.dash-mcard.neut::before{background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+.dmk-ticker{font-family:'Orbitron',monospace;font-size:9px;font-weight:700;color:var(--gold);margin-bottom:3px;}
+.dmk-score{font-family:'Orbitron',monospace;font-size:20px;font-weight:900;line-height:1;margin-bottom:4px;}
+.dmk-score.bull{color:var(--green);}
+.dmk-score.bear{color:var(--red);}
+.dmk-score.neut{color:var(--gold);}
+.dmk-bar{height:3px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden;margin-bottom:6px;}
+.dmk-fill{height:100%;border-radius:2px;}
+.dmk-cat{font-size:8.5px;color:var(--text3);font-family:'Space Mono',monospace;line-height:1.6;}
+.dmk-cat span{margin-right:3px;}
+.dash-corr{background:rgba(17,24,32,.9);border:1px solid var(--gold-border);border-radius:8px;padding:10px 12px;}
+.dash-corr-label{font-family:'Orbitron',monospace;font-size:8px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px;}
+.dash-corr-text{font-size:10px;color:var(--text2);line-height:1.5;}
+
+/* ── SCROLL HINT ── */
+.scroll-hint{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;animation:float 3s ease-in-out infinite;z-index:3;}
+@keyframes float{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(-7px);}}
+.scroll-line{width:1px;height:28px;background:linear-gradient(to bottom,var(--cyan),transparent);}
+.scroll-txt{font-family:'Space Mono',monospace;font-size:8px;color:var(--text4);letter-spacing:2px;text-transform:uppercase;}
+
+/* ── LIVE SECTION ── */
+.live-section{position:relative;z-index:2;padding:100px 48px;max-width:1300px;margin:0 auto;}
+.section-eyebrow{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--cyan);text-transform:uppercase;margin-bottom:12px;}
+.section-line{width:48px;height:2px;background:linear-gradient(90deg,var(--cyan),transparent);margin-bottom:16px;}
+.section-h2{font-family:'Orbitron',monospace;font-size:clamp(26px,3.5vw,44px);font-weight:900;color:var(--text);line-height:1.1;margin-bottom:12px;}
+.section-h2 span{background:linear-gradient(90deg,var(--cyan),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.section-lead{font-size:15px;color:var(--text2);line-height:1.8;max-width:560px;margin-bottom:48px;}
+
+/* SENTIMENT LIVE DASHBOARD */
+.live-controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:32px;}
+.control-group{display:flex;gap:6px;}
+.ctrl-btn{background:var(--obs4);border:1px solid var(--border);border-radius:6px;padding:8px 16px;font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:1.5px;color:var(--text3);cursor:none;text-transform:uppercase;transition:all .2s;}
+.ctrl-btn:hover{border-color:var(--cyan);color:var(--text);}
+.ctrl-btn.active{background:var(--cyan-dim);border-color:var(--cyan);color:var(--cyan);}
+.ctrl-btn.gold.active{background:var(--gold-dim);border-color:var(--gold);color:var(--gold);}
+.refresh-btn{display:flex;align-items:center;gap:8px;background:var(--gold);color:#000;border:none;border-radius:6px;padding:10px 22px;font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:1.5px;cursor:none;text-transform:uppercase;transition:all .2s;margin-left:auto;}
+.refresh-btn:hover{background:#FFD040;transform:translateY(-1px);}
+.refresh-btn.loading{background:var(--obs4);color:var(--text3);border:1px solid var(--border);}
+.spin{display:inline-block;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* MARKET CARDS LARGE */
+.markets-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px;}
+.mkt-card{background:var(--obs3);border:1px solid var(--border);border-radius:16px;padding:24px;position:relative;overflow:hidden;transition:border-color .3s,transform .3s;}
+.mkt-card:hover{border-color:var(--border2);transform:translateY(-3px);}
+.mkt-card::after{content:'';position:absolute;inset:0;background:conic-gradient(transparent 0deg,rgba(0,212,255,.02) 90deg,transparent 180deg);animation:cardSpin 10s linear infinite;pointer-events:none;}
+@keyframes cardSpin{to{transform:rotate(360deg);}}
+.mkt-card.bull{border-top:2px solid rgba(0,255,136,.4);}
+.mkt-card.bear{border-top:2px solid rgba(255,68,85,.4);}
+.mkt-card.neut{border-top:2px solid rgba(240,192,64,.4);}
+.mkt-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;}
+.mkt-ticker{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--gold);}
+.mkt-pair{font-size:10px;color:var(--text3);font-family:'Space Mono',monospace;margin-top:2px;}
+.mkt-dir-badge{font-family:'Orbitron',monospace;font-size:8px;font-weight:700;letter-spacing:1px;padding:3px 10px;border-radius:20px;text-transform:uppercase;}
+.mkt-dir-badge.bull{background:var(--green-dim);border:1px solid rgba(0,255,136,.25);color:var(--green);}
+.mkt-dir-badge.bear{background:var(--red-dim);border:1px solid rgba(255,68,85,.25);color:var(--red);}
+.mkt-dir-badge.neut{background:var(--gold-dim);border:1px solid rgba(240,192,64,.25);color:var(--gold);}
+.mkt-score-big{font-family:'Orbitron',monospace;font-size:48px;font-weight:900;line-height:1;margin-bottom:6px;}
+.mkt-score-big.bull{color:var(--green);}
+.mkt-score-big.bear{color:var(--red);}
+.mkt-score-big.neut{color:var(--gold);}
+.mkt-gauge-wrap{margin-bottom:14px;}
+.mkt-gauge-labels{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:8px;color:var(--text4);margin-bottom:4px;}
+.mkt-gauge-track{height:6px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden;position:relative;}
+.mkt-gauge-fill{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1);}
+.mkt-gauge-zero{position:absolute;top:0;bottom:0;left:50%;width:1px;background:rgba(255,255,255,.15);}
+.mkt-divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
+.mkt-cats-label{font-family:'Orbitron',monospace;font-size:8px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
+.mkt-cat-item{display:flex;align-items:flex-start;gap:7px;font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:5px;font-family:'Space Mono',monospace;}
+.cat-icon{font-size:10px;flex-shrink:0;margin-top:2px;}
+.cat-icon.up{color:var(--green);}
+.cat-icon.dn{color:var(--red);}
+.cat-icon.ne{color:var(--gold);}
+.mkt-outlook{margin-top:12px;background:rgba(26,34,48,.6);border:1px solid var(--border);border-radius:8px;padding:10px 12px;}
+.mkt-outlook-label{font-family:'Orbitron',monospace;font-size:8px;color:var(--cyan);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:5px;}
+.mkt-outlook-text{font-size:11px;color:var(--text2);line-height:1.6;}
+
+/* CORRELATION PANEL */
+.corr-panel{background:var(--obs3);border:1px solid var(--gold-border);border-radius:16px;padding:28px;margin-bottom:32px;display:grid;grid-template-columns:1fr 1fr;gap:32px;}
+.corr-side-label{font-family:'Orbitron',monospace;font-size:9px;color:var(--gold);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:14px;opacity:.8;}
+.corr-matrix{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-radius:10px;overflow:hidden;}
+.corr-cell{background:var(--obs4);padding:10px 6px;text-align:center;}
+.corr-cell-ticker{font-family:'Orbitron',monospace;font-size:8px;font-weight:700;color:var(--gold);margin-bottom:4px;}
+.corr-cell-val{font-family:'Orbitron',monospace;font-size:13px;font-weight:900;}
+.corr-cell-val.pos{color:var(--green);}
+.corr-cell-val.neg{color:var(--red);}
+.corr-cell-val.zero{color:var(--text3);}
+.corr-narratives{display:flex;flex-direction:column;gap:12px;}
+.corr-narrative{background:rgba(17,24,32,.8);border:1px solid var(--border);border-radius:8px;padding:12px 14px;}
+.cn-pair{font-family:'Orbitron',monospace;font-size:9px;font-weight:700;color:var(--cyan);letter-spacing:1px;margin-bottom:5px;}
+.cn-text{font-size:12px;color:var(--text2);line-height:1.6;}
+.cn-badge{display:inline-block;font-size:8px;font-family:'Space Mono',monospace;padding:2px 8px;border-radius:3px;margin-top:6px;text-transform:uppercase;letter-spacing:1px;}
+.cn-badge.inverse{background:rgba(255,68,85,.08);border:1px solid rgba(255,68,85,.2);color:var(--red);}
+.cn-badge.tracking{background:var(--green-dim);border:1px solid rgba(0,255,136,.2);color:var(--green);}
+.cn-badge.neutral{background:var(--gold-dim);border:1px solid rgba(240,192,64,.2);color:var(--gold);}
+
+/* 7-DAY TREND CHART */
+.trend-section{margin-bottom:32px;}
+.trend-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.trend-title{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:var(--text);}
+.trend-legend{display:flex;gap:16px;}
+.tl-item{display:flex;align-items:center;gap:6px;font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);}
+.tl-dot{width:8px;height:8px;border-radius:50%;}
+.chart-wrap{background:var(--obs3);border:1px solid var(--border);border-radius:16px;padding:24px;position:relative;overflow:hidden;}
+.chart-wrap canvas{width:100%;display:block;}
+
+/* AI ANALYSIS PANEL */
+.ai-panel{background:var(--obs3);border:1px solid var(--gold-border);border-radius:16px;padding:28px;margin-bottom:32px;}
+.ai-panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.ai-panel-title{display:flex;align-items:center;gap:10px;}
+.ai-icon{width:36px;height:36px;background:var(--gold-dim);border:1px solid var(--gold-border);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.ai-panel-name{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:var(--text);}
+.ai-panel-sub{font-size:11px;color:var(--text3);font-family:'Space Mono',monospace;margin-top:2px;}
+.ask-btn{display:flex;align-items:center;gap:8px;background:var(--gold);color:#000;border:none;border-radius:6px;padding:10px 20px;font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:1.5px;cursor:none;transition:all .2s;text-transform:uppercase;}
+.ask-btn:hover{background:#FFD040;transform:translateY(-1px);}
+.ai-input-row{display:flex;gap:10px;margin-bottom:16px;}
+.ai-input{flex:1;background:var(--obs4);border:1px solid var(--border);border-radius:8px;padding:12px 16px;color:var(--text);font-family:'Syne',sans-serif;font-size:13px;outline:none;transition:border-color .2s;}
+.ai-input:focus{border-color:var(--gold);}
+.ai-input::placeholder{color:var(--text4);}
+.ai-presets{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.preset-btn{background:var(--obs4);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);cursor:none;transition:all .2s;letter-spacing:.5px;}
+.preset-btn:hover{border-color:var(--gold);color:var(--gold);}
+.ai-response{background:rgba(17,24,32,.8);border:1px solid var(--border);border-radius:10px;padding:18px;min-height:80px;font-size:13px;color:var(--text);line-height:1.8;white-space:pre-wrap;}
+.ai-response.empty{color:var(--text4);font-family:'Space Mono',monospace;font-size:11px;display:flex;align-items:center;justify-content:center;}
+.ai-response .ai-tag{font-family:'Orbitron',monospace;font-size:8px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:10px;opacity:.7;}
+
+/* HOW IT WORKS */
+.how-section{padding:80px 48px;max-width:1300px;margin:0 auto;}
+.steps-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:20px;overflow:hidden;margin-top:48px;}
+.step-card{background:var(--obs2);padding:36px 28px;position:relative;overflow:hidden;}
+.step-card:hover{background:var(--obs3);}
+.step-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:0;transition:opacity .3s;}
+.step-card:hover::before{opacity:1;}
+.step-num{font-family:'Orbitron',monospace;font-size:40px;font-weight:900;color:rgba(0,212,255,.08);position:absolute;top:16px;right:20px;}
+.step-icon{font-size:28px;margin-bottom:16px;display:block;}
+.step-title{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;letter-spacing:.5px;}
+.step-desc{font-size:12px;color:var(--text2);line-height:1.7;}
+
+/* DOWNLOAD CTA */
+.dl-section{position:relative;overflow:hidden;z-index:2;}
+.dl-bg{position:absolute;inset:0;background:radial-gradient(ellipse 100% 80% at 50% 50%,rgba(0,212,255,.06) 0%,transparent 70%);}
+.dl-inner{max-width:900px;margin:0 auto;padding:120px 48px;text-align:center;position:relative;z-index:2;}
+.dl-h2{font-family:'Orbitron',monospace;font-size:clamp(28px,4vw,52px);font-weight:900;line-height:1.1;color:var(--text);margin-bottom:14px;}
+.dl-h2 span{background:linear-gradient(90deg,var(--cyan),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.dl-sub{font-size:15px;color:var(--text2);line-height:1.7;max-width:480px;margin:0 auto 44px;}
+.store-btns{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-bottom:24px;}
+.store-btn{display:flex;align-items:center;gap:14px;padding:18px 30px;border-radius:12px;text-decoration:none;transition:all .3s;min-width:210px;}
+.store-btn.ios{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.18);}
+.store-btn.ios:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.35);transform:translateY(-3px);}
+.store-btn.android{background:var(--cyan-dim);border:1px solid var(--border2);}
+.store-btn.android:hover{background:rgba(0,212,255,.15);border-color:var(--cyan);transform:translateY(-3px);}
+.sbi{font-size:32px;line-height:1;}
+.sbt{text-align:left;}
+.sbt-label{display:block;font-size:10px;color:var(--text3);font-family:'Space Mono',monospace;letter-spacing:1px;text-transform:uppercase;}
+.sbt-name{display:block;font-family:'Orbitron',monospace;font-size:15px;font-weight:700;color:var(--text);margin-top:2px;}
+.sbt-sub{display:block;font-size:10px;color:var(--text3);margin-top:2px;font-family:'Space Mono',monospace;}
+.dl-disclaimer{font-family:'Space Mono',monospace;font-size:9px;color:var(--text4);letter-spacing:1px;}
+
+/* MODULE NAV STRIP */
+.module-strip{background:var(--obs2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:0 48px;position:relative;z-index:2;}
+.module-strip-inner{max-width:1300px;margin:0 auto;display:flex;gap:0;overflow-x:auto;scrollbar-width:none;}
+.module-strip-inner::-webkit-scrollbar{display:none;}
+.mod-tab{padding:16px 24px;font-family:'Orbitron',monospace;font-size:9px;font-weight:600;letter-spacing:1.5px;color:var(--text4);text-decoration:none;white-space:nowrap;border-bottom:2px solid transparent;transition:all .2s;text-transform:uppercase;}
+.mod-tab:hover{color:var(--text2);}
+.mod-tab.active{color:var(--cyan);border-bottom-color:var(--cyan);}
+
+/* FOOTER */
+footer{background:var(--obs2);border-top:1px solid var(--border);padding:36px 48px;}
+.ft-inner{max-width:1300px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;}
+.ft-logo{font-family:'Orbitron',monospace;font-size:12px;font-weight:900;letter-spacing:2px;color:var(--cyan);}
+.ft-logo span{color:var(--gold);}
+.ft-links{display:flex;gap:22px;}
+.ft-links a{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1.5px;color:var(--text4);text-decoration:none;text-transform:uppercase;transition:color .2s;}
+.ft-links a:hover{color:var(--text2);}
+.ft-copy{font-family:'Space Mono',monospace;font-size:9px;color:var(--text4);letter-spacing:1px;}
+
+/* ANIMATIONS */
+.fade-up{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease;}
+.fade-up.vis{opacity:1;transform:translateY(0);}
+.d1{transition-delay:.1s;}.d2{transition-delay:.2s;}.d3{transition-delay:.3s;}.d4{transition-delay:.4s;}
+
+/* LAST UPDATE */
+.last-update{font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:1px;display:flex;align-items:center;gap:6px;}
+.last-update::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+
+@media(max-width:1100px){.markets-grid{grid-template-columns:repeat(2,1fr);}.hero-inner{grid-template-columns:1fr;}.steps-grid{grid-template-columns:repeat(2,1fr);}.corr-panel{grid-template-columns:1fr;}}
+@media(max-width:700px){.markets-grid{grid-template-columns:1fr;}.live-section,.how-section{padding:60px 20px;}.corr-matrix{grid-template-columns:repeat(2,1fr);}}
+</style>
+</head>
+<body>
+
+<div id="cur"></div>
+<div id="cur-ring"></div>
+<canvas id="pc"></canvas>
+
+<!-- NAV -->
+<nav>
+  <a href="traderedge_landing.html" class="nav-logo">SNIPER<span>TRADER</span>.AI</a>
+  <div class="nav-links">
+    <a href="#">Baseline</a>
+    <a href="#">Guardrails</a>
+    <a href="#">Review Loop</a>
+    <a href="#" class="nav-pill">⬡ AI Sentiment</a>
+    <a href="#">AI Chart Analyzer</a>
+    <a href="#">Prop Firm Center</a>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode"><span class="toggle-thumb"></span></button>
+    <a href="#download" class="nav-cta">Get The App</a>
+  </div>
+</nav>
+
+<!-- MODULE STRIP -->
+<div class="module-strip" style="margin-top:57px;">
+  <div class="module-strip-inner">
+    <a class="mod-tab" href="#">01 · Baseline</a>
+    <a class="mod-tab" href="#">02 · Guardrails</a>
+    <a class="mod-tab" href="#">03 · Review Loop</a>
+    <a class="mod-tab active" href="#">04 · Sentiment</a>
+    <a class="mod-tab" href="#">05 · Chart AI</a>
+    <a class="mod-tab" href="#">06 · Trader's Couch</a>
+    <a class="mod-tab" href="#">07 · Prop Firms</a>
+  </div>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-orb1"></div>
+  <div class="hero-orb2"></div>
+
+  <div class="hero-inner">
+    <div class="hero-text">
+      <div class="hero-breadcrumb">TraderEdge Psych OS <span>/ Module 04</span></div>
+      <div class="hero-module-num">MODULE 04 · AI INTELLIGENCE</div>
+      <h1 class="hero-h1">Market<br>Sentiment<br><span class="accent">Engine</span></h1>
+      <p class="hero-sub">Walk into every open with <strong>institutional-grade context</strong>. Real-time AI sentiment across NASDAQ, Gold, Oil, and Bitcoin — with macro catalyst identification, cross-market correlation, and a 7-day trend view that most prop traders never see.</p>
+      <div class="hero-tags">
+        <span class="htag c">NQ · QQQ</span>
+        <span class="htag g">XAU · GOLD</span>
+        <span class="htag c">CL · OIL</span>
+        <span class="htag gr">BTC · USD</span>
+      </div>
+      <div class="hero-live-badge">
+        <span class="live-dot"></span>
+        AI-Powered · Updates on demand
+      </div>
+    </div>
+
+    <div class="hero-dashboard">
+      <div class="dash-3d" id="dash3d">
+        <div class="dash-outer">
+          <div class="dash-topbar">
+            <div class="dash-logo">TRADER<em>EDGE</em> · SENTIMENT</div>
+            <div class="dash-status"><div class="live-dot"></div> LIVE</div>
+          </div>
+          <div class="dash-body">
+            <div class="dash-module-label">Market Sentiment — Live Snapshot</div>
+            <div class="dash-market-grid">
+              <div class="dash-mcard bull">
+                <div class="dmk-ticker">NQ / QQQ</div>
+                <div class="dmk-score bull">+0.65</div>
+                <div class="dmk-bar"><div class="dmk-fill" style="width:83%;background:var(--green);"></div></div>
+                <div class="dmk-cat"><span class="cat-icon up" style="font-size:8px;">▲</span>AI earnings beat<br><span class="cat-icon dn" style="font-size:8px;">▼</span>Geopolitical tension</div>
+              </div>
+              <div class="dash-mcard bull">
+                <div class="dmk-ticker">XAU / GOLD</div>
+                <div class="dmk-score bull">+0.42</div>
+                <div class="dmk-bar"><div class="dmk-fill" style="width:71%;background:var(--green);"></div></div>
+                <div class="dmk-cat"><span style="font-size:8px;color:var(--green);">▲</span> Safe-haven demand elevated<br><span style="font-size:8px;color:var(--green);">▲</span> DXY weakness supports</div>
+              </div>
+              <div class="dash-mcard bear">
+                <div class="dmk-ticker">CL / OIL</div>
+                <div class="dmk-score bear">-0.28</div>
+                <div class="dmk-bar"><div class="dmk-fill" style="width:36%;background:var(--red);"></div></div>
+                <div class="dmk-cat"><span style="font-size:8px;color:var(--red);">▼</span> OPEC+ supply increase<br><span style="font-size:8px;color:var(--red);">▼</span> Demand outlook softened</div>
+              </div>
+              <div class="dash-mcard neut">
+                <div class="dmk-ticker">BTC / USD</div>
+                <div class="dmk-score neut">+0.15</div>
+                <div class="dmk-bar"><div class="dmk-fill" style="width:58%;background:var(--gold);"></div></div>
+                <div class="dmk-cat"><span style="font-size:8px;color:var(--green);">▲</span> ETF inflows consistent<br><span style="font-size:8px;color:var(--gold);">~</span> Consolidation phase</div>
+              </div>
+            </div>
+            <div class="dash-corr">
+              <div class="dash-corr-label">Market Correlation</div>
+              <div class="dash-corr-text">NQ ↔ GOLD: Inverse — risk-on NASDAQ bid suppressing safe-haven demand. CL bearish divergence from equity strength.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scroll-hint"><div class="scroll-line"></div><div class="scroll-txt">Scroll to explore</div></div>
+</section>
+
+<!-- LIVE SENTIMENT DASHBOARD -->
+<section id="live">
+  <div class="live-section">
+    <div class="fade-up">
+      <div class="section-eyebrow">Live Intelligence</div>
+      <div class="section-line"></div>
+      <h2 class="section-h2">Real-time <span>AI Sentiment</span></h2>
+      <p class="section-lead">Hit Refresh to pull a live AI analysis of current macro conditions. Sentiment scores from -1.0 (strongly bearish) to +1.0 (strongly bullish), with the three key catalysts driving each market.</p>
+    </div>
+
+    <div class="live-controls fade-up d1">
+      <div class="control-group">
+        <button class="ctrl-btn active" onclick="filterMarket('all',this)">ALL MARKETS</button>
+        <button class="ctrl-btn" onclick="filterMarket('equity',this)">EQUITY</button>
+        <button class="ctrl-btn" onclick="filterMarket('commodities',this)">COMMODITIES</button>
+        <button class="ctrl-btn" onclick="filterMarket('crypto',this)">CRYPTO</button>
+      </div>
+      <div class="last-update" id="lastUpdate">Last updated: —</div>
+      <button class="refresh-btn" id="refreshBtn" onclick="refreshSentiment()">
+        <span id="refreshIcon">⬡</span> REFRESH AI SCAN
+      </button>
+    </div>
+
+    <!-- MARKET CARDS -->
+    <div class="markets-grid fade-up d2" id="marketsGrid">
+
+      <!-- NQ -->
+      <div class="mkt-card bull" data-category="equity">
+        <div class="mkt-header">
+          <div><div class="mkt-ticker">NASDAQ 100</div><div class="mkt-pair">NQ / QQQ</div></div>
+          <div class="mkt-dir-badge bull" id="nq-badge">BULLISH</div>
+        </div>
+        <div class="mkt-score-big bull" id="nq-score">+0.65</div>
+        <div class="mkt-gauge-wrap">
+          <div class="mkt-gauge-labels"><span>-1.0 Bearish</span><span>0</span><span>+1.0 Bullish</span></div>
+          <div class="mkt-gauge-track"><div class="mkt-gauge-fill" id="nq-gauge" style="width:83%;background:linear-gradient(90deg,rgba(0,255,136,.3),var(--green));margin-left:0;"></div><div class="mkt-gauge-zero"></div></div>
+        </div>
+        <hr class="mkt-divider">
+        <div class="mkt-cats-label">Key Catalysts</div>
+        <div id="nq-cats">
+          <div class="mkt-cat-item"><span class="cat-icon up">▲</span>AI sector earnings significantly beat expectations</div>
+          <div class="mkt-cat-item"><span class="cat-icon up">▲</span>Federal Reserve holds rates — risk-on environment</div>
+          <div class="mkt-cat-item"><span class="cat-icon dn">▼</span>Geopolitical tension in Asia caps further upside</div>
+        </div>
+        <div class="mkt-outlook">
+          <div class="mkt-outlook-label">Technical Outlook</div>
+          <div class="mkt-outlook-text" id="nq-outlook">Price above VWAP. Strong momentum from NY open. Watch for potential liquidity grab above 19,240 before continuation.</div>
+        </div>
+      </div>
+
+      <!-- GOLD -->
+      <div class="mkt-card bull" data-category="commodities">
+        <div class="mkt-header">
+          <div><div class="mkt-ticker">GOLD SPOT</div><div class="mkt-pair">XAU / USD</div></div>
+          <div class="mkt-dir-badge bull" id="gold-badge">BULLISH</div>
+        </div>
+        <div class="mkt-score-big bull" id="gold-score">+0.42</div>
+        <div class="mkt-gauge-wrap">
+          <div class="mkt-gauge-labels"><span>-1.0 Bearish</span><span>0</span><span>+1.0 Bullish</span></div>
+          <div class="mkt-gauge-track"><div class="mkt-gauge-fill" id="gold-gauge" style="width:71%;background:linear-gradient(90deg,rgba(0,255,136,.3),var(--green));"></div><div class="mkt-gauge-zero"></div></div>
+        </div>
+        <hr class="mkt-divider">
+        <div class="mkt-cats-label">Key Catalysts</div>
+        <div id="gold-cats">
+          <div class="mkt-cat-item"><span class="cat-icon up">▲</span>Global safe-haven demand elevated on macro uncertainty</div>
+          <div class="mkt-cat-item"><span class="cat-icon up">▲</span>DXY weakness provides tailwind for metals bid</div>
+          <div class="mkt-cat-item"><span class="cat-icon ne">~</span>Inverse correlation with NQ currently dominant</div>
+        </div>
+        <div class="mkt-outlook">
+          <div class="mkt-outlook-label">Technical Outlook</div>
+          <div class="mkt-outlook-text" id="gold-outlook">Holding above key OB. RSI not yet overbought. Potential continuation to 2,680 resistance if DXY continues softening.</div>
+        </div>
+      </div>
+
+      <!-- OIL -->
+      <div class="mkt-card bear" data-category="commodities">
+        <div class="mkt-header">
+          <div><div class="mkt-ticker">CRUDE OIL</div><div class="mkt-pair">CL / WTI</div></div>
+          <div class="mkt-dir-badge bear" id="oil-badge">BEARISH</div>
+        </div>
+        <div class="mkt-score-big bear" id="oil-score">-0.28</div>
+        <div class="mkt-gauge-wrap">
+          <div class="mkt-gauge-labels"><span>-1.0 Bearish</span><span>0</span><span>+1.0 Bullish</span></div>
+          <div class="mkt-gauge-track"><div class="mkt-gauge-fill" id="oil-gauge" style="width:36%;background:linear-gradient(90deg,var(--red),rgba(255,68,85,.3));margin-left:0;"></div><div class="mkt-gauge-zero"></div></div>
+        </div>
+        <hr class="mkt-divider">
+        <div class="mkt-cats-label">Key Catalysts</div>
+        <div id="oil-cats">
+          <div class="mkt-cat-item"><span class="cat-icon dn">▼</span>OPEC+ surprise production increase announcement</div>
+          <div class="mkt-cat-item"><span class="cat-icon dn">▼</span>Global demand outlook revised lower by IEA</div>
+          <div class="mkt-cat-item"><span class="cat-icon ne">~</span>Price technically below 200-day moving average</div>
+        </div>
+        <div class="mkt-outlook">
+          <div class="mkt-outlook-label">Technical Outlook</div>
+          <div class="mkt-outlook-text" id="oil-outlook">Breaking key weekly OB support. Bears in control below $78.50. FVG visible at $74.20 — potential draw on liquidity target.</div>
+        </div>
+      </div>
+
+      <!-- BTC -->
+      <div class="mkt-card neut" data-category="crypto">
+        <div class="mkt-header">
+          <div><div class="mkt-ticker">BITCOIN</div><div class="mkt-pair">BTC / USD</div></div>
+          <div class="mkt-dir-badge neut" id="btc-badge">NEUTRAL</div>
+        </div>
+        <div class="mkt-score-big neut" id="btc-score">+0.15</div>
+        <div class="mkt-gauge-wrap">
+          <div class="mkt-gauge-labels"><span>-1.0 Bearish</span><span>0</span><span>+1.0 Bullish</span></div>
+          <div class="mkt-gauge-track"><div class="mkt-gauge-fill" id="btc-gauge" style="width:58%;background:linear-gradient(90deg,rgba(240,192,64,.3),var(--gold));"></div><div class="mkt-gauge-zero"></div></div>
+        </div>
+        <hr class="mkt-divider">
+        <div class="mkt-cats-label">Key Catalysts</div>
+        <div id="btc-cats">
+          <div class="mkt-cat-item"><span class="cat-icon up">▲</span>Spot ETF inflows remain consistently positive</div>
+          <div class="mkt-cat-item"><span class="cat-icon ne">~</span>Price consolidating in well-defined range structure</div>
+          <div class="mkt-cat-item"><span class="cat-icon dn">▼</span>EU regulatory framework proposals create overhang</div>
+        </div>
+        <div class="mkt-outlook">
+          <div class="mkt-outlook-label">Technical Outlook</div>
+          <div class="mkt-outlook-text" id="btc-outlook">Range-bound between 62K–68K. Watching for BSL sweep above 68.4K to trigger directional move. Low conviction environment.</div>
+        </div>
+      </div>
+
+    </div><!-- /markets-grid -->
+
+    <!-- CORRELATION PANEL -->
+    <div class="corr-panel fade-up d3">
+      <div>
+        <div class="corr-side-label">Cross-Market Correlation Matrix</div>
+        <div class="corr-matrix">
+          <div class="corr-cell"><div class="corr-cell-ticker">NQ</div><div class="corr-cell-val zero">1.00</div></div>
+          <div class="corr-cell"><div class="corr-cell-ticker">GOLD</div><div class="corr-cell-val neg">-0.62</div></div>
+          <div class="corr-cell"><div class="corr-cell-ticker">OIL</div><div class="corr-cell-val pos">+0.31</div></div>
+          <div class="corr-cell"><div class="corr-cell-ticker">BTC</div><div class="corr-cell-val pos">+0.44</div></div>
+          <div class="corr-cell"><div class="corr-cell-ticker">NQ</div><div class="corr-cell-val neg">-0.62</div></div>
+          <div class="corr-cell"><div class="corr-cell-ticker">GOLD</div><div class="corr-cell-val zero">1.00</div></div>
+          <div class="corr-cell"><div class="corr-cell-ticker">OIL</div><div class="corr-cell-val neg">-0.18</div></div>
+          <div class="corr-cell"><div class="corr-cell-ticker">BTC</div><div class="corr-cell-val neg">-0.29</div></div>
+        </div>
+        <div style="margin-top:10px;font-family:'Space Mono',monospace;font-size:9px;color:var(--text4);line-height:1.7;">Green = positive correlation · Red = inverse · Based on 30-day rolling window</div>
+      </div>
+      <div>
+        <div class="corr-side-label">Correlation Narratives</div>
+        <div class="corr-narratives">
+          <div class="corr-narrative">
+            <div class="cn-pair">NQ ↔ GOLD</div>
+            <div class="cn-text">Risk assets and safe-haven currently running inverse. When NQ bids, gold selling pressure increases as capital rotates into equities.</div>
+            <span class="cn-badge inverse">Inverse</span>
+          </div>
+          <div class="corr-narrative">
+            <div class="cn-pair">NQ ↔ BTC</div>
+            <div class="cn-text">Bitcoin continues to track tech sentiment. ETF flows tethering BTC to equity risk appetite more tightly than prior cycles.</div>
+            <span class="cn-badge tracking">Tracking</span>
+          </div>
+          <div class="corr-narrative">
+            <div class="cn-pair">GOLD ↔ OIL</div>
+            <div class="cn-text">Historically correlated through USD index — currently decoupled. Oil bearish on supply, gold bullish on geopolitical risk.</div>
+            <span class="cn-badge neutral">Decoupled</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7-DAY TREND -->
+    <div class="trend-section fade-up d3">
+      <div class="trend-header">
+        <div class="trend-title">7-Day Sentiment Trend</div>
+        <div class="trend-legend">
+          <div class="tl-item"><div class="tl-dot" style="background:var(--cyan);"></div>NQ</div>
+          <div class="tl-item"><div class="tl-dot" style="background:var(--gold);"></div>GOLD</div>
+          <div class="tl-item"><div class="tl-dot" style="background:var(--red);"></div>OIL</div>
+          <div class="tl-item"><div class="tl-dot" style="background:#AA88FF;"></div>BTC</div>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="trendChart" height="200"></canvas>
+      </div>
+    </div>
+
+    <!-- AI ANALYSIS PANEL -->
+    <div class="ai-panel fade-up d4">
+      <div class="ai-panel-header">
+        <div class="ai-panel-title">
+          <div class="ai-icon">🤖</div>
+          <div>
+            <div class="ai-panel-name">AI Macro Strategist</div>
+            <div class="ai-panel-sub">Ask Claude anything about current market conditions</div>
+          </div>
+        </div>
+        <button class="ask-btn" id="askBtn" onclick="askAI()"><span id="askIcon">⬡</span> ASK AI</button>
+      </div>
+      <div class="ai-presets">
+        <button class="preset-btn" onclick="setPreset(this,'What is the current macro environment telling us about risk appetite?')">Macro Risk Appetite</button>
+        <button class="preset-btn" onclick="setPreset(this,'Is it a good day to trade NQ based on current sentiment?')">NQ Trade Day?</button>
+        <button class="preset-btn" onclick="setPreset(this,'Explain the current NQ vs Gold correlation and what it means for my trades today.')">NQ vs Gold</button>
+        <button class="preset-btn" onclick="setPreset(this,'What should a prop firm trader avoid today given current conditions?')">Prop Trader Alert</button>
+        <button class="preset-btn" onclick="setPreset(this,'What are the key macro events this week that could impact NASDAQ and Gold?')">Key Catalysts</button>
+      </div>
+      <div class="ai-input-row">
+        <input class="ai-input" id="aiInput" type="text" placeholder="Ask the AI strategist anything about market conditions, sentiment, or your trade plan..." />
+        <button class="ask-btn" onclick="askAI()"><span>▶</span></button>
+      </div>
+      <div class="ai-response" id="aiResponse">
+        <span class="empty" style="display:block;text-align:center;padding:20px;color:var(--text4);font-family:'Space Mono',monospace;font-size:11px;">Select a preset or type a question above — the AI Macro Strategist will analyze current market conditions and give you a direct, actionable answer.</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how" class="how-section">
+  <div class="fade-up">
+    <div class="section-eyebrow">How It Works</div>
+    <div class="section-line"></div>
+    <h2 class="section-h2">Intelligence <span>before the open.</span></h2>
+    <p class="section-lead">The Sentiment Engine runs a four-step intelligence protocol every time you refresh — giving you the same macro context a senior strategist would bring to the desk.</p>
+  </div>
+  <div class="steps-grid">
+    <div class="step-card fade-up d1">
+      <div class="step-num">01</div>
+      <span class="step-icon">📡</span>
+      <div class="step-title">Scan Headlines</div>
+      <div class="step-desc">Claude scans the latest macro financial news across Bloomberg, Reuters, CNBC, and FT for each market — identifying sentiment-driving events in real time.</div>
+    </div>
+    <div class="step-card fade-up d2">
+      <div class="step-num">02</div>
+      <span class="step-icon">🧮</span>
+      <div class="step-title">Score Sentiment</div>
+      <div class="step-desc">Each market gets a score from -1.0 (strongly bearish) to +1.0 (strongly bullish), weighted by the magnitude and recency of catalysts identified.</div>
+    </div>
+    <div class="step-card fade-up d3">
+      <div class="step-num">03</div>
+      <span class="step-icon">🔗</span>
+      <div class="step-title">Map Correlations</div>
+      <div class="step-desc">Cross-market relationships are assessed — is NQ leading Gold? Are Oil and BTC decoupled? Knowing these relationships is what separates professionals from retail.</div>
+    </div>
+    <div class="step-card fade-up d4">
+      <div class="step-num">04</div>
+      <span class="step-icon">⚡</span>
+      <div class="step-title">Deliver Intel</div>
+      <div class="step-desc">Results delivered in a clean, structured dashboard — with the full AI Macro Strategist available to answer follow-up questions before you place a single trade.</div>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE NAV -->
+<div class="module-strip" id="modules">
+  <div class="module-strip-inner">
+    <a class="mod-tab" href="#">01 · Baseline</a>
+    <a class="mod-tab" href="#">02 · Guardrails</a>
+    <a class="mod-tab" href="#">03 · Review Loop</a>
+    <a class="mod-tab active" href="#">04 · Sentiment ←</a>
+    <a class="mod-tab" href="#">05 · Chart AI</a>
+    <a class="mod-tab" href="#">06 · Trader's Couch</a>
+    <a class="mod-tab" href="#">07 · Prop Firms</a>
+  </div>
+</div>
+
+<!-- DOWNLOAD -->
+<section id="download" class="dl-section">
+  <div class="dl-bg"></div>
+  <div class="dl-inner">
+    <div class="fade-up">
+      <div class="section-eyebrow" style="display:flex;justify-content:center;">Available Now</div>
+      <h2 class="dl-h2">Get the full<br><span>Sentiment Engine</span><br>on mobile.</h2>
+      <p class="dl-sub">The desktop experience is deep. The mobile app is always with you — refresh sentiment in seconds before every trade, anywhere.</p>
+    </div>
+    <div class="store-btns fade-up d1">
+      <a href="#" class="store-btn ios">
+        <div class="sbi">🍎</div>
+        <div class="sbt"><span class="sbt-label">Download on the</span><span class="sbt-name">App Store</span><span class="sbt-sub">iOS 16.0 or later · Free</span></div>
+      </a>
+      <a href="#" class="store-btn android">
+        <div class="sbi">▶</div>
+        <div class="sbt"><span class="sbt-label">Get it on</span><span class="sbt-name">Google Play</span><span class="sbt-sub">Android 9.0 or later · Free</span></div>
+      </a>
+    </div>
+    <div class="dl-disclaimer fade-up d2">SNIPERTRADER.AI · TRADEREDGE PSYCH OS · NOT FINANCIAL ADVICE · EDUCATIONAL USE ONLY</div>
+  </div>
+</section>
+
+<footer>
+  <div class="ft-inner" style="flex-direction:column;align-items:flex-start;gap:28px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;width:100%;flex-wrap:wrap;gap:16px;">
+      <div class="ft-logo">SNIPER<span>TRADER</span></div>
+      <div class="ft-copy">© 2026 SniperTrader.ai Intelligence Platform — All rights reserved.</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:32px;width:100%;">
+      <div>
+        <div style="font-family:'Orbitron',monospace;font-size:8px;color:var(--cyan);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;">Tools</div>
+        <div class="ft-links" style="flex-direction:column;gap:10px;">
+          <a href="#">USME Algo</a>
+          <a href="#">Pre-Market Baseline</a>
+          <a href="#">Habit Guardrails</a>
+          <a href="#">Post-Market Review Loop</a>
+          <a href="#">AI Sentiment Engine</a>
+          <a href="#">AI Chart Analyzer</a>
+          <a href="#">Prop Firm Command Center</a>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:'Orbitron',monospace;font-size:8px;color:var(--cyan);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;">Ecosystem</div>
+        <div class="ft-links" style="flex-direction:column;gap:10px;">
+          <a href="#">AI Smart Glasses</a>
+          <a href="#">Prop Master Plan</a>
+          <a href="#">30-Day Funded Challenge</a>
+          <a href="#">ICT Discipline Engine</a>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:'Orbitron',monospace;font-size:8px;color:var(--cyan);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;">Resources</div>
+        <div class="ft-links" style="flex-direction:column;gap:10px;">
+          <a href="#">Affiliate Program</a>
+          <a href="#">Trader's Couch</a>
+          <a href="#">Ebook</a>
+          <a href="#">Prop Firm Master Plan</a>
+          <a href="#">30 Days Funded Challenge</a>
+          <a href="#">Shop</a>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:'Orbitron',monospace;font-size:8px;color:var(--cyan);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;">Company</div>
+        <div class="ft-links" style="flex-direction:column;gap:10px;">
+          <a href="#">About</a>
+          <a href="#">Docs</a>
+          <a href="#">Terms</a>
+          <a href="#">Disclaimer</a>
+          <a href="#">Privacy</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ── CURSOR ──
+const cur=document.getElementById('cur'),ring=document.getElementById('cur-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px';});
+(function animR(){rx+=(mx-rx)*.1;ry+=(my-ry)*.1;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(animR);})();
+
+// ── PARTICLES ──
+const pc=document.getElementById('pc'),ctx=pc.getContext('2d');
+pc.width=window.innerWidth;pc.height=window.innerHeight;
+window.addEventListener('resize',()=>{pc.width=window.innerWidth;pc.height=window.innerHeight;});
+const PCOUNT=90;const pts=[];
+for(let i=0;i<PCOUNT;i++) pts.push({x:Math.random()*pc.width,y:Math.random()*pc.height,vx:(Math.random()-.5)*.25,vy:(Math.random()-.5)*.25,r:Math.random()*1.4+.3,a:Math.random()*.35+.08,c:Math.random()>.65?'240,192,64':'0,212,255'});
+let pmx=pc.width/2,pmy=pc.height/2;
+document.addEventListener('mousemove',e=>{pmx=e.clientX;pmy=e.clientY;});
+(function drawP(){
+  ctx.clearRect(0,0,pc.width,pc.height);
+  for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){
+    const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);
+    if(d<130){ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.strokeStyle=`rgba(0,212,255,${(1-d/130)*.055})`;ctx.lineWidth=.5;ctx.stroke();}
+  }
+  pts.forEach(p=>{
+    const dx=pmx-p.x,dy=pmy-p.y,d=Math.sqrt(dx*dx+dy*dy);
+    if(d<180){p.vx+=dx/d*.007;p.vy+=dy/d*.007;}
+    p.vx*=.99;p.vy*=.99;p.x+=p.vx;p.y+=p.vy;
+    if(p.x<0)p.x=pc.width;if(p.x>pc.width)p.x=0;
+    if(p.y<0)p.y=pc.height;if(p.y>pc.height)p.y=0;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=`rgba(${p.c},${p.a})`;ctx.fill();
+  });
+  requestAnimationFrame(drawP);
+})();
+
+// ── 3D DASHBOARD TILT ──
+const dash=document.getElementById('dash3d');
+document.addEventListener('mousemove',e=>{
+  const cx=window.innerWidth/2,cy=window.innerHeight/2;
+  const dx=(e.clientX-cx)/cx,dy=(e.clientY-cy)/cy;
+  dash.style.transform=`rotateY(${dx*10}deg) rotateX(${-dy*7}deg)`;
+});
+
+// ── SCROLL FADE-IN ──
+const obs=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('vis');}),{threshold:.08});
+document.querySelectorAll('.fade-up').forEach(el=>obs.observe(el));
+
+// ── TREND CHART ──
+function drawTrendChart(){
+  const canvas=document.getElementById('trendChart');
+  const c=canvas.getContext('2d');
+  const W=canvas.offsetWidth,H=200;
+  canvas.width=W;canvas.height=H;
+  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const data={
+    nq:[0.2,0.35,0.28,0.52,0.61,0.55,0.65],
+    gold:[0.1,0.18,0.22,0.35,0.38,0.44,0.42],
+    oil:[-0.1,-0.15,-0.22,-0.28,-0.35,-0.30,-0.28],
+    btc:[0.05,0.12,0.08,0.18,0.22,0.15,0.15]
+  };
+  const colors={nq:'rgba(0,212,255,1)',gold:'rgba(240,192,64,1)',oil:'rgba(255,68,85,1)',btc:'rgba(170,136,255,1)'};
+  const pad={l:44,r:20,t:20,b:36};
+  const gW=W-pad.l-pad.r,gH=H-pad.t-pad.b;
+  // Grid
+  c.strokeStyle='rgba(0,212,255,0.06)';c.lineWidth=1;
+  for(let i=0;i<=4;i++){const y=pad.t+gH*i/4;c.beginPath();c.moveTo(pad.l,y);c.lineTo(W-pad.r,y);c.stroke();}
+  // Zero line
+  const zeroY=pad.t+gH*0.5;
+  c.strokeStyle='rgba(255,255,255,0.12)';c.lineWidth=1;c.setLineDash([4,4]);
+  c.beginPath();c.moveTo(pad.l,zeroY);c.lineTo(W-pad.r,zeroY);c.stroke();
+  c.setLineDash([]);
+  // Y labels
+  c.fillStyle='rgba(120,153,170,0.8)';c.font='10px Space Mono,monospace';c.textAlign='right';
+  ['+1.0','+0.5','0','-0.5','-1.0'].forEach((l,i)=>{c.fillText(l,pad.l-6,pad.t+gH*i/4+4);});
+  // X labels
+  c.textAlign='center';
+  days.forEach((d,i)=>{const x=pad.l+gW*i/(days.length-1);c.fillText(d,x,H-8);});
+  // Lines
+  Object.entries(data).forEach(([key,vals])=>{
+    const col=colors[key];
+    c.strokeStyle=col;c.lineWidth=2;c.beginPath();
+    vals.forEach((v,i)=>{
+      const x=pad.l+gW*i/(vals.length-1);
+      const y=pad.t+gH*(1-(v+1)/2);
+      i===0?c.moveTo(x,y):c.lineTo(x,y);
+    });
+    c.stroke();
+    // Dots
+    vals.forEach((v,i)=>{
+      const x=pad.l+gW*i/(vals.length-1);
+      const y=pad.t+gH*(1-(v+1)/2);
+      c.beginPath();c.arc(x,y,3,0,Math.PI*2);c.fillStyle=col;c.fill();
+    });
+  });
+}
+window.addEventListener('load',drawTrendChart);
+window.addEventListener('resize',drawTrendChart);
+
+// ── FILTER MARKETS ──
+function filterMarket(cat,btn){
+  document.querySelectorAll('.ctrl-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.mkt-card').forEach(c=>{
+    if(cat==='all'||c.dataset.category===cat) c.style.display='';
+    else c.style.display='none';
+  });
+}
+
+// ── PRESET ──
+function setPreset(btn,text){
+  document.getElementById('aiInput').value=text;
+  document.querySelectorAll('.preset-btn').forEach(b=>b.style.borderColor='');
+  btn.style.borderColor='var(--gold)';
+  btn.style.color='var(--gold)';
+}
+
+// ── ASK AI ──
+async function askAI(){
+  const q=document.getElementById('aiInput').value.trim();
+  if(!q) return;
+  const btn=document.getElementById('askBtn');
+  const icon=document.getElementById('askIcon');
+  const resp=document.getElementById('aiResponse');
+  btn.style.background='var(--obs4)';btn.style.color='var(--text3)';
+  icon.innerHTML='<span class="spin">◌</span>';
+  resp.innerHTML='<span class="empty" style="display:block;text-align:center;padding:20px;color:var(--text3);font-family:\'Space Mono\',monospace;font-size:11px;">⬡ Claude is analyzing market conditions...</span>';
+  const sentimentContext=`Current market sentiment data:
+- NASDAQ (NQ/QQQ): +0.65 Bullish. Key catalysts: AI earnings beat, Fed rate hold, geopolitical tension.
+- Gold (XAU/USD): +0.42 Bullish. Safe-haven demand elevated, DXY weakness, inverse to NQ.
+- Crude Oil (CL): -0.28 Bearish. OPEC+ supply increase, demand outlook lowered, below 200-day MA.
+- Bitcoin (BTC): +0.15 Neutral. ETF inflows consistent, consolidating, EU regulatory risk.
+Cross-market: NQ and Gold inverse (-0.62). NQ and BTC tracking together (+0.44). Gold and Oil decoupled.`;
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',max_tokens:800,
+        system:`You are a Senior Macro Strategist and Sentiment Analyst specializing in equity and commodity markets, with deep expertise in ICT/SMC methodology for day traders. You have access to the current market sentiment data provided. Give direct, actionable, professional analysis. Keep responses under 200 words. Format with clear structure. Always tie analysis to practical implications for a day trader trading NQ, Gold, Oil, or BTC futures.`,
+        messages:[{role:'user',content:`${sentimentContext}\n\nTrader's question: ${q}`}]
+      })
+    });
+    const d=await res.json();
+    const text=d.content.filter(c=>c.type==='text').map(c=>c.text).join('');
+    resp.innerHTML=`<span class="ai-tag">⬡ AI MACRO STRATEGIST ANALYSIS</span>${text.replace(/\n/g,'<br>')}`;
+  }catch(e){
+    resp.innerHTML=`<span class="empty" style="display:block;text-align:center;padding:20px;color:var(--red);font-family:'Space Mono',monospace;font-size:11px;">Connection failed. Check API key in app settings.</span>`;
+  }
+  btn.style.background='var(--gold)';btn.style.color='#000';
+  icon.innerHTML='⬡';
+}
+document.getElementById('aiInput').addEventListener('keydown',e=>{if(e.key==='Enter')askAI();});
+
+// ── THEME TOGGLE ──
+function toggleTheme(){
+  document.body.classList.toggle('light-mode');
+  localStorage.setItem('theme',document.body.classList.contains('light-mode')?'light':'dark');
+}
+// Restore saved theme
+(function(){if(localStorage.getItem('theme')==='light')document.body.classList.add('light-mode');})();
+
+// ── REFRESH SENTIMENT ──
+async function refreshSentiment(){
+  const btn=document.getElementById('refreshBtn');
+  const icon=document.getElementById('refreshIcon');
+  btn.classList.add('loading');btn.disabled=true;
+  icon.innerHTML='<span class="spin">◌</span>';
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',max_tokens:1000,
+        system:'You are a senior macro strategist. Return ONLY valid JSON, no markdown, no backticks, no preamble.',
+        messages:[{role:'user',content:`Today is April 2026. Analyze current macro sentiment for these markets and return ONLY this JSON structure with no other text:
+{"nasdaq":{"score":0.0,"status":"Bullish","catalysts":["cat1","cat2","cat3"],"outlook":"1 sentence technical outlook"},"gold":{"score":0.0,"status":"Bullish","catalysts":["cat1","cat2","cat3"],"outlook":"1 sentence"},"oil":{"score":0.0,"status":"Bearish","catalysts":["cat1","cat2","cat3"],"outlook":"1 sentence"},"btc":{"score":0.0,"status":"Neutral","catalysts":["cat1","cat2","cat3"],"outlook":"1 sentence"},"correlation":"2 sentences about current cross-market relationships"}`}]
+      })
+    });
+    const d=await res.json();
+    const p=JSON.parse(d.content[0].text);
+    const map={nasdaq:{id:'nq',cat:'equity'},gold:{id:'gold',cat:'commodities'},oil:{id:'oil',cat:'commodities'},btc:{id:'btc',cat:'crypto'}};
+    Object.entries(map).forEach(([key,{id}])=>{
+      const s=p[key]; if(!s) return;
+      const sc=parseFloat(s.score);
+      const isBull=sc>0.1,isBear=sc<-0.1;
+      const cls=isBull?'bull':isBear?'bear':'neut';
+      const clr=isBull?'var(--green)':isBear?'var(--red)':'var(--gold)';
+      const label=isBull?'BULLISH':isBear?'BEARISH':'NEUTRAL';
+      const card=document.getElementById(id+'-score').closest('.mkt-card');
+      card.className='mkt-card '+cls;
+      document.getElementById(id+'-score').textContent=(sc>=0?'+':'')+sc.toFixed(2);
+      document.getElementById(id+'-score').className='mkt-score-big '+cls;
+      document.getElementById(id+'-badge').textContent=label;
+      document.getElementById(id+'-badge').className='mkt-dir-badge '+cls;
+      const pct=Math.min(100,Math.max(5,((sc+1)/2)*100));
+      document.getElementById(id+'-gauge').style.width=pct+'%';
+      document.getElementById(id+'-gauge').style.background=isBull?`linear-gradient(90deg,rgba(0,255,136,.3),var(--green))`:isBear?`linear-gradient(90deg,var(--red),rgba(255,68,85,.3))`:`linear-gradient(90deg,rgba(240,192,64,.3),var(--gold))`;
+      const catsEl=document.getElementById(id+'-cats');
+      if(catsEl&&s.catalysts){
+        catsEl.innerHTML=s.catalysts.slice(0,3).map((c,i)=>{
+          const ic=isBull&&i<2?'▲':isBear&&i<2?'▼':'~';
+          const cc=isBull&&i<2?'up':isBear&&i<2?'dn':'ne';
+          return`<div class="mkt-cat-item"><span class="cat-icon ${cc}">${ic}</span>${c}</div>`;
+        }).join('');
+      }
+      if(s.outlook) document.getElementById(id+'-outlook').textContent=s.outlook;
+    });
+    document.getElementById('lastUpdate').innerHTML=`<span style="width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;display:inline-block;"></span> Last updated: ${new Date().toLocaleTimeString()}`;
+  }catch(e){console.error(e);}
+  btn.classList.remove('loading');btn.disabled=false;
+  icon.innerHTML='⬡';
+}
+
+// Smooth scroll
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{
+    const t=document.querySelector(a.getAttribute('href'));
+    if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'});}
+  });
+});
+</script>
+</body>
+</html>
