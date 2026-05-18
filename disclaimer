@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Disclaimer — SniperTrader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════════════════════════
+   VARIABLES — SniperTrader Brand + Gold/Amber Disclaimer Theme
+═══════════════════════════════════════════════════════════ */
+:root {
+  --obsidian:      #0a0b0e;
+  --obsidian-2:    #0d0e12;
+  --obsidian-3:    #12140a;
+  --glass-bg:      #13120c;
+  --glass-bg-2:    #0f0e09;
+  --glass-border:  rgba(255,193,7,0.14);
+  --glass-hover:   rgba(255,193,7,0.26);
+
+  /* Primary accent — gold/amber for Disclaimer */
+  --gold:          #ffc107;
+  --gold-bright:   #ffd54f;
+  --gold-dim:      #e6a800;
+  --gold-ghost:    rgba(255,193,7,0.07);
+  --gold-glow:     rgba(255,193,7,0.4);
+  --amber:         #ff8f00;
+  --amber-ghost:   rgba(255,143,0,0.08);
+
+  /* Supporting accents */
+  --cyan:          #00e5ff;
+  --cyan-ghost:    rgba(0,229,255,0.07);
+  --cyan-glow:     rgba(0,229,255,0.3);
+  --red:           #ff3d5a;
+  --red-ghost:     rgba(255,61,90,0.07);
+  --red-glow:      rgba(255,61,90,0.3);
+  --emerald:       #00e5a0;
+  --emerald-ghost: rgba(0,229,160,0.07);
+
+  --white:         #f8fafc;
+  --white-dim:     rgba(248,250,252,0.88);
+  --white-muted:   rgba(248,250,252,0.55);
+
+  --nav-h:         64px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIGHT MODE OVERRIDES
+═══════════════════════════════════════════════════════════ */
+body.light-mode {
+  --obsidian:      #f0f2f5;
+  --obsidian-2:    #e8eaed;
+  --obsidian-3:    #eef0e8;
+  --glass-bg:      #ffffff;
+  --glass-bg-2:    #f7f7f2;
+  --glass-border:  rgba(180,130,0,0.18);
+  --glass-hover:   rgba(180,130,0,0.28);
+  --gold:          #b8860b;
+  --gold-bright:   #d4a017;
+  --gold-dim:      #9a7000;
+  --gold-ghost:    rgba(180,130,0,0.08);
+  --gold-glow:     rgba(180,130,0,0.3);
+  --amber:         #c07000;
+  --amber-ghost:   rgba(192,112,0,0.08);
+  --cyan:          #0077aa;
+  --cyan-ghost:    rgba(0,119,170,0.08);
+  --cyan-glow:     rgba(0,119,170,0.25);
+  --red:           #cc1a2e;
+  --red-ghost:     rgba(204,26,46,0.07);
+  --red-glow:      rgba(204,26,46,0.25);
+  --emerald:       #007a50;
+  --emerald-ghost: rgba(0,122,80,0.07);
+  --white:         #111318;
+  --white-dim:     rgba(17,19,24,0.85);
+  --white-muted:   rgba(17,19,24,0.5);
+}
+body.light-mode nav {
+  background: rgba(240,242,245,0.94);
+  border-bottom-color: rgba(180,130,0,0.15);
+}
+body.light-mode .section-card { box-shadow: 0 2px 16px rgba(0,0,0,0.06); }
+body.light-mode .card-red  { background: #fff5f6; }
+body.light-mode .card-cyan { background: #f0f8fc; }
+body.light-mode .card-emerald { background: #f0faf6; }
+body.light-mode .toc-pill,
+body.light-mode .risk-stat { background: #ffffff; }
+body.light-mode footer { background: #e8eaed; }
+body.light-mode .grid-overlay {
+  background-image:
+    linear-gradient(rgba(180,130,0,0.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(180,130,0,0.04) 1px,transparent 1px);
+}
+body.light-mode #particle-canvas { opacity: 0.25; }
+body.light-mode .aurora {
+  background: radial-gradient(ellipse,rgba(180,130,0,0.06) 0%,rgba(212,160,23,0.03) 40%,transparent 68%);
+}
+body.light-mode strong { color: #0d1014; }
+body.light-mode .check-text strong { color: #0d1014; }
+body.light-mode .critical-banner p { color: rgba(17,19,24,0.82); }
+body.light-mode .critical-banner strong { color: #0d1014; }
+body.light-mode .risk-table td { color: rgba(17,19,24,0.82); }
+
+/* ── Theme Toggle Button ── */
+.theme-toggle {
+  display: flex;align-items:center;gap:7px;
+  font-family:'Space Mono',monospace;font-size:.58rem;
+  letter-spacing:.1em;text-transform:uppercase;
+  color:var(--white-muted);cursor:none;
+  padding:5px 13px;border:1px solid rgba(255,193,7,0.18);border-radius:20px;
+  background:transparent;
+  transition:color .2s,border-color .2s,box-shadow .2s;
+  white-space:nowrap;
+}
+.theme-toggle:hover{color:var(--gold);border-color:rgba(255,193,7,.4);box-shadow:0 0 14px var(--gold-ghost);}
+.theme-toggle .tt-icon { font-size:.8rem; line-height:1; }
+
+/* ═══════════════════════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--obsidian);
+  color:var(--white);
+  font-family:'Syne',sans-serif;
+  font-size:15px;
+  line-height:1.7;
+  overflow-x:hidden;
+  cursor:none;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CURSOR — amber/gold theme
+═══════════════════════════════════════════════════════════ */
+.cursor-dot{
+  position:fixed;width:6px;height:6px;
+  background:var(--gold);border-radius:50%;
+  pointer-events:none;z-index:9999;
+  transform:translate(-50%,-50%);
+  box-shadow:0 0 10px var(--gold),0 0 22px var(--gold-glow);
+}
+.cursor-ring{
+  position:fixed;width:30px;height:30px;
+  border:1px solid rgba(255,193,7,0.5);border-radius:50%;
+  pointer-events:none;z-index:9998;
+  transform:translate(-50%,-50%);
+  transition:width .18s,height .18s,border-color .18s;
+}
+.cursor-ring.hover{width:48px;height:48px;border-color:var(--cyan);}
+
+/* ═══════════════════════════════════════════════════════════
+   CANVAS + ATMOSPHERE
+═══════════════════════════════════════════════════════════ */
+#particle-canvas{
+  position:fixed;inset:0;z-index:0;
+  pointer-events:none;opacity:0.5;
+}
+.grid-overlay{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(255,193,7,0.02) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,193,7,0.02) 1px,transparent 1px);
+  background-size:60px 60px;
+  mask-image:radial-gradient(ellipse 100% 100% at 50% 0%,black 40%,transparent 100%);
+}
+.scanlines{
+  position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,
+    rgba(0,0,0,0.025) 2px,rgba(0,0,0,0.025) 4px);
+}
+
+/* Hazard aurora — amber/gold radial for disclaimer page */
+.aurora{
+  position:fixed;top:-180px;left:50%;transform:translateX(-50%);
+  width:1000px;height:520px;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse,
+    rgba(255,143,0,0.07) 0%,
+    rgba(255,193,7,0.04) 40%,
+    transparent 68%);
+  animation:auroraPulse 7s ease-in-out infinite;
+}
+@keyframes auroraPulse{
+  0%,100%{opacity:0.7;transform:translateX(-50%) scaleX(1);}
+  50%{opacity:1;transform:translateX(-50%) scaleX(1.1);}
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SCROLL PROGRESS
+═══════════════════════════════════════════════════════════ */
+.scroll-progress{
+  position:fixed;top:0;left:0;height:2px;
+  background:linear-gradient(90deg,var(--amber),var(--gold),var(--gold-bright),var(--cyan));
+  z-index:200;box-shadow:0 0 10px var(--gold-glow);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   NAV
+═══════════════════════════════════════════════════════════ */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  height:var(--nav-h);padding:0 40px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(10,11,14,0.9);backdrop-filter:blur(22px);
+  border-bottom:1px solid rgba(255,193,7,0.1);
+}
+.nav-logo{
+  font-family:'Orbitron',sans-serif;font-weight:900;font-size:1.05rem;
+  letter-spacing:.12em;text-decoration:none;
+  background:linear-gradient(135deg,var(--cyan) 0%,var(--gold) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.nav-badge{
+  font-family:'Space Mono',monospace;font-size:.62rem;
+  color:var(--gold);letter-spacing:.18em;text-transform:uppercase;
+  opacity:.75;
+}
+.nav-home{
+  font-family:'Space Mono',monospace;font-size:.6rem;
+  letter-spacing:.1em;text-transform:uppercase;
+  color:var(--white-muted);text-decoration:none;
+  padding:6px 14px;border:1px solid rgba(255,193,7,0.18);border-radius:6px;
+  transition:color .2s,border-color .2s,box-shadow .2s;
+}
+.nav-home:hover{color:var(--gold);border-color:rgba(255,193,7,.4);box-shadow:0 0 14px var(--gold-ghost);}
+
+/* ═══════════════════════════════════════════════════════════
+   HERO
+═══════════════════════════════════════════════════════════ */
+.hero{
+  position:relative;z-index:2;min-height:380px;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+  padding:140px 40px 64px;text-align:center;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-58%);
+  width:720px;height:440px;
+  background:radial-gradient(ellipse,rgba(255,143,0,0.08) 0%,transparent 65%);
+  pointer-events:none;
+}
+/* Animated hazard stripes in hero bg */
+.hero-hazard{
+  position:absolute;bottom:0;left:0;right:0;height:3px;
+  background:repeating-linear-gradient(90deg,
+    var(--gold) 0,var(--gold) 18px,
+    transparent 18px,transparent 36px,
+    var(--amber) 36px,var(--amber) 54px,
+    transparent 54px,transparent 72px);
+  opacity:.35;
+  animation:hazardScroll 6s linear infinite;
+}
+@keyframes hazardScroll{to{background-position-x:72px;}}
+
+.hero-eyebrow{
+  font-family:'Space Mono',monospace;font-size:.62rem;
+  letter-spacing:.3em;text-transform:uppercase;color:var(--gold);
+  margin-bottom:14px;animation:fadeUp .8s ease both;
+  display:flex;align-items:center;gap:10px;
+}
+.hero-eyebrow::before,.hero-eyebrow::after{
+  content:'';width:40px;height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold));
+}
+.hero-eyebrow::after{transform:scaleX(-1);}
+
+.hero-title{
+  font-family:'Orbitron',sans-serif;font-weight:900;
+  font-size:clamp(2.4rem,5.5vw,4.2rem);letter-spacing:.05em;line-height:1.08;
+  background:linear-gradient(135deg,#fff 20%,var(--gold-bright) 55%,var(--amber) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  animation:fadeUp .8s .1s ease both;
+}
+.hero-sub{
+  margin-top:16px;font-family:'Space Mono',monospace;font-size:.72rem;
+  color:var(--white-muted);letter-spacing:.12em;
+  animation:fadeUp .8s .2s ease both;
+}
+.hero-divider{
+  margin-top:42px;width:100%;max-width:960px;height:1px;
+  background:linear-gradient(90deg,transparent,var(--amber),var(--gold),var(--gold-dim),transparent);
+  animation:fadeUp .8s .3s ease both;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PAGE WRAP
+═══════════════════════════════════════════════════════════ */
+.page-wrap{
+  position:relative;z-index:2;
+  max-width:980px;margin:0 auto;padding:0 40px 120px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EFFECTIVE BANNER
+═══════════════════════════════════════════════════════════ */
+.effective-banner{
+  margin:44px 0 36px;padding:14px 22px;
+  background:rgba(255,193,7,0.04);
+  border:1px solid rgba(255,193,7,0.16);border-radius:8px;
+  display:flex;align-items:center;gap:14px;
+  font-family:'Space Mono',monospace;font-size:.67rem;
+  color:var(--white-muted);letter-spacing:.1em;
+  animation:fadeUp .8s .35s ease both;
+}
+.effective-banner .dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--gold);box-shadow:0 0 10px var(--gold-glow);
+  flex-shrink:0;animation:pulseDot 2.2s ease infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CRITICAL WARNING BANNER — unmissable top-of-page alert
+═══════════════════════════════════════════════════════════ */
+.critical-banner{
+  margin-bottom:40px;padding:24px 28px;
+  background:rgba(255,61,90,0.06);
+  border:1px solid rgba(255,61,90,0.28);
+  border-radius:14px;
+  position:relative;overflow:hidden;
+  animation:fadeUp .7s .4s ease both;
+}
+.critical-banner::before{
+  content:'';position:absolute;inset:0;border-radius:inherit;
+  background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(255,61,90,0.04),transparent);
+  pointer-events:none;
+}
+.critical-banner-header{
+  display:flex;align-items:center;gap:14px;margin-bottom:12px;
+}
+.critical-icon{
+  width:36px;height:36px;border-radius:8px;flex-shrink:0;
+  background:rgba(255,61,90,0.12);border:1px solid rgba(255,61,90,0.3);
+  display:flex;align-items:center;justify-content:center;font-size:1rem;
+}
+.critical-label{
+  font-family:'Orbitron',sans-serif;font-weight:800;font-size:.8rem;
+  letter-spacing:.15em;text-transform:uppercase;color:var(--red);
+}
+.critical-banner p{
+  color:rgba(240,244,248,.7);font-size:.88rem;line-height:1.8;
+}
+.critical-banner strong{color:var(--white);font-weight:600;}
+
+/* ═══════════════════════════════════════════════════════════
+   RISK STAT STRIP
+═══════════════════════════════════════════════════════════ */
+.risk-stats{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:14px;margin-bottom:40px;
+  animation:fadeUp .7s .5s ease both;
+}
+.risk-stat{
+  padding:18px 16px;text-align:center;
+  background:var(--glass-bg);
+  border:1px solid rgba(255,193,7,0.12);border-radius:12px;
+  transition:border-color .25s,transform .25s,box-shadow .25s;
+  position:relative;overflow:hidden;
+}
+.risk-stat::before{
+  content:'';position:absolute;inset:0;border-radius:inherit;
+  background:radial-gradient(400px circle at var(--mx,50%) var(--my,50%),
+    rgba(255,193,7,0.05),transparent 65%);
+  opacity:0;transition:opacity .3s;pointer-events:none;
+}
+.risk-stat:hover::before{opacity:1;}
+.risk-stat:hover{
+  border-color:rgba(255,193,7,.3);transform:translateY(-3px);
+  box-shadow:0 8px 28px rgba(255,193,7,0.08);
+}
+.rs-num{
+  font-family:'Orbitron',sans-serif;font-weight:900;font-size:1.5rem;
+  color:var(--gold);letter-spacing:.02em;margin-bottom:4px;
+}
+.rs-label{
+  font-family:'Space Mono',monospace;font-size:.58rem;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--white-muted);line-height:1.4;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOC
+═══════════════════════════════════════════════════════════ */
+.toc-pill{
+  margin-bottom:48px;padding:22px 26px;
+  background:var(--glass-bg);border:1px solid rgba(255,193,7,0.13);
+  border-radius:14px;backdrop-filter:blur(12px);
+  animation:fadeUp .7s .55s ease both;
+  transition:border-color .3s,box-shadow .3s;
+}
+.toc-pill:hover{border-color:rgba(255,193,7,.28);box-shadow:0 0 30px rgba(255,193,7,0.05);}
+.toc-label{
+  font-family:'Space Mono',monospace;font-size:.58rem;
+  letter-spacing:.25em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;
+}
+.toc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:4px 16px;}
+.toc-grid a{
+  font-family:'Space Mono',monospace;font-size:.68rem;
+  color:var(--white-dim);text-decoration:none;
+  padding:4px 0;letter-spacing:.04em;
+  display:flex;align-items:center;gap:8px;transition:color .2s;
+}
+.toc-grid a::before{
+  content:'→';color:var(--gold);font-size:.62rem;
+  opacity:.55;transition:opacity .2s,transform .2s;
+}
+.toc-grid a:hover{color:var(--gold);}
+.toc-grid a:hover::before{opacity:1;transform:translateX(3px);}
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION CARDS
+═══════════════════════════════════════════════════════════ */
+.section-card{
+  position:relative;margin-bottom:22px;padding:34px 38px;
+  background:var(--glass-bg);
+  border:1px solid rgba(255,193,7,0.13);
+  border-radius:16px;backdrop-filter:blur(16px);
+  transition:border-color .3s,box-shadow .3s;
+  will-change:transform;overflow:hidden;
+}
+.section-card::before{
+  content:'';position:absolute;inset:0;border-radius:inherit;
+  background:radial-gradient(600px circle at var(--mx,50%) var(--my,50%),
+    rgba(255,193,7,0.04),transparent 60%);
+  pointer-events:none;opacity:0;transition:opacity .3s;
+}
+.section-card:hover::before{opacity:1;}
+.section-card:hover{
+  border-color:rgba(255,193,7,.26);
+  box-shadow:0 8px 44px rgba(255,193,7,0.07),0 2px 0 inset rgba(255,193,7,0.06);
+}
+.section-card::after{
+  content:'';position:absolute;left:0;top:20%;bottom:20%;width:2px;
+  border-radius:2px;
+  background:linear-gradient(180deg,transparent,var(--gold),transparent);
+  opacity:0;transition:opacity .3s;
+}
+.section-card:hover::after{opacity:1;}
+
+/* ── card variants ── */
+.card-red{background:#130a0c;border-color:rgba(255,61,90,0.2);}
+.card-red::after{background:linear-gradient(180deg,transparent,var(--red),transparent);}
+.card-red::before{background:radial-gradient(600px circle at var(--mx,50%) var(--my,50%),rgba(255,61,90,0.04),transparent 60%);}
+.card-red:hover{border-color:rgba(255,61,90,.38);box-shadow:0 8px 44px rgba(255,61,90,0.07);}
+.card-red h2{color:var(--red);}
+.card-red h2 .icon{background:var(--red-ghost);border-color:rgba(255,61,90,.22);}
+.card-red .section-num{color:rgba(255,61,90,.2);}
+.card-red ul li::before{color:var(--red);}
+
+.card-cyan{background:#0a0d10;border-color:rgba(0,229,255,0.13);}
+.card-cyan::after{background:linear-gradient(180deg,transparent,var(--cyan),transparent);}
+.card-cyan::before{background:radial-gradient(600px circle at var(--mx,50%) var(--my,50%),rgba(0,229,255,0.04),transparent 60%);}
+.card-cyan:hover{border-color:rgba(0,229,255,.26);box-shadow:0 8px 44px rgba(0,229,255,0.07);}
+.card-cyan h2{color:var(--cyan);}
+.card-cyan h2 .icon{background:var(--cyan-ghost);border-color:rgba(0,229,255,.22);}
+.card-cyan .section-num{color:rgba(0,229,255,.2);}
+.card-cyan ul li::before{color:var(--cyan);}
+
+.card-emerald{background:#0a100d;border-color:rgba(0,229,160,0.13);}
+.card-emerald::after{background:linear-gradient(180deg,transparent,var(--emerald),transparent);}
+.card-emerald::before{background:radial-gradient(600px circle at var(--mx,50%) var(--my,50%),rgba(0,229,160,0.04),transparent 60%);}
+.card-emerald:hover{border-color:rgba(0,229,160,.26);box-shadow:0 8px 44px rgba(0,229,160,0.07);}
+.card-emerald h2{color:var(--emerald);}
+.card-emerald h2 .icon{background:var(--emerald-ghost);border-color:rgba(0,229,160,.22);}
+.card-emerald .section-num{color:rgba(0,229,160,.2);}
+.card-emerald ul li::before{color:var(--emerald);}
+
+.section-num{
+  position:absolute;top:20px;right:26px;
+  font-family:'Orbitron',monospace;font-size:.58rem;font-weight:700;
+  color:rgba(255,193,7,.18);letter-spacing:.2em;
+}
+.section-card h2{
+  font-family:'Orbitron',sans-serif;font-weight:700;font-size:.92rem;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--gold);
+  margin-bottom:16px;display:flex;align-items:center;gap:12px;
+}
+.section-card h2 .icon{
+  width:28px;height:28px;border-radius:6px;
+  background:var(--gold-ghost);border:1px solid rgba(255,193,7,.22);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.75rem;flex-shrink:0;
+}
+.section-card p{
+  color:var(--white-dim);font-size:.88rem;line-height:1.82;margin-bottom:12px;
+}
+.section-card p:last-child{margin-bottom:0;}
+.section-card ul{list-style:none;margin:12px 0;}
+.section-card ul li{
+  position:relative;padding-left:20px;
+  color:var(--white-dim);font-size:.87rem;line-height:1.8;margin-bottom:5px;
+}
+.section-card ul li::before{
+  content:'▸';position:absolute;left:0;color:var(--gold);font-size:.62rem;top:5px;
+}
+strong{color:var(--white);font-weight:600;}
+.hl-g{color:var(--gold);font-weight:600;}
+.hl-a{color:var(--amber);font-weight:600;}
+.hl-c{color:var(--cyan);font-weight:600;}
+.hl-r{color:var(--red);font-weight:600;}
+.hl-e{color:var(--emerald);font-weight:600;}
+code{
+  font-family:'Space Mono',monospace;font-size:.74rem;
+  background:rgba(255,193,7,0.07);border:1px solid rgba(255,193,7,0.18);
+  padding:2px 7px;border-radius:4px;color:var(--gold);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INSTRUMENT RISK TABLE
+═══════════════════════════════════════════════════════════ */
+.risk-table{width:100%;border-collapse:collapse;margin:16px 0;}
+.risk-table th{
+  font-family:'Space Mono',monospace;font-size:.62rem;
+  letter-spacing:.12em;text-transform:uppercase;
+  padding:10px 14px;background:rgba(255,193,7,0.07);
+  border-bottom:1px solid rgba(255,193,7,0.18);color:var(--gold);text-align:left;
+}
+.risk-table td{
+  padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.04);
+  color:var(--white-dim);font-size:.84rem;vertical-align:top;
+}
+.risk-table tr:last-child td{border-bottom:none;}
+.risk-table tr:hover td{background:rgba(255,193,7,0.025);}
+.risk-pill{
+  display:inline-block;padding:2px 9px;border-radius:4px;
+  font-family:'Orbitron',monospace;font-size:.5rem;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;
+}
+.rp-high{background:rgba(255,61,90,0.1);color:var(--red);border:1px solid rgba(255,61,90,0.22);}
+.rp-med {background:rgba(255,193,7,0.1);color:var(--gold);border:1px solid rgba(255,193,7,0.22);}
+.rp-low {background:rgba(0,229,160,0.1);color:var(--emerald);border:1px solid rgba(0,229,160,0.22);}
+
+/* ═══════════════════════════════════════════════════════════
+   AWARENESS CHECKLIST
+═══════════════════════════════════════════════════════════ */
+.checklist{display:flex;flex-direction:column;gap:10px;margin:16px 0;}
+.check-item{
+  display:flex;align-items:flex-start;gap:14px;
+  padding:14px 16px;
+  background:rgba(255,255,255,0.02);
+  border:1px solid rgba(255,193,7,0.1);border-radius:10px;
+  transition:border-color .22s,background .22s;
+}
+.check-item:hover{border-color:rgba(255,193,7,.25);background:rgba(255,193,7,0.03);}
+.check-box{
+  width:22px;height:22px;border-radius:5px;flex-shrink:0;
+  background:rgba(255,193,7,0.09);border:1px solid rgba(255,193,7,0.28);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.7rem;color:var(--gold);margin-top:1px;
+}
+.check-text{font-size:.86rem;color:var(--white-dim);line-height:1.65;}
+.check-text strong{color:var(--white);}
+
+/* ═══════════════════════════════════════════════════════════
+   BACK TO TOP
+═══════════════════════════════════════════════════════════ */
+.back-top{
+  position:fixed;bottom:30px;right:30px;z-index:50;
+  width:44px;height:44px;background:var(--glass-bg);
+  border:1px solid rgba(255,193,7,0.2);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  cursor:none;font-size:.85rem;color:var(--gold);
+  opacity:0;transform:translateY(12px);
+  transition:opacity .3s,transform .3s,border-color .2s,box-shadow .2s;
+  text-decoration:none;
+}
+.back-top.visible{opacity:1;transform:translateY(0);}
+.back-top:hover{border-color:var(--gold);box-shadow:0 0 20px var(--gold-glow);}
+
+/* ═══════════════════════════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════════════════════════ */
+footer{
+  position:relative;z-index:2;
+  border-top:1px solid rgba(255,193,7,0.08);
+  padding:38px 40px;display:flex;flex-wrap:wrap;
+  gap:12px;align-items:center;justify-content:space-between;
+}
+.footer-brand{
+  font-family:'Orbitron',sans-serif;font-weight:900;font-size:.85rem;letter-spacing:.15em;
+  background:linear-gradient(135deg,var(--cyan),var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.footer-copy{font-family:'Space Mono',monospace;font-size:.6rem;color:var(--white-muted);letter-spacing:.1em;}
+.footer-links{display:flex;gap:22px;}
+.footer-links a{
+  font-family:'Space Mono',monospace;font-size:.6rem;
+  color:var(--white-muted);text-decoration:none;letter-spacing:.08em;transition:color .2s;
+}
+.footer-links a:hover{color:var(--gold);}
+
+/* ═══════════════════════════════════════════════════════════
+   KEYFRAMES
+═══════════════════════════════════════════════════════════ */
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px);}to{opacity:1;transform:translateY(0);}}
+@keyframes pulseDot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(1.5);}}
+@keyframes counterUp{from{opacity:0;}to{opacity:1;}}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════════════════ */
+@media(max-width:640px){
+  nav{padding:0 20px;}
+  .hero{padding:110px 20px 50px;}
+  .page-wrap{padding:0 20px 80px;}
+  .section-card{padding:26px 20px;}
+  .toc-grid{grid-template-columns:1fr 1fr;}
+  .risk-stats{grid-template-columns:1fr 1fr;}
+  footer{padding:26px 20px;flex-direction:column;align-items:flex-start;}
+}
+</style>
+</head>
+<body>
+
+<!-- Cursor -->
+<div class="cursor-dot" id="cursorDot"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- Canvas -->
+<canvas id="particle-canvas"></canvas>
+<div class="aurora"></div>
+<div class="grid-overlay"></div>
+<div class="scanlines"></div>
+
+<!-- Scroll progress -->
+<div class="scroll-progress" id="scrollBar"></div>
+
+<!-- Back to top -->
+<a href="#top" class="back-top" id="backTop">↑</a>
+
+<!-- ══════════════════ NAV ══════════════════ -->
+<nav id="top">
+  <a href="index.html" class="nav-logo">SNIPERTRADER</a>
+  <span class="nav-badge">LEGAL // DISCLAIMER</span>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle light/dark mode">
+      <span class="tt-icon" id="ttIcon">☀</span>
+      <span id="ttLabel">LIGHT</span>
+    </button>
+    <a href="index.html" class="nav-home">← BACK TO SITE</a>
+  </div>
+</nav>
+
+<!-- ══════════════════ HERO ══════════════════ -->
+<section class="hero">
+  <p class="hero-eyebrow">// RISK DISCLOSURE FRAMEWORK — DOCUMENT v2.0</p>
+  <h1 class="hero-title">DISCLAIMER</h1>
+  <p class="hero-sub">LAST UPDATED: JUNE 1, 2025 &nbsp;·&nbsp; READ IN FULL BEFORE USING ANY SNIPERTRADER PRODUCT</p>
+  <div class="hero-divider"></div>
+  <div class="hero-hazard"></div>
+</section>
+
+<!-- ══════════════════ MAIN ══════════════════ -->
+<main class="page-wrap">
+
+  <div class="effective-banner">
+    <span class="dot"></span>
+    THIS DISCLAIMER GOVERNS YOUR USE OF ALL SNIPERTRADER PRODUCTS, INDICATORS, EDUCATIONAL CONTENT, AND SERVICES. ACCESS CONSTITUTES ACCEPTANCE.
+  </div>
+
+  <!-- Critical warning banner -->
+  <div class="critical-banner">
+    <div class="critical-banner-header">
+      <div class="critical-icon">⚠</div>
+      <span class="critical-label">Critical Risk Warning</span>
+    </div>
+    <p>
+      <strong>Trading financial instruments involves a substantial risk of loss</strong> and is not
+      appropriate for every investor. The past performance of any trading strategy, indicator, or
+      methodology — including the Unified Smart Money Engine (USME) and all ICT/SMC-based systems —
+      <span class="hl-r">does not guarantee or imply future results.</span> You may lose some or all of your
+      invested capital. Only trade with money you can afford to lose entirely.
+    </p>
+  </div>
+
+  <!-- Risk stat strip -->
+  <div class="risk-stats">
+    <div class="risk-stat tilt-stat">
+      <div class="rs-num">70–80%</div>
+      <div class="rs-label">Retail traders<br>lose money</div>
+    </div>
+    <div class="risk-stat tilt-stat">
+      <div class="rs-num">100%</div>
+      <div class="rs-label">Capital at risk<br>in all trades</div>
+    </div>
+    <div class="risk-stat tilt-stat">
+      <div class="rs-num">0</div>
+      <div class="rs-label">Guaranteed<br>outcomes</div>
+    </div>
+    <div class="risk-stat tilt-stat">
+      <div class="rs-num">∞</div>
+      <div class="rs-label">Your sole<br>responsibility</div>
+    </div>
+  </div>
+
+  <!-- TOC -->
+  <div class="toc-pill">
+    <p class="toc-label">// Quick Navigation</p>
+    <div class="toc-grid">
+      <a href="#no-advice">01 — Not Financial Advice</a>
+      <a href="#past-performance">02 — Past Performance</a>
+      <a href="#risk-disclosure">03 — Risk Disclosure</a>
+      <a href="#instruments">04 — Instrument Risks</a>
+      <a href="#indicators">05 — Indicator Limitations</a>
+      <a href="#prop-firms">06 — Prop Firm Disclaimer</a>
+      <a href="#educational">07 — Educational Content</a>
+      <a href="#third-party">08 — Third-Party Platforms</a>
+      <a href="#no-guarantee">09 — No Guarantee</a>
+      <a href="#awareness">10 — Trader Awareness</a>
+      <a href="#liability">11 — Liability Waiver</a>
+      <a href="#contact">12 — Contact</a>
+    </div>
+  </div>
+
+  <!-- ─── 01 NOT FINANCIAL ADVICE ─── -->
+  <div class="section-card card-red" id="no-advice">
+    <span class="section-num">01</span>
+    <h2><span class="icon">⊘</span>Not Financial Advice</h2>
+    <p>
+      <span class="hl-r">Nothing on the SniperTrader website, in our products, in our educational content,
+      in our community channels, or in any communication from SniperTrader constitutes financial advice,
+      investment advice, trading advice, or a recommendation to buy or sell any financial instrument.</span>
+    </p>
+    <p>
+      All content provided by SniperTrader — including indicator signals, trade setups, methodology
+      explanations, chart analysis, and market commentary — is provided for
+      <strong>educational and informational purposes only</strong>. It is intended to help traders
+      develop their own skills and does not represent a recommendation to execute any specific trade.
+    </p>
+    <p>
+      SniperTrader is <strong>not a registered investment advisor, broker-dealer, commodity trading
+      advisor, financial planner, or financial institution</strong> of any kind. We do not hold and are
+      not seeking any license to provide investment advice. Before making any investment or trading
+      decision, you should consult with a qualified, licensed financial professional who understands
+      your individual financial situation, goals, and risk tolerance.
+    </p>
+  </div>
+
+  <!-- ─── 02 PAST PERFORMANCE ─── -->
+  <div class="section-card" id="past-performance">
+    <span class="section-num">02</span>
+    <h2><span class="icon">◎</span>Past Performance Is Not Indicative of Future Results</h2>
+    <p>
+      Any reference to historical signal accuracy, win rates, performance statistics, backtested results,
+      or anecdotal trading outcomes associated with the <span class="hl-g">Unified Smart Money Engine (USME)</span>
+      or any other SniperTrader product must be understood in the following context:
+    </p>
+    <ul>
+      <li><strong>Backtested results are hypothetical.</strong> They are based on historical data and do not account for real-world execution slippage, commission, latency, position sizing, or emotional factors.</li>
+      <li><strong>Past signal performance does not predict future results.</strong> Market conditions change constantly. A strategy that performed well in trending conditions may perform poorly in ranging or volatile markets.</li>
+      <li><strong>Forward-tested results may differ materially</strong> from backtested results due to the nature of live market participation.</li>
+      <li><strong>Advertised win rates, if any, reflect specific backtesting conditions</strong> that may not replicate in your trading environment, timeframe, account size, or instrument of choice.</li>
+      <li>Individual trader results vary widely based on discipline, risk management, execution quality, and market timing.</li>
+    </ul>
+  </div>
+
+  <!-- ─── 03 RISK DISCLOSURE ─── -->
+  <div class="section-card card-red" id="risk-disclosure">
+    <span class="section-num">03</span>
+    <h2><span class="icon">△</span>General Risk Disclosure</h2>
+    <p>
+      Trading financial markets is inherently speculative and carries a <span class="hl-r">high degree of risk</span>.
+      You should carefully consider whether trading is appropriate for you given your financial situation,
+      trading experience, investment objectives, and risk tolerance. The following risks apply to all forms
+      of financial trading:
+    </p>
+    <ul>
+      <li><strong>Market Risk:</strong> Prices can move against your position rapidly and without warning due to economic events, geopolitical developments, central bank decisions, or other unpredictable factors.</li>
+      <li><strong>Leverage Risk:</strong> Many trading instruments (futures, forex, CFDs) involve leverage, which amplifies both gains and losses. You can lose more than your initial margin deposit.</li>
+      <li><strong>Liquidity Risk:</strong> In fast or thin markets, it may be impossible to exit a position at your desired price, resulting in worse execution than anticipated.</li>
+      <li><strong>Volatility Risk:</strong> Market volatility can trigger stops, spike through levels, and create conditions where technical analysis performs erratically.</li>
+      <li><strong>Technology Risk:</strong> Platform outages, internet connectivity failures, software bugs, or data feed issues can prevent you from executing or managing trades.</li>
+      <li><strong>Psychological Risk:</strong> Emotional decision-making, revenge trading, and deviation from your plan are the leading causes of trader failure.</li>
+    </ul>
+    <p>
+      <strong>You are solely responsible for all trading decisions you make.</strong> SniperTrader
+      accepts no responsibility for any losses incurred as a result of using our products or following
+      any information presented on our platforms.
+    </p>
+  </div>
+
+  <!-- ─── 04 INSTRUMENT RISKS ─── -->
+  <div class="section-card" id="instruments">
+    <span class="section-num">04</span>
+    <h2><span class="icon">⊡</span>Instrument-Specific Risk Levels</h2>
+    <p>Different financial instruments carry different risk profiles. USME is designed for use across multiple asset classes. Understand the specific risks of your chosen instrument:</p>
+
+    <table class="risk-table">
+      <thead>
+        <tr><th>Instrument</th><th>Risk Level</th><th>Key Risk Factors</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Equity Futures (NQ, ES, YM)</strong></td>
+          <td><span class="risk-pill rp-high">VERY HIGH</span></td>
+          <td>High leverage, overnight gaps, margin calls, contract expiry</td>
+        </tr>
+        <tr>
+          <td><strong>Forex (EURUSD, GBP/USD)</strong></td>
+          <td><span class="risk-pill rp-high">VERY HIGH</span></td>
+          <td>24-hour market, political events, central bank intervention</td>
+        </tr>
+        <tr>
+          <td><strong>Commodities (GC, CL, SI)</strong></td>
+          <td><span class="risk-pill rp-high">VERY HIGH</span></td>
+          <td>Supply/demand shocks, geopolitical risk, weather events</td>
+        </tr>
+        <tr>
+          <td><strong>Cryptocurrency (BTC, ETH)</strong></td>
+          <td><span class="risk-pill rp-high">EXTREME</span></td>
+          <td>24/7 markets, thin liquidity, regulatory risk, manipulation</td>
+        </tr>
+        <tr>
+          <td><strong>Individual Equities</strong></td>
+          <td><span class="risk-pill rp-med">HIGH</span></td>
+          <td>Earnings surprises, halts, sector rotation, thin float</td>
+        </tr>
+        <tr>
+          <td><strong>Index ETFs (SPY, QQQ)</strong></td>
+          <td><span class="risk-pill rp-med">MODERATE–HIGH</span></td>
+          <td>Market-wide risk, reduced individual stock risk</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>Using <strong>leverage of any kind magnifies these risks proportionally.</strong> Always understand your margin requirements and maximum potential loss before entering any leveraged position.</p>
+  </div>
+
+  <!-- ─── 05 INDICATOR LIMITATIONS ─── -->
+  <div class="section-card" id="indicators">
+    <span class="section-num">05</span>
+    <h2><span class="icon">⚙</span>Indicator Limitations &amp; Signal Disclaimer</h2>
+    <p>
+      The <span class="hl-g">Unified Smart Money Engine (USME)</span> and all SniperTrader indicators
+      are <strong>technical analysis tools only</strong>. They are not infallible systems and do not
+      guarantee profitable trading outcomes. Users must understand the following limitations:
+    </p>
+    <ul>
+      <li><strong>No indicator can predict the future.</strong> USME processes historical price data to identify probabilistic patterns. Every signal carries the possibility of being wrong.</li>
+      <li><strong>False signals occur regularly</strong> in all market conditions. USME is designed to minimize false signals through multi-layer confluence, but cannot eliminate them entirely.</li>
+      <li><strong>Market structure changes.</strong> Institutional patterns that worked historically may change as market participants, regulations, or liquidity conditions evolve.</li>
+      <li><strong>Results vary by instrument, timeframe, and market regime.</strong> An indicator optimized for NQ futures may not perform identically on EURUSD or low-cap equities.</li>
+      <li><strong>No stop-loss or risk management is built into USME.</strong> All risk management decisions — stop placement, position sizing, maximum loss — are your responsibility.</li>
+      <li><strong>Indicators are a tool, not a system.</strong> Trading USME signals without a complete trade plan, risk management framework, and psychological discipline is not recommended.</li>
+    </ul>
+    <p>
+      SniperTrader makes no representation that using USME or any other product will result in
+      profits or prevent losses. Past signal accuracy in any demo or backtest environment
+      <span class="hl-r">does not represent expected future performance in live markets.</span>
+    </p>
+  </div>
+
+  <!-- ─── 06 PROP FIRMS ─── -->
+  <div class="section-card card-cyan" id="prop-firms">
+    <span class="section-num">06</span>
+    <h2><span class="icon">🏛</span>Prop Firm &amp; Funded Account Disclaimer</h2>
+    <p>
+      SniperTrader products are widely used by traders pursuing <span class="hl-c">prop firm funded
+      account evaluations</span> (FTMO, Apex Trader Funding, The5ers, FundedNext, etc.). The following
+      important disclaimers apply to this use case:
+    </p>
+    <ul>
+      <li><strong>SniperTrader is not affiliated with any prop firm.</strong> We do not represent, endorse, or guarantee any specific prop firm's rules, payout structures, or viability.</li>
+      <li><strong>Prop firm rules change.</strong> Maximum drawdown limits, daily loss limits, prohibited instruments, news trading restrictions, and evaluation rules are set by the individual prop firm and may change without notice. Always verify current rules directly with your prop firm.</li>
+      <li><strong>Passing an evaluation is not guaranteed.</strong> USME signals can and do lose. Using USME does not guarantee passing any funded account evaluation.</li>
+      <li><strong>Account blow-ups are possible.</strong> Trading with a prop firm account still carries real financial risk — evaluation fees, reset fees, and the psychological cost of account failure are real.</li>
+      <li><strong>Funded payouts are not guaranteed.</strong> Prop firm solvency, policy changes, and rule interpretation disputes can affect whether funded traders receive payouts. SniperTrader has no control over and no liability for prop firm operations.</li>
+    </ul>
+  </div>
+
+  <!-- ─── 07 EDUCATIONAL CONTENT ─── -->
+  <div class="section-card" id="educational">
+    <span class="section-num">07</span>
+    <h2><span class="icon">📖</span>Educational Content Disclaimer</h2>
+    <p>
+      All educational content produced by SniperTrader — including the
+      <span class="hl-g">"From Broke to Funded"</span> eBook, course materials, masterclass slides,
+      documentation, blog posts, video content, and community discussions — is provided solely for
+      <strong>educational purposes</strong> and does not constitute financial, investment, or trading advice.
+    </p>
+    <p>
+      Educational content describes concepts, frameworks, and methodologies that individual traders
+      may choose to study and apply. The application of any educational concept to live or simulated
+      trading is entirely at your own risk. SniperTrader does not guarantee that concepts taught
+      in our educational materials will be profitable when applied to real markets.
+    </p>
+    <p>
+      References to the <strong>Inner Circle Trader (ICT)</strong> methodology and
+      <strong>Smart Money Concepts (SMC)</strong> framework in our educational content are for
+      informational and educational purposes. SniperTrader is an independent entity and is not
+      affiliated with, endorsed by, or officially associated with ICT or any of its affiliated programs.
+    </p>
+  </div>
+
+  <!-- ─── 08 THIRD PARTY ─── -->
+  <div class="section-card" id="third-party">
+    <span class="section-num">08</span>
+    <h2><span class="icon">↔</span>Third-Party Platforms</h2>
+    <p>
+      USME is delivered as a script for use on <strong>ThinkorSwim (TD Ameritrade / Schwab)</strong>
+      and <strong>TradingView</strong>. SniperTrader has no affiliation with, control over, or
+      responsibility for these platforms. The following disclaimers apply:
+    </p>
+    <ul>
+      <li><strong>Platform changes may affect functionality.</strong> ThinkorSwim or TradingView may update their platforms, change ThinkScript or Pine Script APIs, or alter their terms of service in ways that affect USME's functionality. SniperTrader will make commercially reasonable efforts to update affected products but cannot guarantee immediate compatibility.</li>
+      <li><strong>Platform outages are outside our control.</strong> SniperTrader is not responsible for losses resulting from platform unavailability, data feed errors, or execution failures on third-party platforms.</li>
+      <li><strong>Data accuracy is provided by the platform.</strong> Price data, volume data, and historical data are sourced from the trading platform and its data providers. SniperTrader makes no representation about the accuracy of data provided by third-party platforms.</li>
+      <li><strong>Third-party links.</strong> Our website may contain links to third-party websites. These are provided for reference only. SniperTrader has no control over and accepts no responsibility for the content, privacy practices, or accuracy of any third-party website.</li>
+    </ul>
+  </div>
+
+  <!-- ─── 09 NO GUARANTEE ─── -->
+  <div class="section-card card-red" id="no-guarantee">
+    <span class="section-num">09</span>
+    <h2><span class="icon">⊛</span>No Guarantee of Results</h2>
+    <p>
+      <span class="hl-r">SniperTrader makes absolutely no guarantee, representation, or warranty —
+      express or implied — that the use of any product, indicator, strategy, or educational content
+      will result in profitable trading.</span>
+    </p>
+    <p>
+      All products are provided on an <strong>"as is" and "as available"</strong> basis without
+      warranty of any kind, including but not limited to:
+    </p>
+    <ul>
+      <li>Merchantability or fitness for a particular trading purpose</li>
+      <li>Accuracy, completeness, or timeliness of signals or information</li>
+      <li>Non-infringement of third-party intellectual property</li>
+      <li>Uninterrupted or error-free operation of indicators or software</li>
+      <li>Compatibility with all brokerage accounts, platforms, or trading environments</li>
+      <li>Achievement of any specific profitability target, win rate, or drawdown metric</li>
+    </ul>
+    <p>
+      Any testimonials, results, or case studies referenced in our marketing materials represent
+      exceptional cases and are not typical results. The average trader using USME or any technical
+      analysis tool may experience significantly different, including negative, outcomes.
+    </p>
+  </div>
+
+  <!-- ─── 10 AWARENESS CHECKLIST ─── -->
+  <div class="section-card card-emerald" id="awareness">
+    <span class="section-num">10</span>
+    <h2><span class="icon">✓</span>Trader Awareness Checklist</h2>
+    <p>Before using any SniperTrader product in live trading, confirm you understand and accept the following:</p>
+    <div class="checklist">
+      <div class="check-item">
+        <div class="check-box">✓</div>
+        <div class="check-text"><strong>I understand I can lose all capital invested.</strong> I only trade with money I can afford to lose.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-box">✓</div>
+        <div class="check-text"><strong>I understand USME signals are not guarantees.</strong> Every signal can and will lose. I have a risk management plan.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-box">✓</div>
+        <div class="check-text"><strong>I understand this is not financial advice.</strong> All trading decisions are mine alone and I am solely responsible for outcomes.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-box">✓</div>
+        <div class="check-text"><strong>I have researched my trading instruments.</strong> I understand leverage, margin, and the specific risks of what I am trading.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-box">✓</div>
+        <div class="check-text"><strong>I will use a defined maximum risk per trade.</strong> I will not risk more than I can psychologically and financially tolerate losing.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-box">✓</div>
+        <div class="check-text"><strong>I will paper trade before going live.</strong> I will test my understanding of USME signals in a simulated environment before risking real capital.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-box">✓</div>
+        <div class="check-text"><strong>I will consult a licensed financial professional</strong> for personalized investment advice appropriate to my financial situation.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── 11 LIABILITY WAIVER ─── -->
+  <div class="section-card" id="liability">
+    <span class="section-num">11</span>
+    <h2><span class="icon">⊘</span>Limitation of Liability</h2>
+    <p>
+      To the maximum extent permitted by applicable law, <strong>SniperTrader, its owner(s),
+      employees, affiliates, partners, and licensors shall not be liable for any direct, indirect,
+      incidental, special, consequential, exemplary, or punitive damages</strong>, including but
+      not limited to:
+    </p>
+    <ul>
+      <li>Trading losses of any amount arising from the use of or reliance on any SniperTrader product</li>
+      <li>Loss of income, revenue, profit, data, or business opportunity</li>
+      <li>Psychological distress, emotional harm, or consequential damages from trading outcomes</li>
+      <li>Technical failures, bugs, errors, or inaccuracies in indicator output</li>
+      <li>Third-party platform outages or data feed failures</li>
+      <li>Losses incurred during prop firm evaluations or funded account programs</li>
+    </ul>
+    <p>
+      By accessing our website or using any SniperTrader product, you acknowledge that you have read,
+      understood, and agree to this Disclaimer and our full <a href="terms.html" style="color:var(--gold);">Terms of Service</a>.
+      You agree that your sole remedy for dissatisfaction with any product is to discontinue use in
+      accordance with our refund policy.
+    </p>
+    <p>
+      In no event shall SniperTrader's aggregate liability to you exceed the total amount you paid
+      for the specific product giving rise to the claim in the twelve (12) months preceding the incident.
+    </p>
+  </div>
+
+  <!-- ─── 12 CONTACT ─── -->
+  <div class="section-card" id="contact">
+    <span class="section-num">12</span>
+    <h2><span class="icon">✉</span>Questions &amp; Contact</h2>
+    <p>
+      If you have questions about this Disclaimer, our risk disclosures, or any aspect of our products,
+      please contact us. We are committed to transparency and will respond to all genuine inquiries.
+    </p>
+    <ul>
+      <li><strong>General Inquiries:</strong> <code>support@snipertrader.com</code></li>
+      <li><strong>Legal / Compliance:</strong> <code>legal@snipertrader.com</code></li>
+      <li><strong>Privacy:</strong> <code>privacy@snipertrader.com</code></li>
+      <li><strong>Website:</strong> <code>snipertrader.com</code></li>
+    </ul>
+    <p>
+      Related legal documents:
+      <a href="terms.html" style="color:var(--gold);">Terms of Service</a> ·
+      <a href="privacy.html" style="color:var(--gold);">Privacy Policy</a>
+    </p>
+  </div>
+
+</main>
+
+<!-- ══════════════════ FOOTER ══════════════════ -->
+<footer>
+  <span class="footer-brand">SNIPERTRADER</span>
+  <div class="footer-links">
+    <a href="index.html">Home</a>
+    <a href="terms.html">Terms</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="disclaimer.html">Disclaimer</a>
+    <a href="mailto:support@snipertrader.com">Contact</a>
+  </div>
+  <span class="footer-copy">© 2025 SNIPERTRADER — ALL RIGHTS RESERVED</span>
+</footer>
+
+<!-- ══════════════════ JAVASCRIPT ══════════════════ -->
+<script>
+/* ── Cursor ─────────────────────────────────────────────── */
+const dot=document.getElementById('cursorDot');
+const ring=document.getElementById('cursorRing');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{
+  mx=e.clientX;my=e.clientY;
+  dot.style.left=mx+'px';dot.style.top=my+'px';
+});
+(function loop(){
+  rx+=(mx-rx)*.13;ry+=(my-ry)*.13;
+  ring.style.left=rx+'px';ring.style.top=ry+'px';
+  requestAnimationFrame(loop);
+})();
+document.querySelectorAll('a,button,.section-card,.risk-stat,.check-item,.toc-grid a,.trust-item').forEach(el=>{
+  el.addEventListener('mouseenter',()=>ring.classList.add('hover'));
+  el.addEventListener('mouseleave',()=>ring.classList.remove('hover'));
+});
+
+/* ── Scroll Progress ─────────────────────────────────────── */
+const bar=document.getElementById('scrollBar');
+window.addEventListener('scroll',()=>{
+  bar.style.width=(scrollY/(document.body.scrollHeight-innerHeight)*100)+'%';
+});
+
+/* ── Back to Top ─────────────────────────────────────────── */
+const bt=document.getElementById('backTop');
+window.addEventListener('scroll',()=>bt.classList.toggle('visible',scrollY>400));
+bt.addEventListener('click',e=>{e.preventDefault();scrollTo({top:0,behavior:'smooth'});});
+
+/* ── 3D Card Tilt ────────────────────────────────────────── */
+document.querySelectorAll('.section-card').forEach(card=>{
+  card.addEventListener('mousemove',e=>{
+    const r=card.getBoundingClientRect();
+    const dx=e.clientX-(r.left+r.width/2);
+    const dy=e.clientY-(r.top+r.height/2);
+    card.style.transform=`perspective(900px) rotateX(${-(dy/(r.height/2))*3.5}deg) rotateY(${(dx/(r.width/2))*3.5}deg) translateZ(4px)`;
+    card.style.setProperty('--mx',((e.clientX-r.left)/r.width*100).toFixed(1)+'%');
+    card.style.setProperty('--my',((e.clientY-r.top)/r.height*100).toFixed(1)+'%');
+  });
+  card.addEventListener('mouseleave',()=>{card.style.transform='';});
+});
+
+/* ── Risk stat tilt (sharper) ──────────────────────────────── */
+document.querySelectorAll('.tilt-stat').forEach(card=>{
+  card.addEventListener('mousemove',e=>{
+    const r=card.getBoundingClientRect();
+    const dx=e.clientX-(r.left+r.width/2);
+    const dy=e.clientY-(r.top+r.height/2);
+    card.style.transform=`perspective(500px) rotateX(${-(dy/(r.height/2))*7}deg) rotateY(${(dx/(r.width/2))*7}deg) translateZ(8px)`;
+    card.style.setProperty('--mx',((e.clientX-r.left)/r.width*100).toFixed(1)+'%');
+    card.style.setProperty('--my',((e.clientY-r.top)/r.height*100).toFixed(1)+'%');
+  });
+  card.addEventListener('mouseleave',()=>{card.style.transform='';});
+});
+
+/* ── Scroll reveal ───────────────────────────────────────── */
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.style.opacity='1';
+      e.target.style.transform='';
+      obs.unobserve(e.target);
+    }
+  });
+},{threshold:0.07});
+document.querySelectorAll('.section-card').forEach((el,i)=>{
+  el.style.opacity='0';
+  el.style.transform='translateY(28px)';
+  el.style.transition=`opacity .55s ${i*.04}s ease,transform .55s ${i*.04}s ease,border-color .3s,box-shadow .3s`;
+  obs.observe(el);
+});
+
+/* ── Animated counter for risk stats ────────────────────── */
+function animateCounter(el,target,suffix,decimals=0){
+  const duration=1200;
+  const start=performance.now();
+  const isPercent=suffix.includes('%');
+  function step(now){
+    const t=Math.min((now-start)/duration,1);
+    const ease=1-Math.pow(1-t,3);
+    const val=target*ease;
+    if(target===0){el.textContent='0';}
+    else if(!isFinite(target)){el.textContent=suffix;}
+    else{el.textContent=(decimals?val.toFixed(decimals):Math.round(val))+(isPercent?'%':'');}
+    if(t<1)requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+const statsObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      const nums=e.target.querySelectorAll('.rs-num');
+      nums.forEach(n=>{
+        const txt=n.textContent;
+        if(txt.includes('70'))animateCounter(n,80,'%');
+        else if(txt==='100%')animateCounter(n,100,'%');
+        else if(txt==='0'){n.textContent='0';}
+        else if(txt==='∞'){n.textContent='∞';}
+      });
+      statsObs.unobserve(e.target);
+    }
+  });
+},{threshold:0.5});
+const strip=document.querySelector('.risk-stats');
+if(strip)statsObs.observe(strip);
+
+/* ── Particle System ─────────────────────────────────────── */
+const canvas=document.getElementById('particle-canvas');
+const ctx=canvas.getContext('2d');
+let W,H;
+const mouse={x:-9999,y:-9999};
+function resize(){W=canvas.width=innerWidth;H=canvas.height=innerHeight;}
+resize();window.addEventListener('resize',resize);
+document.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY;});
+
+/* Gold/amber palette for the disclaimer page */
+const COLS=['#ffc107','#ffd54f','#ff8f00','#ffca28','#ffffff','#00e5ff'];
+
+class Particle{
+  constructor(){this.reset(true);}
+  reset(init){
+    this.x=init?Math.random()*W:Math.random()<.5?0:W;
+    this.y=Math.random()*H;
+    this.vx=(Math.random()-.5)*.3;this.vy=(Math.random()-.5)*.3;
+    this.r=Math.random()*1.3+.25;this.a=Math.random()*.45+.08;
+    this.col=COLS[Math.floor(Math.random()*COLS.length)];
+    this.life=Math.random()*280+130;this.age=0;
+  }
+  update(){
+    this.age++;
+    if(this.age>this.life){this.reset(false);return;}
+    const dx=this.x-mouse.x,dy=this.y-mouse.y,d=Math.hypot(dx,dy);
+    if(d<110){const f=(110-d)/110*.34;this.vx+=dx/d*f;this.vy+=dy/d*f;}
+    this.vx*=.979;this.vy*=.979;
+    this.x+=this.vx;this.y+=this.vy;
+    if(this.x<0)this.x=W;if(this.x>W)this.x=0;
+    if(this.y<0)this.y=H;if(this.y>H)this.y=0;
+  }
+  draw(){
+    const f=this.age<30?this.age/30:this.age>this.life-30?(this.life-this.age)/30:1;
+    ctx.globalAlpha=this.a*f;ctx.fillStyle=this.col;
+    ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);ctx.fill();
+  }
+}
+
+const particles=Array.from({length:210},()=>new Particle());
+
+function drawConnections(){
+  ctx.lineWidth=.32;
+  for(let i=0;i<particles.length;i++){
+    for(let j=i+1;j<particles.length;j++){
+      const d=Math.hypot(particles[i].x-particles[j].x,particles[i].y-particles[j].y);
+      if(d<82){
+        ctx.globalAlpha=(1-d/82)*.09;
+        ctx.strokeStyle='#ffc107';
+        ctx.beginPath();
+        ctx.moveTo(particles[i].x,particles[i].y);
+        ctx.lineTo(particles[j].x,particles[j].y);
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+function animate(){
+  ctx.clearRect(0,0,W,H);
+  drawConnections();
+  particles.forEach(p=>{p.update();p.draw();});
+  ctx.globalAlpha=1;
+  requestAnimationFrame(animate);
+}
+animate();
+
+/* ── Theme Toggle ───────────────────────────────────────── */
+const themeToggle = document.getElementById('themeToggle');
+const ttIcon = document.getElementById('ttIcon');
+const ttLabel = document.getElementById('ttLabel');
+
+function applyTheme(light) {
+  if (light) {
+    document.body.classList.add('light-mode');
+    ttIcon.textContent = '🌙';
+    ttLabel.textContent = 'DARK';
+  } else {
+    document.body.classList.remove('light-mode');
+    ttIcon.textContent = '☀';
+    ttLabel.textContent = 'LIGHT';
+  }
+  localStorage.setItem('st-theme', light ? 'light' : 'dark');
+}
+
+// Restore saved preference
+const saved = localStorage.getItem('st-theme');
+if (saved === 'light') applyTheme(true);
+
+themeToggle.addEventListener('click', () => {
+  applyTheme(!document.body.classList.contains('light-mode'));
+});
+</script>
+</body>
+</html>
