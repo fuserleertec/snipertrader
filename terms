@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Terms of Service — SniperTrader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+/* ============================================================
+   CSS VARIABLES — SniperTrader Brand System
+   ============================================================ */
+:root {
+  --obsidian:    #0a0b0e;
+  --obsidian-2:  #0f1014;
+  --obsidian-3:  #13151a;
+  --obsidian-4:  #1a1d24;
+  --cyan:        #00e5ff;
+  --cyan-dim:    #00b8d4;
+  --cyan-ghost:  rgba(0,229,255,0.08);
+  --cyan-glow:   rgba(0,229,255,0.35);
+  --gold:        #ffc107;
+  --gold-dim:    #e6a800;
+  --gold-ghost:  rgba(255,193,7,0.08);
+  --gold-glow:   rgba(255,193,7,0.35);
+  --red:         #ff3d5a;
+  --red-ghost:   rgba(255,61,90,0.08);
+  --white:       #f8fafc;
+  --white-dim:   rgba(248,250,252,0.92);
+  --white-muted: rgba(248,250,252,0.62);
+  --glass-bg:    #12151c;
+  --glass-border:rgba(0,229,255,0.14);
+  --glass-hover: rgba(0,229,255,0.22);
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--obsidian);
+  color: var(--white);
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* ============================================================
+   CUSTOM CURSOR
+   ============================================================ */
+.cursor-dot {
+  position: fixed;
+  width: 6px; height: 6px;
+  background: var(--cyan);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%,-50%);
+  transition: transform 0.05s, background 0.2s;
+  box-shadow: 0 0 10px var(--cyan), 0 0 20px var(--cyan-glow);
+}
+.cursor-ring {
+  position: fixed;
+  width: 32px; height: 32px;
+  border: 1px solid rgba(0,229,255,0.5);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9998;
+  transform: translate(-50%,-50%);
+  transition: transform 0.12s cubic-bezier(0.23,1,0.32,1),
+              width 0.2s, height 0.2s, border-color 0.2s;
+}
+.cursor-ring.hover {
+  width: 48px; height: 48px;
+  border-color: var(--gold);
+}
+
+/* ============================================================
+   CANVAS — PARTICLE FIELD
+   ============================================================ */
+#particle-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* ============================================================
+   GRID OVERLAY
+   ============================================================ */
+.grid-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(0,229,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,255,0.025) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 100% 100% at 50% 0%, black 40%, transparent 100%);
+}
+
+/* ============================================================
+   SCANLINES
+   ============================================================ */
+.scanlines {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+}
+
+/* ============================================================
+   NAV
+   ============================================================ */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 0 40px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(10,11,14,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0,229,255,0.1);
+}
+
+.nav-logo {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 1.1rem;
+  letter-spacing: 0.12em;
+  text-decoration: none;
+  background: linear-gradient(135deg, var(--cyan) 0%, var(--gold) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.nav-badge {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--white-muted);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   HERO BANNER
+   ============================================================ */
+.hero {
+  position: relative;
+  z-index: 2;
+  min-height: 340px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 130px 40px 60px;
+  text-align: center;
+  overflow: hidden;
+}
+
+/* Radial glow behind hero */
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-60%);
+  width: 800px; height: 400px;
+  background: radial-gradient(ellipse, rgba(0,229,255,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-eyebrow {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 16px;
+  animation: fadeUp 0.8s ease both;
+}
+
+.hero-title {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: clamp(2.2rem, 5vw, 3.8rem);
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  background: linear-gradient(135deg, #fff 30%, var(--cyan) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: fadeUp 0.8s 0.1s ease both;
+}
+
+.hero-sub {
+  margin-top: 18px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--white-muted);
+  letter-spacing: 0.12em;
+  animation: fadeUp 0.8s 0.2s ease both;
+}
+
+.hero-divider {
+  margin-top: 40px;
+  width: 100%;
+  max-width: 960px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan-dim), transparent);
+  animation: fadeUp 0.8s 0.3s ease both;
+}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.page-wrap {
+  position: relative;
+  z-index: 2;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 40px 120px;
+}
+
+/* ============================================================
+   QUICK NAV PILL
+   ============================================================ */
+.toc-pill {
+  margin: 48px 0 60px;
+  padding: 24px 28px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  backdrop-filter: blur(12px);
+  animation: fadeUp 0.8s 0.4s ease both;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.toc-pill:hover {
+  border-color: var(--glass-hover);
+  box-shadow: 0 0 32px rgba(0,229,255,0.06);
+}
+
+.toc-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 14px;
+}
+
+.toc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 6px 16px;
+}
+
+.toc-grid a {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--white-dim);
+  text-decoration: none;
+  padding: 4px 0;
+  letter-spacing: 0.05em;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.toc-grid a::before {
+  content: '→';
+  color: var(--cyan);
+  font-size: 0.65rem;
+  opacity: 0.6;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.toc-grid a:hover { color: var(--cyan); }
+.toc-grid a:hover::before { opacity: 1; transform: translateX(3px); }
+
+/* ============================================================
+   SECTION CARDS — 3D TILT
+   ============================================================ */
+.section-card {
+  position: relative;
+  margin-bottom: 28px;
+  padding: 36px 40px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  backdrop-filter: blur(16px);
+  transform-style: preserve-3d;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  animation: fadeUp 0.6s ease both;
+  will-change: transform;
+  overflow: hidden;
+}
+
+.section-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    600px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(0,229,255,0.04),
+    transparent 60%
+  );
+  pointer-events: none;
+  transition: opacity 0.3s;
+  opacity: 0;
+}
+.section-card:hover::before { opacity: 1; }
+
+.section-card:hover {
+  border-color: var(--glass-hover);
+  box-shadow: 0 8px 48px rgba(0,229,255,0.08), 0 2px 0 inset rgba(0,229,255,0.06);
+}
+
+/* accent bar left edge */
+.section-card::after {
+  content: '';
+  position: absolute;
+  left: 0; top: 20%; bottom: 20%;
+  width: 2px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, transparent, var(--cyan), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.section-card:hover::after { opacity: 1; }
+
+/* Section number */
+.section-num {
+  position: absolute;
+  top: 22px; right: 28px;
+  font-family: 'Orbitron', monospace;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: rgba(0,229,255,0.2);
+  letter-spacing: 0.2em;
+}
+
+.section-card h2 {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-card h2 .icon {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  background: var(--cyan-ghost);
+  border: 1px solid rgba(0,229,255,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.section-card p {
+  color: var(--white-dim);
+  font-size: 0.88rem;
+  line-height: 1.8;
+  margin-bottom: 12px;
+}
+.section-card p:last-child { margin-bottom: 0; }
+
+.section-card ul {
+  list-style: none;
+  margin: 12px 0;
+}
+.section-card ul li {
+  position: relative;
+  padding-left: 20px;
+  color: var(--white-dim);
+  font-size: 0.88rem;
+  line-height: 1.8;
+  margin-bottom: 4px;
+}
+.section-card ul li::before {
+  content: '▸';
+  position: absolute;
+  left: 0;
+  color: var(--cyan);
+  font-size: 0.65rem;
+  top: 5px;
+}
+
+strong {
+  color: var(--white);
+  font-weight: 600;
+}
+
+.highlight-gold { color: var(--gold); font-weight: 600; }
+.highlight-red   { color: var(--red);  font-weight: 600; }
+.highlight-cyan  { color: var(--cyan); font-weight: 600; }
+
+/* ============================================================
+   WARNING CARD
+   ============================================================ */
+.warning-card {
+  border-color: rgba(255,193,7,0.25);
+  background: #141209;
+}
+.warning-card::after {
+  background: linear-gradient(180deg, transparent, var(--gold), transparent);
+}
+.warning-card:hover {
+  border-color: rgba(255,193,7,0.45);
+  box-shadow: 0 8px 48px rgba(255,193,7,0.06);
+}
+.warning-card::before {
+  background: radial-gradient(
+    600px circle at var(--mx,50%) var(--my,50%),
+    rgba(255,193,7,0.04),
+    transparent 60%
+  );
+}
+.warning-card h2 { color: var(--gold); }
+.warning-card h2 .icon {
+  background: var(--gold-ghost);
+  border-color: rgba(255,193,7,0.25);
+}
+
+/* ============================================================
+   DANGER CARD
+   ============================================================ */
+.danger-card {
+  border-color: rgba(255,61,90,0.25);
+  background: #130a0c;
+}
+.danger-card::after {
+  background: linear-gradient(180deg, transparent, var(--red), transparent);
+}
+.danger-card:hover {
+  border-color: rgba(255,61,90,0.45);
+  box-shadow: 0 8px 48px rgba(255,61,90,0.06);
+}
+.danger-card::before {
+  background: radial-gradient(
+    600px circle at var(--mx,50%) var(--my,50%),
+    rgba(255,61,90,0.04),
+    transparent 60%
+  );
+}
+.danger-card h2 { color: var(--red); }
+.danger-card h2 .icon {
+  background: var(--red-ghost);
+  border-color: rgba(255,61,90,0.25);
+}
+
+/* ============================================================
+   INLINE CODE
+   ============================================================ */
+code {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  background: rgba(0,229,255,0.07);
+  border: 1px solid rgba(0,229,255,0.15);
+  padding: 2px 7px;
+  border-radius: 4px;
+  color: var(--cyan);
+}
+
+/* ============================================================
+   EFFECTIVE DATE BANNER
+   ============================================================ */
+.effective-banner {
+  margin: 0 0 40px;
+  padding: 14px 24px;
+  background: rgba(0,229,255,0.04);
+  border: 1px solid rgba(0,229,255,0.1);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--white-muted);
+  letter-spacing: 0.1em;
+  animation: fadeUp 0.8s 0.35s ease both;
+}
+.effective-banner .dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 10px var(--cyan);
+  flex-shrink: 0;
+  animation: pulse 2s ease infinite;
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+footer {
+  position: relative;
+  z-index: 2;
+  border-top: 1px solid rgba(0,229,255,0.08);
+  padding: 40px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+.footer-brand {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 0.85rem;
+  letter-spacing: 0.15em;
+  background: linear-gradient(135deg, var(--cyan), var(--gold));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.footer-copy {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--white-muted);
+  letter-spacing: 0.1em;
+}
+.footer-links {
+  display: flex;
+  gap: 24px;
+}
+.footer-links a {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--white-muted);
+  text-decoration: none;
+  letter-spacing: 0.08em;
+  transition: color 0.2s;
+}
+.footer-links a:hover { color: var(--cyan); }
+
+/* ============================================================
+   SCROLL PROGRESS
+   ============================================================ */
+.scroll-progress {
+  position: fixed;
+  top: 0; left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--cyan), var(--gold));
+  z-index: 200;
+  transform-origin: left;
+  box-shadow: 0 0 10px var(--cyan-glow);
+  transition: width 0.1s linear;
+}
+
+/* ============================================================
+   BACK TO TOP
+   ============================================================ */
+.back-top {
+  position: fixed;
+  bottom: 32px; right: 32px;
+  z-index: 50;
+  width: 44px; height: 44px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: none;
+  font-size: 0.85rem;
+  color: var(--cyan);
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.3s, transform 0.3s, border-color 0.2s, box-shadow 0.2s;
+  text-decoration: none;
+}
+.back-top.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.back-top:hover {
+  border-color: var(--cyan);
+  box-shadow: 0 0 20px var(--cyan-glow);
+}
+
+/* ============================================================
+   KEYFRAMES
+   ============================================================ */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(1.4); }
+}
+
+@keyframes glow-line {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 1; }
+}
+
+/* stagger section cards */
+.section-card:nth-child(1)  { animation-delay: 0.05s; }
+.section-card:nth-child(2)  { animation-delay: 0.10s; }
+.section-card:nth-child(3)  { animation-delay: 0.15s; }
+.section-card:nth-child(4)  { animation-delay: 0.20s; }
+.section-card:nth-child(5)  { animation-delay: 0.25s; }
+.section-card:nth-child(6)  { animation-delay: 0.30s; }
+.section-card:nth-child(7)  { animation-delay: 0.35s; }
+.section-card:nth-child(8)  { animation-delay: 0.40s; }
+.section-card:nth-child(9)  { animation-delay: 0.45s; }
+.section-card:nth-child(10) { animation-delay: 0.50s; }
+.section-card:nth-child(11) { animation-delay: 0.55s; }
+.section-card:nth-child(12) { animation-delay: 0.60s; }
+.section-card:nth-child(13) { animation-delay: 0.65s; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 640px) {
+  nav { padding: 0 20px; }
+  .hero { padding: 110px 20px 50px; }
+  .page-wrap { padding: 0 20px 80px; }
+  .section-card { padding: 28px 24px; }
+  .toc-grid { grid-template-columns: 1fr 1fr; }
+  footer { padding: 28px 20px; flex-direction: column; align-items: flex-start; }
+}
+
+/* ============================================================
+   LIGHT MODE
+   ============================================================ */
+body.light-mode {
+  --obsidian:    #f0f4f8;
+  --obsidian-2:  #e8ecf0;
+  --obsidian-3:  #dde2e8;
+  --obsidian-4:  #cdd3db;
+  --glass-bg:    #ffffff;
+  --glass-border:rgba(0,180,210,0.25);
+  --glass-hover: rgba(0,180,210,0.40);
+  --white:       #0d1117;
+  --white-dim:   rgba(13,17,23,0.88);
+  --white-muted: rgba(13,17,23,0.55);
+  background: var(--obsidian);
+  color: var(--white);
+}
+body.light-mode nav {
+  background: rgba(240,244,248,0.92);
+  border-bottom-color: rgba(0,180,210,0.18);
+}
+body.light-mode footer {
+  border-top-color: rgba(0,180,210,0.15);
+}
+body.light-mode .section-card {
+  background: #ffffff;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+}
+body.light-mode .warning-card {
+  background: #fffbee;
+}
+body.light-mode .danger-card {
+  background: #fff5f7;
+}
+body.light-mode .toc-pill {
+  background: #ffffff;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+body.light-mode .effective-banner {
+  background: rgba(0,180,210,0.07);
+}
+body.light-mode .grid-overlay {
+  background-image:
+    linear-gradient(rgba(0,150,180,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,150,180,0.06) 1px, transparent 1px);
+}
+body.light-mode .back-top {
+  background: #ffffff;
+  border-color: rgba(0,180,210,0.3);
+}
+body.light-mode strong {
+  color: #0d1117;
+}
+
+/* ── Theme Toggle Button ── */
+.theme-toggle {
+  width: 40px; height: 22px;
+  border-radius: 11px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  cursor: none;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.3s, border-color 0.3s;
+  outline: none;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+}
+.theme-toggle::after {
+  content: '';
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan-glow);
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1), background 0.3s;
+  flex-shrink: 0;
+}
+body.light-mode .theme-toggle::after {
+  transform: translateX(18px);
+  background: var(--gold);
+  box-shadow: 0 0 8px var(--gold-glow);
+}
+body.light-mode .theme-toggle {
+  background: rgba(255,193,7,0.08);
+  border-color: rgba(255,193,7,0.3);
+}
+.theme-toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.theme-toggle-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.15em;
+  color: var(--white-muted);
+  text-transform: uppercase;
+  user-select: none;
+  transition: color 0.3s;
+}
+</style>
+</head>
+<body>
+
+<!-- Cursor -->
+<div class="cursor-dot" id="cursorDot"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- Particle canvas -->
+<canvas id="particle-canvas"></canvas>
+
+<!-- Grid + Scanlines -->
+<div class="grid-overlay"></div>
+<div class="scanlines"></div>
+
+<!-- Scroll progress bar -->
+<div class="scroll-progress" id="scrollBar"></div>
+
+<!-- Back to top -->
+<a href="#top" class="back-top" id="backTop">↑</a>
+
+<!-- ============================================================
+     NAVIGATION
+     ============================================================ -->
+<nav id="top">
+  <a href="index.html" class="nav-logo">SNIPERTRADER</a>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <span class="nav-badge">LEGAL // TERMS OF SERVICE</span>
+    <div class="theme-toggle-wrap">
+      <span class="theme-toggle-label" id="themeLabel">DARK</span>
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle light/dark mode"></button>
+    </div>
+  </div>
+</nav>
+
+<!-- ============================================================
+     HERO
+     ============================================================ -->
+<section class="hero">
+  <p class="hero-eyebrow">// LEGAL FRAMEWORK — DOCUMENT v2.0</p>
+  <h1 class="hero-title">TERMS OF SERVICE</h1>
+  <p class="hero-sub">LAST UPDATED: JUNE 1, 2025 &nbsp;·&nbsp; EFFECTIVE IMMEDIATELY UPON USE</p>
+  <div class="hero-divider"></div>
+</section>
+
+<!-- ============================================================
+     PAGE CONTENT
+     ============================================================ -->
+<main class="page-wrap">
+
+  <!-- Effective date + acceptance banner -->
+  <div class="effective-banner">
+    <span class="dot"></span>
+    EFFECTIVE DATE: JUNE 1, 2025 &nbsp;·&nbsp; BY ACCESSING OR USING ANY SNIPERTRADER PRODUCT YOU AGREE TO THESE TERMS IN FULL
+  </div>
+
+  <!-- Table of Contents -->
+  <div class="toc-pill">
+    <p class="toc-label">// Quick Navigation</p>
+    <div class="toc-grid">
+      <a href="#acceptance">01 — Acceptance</a>
+      <a href="#license">02 — License Grant</a>
+      <a href="#restrictions">03 — Restrictions</a>
+      <a href="#ip">04 — Intellectual Property</a>
+      <a href="#disclaimer">05 — Disclaimer</a>
+      <a href="#liability">06 — Liability Limit</a>
+      <a href="#refunds">07 — Refund Policy</a>
+      <a href="#updates">08 — Updates & Termination</a>
+      <a href="#privacy">09 — Privacy</a>
+      <a href="#dmca">10 — DMCA & IP Abuse</a>
+      <a href="#governing">11 — Governing Law</a>
+      <a href="#contact">12 — Contact</a>
+    </div>
+  </div>
+
+  <!-- ─── 01 ACCEPTANCE ─── -->
+  <div class="section-card" id="acceptance">
+    <span class="section-num">01</span>
+    <h2><span class="icon">✦</span>Acceptance of Terms</h2>
+    <p>
+      These Terms of Service (<strong>"Terms"</strong>) constitute a legally binding agreement between you
+      (<strong>"User," "you," or "your"</strong>) and <span class="highlight-cyan">SniperTrader</span>
+      (<strong>"Company," "we," "us," or "our"</strong>) governing your access to and use of all products,
+      services, software, indicators, digital downloads, and content offered through
+      <code>snipertrader</code> and its associated platforms.
+    </p>
+    <p>
+      <span class="highlight-gold">By purchasing, downloading, installing, activating, or otherwise accessing any
+      SniperTrader product, you unconditionally accept and agree to be bound by these Terms.</span>
+      If you do not agree, you must immediately cease all use and contact us within 3 days of purchase
+      to request a refund under our policy outlined in Section 07.
+    </p>
+    <p>
+      These Terms apply to all products including but not limited to: the
+      <strong>Unified Smart Money Engine (USME)</strong> indicator suite for ThinkorSwim (ThinkScript)
+      and TradingView (Pine Script), the <strong>TraderEdge Performance OS</strong> journal application,
+      the <strong>"From Broke to Funded"</strong> eBook, and any future products, updates, or supplemental materials.
+    </p>
+  </div>
+
+  <!-- ─── 02 LICENSE ─── -->
+  <div class="section-card" id="license">
+    <span class="section-num">02</span>
+    <h2><span class="icon">⊡</span>License Grant</h2>
+    <p>
+      Subject to full payment and your continued compliance with these Terms, SniperTrader grants you
+      a <strong>limited, non-exclusive, non-transferable, revocable, single-seat personal license</strong>
+      to install and use the purchased product solely for your own personal, non-commercial trading activities.
+    </p>
+    <ul>
+      <li><strong>Indicator licenses (USME ThinkScript / Pine Script):</strong> Licensed for use on a single ThinkorSwim or TradingView account registered in your name. You may install on up to 2 personal devices simultaneously.</li>
+      <li><strong>Digital documents (eBook, course materials):</strong> Licensed for personal reading and study only. No redistribution, printing for sale, or public sharing.</li>
+      <li><strong>Journal application (TraderEdge Performance OS):</strong> Licensed for use on your personal devices only. No multi-seat deployment without a separate commercial license.</li>
+    </ul>
+    <p>
+      This license does <span class="highlight-red">not</span> constitute a transfer of title or ownership.
+      All intellectual property rights remain exclusively with SniperTrader.
+    </p>
+  </div>
+
+  <!-- ─── 03 RESTRICTIONS ─── -->
+  <div class="section-card danger-card" id="restrictions">
+    <span class="section-num">03</span>
+    <h2><span class="icon">⚠</span>Use Restrictions &amp; Prohibited Conduct</h2>
+    <p>
+      You are <span class="highlight-red">strictly prohibited</span> from engaging in any of the following
+      without express written consent from SniperTrader:
+    </p>
+    <ul>
+      <li><strong>Reverse engineering, decompiling, or deobfuscating</strong> any indicator script, software component, or compiled code.</li>
+      <li><strong>Redistribution, resale, sublicensing, or gifting</strong> of any SniperTrader product or license to any third party.</li>
+      <li><strong>Sharing, leaking, or publicly posting</strong> any indicator script code, proprietary logic, or protected source files on any forum, Discord, Telegram, GitHub, or social platform.</li>
+      <li><strong>Using any product as part of a commercial service</strong>, paid mentorship, prop firm coaching program, signals service, or any revenue-generating activity without a commercial license.</li>
+      <li><strong>Creating derivative works</strong> based on SniperTrader products and distributing or selling them under your own brand.</li>
+      <li><strong>Circumventing, disabling, or tampering</strong> with license key validation, machine fingerprinting, or any digital rights management (DRM) mechanism.</li>
+      <li><strong>Using the products in a manner that violates</strong> any applicable law, regulation, or third-party platform terms (including ThinkorSwim and TradingView terms of service).</li>
+    </ul>
+    <p>
+      Violation of any restriction in this section will result in immediate license revocation, forfeiture of
+      any refund eligibility, and may subject you to civil or criminal legal action.
+    </p>
+  </div>
+
+  <!-- ─── 04 IP ─── -->
+  <div class="section-card" id="ip">
+    <span class="section-num">04</span>
+    <h2><span class="icon">©</span>Intellectual Property</h2>
+    <p>
+      All SniperTrader products, including all ThinkScript code, Pine Script code, indicator logic,
+      signal algorithms, proprietary setups, brand assets, UI designs, course content, eBook text, and
+      marketing materials are the exclusive intellectual property of SniperTrader and are protected by
+      applicable copyright, trade secret, and intellectual property laws.
+    </p>
+    <p>
+      The <strong>Unified Smart Money Engine (USME)</strong> signal sequencing logic, the Setup of the Day
+      (SOTD) alert tier framework (WATCH / PRIME / ELITE), and all associated proprietary methodology
+      implementations are trade secrets of SniperTrader. Unauthorized disclosure constitutes
+      misappropriation of trade secrets.
+    </p>
+    <p>
+      The <span class="highlight-cyan">SniperTrader</span> name, logo, brand identity system, and all
+      associated trademarks are the sole property of SniperTrader. You may not use our trademarks,
+      branding, or name in any manner that implies endorsement, affiliation, or partnership without
+      written permission.
+    </p>
+  </div>
+
+  <!-- ─── 05 DISCLAIMER ─── -->
+  <div class="section-card warning-card" id="disclaimer">
+    <span class="section-num">05</span>
+    <h2><span class="icon">△</span>Trading Risk Disclaimer</h2>
+    <p>
+      <span class="highlight-gold">IMPORTANT — PLEASE READ CAREFULLY.</span> All SniperTrader products
+      are provided for <strong>educational and informational purposes only</strong>. Nothing on this
+      platform constitutes financial advice, investment advice, trading advice, or any recommendation
+      to buy or sell any financial instrument.
+    </p>
+    <p>
+      <strong>Trading involves substantial risk of loss.</strong> Forex, futures, equities, and other
+      leveraged financial instruments can result in losses exceeding your initial investment. Past
+      performance of any indicator, strategy, or methodology — including ICT and Smart Money Concepts —
+      <span class="highlight-red">does not guarantee future results.</span>
+    </p>
+    <ul>
+      <li>No indicator, including USME, can predict market movements with certainty.</li>
+      <li>Signal outputs are probabilistic tools, not guaranteed entry/exit points.</li>
+      <li>All trading decisions are made solely by you and are your sole responsibility.</li>
+      <li>SniperTrader is not a registered investment advisor, broker-dealer, or financial institution.</li>
+      <li>You should consult a qualified financial advisor before making any trading decisions.</li>
+    </ul>
+    <p>
+      SniperTrader expressly disclaims all warranties, express or implied, including but not limited to
+      merchantability, fitness for a particular purpose, and non-infringement. Products are provided
+      <strong>"as is"</strong> without warranty of any kind.
+    </p>
+  </div>
+
+  <!-- ─── 06 LIABILITY ─── -->
+  <div class="section-card" id="liability">
+    <span class="section-num">06</span>
+    <h2><span class="icon">⊘</span>Limitation of Liability</h2>
+    <p>
+      To the fullest extent permitted by applicable law, SniperTrader and its owner(s), affiliates,
+      agents, and licensors shall not be liable for any direct, indirect, incidental, special, consequential,
+      punitive, or exemplary damages arising out of or in any way connected with:
+    </p>
+    <ul>
+      <li>Your use of or inability to use any SniperTrader product.</li>
+      <li>Any trading losses, missed trades, or financial damages resulting from indicator signals.</li>
+      <li>Errors, bugs, delays, or interruptions in product delivery or functionality.</li>
+      <li>Unauthorized access to or alteration of your data or transmissions.</li>
+      <li>Any third-party platform (ThinkorSwim, TradingView) changes that affect product functionality.</li>
+    </ul>
+    <p>
+      In no event shall SniperTrader's total aggregate liability to you exceed the amount you paid for
+      the specific product giving rise to the claim in the twelve (12) months preceding the incident.
+    </p>
+  </div>
+
+  <!-- ─── 07 REFUNDS ─── -->
+  <div class="section-card" id="refunds">
+    <span class="section-num">07</span>
+    <h2><span class="icon">↺</span>Refund Policy</h2>
+    <p>
+      Due to the <strong>digital nature</strong> of SniperTrader products, all sales are generally
+      final. However, we offer the following limited refund consideration:
+    </p>
+    <ul>
+      <li><strong>3-Day Review Window:</strong> If you are unsatisfied with your purchase, you may request a refund within 3 calendar days of purchase date, provided you have not violated any license restrictions and can demonstrate the product does not function as described.</li>
+      <li><strong>Technical Non-Delivery:</strong> If a product was purchased but not delivered due to a technical error on our end, a full refund will be issued within 5 business days of verification.</li>
+      <li><strong>No Refunds:</strong> Refund requests will be denied if the product has been used, shared, or if any license violation has been detected. Performance-based refunds ("the indicator didn't work for me") are not issued.</li>
+    </ul>
+    <p>
+      All refund requests must be submitted to <code>support@snipertrader</code> with your order number,
+      proof of purchase, and reason for request. We reserve the right to accept or deny any refund request
+      at our sole discretion.
+    </p>
+  </div>
+
+  <!-- ─── 08 UPDATES ─── -->
+  <div class="section-card" id="updates">
+    <span class="section-num">08</span>
+    <h2><span class="icon">↻</span>Updates, Modifications &amp; Termination</h2>
+    <p>
+      SniperTrader reserves the right to update, modify, discontinue, or terminate any product,
+      service, or feature at any time without prior notice. We will make reasonable efforts to notify
+      active licensees of significant changes via email.
+    </p>
+    <p>
+      <strong>Product updates</strong> within the same major version (e.g., USME v2.x) will be provided
+      at no additional cost to active licensees. Major version upgrades may require a separate purchase
+      or an upgrade fee.
+    </p>
+    <p>
+      We reserve the right to <span class="highlight-red">immediately terminate your license</span> without
+      refund if we detect or reasonably believe you have violated any provision of these Terms. Upon
+      termination, you must immediately uninstall and destroy all copies of the product in your possession.
+    </p>
+    <p>
+      We also reserve the right to modify these Terms at any time. Continued use of any SniperTrader
+      product following notice of changes constitutes your acceptance of the revised Terms.
+    </p>
+  </div>
+
+  <!-- ─── 09 PRIVACY ─── -->
+  <div class="section-card" id="privacy">
+    <span class="section-num">09</span>
+    <h2><span class="icon">🔒</span>Privacy &amp; Data</h2>
+    <p>
+      Your privacy is important to us. Our full <strong>Privacy Policy</strong> governs the collection,
+      use, and storage of your personal information and is incorporated into these Terms by reference.
+    </p>
+    <ul>
+      <li><strong>License Validation:</strong> To enforce license restrictions, our products may collect and transmit a machine fingerprint (hardware hash) to our validation servers. No personally identifiable information is included in this fingerprint.</li>
+      <li><strong>Purchase Data:</strong> Order information, email addresses, and payment details are handled by our payment processors (Stripe, etc.) under their respective privacy policies.</li>
+      <li><strong>No Sale of Data:</strong> We do not sell, rent, or share your personal data with third parties for marketing purposes.</li>
+      <li><strong>Analytics:</strong> We may use anonymized usage analytics to improve our products. No trading data is collected from your brokerage account.</li>
+    </ul>
+  </div>
+
+  <!-- ─── 10 DMCA ─── -->
+  <div class="section-card danger-card" id="dmca">
+    <span class="section-num">10</span>
+    <h2><span class="icon">⚡</span>DMCA &amp; IP Abuse Enforcement</h2>
+    <p>
+      SniperTrader aggressively enforces its intellectual property rights. We actively monitor
+      platforms including TradingView, ThinkorSwim community scripts, Discord, Telegram, Reddit,
+      YouTube, and other forums for unauthorized distribution of our products.
+    </p>
+    <p>
+      If you discover unauthorized distribution of any SniperTrader product, please report it
+      to <code>legal@snipertrader</code> immediately.
+    </p>
+    <p>
+      <span class="highlight-red">Any individual found redistributing, reselling, or leaking
+      SniperTrader protected code or content will be subject to:</span>
+    </p>
+    <ul>
+      <li>Immediate DMCA takedown notices filed with applicable platforms.</li>
+      <li>Civil litigation for copyright infringement and trade secret misappropriation.</li>
+      <li>Claims for actual damages, statutory damages up to $150,000 per work for willful infringement, plus attorney fees.</li>
+      <li>Permanent ban from all SniperTrader products and services.</li>
+    </ul>
+    <p>
+      We take a zero-tolerance stance on piracy. Our license key system and machine fingerprinting
+      infrastructure enables us to trace the source of any leaked license. <strong>Don't share. It's not
+      worth it.</strong>
+    </p>
+  </div>
+
+  <!-- ─── 11 GOVERNING LAW ─── -->
+  <div class="section-card" id="governing">
+    <span class="section-num">11</span>
+    <h2><span class="icon">⊞</span>Governing Law &amp; Dispute Resolution</h2>
+    <p>
+      These Terms shall be governed by and construed in accordance with the laws of the
+      <strong>United States</strong>, without regard to conflict of law principles. Any disputes
+      arising under or in connection with these Terms shall be resolved by binding arbitration
+      administered under the rules of the American Arbitration Association (AAA), except where
+      prohibited by applicable law.
+    </p>
+    <p>
+      <strong>Class action waiver:</strong> You agree that any dispute resolution proceedings will
+      be conducted only on an individual basis and not in a class, consolidated, or representative action.
+    </p>
+    <p>
+      Nothing in this section shall prevent SniperTrader from seeking injunctive or other equitable
+      relief in any court of competent jurisdiction for the protection of its intellectual property rights.
+    </p>
+  </div>
+
+  <!-- ─── 12 CONTACT ─── -->
+  <div class="section-card" id="contact">
+    <span class="section-num">12</span>
+    <h2><span class="icon">✉</span>Contact &amp; Legal Notices</h2>
+    <p>
+      For all legal inquiries, license questions, DMCA notices, refund requests, or Terms-related
+      communications, please contact us at:
+    </p>
+    <ul>
+      <li><strong>General Support:</strong> <code>support@snipertrader</code></li>
+      <li><strong>Legal / IP Enforcement:</strong> <code>legal@snipertrader</code></li>
+      <li><strong>Refund Requests:</strong> <code>support@snipertrader</code> — include order number</li>
+      <li><strong>Website:</strong> <code>snipertrader</code></li>
+    </ul>
+    <p>
+      We aim to respond to all inquiries within <strong>2–3 business days</strong>.
+      By contacting us you acknowledge that electronic communications satisfy any legal requirement
+      that communications be in writing.
+    </p>
+  </div>
+
+</main>
+
+<!-- ============================================================
+     FOOTER
+     ============================================================ -->
+<footer>
+  <span class="footer-brand">SNIPERTRADER</span>
+  <div class="footer-links">
+    <a href="index.html">Home</a>
+    <a href="privacy.html">Privacy Policy</a>
+    <a href="terms.html">Terms</a>
+    <a href="mailto:support@snipertrader">Contact</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+    <span class="footer-copy">© 2025 SNIPERTRADER — ALL RIGHTS RESERVED</span>
+    <div class="theme-toggle-wrap">
+      <span class="theme-toggle-label" id="themeLabel2">DARK</span>
+      <button class="theme-toggle" id="themeToggle2" aria-label="Toggle light/dark mode"></button>
+    </div>
+  </div>
+</footer>
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script>
+/* ── Cursor ─────────────────────────────────────────── */
+const dot  = document.getElementById('cursorDot');
+const ring = document.getElementById('cursorRing');
+let mx = 0, my = 0, rx = 0, ry = 0;
+
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  dot.style.left  = mx + 'px';
+  dot.style.top   = my + 'px';
+});
+
+(function animateCursor(){
+  rx += (mx - rx) * 0.14;
+  ry += (my - ry) * 0.14;
+  ring.style.left = rx + 'px';
+  ring.style.top  = ry + 'px';
+  requestAnimationFrame(animateCursor);
+})();
+
+document.querySelectorAll('a, button, .section-card').forEach(el => {
+  el.addEventListener('mouseenter', () => ring.classList.add('hover'));
+  el.addEventListener('mouseleave', () => ring.classList.remove('hover'));
+});
+
+/* ── Scroll Progress ─────────────────────────────────── */
+const bar = document.getElementById('scrollBar');
+window.addEventListener('scroll', () => {
+  const scrolled = window.scrollY;
+  const total    = document.body.scrollHeight - window.innerHeight;
+  bar.style.width = (scrolled / total * 100) + '%';
+});
+
+/* ── Back to Top ─────────────────────────────────────── */
+const backTop = document.getElementById('backTop');
+window.addEventListener('scroll', () => {
+  backTop.classList.toggle('visible', window.scrollY > 400);
+});
+backTop.addEventListener('click', e => {
+  e.preventDefault();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+/* ── 3D Card Tilt ────────────────────────────────────── */
+document.querySelectorAll('.section-card').forEach(card => {
+  card.addEventListener('mousemove', e => {
+    const rect   = card.getBoundingClientRect();
+    const cx     = rect.left + rect.width  / 2;
+    const cy     = rect.top  + rect.height / 2;
+    const dx     = e.clientX - cx;
+    const dy     = e.clientY - cy;
+    const rotY   = (dx / (rect.width  / 2)) * 4;
+    const rotX   = -(dy / (rect.height / 2)) * 4;
+    const pctX   = ((e.clientX - rect.left) / rect.width  * 100).toFixed(1);
+    const pctY   = ((e.clientY - rect.top)  / rect.height * 100).toFixed(1);
+    card.style.transform = `perspective(900px) rotateX(${rotX}deg) rotateY(${rotY}deg) translateZ(4px)`;
+    card.style.setProperty('--mx', pctX + '%');
+    card.style.setProperty('--my', pctY + '%');
+  });
+  card.addEventListener('mouseleave', () => {
+    card.style.transform = '';
+  });
+});
+
+/* ── Particle System ─────────────────────────────────── */
+const canvas  = document.getElementById('particle-canvas');
+const ctx     = canvas.getContext('2d');
+let   W, H, particles = [], mouse = { x: -9999, y: -9999 };
+
+function resize() {
+  W = canvas.width  = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+document.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+
+const COLORS = ['#00e5ff', '#ffc107', '#00b8d4', '#ffffff'];
+
+class Particle {
+  constructor() { this.reset(); }
+  reset() {
+    this.x   = Math.random() * W;
+    this.y   = Math.random() * H;
+    this.vx  = (Math.random() - 0.5) * 0.35;
+    this.vy  = (Math.random() - 0.5) * 0.35;
+    this.r   = Math.random() * 1.4 + 0.3;
+    this.a   = Math.random() * 0.5 + 0.1;
+    this.col = COLORS[Math.floor(Math.random() * COLORS.length)];
+    this.life= Math.random() * 300 + 150;
+    this.age = 0;
+  }
+  update() {
+    this.age++;
+    if (this.age > this.life) this.reset();
+
+    // mouse repulsion
+    const dx = this.x - mouse.x;
+    const dy = this.y - mouse.y;
+    const d  = Math.sqrt(dx*dx + dy*dy);
+    if (d < 100) {
+      const f = (100 - d) / 100;
+      this.vx += dx / d * f * 0.4;
+      this.vy += dy / d * f * 0.4;
+    }
+
+    this.vx *= 0.98;
+    this.vy *= 0.98;
+    this.x  += this.vx;
+    this.y  += this.vy;
+
+    if (this.x < 0) this.x = W;
+    if (this.x > W) this.x = 0;
+    if (this.y < 0) this.y = H;
+    if (this.y > H) this.y = 0;
+  }
+  draw() {
+    const fade = this.age < 30
+      ? this.age / 30
+      : this.age > this.life - 30
+        ? (this.life - this.age) / 30
+        : 1;
+    ctx.globalAlpha = this.a * fade;
+    ctx.fillStyle   = this.col;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// init particles
+for (let i = 0; i < 200; i++) particles.push(new Particle());
+
+// draw connecting lines between nearby particles
+function drawLines() {
+  ctx.lineWidth = 0.4;
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const d  = Math.sqrt(dx*dx + dy*dy);
+      if (d < 90) {
+        ctx.globalAlpha = (1 - d / 90) * 0.12;
+        ctx.strokeStyle = '#00e5ff';
+        ctx.beginPath();
+        ctx.moveTo(particles[i].x, particles[i].y);
+        ctx.lineTo(particles[j].x, particles[j].y);
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+function animate() {
+  ctx.clearRect(0, 0, W, H);
+  drawLines();
+  particles.forEach(p => { p.update(); p.draw(); });
+  ctx.globalAlpha = 1;
+  requestAnimationFrame(animate);
+}
+animate();
+
+/* ── Intersection Observer — fade up on scroll ── */
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.style.opacity     = '1';
+      entry.target.style.transform   = 'translateY(0)';
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.08 });
+
+document.querySelectorAll('.section-card').forEach((el, i) => {
+  el.style.opacity   = '0';
+  el.style.transform = 'translateY(32px)';
+  el.style.transition= `opacity 0.55s ${i * 0.04}s ease, transform 0.55s ${i * 0.04}s ease, border-color 0.3s, box-shadow 0.3s`;
+  observer.observe(el);
+});
+
+
+/* ── Theme Toggle ─────────────────────────────────── */
+function applyTheme(isDark) {
+  if (isDark) {
+    document.body.classList.remove('light-mode');
+    localStorage.setItem('snipertrader-theme', 'dark');
+    document.querySelectorAll('.theme-toggle-label').forEach(el => el.textContent = 'DARK');
+  } else {
+    document.body.classList.add('light-mode');
+    localStorage.setItem('snipertrader-theme', 'light');
+    document.querySelectorAll('.theme-toggle-label').forEach(el => el.textContent = 'LIGHT');
+  }
+}
+
+// Load saved preference
+const savedTheme = localStorage.getItem('snipertrader-theme');
+applyTheme(savedTheme !== 'light');
+
+['themeToggle','themeToggle2'].forEach(id => {
+  const btn = document.getElementById(id);
+  if (btn) {
+    btn.addEventListener('click', () => {
+      applyTheme(document.body.classList.contains('light-mode'));
+    });
+  }
+});
+</script>
+</body>
+</html>
