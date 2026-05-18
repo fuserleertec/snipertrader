@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TraderEdge Command Portal — SniperTrader</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Space+Mono:wght@400;700&family=Syne:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --obs:#020408;--obs2:#06090F;--obs3:#0A1018;--obs4:#111820;--obs5:#1A2230;
+  --cyan:#00D4FF;--cyan2:#00A8CC;--cyan-dim:rgba(0,212,255,0.10);
+  --gold:#F0C040;--gold2:#C9A84C;--gold-dim:rgba(240,192,64,0.10);
+  --red:#FF4455;--red-dim:rgba(255,68,85,0.09);
+  --green:#00FF88;--green-dim:rgba(0,255,136,0.08);
+  --amber:#FF9F43;--amber-dim:rgba(255,159,67,0.09);
+  --text:#FFFFFF;--text2:#E8F2FA;--text3:#A8C4D8;--text4:#5A7888;
+  --border:rgba(0,212,255,0.13);--border2:rgba(0,212,255,0.26);
+  --gold-border:rgba(240,192,64,0.18);
+}
+/* ─── LIGHT MODE ─── */
+body.light-mode{
+  --obs:#F0F4F8;--obs2:#E4ECF4;--obs3:#FFFFFF;--obs4:#EAF0F8;--obs5:#D8E4F0;
+  --text:#0A1828;--text2:#1E3048;--text3:#3A5878;--text4:#6A88A8;
+  --border:rgba(0,150,200,0.18);--border2:rgba(0,150,200,0.36);
+  --cyan:#0080B8;--cyan2:#006090;--cyan-dim:rgba(0,128,184,0.10);
+  --gold:#B07800;--gold2:#9A6A00;--gold-dim:rgba(176,120,0,0.10);
+  --gold-border:rgba(176,120,0,0.22);
+  --green:#007A40;--green-dim:rgba(0,122,64,0.09);
+  --red:#CC2233;--red-dim:rgba(204,34,51,0.09);
+  --amber:#C07020;--amber-dim:rgba(192,112,32,0.09);
+}
+body.light-mode::before{opacity:.15;}
+body.light-mode #pc{opacity:.25;}
+
+/* ─── LIGHT MODE: override all hardcoded #fff / white text ─── */
+body.light-mode .login-title,
+body.light-mode .lf-input,
+body.light-mode .tfa-input,
+body.light-mode .aub-name,
+body.light-mode .sidebar-link:hover,
+body.light-mode .gph-title,
+body.light-mode .form-input,
+body.light-mode .form-select,
+body.light-mode .tl-title,
+body.light-mode .mp-name,
+body.light-mode .dl-card-name,
+body.light-mode .toggle-name,
+body.light-mode .app-strip-title,
+body.light-mode .app-dl-btn.ios,
+body.light-mode .app-dl-btn.android{color:var(--text);}
+
+body.light-mode .lf-input,
+body.light-mode .tfa-input,
+body.light-mode .form-input,
+body.light-mode .form-select{background:var(--obs3);color:var(--text);}
+body.light-mode .lf-input::placeholder{color:var(--text4);}
+
+body.light-mode .app-dl-btn.ios{background:rgba(0,0,0,.06);border-color:rgba(0,0,0,.15);}
+
+/* Inline color:#fff overrides via CSS variable trick */
+body.light-mode [style*="color:#fff"],
+body.light-mode [style*='color:#fff']{color:var(--text) !important;-webkit-text-fill-color:initial !important;}
+
+/* Section headings with inline color:#fff */
+body.light-mode [style*="font-weight:900"][style*="color:#fff"],
+body.light-mode [style*="font-weight:700"][style*="color:#fff"]{color:var(--text) !important;}
+
+/* Billing price */
+body.light-mode [style*="font-size:16px"][style*="color:#fff"]{color:var(--text) !important;}
+html{scroll-behavior:smooth;}
+body{background:var(--obs);color:var(--text);font-family:'Syne',sans-serif;overflow-x:hidden;cursor:none;min-height:100vh;transition:background .3s,color .3s;}
+body.light-mode{background:var(--obs);}
+/* THEME TOGGLE BUTTON */
+#themeToggle{background:var(--obs4);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-family:'Orbitron',monospace;font-size:8px;font-weight:700;color:var(--text3);cursor:none;letter-spacing:1px;transition:all .2s;display:flex;align-items:center;gap:6px;}
+#themeToggle:hover{border-color:var(--cyan);color:var(--cyan);}
+#themeToggle .toggle-icon{font-size:14px;}
+
+/* CURSOR */
+#cur{position:fixed;width:10px;height:10px;background:var(--cyan);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);mix-blend-mode:screen;transition:background .15s,transform .1s;}
+#cur-ring{position:fixed;width:34px;height:34px;border:1px solid rgba(0,212,255,.45);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:width .2s,height .2s;}
+body:has(button:hover,a:hover,input:hover) #cur{background:var(--gold);transform:translate(-50%,-50%) scale(1.5);}
+body:has(button:hover,a:hover) #cur-ring{width:50px;height:50px;border-color:rgba(240,192,64,.35);}
+
+#pc{position:fixed;inset:0;pointer-events:none;z-index:0;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");pointer-events:none;z-index:1;opacity:.45;}
+
+/* ─── LOGIN SCREEN ─── */
+#loginScreen{position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;background:var(--obs);}
+.login-orb1{position:absolute;width:700px;height:700px;background:radial-gradient(circle,rgba(0,212,255,.07) 0%,transparent 65%);top:-200px;left:-150px;pointer-events:none;animation:od1 16s ease-in-out infinite;}
+.login-orb2{position:absolute;width:500px;height:500px;background:radial-gradient(circle,rgba(240,192,64,.05) 0%,transparent 65%);bottom:-100px;right:-80px;pointer-events:none;animation:od2 20s ease-in-out infinite;}
+@keyframes od1{0%,100%{transform:translate(0,0);}50%{transform:translate(30px,-25px);}}
+@keyframes od2{0%,100%{transform:translate(0,0);}50%{transform:translate(-25px,35px);}}
+.login-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,212,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.02) 1px,transparent 1px);background-size:58px 58px;mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black 20%,transparent 100%);}
+
+.login-wrap{position:relative;z-index:2;width:100%;max-width:440px;padding:20px;}
+.login-logo-wrap{text-align:center;margin-bottom:32px;}
+.login-logo{font-family:'Orbitron',monospace;font-size:16px;font-weight:900;letter-spacing:3px;color:var(--cyan);}
+.login-logo span{color:var(--gold);}
+.login-logo-sub{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--text3);text-transform:uppercase;margin-top:6px;}
+
+.login-card{background:linear-gradient(145deg,#0A1220,#06090F);border:1px solid var(--border2);border-radius:20px;padding:36px;box-shadow:0 0 60px rgba(0,212,255,.08),0 30px 60px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.04);position:relative;overflow:hidden;}
+.login-card::after{content:'';position:absolute;inset:0;background:conic-gradient(transparent 0deg,rgba(0,212,255,.015) 90deg,transparent 180deg);animation:cspin 12s linear infinite;pointer-events:none;}
+@keyframes cspin{to{transform:rotate(360deg);}}
+
+.login-title{font-family:'Orbitron',monospace;font-size:18px;font-weight:700;color:#fff;margin-bottom:6px;}
+.login-sub{font-size:12px;color:var(--text3);font-family:'Space Mono',monospace;margin-bottom:28px;line-height:1.5;}
+
+.login-field{margin-bottom:18px;}
+.lf-label{font-family:'Orbitron',monospace;font-size:8.5px;color:var(--cyan);letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:8px;}
+.lf-input-wrap{position:relative;}
+.lf-input{width:100%;background:var(--obs4);border:1px solid var(--border);border-radius:8px;padding:13px 16px;color:#fff;font-family:'Syne',sans-serif;font-size:13px;outline:none;transition:border-color .2s;}
+.lf-input:focus{border-color:var(--cyan);}
+.lf-input::placeholder{color:var(--text4);}
+.lf-icon{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none;opacity:.4;}
+
+.login-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
+.login-remember{display:flex;align-items:center;gap:8px;font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);cursor:none;}
+.login-checkbox{width:16px;height:16px;border-radius:3px;border:1.5px solid var(--text4);background:transparent;appearance:none;cursor:none;transition:all .2s;}
+.login-checkbox:checked{background:var(--cyan);border-color:var(--cyan);}
+.login-forgot{font-family:'Space Mono',monospace;font-size:10px;color:var(--cyan);text-decoration:none;letter-spacing:.5px;}
+
+.login-btn{width:100%;background:linear-gradient(90deg,var(--cyan),var(--cyan2));color:#000;border:none;border-radius:10px;padding:15px 24px;font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:2px;cursor:none;transition:all .3s;text-transform:uppercase;box-shadow:0 0 24px rgba(0,212,255,.25);margin-bottom:16px;}
+.login-btn:hover{box-shadow:0 0 40px rgba(0,212,255,.35);transform:translateY(-1px);}
+
+.login-divider{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+.login-divider-line{flex:1;height:1px;background:var(--border);}
+.login-divider-txt{font-family:'Space Mono',monospace;font-size:9px;color:var(--text4);letter-spacing:1px;}
+
+.login-biometric{display:flex;gap:10px;}
+.lbio-btn{flex:1;background:var(--obs4);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);cursor:none;transition:all .2s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:5px;}
+.lbio-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+.lbio-icon{font-size:20px;}
+
+.login-error{background:var(--red-dim);border:1px solid rgba(255,68,85,.3);border-radius:6px;padding:10px 14px;font-family:'Space Mono',monospace;font-size:10px;color:#FF8899;margin-bottom:14px;display:none;}
+.login-error.show{display:block;}
+
+.login-2fa{display:none;margin-bottom:18px;}
+.login-2fa.show{display:block;}
+.tfa-label{font-family:'Orbitron',monospace;font-size:8.5px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:8px;}
+.tfa-inputs{display:flex;gap:8px;}
+.tfa-input{flex:1;background:var(--obs4);border:1px solid var(--border);border-radius:8px;padding:12px 0;color:#fff;font-family:'Orbitron',monospace;font-size:18px;font-weight:700;text-align:center;outline:none;transition:border-color .2s;}
+.tfa-input:focus{border-color:var(--gold);}
+
+/* ─── ADMIN DASHBOARD ─── */
+#adminDash{display:none;position:relative;z-index:2;min-height:100vh;}
+
+/* TOP NAV */
+.admin-nav{position:fixed;top:0;left:0;right:0;z-index:200;padding:14px 32px;display:flex;align-items:center;justify-content:space-between;background:rgba(2,4,8,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+.admin-nav-logo{font-family:'Orbitron',monospace;font-size:12px;font-weight:900;letter-spacing:3px;color:var(--cyan);text-decoration:none;}
+.admin-nav-logo span{color:var(--gold);}
+.admin-nav-label{font-family:'Space Mono',monospace;font-size:8px;color:var(--text4);letter-spacing:2px;text-transform:uppercase;margin-left:8px;}
+.admin-nav-right{display:flex;align-items:center;gap:16px;}
+.admin-user-badge{display:flex;align-items:center;gap:8px;background:var(--obs3);border:1px solid var(--border);border-radius:20px;padding:6px 14px;}
+.aub-avatar{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--gold));display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:9px;font-weight:700;color:#000;}
+.aub-name{font-family:'Space Mono',monospace;font-size:10px;color:#fff;}
+.aub-role{font-size:8px;color:var(--cyan);font-family:'Orbitron',monospace;letter-spacing:1px;}
+.admin-logout-btn{background:var(--red-dim);border:1px solid rgba(255,68,85,.25);border-radius:6px;padding:7px 14px;font-family:'Orbitron',monospace;font-size:8.5px;font-weight:700;color:#FF8899;cursor:none;letter-spacing:1px;transition:all .2s;}
+.admin-logout-btn:hover{background:var(--red);color:#fff;border-color:var(--red);}
+
+/* SIDEBAR */
+.admin-layout{display:flex;padding-top:57px;min-height:100vh;}
+.admin-sidebar{width:240px;background:var(--obs2);border-right:1px solid var(--border);padding:24px 0;position:fixed;top:57px;bottom:0;left:0;overflow-y:auto;z-index:100;}
+.sidebar-section-label{font-family:'Orbitron',monospace;font-size:8px;color:var(--text4);letter-spacing:2.5px;text-transform:uppercase;padding:0 20px;margin-bottom:8px;margin-top:20px;}
+.sidebar-section-label:first-child{margin-top:0;}
+.sidebar-link{display:flex;align-items:center;gap:12px;padding:11px 20px;font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);text-decoration:none;letter-spacing:.5px;transition:all .2s;cursor:none;position:relative;}
+.sidebar-link:hover{background:var(--obs3);color:#fff;}
+.sidebar-link.active{background:var(--cyan-dim);color:var(--cyan);border-right:2px solid var(--cyan);}
+.sidebar-link-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0;}
+.sidebar-badge{margin-left:auto;font-family:'Orbitron',monospace;font-size:8px;font-weight:700;padding:2px 7px;border-radius:10px;}
+.sidebar-badge.red{background:var(--red-dim);border:1px solid rgba(255,68,85,.25);color:var(--red);}
+.sidebar-badge.green{background:var(--green-dim);border:1px solid rgba(0,255,136,.2);color:var(--green);}
+.sidebar-badge.gold{background:var(--gold-dim);border:1px solid rgba(240,192,64,.2);color:var(--gold);}
+
+/* MAIN CONTENT */
+.admin-main{flex:1;margin-left:240px;padding:32px;min-height:calc(100vh - 57px);}
+
+/* DASHBOARD PANELS */
+.dash-panel{display:none;}
+.dash-panel.active{display:block;}
+
+/* STATS ROW */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+.stat-card{background:var(--obs3);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;overflow:hidden;transition:border-color .3s;}
+.stat-card:hover{border-color:var(--border2);}
+.stat-card::after{content:'';position:absolute;inset:0;background:conic-gradient(transparent 0deg,rgba(0,212,255,.012) 90deg,transparent 180deg);animation:cspin 12s linear infinite;pointer-events:none;}
+.sc-val{font-family:'Orbitron',monospace;font-size:28px;font-weight:900;display:block;margin-bottom:4px;}
+.sc-label{font-size:10px;color:var(--text3);font-family:'Space Mono',monospace;letter-spacing:.5px;text-transform:uppercase;display:block;}
+.sc-change{font-size:9px;font-family:'Space Mono',monospace;margin-top:5px;display:block;}
+.sc-change.up{color:var(--green);}
+.sc-change.dn{color:var(--red);}
+.sc-change.nt{color:var(--gold);}
+
+/* GLASS PANELS */
+.g-panel{background:var(--obs3);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:20px;}
+.g-panel-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+.gph-left{display:flex;align-items:center;gap:12px;}
+.gph-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.gph-icon.c{background:var(--cyan-dim);border:1px solid rgba(0,212,255,.2);}
+.gph-icon.g{background:var(--gold-dim);border:1px solid rgba(240,192,64,.2);}
+.gph-icon.r{background:var(--red-dim);border:1px solid rgba(255,68,85,.2);}
+.gph-icon.gr{background:var(--green-dim);border:1px solid rgba(0,255,136,.15);}
+.gph-icon.a{background:var(--amber-dim);border:1px solid rgba(255,159,67,.2);}
+.gph-title{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;color:#fff;}
+.gph-sub{font-size:10px;color:var(--text3);font-family:'Space Mono',monospace;margin-top:2px;}
+
+/* TABLES */
+.admin-table{width:100%;border-collapse:collapse;}
+.admin-table th{font-family:'Orbitron',monospace;font-size:8px;letter-spacing:2px;color:var(--text4);text-transform:uppercase;text-align:left;padding:10px 14px;border-bottom:1px solid var(--border);}
+.admin-table td{padding:13px 14px;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px;color:var(--text2);vertical-align:middle;}
+.admin-table tr:hover td{background:rgba(0,212,255,.02);}
+.admin-table tr:last-child td{border-bottom:none;}
+
+/* BADGES */
+.badge{font-family:'Orbitron',monospace;font-size:8px;font-weight:700;letter-spacing:1px;padding:3px 10px;border-radius:20px;text-transform:uppercase;}
+.badge.active{background:var(--green-dim);border:1px solid rgba(0,255,136,.2);color:var(--green);}
+.badge.inactive{background:var(--red-dim);border:1px solid rgba(255,68,85,.2);color:#FF8899;}
+.badge.trial{background:var(--gold-dim);border:1px solid rgba(240,192,64,.2);color:var(--gold);}
+.badge.pro{background:var(--cyan-dim);border:1px solid rgba(0,212,255,.2);color:var(--cyan);}
+.badge.elite{background:linear-gradient(90deg,rgba(240,192,64,.15),rgba(0,212,255,.1));border:1px solid rgba(240,192,64,.3);color:var(--gold);}
+
+/* ACTION BUTTONS */
+.action-btn{font-family:'Orbitron',monospace;font-size:8px;font-weight:700;letter-spacing:1px;padding:5px 12px;border-radius:5px;cursor:none;text-transform:uppercase;transition:all .2s;border:none;}
+.action-btn.cyan{background:var(--cyan-dim);border:1px solid rgba(0,212,255,.25);color:var(--cyan);}
+.action-btn.cyan:hover{background:var(--cyan);color:#000;}
+.action-btn.red{background:var(--red-dim);border:1px solid rgba(255,68,85,.22);color:#FF8899;}
+.action-btn.red:hover{background:var(--red);color:#fff;}
+.action-btn.gold{background:var(--gold-dim);border:1px solid rgba(240,192,64,.22);color:var(--gold);}
+.action-btn.gold:hover{background:var(--gold);color:#000;}
+.action-btn.green{background:var(--green-dim);border:1px solid rgba(0,255,136,.18);color:var(--green);}
+
+/* FORM FIELDS */
+.form-field{margin-bottom:16px;}
+.form-label{font-family:'Orbitron',monospace;font-size:8.5px;color:var(--cyan);letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:7px;}
+.form-input{width:100%;background:var(--obs4);border:1px solid var(--border);border-radius:8px;padding:11px 14px;color:#fff;font-family:'Syne',sans-serif;font-size:13px;outline:none;transition:border-color .2s;}
+.form-input:focus{border-color:var(--cyan);}
+.form-input::placeholder{color:var(--text4);}
+.form-select{width:100%;background:var(--obs4);border:1px solid var(--border);border-radius:8px;padding:11px 14px;color:#fff;font-family:'Syne',sans-serif;font-size:13px;outline:none;appearance:none;cursor:none;}
+.form-select:focus{border-color:var(--cyan);}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.save-btn{background:linear-gradient(90deg,var(--cyan),var(--cyan2));color:#000;border:none;border-radius:8px;padding:12px 24px;font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:1.5px;cursor:none;transition:all .2s;text-transform:uppercase;}
+.save-btn:hover{box-shadow:0 0 20px rgba(0,212,255,.3);transform:translateY(-1px);}
+
+/* PRODUCT KEY DISPLAY */
+.key-display{background:var(--obs4);border:1px solid var(--border2);border-radius:10px;padding:16px 20px;font-family:'Orbitron',monospace;font-size:15px;font-weight:700;color:var(--gold);letter-spacing:3px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.key-copy-btn{background:var(--gold-dim);border:1px solid var(--gold-border);border-radius:6px;padding:6px 14px;font-family:'Orbitron',monospace;font-size:8px;color:var(--gold);cursor:none;transition:all .2s;font-weight:700;letter-spacing:1px;}
+.key-copy-btn:hover{background:var(--gold);color:#000;}
+
+/* TIMELINE */
+.timeline{display:flex;flex-direction:column;gap:0;}
+.tl-item{display:flex;gap:16px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.tl-item:last-child{border-bottom:none;}
+.tl-dot-wrap{display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:16px;}
+.tl-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.tl-line{flex:1;width:1px;background:var(--border);margin-top:4px;}
+.tl-content{flex:1;min-width:0;}
+.tl-title{font-size:12px;color:#fff;margin-bottom:3px;}
+.tl-meta{font-size:10px;color:var(--text3);font-family:'Space Mono',monospace;}
+
+/* MODULE PROGRESS */
+.module-progress-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+.mp-card{background:var(--obs4);border:1px solid var(--border);border-radius:10px;padding:14px;}
+.mp-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.mp-name{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:#fff;}
+.mp-pct{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;}
+.mp-bar-track{height:4px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden;}
+.mp-bar-fill{height:100%;border-radius:2px;}
+.mp-sessions{font-size:9px;color:var(--text3);font-family:'Space Mono',monospace;margin-top:5px;}
+
+/* DOWNLOAD CARDS */
+.dl-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.dl-card{background:var(--obs4);border:1px solid var(--border);border-radius:12px;padding:18px;transition:all .3s;cursor:none;}
+.dl-card:hover{border-color:var(--border2);transform:translateY(-2px);}
+.dl-card-icon{font-size:28px;margin-bottom:10px;display:block;}
+.dl-card-name{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:#fff;margin-bottom:4px;}
+.dl-card-meta{font-size:10px;color:var(--text3);font-family:'Space Mono',monospace;margin-bottom:12px;line-height:1.5;}
+.dl-card-btn{display:flex;align-items:center;gap:6px;font-family:'Orbitron',monospace;font-size:9px;font-weight:700;color:var(--cyan);letter-spacing:1px;text-transform:uppercase;cursor:none;}
+
+/* TOGGLE SWITCH */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.toggle-row:last-child{border-bottom:none;}
+.toggle-info{}
+.toggle-name{font-size:12px;color:#fff;margin-bottom:2px;}
+.toggle-desc{font-size:10px;color:var(--text3);font-family:'Space Mono',monospace;}
+.toggle-switch{position:relative;width:44px;height:24px;flex-shrink:0;}
+.toggle-switch input{opacity:0;width:0;height:0;position:absolute;}
+.toggle-slider{position:absolute;inset:0;background:var(--obs4);border:1px solid var(--border);border-radius:12px;cursor:none;transition:all .3s;}
+.toggle-slider::before{content:'';position:absolute;width:18px;height:18px;left:2px;top:50%;transform:translateY(-50%);background:var(--text4);border-radius:50%;transition:all .3s;}
+.toggle-switch input:checked + .toggle-slider{background:var(--cyan-dim);border-color:var(--cyan);}
+.toggle-switch input:checked + .toggle-slider::before{background:var(--cyan);transform:translateY(-50%) translateX(20px);}
+
+/* CHART BARS */
+.mini-bar-chart{display:flex;align-items:flex-end;gap:4px;height:60px;padding-top:8px;}
+.mbc-bar{flex:1;border-radius:3px 3px 0 0;background:var(--cyan-dim);border:1px solid rgba(0,212,255,.2);transition:height .5s ease;min-width:0;}
+.mbc-bar.active{background:var(--cyan-dim);border-color:var(--cyan);}
+
+/* ALERT ROW */
+.alert-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--obs4);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;}
+.ai-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.ai-text{font-size:12px;color:var(--text2);flex:1;}
+.ai-time{font-size:9px;color:var(--text4);font-family:'Space Mono',monospace;flex-shrink:0;}
+
+/* PROGRESS RING */
+.progress-ring-wrap{display:flex;justify-content:center;margin-bottom:16px;}
+
+/* MOBILE STORE STRIP */
+.app-strip{background:linear-gradient(90deg,rgba(0,212,255,.05),rgba(240,192,64,.04));border:1px solid var(--border);border-radius:14px;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-top:24px;}
+.app-strip-text{}
+.app-strip-title{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:#fff;margin-bottom:4px;}
+.app-strip-sub{font-size:12px;color:var(--text3);}
+.app-strip-btns{display:flex;gap:10px;}
+.app-dl-btn{display:flex;align-items:center;gap:10px;padding:10px 18px;border-radius:8px;text-decoration:none;transition:all .2s;}
+.app-dl-btn.ios{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);color:#fff;}
+.app-dl-btn.ios:hover{background:rgba(255,255,255,.1);transform:translateY(-1px);}
+.app-dl-btn.android{background:var(--cyan-dim);border:1px solid var(--border2);color:#fff;}
+.app-dl-btn.android:hover{background:rgba(0,212,255,.15);border-color:var(--cyan);transform:translateY(-1px);}
+.adl-icon{font-size:22px;line-height:1;}
+.adl-text{text-align:left;}
+.adl-label{display:block;font-size:9px;color:var(--text3);font-family:'Space Mono',monospace;letter-spacing:.5px;}
+.adl-name{display:block;font-family:'Orbitron',monospace;font-size:12px;font-weight:700;margin-top:1px;}
+
+/* PULSE */
+.pulse{width:7px;height:7px;border-radius:50%;display:inline-block;animation:pls 2s infinite;}
+@keyframes pls{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.8);}}
+.spin{display:inline-block;animation:spn .7s linear infinite;}
+@keyframes spn{to{transform:rotate(360deg);}}
+.fu{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease;}
+.fu.v{opacity:1;transform:translateY(0);}
+.d1{transition-delay:.1s;}.d2{transition-delay:.2s;}.d3{transition-delay:.3s;}
+
+/* ─── SITE FOOTER ─── */
+.site-footer{background:var(--obs2);border-top:1px solid var(--border);padding:56px 48px 32px;margin-top:0;}
+.footer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:36px;margin-bottom:40px;}
+.footer-col-title{font-family:'Orbitron',monospace;font-size:9px;font-weight:700;color:var(--cyan);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:14px;}
+.footer-links{display:flex;flex-direction:column;gap:8px;}
+.footer-link{font-size:11px;color:var(--text3);text-decoration:none;font-family:'Space Mono',monospace;letter-spacing:.3px;transition:color .2s;cursor:none;}
+.footer-link:hover{color:var(--text);}
+.footer-bottom{display:flex;align-items:center;justify-content:space-between;padding-top:24px;border-top:1px solid var(--border);flex-wrap:wrap;gap:12px;}
+.footer-copy{font-family:'Space Mono',monospace;font-size:9px;color:var(--text4);letter-spacing:.5px;}
+.footer-logo{font-family:'Orbitron',monospace;font-size:11px;font-weight:900;color:var(--cyan);letter-spacing:2px;}
+.footer-logo span{color:var(--gold);}
+.footer-legal{display:flex;gap:20px;}
+@media(max-width:900px){.footer-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:500px){.footer-grid{grid-template-columns:1fr;}.footer-bottom{flex-direction:column;text-align:center;}}
+
+/* ─── SITE TOP NAV ─── */
+.site-nav{position:fixed;top:0;left:0;right:0;z-index:300;padding:0 40px;display:flex;align-items:center;justify-content:space-between;background:rgba(2,4,8,.97);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);height:56px;}
+body.light-mode .site-nav{background:rgba(240,244,248,.97);}
+.site-nav-logo{font-family:'Orbitron',monospace;font-size:13px;font-weight:900;letter-spacing:3px;color:var(--cyan);text-decoration:none;white-space:nowrap;}
+.site-nav-logo span{color:var(--gold);}
+.site-nav-links{display:flex;align-items:center;gap:4px;}
+.site-nav-link{font-family:'Orbitron',monospace;font-size:8px;font-weight:700;color:var(--text3);text-decoration:none;letter-spacing:1.5px;text-transform:uppercase;padding:8px 12px;border-radius:6px;transition:all .2s;cursor:none;}
+.site-nav-link:hover{color:var(--cyan);background:var(--cyan-dim);}
+.site-nav-right{display:flex;align-items:center;gap:8px;}
+@media(max-width:900px){.site-nav-links{display:none;}}
+
+@media(max-width:1100px){.stats-row{grid-template-columns:repeat(2,1fr);}.dl-cards{grid-template-columns:repeat(2,1fr);}.module-progress-grid{grid-template-columns:1fr;}.admin-sidebar{display:none;}.admin-main{margin-left:0;padding:20px;}}
+@media(max-width:700px){.stats-row{grid-template-columns:1fr 1fr;}.dl-cards{grid-template-columns:1fr;}.two-col{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div id="cur"></div>
+<div id="cur-ring"></div>
+<canvas id="pc"></canvas>
+
+<!-- ═══════════════════════ LOGIN SCREEN ═══════════════════════ -->
+<div id="loginScreen">
+  <div class="login-grid"></div>
+  <div class="login-orb1"></div>
+  <div class="login-orb2"></div>
+
+  <div class="login-wrap">
+    <div class="login-logo-wrap">
+      <div class="login-logo">SNIPER<span>TRADER</span></div>
+      <div class="login-logo-sub">Command Portal · Secure Access</div>
+      <div style="margin-top:12px;display:flex;justify-content:center;">
+        <button id="themeToggleLogin" onclick="toggleTheme()" style="background:var(--obs4);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-family:'Orbitron',monospace;font-size:8px;font-weight:700;color:var(--text3);cursor:none;letter-spacing:1px;transition:all .2s;display:flex;align-items:center;gap:6px;"><span id="themeIconLogin">🌙</span><span id="themeLabelLogin">DARK MODE</span></button>
+      </div>
+    </div>
+
+    <div class="login-card">
+      <div class="login-title">Welcome back, Trader.</div>
+      <div class="login-sub">Sign in to access your TraderEdge Psych OS dashboard, settings, downloads, and product keys.</div>
+
+      <div class="login-error" id="loginError">⚠ Invalid credentials. Please try again.</div>
+
+      <div class="login-field">
+        <label class="lf-label">Email Address</label>
+        <div class="lf-input-wrap">
+          <input class="lf-input" type="email" id="loginEmail" placeholder="trader@snipertrader.ai">
+          <span class="lf-icon">✉</span>
+        </div>
+      </div>
+
+      <div class="login-field">
+        <label class="lf-label">Password</label>
+        <div class="lf-input-wrap">
+          <input class="lf-input" type="password" id="loginPass" placeholder="••••••••••••">
+          <span class="lf-icon" id="eyeIcon" onclick="togglePass()" style="pointer-events:all;cursor:none;">👁</span>
+        </div>
+      </div>
+
+      <div class="login-2fa" id="twoFAField">
+        <label class="tfa-label">⬡ Two-Factor Authentication</label>
+        <div class="tfa-inputs">
+          <input class="tfa-input" maxlength="1" id="t1" oninput="tfa(this,'t2')">
+          <input class="tfa-input" maxlength="1" id="t2" oninput="tfa(this,'t3')">
+          <input class="tfa-input" maxlength="1" id="t3" oninput="tfa(this,'t4')">
+          <input class="tfa-input" maxlength="1" id="t4" oninput="tfa(this,'t5')">
+          <input class="tfa-input" maxlength="1" id="t5" oninput="tfa(this,'t6')">
+          <input class="tfa-input" maxlength="1" id="t6" oninput="tfa(this,null)">
+        </div>
+      </div>
+
+      <div class="login-row">
+        <label class="login-remember">
+          <input type="checkbox" class="login-checkbox" checked> Keep me signed in
+        </label>
+        <a href="#" class="login-forgot">Forgot password?</a>
+      </div>
+
+      <button class="login-btn" id="loginBtn" onclick="doLogin()">
+        <span id="loginBtnText">⬡ SIGN IN TO COMMAND PORTAL</span>
+      </button>
+
+      <div class="login-divider">
+        <div class="login-divider-line"></div>
+        <span class="login-divider-txt">OR CONTINUE WITH</span>
+        <div class="login-divider-line"></div>
+      </div>
+
+      <div class="login-biometric">
+        <div class="lbio-btn" onclick="bioLogin()">
+          <span class="lbio-icon">🔑</span>
+          <span>Passkey</span>
+        </div>
+        <div class="lbio-btn" onclick="bioLogin()">
+          <span class="lbio-icon">👁</span>
+          <span>Face ID</span>
+        </div>
+        <div class="lbio-btn" onclick="bioLogin()">
+          <span class="lbio-icon">☁</span>
+          <span>Google SSO</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ ADMIN DASHBOARD ═══════════════════════ -->
+<div id="adminDash">
+
+  <!-- TOP NAV -->
+  <nav class="site-nav">
+    <a href="traderedge_landing.html" class="site-nav-logo">SNIPER<span>TRADER</span></a>
+    <div class="site-nav-links">
+      <a href="#" class="site-nav-link">Baseline</a>
+      <a href="#" class="site-nav-link">Guardrails</a>
+      <a href="#" class="site-nav-link">Review Loop</a>
+      <a href="#" class="site-nav-link">Ai Sentiment</a>
+      <a href="#" class="site-nav-link">Ai Chart Analyzer</a>
+      <a href="#" class="site-nav-link">Prop Firm Center</a>
+    </div>
+    <div class="site-nav-right">
+      <div style="display:flex;align-items:center;gap:6px;font-family:'Space Mono',monospace;font-size:9px;color:var(--green);"><span class="pulse" style="background:var(--green);"></span>All systems live</div>
+      <button id="themeToggle" onclick="toggleTheme()"><span class="toggle-icon">🌙</span><span id="themeLabel">DARK</span></button>
+      <div class="admin-user-badge">
+        <div class="aub-avatar" id="navAvatar">JL</div>
+        <div>
+          <div class="aub-name" id="navName">Jaylu</div>
+          <div class="aub-role">ELITE TRADER</div>
+        </div>
+      </div>
+      <div class="admin-logout-btn" onclick="doLogout()">✕ SIGN OUT</div>
+    </div>
+  </nav>
+
+  <!-- LAYOUT -->
+  <div class="admin-layout">
+
+    <!-- SIDEBAR -->
+    <div class="admin-sidebar">
+      <div class="sidebar-section-label">Overview</div>
+      <div class="sidebar-link active" onclick="showPanel('overview',this)">
+        <span class="sidebar-link-icon">⬡</span> Dashboard
+      </div>
+      <div class="sidebar-link" onclick="showPanel('history',this)">
+        <span class="sidebar-link-icon">📋</span> Session History
+        <span class="sidebar-badge red">7</span>
+      </div>
+      <div class="sidebar-link" onclick="showPanel('modules',this)">
+        <span class="sidebar-link-icon">🧠</span> Module Progress
+      </div>
+
+      <div class="sidebar-section-label">Account</div>
+      <div class="sidebar-link" onclick="showPanel('settings',this)">
+        <span class="sidebar-link-icon">⚙</span> Account Settings
+      </div>
+      <div class="sidebar-link" onclick="showPanel('license',this)">
+        <span class="sidebar-link-icon">🔑</span> Product Keys
+        <span class="sidebar-badge gold">PRO</span>
+      </div>
+      <div class="sidebar-link" onclick="showPanel('downloads',this)">
+        <span class="sidebar-link-icon">⬇</span> Downloads
+        <span class="sidebar-badge green">3</span>
+      </div>
+      <div class="sidebar-link" onclick="showPanel('billing',this)">
+        <span class="sidebar-link-icon">💳</span> Billing & Plan
+      </div>
+
+      <div class="sidebar-section-label">App</div>
+      <div class="sidebar-link" onclick="showPanel('notifications',this)">
+        <span class="sidebar-link-icon">🔔</span> Notifications
+        <span class="sidebar-badge red">3</span>
+      </div>
+      <div class="sidebar-link" onclick="showPanel('security',this)">
+        <span class="sidebar-link-icon">🛡</span> Security
+      </div>
+      <div class="sidebar-section-label">Navigation</div>
+      <a class="sidebar-link" href="traderedge_landing.html">
+        <span class="sidebar-link-icon">🏠</span> TraderEdge Home
+      </a>
+    </div>
+
+    <!-- MAIN -->
+    <div class="admin-main">
+
+      <!-- ── OVERVIEW PANEL ── -->
+      <div class="dash-panel active" id="panel-overview">
+        <div style="margin-bottom:24px;">
+          <div style="font-family:'Orbitron',monospace;font-size:22px;font-weight:900;color:#fff;margin-bottom:5px;">Good morning, <span style="background:linear-gradient(90deg,var(--cyan),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Jaylu.</span></div>
+          <div style="font-family:'Space Mono',monospace;font-size:11px;color:var(--text3);">Session 24 · TraderEdge Elite Plan · Last login: Today 06:42 EST</div>
+        </div>
+
+        <div class="stats-row fu">
+          <div class="stat-card"><span class="sc-val" style="color:var(--cyan);">24</span><span class="sc-label">Sessions Completed</span><span class="sc-change up">▲ +3 this week</span></div>
+          <div class="stat-card"><span class="sc-val" style="color:var(--green);">78%</span><span class="sc-label">Avg Discipline Score</span><span class="sc-change up">▲ +4% vs last month</span></div>
+          <div class="stat-card"><span class="sc-val" style="color:var(--gold);">14</span><span class="sc-label">Day Streak</span><span class="sc-change nt">● Consecutive sessions</span></div>
+          <div class="stat-card"><span class="sc-val" style="color:var(--red);">2</span><span class="sc-label">Breach Events</span><span class="sc-change dn">▼ Down from 5 last month</span></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+          <!-- Activity chart -->
+          <div class="g-panel fu d1">
+            <div class="g-panel-hdr">
+              <div class="gph-left"><div class="gph-icon c">📊</div><div><div class="gph-title">Weekly Activity</div><div class="gph-sub">Sessions per day · Last 7 days</div></div></div>
+            </div>
+            <div class="mini-bar-chart" id="activityChart"></div>
+            <div style="display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:8px;color:var(--text4);margin-top:6px;">
+              <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+            </div>
+          </div>
+
+          <!-- Neural readiness trend -->
+          <div class="g-panel fu d1">
+            <div class="g-panel-hdr">
+              <div class="gph-left"><div class="gph-icon gr">🧠</div><div><div class="gph-title">Neural Readiness Avg</div><div class="gph-sub">Pre-session scores · 4 weeks</div></div></div>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:6px;height:60px;">
+              <div style="flex:1;height:55%;background:var(--cyan-dim);border:1px solid rgba(0,212,255,.2);border-radius:3px 3px 0 0;"></div>
+              <div style="flex:1;height:62%;background:var(--cyan-dim);border:1px solid rgba(0,212,255,.2);border-radius:3px 3px 0 0;"></div>
+              <div style="flex:1;height:70%;background:var(--cyan-dim);border:1px solid rgba(0,212,255,.2);border-radius:3px 3px 0 0;"></div>
+              <div style="flex:1;height:82%;background:var(--cyan-dim);border:1px solid var(--cyan);border-radius:3px 3px 0 0;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:8px;color:var(--text4);margin-top:6px;">
+              <span>Wk1</span><span>Wk2</span><span>Wk3</span><span>Wk4</span>
+            </div>
+            <div style="font-family:'Orbitron',monospace;font-size:24px;font-weight:900;color:var(--cyan);margin-top:8px;">82 <span style="font-size:12px;color:var(--text3);">/ 100</span></div>
+          </div>
+        </div>
+
+        <!-- Recent alerts -->
+        <div class="g-panel fu d2">
+          <div class="g-panel-hdr">
+            <div class="gph-left"><div class="gph-icon r">⚠</div><div><div class="gph-title">Recent Alerts</div><div class="gph-sub">System events and risk flags</div></div></div>
+            <div class="action-btn cyan" onclick="showPanel('history',document.querySelector('[onclick*=history]'))">View All</div>
+          </div>
+          <div class="alert-item"><div class="ai-dot" style="background:var(--red);"></div><div class="ai-text">Apex daily loss limit reached 78% — breach prevention activated</div><div class="ai-time">Today 10:42</div></div>
+          <div class="alert-item"><div class="ai-dot" style="background:var(--gold);"></div><div class="ai-text">Session review skipped — streak at risk (complete today)</div><div class="ai-time">Yesterday 18:00</div></div>
+          <div class="alert-item"><div class="ai-dot" style="background:var(--green);"></div><div class="ai-text">14-day discipline streak achieved — milestone unlocked</div><div class="ai-time">Yesterday 09:15</div></div>
+          <div class="alert-item"><div class="ai-dot" style="background:var(--cyan);"></div><div class="ai-text">Product key TS-ELITE-2025 renewed successfully</div><div class="ai-time">Apr 01 08:00</div></div>
+        </div>
+
+        <!-- App download strip -->
+        <div class="app-strip fu d3">
+          <div class="app-strip-text">
+            <div class="app-strip-title">TraderEdge Psych OS · Mobile</div>
+            <div class="app-strip-sub">Access all 7 modules on your phone — baseline, guardrails, sentiment, chart AI, and more.</div>
+          </div>
+          <div class="app-strip-btns">
+            <a href="#" class="app-dl-btn ios"><div class="adl-icon">🍎</div><div class="adl-text"><span class="adl-label">Download on the</span><span class="adl-name">App Store</span></div></a>
+            <a href="#" class="app-dl-btn android"><div class="adl-icon">▶</div><div class="adl-text"><span class="adl-label">Get it on</span><span class="adl-name">Google Play</span></div></a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SESSION HISTORY ── -->
+      <div class="dash-panel" id="panel-history">
+        <div style="margin-bottom:24px;"><div style="font-family:'Orbitron',monospace;font-size:20px;font-weight:900;color:#fff;margin-bottom:5px;">Session History</div><div style="font-size:12px;color:var(--text3);font-family:'Space Mono',monospace;">All 24 sessions logged · Discipline scores · Gap analysis · Triggers</div></div>
+        <div class="g-panel fu">
+          <div class="g-panel-hdr">
+            <div class="gph-left"><div class="gph-icon c">📋</div><div><div class="gph-title">All Sessions</div><div class="gph-sub">Sorted by most recent</div></div></div>
+            <div style="display:flex;gap:8px;">
+              <select class="form-select" style="width:auto;padding:7px 14px;font-size:11px;">
+                <option>All Modules</option>
+                <option>Review Loop</option>
+                <option>Baseline</option>
+                <option>Guardrails</option>
+              </select>
+            </div>
+          </div>
+          <table class="admin-table">
+            <thead><tr><th>Date</th><th>Module</th><th>Market</th><th>Session P&L</th><th>Score</th><th>Primary Trigger</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>
+              <tr><td style="font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);">Apr 08</td><td><span class="badge pro">REVIEW LOOP</span></td><td style="font-family:'Orbitron',monospace;font-size:10px;">NQ</td><td style="font-family:'Orbitron',monospace;font-size:11px;color:var(--green);">+$520</td><td><div style="width:28px;height:28px;border-radius:50%;background:var(--green-dim);border:1px solid rgba(0,255,136,.3);display:inline-flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:var(--green);">9</div></td><td style="font-size:11px;color:var(--text2);">None — clean execution</td><td><span class="badge active">COMPLETE</span></td><td><button class="action-btn cyan">View</button></td></tr>
+              <tr><td style="font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);">Apr 07</td><td><span class="badge pro">REVIEW LOOP</span></td><td style="font-family:'Orbitron',monospace;font-size:10px;">ES</td><td style="font-family:'Orbitron',monospace;font-size:11px;color:var(--red);">-$310</td><td><div style="width:28px;height:28px;border-radius:50%;background:var(--gold-dim);border:1px solid rgba(240,192,64,.3);display:inline-flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:var(--gold);">5</div></td><td style="font-size:11px;color:var(--amber);">Early entry before close</td><td><span class="badge active">COMPLETE</span></td><td><button class="action-btn cyan">View</button></td></tr>
+              <tr><td style="font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);">Apr 04</td><td><span class="badge pro">REVIEW LOOP</span></td><td style="font-family:'Orbitron',monospace;font-size:10px;">NQ</td><td style="font-family:'Orbitron',monospace;font-size:11px;color:var(--green);">+$1,240</td><td><div style="width:28px;height:28px;border-radius:50%;background:var(--green-dim);border:1px solid rgba(0,255,136,.3);display:inline-flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:var(--green);">8</div></td><td style="font-size:11px;color:var(--text2);">Slight oversize (+0.2%)</td><td><span class="badge active">COMPLETE</span></td><td><button class="action-btn cyan">View</button></td></tr>
+              <tr><td style="font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);">Apr 03</td><td><span class="badge pro">REVIEW LOOP</span></td><td style="font-family:'Orbitron',monospace;font-size:10px;">GC</td><td style="font-family:'Orbitron',monospace;font-size:11px;color:var(--red);">-$680</td><td><div style="width:28px;height:28px;border-radius:50%;background:var(--red-dim);border:1px solid rgba(255,68,85,.25);display:inline-flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:var(--red);">2</div></td><td style="font-size:11px;color:var(--red);">3× Revenge trades</td><td><span class="badge inactive">BREACH</span></td><td><button class="action-btn cyan">View</button></td></tr>
+              <tr><td style="font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);">Apr 02</td><td><span class="badge pro">REVIEW LOOP</span></td><td style="font-family:'Orbitron',monospace;font-size:10px;">NQ</td><td style="font-family:'Orbitron',monospace;font-size:11px;color:var(--green);">+$780</td><td><div style="width:28px;height:28px;border-radius:50%;background:var(--cyan-dim);border:1px solid rgba(0,212,255,.3);display:inline-flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:var(--cyan);">7</div></td><td style="font-size:11px;color:var(--text2);">Early exit (fear)</td><td><span class="badge active">COMPLETE</span></td><td><button class="action-btn cyan">View</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── MODULE PROGRESS ── -->
+      <div class="dash-panel" id="panel-modules">
+        <div style="margin-bottom:24px;"><div style="font-family:'Orbitron',monospace;font-size:20px;font-weight:900;color:#fff;margin-bottom:5px;">Module Progress</div><div style="font-size:12px;color:var(--text3);font-family:'Space Mono',monospace;">Usage stats and completion across all 7 TraderEdge modules</div></div>
+        <div class="module-progress-grid fu">
+          <div class="mp-card"><div class="mp-card-hdr"><div class="mp-name">01 · Baseline</div><div class="mp-pct" style="color:#FF6B9D;">24 sessions</div></div><div class="mp-bar-track"><div class="mp-bar-fill" style="width:100%;background:#FF6B9D;"></div></div><div class="mp-sessions">Last used: Today · Avg score: 82/100</div></div>
+          <div class="mp-card"><div class="mp-card-hdr"><div class="mp-name">02 · Guardrails</div><div class="mp-pct" style="color:#00C9A7;">21 sessions</div></div><div class="mp-bar-track"><div class="mp-bar-fill" style="width:88%;background:#00C9A7;"></div></div><div class="mp-sessions">Last used: Today · Avg gates: 8.2/9</div></div>
+          <div class="mp-card"><div class="mp-card-hdr"><div class="mp-name">03 · Review Loop</div><div class="mp-pct" style="color:#9B6DFF;">20 sessions</div></div><div class="mp-bar-track"><div class="mp-bar-fill" style="width:83%;background:#9B6DFF;"></div></div><div class="mp-sessions">Last used: Yesterday · Avg score: 6.4</div></div>
+          <div class="mp-card"><div class="mp-card-hdr"><div class="mp-name">04 · Sentiment</div><div class="mp-pct" style="color:var(--cyan);">18 sessions</div></div><div class="mp-bar-track"><div class="mp-bar-fill" style="width:75%;background:var(--cyan);"></div></div><div class="mp-sessions">Last used: Today · Daily refreshes: 2.3 avg</div></div>
+          <div class="mp-card"><div class="mp-card-hdr"><div class="mp-name">05 · Chart AI</div><div class="mp-pct" style="color:#00E5A0;">15 sessions</div></div><div class="mp-bar-track"><div class="mp-bar-fill" style="width:63%;background:#00E5A0;"></div></div><div class="mp-sessions">Last used: Apr 06 · Charts analyzed: 38</div></div>
+          <div class="mp-card"><div class="mp-card-hdr"><div class="mp-name">06 · Trader's Couch</div><div class="mp-pct" style="color:#9B7DE0;">12 sessions</div></div><div class="mp-bar-track"><div class="mp-bar-fill" style="width:50%;background:#9B7DE0;"></div></div><div class="mp-sessions">Last used: Apr 05 · Fav: Stop. Breathe. Reset.</div></div>
+          <div class="mp-card"><div class="mp-card-hdr"><div class="mp-name">07 · Prop Firms</div><div class="mp-pct" style="color:var(--gold);">24 sessions</div></div><div class="mp-bar-track"><div class="mp-bar-fill" style="width:100%;background:var(--gold);"></div></div><div class="mp-sessions">Last used: Today · Accounts monitored: 3</div></div>
+        </div>
+      </div>
+
+      <!-- ── SETTINGS ── -->
+      <div class="dash-panel" id="panel-settings">
+        <div style="margin-bottom:24px;"><div style="font-family:'Orbitron',monospace;font-size:20px;font-weight:900;color:#fff;margin-bottom:5px;">Account Settings</div><div style="font-size:12px;color:var(--text3);font-family:'Space Mono',monospace;">Profile, preferences, and display settings</div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+          <div class="g-panel fu">
+            <div class="g-panel-hdr"><div class="gph-left"><div class="gph-icon c">👤</div><div><div class="gph-title">Profile</div></div></div><button class="save-btn" onclick="saveSettings()">SAVE CHANGES</button></div>
+            <div class="form-field"><label class="form-label">Display Name</label><input class="form-input" value="Jaylu" id="settingName"></div>
+            <div class="form-field"><label class="form-label">Email Address</label><input class="form-input" value="jaylu@snipertrader.ai" id="settingEmail"></div>
+            <div class="two-col">
+              <div class="form-field"><label class="form-label">Timezone</label><select class="form-select"><option>America/New_York (EST)</option><option>America/Chicago (CST)</option><option>America/Los_Angeles (PST)</option><option>Europe/London (GMT)</option></select></div>
+              <div class="form-field"><label class="form-label">Primary Market</label><select class="form-select"><option>NQ / NASDAQ 100</option><option>ES / S&P 500</option><option>GC / Gold</option><option>CL / Crude Oil</option><option>BTC / Bitcoin</option></select></div>
+            </div>
+            <div class="form-field"><label class="form-label">Trading Style</label><select class="form-select"><option>ICT / Smart Money Concepts</option><option>Price Action</option><option>Institutional Flow</option><option>Hybrid</option></select></div>
+          </div>
+          <div class="g-panel fu d1">
+            <div class="g-panel-hdr"><div class="gph-left"><div class="gph-icon g">⚙</div><div><div class="gph-title">Preferences</div></div></div></div>
+            <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Pre-session baseline reminders</div><div class="toggle-desc">Daily notification at your session start time</div></div><label class="toggle-switch"><input type="checkbox" checked><div class="toggle-slider"></div></label></div>
+            <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Breach warning alerts</div><div class="toggle-desc">Push alert when daily loss limit approaches</div></div><label class="toggle-switch"><input type="checkbox" checked><div class="toggle-slider"></div></label></div>
+            <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Auto-refresh sentiment on open</div><div class="toggle-desc">Sentiment scan runs automatically at 8:30 AM</div></div><label class="toggle-switch"><input type="checkbox" checked><div class="toggle-slider"></div></label></div>
+            <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Post-session review prompts</div><div class="toggle-desc">Reminder to complete review after session close</div></div><label class="toggle-switch"><input type="checkbox" checked><div class="toggle-slider"></div></label></div>
+            <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Streak milestone notifications</div><div class="toggle-desc">Celebrate discipline milestones (7, 14, 30 days)</div></div><label class="toggle-switch"><input type="checkbox"><div class="toggle-slider"></div></label></div>
+            <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Weekly performance report</div><div class="toggle-desc">Email summary every Sunday at 8:00 PM</div></div><label class="toggle-switch"><input type="checkbox" checked><div class="toggle-slider"></div></label></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── LICENSE / PRODUCT KEYS ── -->
+      <div class="dash-panel" id="panel-license">
+        <div style="margin-bottom:24px;"><div style="font-family:'Orbitron',monospace;font-size:20px;font-weight:900;color:#fff;margin-bottom:5px;">Product Keys</div><div style="font-size:12px;color:var(--text3);font-family:'Space Mono',monospace;">License management for TraderEdge Psych OS and connected products</div></div>
+        <div class="g-panel fu">
+          <div class="g-panel-hdr"><div class="gph-left"><div class="gph-icon g">🔑</div><div><div class="gph-title">Active Licenses</div><div class="gph-sub">All registered product keys</div></div></div><button class="action-btn cyan" onclick="activateKey()">+ ACTIVATE KEY</button></div>
+          <div style="margin-bottom:24px;">
+            <div style="font-family:'Orbitron',monospace;font-size:9px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">TraderEdge Psych OS — Elite Plan</div>
+            <div class="key-display"><span id="mainKey">TS-ELITE-2025-XXXX-YYYY-ZZZZ</span><div class="key-copy-btn" onclick="copyKey()">⬡ COPY</div></div>
+            <div style="display:flex;gap:20px;flex-wrap:wrap;">
+              <div><div style="font-size:9px;color:var(--text3);font-family:'Space Mono',monospace;margin-bottom:2px;">STATUS</div><span class="badge active">ACTIVE</span></div>
+              <div><div style="font-size:9px;color:var(--text3);font-family:'Space Mono',monospace;margin-bottom:2px;">PLAN</div><span class="badge elite">ELITE</span></div>
+              <div><div style="font-size:9px;color:var(--text3);font-family:'Space Mono',monospace;margin-bottom:2px;">DEVICES</div><span style="font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--cyan);">3 / 5</span></div>
+              <div><div style="font-size:9px;color:var(--text3);font-family:'Space Mono',monospace;margin-bottom:2px;">RENEWS</div><span style="font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--gold);">Apr 01, 2026</span></div>
+            </div>
+          </div>
+          <div style="margin-bottom:24px;">
+            <div style="font-family:'Orbitron',monospace;font-size:9px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">USME Indicator Suite — ThinkorSwim</div>
+            <div class="key-display" style="font-size:13px;"><span>USME-TOS-PRO-2025-AAAA-BBBB</span><div class="key-copy-btn" onclick="copyKey2()">⬡ COPY</div></div>
+            <div style="display:flex;gap:20px;flex-wrap:wrap;">
+              <div><div style="font-size:9px;color:var(--text3);font-family:'Space Mono',monospace;margin-bottom:2px;">STATUS</div><span class="badge active">ACTIVE</span></div>
+              <div><div style="font-size:9px;color:var(--text3);font-family:'Space Mono',monospace;margin-bottom:2px;">VERSION</div><span style="font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--cyan);">v2.0</span></div>
+              <div><div style="font-size:9px;color:var(--text3);font-family:'Space Mono',monospace;margin-bottom:2px;">PLATFORM</div><span style="font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:var(--gold);">TOS + PINE</span></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-family:'Orbitron',monospace;font-size:9px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">ICT/SMC eBook — From Broke to Funded</div>
+            <div class="key-display" style="font-size:13px;"><span>EBOOK-FBF-2025-CCCC-DDDD</span><div class="key-copy-btn" onclick="copyKey3()">⬡ COPY</div></div>
+            <div style="display:flex;gap:20px;"><div><span class="badge active">ACTIVE</span></div><div><span style="font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--cyan);">LIFETIME</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── DOWNLOADS ── -->
+      <div class="dash-panel" id="panel-downloads">
+        <div style="margin-bottom:24px;"><div style="font-family:'Orbitron',monospace;font-size:20px;font-weight:900;color:#fff;margin-bottom:5px;">Downloads</div><div style="font-size:12px;color:var(--text3);font-family:'Space Mono',monospace;">All licensed products, indicators, and documents available for download</div></div>
+        <div class="dl-cards fu">
+          <div class="dl-card">
+            <span class="dl-card-icon">📱</span>
+            <div class="dl-card-name">TraderEdge Psych OS — iOS</div>
+            <div class="dl-card-meta">Version 2.4.1 · 87 MB · Requires iOS 16+<br>All 7 modules · AI-powered · Claude integration</div>
+            <a href="#" class="dl-card-btn">🍎 Download on App Store →</a>
+          </div>
+          <div class="dl-card">
+            <span class="dl-card-icon">🤖</span>
+            <div class="dl-card-name">TraderEdge Psych OS — Android</div>
+            <div class="dl-card-meta">Version 2.4.1 · 91 MB · Requires Android 9+<br>All 7 modules · AI-powered · Claude integration</div>
+            <a href="#" class="dl-card-btn">▶ Get on Google Play →</a>
+          </div>
+          <div class="dl-card">
+            <span class="dl-card-icon">📊</span>
+            <div class="dl-card-name">USME v2.0 — ThinkorSwim ThinkScript</div>
+            <div class="dl-card-meta">ThinkScript · v2.0 · 3 files<br>USME Core + SOTD + Killzone Engine</div>
+            <div class="dl-card-btn" onclick="simulateDownload(this,'USME_TOS_v2.0.zip')">⬇ Download Package →</div>
+          </div>
+          <div class="dl-card">
+            <span class="dl-card-icon">🌲</span>
+            <div class="dl-card-name">USME v2.0 — Pine Script (TradingView)</div>
+            <div class="dl-card-meta">Pine Script v5 · v2.0 · 2 files<br>USME Core + Alert System</div>
+            <div class="dl-card-btn" onclick="simulateDownload(this,'USME_Pine_v2.0.zip')">⬇ Download Package →</div>
+          </div>
+          <div class="dl-card">
+            <span class="dl-card-icon">📚</span>
+            <div class="dl-card-name">From Broke to Funded — eBook</div>
+            <div class="dl-card-meta">PDF · 28 pages · Lifetime access<br>ICT/SMC methodology · Prop firm rules · USME guide</div>
+            <div class="dl-card-btn" onclick="simulateDownload(this,'From_Broke_to_Funded_2025.pdf')">⬇ Download PDF →</div>
+          </div>
+          <div class="dl-card">
+            <span class="dl-card-icon">📋</span>
+            <div class="dl-card-name">USME Prop Firm Master Plan</div>
+            <div class="dl-card-meta">PDF · 11 pages · Funded account blueprint<br>Challenge rules · Risk parameters · USME settings</div>
+            <div class="dl-card-btn" onclick="simulateDownload(this,'USME_PropFirm_MasterPlan.pdf')">⬇ Download PDF →</div>
+          </div>
+        </div>
+        <div class="app-strip" style="margin-top:24px;">
+          <div class="app-strip-text"><div class="app-strip-title">Always have TraderEdge with you.</div><div class="app-strip-sub">Mobile app keeps all 7 modules available before, during, and after every session.</div></div>
+          <div class="app-strip-btns">
+            <a href="#" class="app-dl-btn ios"><div class="adl-icon">🍎</div><div class="adl-text"><span class="adl-label">Download on the</span><span class="adl-name">App Store</span></div></a>
+            <a href="#" class="app-dl-btn android"><div class="adl-icon">▶</div><div class="adl-text"><span class="adl-label">Get it on</span><span class="adl-name">Google Play</span></div></a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── BILLING ── -->
+      <div class="dash-panel" id="panel-billing">
+        <div style="margin-bottom:24px;"><div style="font-family:'Orbitron',monospace;font-size:20px;font-weight:900;color:#fff;margin-bottom:5px;">Billing & Plan</div><div style="font-size:12px;color:var(--text3);font-family:'Space Mono',monospace;">Subscription, invoices, and upgrade options</div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+          <div class="g-panel fu">
+            <div class="g-panel-hdr"><div class="gph-left"><div class="gph-icon g">💳</div><div><div class="gph-title">Current Plan</div></div></div></div>
+            <div style="background:linear-gradient(135deg,rgba(240,192,64,.08),rgba(0,212,255,.05));border:1px solid rgba(240,192,64,.2);border-radius:12px;padding:20px;margin-bottom:16px;">
+              <div style="font-family:'Orbitron',monospace;font-size:22px;font-weight:900;color:var(--gold);margin-bottom:6px;">ELITE PLAN</div>
+              <div style="font-family:'Orbitron',monospace;font-size:16px;color:#fff;margin-bottom:10px;">$49<span style="font-size:11px;color:var(--text3);">/month</span></div>
+              <div style="font-size:11px;color:var(--text2);line-height:1.8;font-family:'Space Mono',monospace;">✓ All 7 TraderEdge modules<br>✓ Claude AI integration (unlimited)<br>✓ 5 device licenses<br>✓ USME indicator suite (TOS + Pine)<br>✓ Prop firm API connections (unlimited)<br>✓ Priority support</div>
+            </div>
+            <div style="display:flex;gap:10px;">
+              <button class="save-btn">MANAGE BILLING</button>
+              <button class="action-btn gold">UPGRADE PLAN</button>
+            </div>
+          </div>
+          <div class="g-panel fu d1">
+            <div class="g-panel-hdr"><div class="gph-left"><div class="gph-icon c">🧾</div><div><div class="gph-title">Recent Invoices</div></div></div></div>
+            <table class="admin-table">
+              <thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td style="font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);">Apr 01</td><td style="font-size:11px;">Elite Plan — Monthly</td><td style="font-family:'Orbitron',monospace;font-size:11px;color:var(--green);">$49.00</td><td><span class="badge active">PAID</span></td></tr>
+                <tr><td style="font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);">Mar 01</td><td style="font-size:11px;">Elite Plan — Monthly</td><td style="font-family:'Orbitron',monospace;font-size:11px;color:var(--green);">$49.00</td><td><span class="badge active">PAID</span></td></tr>
+                <tr><td style="font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);">Feb 01</td><td style="font-size:11px;">Elite Plan — Monthly</td><td style="font-family:'Orbitron',monospace;font-size:11px;color:var(--green);">$49.00</td><td><span class="badge active">PAID</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── NOTIFICATIONS ── -->
+      <div class="dash-panel" id="panel-notifications">
+        <div style="margin-bottom:24px;"><div style="font-family:'Orbitron',monospace;font-size:20px;font-weight:900;color:#fff;margin-bottom:5px;">Notifications</div><div style="font-size:12px;color:var(--text3);font-family:'Space Mono',monospace;">System alerts, trading events, and account updates</div></div>
+        <div class="g-panel fu">
+          <div class="timeline">
+            <div class="tl-item"><div class="tl-dot-wrap"><div class="tl-dot" style="background:var(--red);box-shadow:0 0 6px rgba(255,68,85,.4);"></div><div class="tl-line"></div></div><div class="tl-content"><div class="tl-title">⚠ Apex Daily Loss — 78% Consumed<br><span style="font-size:11px;color:var(--text3);">Apex Trader Funding · $100K account · $220 remaining before breach</span></div><div class="tl-meta">Today 10:42 EST · Prop Firm Monitor</div></div></div>
+            <div class="tl-item"><div class="tl-dot-wrap"><div class="tl-dot" style="background:var(--gold);"></div><div class="tl-line"></div></div><div class="tl-content"><div class="tl-title">⬡ Review Session Reminder<br><span style="font-size:11px;color:var(--text3);">Yesterday's session hasn't been reviewed. Complete to maintain your streak.</span></div><div class="tl-meta">Yesterday 06:00 PM EST · Review Loop</div></div></div>
+            <div class="tl-item"><div class="tl-dot-wrap"><div class="tl-dot" style="background:var(--green);"></div><div class="tl-line"></div></div><div class="tl-content"><div class="tl-title">🔥 14-Day Streak Milestone Unlocked<br><span style="font-size:11px;color:var(--text3);">You've maintained discipline for 14 consecutive sessions. Elite tier unlocked.</span></div><div class="tl-meta">Yesterday 09:15 EST · Guardrails</div></div></div>
+            <div class="tl-item"><div class="tl-dot-wrap"><div class="tl-dot" style="background:var(--cyan);"></div><div class="tl-line"></div></div><div class="tl-content"><div class="tl-title">✓ Product Key Renewed — TS-ELITE-2025<br><span style="font-size:11px;color:var(--text3);">Annual Elite license auto-renewed. Next renewal: Apr 01, 2026.</span></div><div class="tl-meta">Apr 01 08:00 EST · Account</div></div></div>
+            <div class="tl-item"><div class="tl-dot-wrap"><div class="tl-dot" style="background:var(--green);"></div></div><div class="tl-content"><div class="tl-title">⬡ USME v2.0 Update Available<br><span style="font-size:11px;color:var(--text3);">New SOTD feature and killzone state resets added. Download from Downloads tab.</span></div><div class="tl-meta">Mar 28 12:00 EST · Downloads</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SECURITY ── -->
+      <div class="dash-panel" id="panel-security">
+        <div style="margin-bottom:24px;"><div style="font-family:'Orbitron',monospace;font-size:20px;font-weight:900;color:#fff;margin-bottom:5px;">Security</div><div style="font-size:12px;color:var(--text3);font-family:'Space Mono',monospace;">Password, 2FA, device management, and login history</div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+          <div class="g-panel fu">
+            <div class="g-panel-hdr"><div class="gph-left"><div class="gph-icon r">🛡</div><div><div class="gph-title">Change Password</div></div></div></div>
+            <div class="form-field"><label class="form-label">Current Password</label><input class="form-input" type="password" placeholder="••••••••••••"></div>
+            <div class="form-field"><label class="form-label">New Password</label><input class="form-input" type="password" placeholder="Min 12 characters"></div>
+            <div class="form-field"><label class="form-label">Confirm New Password</label><input class="form-input" type="password" placeholder="Confirm new password"></div>
+            <button class="save-btn">UPDATE PASSWORD</button>
+          </div>
+          <div class="g-panel fu d1">
+            <div class="g-panel-hdr"><div class="gph-left"><div class="gph-icon g">🔐</div><div><div class="gph-title">Two-Factor Auth</div></div></div><span class="badge active">ENABLED</span></div>
+            <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Authenticator App (TOTP)</div><div class="toggle-desc">Google Authenticator / Authy</div></div><label class="toggle-switch"><input type="checkbox" checked><div class="toggle-slider"></div></label></div>
+            <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">SMS Backup Code</div><div class="toggle-desc">+1 (xxx) xxx-7834</div></div><label class="toggle-switch"><input type="checkbox" checked><div class="toggle-slider"></div></label></div>
+            <div class="toggle-row"><div class="toggle-info"><div class="toggle-name">Passkey / Face ID</div><div class="toggle-desc">Biometric login enabled</div></div><label class="toggle-switch"><input type="checkbox" checked><div class="toggle-slider"></div></label></div>
+            <div style="margin-top:16px;">
+              <div style="font-family:'Orbitron',monospace;font-size:9px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">Active Sessions (3 devices)</div>
+              <div class="alert-item"><div class="ai-dot" style="background:var(--green);"></div><div class="ai-text">MacBook Pro — Boston, MA · Current session</div><div class="ai-time">Now</div></div>
+              <div class="alert-item"><div class="ai-dot" style="background:var(--cyan);"></div><div class="ai-text">iPhone 15 Pro — Boston, MA · Last: 2h ago</div><div class="action-btn red" style="font-size:7px;">REVOKE</div></div>
+              <div class="alert-item"><div class="ai-dot" style="background:var(--cyan);"></div><div class="ai-text">iPad Pro — Boston, MA · Last: 3d ago</div><div class="action-btn red" style="font-size:7px;">REVOKE</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /admin-main -->
+  </div><!-- /admin-layout -->
+
+  <!-- ─── SITE FOOTER ─── -->
+  <footer class="site-footer">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-col-title">Tools</div>
+        <div class="footer-links">
+          <a href="#" class="footer-link">USME Algo</a>
+          <a href="#" class="footer-link">Pre-Market Baseline</a>
+          <a href="#" class="footer-link">Habit Guardrails</a>
+          <a href="#" class="footer-link">Post-Market Review Loop</a>
+          <a href="#" class="footer-link">Ai Sentiment Engine</a>
+          <a href="#" class="footer-link">Ai Chart Analyzer</a>
+          <a href="#" class="footer-link">Prop Firm Command Center</a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Ecosystem</div>
+        <div class="footer-links">
+          <a href="#" class="footer-link">Ai Smart Glasses</a>
+          <a href="#" class="footer-link">Prop Master Plan</a>
+          <a href="#" class="footer-link">30-Day Funded Challenge</a>
+          <a href="#" class="footer-link">ICT Discipline Engine</a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Resources</div>
+        <div class="footer-links">
+          <a href="#" class="footer-link">Affiliate Program</a>
+          <a href="#" class="footer-link">Trader's Couch</a>
+          <a href="#" class="footer-link">Ebook</a>
+          <a href="#" class="footer-link">Prop Firm Master Plan</a>
+          <a href="#" class="footer-link">30 Days Funded Challenge</a>
+          <a href="#" class="footer-link">Shop</a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Company</div>
+        <div class="footer-links">
+          <a href="#" class="footer-link">About</a>
+          <a href="#" class="footer-link">Docs</a>
+          <a href="#" class="footer-link">Terms</a>
+          <a href="#" class="footer-link">Disclaimer</a>
+          <a href="#" class="footer-link">Privacy</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-logo">SNIPER<span>TRADER</span><span style="color:var(--text4);font-weight:400;font-size:9px;margin-left:8px;">.ai</span></div>
+      <div class="footer-copy">© 2026 SniperTrader.ai Intelligence Platform — All rights reserved.</div>
+    </div>
+  </footer>
+
+</div><!-- /adminDash -->
+
+<script>
+// CURSOR
+const cur=document.getElementById('cur'),ring=document.getElementById('cur-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px';});
+(function ar(){rx+=(mx-rx)*.1;ry+=(my-ry)*.1;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(ar);})();
+
+// PARTICLES
+const pc=document.getElementById('pc'),ctx=pc.getContext('2d');
+pc.width=window.innerWidth;pc.height=window.innerHeight;
+window.addEventListener('resize',()=>{pc.width=window.innerWidth;pc.height=window.innerHeight;});
+const pts=[];
+const pCols=['0,212,255','240,192,64','0,255,136'];
+for(let i=0;i<80;i++) pts.push({x:Math.random()*pc.width,y:Math.random()*pc.height,vx:(Math.random()-.5)*.2,vy:(Math.random()-.5)*.2,r:Math.random()*1.3+.3,a:Math.random()*.22+.06,col:pCols[Math.floor(Math.random()*pCols.length)]});
+let pmx=pc.width/2,pmy=pc.height/2;
+document.addEventListener('mousemove',e=>{pmx=e.clientX;pmy=e.clientY;});
+(function dp(){
+  ctx.clearRect(0,0,pc.width,pc.height);
+  for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){
+    const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);
+    if(d<120){ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.strokeStyle=`rgba(0,212,255,${(1-d/120)*.045})`;ctx.lineWidth=.5;ctx.stroke();}
+  }
+  pts.forEach(p=>{
+    const dx=pmx-p.x,dy=pmy-p.y,d=Math.sqrt(dx*dx+dy*dy);
+    if(d<180){p.vx+=dx/d*.006;p.vy+=dy/d*.006;}
+    p.vx*=.99;p.vy*=.99;p.x+=p.vx;p.y+=p.vy;
+    if(p.x<0)p.x=pc.width;if(p.x>pc.width)p.x=0;
+    if(p.y<0)p.y=pc.height;if(p.y>pc.height)p.y=0;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=`rgba(${p.col},${p.a})`;ctx.fill();
+  });
+  requestAnimationFrame(dp);
+})();
+
+// SCROLL OBSERVER
+const so=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('v');}),{threshold:.06});
+document.querySelectorAll('.fu').forEach(el=>so.observe(el));
+
+// BUILD ACTIVITY CHART
+function buildActivityChart(){
+  const c=document.getElementById('activityChart');
+  if(!c) return;
+  const data=[40,80,60,100,90,30,70];
+  const colors=['var(--cyan-dim)','var(--cyan-dim)','var(--cyan-dim)','var(--cyan)','var(--cyan-dim)','rgba(0,212,255,.05)','var(--cyan-dim)'];
+  const borders=['rgba(0,212,255,.2)','rgba(0,212,255,.2)','rgba(0,212,255,.2)','var(--cyan)','rgba(0,212,255,.2)','rgba(0,212,255,.08)','rgba(0,212,255,.2)'];
+  data.forEach((h,i)=>{
+    const b=document.createElement('div');
+    b.className='mbc-bar'+(i===3?' active':'');
+    b.style.height=h+'%';
+    b.style.background=colors[i];
+    b.style.borderColor=borders[i];
+    c.appendChild(b);
+  });
+}
+buildActivityChart();
+
+// LOGIN
+function togglePass(){
+  const inp=document.getElementById('loginPass');
+  inp.type=inp.type==='password'?'text':'password';
+}
+function tfa(el,nextId){
+  if(el.value&&nextId) document.getElementById(nextId).focus();
+}
+function bioLogin(){doLogin(true);}
+
+let loginAttempts=0;
+function doLogin(skip=false){
+  const btn=document.getElementById('loginBtn');
+  const btnTxt=document.getElementById('loginBtnText');
+  const email=document.getElementById('loginEmail').value;
+  const pass=document.getElementById('loginPass').value;
+  const err=document.getElementById('loginError');
+
+  if(!skip && !email){err.textContent='⚠ Please enter your email address.';err.classList.add('show');return;}
+
+  btnTxt.innerHTML='<span class="spin">◌</span> AUTHENTICATING...';
+  btn.style.opacity='.7';
+  err.classList.remove('show');
+
+  setTimeout(()=>{
+    // Demo: any credentials work, or show 2FA step
+    if(pass==='wrong'){
+      loginAttempts++;
+      err.textContent='⚠ Invalid credentials. '+(3-loginAttempts)+' attempts remaining.';
+      err.classList.add('show');
+      btnTxt.innerHTML='⬡ SIGN IN TO COMMAND PORTAL';
+      btn.style.opacity='1';
+    } else if(!skip && pass.length>0 && loginAttempts===0 && !document.getElementById('twoFAField').classList.contains('show')){
+      // Show 2FA
+      document.getElementById('twoFAField').classList.add('show');
+      btnTxt.innerHTML='⬡ VERIFY 2FA CODE';
+      btn.style.opacity='1';
+      document.getElementById('t1').focus();
+    } else {
+      // Login success
+      loginSuccess(email||'Jaylu');
+    }
+  },1200);
+}
+
+function loginSuccess(email){
+  const screen=document.getElementById('loginScreen');
+  const dash=document.getElementById('adminDash');
+  // Set name
+  const name=email.includes('@')?email.split('@')[0].charAt(0).toUpperCase()+email.split('@')[0].slice(1):'Jaylu';
+  const initials=name.substring(0,2).toUpperCase();
+  document.getElementById('navName').textContent=name;
+  document.getElementById('navAvatar').textContent=initials;
+  // Animate out login
+  screen.style.transition='opacity .6s ease, transform .6s ease';
+  screen.style.opacity='0';
+  screen.style.transform='scale(0.97)';
+  setTimeout(()=>{
+    screen.style.display='none';
+    dash.style.display='block';
+    // Apply light mode patch on inline styles now that dash is visible
+    if(document.body.classList.contains('light-mode')) patchInlineColors(true);
+    // Trigger scroll observers
+    setTimeout(()=>{document.querySelectorAll('.fu').forEach(el=>so.observe(el));},100);
+  },600);
+}
+
+function doLogout(){
+  const dash=document.getElementById('adminDash');
+  const screen=document.getElementById('loginScreen');
+  dash.style.transition='opacity .4s';
+  dash.style.opacity='0';
+  setTimeout(()=>{
+    dash.style.display='none';
+    screen.style.display='flex';
+    screen.style.opacity='0';
+    screen.style.transform='scale(0.97)';
+    screen.style.transition='opacity .5s,transform .5s';
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      screen.style.opacity='1';
+      screen.style.transform='scale(1)';
+    }));
+    dash.style.opacity='1';
+    // Reset 2FA and inputs
+    document.getElementById('twoFAField').classList.remove('show');
+    document.getElementById('loginEmail').value='';
+    document.getElementById('loginPass').value='';
+    document.getElementById('loginBtnText').innerHTML='⬡ SIGN IN TO COMMAND PORTAL';
+    document.getElementById('loginBtn').style.opacity='1';
+    loginAttempts=0;
+  },400);
+}
+
+// PANEL NAVIGATION
+function showPanel(id,el){
+  document.querySelectorAll('.dash-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-link').forEach(l=>l.classList.remove('active'));
+  const panel=document.getElementById('panel-'+id);
+  if(panel) panel.classList.add('active');
+  if(el) el.classList.add('active');
+  // Re-observe fade-up elements
+  setTimeout(()=>{panel.querySelectorAll('.fu').forEach(e=>so.observe(e));},50);
+}
+
+// COPY KEY
+function copyKey(){
+  const key=document.getElementById('mainKey').textContent;
+  navigator.clipboard?.writeText(key).then(()=>{
+    const btn=event.target;
+    btn.textContent='✓ COPIED';
+    btn.style.background='var(--green)';
+    btn.style.color='#000';
+    setTimeout(()=>{btn.textContent='⬡ COPY';btn.style.background='';btn.style.color='';},1500);
+  });
+}
+function copyKey2(){event.target.textContent='✓ COPIED';setTimeout(()=>event.target.textContent='⬡ COPY',1500);}
+function copyKey3(){event.target.textContent='✓ COPIED';setTimeout(()=>event.target.textContent='⬡ COPY',1500);}
+
+// ACTIVATE KEY
+function activateKey(){
+  const key=prompt('Enter your product key:');
+  if(key) alert('✓ Key "'+key+'" activated successfully.');
+}
+
+// SAVE SETTINGS
+function saveSettings(){
+  const btn=event.target;
+  const orig=btn.textContent;
+  btn.textContent='✓ SAVED';
+  btn.style.background='linear-gradient(90deg,rgba(0,255,136,.8),rgba(0,212,255,.8))';
+  setTimeout(()=>{btn.textContent=orig;btn.style.background='';},2000);
+}
+
+// SIMULATE DOWNLOAD
+function simulateDownload(el,filename){
+  const orig=el.textContent;
+  el.textContent='⬇ DOWNLOADING...';
+  el.style.color='var(--gold)';
+  setTimeout(()=>{
+    el.textContent='✓ DOWNLOADED — '+filename;
+    el.style.color='var(--green)';
+    setTimeout(()=>{el.textContent=orig;el.style.color='';},3000);
+  },1800);
+}
+
+// KEYBOARD ENTER on login
+document.getElementById('loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+document.getElementById('loginEmail').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('loginPass').focus();});
+
+// THEME TOGGLE
+function toggleTheme(){
+  const body=document.body;
+  const isLight=body.classList.toggle('light-mode');
+  // Nav button
+  const icon=document.querySelector('#themeToggle .toggle-icon');
+  const label=document.getElementById('themeLabel');
+  // Login button
+  const iconL=document.getElementById('themeIconLogin');
+  const labelL=document.getElementById('themeLabelLogin');
+  if(isLight){
+    if(icon)icon.textContent='☀';if(label)label.textContent='LIGHT';
+    if(iconL)iconL.textContent='☀';if(labelL)labelL.textContent='LIGHT MODE';
+    patchInlineColors(true);
+  } else {
+    if(icon)icon.textContent='🌙';if(label)label.textContent='DARK';
+    if(iconL)iconL.textContent='🌙';if(labelL)labelL.textContent='DARK MODE';
+    patchInlineColors(false);
+  }
+  localStorage.setItem('theme',isLight?'light':'dark');
+}
+
+function patchInlineColors(isLight){
+  // Walk all elements with inline style containing color:#fff or similar whites
+  const all=document.querySelectorAll('[style]');
+  all.forEach(el=>{
+    if(isLight){
+      const s=el.getAttribute('style')||'';
+      if(/color\s*:\s*#fff/i.test(s)||/color\s*:\s*#ffffff/i.test(s)||/color\s*:\s*white/i.test(s)){
+        el.dataset.origColor=s;
+        // Replace the white color with dark text
+        el.style.color='#0A1828';
+        // Also clear webkit-text-fill-color if set to transparent (gradient text should stay)
+        if(!/webkit-text-fill-color\s*:\s*transparent/.test(s)){
+          el.style.webkitTextFillColor='#0A1828';
+        }
+      }
+    } else {
+      // Restore original inline styles
+      if(el.dataset.origColor!==undefined){
+        el.setAttribute('style',el.dataset.origColor);
+        delete el.dataset.origColor;
+      }
+    }
+  });
+}
+
+// Restore theme on load
+(function(){
+  if(localStorage.getItem('theme')==='light'){
+    document.body.classList.add('light-mode');
+    const icon=document.querySelector('#themeToggle .toggle-icon');
+    const label=document.getElementById('themeLabel');
+    const iconL=document.getElementById('themeIconLogin');
+    const labelL=document.getElementById('themeLabelLogin');
+    if(icon)icon.textContent='☀';if(label)label.textContent='LIGHT';
+    if(iconL)iconL.textContent='☀';if(labelL)labelL.textContent='LIGHT MODE';
+    // Patch after DOM ready
+    setTimeout(()=>patchInlineColors(true),50);
+  }
+})();
+</script>
+</body>
+</html>
