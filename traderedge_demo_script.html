@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TraderEdge Psych OS — Demo Video Script</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Syne:wght@400;600&family=Space+Mono&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0A0C10; color: #E8EDF5; font-family: 'Syne', sans-serif; padding: 40px 20px; }
+  .page { max-width: 780px; margin: 0 auto; }
+
+  .cover { text-align: center; padding: 48px 0 40px; border-bottom: 1px solid rgba(0,212,255,0.2); margin-bottom: 40px; }
+  .cover-label { font-family: 'Orbitron', monospace; font-size: 10px; letter-spacing: 3px; color: #00D4FF; text-transform: uppercase; margin-bottom: 12px; }
+  .cover-title { font-family: 'Orbitron', monospace; font-size: 26px; font-weight: 700; color: #FFFFFF; line-height: 1.3; margin-bottom: 6px; }
+  .cover-title span { color: #F0C040; }
+  .cover-sub { font-size: 13px; color: #6B7A8D; font-family: 'Space Mono', monospace; margin-top: 10px; }
+  .meta-row { display: flex; justify-content: center; gap: 32px; margin-top: 24px; flex-wrap: wrap; }
+  .meta-item { text-align: center; }
+  .meta-val { font-family: 'Orbitron', monospace; font-size: 18px; font-weight: 700; color: #00D4FF; display: block; }
+  .meta-label { font-size: 10px; color: #6B7A8D; font-family: 'Space Mono', monospace; margin-top: 3px; }
+
+  .intro-box { background: #161B24; border: 1px solid rgba(0,212,255,0.15); border-radius: 10px; padding: 20px 24px; margin-bottom: 32px; }
+  .intro-box p { font-size: 13px; color: #A0AEBB; line-height: 1.8; }
+  .intro-box p + p { margin-top: 10px; }
+
+  .scene { background: #0F1218; border: 1px solid rgba(0,212,255,0.12); border-radius: 12px; margin-bottom: 24px; overflow: hidden; }
+  .scene-header { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid rgba(0,212,255,0.1); background: #161B24; }
+  .scene-num { font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700; color: #000; background: #00D4FF; border-radius: 4px; padding: 3px 9px; flex-shrink: 0; }
+  .scene-title { font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; color: #FFFFFF; flex: 1; }
+  .scene-time { font-family: 'Space Mono', monospace; font-size: 10px; color: #F0C040; background: rgba(240,192,64,0.1); border: 1px solid rgba(240,192,64,0.2); border-radius: 4px; padding: 3px 10px; flex-shrink: 0; }
+  .scene-body { padding: 18px 20px; }
+
+  .action-row { display: flex; gap: 14px; margin-bottom: 14px; }
+  .action-badge { font-family: 'Orbitron', monospace; font-size: 8px; font-weight: 700; letter-spacing: 1.5px; padding: 3px 10px; border-radius: 20px; flex-shrink: 0; height: fit-content; margin-top: 2px; text-transform: uppercase; }
+  .action-badge.vo { background: rgba(0,212,255,0.12); border: 1px solid rgba(0,212,255,0.3); color: #00D4FF; }
+  .action-badge.screen { background: rgba(240,192,64,0.1); border: 1px solid rgba(240,192,64,0.25); color: #F0C040; }
+  .action-badge.tip { background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.2); color: #00FF88; }
+  .action-text { font-size: 13px; line-height: 1.75; color: #E8EDF5; }
+  .action-text em { color: #A0AEBB; font-style: normal; font-size: 12px; font-family: 'Space Mono', monospace; }
+
+  .divider { border: none; border-top: 1px solid rgba(0,212,255,0.1); margin: 18px 0; }
+
+  .cta-box { background: linear-gradient(135deg, rgba(0,212,255,0.08), rgba(240,192,64,0.06)); border: 1px solid rgba(0,212,255,0.2); border-radius: 10px; padding: 20px 24px; margin-top: 32px; text-align: center; }
+  .cta-title { font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 700; color: #FFFFFF; margin-bottom: 8px; }
+  .cta-text { font-size: 12px; color: #A0AEBB; line-height: 1.7; }
+
+  .tips-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 24px; }
+  .tip-card { background: #161B24; border: 1px solid rgba(0,212,255,0.12); border-radius: 8px; padding: 14px 16px; }
+  .tip-card-label { font-family: 'Orbitron', monospace; font-size: 8px; letter-spacing: 2px; color: #00D4FF; text-transform: uppercase; margin-bottom: 6px; }
+  .tip-card-text { font-size: 12px; color: #A0AEBB; line-height: 1.6; }
+
+  @media print {
+    body { background: #fff; color: #111; }
+    .scene { border: 1px solid #ccc; }
+    .scene-header { background: #f5f5f5; }
+    .cover-title, .scene-title, .action-text { color: #111; }
+    .action-text em { color: #555; }
+    .intro-box, .cta-box, .tip-card { background: #f9f9f9; border: 1px solid #ddd; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="cover">
+    <div class="cover-label">Demo Video Script</div>
+    <div class="cover-title">TRADER<span>EDGE</span> PSYCH OS</div>
+    <div class="cover-sub">Voiceover Script · Screen Direction · Production Notes</div>
+    <div class="meta-row">
+      <div class="meta-item"><span class="meta-val">~90s</span><span class="meta-label">TARGET RUNTIME</span></div>
+      <div class="meta-item"><span class="meta-val">7</span><span class="meta-label">SCENES</span></div>
+      <div class="meta-item"><span class="meta-val">6</span><span class="meta-label">MODULES SHOWN</span></div>
+    </div>
+  </div>
+
+  <div class="intro-box">
+    <p><strong style="color:#FFFFFF">How to use this script:</strong> Each scene has a VOICEOVER block (what you say) and a SCREEN block (what you do on screen). Record your screen at full resolution, then record voiceover separately or live. Recommended: Loom, QuickTime, or OBS Studio.</p>
+    <p>Keep the pace brisk. The goal is to show the app feels fast and purposeful — not to explain every feature. Let the visuals do the heavy lifting.</p>
+  </div>
+
+  <!-- SCENE 0: HOOK -->
+  <div class="scene">
+    <div class="scene-header">
+      <div class="scene-num">00</div>
+      <div class="scene-title">THE HOOK — Opening Title Card</div>
+      <div class="scene-time">0:00 – 0:08</div>
+    </div>
+    <div class="scene-body">
+      <div class="action-row">
+        <div class="action-badge screen">SCREEN</div>
+        <div class="action-text">Static shot of the app's dark interface with the glowing TRADEREDGE · PSYCH OS header visible. No interaction yet — let the aesthetic land.</div>
+      </div>
+      <div class="divider"></div>
+      <div class="action-row">
+        <div class="action-badge vo">VOICE</div>
+        <div class="action-text">"Most traders don't lose because of a bad strategy. They lose because of a bad mental state. TraderEdge fixes that."</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCENE 1: BASELINE -->
+  <div class="scene">
+    <div class="scene-header">
+      <div class="scene-num">01</div>
+      <div class="scene-title">MODULE 01 — Pre-Session Baseline</div>
+      <div class="scene-time">0:08 – 0:22</div>
+    </div>
+    <div class="scene-body">
+      <div class="action-row">
+        <div class="action-badge screen">SCREEN</div>
+        <div class="action-text">App is on the BASELINE tab. Click <em>FLOW</em> — the green alert animates in: "FLOW STATE CONFIRMED." Slowly drag the Heart Rate slider up to ~105 BPM — color shifts from green to red. Drag back down to 72.</div>
+      </div>
+      <div class="divider"></div>
+      <div class="action-row">
+        <div class="action-badge vo">VOICE</div>
+        <div class="action-text">"Before you touch a chart, you check in. Emotional state. Heart rate. Sleep. Stress. If you're in revenge mode or spiking over 100 BPM — the app tells you to walk away."</div>
+      </div>
+      <div class="divider"></div>
+      <div class="action-row">
+        <div class="action-badge screen">SCREEN</div>
+        <div class="action-text">Click the <em>REVENGE</em> button — the red "STAND DOWN" alert fires. Then click <em>FLOW</em> to reset. Click <em>LOG BASELINE & ENTER MARKET</em>.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCENE 2: GUARDRAILS -->
+  <div class="scene">
+    <div class="scene-header">
+      <div class="scene-num">02</div>
+      <div class="scene-title">MODULE 02 — Habit Guardrails</div>
+      <div class="scene-time">0:22 – 0:38</div>
+    </div>
+    <div class="scene-body">
+      <div class="action-row">
+        <div class="action-badge screen">SCREEN</div>
+        <div class="action-text">On the GUARDRAILS tab. Quickly check off each item in the Entry Criteria checklist — watch the green glow animate in on each row. Show the Readiness Score ticking up: 0/9... 3/9... 7/9...</div>
+      </div>
+      <div class="divider"></div>
+      <div class="action-row">
+        <div class="action-badge vo">VOICE</div>
+        <div class="action-text">"Then you run the ICT checklist. Order block confirmed. Liquidity swept. Wick valid. Candle closed. Not until all nine boxes are green do you have permission to enter. That discipline streak at the bottom? That's your real P&L."</div>
+      </div>
+      <div class="divider"></div>
+      <div class="action-row">
+        <div class="action-badge screen">SCREEN</div>
+        <div class="action-text">Check remaining boxes — Readiness Score hits <em>9 / 9</em> and turns green: "Fully locked. ENTER THE MARKET." Scroll down briefly to show the 28-day streak grid.</div>
+      </div>
+      <div class="divider"></div>
+      <div class="action-row">
+        <div class="action-badge tip">TIP</div>
+        <div class="action-text">Slow down slightly on the 9/9 moment — it's satisfying and the viewer needs to register what just happened.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCENE 3: REVIEW LOOP -->
+  <div class="scene">
+    <div class="scene-header">
+      <div class="scene-num">03</div>
+      <div class="scene-title">MODULE 03 — Post-Market Review Loop</div>
+      <div class="scene-time">0:38 – 0:50</div>
+    </div>
+    <div class="scene-body">
+      <div class="action-row">
+        <div class="action-badge screen">SCREEN</div>
+        <div class="action-text">Navigate to REVIEW LOOP. Quickly type a few words into the "What was my plan?" and "What did I actually do?" fields — doesn't need to be long. Click the <em>ELITE (9)</em> self-score button.</div>
+      </div>
+      <div class="divider"></div>
+      <div class="action-row">
+        <div class="action-badge vo">VOICE</div>
+        <div class="action-text">"After the session, you close the loop. What did you plan? What did you actually do? What's the gap? Steenbarger's performance loop — Plan, Act, Review — built directly into the flow. Your edge compounds every time you fill this out."</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCENE 4: SENTIMENT -->
+  <div class="scene">
+    <div class="scene-header">
+      <div class="scene-num">04</div>
+      <div class="scene-title">MODULE 04 — AI Sentiment Engine</div>
+      <div class="scene-time">0:50 – 1:04</div>
+    </div>
+    <div class="scene-body">
+      <div class="action-row">
+        <div class="action-badge screen">SCREEN</div>
+        <div class="action-text">Navigate to SENTIMENT. The 4 market cards (NQ, Gold, Oil, BTC) are already showing scores. Click <em>REFRESH AI SENTIMENT SCAN</em> — the cards fade to 30% opacity, the spinner appears, then the new AI-generated scores and catalysts animate back in.</div>
+      </div>
+      <div class="divider"></div>
+      <div class="action-row">
+        <div class="action-badge vo">VOICE</div>
+        <div class="action-text">"One tap. Live AI sentiment across NASDAQ, Gold, Oil, and Bitcoin. Sentiment scores, the key catalysts driving each market, and how they're correlating right now. You walk into the open with context — not guesses."</div>
+      </div>
+      <div class="divider"></div>
+      <div class="action-row">
+        <div class="action-badge tip">TIP</div>
+        <div class="action-text">Do the refresh before recording so you know it works. The live API call is real — have a backup static screenshot ready in case of latency.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCENE 5: CHART AI -->
+  <div class="scene">
+    <div class="scene-header">
+      <div class="scene-num">05</div>
+      <div class="scene-title">MODULE 05 — AI Chart Analyzer</div>
+      <div class="scene-time">1:04 – 1:18</div>
+    </div>
+    <div class="scene-body">
+      <div class="action-row">
+        <div class="action-badge screen">SCREEN</div>
+        <div class="action-text">Navigate to CHART AI. Have a chart screenshot pre-saved on your desktop. Click the upload zone, select the file — the preview appears immediately. Click <em>ANALYZE WITH AI</em>. The spinner runs briefly, then Claude's structured analysis populates: trend, OBs, liquidity zones, outlook.</div>
+      </div>
+      <div class="divider"></div>
+      <div class="action-row">
+        <div class="action-badge vo">VOICE</div>
+        <div class="action-text">"Screenshot any chart. NQ, Gold, BTC — doesn't matter. AI reads the price action using ICT and SMC methodology. Order blocks, fair value gaps, liquidity sweeps, technical outlook. In seconds."</div>
+      </div>
+      <div class="divider"></div>
+      <div class="action-row">
+        <div class="action-badge tip">TIP</div>
+        <div class="action-text">Use a clean, high-contrast chart screenshot for this demo — ideally NQ on a 15-min with clear OBs visible. The more structured the chart, the more impressive the AI output looks.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCENE 6: PROP FIRMS -->
+  <div class="scene">
+    <div class="scene-header">
+      <div class="scene-num">06</div>
+      <div class="scene-title">MODULE 06 — Prop Firm Account Monitor</div>
+      <div class="scene-time">1:18 – 1:32</div>
+    </div>
+    <div class="scene-body">
+      <div class="action-row">
+        <div class="action-badge screen">SCREEN</div>
+        <div class="action-text">Navigate to PROP FIRMS. Show the portfolio summary row at the top — total P&L, 3 accounts, buying power. Pause on the red warning banner: "APEX — Daily loss limit 78% consumed." Click to expand the APEX card — show the red drawdown bar and recent losing trades. Then click to expand TOPSTEP — green and healthy contrast.</div>
+      </div>
+      <div class="divider"></div>
+      <div class="action-row">
+        <div class="action-badge vo">VOICE</div>
+        <div class="action-text">"Running multiple prop firm accounts? All of them live in one dashboard. P&L, drawdown health, daily loss consumed, recent trades. When Apex is 78% into its daily limit — you see it before you blow the account. Click Analyze with AI and it tells you exactly what to do."</div>
+      </div>
+      <div class="divider"></div>
+      <div class="action-row">
+        <div class="action-badge screen">SCREEN</div>
+        <div class="action-text">Scroll down and click <em>ANALYZE ALL ACCOUNTS WITH AI</em> — show the spinner then the AI risk report populating.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCENE 7: CLOSE -->
+  <div class="scene">
+    <div class="scene-header">
+      <div class="scene-num">07</div>
+      <div class="scene-title">CLOSING — CTA</div>
+      <div class="scene-time">1:32 – 1:42</div>
+    </div>
+    <div class="scene-body">
+      <div class="action-row">
+        <div class="action-badge screen">SCREEN</div>
+        <div class="action-text">Pan back to the BASELINE tab — the full app header glowing. Hold on the neural state badge: "NEURAL STATE: ACTIVE." Fade to black or end on a static brand frame.</div>
+      </div>
+      <div class="divider"></div>
+      <div class="action-row">
+        <div class="action-badge vo">VOICE</div>
+        <div class="action-text">"TraderEdge Psych OS. Six modules. One system. Built for traders who are serious about the only edge that actually lasts — the one between your ears. TradeSniper.ai."</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRODUCTION TIPS -->
+  <div class="tips-grid">
+    <div class="tip-card">
+      <div class="tip-card-label">Recording Setup</div>
+      <div class="tip-card-text">Open the HTML file locally in Chrome at 1920×1080. Use Loom or OBS at 60fps. Record voiceover separately for cleaner audio if possible.</div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-card-label">Pacing Note</div>
+      <div class="tip-card-text">Move deliberately — don't rush clicks. Pause half a second after each interaction to let animations complete before speaking the next line.</div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-card-label">Music Suggestion</div>
+      <div class="tip-card-text">Dark cinematic electronic, 80–90 BPM. Avoid anything with lyrics. YouTube Audio Library: search "cinematic dark electronic" or "tech noir ambient."</div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-card-label">Thumbnail Frame</div>
+      <div class="tip-card-text">Pause on the Readiness Score hitting 9/9 (green glow) or the AI sentiment cards fully loaded. High-contrast, clean — strong for social preview.</div>
+    </div>
+  </div>
+
+  <div class="cta-box">
+    <div class="cta-title">CLOSING FRAME TEXT (optional overlay)</div>
+    <div class="cta-text">
+      "TraderEdge Psych OS &nbsp;·&nbsp; TradeSniper.ai"<br>
+      <span style="color:#6B7A8D;font-size:11px;font-family:'Space Mono',monospace;margin-top:6px;display:block">Precision is the only edge.</span>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

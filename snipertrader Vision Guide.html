@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SniperTrader Vision — Implementation Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   ROOT TOKENS
+═══════════════════════════════════════════ */
+:root {
+  --obsidian:      #04060a;
+  --deep:          #070c14;
+  --surface:       #0b1320;
+  --surface-2:     #0f1a2a;
+  --glass:         rgba(11,19,32,0.60);
+  --glass-lite:    rgba(11,19,32,0.35);
+  --border-c:      rgba(0,212,255,0.14);
+  --border-gold:   rgba(255,180,0,0.18);
+  --border-dim:    rgba(0,212,255,0.07);
+  --cyan:          #00d4ff;
+  --cyan-60:       rgba(0,212,255,0.60);
+  --cyan-20:       rgba(0,212,255,0.20);
+  --cyan-08:       rgba(0,212,255,0.08);
+  --gold:          #ffb400;
+  --gold-60:       rgba(255,180,0,0.60);
+  --gold-10:       rgba(255,180,0,0.10);
+  --red:           #ff3b5c;
+  --green:         #00ff9d;
+  --white:         #f0f8ff;
+  --muted:         rgba(200,225,245,0.75);
+  --muted-hi:      rgba(220,238,255,0.92);
+  --font-h:        'Orbitron', monospace;
+  --font-m:        'Space Mono', monospace;
+  --font-b:        'Syne', sans-serif;
+}
+
+/* ═══════════════════════════════════════════
+   LIGHT MODE OVERRIDES
+═══════════════════════════════════════════ */
+body.light-mode {
+  --obsidian:      #f0f4fa;
+  --deep:          #e4ecf7;
+  --surface:       #dce8f5;
+  --surface-2:     #d0e0ef;
+  --glass:         rgba(220,232,245,0.75);
+  --glass-lite:    rgba(220,232,245,0.45);
+  --border-c:      rgba(0,140,200,0.22);
+  --border-gold:   rgba(180,120,0,0.22);
+  --border-dim:    rgba(0,140,200,0.10);
+  --cyan:          #007ab8;
+  --cyan-60:       rgba(0,122,184,0.60);
+  --cyan-20:       rgba(0,122,184,0.20);
+  --cyan-08:       rgba(0,122,184,0.08);
+  --gold:          #b87800;
+  --gold-60:       rgba(184,120,0,0.60);
+  --gold-10:       rgba(184,120,0,0.10);
+  --red:           #cc1f3a;
+  --green:         #007a44;
+  --white:         #0d1a2e;
+  --muted:         rgba(20,50,90,0.65);
+  --muted-hi:      rgba(10,35,75,0.88);
+}
+
+/* ═══════════════════════════════════════════
+   RESET + BASE
+═══════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body {
+  background: var(--obsidian);
+  color: var(--white);
+  font-family: var(--font-b);
+  overflow-x: hidden;
+  cursor: none;
+  line-height: 1.6;
+}
+::selection { background: rgba(0,212,255,0.25); color: var(--white); }
+
+/* ═══════════════════════════════════════════
+   CURSOR
+═══════════════════════════════════════════ */
+#cur { position:fixed;width:10px;height:10px;background:var(--cyan);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);box-shadow:0 0 10px var(--cyan),0 0 24px rgba(0,212,255,.35);mix-blend-mode:screen;transition:width .18s,height .18s; }
+#cur-ring { position:fixed;width:32px;height:32px;border:1px solid rgba(0,212,255,.45);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:transform .2s ease-out,width .25s,height .25s; }
+
+/* ═══════════════════════════════════════════
+   PARTICLES + SCANLINES
+═══════════════════════════════════════════ */
+#pcanvas { position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.55; }
+.scanlines { position:fixed;inset:0;pointer-events:none;z-index:2;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.025) 2px,rgba(0,0,0,.025) 4px); }
+
+/* ═══════════════════════════════════════════
+   LAYOUT SHELL
+═══════════════════════════════════════════ */
+.page { position:relative;z-index:1; }
+
+/* ═══════════════════════════════════════════
+   NAV
+═══════════════════════════════════════════ */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 56px;
+  background: rgba(4,6,10,0.80);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border-dim);
+}
+.nav-logo { font-family:var(--font-h);font-size:12px;font-weight:700;letter-spacing:.22em;color:var(--cyan); }
+.nav-logo b { color:var(--gold); }
+.nav-breadcrumb { font-family:var(--font-m);font-size:9px;letter-spacing:.28em;color:var(--muted);text-transform:uppercase; }
+.nav-breadcrumb span { color:var(--cyan); }
+.nav-pill {
+  font-family:var(--font-m);font-size:9px;letter-spacing:.2em;text-transform:uppercase;
+  padding: 6px 16px; border: 1px solid var(--border-c); color: var(--cyan);
+  background: var(--cyan-08);
+}
+
+body.light-mode nav { background:rgba(224,234,248,0.92); }
+body.light-mode .scanlines { opacity:.3; }
+body.light-mode #pcanvas { opacity:.2; }
+
+/* ── Nav links ── */
+.nav-links {
+  display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center;
+}
+.nav-link {
+  font-family:var(--font-m);font-size:8.5px;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--muted-hi);text-decoration:none;padding:5px 11px;
+  border:1px solid transparent;
+  transition:color .2s,border-color .2s,background .2s;
+}
+.nav-link:hover { color:var(--cyan);border-color:var(--border-c);background:var(--cyan-08); }
+.nav-link.nav-link-cta { color:var(--gold);border-color:var(--border-gold);background:var(--gold-10); }
+.nav-link.nav-link-cta:hover { border-color:var(--gold-60);background:rgba(255,180,0,.15); }
+
+/* ── Theme Toggle ── */
+.theme-toggle {
+  background:var(--glass);border:1px solid var(--border-c);
+  color:var(--cyan);font-size:15px;
+  width:36px;height:36px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:border-color .2s,background .2s;flex-shrink:0;
+}
+.theme-toggle:hover { border-color:var(--cyan-60);background:var(--cyan-08); }
+
+/* ── Footer ── */
+.site-footer {
+  border-top:1px solid var(--border-dim);
+  background:rgba(4,6,10,.95);
+  padding:60px 56px 0;
+}
+body.light-mode .site-footer { background:rgba(224,234,244,.95); }
+.footer-inner {
+  display:grid;
+  grid-template-columns:1.4fr 1fr 1fr 1fr 1fr;
+  gap:40px;
+  padding-bottom:48px;
+  border-bottom:1px solid var(--border-dim);
+}
+.footer-brand { display:flex;flex-direction:column;gap:8px; }
+.footer-logo { font-family:var(--font-h);font-size:13px;font-weight:700;letter-spacing:.2em;color:var(--cyan); }
+.footer-logo b { color:var(--gold); }
+.footer-tagline { font-family:var(--font-m);font-size:8px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted); }
+.footer-col-title {
+  font-family:var(--font-m);font-size:8.5px;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:16px;padding-bottom:8px;
+  border-bottom:1px solid var(--border-gold);
+}
+.footer-links { list-style:none;display:flex;flex-direction:column;gap:9px; }
+.footer-links a {
+  font-family:var(--font-b);font-size:12px;color:var(--muted-hi);text-decoration:none;
+  transition:color .2s;
+}
+.footer-links a:hover { color:var(--cyan); }
+.footer-bottom {
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;
+  padding:20px 0;
+  font-family:var(--font-m);font-size:8px;letter-spacing:.15em;color:var(--muted);
+}
+.footer-legal { color:rgba(160,190,220,.35); }
+@media(max-width:900px){
+  .footer-inner{grid-template-columns:1fr 1fr;}
+  .site-footer{padding:40px 20px 0;}
+  .footer-bottom{font-size:7px;}
+  .nav-links{display:none;}
+}
+
+/* ═══════════════════════════════════════════
+   MISSION HEADER
+═══════════════════════════════════════════ */
+.mission-header {
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 120px 40px 80px;
+  position: relative; overflow: hidden; text-align: center;
+}
+
+/* Radial glow bg */
+.mission-header::before {
+  content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:900px;height:900px;
+  background:radial-gradient(ellipse,rgba(0,212,255,.055) 0%,transparent 65%);
+  pointer-events:none;
+}
+
+.mission-badge {
+  display:inline-flex;align-items:center;gap:10px;
+  font-family:var(--font-m);font-size:9px;letter-spacing:.35em;text-transform:uppercase;
+  padding:7px 18px;border:1px solid var(--border-c);
+  background:var(--cyan-08);color:var(--cyan);
+  margin-bottom:32px;
+  opacity:0;animation:fadeUp .7s .2s forwards;
+}
+.mission-badge::before { content:'●';color:var(--red);animation:blink 1.4s step-end infinite; }
+
+.mission-title {
+  font-family:var(--font-h);
+  font-size:clamp(38px,7.5vw,90px);
+  font-weight:900;line-height:.92;letter-spacing:-.01em;text-transform:uppercase;
+  margin-bottom:28px;
+  opacity:0;animation:fadeUp .8s .4s forwards;
+}
+.mission-title .t1 { display:block;color:var(--white); }
+.mission-title .t2 {
+  display:block;
+  background:linear-gradient(95deg,var(--cyan) 20%,var(--gold) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 28px rgba(0,212,255,.45));
+}
+
+.mission-sub {
+  font-size:clamp(14px,1.6vw,17px);color:var(--muted-hi);
+  max-width:600px;line-height:1.75;margin-bottom:52px;
+  opacity:0;animation:fadeUp .8s .6s forwards;
+}
+
+/* ── Pipeline diagram ── */
+.pipeline-diagram {
+  display:flex;align-items:center;gap:0;
+  opacity:0;animation:fadeUp .9s .8s forwards;
+  flex-wrap:wrap;justify-content:center;
+}
+.pipe-node {
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  padding:20px 24px;
+  background:var(--glass);
+  border:1px solid var(--border-c);
+  backdrop-filter:blur(20px);
+  min-width:140px;
+  position:relative;
+  clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px));
+}
+.pipe-node.gold-b { border-color:var(--border-gold); }
+.pipe-node-icon { font-size:22px; }
+.pipe-node-label { font-family:var(--font-m);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--cyan); }
+.pipe-node-label.gold { color:var(--gold); }
+.pipe-node-sub { font-size:11px;color:var(--muted);text-align:center;line-height:1.4; }
+
+.pipe-arrow {
+  width:48px;flex-shrink:0;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+}
+.pipe-arrow-line {
+  height:2px;width:100%;
+  background:linear-gradient(90deg,var(--cyan-60),var(--gold-60));
+  position:relative;
+}
+.pipe-arrow-line::after {
+  content:'';position:absolute;right:-5px;top:50%;transform:translateY(-50%);
+  border:5px solid transparent;border-left-color:var(--gold);
+}
+.pipe-arrow-label { font-family:var(--font-m);font-size:8px;letter-spacing:.15em;color:var(--muted);white-space:nowrap; }
+
+/* ── Scroll cue ── */
+.scroll-cue {
+  position:absolute;bottom:36px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  font-family:var(--font-m);font-size:8px;letter-spacing:.3em;color:var(--muted);text-transform:uppercase;
+  animation:fadeUp .8s 1.2s forwards;opacity:0;
+}
+.scroll-line {
+  width:1px;height:40px;
+  background:linear-gradient(180deg,var(--cyan),transparent);
+  animation:scrollPulse 2s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════
+   SECTION CHROME
+═══════════════════════════════════════════ */
+.section-wrap { max-width:1240px;margin:0 auto;padding:100px 56px; }
+.section-wrap.tight { padding-top:60px;padding-bottom:60px; }
+
+hr.div { border:none;height:1px;background:linear-gradient(90deg,transparent,rgba(0,212,255,.12),rgba(255,180,0,.08),transparent);margin:0 56px; }
+
+.s-eye {
+  display:flex;align-items:center;gap:12px;
+  font-family:var(--font-m);font-size:9px;letter-spacing:.38em;text-transform:uppercase;color:var(--gold);
+  margin-bottom:14px;
+}
+.s-eye::before { content:'';display:block;width:28px;height:1px;background:var(--gold); }
+.s-eye .step-num { color:var(--cyan);letter-spacing:.2em; }
+
+.s-title {
+  font-family:var(--font-h);
+  font-size:clamp(24px,3.5vw,46px);
+  font-weight:900;text-transform:uppercase;line-height:1.06;letter-spacing:-.01em;
+  margin-bottom:20px;
+}
+.s-title .ac { color:var(--cyan); }
+.s-title .ag { color:var(--gold); }
+
+.s-desc { font-size:15px;color:var(--muted-hi);max-width:600px;line-height:1.8;margin-bottom:40px; }
+
+/* ═══════════════════════════════════════════
+   GLASS CARD BASE
+═══════════════════════════════════════════ */
+.g-card {
+  background:var(--glass);
+  border:1px solid var(--border-c);
+  backdrop-filter:blur(28px);
+  position:relative;overflow:hidden;
+  transition:border-color .3s,box-shadow .3s,transform .25s;
+  will-change:transform;
+}
+.g-card::after {
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(0,212,255,.03) 0%,transparent 55%);
+  pointer-events:none;
+}
+.g-card:hover { border-color:var(--cyan-60);box-shadow:0 0 32px rgba(0,212,255,.07),inset 0 0 20px rgba(0,212,255,.03); }
+.g-card.gold-card { border-color:var(--border-gold); }
+.g-card.gold-card:hover { border-color:var(--gold-60);box-shadow:0 0 28px rgba(255,180,0,.08); }
+
+/* clip corner variants */
+.clip-sm { clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px)); }
+.clip-md { clip-path:polygon(0 0,calc(100% - 18px) 0,100% 18px,100% 100%,18px 100%,0 calc(100% - 18px)); }
+.clip-lg { clip-path:polygon(0 0,calc(100% - 24px) 0,100% 24px,100% 100%,24px 100%,0 calc(100% - 24px)); }
+
+/* top accent bar */
+.g-card .top-bar { position:absolute;top:0;left:0;right:0;height:2px; }
+.g-card .top-bar.cyan-bar { background:linear-gradient(90deg,var(--cyan),rgba(0,212,255,0)); }
+.g-card .top-bar.gold-bar { background:linear-gradient(90deg,var(--gold),rgba(255,180,0,0)); }
+
+/* ═══════════════════════════════════════════
+   PHASE 0 — PARADIGM SHIFT
+═══════════════════════════════════════════ */
+.shift-grid {
+  display:grid;grid-template-columns:1fr 80px 1fr;gap:0;align-items:stretch;
+  margin-top:50px;
+}
+.shift-col {
+  padding:36px 30px;
+}
+.shift-col.before-col { background:rgba(255,59,92,.04);border:1px solid rgba(255,59,92,.15);border-right:none; }
+.shift-col.after-col { background:rgba(0,212,255,.04);border:1px solid var(--border-c);border-left:none; }
+.shift-divider { display:flex;align-items:center;justify-content:center;background:var(--surface);border-top:1px solid rgba(255,59,92,.15);border-bottom:1px solid var(--border-c); }
+.shift-vs { font-family:var(--font-h);font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.1em; }
+
+.shift-label { font-family:var(--font-m);font-size:9px;letter-spacing:.28em;text-transform:uppercase;margin-bottom:20px; }
+.shift-label.red { color:var(--red); }
+.shift-label.cyan { color:var(--cyan); }
+
+.shift-items { list-style:none;display:flex;flex-direction:column;gap:12px; }
+.shift-items li {
+  display:flex;align-items:flex-start;gap:12px;
+  font-size:13px;color:var(--muted-hi);line-height:1.55;
+}
+.shift-items li .ico { flex-shrink:0;font-size:12px;margin-top:1px; }
+
+/* ═══════════════════════════════════════════
+   PHASE 1 — HARDWARE
+═══════════════════════════════════════════ */
+.hw-grid { display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:48px; }
+
+.hw-card { padding:36px 32px; }
+.hw-badge { display:inline-block;font-family:var(--font-m);font-size:8px;letter-spacing:.2em;text-transform:uppercase;padding:4px 10px;border:1px solid var(--border-c);color:var(--cyan);background:var(--cyan-08);margin-bottom:16px; }
+.hw-badge.rec { border-color:var(--border-gold);color:var(--gold);background:var(--gold-10); }
+.hw-name { font-family:var(--font-h);font-size:17px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px; }
+.hw-tagline { font-family:var(--font-m);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-bottom:20px; }
+.hw-specs { display:flex;flex-direction:column;gap:9px;margin-bottom:24px; }
+.hw-spec-row { display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(0,212,255,.03);border-left:2px solid var(--border-c); }
+.hw-spec-key { font-family:var(--font-m);font-size:9px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase; }
+.hw-spec-val { font-family:var(--font-m);font-size:10px;color:var(--white);letter-spacing:.05em; }
+.hw-verdict { font-size:12px;color:var(--muted-hi);line-height:1.65;border-top:1px solid var(--border-dim);padding-top:16px; }
+
+/* 3D HUD glasses visual */
+.hud-scene {
+  perspective:800px;
+  width:100%;height:180px;
+  margin-top:40px;
+  display:flex;align-items:center;justify-content:center;
+}
+.hud-3d {
+  transform-style:preserve-3d;
+  width:440px;height:150px;
+  position:relative;
+  transition:transform .08s linear;
+}
+/* floating data planes */
+.hud-plane {
+  position:absolute;
+  transform-style:preserve-3d;
+  background:rgba(0,212,255,.04);
+  border:1px solid rgba(0,212,255,.18);
+  backdrop-filter:blur(4px);
+  font-family:var(--font-m);font-size:8px;color:var(--cyan);letter-spacing:.12em;
+  padding:6px 10px;
+  white-space:nowrap;
+  animation:floatPlane 4s ease-in-out infinite;
+}
+.hud-plane.p1 { top:-30px;left:20px;transform:translateZ(30px);animation-delay:0s; }
+.hud-plane.p2 { top:-30px;right:20px;transform:translateZ(20px);animation-delay:.8s;color:var(--gold);border-color:rgba(255,180,0,.2); }
+.hud-plane.p3 { bottom:-20px;left:60px;transform:translateZ(40px);animation-delay:1.4s; }
+.hud-plane.p4 { bottom:-20px;right:40px;transform:translateZ(10px);animation-delay:2s;color:var(--green);border-color:rgba(0,255,157,.2); }
+
+/* ═══════════════════════════════════════════
+   PHASE 2 — SIGNAL PIPELINE
+═══════════════════════════════════════════ */
+.pipeline-full {
+  margin-top:52px;
+  display:flex;flex-direction:column;gap:0;
+  border:1px solid var(--border-c);
+  overflow:hidden;
+  clip-path:polygon(0 0,calc(100% - 20px) 0,100% 20px,100% 100%,20px 100%,0 calc(100% - 20px));
+}
+
+.pl-row {
+  display:grid;grid-template-columns:220px 1fr;
+  border-bottom:1px solid var(--border-dim);
+  transition:background .2s;
+  position:relative;
+}
+.pl-row:last-child { border-bottom:none; }
+.pl-row:hover { background:rgba(0,212,255,.025); }
+
+.pl-left {
+  padding:28px 28px;
+  border-right:1px solid var(--border-dim);
+  display:flex;flex-direction:column;gap:6px;
+  background:rgba(0,212,255,.03);
+}
+.pl-step-num { font-family:var(--font-h);font-size:28px;font-weight:900;color:rgba(0,212,255,.1);line-height:1; }
+.pl-step-tag { font-family:var(--font-m);font-size:8px;letter-spacing:.25em;text-transform:uppercase;color:var(--cyan); }
+.pl-step-name { font-family:var(--font-h);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--white); }
+
+.pl-right { padding:28px 32px; }
+.pl-desc { font-size:13px;color:var(--muted-hi);line-height:1.7;margin-bottom:14px; }
+.pl-code {
+  font-family:var(--font-m);font-size:11px;color:var(--cyan);
+  background:rgba(0,212,255,.04);
+  border:1px solid rgba(0,212,255,.1);
+  border-left:3px solid var(--cyan);
+  padding:12px 16px;
+  line-height:1.8;
+  overflow-x:auto;
+  white-space:pre;
+}
+.pl-code .kw { color:var(--gold); }
+.pl-code .str { color:var(--green); }
+.pl-code .cm { color:rgba(160,190,220,.4); }
+.pl-code .fn { color:#c792ea; }
+
+/* flow indicator */
+.pl-flow-dot {
+  position:absolute;left:218px;top:50%;transform:translate(-50%,-50%);
+  width:8px;height:8px;border-radius:50%;background:var(--cyan);
+  box-shadow:0 0 8px var(--cyan);
+  animation:flowDot 2.5s ease-in-out infinite;
+  z-index:2;
+}
+
+/* ═══════════════════════════════════════════
+   PHASE 3 — CLAUDE CUSTOMIZATION
+═══════════════════════════════════════════ */
+.claude-grid { display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:52px; }
+
+.claude-panel { padding:32px 28px; }
+
+.cp-header {
+  display:flex;align-items:center;gap:12px;
+  font-family:var(--font-m);font-size:9px;letter-spacing:.25em;text-transform:uppercase;
+  margin-bottom:20px;
+}
+.cp-indicator {
+  width:7px;height:7px;border-radius:50%;
+  background:var(--cyan);box-shadow:0 0 6px var(--cyan);
+  animation:blink 2s step-end infinite;
+}
+.cp-indicator.gold { background:var(--gold);box-shadow:0 0 6px var(--gold); }
+.cp-indicator.grn { background:var(--green);box-shadow:0 0 6px var(--green); }
+.cp-title { color:var(--white);font-family:var(--font-h);font-size:13px;letter-spacing:.1em; }
+
+/* Prompt builder */
+.prompt-block {
+  background:rgba(4,6,10,.9);
+  border:1px solid var(--border-c);
+  border-left:3px solid var(--cyan);
+  padding:18px 20px;
+  font-family:var(--font-m);font-size:10px;
+  line-height:1.85;
+  color:rgba(160,190,220,.8);
+  position:relative;
+  overflow:hidden;
+}
+.prompt-block .sys { color:rgba(0,212,255,.5);font-size:8px;letter-spacing:.2em;text-transform:uppercase;display:block;margin-bottom:10px; }
+.prompt-block .hi { color:var(--cyan); }
+.prompt-block .hi-g { color:var(--gold); }
+.prompt-block .hi-gr { color:var(--green); }
+.prompt-block .cm { color:rgba(160,190,220,.3); }
+
+/* Tier weight sliders */
+.tier-weights { display:flex;flex-direction:column;gap:16px;margin-top:4px; }
+.tier-row { }
+.tier-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:7px; }
+.tier-name { font-family:var(--font-m);font-size:9px;letter-spacing:.2em;text-transform:uppercase; }
+.tier-name.watch { color:var(--muted-hi); }
+.tier-name.prime { color:var(--cyan); }
+.tier-name.elite { color:var(--gold); }
+.tier-val { font-family:var(--font-h);font-size:11px;font-weight:700; }
+.tier-val.watch { color:var(--muted-hi); }
+.tier-val.prime { color:var(--cyan); }
+.tier-val.elite { color:var(--gold); }
+
+.tier-bar-bg { height:6px;background:rgba(255,255,255,.06);position:relative;overflow:hidden; }
+.tier-bar-fill { height:100%;transition:width .4s; }
+.tier-bar-fill.watch { width:40%;background:rgba(160,190,220,.5); }
+.tier-bar-fill.prime { width:70%;background:linear-gradient(90deg,var(--cyan),rgba(0,212,255,.4)); }
+.tier-bar-fill.elite { width:95%;background:linear-gradient(90deg,var(--gold),rgba(255,180,0,.4)); }
+
+/* Session bias matrix */
+.session-matrix { display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px; }
+.sess-cell {
+  padding:14px 16px;
+  background:rgba(0,212,255,.03);
+  border:1px solid var(--border-dim);
+  display:flex;flex-direction:column;gap:5px;
+}
+.sess-cell.active { border-color:var(--border-c);background:rgba(0,212,255,.06); }
+.sess-name { font-family:var(--font-m);font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted); }
+.sess-bias { font-family:var(--font-h);font-size:10px;font-weight:700;letter-spacing:.05em; }
+.sess-bias.long { color:var(--green); }
+.sess-bias.short { color:var(--red); }
+.sess-bias.neutral { color:var(--muted); }
+.sess-time { font-family:var(--font-m);font-size:8px;color:var(--muted);letter-spacing:.05em; }
+.sess-active-dot { width:5px;height:5px;border-radius:50%;background:var(--cyan);box-shadow:0 0 5px var(--cyan);animation:blink 1.5s step-end infinite; }
+
+/* ═══════════════════════════════════════════
+   PHASE 4 — AUDIO DELIVERY
+═══════════════════════════════════════════ */
+.audio-layout { display:grid;grid-template-columns:1fr 1.1fr;gap:32px;margin-top:52px;align-items:start; }
+
+.audio-steps { display:flex;flex-direction:column;gap:0; }
+.a-step {
+  display:grid;grid-template-columns:52px 1fr;
+  border-bottom:1px solid var(--border-dim);
+}
+.a-step:last-child { border-bottom:none; }
+.a-num-col {
+  display:flex;flex-direction:column;align-items:center;padding:24px 0;
+  border-right:1px solid var(--border-dim);
+  gap:8px;
+}
+.a-num {
+  font-family:var(--font-h);font-size:11px;font-weight:700;
+  color:var(--cyan);letter-spacing:.1em;
+}
+.a-line { flex:1;width:1px;background:linear-gradient(180deg,var(--cyan-20),transparent); }
+.a-content { padding:24px 24px; }
+.a-title { font-family:var(--font-h);font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--white);margin-bottom:8px; }
+.a-desc { font-size:12px;color:var(--muted);line-height:1.65; }
+.a-code-inline {
+  display:inline;font-family:var(--font-m);font-size:10px;
+  color:var(--cyan);background:var(--cyan-08);
+  padding:1px 6px;border:1px solid rgba(0,212,255,.15);
+}
+
+/* Live output card */
+.live-output {
+  padding:28px;
+  background:rgba(4,6,10,.88);
+  border:1px solid var(--border-c);
+  clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px));
+}
+.lo-header {
+  display:flex;align-items:center;gap:8px;
+  font-family:var(--font-m);font-size:8px;letter-spacing:.25em;text-transform:uppercase;color:var(--muted);
+  margin-bottom:18px;
+}
+.lo-dot { width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 5px var(--red);animation:blink 1.4s step-end infinite; }
+
+.lo-signal { padding:12px 16px;border:1px solid rgba(255,180,0,.2);border-left:3px solid var(--gold);background:rgba(255,180,0,.04);margin-bottom:14px; }
+.lo-sig-tier { font-family:var(--font-h);font-size:10px;color:var(--gold);letter-spacing:.15em;font-weight:700; }
+.lo-sig-detail { font-family:var(--font-m);font-size:9px;color:var(--muted);margin-top:4px;letter-spacing:.06em; }
+
+.lo-wave { display:flex;align-items:center;gap:3px;margin-bottom:14px; }
+.lo-wave-label { font-family:var(--font-m);font-size:8px;letter-spacing:.2em;color:var(--gold);text-transform:uppercase;margin-right:8px;flex-shrink:0; }
+.wave-b { width:3px;border-radius:2px;background:var(--gold);opacity:.7;animation:wb 1.1s ease-in-out infinite; }
+
+.lo-transcript {
+  font-family:var(--font-m);font-size:10px;
+  color:rgba(180,210,235,.75);line-height:1.75;
+  border-top:1px solid var(--border-dim);padding-top:14px;
+  font-style:italic;
+}
+.lo-transcript .tag { color:var(--cyan);font-style:normal;letter-spacing:.1em; }
+
+/* ═══════════════════════════════════════════
+   PHASE 5 — CLAUDE PROMPT TEMPLATES
+═══════════════════════════════════════════ */
+.templates-grid { display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:52px; }
+.tpl-card { padding:28px 26px; }
+.tpl-tag { font-family:var(--font-m);font-size:8px;letter-spacing:.25em;text-transform:uppercase;margin-bottom:12px; }
+.tpl-tag.c { color:var(--cyan); }
+.tpl-tag.g { color:var(--gold); }
+.tpl-tag.gr { color:var(--green); }
+.tpl-tag.r { color:var(--red); }
+.tpl-title { font-family:var(--font-h);font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--white);margin-bottom:14px; }
+.tpl-prompt {
+  font-family:var(--font-m);font-size:9.5px;
+  color:rgba(160,190,220,.8);
+  background:rgba(4,6,10,.85);
+  border:1px solid var(--border-dim);
+  border-left:2px solid;
+  padding:14px 16px;
+  line-height:1.8;
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+.tpl-prompt.c-border { border-left-color:var(--cyan); }
+.tpl-prompt.g-border { border-left-color:var(--gold); }
+.tpl-prompt.gr-border { border-left-color:var(--green); }
+.tpl-prompt.r-border { border-left-color:var(--red); }
+.tpl-prompt .hl { color:var(--cyan); }
+.tpl-prompt .hlg { color:var(--gold); }
+.tpl-prompt .hlgr { color:var(--green); }
+
+/* ═══════════════════════════════════════════
+   PHASE 6 — CHECKLIST / GO LIVE
+═══════════════════════════════════════════ */
+.checklist-layout { display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:52px; }
+.cl-group { }
+.cl-group-title { font-family:var(--font-m);font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:var(--muted);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border-dim); }
+.cl-items { display:flex;flex-direction:column;gap:10px; }
+.cl-item {
+  display:flex;align-items:flex-start;gap:12px;
+  padding:12px 16px;
+  background:rgba(0,212,255,.03);
+  border:1px solid var(--border-dim);
+  cursor:pointer;
+  transition:border-color .2s,background .2s;
+}
+.cl-item:hover { border-color:var(--border-c);background:rgba(0,212,255,.05); }
+.cl-item.done { border-color:rgba(0,255,157,.2);background:rgba(0,255,157,.03); }
+.cl-box {
+  width:14px;height:14px;border:1px solid var(--border-c);flex-shrink:0;margin-top:1px;
+  display:flex;align-items:center;justify-content:center;font-size:9px;
+  transition:border-color .2s,background .2s;
+}
+.cl-item.done .cl-box { border-color:var(--green);background:rgba(0,255,157,.1);color:var(--green); }
+.cl-text { font-size:12px;color:var(--muted-hi);line-height:1.5; }
+.cl-item.done .cl-text { color:var(--muted);text-decoration:line-through;text-decoration-color:rgba(0,255,157,.3); }
+
+/* ═══════════════════════════════════════════
+   NEURAL PATHWAY SVG
+═══════════════════════════════════════════ */
+.neural-wrap {
+  margin:60px 0;
+  position:relative;height:200px;overflow:hidden;
+}
+.neural-wrap svg { width:100%;height:100%; }
+
+/* ═══════════════════════════════════════════
+   REVEAL + TILT
+═══════════════════════════════════════════ */
+.reveal { opacity:0;transform:translateY(36px);transition:opacity .7s,transform .7s; }
+.reveal.visible { opacity:1;transform:translateY(0); }
+.reveal.d1 { transition-delay:.08s; }
+.reveal.d2 { transition-delay:.16s; }
+.reveal.d3 { transition-delay:.24s; }
+.reveal.d4 { transition-delay:.32s; }
+
+/* tiltable cards */
+.tilt { will-change:transform;transition:transform .08s linear,box-shadow .2s; }
+
+/* ═══════════════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════════════ */
+@keyframes fadeUp { from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none} }
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0} }
+@keyframes scrollPulse { 0%,100%{opacity:.3;transform:scaleY(1)}50%{opacity:1;transform:scaleY(1.15)} }
+@keyframes floatPlane { 0%,100%{transform:translateZ(var(--tz,30px)) translateY(0)}50%{transform:translateZ(var(--tz,30px)) translateY(-6px)} }
+@keyframes flowDot { 0%,100%{opacity:.4;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.5)} }
+@keyframes wb { 0%,100%{height:4px}50%{height:20px} }
+@keyframes neuralFlow { 0%{stroke-dashoffset:600}100%{stroke-dashoffset:0} }
+@keyframes nodeGlow { 0%,100%{opacity:.4}50%{opacity:1} }
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════ */
+@media(max-width:900px){
+  nav{padding:14px 20px;}
+  .section-wrap{padding:60px 20px;}
+  hr.div{margin:0 20px;}
+  .hw-grid,.claude-grid,.audio-layout,.templates-grid,.checklist-layout{grid-template-columns:1fr;}
+  .shift-grid{grid-template-columns:1fr;}
+  .shift-divider{display:none;}
+  .shift-col.before-col,.shift-col.after-col{border:1px solid;}
+  .shift-col.before-col{border-color:rgba(255,59,92,.2);}
+  .shift-col.after-col{border-color:var(--border-c);}
+  .pl-row{grid-template-columns:1fr;}
+  .pl-left{border-right:none;border-bottom:1px solid var(--border-dim);}
+  .pl-flow-dot{display:none;}
+  .pipeline-diagram{gap:8px;}
+  .pipe-arrow{width:24px;}
+}
+</style>
+</head>
+<body>
+
+<div id="cur"></div>
+<div id="cur-ring"></div>
+<canvas id="pcanvas"></canvas>
+<div class="scanlines"></div>
+
+<div class="page">
+
+<!-- ══════════════ NAV ══════════════ -->
+<nav>
+  <div class="nav-logo">SNIPER<b>TRADER</b></div>
+  <div class="nav-links">
+    <a href="#" class="nav-link">Baseline</a>
+    <a href="#" class="nav-link">Guardrails</a>
+    <a href="#" class="nav-link">Review Loop</a>
+    <a href="#" class="nav-link">Ai Sentiment</a>
+    <a href="#" class="nav-link">Ai Chart Analyzer</a>
+    <a href="#" class="nav-link nav-link-cta">Prop Firm Center</a>
+  </div>
+  <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">
+    <span class="theme-icon-dark">🌙</span>
+    <span class="theme-icon-light" style="display:none">☀️</span>
+  </button>
+</nav>
+
+<!-- ══════════════ MISSION HEADER ══════════════ -->
+<section class="mission-header">
+  <div class="mission-badge">CLASSIFIED // OPERATOR DOCUMENT // REV 2.0</div>
+
+  <h1 class="mission-title">
+    <span class="t1">Eyes Up.</span>
+    <span class="t2">Hands Free.</span>
+  </h1>
+  <p class="mission-sub">The complete operator guide for deploying SniperTrader Vision — from hardware setup through Claude AI customization. This is not a tutorial. This is your unfair advantage, operationalized.</p>
+
+  <!-- Pipeline Overview Diagram -->
+  <div class="pipeline-diagram">
+    <div class="pipe-node">
+      <div class="pipe-node-icon">⚡</div>
+      <div class="pipe-node-label">USME Engine</div>
+      <div class="pipe-node-sub">TOS / TradingView<br>Signal Detection</div>
+    </div>
+    <div class="pipe-arrow">
+      <div class="pipe-arrow-line"></div>
+      <div class="pipe-arrow-label">WEBHOOK</div>
+    </div>
+    <div class="pipe-node">
+      <div class="pipe-node-icon">🔗</div>
+      <div class="pipe-node-label">Backend Relay</div>
+      <div class="pipe-node-sub">Node.js / Vercel<br>Edge Function</div>
+    </div>
+    <div class="pipe-arrow">
+      <div class="pipe-arrow-line"></div>
+      <div class="pipe-arrow-label">API CALL</div>
+    </div>
+    <div class="pipe-node gold-b">
+      <div class="pipe-node-icon">🧠</div>
+      <div class="pipe-node-label gold">Claude AI</div>
+      <div class="pipe-node-sub">SMC Interpreter<br>Audio Brief</div>
+    </div>
+    <div class="pipe-arrow">
+      <div class="pipe-arrow-line"></div>
+      <div class="pipe-arrow-label">BLUETOOTH</div>
+    </div>
+    <div class="pipe-node gold-b">
+      <div class="pipe-node-icon">🥽</div>
+      <div class="pipe-node-label gold">Smart Glasses</div>
+      <div class="pipe-node-sub">Ray-Ban Meta<br>Mentra Live</div>
+    </div>
+  </div>
+
+  <div class="scroll-cue">
+    <div class="scroll-line"></div>
+    SCROLL TO BEGIN BRIEFING
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ══════════════ PHASE 0: PARADIGM SHIFT ══════════════ -->
+<section class="section-wrap">
+  <div class="s-eye reveal"><span class="step-num">PHASE 00 //</span> THE PARADIGM SHIFT</div>
+  <h2 class="s-title reveal d1">From <span class="ac">Screen-Glued</span><br>to <span class="ag">Eyes-Up</span> Trading</h2>
+  <p class="s-desc reveal d2">Before configuring a single line of code, you must internalize the shift. SniperTrader Vision is not an alert tool — it's a cognitive architecture upgrade. Here's what changes.</p>
+
+  <div class="shift-grid reveal d3">
+    <div class="shift-col before-col">
+      <div class="shift-label red">// BEFORE — SCREEN-GLUED</div>
+      <ul class="shift-items">
+        <li><span class="ico">🔴</span>Eyes locked to 3–5 monitors, pattern recognition degrading after hour 2</li>
+        <li><span class="ico">🔴</span>Cognitive bottleneck: see signal → interpret → decide → execute (2–4 seconds)</li>
+        <li><span class="ico">🔴</span>Alert popups compete with live price action for visual bandwidth</li>
+        <li><span class="ico">🔴</span>Chart fatigue causes missed setups in the 2nd half of NY session</li>
+        <li><span class="ico">🔴</span>Reactive posture — you respond to price, not anticipate it</li>
+        <li><span class="ico">🔴</span>Information overload causes hesitation at the exact moment of entry</li>
+      </ul>
+    </div>
+    <div class="shift-divider"><div class="shift-vs">VS</div></div>
+    <div class="shift-col after-col">
+      <div class="shift-label cyan">// AFTER — EYES-UP OPERATOR</div>
+      <ul class="shift-items">
+        <li><span class="ico">🔵</span>Eyes stay on the chart at all times — audio delivers the full setup brief</li>
+        <li><span class="ico">🔵</span>Decision chain collapses to: hear signal → confirm visually → execute (&lt;1s)</li>
+        <li><span class="ico">🔵</span>Claude's voice memo carries tier, bias, levels, and target — nothing to decode</li>
+        <li><span class="ico">🔵</span>Audio channel is a separate cognitive lane — zero visual competition</li>
+        <li><span class="ico">🔵</span>Proactive posture — system primes you before price reaches the level</li>
+        <li><span class="ico">🔵</span>Clarity at the moment of execution — you know exactly what you're trading</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ══════════════ PHASE 1: HARDWARE ══════════════ -->
+<section class="section-wrap">
+  <div class="s-eye reveal"><span class="step-num">PHASE 01 //</span> HARDWARE SELECTION</div>
+  <h2 class="s-title reveal d1">Choose Your <span class="ac">Delivery</span> Hardware</h2>
+  <p class="s-desc reveal d2">The Vision stack is hardware-agnostic. Two pathways exist today — one for fastest deployment, one for maximum developer control. Both deliver Claude's audio brief via open-ear Bluetooth.</p>
+
+  <!-- 3D HUD Visual -->
+  <div class="hud-scene reveal d2" id="hudScene">
+    <div class="hud-3d" id="hud3d">
+      <div class="hud-plane p1">▸ SIGNAL: ELITE TIER DETECTED</div>
+      <div class="hud-plane p2">▸ CLAUDE: AUDIO BRIEF READY</div>
+      <div class="hud-plane p3">▸ SESSION: NY OPEN KILLZONE</div>
+      <div class="hud-plane p4">▸ BIAS: LONG // CONFIRMED</div>
+      <!-- Glasses SVG center -->
+      <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 0 440 150" fill="none">
+        <path d="M168 75 Q178 65 188 68 Q200 71 220 71 Q240 71 252 68 Q262 65 272 75" stroke="rgba(0,212,255,0.7)" stroke-width="2" fill="none"/>
+        <rect x="20" y="30" width="138" height="78" rx="18" stroke="rgba(0,212,255,0.6)" stroke-width="1.5" fill="rgba(0,212,255,0.03)"/>
+        <rect x="282" y="30" width="138" height="78" rx="18" stroke="rgba(255,180,0,0.6)" stroke-width="1.5" fill="rgba(255,180,0,0.02)"/>
+        <!-- Left lens HUD lines -->
+        <line x1="36" y1="58" x2="100" y2="58" stroke="rgba(0,212,255,0.25)" stroke-width="1"/>
+        <line x1="36" y1="68" x2="80" y2="68" stroke="rgba(0,212,255,0.15)" stroke-width="1"/>
+        <line x1="36" y1="78" x2="90" y2="78" stroke="rgba(0,212,255,0.15)" stroke-width="1"/>
+        <!-- Right lens waveform -->
+        <polyline points="298,75 308,62 318,82 328,55 338,76 348,65 358,75" stroke="rgba(255,180,0,0.45)" stroke-width="1.5" fill="none"/>
+        <!-- Corner marks left -->
+        <path d="M32 45 L32 32 L45 32" stroke="rgba(0,212,255,0.6)" stroke-width="1.5" fill="none"/>
+        <path d="M146 32 L158 32 L158 45" stroke="rgba(0,212,255,0.6)" stroke-width="1.5" fill="none"/>
+        <!-- Corner marks right -->
+        <path d="M294 45 L294 32 L307 32" stroke="rgba(255,180,0,0.6)" stroke-width="1.5" fill="none"/>
+        <path d="M408 32 L420 32 L420 45" stroke="rgba(255,180,0,0.6)" stroke-width="1.5" fill="none"/>
+        <!-- Temples -->
+        <path d="M20 55 Q2 55 1 65 Q0 75 8 92" stroke="rgba(0,212,255,0.35)" stroke-width="2" fill="none"/>
+        <path d="M420 55 Q438 55 439 65 Q440 75 432 92" stroke="rgba(255,180,0,0.35)" stroke-width="2" fill="none"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="hw-grid">
+    <div class="g-card clip-md hw-card tilt reveal d2">
+      <div class="top-bar cyan-bar"></div>
+      <div class="hw-badge rec">★ RECOMMENDED</div>
+      <div class="hw-name">Ray-Ban Meta Gen 2</div>
+      <div class="hw-tagline">// FASTEST PATH TO PRODUCTION</div>
+      <div class="hw-specs">
+        <div class="hw-spec-row"><span class="hw-spec-key">Audio</span><span class="hw-spec-val">Open-ear speakers + Mic</span></div>
+        <div class="hw-spec-row"><span class="hw-spec-key">Connection</span><span class="hw-spec-val">Bluetooth 5.2 / iOS & Android</span></div>
+        <div class="hw-spec-row"><span class="hw-spec-key">SDK</span><span class="hw-spec-val">Meta Wearables Toolkit (Dec 2025)</span></div>
+        <div class="hw-spec-row"><span class="hw-spec-key">Dev Access</span><span class="hw-spec-val">Camera + Audio APIs live</span></div>
+        <div class="hw-spec-row"><span class="hw-spec-key">Price</span><span class="hw-spec-val">~$329 USD</span></div>
+      </div>
+      <div class="hw-verdict">Best-in-class consumer form factor. 7M+ units sold. Use companion app (iOS/Android) to receive Claude's audio briefs via Bluetooth profiles — no custom SDK required for audio-only mode. Ideal for traders who want Vision running within a weekend.</div>
+    </div>
+
+    <div class="g-card gold-card clip-md hw-card tilt reveal d3">
+      <div class="top-bar gold-bar"></div>
+      <div class="hw-badge">DEVELOPER TRACK</div>
+      <div class="hw-name">Mentra Live</div>
+      <div class="hw-tagline">// MAXIMUM DEVELOPER CONTROL</div>
+      <div class="hw-specs">
+        <div class="hw-spec-row"><span class="hw-spec-key">Audio</span><span class="hw-spec-val">Speakers + Mic + Display</span></div>
+        <div class="hw-spec-row"><span class="hw-spec-key">SDK</span><span class="hw-spec-val">MentraOS (TypeScript, Open Source)</span></div>
+        <div class="hw-spec-row"><span class="hw-spec-key">AI Support</span><span class="hw-spec-val">Native AI MiniApp integration</span></div>
+        <div class="hw-spec-row"><span class="hw-spec-key">Display</span><span class="hw-spec-val">AR overlay support</span></div>
+        <div class="hw-spec-row"><span class="hw-spec-key">Power</span><span class="hw-spec-val">USB-C charge-while-use</span></div>
+      </div>
+      <div class="hw-verdict">Full open-source OS gives direct API access. Build a TypeScript MiniApp that listens for USME webhooks, calls Claude, and pushes audio output through the glasses' speakers. AR display layer available for future visual overlay expansion.</div>
+    </div>
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ══════════════ PHASE 2: SIGNAL PIPELINE ══════════════ -->
+<section class="section-wrap">
+  <div class="s-eye reveal"><span class="step-num">PHASE 02 //</span> SIGNAL PIPELINE</div>
+  <h2 class="s-title reveal d1">Wire The <span class="ac">Data</span> Pipeline</h2>
+  <p class="s-desc reveal d2">Five precise steps connect your USME indicator to Claude's interpreter. Each layer has one job. Zero redundancy, zero lag.</p>
+
+  <!-- Neural pathway visualization -->
+  <div class="neural-wrap reveal d2">
+    <svg id="neural-svg" viewBox="0 0 1200 200" preserveAspectRatio="none">
+      <!-- Background grid lines -->
+      <line x1="0" y1="100" x2="1200" y2="100" stroke="rgba(0,212,255,0.04)" stroke-width="1"/>
+      <line x1="0" y1="60" x2="1200" y2="60" stroke="rgba(0,212,255,0.02)" stroke-width="1"/>
+      <line x1="0" y1="140" x2="1200" y2="140" stroke="rgba(0,212,255,0.02)" stroke-width="1"/>
+      <!-- Vertical node lines -->
+      <line x1="120" y1="30" x2="120" y2="170" stroke="rgba(0,212,255,0.08)" stroke-width="1"/>
+      <line x1="360" y1="30" x2="360" y2="170" stroke="rgba(0,212,255,0.08)" stroke-width="1"/>
+      <line x1="600" y1="30" x2="600" y2="170" stroke="rgba(0,212,255,0.08)" stroke-width="1"/>
+      <line x1="840" y1="30" x2="840" y2="170" stroke="rgba(255,180,0,0.08)" stroke-width="1"/>
+      <line x1="1080" y1="30" x2="1080" y2="170" stroke="rgba(255,180,0,0.08)" stroke-width="1"/>
+      <!-- Main pathway -->
+      <path id="np1" d="M120,100 C240,100 240,100 360,100" stroke="rgba(0,212,255,0.5)" stroke-width="2" fill="none" stroke-dasharray="240" stroke-dashoffset="240"/>
+      <path id="np2" d="M360,100 C480,100 480,100 600,100" stroke="rgba(0,212,255,0.5)" stroke-width="2" fill="none" stroke-dasharray="240" stroke-dashoffset="240"/>
+      <path id="np3" d="M600,100 C720,100 720,100 840,100" stroke="url(#grad1)" stroke-width="2" fill="none" stroke-dasharray="240" stroke-dashoffset="240"/>
+      <path id="np4" d="M840,100 C960,100 960,100 1080,100" stroke="rgba(255,180,0,0.5)" stroke-width="2" fill="none" stroke-dasharray="240" stroke-dashoffset="240"/>
+      <!-- Branch paths -->
+      <path d="M360,100 C360,70 420,55 440,45" stroke="rgba(0,212,255,0.2)" stroke-width="1" fill="none" stroke-dasharray="5,4"/>
+      <path d="M600,100 C600,130 660,145 680,155" stroke="rgba(0,212,255,0.2)" stroke-width="1" fill="none" stroke-dasharray="5,4"/>
+      <path d="M840,100 C840,65 900,50 920,42" stroke="rgba(255,180,0,0.2)" stroke-width="1" fill="none" stroke-dasharray="5,4"/>
+      <!-- Node circles -->
+      <circle cx="120" cy="100" r="8" fill="rgba(0,212,255,0.15)" stroke="rgba(0,212,255,0.6)" stroke-width="1.5"/>
+      <circle cx="120" cy="100" r="3" fill="var(--cyan)" style="animation:nodeGlow 2s ease-in-out infinite;"/>
+      <circle cx="360" cy="100" r="8" fill="rgba(0,212,255,0.15)" stroke="rgba(0,212,255,0.6)" stroke-width="1.5"/>
+      <circle cx="360" cy="100" r="3" fill="var(--cyan)" style="animation:nodeGlow 2s .4s ease-in-out infinite;"/>
+      <circle cx="600" cy="100" r="8" fill="rgba(0,212,255,0.15)" stroke="rgba(0,212,255,0.6)" stroke-width="1.5"/>
+      <circle cx="600" cy="100" r="3" fill="var(--cyan)" style="animation:nodeGlow 2s .8s ease-in-out infinite;"/>
+      <circle cx="840" cy="100" r="10" fill="rgba(255,180,0,0.12)" stroke="rgba(255,180,0,0.7)" stroke-width="1.5"/>
+      <circle cx="840" cy="100" r="4" fill="var(--gold)" style="animation:nodeGlow 2s 1.2s ease-in-out infinite;"/>
+      <circle cx="1080" cy="100" r="10" fill="rgba(255,180,0,0.12)" stroke="rgba(255,180,0,0.7)" stroke-width="1.5"/>
+      <circle cx="1080" cy="100" r="4" fill="var(--gold)" style="animation:nodeGlow 2s 1.6s ease-in-out infinite;"/>
+      <!-- Labels -->
+      <text x="120" y="22" text-anchor="middle" font-family="'Space Mono'" font-size="9" fill="rgba(0,212,255,0.6)" letter-spacing="2">USME</text>
+      <text x="360" y="22" text-anchor="middle" font-family="'Space Mono'" font-size="9" fill="rgba(0,212,255,0.6)" letter-spacing="2">WEBHOOK</text>
+      <text x="600" y="22" text-anchor="middle" font-family="'Space Mono'" font-size="9" fill="rgba(0,212,255,0.6)" letter-spacing="2">RELAY</text>
+      <text x="840" y="22" text-anchor="middle" font-family="'Space Mono'" font-size="9" fill="rgba(255,180,0,0.7)" letter-spacing="2">CLAUDE</text>
+      <text x="1080" y="22" text-anchor="middle" font-family="'Space Mono'" font-size="9" fill="rgba(255,180,0,0.7)" letter-spacing="2">GLASSES</text>
+      <text x="120" y="186" text-anchor="middle" font-family="'Space Mono'" font-size="8" fill="rgba(160,190,220,0.35)">SIGNAL SOURCE</text>
+      <text x="600" y="186" text-anchor="middle" font-family="'Space Mono'" font-size="8" fill="rgba(160,190,220,0.35)">EDGE FUNCTION</text>
+      <text x="1080" y="186" text-anchor="middle" font-family="'Space Mono'" font-size="8" fill="rgba(160,190,220,0.35)">AUDIO OUTPUT</text>
+      <defs>
+        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="rgba(0,212,255,0.5)"/>
+          <stop offset="100%" stop-color="rgba(255,180,0,0.5)"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  </div>
+
+  <div class="pipeline-full reveal d3">
+    <div class="pl-row">
+      <div class="pl-left">
+        <div class="pl-step-num">01</div>
+        <div class="pl-step-tag">// USME ALERT</div>
+        <div class="pl-step-name">Configure Webhook Alert</div>
+      </div>
+      <div class="pl-right">
+        <p class="pl-desc">In ThinkorSwim, set your USME SOTD alert to fire via email (use a webhook relay like Zapier or a custom Node endpoint). In TradingView, use the native Webhook URL field on your USME Pine Script alert. The payload should include: symbol, timeframe, tier, session, and setup type.</p>
+        <div class="pl-code"><span class="cm">// TradingView Alert — Webhook Payload JSON</span>
+{
+  <span class="str">"symbol"</span>: <span class="str">"{{ticker}}"</span>,
+  <span class="str">"tier"</span>: <span class="str">"ELITE"</span>,        <span class="cm">// WATCH | PRIME | ELITE</span>
+  <span class="str">"timeframe"</span>: <span class="str">"{{interval}}"</span>,
+  <span class="str">"session"</span>: <span class="str">"NY_OPEN"</span>,
+  <span class="str">"setup"</span>: <span class="str">"FVG_OB_CONFLUENCE"</span>,
+  <span class="str">"price"</span>: <span class="str">"{{close}}"</span>,
+  <span class="str">"bias"</span>: <span class="str">"LONG"</span>
+}</div>
+      </div>
+      <div class="pl-flow-dot"></div>
+    </div>
+
+    <div class="pl-row">
+      <div class="pl-left">
+        <div class="pl-step-num">02</div>
+        <div class="pl-step-tag">// RELAY SERVER</div>
+        <div class="pl-step-name">Deploy Edge Function</div>
+      </div>
+      <div class="pl-right">
+        <p class="pl-desc">Deploy a Vercel Edge Function (or Cloudflare Worker) as your webhook receiver. This is the orchestration layer — it receives the USME payload, enriches it with session context, and calls the Claude API. Vercel's free tier handles the traffic volume of active trading sessions.</p>
+        <div class="pl-code"><span class="cm">// /api/signal.js — Vercel Edge Function</span>
+<span class="kw">export</span> <span class="kw">default</span> <span class="kw">async function</span> <span class="fn">handler</span>(req, res) {
+  <span class="kw">const</span> signal = req.body;
+  <span class="kw">const</span> brief = <span class="kw">await</span> <span class="fn">callClaude</span>(signal);
+  <span class="kw">await</span> <span class="fn">pushAudio</span>(brief); <span class="cm">// to glasses app</span>
+  res.json({ status: <span class="str">"delivered"</span> });
+}</div>
+      </div>
+      <div class="pl-flow-dot"></div>
+    </div>
+
+    <div class="pl-row">
+      <div class="pl-left">
+        <div class="pl-step-num">03</div>
+        <div class="pl-step-tag">// CLAUDE API</div>
+        <div class="pl-step-name">Wire Claude Interpreter</div>
+      </div>
+      <div class="pl-right">
+        <p class="pl-desc">Call <span class="a-code-inline">claude-sonnet-4-20250514</span> with your SMC system prompt + the signal payload as user message. Target max_tokens of 120 for a tight, spoken brief. Response time with Sonnet is typically 400–900ms — well within killzone windows.</p>
+        <div class="pl-code"><span class="kw">async function</span> <span class="fn">callClaude</span>(signal) {
+  <span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">"https://api.anthropic.com/v1/messages"</span>, {
+    method: <span class="str">"POST"</span>,
+    headers: {
+      <span class="str">"Content-Type"</span>: <span class="str">"application/json"</span>,
+      <span class="str">"x-api-key"</span>: process.env.<span class="fn">ANTHROPIC_KEY</span>
+    },
+    body: <span class="fn">JSON.stringify</span>({
+      model: <span class="str">"claude-sonnet-4-20250514"</span>,
+      max_tokens: <span class="kw">120</span>,
+      system: SMC_SYSTEM_PROMPT, <span class="cm">// your custom prompt</span>
+      messages: [{ role: <span class="str">"user"</span>, content: <span class="fn">JSON.stringify</span>(signal) }]
+    })
+  });
+  <span class="kw">return</span> (await res.<span class="fn">json</span>()).content[<span class="kw">0</span>].text;
+}</div>
+      </div>
+      <div class="pl-flow-dot"></div>
+    </div>
+
+    <div class="pl-row">
+      <div class="pl-left">
+        <div class="pl-step-num">04</div>
+        <div class="pl-step-tag">// TTS LAYER</div>
+        <div class="pl-step-name">Text → Audio</div>
+      </div>
+      <div class="pl-right">
+        <p class="pl-desc">Convert Claude's text brief to speech. ElevenLabs delivers the highest-quality voice for financial content (use a low-latency "Turbo" voice). For fastest delivery, use the streaming endpoint and pipe the audio buffer directly to your glasses app over Bluetooth.</p>
+        <div class="pl-code"><span class="cm">// ElevenLabs TTS — Streaming</span>
+<span class="kw">const</span> audioStream = <span class="kw">await</span> <span class="fn">fetch</span>(
+  <span class="str">`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}/stream`</span>,
+  {
+    method: <span class="str">"POST"</span>,
+    body: <span class="fn">JSON.stringify</span>({
+      text: claudeBrief,
+      model_id: <span class="str">"eleven_turbo_v2"</span>,
+      voice_settings: { stability: <span class="kw">0.7</span>, similarity_boost: <span class="kw">0.85</span> }
+    })
+  }
+);</div>
+      </div>
+      <div class="pl-flow-dot"></div>
+    </div>
+
+    <div class="pl-row">
+      <div class="pl-left">
+        <div class="pl-step-num">05</div>
+        <div class="pl-step-tag">// GLASSES DELIVERY</div>
+        <div class="pl-step-name">Push to Hardware</div>
+      </div>
+      <div class="pl-right">
+        <p class="pl-desc">Route the audio to your glasses via the companion app. For Ray-Ban Meta: your mobile app plays the audio — the glasses' Bluetooth speakers mirror it automatically. For Mentra Live: your MentraOS TypeScript MiniApp receives a WebSocket push and plays the buffer directly through the hardware speakers.</p>
+        <div class="pl-code"><span class="cm">// Mentra Live — MiniApp WebSocket Push</span>
+<span class="kw">import</span> { MentraApp } <span class="kw">from</span> <span class="str">"@mentra/sdk"</span>;
+
+<span class="kw">const</span> app = <span class="kw">new</span> <span class="fn">MentraApp</span>({ name: <span class="str">"SniperTrader Vision"</span> });
+app.<span class="fn">onWebSocketMessage</span>(<span class="str">"signal_audio"</span>, (audioBuffer) => {
+  app.<span class="fn">playAudio</span>(audioBuffer); <span class="cm">// fires through glasses speakers</span>
+});</div>
+      </div>
+      <div class="pl-flow-dot"></div>
+    </div>
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ══════════════ PHASE 3: CLAUDE CUSTOMIZATION ══════════════ -->
+<section class="section-wrap">
+  <div class="s-eye reveal"><span class="step-num">PHASE 03 //</span> CLAUDE CUSTOMIZATION</div>
+  <h2 class="s-title reveal d1">Program Claude With<br><span class="ac">Your</span> SMC <span class="ag">Context</span></h2>
+  <p class="s-desc reveal d2">This is where the moat deepens. Claude's system prompt is the intelligence layer — it encodes your tier weights, session bias, and ICT framework so every audio brief is already calibrated to your exact methodology.</p>
+
+  <div class="claude-grid">
+    <!-- Master System Prompt -->
+    <div class="g-card clip-md claude-panel tilt reveal d2">
+      <div class="top-bar cyan-bar"></div>
+      <div class="cp-header">
+        <div class="cp-indicator"></div>
+        <div class="cp-title">MASTER SYSTEM PROMPT</div>
+      </div>
+      <div class="prompt-block">
+<span class="sys">// PASTE THIS INTO YOUR RELAY — EDIT BRACKETED VALUES</span>
+<span class="hi">You are SniperTrader Vision,</span> an elite ICT/SMC trade
+interpreter embedded in smart glasses.
+
+<span class="cm">// Core Identity</span>
+When a USME signal fires, deliver a <span class="hi-g">concise spoken brief</span>
+in 2–3 sentences. Maximum 80 words. Use trader shorthand.
+
+<span class="cm">// SMC Framework Context</span>
+Framework: <span class="hi">ICT / Smart Money Concepts</span>
+Key concepts: FVG, OB, CHoCH, BOS, NWOG, CISD, liquidity
+Instruments: <span class="hi-g">[NQ, ES, CL — edit yours]</span>
+Preferred sessions: <span class="hi">London, NY Open, NY AM</span>
+
+<span class="cm">// Bias Rules — customize per your playbook</span>
+Default session bias: <span class="hi-gr">see session config below</span>
+Tier hierarchy: WATCH &lt; PRIME &lt; ELITE
+ELITE = act now. PRIME = high attention. WATCH = awareness.
+
+<span class="cm">// Output Format — ALWAYS follow this structure:</span>
+1. Tier + instrument + session
+2. Setup type + key confluence level
+3. Target 1 + invalidation level
+Tone: direct, calm, authoritative. Never verbose.</div>
+    </div>
+
+    <!-- Tier Weights -->
+    <div class="g-card gold-card clip-md claude-panel tilt reveal d3">
+      <div class="top-bar gold-bar"></div>
+      <div class="cp-header">
+        <div class="cp-indicator gold"></div>
+        <div class="cp-title">TIER WEIGHT CONFIG</div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);line-height:1.65;margin-bottom:20px;">Configure how verbose and urgent Claude's brief is per tier. ELITE gets full target + invalidation. WATCH gets a single-line awareness note.</p>
+      <div class="tier-weights">
+        <div class="tier-row">
+          <div class="tier-header">
+            <div class="tier-name watch">WATCH TIER</div>
+            <div class="tier-val watch">AWARENESS</div>
+          </div>
+          <div class="tier-bar-bg"><div class="tier-bar-fill watch"></div></div>
+        </div>
+        <div class="tier-row">
+          <div class="tier-header">
+            <div class="tier-name prime">PRIME TIER</div>
+            <div class="tier-val prime">HIGH ATTENTION</div>
+          </div>
+          <div class="tier-bar-bg"><div class="tier-bar-fill prime"></div></div>
+        </div>
+        <div class="tier-row">
+          <div class="tier-header">
+            <div class="tier-name elite">ELITE TIER</div>
+            <div class="tier-val elite">EXECUTE NOW</div>
+          </div>
+          <div class="tier-bar-bg"><div class="tier-bar-fill elite"></div></div>
+        </div>
+      </div>
+      <div class="prompt-block" style="margin-top:20px;">
+<span class="cm">// Add to system prompt — tier verbosity rules</span>
+<span class="hi-gr">WATCH:</span> One sentence. "Watch [sym] — [setup] forming."
+<span class="hi">PRIME:</span> Two sentences. Include confluence + direction.
+<span class="hlg">ELITE:</span> Full brief — tier, setup, target, invalidation.</div>
+    </div>
+
+    <!-- Session Bias Matrix -->
+    <div class="g-card clip-md claude-panel tilt reveal d2">
+      <div class="top-bar cyan-bar"></div>
+      <div class="cp-header">
+        <div class="cp-indicator grn"></div>
+        <div class="cp-title">SESSION BIAS MATRIX</div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);line-height:1.65;margin-bottom:20px;">Define your default directional lean per session. Claude uses this to contextualize the signal — if the setup aligns with session bias, it flags it. Disagreement gets a caution note.</p>
+      <div class="session-matrix">
+        <div class="sess-cell">
+          <div class="sess-name">London Open</div>
+          <div class="sess-bias long">LONG BIAS</div>
+          <div class="sess-time">02:00 – 05:00 ET</div>
+        </div>
+        <div class="sess-cell active">
+          <div class="sess-name">NY Open</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div class="sess-bias long">LONG BIAS</div>
+            <div class="sess-active-dot"></div>
+          </div>
+          <div class="sess-time">09:30 – 11:00 ET</div>
+        </div>
+        <div class="sess-cell">
+          <div class="sess-name">NY AM Session</div>
+          <div class="sess-bias neutral">NEUTRAL</div>
+          <div class="sess-time">11:00 – 12:00 ET</div>
+        </div>
+        <div class="sess-cell">
+          <div class="sess-name">NY PM / Close</div>
+          <div class="sess-bias short">SHORT BIAS</div>
+          <div class="sess-time">13:30 – 16:00 ET</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Key Level Injection -->
+    <div class="g-card gold-card clip-md claude-panel tilt reveal d3">
+      <div class="top-bar gold-bar"></div>
+      <div class="cp-header">
+        <div class="cp-indicator gold"></div>
+        <div class="cp-title">KEY LEVEL INJECTION</div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);line-height:1.65;margin-bottom:16px;">Pass your pre-marked daily levels into the system prompt so Claude can reference them in the brief — "this OB sits just above the overnight low" becomes possible context.</p>
+      <div class="prompt-block">
+<span class="cm">// Inject at session start — update daily</span>
+<span class="hi">TODAY'S KEY LEVELS ({date}):</span>
+- PDH: <span class="hi-g">21,480</span> // Previous Day High
+- PDL: <span class="hi-g">21,390</span> // Previous Day Low
+- NWOG: <span class="hi-g">21,415–21,425</span> // New Week OG
+- HTF OB: <span class="hi-g">21,350–21,370</span> // Demand zone
+- Buyside Liq: <span class="hi-g">21,510</span> // Resting stops
+- Sellside Liq: <span class="hi-g">21,365</span> // Resting stops
+
+<span class="cm">// Update this block each morning in your relay config</span></div>
+    </div>
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ══════════════ PHASE 4: AUDIO DELIVERY ══════════════ -->
+<section class="section-wrap">
+  <div class="s-eye reveal"><span class="step-num">PHASE 04 //</span> AUDIO DELIVERY</div>
+  <h2 class="s-title reveal d1">Configure The <span class="ag">Voice</span> Layer</h2>
+  <p class="s-desc reveal d2">The audio chain is the last mile. Every millisecond counts between signal and spoken brief. These steps minimize latency from Claude response to audio in your ear.</p>
+
+  <div class="audio-layout">
+    <div class="audio-steps g-card clip-md reveal d2" style="padding:0;">
+      <div class="top-bar cyan-bar"></div>
+      <div class="a-step">
+        <div class="a-num-col">
+          <div class="a-num">A</div>
+          <div class="a-line"></div>
+        </div>
+        <div class="a-content">
+          <div class="a-title">Choose TTS Engine</div>
+          <p class="a-desc">ElevenLabs Turbo v2 for lowest latency with highest natural speech quality. Use a calm, clear voice — avoid dramatic tones during live execution. Configure streaming endpoint for fastest first-byte delivery. Alternatively, OpenAI TTS (<span class="a-code-inline">tts-1</span>) is a solid fallback at lower cost.</p>
+        </div>
+      </div>
+      <div class="a-step">
+        <div class="a-num-col">
+          <div class="a-num">B</div>
+          <div class="a-line"></div>
+        </div>
+        <div class="a-content">
+          <div class="a-title">Mobile App Audio Routing</div>
+          <p class="a-desc">Your Vercel function pushes the audio buffer to your phone via WebSocket or push notification. The mobile app (iOS/Android) plays it through the device — Ray-Ban glasses mirror this audio via Bluetooth automatically. Set phone volume to 60–70% — open-ear speakers at max can be distracting.</p>
+        </div>
+      </div>
+      <div class="a-step">
+        <div class="a-num-col">
+          <div class="a-num">C</div>
+          <div class="a-line"></div>
+        </div>
+        <div class="a-content">
+          <div class="a-title">SOTD Gate Enforcement</div>
+          <p class="a-desc">Enforce your once-per-session firing gate in the relay layer. Use a simple Redis key (or Vercel KV) keyed on <span class="a-code-inline">`{symbol}_{session}_sotd`</span> with a TTL matching your session window. If the key exists, drop the signal silently — USME's clean tier system prevents overtrading at the source.</p>
+        </div>
+      </div>
+      <div class="a-step">
+        <div class="a-num-col">
+          <div class="a-num">D</div>
+        </div>
+        <div class="a-content">
+          <div class="a-title">Test Your Full Chain</div>
+          <p class="a-desc">Before going live: trigger a manual webhook POST to your relay, verify Claude returns a properly formatted brief (&lt;80 words), confirm TTS audio plays through your glasses within 2 seconds of signal fire. Log the round-trip latency. Target under 2.5 seconds signal-to-ear for killzone usage.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Output Preview -->
+    <div class="live-output reveal d3">
+      <div class="lo-header">
+        <div class="lo-dot"></div>
+        LIVE OUTPUT PREVIEW — VISION MODE
+      </div>
+
+      <div class="lo-signal">
+        <div class="lo-sig-tier">⚡ ELITE TIER — NQ / 15M</div>
+        <div class="lo-sig-detail">NY Open Killzone · FVG + OB Confluence · LONG BIAS</div>
+      </div>
+
+      <div class="lo-wave">
+        <div class="lo-wave-label">▸ CLAUDE TTS</div>
+        <div class="wave-b" style="height:8px;"></div>
+        <div class="wave-b" style="height:16px;animation-delay:.1s"></div>
+        <div class="wave-b" style="height:6px;animation-delay:.2s"></div>
+        <div class="wave-b" style="height:20px;animation-delay:.15s"></div>
+        <div class="wave-b" style="height:12px;animation-delay:.25s"></div>
+        <div class="wave-b" style="height:18px;animation-delay:.05s"></div>
+        <div class="wave-b" style="height:8px;animation-delay:.3s"></div>
+        <div class="wave-b" style="height:22px;animation-delay:.18s"></div>
+        <div class="wave-b" style="height:14px;animation-delay:.22s"></div>
+        <div class="wave-b" style="height:10px;animation-delay:.08s"></div>
+        <div class="wave-b" style="height:18px;animation-delay:.28s"></div>
+        <div class="wave-b" style="height:6px;animation-delay:.12s"></div>
+      </div>
+
+      <div class="lo-transcript" id="liveTranscript">
+        <span class="tag">VISION //</span> "Elite tier on NQ, fifteen-minute. NY Open killzone, FVG confirmed at twenty-one four-forty-eight with Order Block directly below. Bias long, target one at twenty-one four-sixty-three — plus fifteen points. Invalidation below the OB at twenty-one four-twenty-nine. Liquidity resting above — institutional intent bullish."
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+        <div style="font-family:var(--font-m);font-size:8px;letter-spacing:.15em;color:var(--cyan);background:var(--cyan-08);border:1px solid var(--border-c);padding:5px 10px;">LATENCY: 1.4s</div>
+        <div style="font-family:var(--font-m);font-size:8px;letter-spacing:.15em;color:var(--gold);background:var(--gold-10);border:1px solid var(--border-gold);padding:5px 10px;">WORDS: 62</div>
+        <div style="font-family:var(--font-m);font-size:8px;letter-spacing:.15em;color:var(--green);background:rgba(0,255,157,.06);border:1px solid rgba(0,255,157,.2);padding:5px 10px;">SOTD GATE: ARMED</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ══════════════ PHASE 5: PROMPT TEMPLATES ══════════════ -->
+<section class="section-wrap">
+  <div class="s-eye reveal"><span class="step-num">PHASE 05 //</span> PROMPT TEMPLATES</div>
+  <h2 class="s-title reveal d1">Ready-to-Deploy <span class="ac">Claude</span> Templates</h2>
+  <p class="s-desc reveal d2">Copy these into your relay's <span style="font-family:var(--font-m);font-size:13px;color:var(--cyan);">SMC_SYSTEM_PROMPT</span> variable. Each template is tuned for a specific trading context and session type.</p>
+
+  <div class="templates-grid">
+    <div class="g-card clip-sm tpl-card tilt reveal d1">
+      <div class="top-bar cyan-bar"></div>
+      <div class="tpl-tag c">// TEMPLATE 01 — STANDARD EXECUTION</div>
+      <div class="tpl-title">Full SMC Brief</div>
+      <div class="tpl-prompt c-border">You are an ICT/SMC trade brief system. When a signal JSON arrives, output a 2-sentence spoken brief (max <span class="hl">75 words</span>).
+
+<span class="hl">Sentence 1:</span> State tier, instrument, session, and primary confluence (FVG/OB/CHoCH).
+<span class="hl">Sentence 2:</span> State directional bias, Target 1, and invalidation level.
+
+Use numeric prices as spoken words. Never use jargon beyond standard ICT terms. Tone: calm and direct. No filler phrases.</div>
+    </div>
+
+    <div class="g-card gold-card clip-sm tpl-card tilt reveal d2">
+      <div class="top-bar gold-bar"></div>
+      <div class="tpl-tag g">// TEMPLATE 02 — PROP FIRM MODE</div>
+      <div class="tpl-title">Funded Account Context</div>
+      <div class="tpl-prompt g-border">You are a prop firm risk-aware trade brief system. The trader is in a funded account with a <span class="hlg">2% daily drawdown limit</span>.
+
+On ELITE signals: deliver full brief + append a one-phrase risk note ("this is a 1R setup").
+On PRIME: brief only.
+On WATCH: awareness note only, no levels.
+
+Never recommend position size. Never guarantee outcomes. State setups only.</div>
+    </div>
+
+    <div class="g-card clip-sm tpl-card tilt reveal d3">
+      <div class="top-bar" style="background:linear-gradient(90deg,var(--green),transparent);"></div>
+      <div class="tpl-tag gr">// TEMPLATE 03 — SCALP MODE</div>
+      <div class="tpl-title">High-Frequency Killzone</div>
+      <div class="tpl-prompt gr-border">You are a scalp-focus brief system for NQ/ES killzone entries.
+
+<span class="hlgr">Priority:</span> Speed over completeness. Max 40 words.
+Format: "[Tier] [Symbol] — [Setup] at [Level]. Bias [Long/Short]. Target [Level]."
+Example: "Elite NQ — FVG mitigation at twenty-one-four-fifty. Bias long. Target twenty-one-four-sixty-five."
+
+Drop invalidation if brief exceeds 40 words.</div>
+    </div>
+
+    <div class="g-card gold-card clip-sm tpl-card tilt reveal d4">
+      <div class="top-bar" style="background:linear-gradient(90deg,var(--red),transparent);"></div>
+      <div class="tpl-tag r">// TEMPLATE 04 — HTFB ALIGNMENT CHECK</div>
+      <div class="tpl-title">Higher Timeframe Bias Guard</div>
+      <div class="tpl-prompt r-border">You are a higher-timeframe bias guard. Before delivering the brief, check if the signal direction aligns with the daily/weekly bias provided in the key levels block.
+
+<span style="color:var(--red);">If aligned:</span> deliver brief normally.
+<span style="color:var(--red);">If counter-trend:</span> prepend "CAUTION — counter-HTF bias" before the brief.
+
+Never block the signal, only flag it. Trader decides.</div>
+    </div>
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ══════════════ PHASE 6: GO LIVE CHECKLIST ══════════════ -->
+<section class="section-wrap">
+  <div class="s-eye reveal"><span class="step-num">PHASE 06 //</span> GO-LIVE CHECKLIST</div>
+  <h2 class="s-title reveal d1">Operator <span class="ac">Pre-Flight</span><br>Checklist</h2>
+  <p class="s-desc reveal d2">Run through every item before your first live session. Each box checked is a failure mode eliminated. Click to mark complete.</p>
+
+  <div class="checklist-layout">
+    <div class="cl-group reveal d2">
+      <div class="cl-group-title">// HARDWARE + CONNECTIVITY</div>
+      <div class="cl-items" id="cl1">
+        <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-box"></div><div class="cl-text">Glasses paired to phone via Bluetooth — stable connection confirmed</div></div>
+        <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-box"></div><div class="cl-text">Audio test: play a voice note through glasses speakers, volume calibrated</div></div>
+        <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-box"></div><div class="cl-text">Phone volume set to 65% — open-ear audio tested in your trading environment</div></div>
+        <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-box"></div><div class="cl-text">Glasses battery charged ≥ 80% before session start</div></div>
+        <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-box"></div><div class="cl-text">Bluetooth auto-reconnect enabled on phone</div></div>
+      </div>
+    </div>
+
+    <div class="cl-group reveal d3">
+      <div class="cl-group-title">// SIGNAL + RELAY</div>
+      <div class="cl-items" id="cl2">
+        <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-box"></div><div class="cl-text">USME alerts active on TOS or TradingView — SOTD gate verified</div></div>
+        <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-box"></div><div class="cl-text">Vercel / Cloudflare edge function deployed and receiving test POSTs</div></div>
+        <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-box"></div><div class="cl-text">ANTHROPIC_KEY and ELEVENLABS_KEY environment variables set</div></div>
+        <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-box"></div><div class="cl-text">Webhook URL entered in TradingView alert or TOS email relay</div></div>
+        <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-box"></div><div class="cl-text">End-to-end latency test completed — signal to audio under 2.5 seconds</div></div>
+      </div>
+    </div>
+
+    <div class="cl-group reveal d2">
+      <div class="cl-group-title">// CLAUDE CONFIGURATION</div>
+      <div class="cl-items" id="cl3">
+        <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-box"></div><div class="cl-text">SMC system prompt loaded with your instrument list and session bias</div></div>
+        <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-box"></div><div class="cl-text">Today's key levels injected (PDH, PDL, NWOG, HTF OBs, liquidity pools)</div></div>
+        <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-box"></div><div class="cl-text">Tier verbosity rules configured (WATCH 1-line, PRIME 2-line, ELITE full)</div></div>
+        <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-box"></div><div class="cl-text">Test signal fired manually — Claude brief reviewed for accuracy and brevity</div></div>
+        <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-box"></div><div class="cl-text">Counter-HTF bias guard enabled if using Template 04</div></div>
+      </div>
+    </div>
+
+    <div class="cl-group reveal d3">
+      <div class="cl-group-title">// SESSION READINESS</div>
+      <div class="cl-items" id="cl4">
+        <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-box"></div><div class="cl-text">Daily bias determined — HTF chart reviewed, bias entered in key levels block</div></div>
+        <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-box"></div><div class="cl-text">SOTD session gate keys cleared in Vercel KV / Redis for new session</div></div>
+        <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-box"></div><div class="cl-text">Funded account drawdown limit confirmed — risk per trade calculated</div></div>
+        <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-box"></div><div class="cl-text">Trade journal open — SMC Trade Journal app ready to log setups</div></div>
+        <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-box"></div><div class="cl-text">Eyes-up posture confirmed — you are monitoring chart, not watching alerts</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- ══════════════ CLOSING CTA ══════════════ -->
+<section class="section-wrap tight" style="text-align:center;padding-bottom:120px;">
+  <div class="s-eye reveal" style="justify-content:center;">MISSION STATUS</div>
+  <h2 class="s-title reveal d1" style="text-align:center;">System Online.<br><span class="ac">Trade With Both Eyes Open.</span></h2>
+  <p style="font-size:15px;color:var(--muted-hi);max-width:520px;line-height:1.8;margin:20px auto 48px;" class="reveal d2">You now have the full architecture. The pipeline is built, Claude is calibrated, and your glasses are the last piece between a signal and a clean execution. The moat is yours.</p>
+  <div style="display:flex;gap:20px;justify-content:center;flex-wrap:wrap;" class="reveal d3">
+    <button class="cta-btn primary">Access USME Indicator</button>
+    <button class="cta-btn secondary">View Vision Roadmap</button>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="footer-logo">SNIPER<b>TRADER</b></div>
+      <div class="footer-tagline">Intelligence Platform</div>
+    </div>
+
+    <div class="footer-col">
+      <div class="footer-col-title">Tools</div>
+      <ul class="footer-links">
+        <li><a href="#">USME Algo</a></li>
+        <li><a href="#">Pre-Market Baseline</a></li>
+        <li><a href="#">Habit Guardrails</a></li>
+        <li><a href="#">Post-Market Review Loop</a></li>
+        <li><a href="#">Ai Sentiment Engine</a></li>
+        <li><a href="#">Ai Chart Analyzer</a></li>
+        <li><a href="#">Prop Firm Command Center</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <div class="footer-col-title">Ecosystem</div>
+      <ul class="footer-links">
+        <li><a href="#">Ai Smart Glasses</a></li>
+        <li><a href="#">Prop Master Plan</a></li>
+        <li><a href="#">30-Day Funded Challenge</a></li>
+        <li><a href="#">ICT Discipline Engine</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <div class="footer-col-title">Resources</div>
+      <ul class="footer-links">
+        <li><a href="#">Affiliate Program</a></li>
+        <li><a href="#">Trader's Couch</a></li>
+        <li><a href="#">Ebook</a></li>
+        <li><a href="#">Prop Firm Master Plan</a></li>
+        <li><a href="#">30 Days Funded Challenge</a></li>
+        <li><a href="#">Shop</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <div class="footer-col-title">Company</div>
+      <ul class="footer-links">
+        <li><a href="#">About</a></li>
+        <li><a href="#">Docs</a></li>
+        <li><a href="#">Terms</a></li>
+        <li><a href="#">Disclaimer</a></li>
+        <li><a href="#">Privacy</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <span>© 2026 SniperTrader.ai Intelligence Platform — All rights reserved.</span>
+    <span class="footer-legal">NOT FINANCIAL ADVICE // VISION SUITE v2.0</span>
+  </div>
+</footer>
+
+</div><!-- /page -->
+
+<style>
+.cta-btn {
+  font-family:var(--font-m);font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+  padding:15px 36px;border:none;cursor:none;font-weight:700;
+  clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%);
+  transition:box-shadow .3s,filter .3s,background .2s;
+  position:relative;overflow:hidden;
+}
+.cta-btn.primary { background:linear-gradient(90deg,var(--cyan),#00a8cc);color:var(--obsidian); }
+.cta-btn.primary:hover { box-shadow:0 0 36px rgba(0,212,255,.5);filter:brightness(1.1); }
+.cta-btn.secondary { background:transparent;color:var(--gold);border:1px solid rgba(255,180,0,.4); }
+.cta-btn.secondary:hover { border-color:var(--gold);background:rgba(255,180,0,.06);box-shadow:0 0 22px rgba(255,180,0,.2); }
+</style>
+
+<script>
+/* ══════════════ CURSOR ══════════════ */
+const cur = document.getElementById('cur');
+const curR = document.getElementById('cur-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove', e => {
+  mx=e.clientX; my=e.clientY;
+  cur.style.left=mx+'px'; cur.style.top=my+'px';
+});
+setInterval(()=>{
+  rx+=(mx-rx)*.15; ry+=(my-ry)*.15;
+  curR.style.left=rx+'px'; curR.style.top=ry+'px';
+},16);
+document.querySelectorAll('button,.g-card,.cl-item,.pl-row,.tpl-card,.shift-col').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{ cur.style.width='18px';cur.style.height='18px';curR.style.width='50px';curR.style.height='50px'; });
+  el.addEventListener('mouseleave',()=>{ cur.style.width='10px';cur.style.height='10px';curR.style.width='32px';curR.style.height='32px'; });
+});
+
+/* ══════════════ PARTICLES ══════════════ */
+const cv = document.getElementById('pcanvas');
+const ctx = cv.getContext('2d');
+let W,H,pts=[];
+function resize(){ W=cv.width=window.innerWidth; H=cv.height=window.innerHeight; }
+resize(); window.addEventListener('resize',resize);
+
+class Pt {
+  constructor(){ this.reset(); }
+  reset(){
+    this.x=Math.random()*W; this.y=Math.random()*H;
+    this.sz=Math.random()*1.4+.3;
+    this.vx=(Math.random()-.5)*.25; this.vy=(Math.random()-.5)*.25;
+    const r=Math.random();
+    this.col=r<.55?`rgba(0,212,255,${Math.random()*.45+.15})`:r<.8?`rgba(255,180,0,${Math.random()*.3+.1})`:`rgba(200,225,255,${Math.random()*.15+.04})`;
+    this.life=Math.random()*280+80; this.ml=this.life;
+  }
+  upd(){ this.x+=this.vx; this.y+=this.vy; this.life--; if(this.life<=0||this.x<0||this.x>W||this.y<0||this.y>H)this.reset(); }
+  draw(){
+    ctx.save(); ctx.globalAlpha=this.life/this.ml;
+    ctx.fillStyle=this.col; ctx.shadowBlur=5; ctx.shadowColor=this.col;
+    ctx.beginPath(); ctx.arc(this.x,this.y,this.sz,0,Math.PI*2); ctx.fill(); ctx.restore();
+  }
+}
+for(let i=0;i<200;i++) pts.push(new Pt());
+
+function drawLines(){
+  for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){
+    const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y, d=Math.sqrt(dx*dx+dy*dy);
+    if(d<75){ ctx.beginPath(); ctx.strokeStyle=`rgba(0,212,255,${(1-d/75)*.07})`; ctx.lineWidth=.5; ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y); ctx.stroke(); }
+  }
+}
+function animPts(){ ctx.clearRect(0,0,W,H); drawLines(); pts.forEach(p=>{p.upd();p.draw();}); requestAnimationFrame(animPts); }
+animPts();
+
+/* ══════════════ 3D MOUSE TILT ══════════════ */
+// Main HUD tilt (hero glasses)
+const hud3d = document.getElementById('hud3d');
+document.addEventListener('mousemove', e => {
+  const cx=window.innerWidth/2, cy=window.innerHeight/2;
+  const dx=(e.clientX-cx)/cx, dy=(e.clientY-cy)/cy;
+  if(hud3d) hud3d.style.transform=`rotateX(${-dy*12}deg) rotateY(${dx*16}deg) rotateZ(${dx*2}deg)`;
+});
+
+// Card tilt on .tilt elements
+document.querySelectorAll('.tilt').forEach(card => {
+  card.addEventListener('mousemove', e => {
+    const r = card.getBoundingClientRect();
+    const cx = r.left + r.width/2, cy = r.top + r.height/2;
+    const dx = (e.clientX-cx)/(r.width/2), dy = (e.clientY-cy)/(r.height/2);
+    card.style.transform = `perspective(600px) rotateX(${-dy*5}deg) rotateY(${dx*5}deg) translateZ(6px)`;
+  });
+  card.addEventListener('mouseleave', () => {
+    card.style.transform = '';
+  });
+});
+
+/* ══════════════ SCROLL REVEAL ══════════════ */
+const revEls = document.querySelectorAll('.reveal');
+const revObs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('visible'); revObs.unobserve(e.target); } });
+}, { threshold: 0.12 });
+revEls.forEach(el => revObs.observe(el));
+
+/* ══════════════ NEURAL PATH ANIMATION ══════════════ */
+function animateNeuralPath(id, delay) {
+  const el = document.getElementById(id);
+  if(!el) return;
+  setTimeout(() => {
+    el.style.transition = 'stroke-dashoffset 1.2s ease';
+    el.style.strokeDashoffset = '0';
+  }, delay);
+}
+setTimeout(() => {
+  animateNeuralPath('np1', 0);
+  animateNeuralPath('np2', 400);
+  animateNeuralPath('np3', 800);
+  animateNeuralPath('np4', 1200);
+}, 800);
+
+/* ══════════════ THEME TOGGLE ══════════════ */
+const themeBtn = document.getElementById('themeToggle');
+const iconDark = themeBtn.querySelector('.theme-icon-dark');
+const iconLight = themeBtn.querySelector('.theme-icon-light');
+const saved = localStorage.getItem('st-theme');
+if(saved === 'light') { document.body.classList.add('light-mode'); iconDark.style.display='none'; iconLight.style.display=''; }
+themeBtn.addEventListener('click', () => {
+  const isLight = document.body.classList.toggle('light-mode');
+  iconDark.style.display = isLight ? 'none' : '';
+  iconLight.style.display = isLight ? '' : 'none';
+  localStorage.setItem('st-theme', isLight ? 'light' : 'dark');
+});
+
+function toggleCheck(el) {
+  el.classList.toggle('done');
+  const box = el.querySelector('.cl-box');
+  box.textContent = el.classList.contains('done') ? '✓' : '';
+}
+
+/* ══════════════ TYPEWRITER ON TRANSCRIPT ══════════════ */
+const transcript = document.getElementById('liveTranscript');
+const fullText = `<span class="tag">VISION //</span> "Elite tier on NQ, fifteen-minute. NY Open killzone, FVG confirmed at twenty-one four-forty-eight with Order Block directly below. Bias long, target one at twenty-one four-sixty-three — plus fifteen points. Invalidation below the OB at twenty-one four-twenty-nine. Liquidity resting above — institutional intent bullish."`;
+let typed = false;
+const tObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(e.isIntersecting && !typed) {
+      typed = true;
+      const plain = `"Elite tier on NQ, fifteen-minute. NY Open killzone, FVG confirmed at twenty-one four-forty-eight with Order Block directly below. Bias long, target one at twenty-one four-sixty-three — plus fifteen points. Invalidation below the OB at twenty-one four-twenty-nine. Liquidity resting above — institutional intent bullish."`;
+      transcript.innerHTML = '<span class="tag">VISION //</span> ';
+      let i = 0;
+      const iv = setInterval(() => {
+        transcript.innerHTML = '<span class="tag">VISION //</span> ' + plain.slice(0, i+1);
+        i++;
+        if(i >= plain.length) clearInterval(iv);
+      }, 20);
+    }
+  });
+}, { threshold: 0.6 });
+tObs.observe(transcript);
+</script>
+</body>
+</html>

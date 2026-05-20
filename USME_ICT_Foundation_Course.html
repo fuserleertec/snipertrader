@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SniperTrader — USME v3.1 Signal Interpretation Course</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --surface-alt: #f0eeea;
+    --border: #d8d4cc;
+    --border-strong: #b0a89a;
+
+    --sniper-red: #c8102e;
+    --sniper-red-dark: #9e0a22;
+    --sniper-red-light: #f5e5e8;
+
+    --ink: #1a1612;
+    --ink-med: #3d3530;
+    --ink-dim: #6b635a;
+    --ink-muted: #9a9088;
+
+    --green: #0a6e3f;
+    --green-bg: #e8f5ee;
+    --red-text: #c8102e;
+    --red-bg: #fdf0f2;
+    --orange: #b85c00;
+    --orange-bg: #fdf3e8;
+    --blue: #1a4e8a;
+    --blue-bg: #e8f0f8;
+    --gold: #7a5500;
+    --gold-bg: #fdf6e3;
+    --purple: #5b2d8a;
+    --purple-bg: #f3eef9;
+    --cyan: #0e6e7a;
+    --cyan-bg: #e6f5f7;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Barlow', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px; height: 600px;
+    background-image:
+      radial-gradient(circle, transparent 38%, rgba(200,16,46,0.04) 38.5%, rgba(200,16,46,0.04) 39%, transparent 39.5%),
+      radial-gradient(circle, transparent 55%, rgba(200,16,46,0.025) 55.5%, rgba(200,16,46,0.025) 56%, transparent 56.5%),
+      linear-gradient(rgba(200,16,46,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,16,46,0.025) 1px, transparent 1px);
+    background-size: 600px 600px, 600px 600px, 40px 40px, 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.6;
+  }
+
+  .container { max-width: 960px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  /* ── Header ── */
+  header { background: var(--ink); border-bottom: 3px solid var(--sniper-red); }
+
+  .header-top { background: var(--sniper-red); padding: 6px 0; }
+  .header-top .container { display: flex; align-items: center; justify-content: space-between; }
+  .header-top-text {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px; color: rgba(255,255,255,0.85);
+    letter-spacing: 3px; text-transform: uppercase;
+  }
+  .header-top-live {
+    display: flex; align-items: center; gap: 6px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px; color: rgba(255,255,255,0.9); letter-spacing: 2px;
+  }
+  .live-dot { width: 6px; height: 6px; background: #fff; border-radius: 50%; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .header-main { padding: 24px 0 20px; }
+  .header-inner { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+
+  .brand-lockup { display: flex; align-items: center; gap: 16px; }
+  .crosshair-logo { width: 52px; height: 52px; flex-shrink: 0; }
+
+  .brand-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 32px; font-weight: 800;
+    color: #ffffff; letter-spacing: 3px;
+    text-transform: uppercase; line-height: 1;
+  }
+  .brand-name span { color: var(--sniper-red); }
+  .brand-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px; color: rgba(255,255,255,0.4);
+    letter-spacing: 3px; text-transform: uppercase; margin-top: 4px;
+  }
+
+  h1 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(20px, 3.5vw, 34px); font-weight: 800;
+    line-height: 1.0; color: #ffffff;
+    letter-spacing: 1px; text-transform: uppercase;
+  }
+  h1 span { color: var(--sniper-red); }
+  .subtitle {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px; color: rgba(255,255,255,0.4);
+    margin-top: 8px; letter-spacing: 1px;
+  }
+
+  /* ── Nav ── */
+  .nav {
+    background: var(--surface);
+    border-bottom: 2px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 12px rgba(26,22,18,0.08);
+  }
+  .nav-inner { display: flex; overflow-x: auto; scrollbar-width: none; }
+  .nav-inner::-webkit-scrollbar { display: none; }
+
+  .nav-btn {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase;
+    color: var(--ink-dim); background: transparent;
+    border: none; border-bottom: 3px solid transparent;
+    padding: 14px 18px; cursor: pointer; white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .nav-btn:hover { color: var(--ink); background: var(--surface-alt); }
+  .nav-btn.active { color: var(--sniper-red); border-bottom-color: var(--sniper-red); }
+
+  /* ── Sections ── */
+  .section { display: none; padding: 48px 0; }
+  .section.active { display: block; }
+
+  .section-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px; letter-spacing: 4px;
+    color: var(--sniper-red); text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-label::before {
+    content: ''; display: inline-block;
+    width: 20px; height: 2px; background: var(--sniper-red);
+  }
+
+  h2 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(24px, 3.5vw, 36px); font-weight: 800;
+    color: var(--ink); margin-bottom: 6px;
+    letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  h3 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 17px; font-weight: 700;
+    color: var(--ink); margin-bottom: 6px;
+    letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  p { font-size: 15px; line-height: 1.72; color: var(--ink-med); margin-bottom: 16px; }
+
+  .lead {
+    font-size: 16px; color: var(--ink-med); line-height: 1.78;
+    margin-bottom: 32px;
+    background: var(--surface);
+    padding: 16px 20px;
+    border-left: 3px solid var(--sniper-red);
+    border-radius: 0 3px 3px 0;
+  }
+
+  /* ── Cards ── */
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin: 28px 0; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 2px; padding: 22px;
+    position: relative; overflow: hidden;
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+  .card:hover { box-shadow: 0 4px 20px rgba(26,22,18,0.1); transform: translateY(-2px); }
+  .card::before { content: ''; position: absolute; top:0; left:0; right:0; height:3px; }
+  .card.green::before { background: var(--green); }
+  .card.red::before { background: var(--sniper-red); }
+  .card.orange::before { background: var(--orange); }
+  .card.blue::before { background: var(--blue); }
+  .card.gold::before { background: var(--gold); }
+  .card.cyan::before { background: var(--cyan); }
+  .card.white::before { background: var(--ink); }
+  .card-icon { font-size: 20px; margin-bottom: 10px; }
+  .card h3 { font-size: 14px; margin-bottom: 6px; }
+  .card p { font-size: 13px; color: var(--ink-dim); margin-bottom: 0; line-height: 1.6; }
+
+  /* ── Signal Boxes ── */
+  .signal-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 2px; padding: 22px; margin: 16px 0;
+  }
+  .signal-box.bull  { border-left: 4px solid var(--green); }
+  .signal-box.bear  { border-left: 4px solid var(--sniper-red); }
+  .signal-box.neutral { border-left: 4px solid var(--blue); }
+  .signal-box.gold  { border-left: 4px solid var(--gold); }
+  .signal-box.cyan  { border-left: 4px solid var(--cyan); }
+  .signal-box.void  { border-left: 4px solid var(--orange); }
+  .signal-box.trap  { border-left: 4px solid var(--ink); }
+
+  .signal-tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px; letter-spacing: 2px;
+    padding: 3px 8px; border-radius: 2px;
+    display: inline-block; margin-bottom: 10px; text-transform: uppercase;
+  }
+  .tag-bull   { background: var(--green-bg); color: var(--green); border: 1px solid rgba(10,110,63,0.2); }
+  .tag-bear   { background: var(--red-bg); color: var(--red-text); border: 1px solid rgba(200,16,46,0.2); }
+  .tag-orange { background: var(--orange-bg); color: var(--orange); border: 1px solid rgba(184,92,0,0.2); }
+  .tag-blue   { background: var(--blue-bg); color: var(--blue); border: 1px solid rgba(26,78,138,0.2); }
+  .tag-gold   { background: var(--gold-bg); color: var(--gold); border: 1px solid rgba(122,85,0,0.2); }
+  .tag-cyan   { background: var(--cyan-bg); color: var(--cyan); border: 1px solid rgba(14,110,122,0.2); }
+  .tag-white  { background: var(--surface-alt); color: var(--ink); border: 1px solid var(--border); }
+
+  /* ── Chart Wrap ── */
+  .chart-wrap {
+    background: #1a1612; border: 1px solid var(--border-strong);
+    border-radius: 2px; padding: 20px; margin: 20px 0; overflow-x: auto;
+  }
+
+  /* ── Code Block ── */
+  .code-block {
+    background: #1e1a16; border: 1px solid #3a332c;
+    border-radius: 2px; padding: 18px 22px; margin: 14px 0;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px; color: #d4c9b8; line-height: 1.9; overflow-x: auto;
+  }
+  .code-block .kw  { color: #e8a87c; }
+  .code-block .val { color: #7ec897; }
+  .code-block .cmt { color: #5a504a; }
+  .code-block .fn  { color: #82b4d4; }
+  .code-block .str { color: #c8a96e; }
+
+  /* ── Steps ── */
+  .steps { display: flex; flex-direction: column; gap: 0; margin: 20px 0; }
+  .step {
+    display: flex; gap: 18px; align-items: flex-start;
+    padding: 18px 0; border-bottom: 1px solid var(--border);
+  }
+  .step:last-child { border-bottom: none; }
+  .step-num {
+    font-family: 'Share Tech Mono', monospace; font-size: 11px; font-weight: 700;
+    color: var(--sniper-red); background: var(--red-bg);
+    border: 1px solid rgba(200,16,46,0.2);
+    width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 2px; flex-shrink: 0; margin-top: 2px;
+  }
+  .step-content h3 { font-size: 14px; margin-bottom: 4px; }
+  .step-content p { font-size: 13px; color: var(--ink-dim); margin-bottom: 0; }
+
+  /* ── Score Table ── */
+  .score-table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13px; }
+  .score-table th {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase;
+    color: var(--ink-dim); text-align: left; padding: 10px 14px;
+    border-bottom: 2px solid var(--border-strong); background: var(--surface-alt);
+  }
+  .score-table td {
+    padding: 12px 14px; border-bottom: 1px solid var(--border);
+    color: var(--ink-med); vertical-align: top; line-height: 1.5;
+  }
+  .score-table tr:last-child td { border-bottom: none; }
+  .score-table tr:hover td { background: var(--surface-alt); }
+  .score-val { font-family: 'Share Tech Mono', monospace; font-weight: 700; font-size: 15px; }
+  .score-val.g { color: var(--green); }
+  .score-val.r { color: var(--sniper-red); }
+  .score-val.o { color: var(--orange); }
+  .score-val.b { color: var(--blue); }
+  .score-val.gold { color: var(--gold); }
+
+  /* ── Alerts ── */
+  .alert {
+    display: flex; gap: 14px; padding: 14px 18px;
+    border-radius: 2px; margin: 14px 0;
+    align-items: flex-start; border: 1px solid;
+  }
+  .alert.info   { background: var(--green-bg); border-color: rgba(10,110,63,0.2); }
+  .alert.warn   { background: var(--orange-bg); border-color: rgba(184,92,0,0.2); }
+  .alert.danger { background: var(--red-bg); border-color: rgba(200,16,46,0.2); }
+  .alert.note   { background: var(--blue-bg); border-color: rgba(26,78,138,0.2); }
+  .alert-icon { font-size: 15px; flex-shrink: 0; margin-top: 2px; }
+  .alert p { font-size: 13px; margin-bottom: 0; line-height: 1.65; }
+  .alert.info p   { color: var(--green); }
+  .alert.warn p   { color: var(--orange); }
+  .alert.danger p { color: var(--sniper-red); }
+  .alert.note p   { color: var(--blue); }
+
+  /* ── Algo Flow ── */
+  .algo-flow {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 1px; background: var(--border);
+    border: 1px solid var(--border-strong); border-radius: 2px;
+    overflow: hidden; margin: 24px 0;
+  }
+  .algo-node { background: var(--surface); padding: 18px 14px; text-align: center; transition: background 0.15s; }
+  .algo-node:hover { background: var(--surface-alt); }
+  .algo-node .icon { font-size: 22px; margin-bottom: 8px; }
+  .algo-node .label {
+    font-family: 'Share Tech Mono', monospace; font-size: 9px;
+    letter-spacing: 1px; color: var(--ink-muted); text-transform: uppercase; margin-bottom: 4px;
+  }
+  .algo-node .val {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 14px;
+    font-weight: 700; color: var(--ink); letter-spacing: 0.5px; text-transform: uppercase;
+  }
+
+  /* ── Setup Panels ── */
+  .setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+  .setup-panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 2px; padding: 20px;
+  }
+  .setup-panel.long  { border-top: 3px solid var(--green); }
+  .setup-panel.short { border-top: 3px solid var(--sniper-red); }
+  .setup-panel .panel-title {
+    font-family: 'Share Tech Mono', monospace; font-size: 10px;
+    letter-spacing: 3px; text-transform: uppercase; margin-bottom: 14px;
+  }
+  .setup-panel.long  .panel-title { color: var(--green); }
+  .setup-panel.short .panel-title { color: var(--sniper-red); }
+
+  .checklist { list-style: none; }
+  .checklist li {
+    font-size: 13px; color: var(--ink-dim);
+    padding: 6px 0; border-bottom: 1px solid var(--border);
+    display: flex; gap: 8px; align-items: flex-start; line-height: 1.45;
+  }
+  .checklist li:last-child { border-bottom: none; }
+  .checklist li::before { content: '›'; color: var(--border-strong); flex-shrink: 0; font-size: 16px; line-height: 1.2; }
+
+  /* ── Score Meter ── */
+  .score-meter {
+    background: var(--surface-alt); border-radius: 1px;
+    height: 5px; margin-top: 8px; overflow: hidden; border: 1px solid var(--border);
+  }
+  .score-fill { height: 100%; border-radius: 1px; }
+  .fill-green  { background: var(--green); }
+  .fill-orange { background: var(--orange); }
+  .fill-red    { background: var(--sniper-red); }
+  .fill-gold   { background: var(--gold); }
+  .fill-cyan   { background: var(--cyan); }
+
+  /* ── Tier Badges ── */
+  .tier-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'Share Tech Mono', monospace; font-size: 10px;
+    letter-spacing: 2px; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 2px; border: 1px solid;
+    font-weight: 700;
+  }
+  .tier-watch  { background: var(--surface-alt); color: var(--ink); border-color: var(--border-strong); }
+  .tier-prime  { background: var(--gold-bg); color: var(--gold); border-color: rgba(122,85,0,0.3); }
+  .tier-elite  { background: var(--cyan-bg); color: var(--cyan); border-color: rgba(14,110,122,0.3); }
+
+  /* ── Dashboard Mockup ── */
+  .dashboard-mock {
+    background: #1a1612; border: 1px solid var(--border-strong);
+    border-radius: 2px; padding: 16px 20px; margin: 20px 0;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 1px;
+  }
+  .dash-cell {
+    padding: 10px 12px;
+    border-right: 1px solid rgba(255,255,255,0.05);
+  }
+  .dash-cell:last-child { border-right: none; }
+  .dash-label {
+    font-family: 'Share Tech Mono', monospace; font-size: 8px;
+    color: rgba(255,255,255,0.3); letter-spacing: 2px; text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .dash-val {
+    font-family: 'Share Tech Mono', monospace; font-size: 13px;
+    font-weight: 700; letter-spacing: 1px;
+  }
+  .dash-bull  { color: #4dbb88; }
+  .dash-bear  { color: #e8606a; }
+  .dash-white { color: rgba(255,255,255,0.85); }
+  .dash-gold  { color: #d4aa40; }
+  .dash-cyan  { color: #4dccd8; }
+  .dash-muted { color: rgba(255,255,255,0.4); }
+
+  /* ── Two-col ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  .divider-label { display: flex; align-items: center; gap: 12px; margin: 28px 0 20px; }
+  .divider-label::before, .divider-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .divider-label span {
+    font-family: 'Share Tech Mono', monospace; font-size: 9px;
+    letter-spacing: 3px; text-transform: uppercase;
+    color: var(--ink-muted); white-space: nowrap;
+  }
+
+  /* ── Footer ── */
+  footer { background: var(--ink); border-top: 3px solid var(--sniper-red); margin-top: 40px; }
+  .footer-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 0; flex-wrap: wrap; gap: 10px;
+  }
+  .footer-inner p {
+    font-family: 'Share Tech Mono', monospace; font-size: 10px;
+    color: rgba(255,255,255,0.35); margin: 0; letter-spacing: 2px;
+  }
+  .footer-brand {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 14px;
+    font-weight: 800; color: rgba(255,255,255,0.6);
+    letter-spacing: 3px; text-transform: uppercase;
+  }
+  .footer-brand span { color: var(--sniper-red); }
+  #page-indicator {
+    font-family: 'Share Tech Mono', monospace; font-size: 10px;
+    color: rgba(255,255,255,0.35); letter-spacing: 3px;
+  }
+
+  code {
+    font-family: 'Share Tech Mono', monospace; font-size: 11px;
+    background: var(--surface-alt); border: 1px solid var(--border);
+    padding: 1px 5px; border-radius: 2px; color: var(--ink-med);
+  }
+
+  svg text { font-family: 'Share Tech Mono', monospace !important; }
+
+  @media (max-width: 600px) {
+    .setup-grid { grid-template-columns: 1fr; }
+    .two-col { grid-template-columns: 1fr; }
+    .brand-name { font-size: 24px; }
+    h1 { font-size: 20px; }
+    .header-top-text { display: none; }
+    .dashboard-mock { grid-template-columns: repeat(3, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="container">
+      <span class="header-top-text">Unified Smart Money Engine v3.1 — Advanced Daytrading Series</span>
+      <span class="header-top-live"><span class="live-dot"></span>LIVE TRAINING</span>
+    </div>
+  </div>
+  <div class="header-main">
+    <div class="container">
+      <div class="header-inner">
+        <div class="brand-lockup">
+          <svg class="crosshair-logo" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="26" cy="26" r="24" stroke="#c8102e" stroke-width="2"/>
+            <circle cx="26" cy="26" r="14" stroke="#c8102e" stroke-width="1.5" opacity="0.6"/>
+            <circle cx="26" cy="26" r="4" fill="#c8102e"/>
+            <line x1="26" y1="2" x2="26" y2="14" stroke="#c8102e" stroke-width="2.5"/>
+            <line x1="26" y1="38" x2="26" y2="50" stroke="#c8102e" stroke-width="2.5"/>
+            <line x1="2" y1="26" x2="14" y2="26" stroke="#c8102e" stroke-width="2.5"/>
+            <line x1="38" y1="26" x2="50" y2="26" stroke="#c8102e" stroke-width="2.5"/>
+            <line x1="26" y1="15" x2="26" y2="17" stroke="rgba(200,16,46,0.4)" stroke-width="1.5"/>
+            <line x1="26" y1="35" x2="26" y2="37" stroke="rgba(200,16,46,0.4)" stroke-width="1.5"/>
+            <line x1="15" y1="26" x2="17" y2="26" stroke="rgba(200,16,46,0.4)" stroke-width="1.5"/>
+            <line x1="35" y1="26" x2="37" y2="26" stroke="rgba(200,16,46,0.4)" stroke-width="1.5"/>
+          </svg>
+          <div>
+            <div class="brand-name"><span>Sniper</span>Trader</div>
+            <div class="brand-sub">Precision · Discipline · Execution</div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <h1>USME v3.1 · Signal<br><span>Interpretation Course</span></h1>
+          <div class="subtitle">// SMC Toolkit + SOTD Engine — Complete Guide</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<nav class="nav">
+  <div class="container">
+    <div class="nav-inner">
+      <button class="nav-btn active" onclick="showSection('overview',this)">01 · Overview</button>
+      <button class="nav-btn" onclick="showSection('architecture',this)">02 · Architecture</button>
+      <button class="nav-btn" onclick="showSection('score',this)">03 · Score System</button>
+      <button class="nav-btn" onclick="showSection('bias',this)">04 · HTF Bias</button>
+      <button class="nav-btn" onclick="showSection('signals',this)">05 · Signal Labels</button>
+      <button class="nav-btn" onclick="showSection('smt',this)">06 · SMT & Sessions</button>
+      <button class="nav-btn" onclick="showSection('execution',this)">07 · Execution</button>
+      <button class="nav-btn" onclick="showSection('sotd',this)">08 · SOTD Engine</button>
+    </div>
+  </div>
+</nav>
+
+<main>
+<div class="container">
+
+<!-- ════════ 01 OVERVIEW ════════ -->
+<section id="overview" class="section active">
+  <div class="section-label">Section 01</div>
+  <h2>What the USME v3.1 Does</h2>
+  <p class="lead">The Unified Smart Money Engine (USME) v3.1 merges four institutional detection systems into a single ThinkScript indicator: an Order Flow Detector, a Smart Money Bias Engine, an SMC Toolkit, and the new Signal-of-the-Day (SOTD) Engine. Together they answer one question — is this the moment institutions are moving, and in which direction?</p>
+
+  <div class="card-grid">
+    <div class="card green">
+      <div class="card-icon">🟩</div>
+      <h3>Order Flow Detector</h3>
+      <p>Tracks Order Blocks, Fair Value Gaps, CHoCH/BOS events, and liquidity sweeps. Paints mitigation clouds that disappear when zones are filled. New: Sponsoring Candle (SC) and Inversion FVG (iFVG) bubbles.</p>
+    </div>
+    <div class="card blue">
+      <div class="card-icon">📊</div>
+      <h3>Smart Money Bias Engine</h3>
+      <p>Reads four timeframes simultaneously — 5M/15M, 1H, 4H, and Weekly — to determine directional bias. Outputs STRUCT:UP/DN, 1H/4H/W labels, and the key HTF:ALIGNED confirmation.</p>
+    </div>
+    <div class="card orange">
+      <div class="card-icon">🎯</div>
+      <h3>SMC Toolkit + Signals</h3>
+      <p>The output layer. Calculates the 0–100% Smart Money Score from 7 weighted components and renders BUY/SELL bubbles with ATR-based stops and targets. New: △ Fade alerts and EMA pullback signals.</p>
+    </div>
+    <div class="card gold">
+      <div class="card-icon">⚡</div>
+      <h3>SOTD Engine (New in v3.1)</h3>
+      <p>Identifies and tiers the day's highest-conviction setup into WATCH, PRIME, or ELITE. Fires distinct alerts (Bell / Chimes / Ring) for each tier. Resets daily. Shows the best setup — not just any setup.</p>
+    </div>
+  </div>
+
+  <div class="divider-label"><span>Four Questions the USME Answers</span></div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-content">
+        <h3>Where Is Institutional Structure?</h3>
+        <p>The Order Flow Detector maps every active OB and FVG zone with mitigation clouds. SC bubbles mark the exact BOS bar that created each Order Block. As long as a cloud is visible, the zone is valid and unmitigated.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-content">
+        <h3>Which Direction Are Institutions Positioned?</h3>
+        <p>The four-tier HTF cascade — Weekly → 4H → 1H → LTF — establishes directional conviction. When the HTF:ALIGNED label is green, institutional money across two primary timeframes agrees on direction.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-content">
+        <h3>Is the Current Setup High-Enough Quality to Trade?</h3>
+        <p>The 0–100% Smart Money Score answers this. Seven components — CHoCH, Sweep, FVG, OB, Volume, Session, Daily Bias — are weighted and summed. A score below 60% means no signal is generated at all.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <div class="step-content">
+        <h3>Is This the Best Setup of the Day?</h3>
+        <p>The SOTD Engine evaluates every signal against three tiers. WATCH fires on a valid signal. PRIME fires when the full SMC stack is present. ELITE fires when HTF alignment is confirmed — the rarest, highest-conviction designation the engine produces.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ 02 ARCHITECTURE ════════ -->
+<section id="architecture" class="section">
+  <div class="section-label">Section 02</div>
+  <h2>Engine Architecture & New Visual Elements</h2>
+  <p class="lead">Understanding the architecture prevents misreading signals. Each of the four modules has a distinct role — and several new visual elements in v3.1 have specific meanings that differ from anything in v2.</p>
+
+  <div class="algo-flow">
+    <div class="algo-node"><div class="icon">📈</div><div class="label">Module 1</div><div class="val">Order Flow</div></div>
+    <div class="algo-node"><div class="icon">🧭</div><div class="label">Module 2</div><div class="val">HTF Bias</div></div>
+    <div class="algo-node"><div class="icon">🔢</div><div class="label">Module 3</div><div class="val">Score + Signals</div></div>
+    <div class="algo-node"><div class="icon">⚡</div><div class="label">Module 4</div><div class="val">SOTD Engine</div></div>
+    <div class="algo-node"><div class="icon">🎯</div><div class="label">Output</div><div class="val">BUY / SELL</div></div>
+  </div>
+
+  <h3>Signal Generation Flow</h3>
+  <p>On every bar close, the engine runs two parallel signal paths:</p>
+
+  <div class="two-col">
+    <div class="signal-box bull">
+      <span class="signal-tag tag-bull">Path A — Master SMC Signal</span>
+      <div class="steps" style="margin:0">
+        <div class="step" style="padding:9px 0"><div class="step-num" style="width:28px;height:28px;font-size:10px">1</div><div class="step-content"><p style="font-size:12px;margin:0;color:var(--ink-dim)">Premium/Discount gate — price must be in discount (buys) or premium (sells)</p></div></div>
+        <div class="step" style="padding:9px 0"><div class="step-num" style="width:28px;height:28px;font-size:10px">2</div><div class="step-content"><p style="font-size:12px;margin:0;color:var(--ink-dim)">SMC Stack check — sweepL + bullBOS + CHoCH + FVG or OB within last 5 bars</p></div></div>
+        <div class="step" style="padding:9px 0"><div class="step-num" style="width:28px;height:28px;font-size:10px">3</div><div class="step-content"><p style="font-size:12px;margin:0;color:var(--ink-dim)">Score gate — Smart Money Score must be ≥ 60%</p></div></div>
+        <div class="step" style="padding:9px 0;border:none"><div class="step-num" style="width:28px;height:28px;font-size:10px">4</div><div class="step-content"><p style="font-size:12px;margin:0;color:var(--ink-dim)">BUY/SELL bubble renders with score %. SOTD Engine evaluates tier.</p></div></div>
+      </div>
+    </div>
+    <div class="signal-box neutral">
+      <span class="signal-tag tag-blue">Path B — EMA Pullback Signal</span>
+      <div class="steps" style="margin:0">
+        <div class="step" style="padding:9px 0"><div class="step-num" style="width:28px;height:28px;font-size:10px;background:var(--blue-bg);border-color:rgba(26,78,138,0.2);color:var(--blue)">1</div><div class="step-content"><p style="font-size:12px;margin:0;color:var(--ink-dim)">EMA 9/14/21 stack is aligned (trendUp or trendDown)</p></div></div>
+        <div class="step" style="padding:9px 0"><div class="step-num" style="width:28px;height:28px;font-size:10px;background:var(--blue-bg);border-color:rgba(26,78,138,0.2);color:var(--blue)">2</div><div class="step-content"><p style="font-size:12px;margin:0;color:var(--ink-dim)">Price touches EMA21 then closes back above (bull) or below (bear) it</p></div></div>
+        <div class="step" style="padding:9px 0"><div class="step-num" style="width:28px;height:28px;font-size:10px;background:var(--blue-bg);border-color:rgba(26,78,138,0.2);color:var(--blue)">3</div><div class="step-content"><p style="font-size:12px;margin:0;color:var(--ink-dim)">Score ≥ 50%, volOK, RSI in range, MACD directional confirmation</p></div></div>
+        <div class="step" style="padding:9px 0;border:none"><div class="step-num" style="width:28px;height:28px;font-size:10px;background:var(--blue-bg);border-color:rgba(26,78,138,0.2);color:var(--blue)">4</div><div class="step-content"><p style="font-size:12px;margin:0;color:var(--ink-dim)">Same BUY/SELL bubble as Path A — trend continuation entry</p></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider-label"><span>New Visual Elements in v3.1</span></div>
+
+  <table class="score-table">
+    <thead>
+      <tr><th>Visual Element</th><th>What It Means</th><th>How to Use It</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>SC bubble</strong> <span class="tier-badge tier-watch" style="font-size:9px;padding:2px 6px">WHITE</span></td>
+        <td>Sponsoring Candle — the BOS bar that created a new Order Block. Marks exactly where institutional displacement originated.</td>
+        <td>The OB zone sits one candle before this bubble. Use as a reference for zone origin confirmation.</td>
+      </tr>
+      <tr>
+        <td><strong>iFVG bubble</strong> <span style="color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:11px">CYAN/MAG</span></td>
+        <td>Inversion FVG — a previous FVG has been revisited and flipped: former support becomes resistance, or vice versa.</td>
+        <td>Cyan iFVG below price = support-turned-resistance. Magenta iFVG above = resistance-turned-support.</td>
+      </tr>
+      <tr>
+        <td><strong>Green/Red cloud</strong> (FVG)</td>
+        <td>Active, unmitigated Fair Value Gap. Disappears automatically once price fully passes through it.</td>
+        <td>Cloud visible = FVG valid for scoring. Cloud gone = zone mitigated — no longer contributes to score.</td>
+      </tr>
+      <tr>
+        <td><strong>Dark cloud</strong> (OB)</td>
+        <td>Active, unmitigated Order Block zone. Disappears when price closes through the OB boundary.</td>
+        <td>Same logic — cloud present = zone active. Used for both scoring and entry reference.</td>
+      </tr>
+      <tr>
+        <td><strong>△ Fade bubble</strong> <span style="color:var(--orange);font-family:'Share Tech Mono',monospace;font-size:11px">ORANGE</span></td>
+        <td>EMA 9/14 cross has failed and momentum is reversing. Not a new entry signal — a caution/exit alert.</td>
+        <td>Tighten stops on open positions. Do not initiate new entries in the fading direction.</td>
+      </tr>
+      <tr>
+        <td><strong>WATCH / PRIME / ELITE</strong></td>
+        <td>SOTD tier label. Fires once per day at the highest-quality setup. Escalates — PRIME upgrades WATCH.</td>
+        <td>See Section 08 for the full SOTD protocol. ELITE = maximum conviction + full size.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="alert warn">
+    <div class="alert-icon">⚠️</div>
+    <p><strong>All signals are bar-close only.</strong> The USME v3.1 evaluates conditions at bar close — not on a forming candle. Never enter mid-bar on a signal that "looks like it's forming." Wait for the close. A good setup will offer a retest entry if you miss the close.</p>
+  </div>
+</section>
+
+<!-- ════════ 03 SCORE SYSTEM ════════ -->
+<section id="score" class="section">
+  <div class="section-label">Section 03</div>
+  <h2>The Smart Money Score System</h2>
+  <p class="lead">The v3.1 scoring system is fundamentally redesigned from v2. The old 0–10 point scale is replaced by a 0–100% percentage system made up of seven independently weighted components. The minimum threshold for any signal is 60%. Higher scores mean more institutional confluence — and larger position size.</p>
+
+  <div class="alert note">
+    <div class="alert-icon">📌</div>
+    <p><strong>v2 vs. v3.1:</strong> In v2, signals used a 0–10 scale with a threshold of 7.0. In v3.1, the scale is 0–100% with a threshold of 60%. The logic is the same — more confluence = higher score — but the percentage format shows exactly how much of the possible confluence is confirmed.</p>
+  </div>
+
+  <h3>The Seven Score Components</h3>
+
+  <table class="score-table">
+    <thead>
+      <tr><th>Component</th><th>Points</th><th>Trigger Condition</th><th>Weight Rationale</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong style="color:var(--blue)">CHoCH / Structural Shift</strong></td>
+        <td><span class="score-val b">+25</span></td>
+        <td>A Change of Character (trendState flip) has occurred in the signal direction</td>
+        <td>Maximum weight — CHoCH is the structural admission that institutions have reversed. Without it, you are entering before confirmation.</td>
+      </tr>
+      <tr>
+        <td><strong style="color:var(--ink)">Liquidity Sweep</strong></td>
+        <td><span class="score-val" style="color:var(--ink)">+20</span></td>
+        <td>sweepL (buys) or sweepH (sells) — price wicks past a recent extreme and closes back inside</td>
+        <td>Second-highest weight. The sweep is the liquidity hunt that funds the institutional reversal. Detected via three methods: prior close range, prior day's high/low, prior candle extreme.</td>
+      </tr>
+      <tr>
+        <td><strong style="color:var(--green)">Fair Value Gap Present</strong></td>
+        <td><span class="score-val g">+15</span></td>
+        <td>An active FVG cloud is present. Cloud must still be showing (unmitigated). Candle range must exceed ATR × 1.2.</td>
+        <td>FVG confirms price traveled with imbalance. Magnet effect adds directional probability to the setup.</td>
+      </tr>
+      <tr>
+        <td><strong style="color:var(--green)">Order Block Present</strong></td>
+        <td><span class="score-val g">+15</span></td>
+        <td>An active OB mitigation cloud is present at or near the signal bar. OB confirming candle must exceed ATR × 1.0.</td>
+        <td>OB marks the accumulation zone. Mitigated OBs (cloud gone) no longer score — this is a key v3.1 improvement over v2.</td>
+      </tr>
+      <tr>
+        <td><strong style="color:var(--orange)">Volume Spike</strong></td>
+        <td><span class="score-val o">+10</span></td>
+        <td>Signal bar volume &gt; 20-bar average × 1.5 × 1.2 (combined volMult and volSpike thresholds)</td>
+        <td>Institutional-level volume confirms large order execution, not retail activity. Stricter than v2.</td>
+      </tr>
+      <tr>
+        <td><strong style="color:var(--sniper-red)">Session / Killzone</strong></td>
+        <td><span class="score-val r">+10</span></td>
+        <td>Signal fires inside London Open (2–5 AM ET) or NY Open (9:30 AM–12:00 PM ET)</td>
+        <td>Institutional desks are active. Killzone timing dramatically increases probability of follow-through. NY window updated from v2 (was 8–11 AM; now 9:30 AM–12 PM).</td>
+      </tr>
+      <tr>
+        <td><strong style="color:var(--ink-dim)">Daily Bias Confirmed</strong></td>
+        <td><span class="score-val" style="color:var(--ink-dim)">+5</span></td>
+        <td>Current close is above prior day's high (D:BULL) or below prior day's low (D:BEAR). D:RANGE = no points.</td>
+        <td>Lowest weight — supporting factor only. Confirms price has broken out of the prior day's range in the signal direction.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Score Grade Matrix</h3>
+  <div class="card-grid">
+    <div class="card" style="border-top:3px solid var(--cyan)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h3 style="margin:0">⚡ ELITE</h3><span class="score-val" style="color:var(--cyan)">85–100%</span>
+      </div>
+      <p>Maximum confluence. All components strongly aligned. Usually coincides with SOTD ELITE tier. Full position size (1–2% risk).</p>
+      <div class="score-meter"><div class="score-fill fill-cyan" style="width:100%"></div></div>
+    </div>
+    <div class="card" style="border-top:3px solid var(--gold)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h3 style="margin:0">★ PRIME</h3><span class="score-val gold">70–84%</span>
+      </div>
+      <p>Full SMC stack. 5–6 components present. High-reliability trade. Standard risk (0.75–1%).</p>
+      <div class="score-meter"><div class="score-fill fill-gold" style="width:75%"></div></div>
+    </div>
+    <div class="card" style="border-top:3px solid var(--orange)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h3 style="margin:0">◈ WATCH</h3><span class="score-val o">60–69%</span>
+      </div>
+      <p>Minimum threshold. Valid signal — proceed with reduced size (0.5% risk).</p>
+      <div class="score-meter"><div class="score-fill fill-orange" style="width:62%"></div></div>
+    </div>
+    <div class="card" style="border-top:3px solid var(--border-strong)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h3 style="margin:0">✗ No Signal</h3><span class="score-val" style="color:var(--ink-muted)">&lt; 60%</span>
+      </div>
+      <p>Insufficient confluence. Engine stays silent — no BUY/SELL bubble is generated. Stand aside.</p>
+      <div class="score-meter"><div class="score-fill" style="width:20%;background:var(--border-strong)"></div></div>
+    </div>
+  </div>
+
+  <div class="alert info">
+    <div class="alert-icon">💡</div>
+    <p><strong>Reading score context:</strong> A score of 75% means roughly three-quarters of the maximum institutional alignment is confirmed. CHoCH (+25) + Sweep (+20) + FVG (+15) + Session (+10) = 70% — that's a PRIME setup missing only OB, Volume, and Daily Bias.</p>
+  </div>
+</section>
+
+<!-- ════════ 04 HTF BIAS ════════ -->
+<section id="bias" class="section">
+  <div class="section-label">Section 04</div>
+  <h2>Multi-Timeframe Bias Logic</h2>
+  <p class="lead">The USME v3.1 now reads four timeframes — Weekly, 4H, 1H, and the entry TF. The Weekly context is new in v3.1 and sits at the top of the hierarchy. Understanding how the dashboard labels reflect each tier is essential to reading the engine correctly.</p>
+
+  <div class="divider-label"><span>The Four-Tier Timeframe Cascade</span></div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num" style="background:var(--gold-bg);border-color:rgba(122,85,0,0.2);color:var(--gold)">W</div>
+      <div class="step-content">
+        <h3>Tier 0 — Weekly: The Macro Blueprint</h3>
+        <p>What it reads: Weekly close direction (wkBull / wkBear — current week vs. prior week close). Dashboard label: <strong>W:BULL</strong> (green) or <strong>W:BEAR</strong> (red). Used in the SOTD ELITE tier check — eliteBuyCond requires HTFtrend aligned AND htfBull (4H). Weekly alignment is logged in the ELITE alert message. Does not gate standard signals but adds conviction context.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:var(--blue-bg);border-color:rgba(26,78,138,0.2);color:var(--blue)">4H</div>
+      <div class="step-content">
+        <h3>Tier 1 — 4H / 1H: The Bias Engine (Primary Authority)</h3>
+        <p>What it reads: 4H close direction (htfBull/htfBear) and 1H swing structure (HTFtrend — tracking HH/HL or LH/LL). When both agree, the <strong>HTF:ALIGNED</strong> label activates in green. This is the most important single label on the dashboard. Green HTF:ALIGNED = institutional consensus across two primary timeframes.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:var(--surface-alt);border-color:var(--border-strong);color:var(--ink)">D</div>
+      <div class="step-content">
+        <h3>Tier 2 — Daily: The Bias Gate</h3>
+        <p>What it reads: Whether current close is above the prior day's high (D:BULL), below the prior day's low (D:BEAR), or inside the prior day's range (D:RANGE). D:RANGE means the daily bias component (+5 points) is not contributing to the score.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5M</div>
+      <div class="step-content">
+        <h3>Tier 3 — 5M / 15M: The Execution Layer</h3>
+        <p>Where the BUY/SELL bubble appears. The engine monitors liquidity sweeps, OB/FVG zones, CHoCH events, EMA stack alignment, and score ≥ 60% on the entry timeframe. This is where you execute — but only after reading the higher tiers first.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider-label"><span>Dashboard Label Reference</span></div>
+
+  <div class="dashboard-mock">
+    <div class="dash-cell"><div class="dash-label">Weekly</div><div class="dash-val dash-bull">W:BULL</div></div>
+    <div class="dash-cell"><div class="dash-label">4H Bias</div><div class="dash-val dash-bull">4H:BULL</div></div>
+    <div class="dash-cell"><div class="dash-label">1H Bias</div><div class="dash-val dash-bull">1H:BULL</div></div>
+    <div class="dash-cell"><div class="dash-label">Alignment</div><div class="dash-val dash-bull">HTF:ALIGNED</div></div>
+    <div class="dash-cell"><div class="dash-label">Daily</div><div class="dash-val dash-bull">D:BULL</div></div>
+    <div class="dash-cell"><div class="dash-label">Structure</div><div class="dash-val dash-bull">STRUCT:UP</div></div>
+    <div class="dash-cell"><div class="dash-label">Zone</div><div class="dash-val dash-bull">DISCOUNT</div></div>
+    <div class="dash-cell"><div class="dash-label">Score</div><div class="dash-val dash-gold">SCORE:80%</div></div>
+    <div class="dash-cell"><div class="dash-label">SOTD</div><div class="dash-val dash-gold">PRIME★</div></div>
+  </div>
+
+  <table class="score-table">
+    <thead>
+      <tr><th>Label</th><th>What to Look For</th><th>Trading Implication</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>W:BULL / W:BEAR</code></td><td>Weekly directional bias</td><td>W:BULL + buying = with macro. W:BEAR + buying = counter-trend — reduce size significantly.</td></tr>
+      <tr><td><code>4H:BULL / 4H:BEAR</code></td><td>4H close trend direction</td><td>Both 4H and 1H must agree for full conviction entry.</td></tr>
+      <tr><td><code>1H:BULL / 1H:BEAR</code></td><td>1H swing structure direction</td><td>Primary operational bias. Should match your trade direction.</td></tr>
+      <tr><td><code>HTF:ALIGNED</code></td><td>1H and 4H in full agreement</td><td>Green = high-conviction context. -- = caution, halve intended position size.</td></tr>
+      <tr><td><code>D:BULL / BEAR / RANGE</code></td><td>Daily breakout status</td><td>D:RANGE = daily bias +5 not scoring. D:BULL or BEAR = adds to score.</td></tr>
+      <tr><td><code>STRUCT:UP / DN</code></td><td>LTF BOS/CHoCH trendState</td><td>Must match signal direction. Contradiction = investigate before entering.</td></tr>
+      <tr><td><code>PREMIUM / DISCOUNT</code></td><td>Price vs. 50-bar EQ line</td><td>Discount = valid for buys. Premium = valid for sells. Opposing = signal will not generate.</td></tr>
+      <tr><td><code>SCORE: XX%</code></td><td>Current Smart Money Score</td><td>≥ 70% = standard size. 60–69% = reduced size. &lt; 60% = no signal.</td></tr>
+      <tr><td><code>SOTD: label</code></td><td>SOTD tier for the day</td><td>ELITE = full size. PRIME = standard. WATCH = minimum. See Section 08.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="alert danger">
+    <div class="alert-icon">🚫</div>
+    <p><strong>Most common mistake:</strong> Focusing only on the entry TF and ignoring the 4H and 1H context. A "perfect" 5M setup with HTF:-- (misaligned) is a low-probability trade. Always read the dashboard top-down before acting on any signal bubble.</p>
+  </div>
+</section>
+
+<!-- ════════ 05 SIGNAL LABELS ════════ -->
+<section id="signals" class="section">
+  <div class="section-label">Section 05</div>
+  <h2>Signal Label Anatomy</h2>
+  <p class="lead">Every element of a USME v3.1 signal bubble has a specific meaning and trading implication. After this section, you will be able to extract a complete trading plan — entry, stop, target, size — from a signal in under 5 seconds.</p>
+
+  <div class="chart-wrap">
+    <svg viewBox="0 0 700 220" width="100%" xmlns="http://www.w3.org/2000/svg">
+      <!-- Grid -->
+      <line x1="0" y1="55" x2="700" y2="55" stroke="#2a2420" stroke-width="1"/>
+      <line x1="0" y1="110" x2="700" y2="110" stroke="#2a2420" stroke-width="1"/>
+      <line x1="0" y1="165" x2="700" y2="165" stroke="#2a2420" stroke-width="1"/>
+      <!-- Bearish candles before sweep -->
+      <rect x="20" y="90" width="18" height="55" fill="#c8102e" opacity="0.6"/>
+      <rect x="50" y="95" width="18" height="50" fill="#c8102e" opacity="0.6"/>
+      <rect x="80" y="100" width="18" height="48" fill="#c8102e" opacity="0.6"/>
+      <!-- Sweep wick below low -->
+      <rect x="115" y="98" width="20" height="52" fill="#c8102e" opacity="0.85"/>
+      <line x1="125" y1="88" x2="125" y2="170" stroke="#c8102e" stroke-width="2"/>
+      <text x="125" y="183" fill="rgba(200,16,46,0.7)" font-size="8" text-anchor="middle">SWEEP↓</text>
+      <!-- OB cloud (dark green) behind sweep candle -->
+      <rect x="108" y="87" width="38" height="90" fill="rgba(0,140,70,0.07)" stroke="rgba(0,180,90,0.3)" stroke-width="1" stroke-dasharray="4,3"/>
+      <!-- SC bubble -->
+      <rect x="148" y="87" width="26" height="14" rx="2" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+      <text x="161" y="97" fill="rgba(255,255,255,0.85)" font-size="8" text-anchor="middle">SC</text>
+      <!-- Signal candle (bullish, closes above OB) -->
+      <rect x="155" y="75" width="22" height="60" fill="#0a9e5c" opacity="0.9"/>
+      <line x1="166" y1="65" x2="166" y2="148" stroke="#0a9e5c" stroke-width="2"/>
+      <!-- BUY bubble -->
+      <rect x="148" y="185" width="36" height="28" rx="3" fill="rgba(10,158,92,0.18)" stroke="#0a9e5c" stroke-width="1.5"/>
+      <text x="166" y="197" fill="#4dbb88" font-size="9" text-anchor="middle" font-weight="700">BUY</text>
+      <text x="166" y="208" fill="#4dbb88" font-size="8" text-anchor="middle">80%</text>
+      <line x1="166" y1="184" x2="166" y2="148" stroke="#0a9e5c" stroke-width="1" stroke-dasharray="3,2"/>
+      <!-- ATR Stop line -->
+      <line x1="148" y1="153" x2="700" y2="153" stroke="rgba(200,16,46,0.4)" stroke-width="1" stroke-dasharray="5,3"/>
+      <text x="650" y="150" fill="rgba(200,16,46,0.6)" font-size="8">STOP 2×ATR</text>
+      <!-- ATR Target line -->
+      <line x1="148" y1="42" x2="700" y2="42" stroke="rgba(10,110,63,0.4)" stroke-width="1" stroke-dasharray="5,3"/>
+      <text x="650" y="39" fill="rgba(10,110,63,0.6)" font-size="8">TARGET 3×ATR</text>
+      <!-- Continuation candles -->
+      <rect x="193" y="60" width="20" height="55" fill="#0a9e5c" opacity="0.7"/>
+      <rect x="226" y="48" width="20" height="45" fill="#0a9e5c" opacity="0.7"/>
+      <rect x="259" y="40" width="20" height="40" fill="#0a9e5c" opacity="0.6"/>
+      <!-- PRIME bubble near signal -->
+      <rect x="192" y="185" width="46" height="16" rx="2" fill="rgba(212,170,64,0.15)" stroke="rgba(212,170,64,0.5)" stroke-width="1"/>
+      <text x="215" y="196" fill="#d4aa40" font-size="8" text-anchor="middle">PRIME★</text>
+      <!-- FVG cloud -->
+      <rect x="193" y="88" width="86" height="22" fill="rgba(0,140,70,0.1)" stroke="rgba(0,180,90,0.25)" stroke-width="1"/>
+      <text x="236" y="101" fill="rgba(0,180,90,0.5)" font-size="8" text-anchor="middle">FVG</text>
+      <text x="20" y="14" fill="#4a4038" font-size="9">SWEEP → SC / OB ZONE → BUY SIGNAL (80%) → PRIME TIER → STOP 2×ATR · TARGET 3×ATR</text>
+    </svg>
+  </div>
+
+  <div class="two-col">
+    <div class="signal-box bull">
+      <span class="signal-tag tag-bull">BUY Signal — Full Anatomy</span>
+      <table class="score-table" style="margin:0;font-size:12px">
+        <tbody>
+          <tr><td style="padding:8px 10px"><strong>BUY XX%</strong></td><td style="padding:8px 10px;color:var(--ink-dim)">Direction + Smart Money Score. Score drives sizing.</td></tr>
+          <tr><td style="padding:8px 10px"><strong>▲ Green arrow</strong></td><td style="padding:8px 10px;color:var(--ink-dim)">Signal bar — plotted below bar at close. Entry reference.</td></tr>
+          <tr><td style="padding:8px 10px"><strong>BuyStop</strong></td><td style="padding:8px 10px;color:var(--ink-dim)">Entry − 2× ATR (14-period). Hard stop on close.</td></tr>
+          <tr><td style="padding:8px 10px"><strong>BuyTarget</strong></td><td style="padding:8px 10px;color:var(--ink-dim)">Entry + 3× ATR. Single primary target.</td></tr>
+          <tr><td style="padding:8px 10px"><strong>SC bubble</strong></td><td style="padding:8px 10px;color:var(--ink-dim)">Marks OB-creating BOS bar. Zone context.</td></tr>
+          <tr><td style="padding:8px 10px;border:none"><strong>SOTD tier</strong></td><td style="padding:8px 10px;color:var(--ink-dim);border:none">WATCH/PRIME/ELITE classification. Drives final sizing.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="signal-box bear">
+      <span class="signal-tag tag-bear">SELL Signal — Full Anatomy</span>
+      <table class="score-table" style="margin:0;font-size:12px">
+        <tbody>
+          <tr><td style="padding:8px 10px"><strong>SELL XX%</strong></td><td style="padding:8px 10px;color:var(--ink-dim)">Direction (short) + score. Fires only in premium zone.</td></tr>
+          <tr><td style="padding:8px 10px"><strong>▼ Red arrow</strong></td><td style="padding:8px 10px;color:var(--ink-dim)">Signal bar — plotted above bar at close.</td></tr>
+          <tr><td style="padding:8px 10px"><strong>SellStop</strong></td><td style="padding:8px 10px;color:var(--ink-dim)">Entry + 2× ATR. Exit if price closes above.</td></tr>
+          <tr><td style="padding:8px 10px"><strong>SellTarget</strong></td><td style="padding:8px 10px;color:var(--ink-dim)">Entry − 3× ATR. Price must drop to this level.</td></tr>
+          <tr><td style="padding:8px 10px"><strong>△ Fade</strong></td><td style="padding:8px 10px;color:var(--ink-dim)">Orange triangle — EMA momentum reversal caution.</td></tr>
+          <tr><td style="padding:8px 10px;border:none"><strong>R:R Ratio</strong></td><td style="padding:8px 10px;color:var(--ink-dim);border:none">3.0÷2.0 = 1.5:1 minimum on every signal.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="alert danger">
+    <div class="alert-icon">🚫</div>
+    <p><strong>ATR stop multiplier changed in v3.1.</strong> In v2, the stop was 1× ATR. In v3.1, <code>atrStopMult = 2.0</code> — the stop is now twice as wide. Your 1R dollar risk is larger at the same position size. Always read the actual BuyStop/SellStop level from the chart label and size accordingly.</p>
+  </div>
+
+  <div class="divider-label"><span>ATR Risk Level Calculator</span></div>
+
+  <table class="score-table">
+    <thead><tr><th>Signal</th><th>Stop Formula</th><th>Target Formula</th><th>Example (ATR = 8.0)</th><th>R:R</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong style="color:var(--green)">BUY</strong></td>
+        <td>Entry − (2.0 × ATR14)</td>
+        <td>Entry + (3.0 × ATR14)</td>
+        <td>Stop: −16 pts · Target: +24 pts</td>
+        <td><span class="score-val g">1.5:1</span></td>
+      </tr>
+      <tr>
+        <td><strong style="color:var(--sniper-red)">SELL</strong></td>
+        <td>Entry + (2.0 × ATR14)</td>
+        <td>Entry − (3.0 × ATR14)</td>
+        <td>Stop: +16 pts · Target: −24 pts</td>
+        <td><span class="score-val g">1.5:1</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>△ Fade Alerts — How to Use Them</h3>
+  <div class="two-col">
+    <div class="signal-box void">
+      <span class="signal-tag tag-orange">△ Fade Below Bar</span>
+      <p style="font-size:13px;color:var(--ink-dim);margin:0">Prior buy-momentum period (buysig) has ended. EMA 9 has crossed below EMA 14. If you are long — tighten your stop toward the midpoint between entry and stop. Do <em>not</em> enter new longs.</p>
+    </div>
+    <div class="signal-box void">
+      <span class="signal-tag tag-orange">△ Fade Above Bar</span>
+      <p style="font-size:13px;color:var(--ink-dim);margin:0">Prior sell-momentum period (sellsig) has ended. EMA 9 has crossed above EMA 14. If you are short — tighten stop. Do <em>not</em> enter new shorts. This is a caution/exit signal only, never an entry trigger.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ 06 SMT & SESSIONS ════════ -->
+<section id="smt" class="section">
+  <div class="section-label">Section 06</div>
+  <h2>SMT Divergence & Session Filters</h2>
+  <p class="lead">Two external confirmation layers elevate a standard signal into a high-conviction trade. SMT Divergence reveals institutional manipulation through inter-market comparison. Session filters ensure the engine rewards signals when institutional desks are most active.</p>
+
+  <h3>SMT Divergence — Inter-Market Confirmation</h3>
+  <p>Smart Money Technique (SMT) Divergence occurs when two highly correlated assets diverge at a swing extreme. One makes a new high or low; its correlated partner fails to confirm. This is institutional fingerprinting — one instrument was engineered to create a false extreme to collect liquidity, while the other reveals the true direction.</p>
+
+  <div class="chart-wrap">
+    <svg viewBox="0 0 700 180" width="100%" xmlns="http://www.w3.org/2000/svg">
+      <!-- Grid -->
+      <line x1="0" y1="60" x2="700" y2="60" stroke="#2a2420" stroke-width="1"/>
+      <line x1="0" y1="120" x2="700" y2="120" stroke="#2a2420" stroke-width="1"/>
+      <!-- PDL reference -->
+      <line x1="0" y1="145" x2="700" y2="145" stroke="rgba(200,200,200,0.2)" stroke-width="1" stroke-dasharray="6,4"/>
+      <text x="590" y="142" fill="rgba(180,180,180,0.45)" font-size="8">PRIOR DAY LOW</text>
+      <!-- ES declining candles -->
+      <text x="30" y="20" fill="rgba(130,180,212,0.7)" font-size="9">ES (Primary)</text>
+      <rect x="30" y="95" width="16" height="35" fill="#c8102e" opacity="0.6"/>
+      <rect x="58" y="100" width="16" height="40" fill="#c8102e" opacity="0.6"/>
+      <rect x="86" y="110" width="16" height="45" fill="#c8102e" opacity="0.65"/>
+      <!-- ES sweep below PDL -->
+      <rect x="118" y="108" width="18" height="52" fill="#c8102e" opacity="0.9"/>
+      <line x1="127" y1="100" x2="127" y2="168" stroke="#c8102e" stroke-width="2"/>
+      <text x="127" y="178" fill="rgba(200,16,46,0.7)" font-size="8" text-anchor="middle">ES SWEEPS</text>
+      <!-- NQ declining candles -->
+      <text x="350" y="20" fill="rgba(130,180,212,0.7)" font-size="9">NQ (SMT Partner)</text>
+      <rect x="350" y="90" width="16" height="35" fill="#c8102e" opacity="0.6"/>
+      <rect x="378" y="94" width="16" height="38" fill="#c8102e" opacity="0.6"/>
+      <rect x="406" y="100" width="16" height="42" fill="#c8102e" opacity="0.65"/>
+      <!-- NQ holds above PDL — no sweep -->
+      <rect x="438" y="102" width="18" height="36" fill="#0a9e5c" opacity="0.8"/>
+      <line x1="447" y1="96" x2="447" y2="148" stroke="#0a9e5c" stroke-width="2"/>
+      <text x="447" y="158" fill="rgba(10,110,63,0.7)" font-size="8" text-anchor="middle">NQ HOLDS</text>
+      <!-- SMT divergence arrow -->
+      <path d="M 145 130 C 200 130 290 120 430 120" stroke="#d4aa40" stroke-width="1.5" stroke-dasharray="5,3" fill="none"/>
+      <text x="290" y="113" fill="#d4aa40" font-size="9" text-anchor="middle">SMT DIVERGENCE → BULLISH</text>
+    </svg>
+  </div>
+
+  <div class="two-col">
+    <div class="signal-box bull">
+      <span class="signal-tag tag-bull">smtBull — Dashboard: SMT:BULL</span>
+      <div class="steps" style="margin:0">
+        <div class="step" style="padding:9px 0"><div class="step-num" style="width:28px;height:28px;font-size:10px">1</div><div class="step-content"><p style="font-size:12px;margin:0;color:var(--ink-dim)">Primary chart (ES) makes new low below prior day's low: <code>l &lt; pdLow</code></p></div></div>
+        <div class="step" style="padding:9px 0"><div class="step-num" style="width:28px;height:28px;font-size:10px">2</div><div class="step-content"><p style="font-size:12px;margin:0;color:var(--ink-dim)">SMT symbol (NQ) holds its prior day's low: <code>compL &gt;= pdLow</code></p></div></div>
+        <div class="step" style="padding:9px 0;border:none"><div class="step-num" style="width:28px;height:28px;font-size:10px">3</div><div class="step-content"><p style="font-size:12px;margin:0;color:var(--ink-dim)">ES sweep was a liquidity hunt. NQ's hold reveals institutional intent is <strong style="color:var(--green)">bullish</strong>.</p></div></div>
+      </div>
+    </div>
+    <div class="signal-box bear">
+      <span class="signal-tag tag-bear">smtBear — Dashboard: SMT:BEAR</span>
+      <div class="steps" style="margin:0">
+        <div class="step" style="padding:9px 0"><div class="step-num" style="width:28px;height:28px;font-size:10px;background:var(--red-bg);border-color:rgba(200,16,46,0.2);color:var(--sniper-red)">1</div><div class="step-content"><p style="font-size:12px;margin:0;color:var(--ink-dim)">Primary chart (ES) makes new high above prior day's high: <code>h &gt; pdHigh</code></p></div></div>
+        <div class="step" style="padding:9px 0"><div class="step-num" style="width:28px;height:28px;font-size:10px;background:var(--red-bg);border-color:rgba(200,16,46,0.2);color:var(--sniper-red)">2</div><div class="step-content"><p style="font-size:12px;margin:0;color:var(--ink-dim)">SMT symbol (NQ) fails to confirm: <code>compH &lt;= pdHigh</code></p></div></div>
+        <div class="step" style="padding:9px 0;border:none"><div class="step-num" style="width:28px;height:28px;font-size:10px;background:var(--red-bg);border-color:rgba(200,16,46,0.2);color:var(--sniper-red)">3</div><div class="step-content"><p style="font-size:12px;margin:0;color:var(--ink-dim)">ES breakout was a bull trap. NQ's failure reveals institutional intent is <strong style="color:var(--sniper-red)">bearish</strong>.</p></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert warn">
+    <div class="alert-icon">⚠️</div>
+    <p><strong>Never trade SMT as a standalone signal.</strong> SMT is a confirmation tool. The full signal stack (OB/FVG + CHoCH + Sweep + Score ≥ 60%) must still be present. In v3.1, SMT is the optional gating condition for the SOTD ELITE tier only.</p>
+  </div>
+
+  <div class="divider-label"><span>Session & Killzone Windows</span></div>
+
+  <table class="score-table">
+    <thead><tr><th>Session</th><th>Time (ET)</th><th>USME Status</th><th>Characteristics</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Asian</strong></td>
+        <td><span style="font-family:'Share Tech Mono',monospace;font-size:12px">8 PM – 12 AM</span></td>
+        <td><span class="score-val" style="color:var(--ink-muted)">Suppressed</span></td>
+        <td>Range-building. Sets highs/lows that London/NY will target. Use for planning only.</td>
+      </tr>
+      <tr>
+        <td><strong>London Open</strong></td>
+        <td><span style="font-family:'Share Tech Mono',monospace;font-size:12px">2:00–5:00 AM</span></td>
+        <td><span class="score-val g">+10 pts</span></td>
+        <td>Prime liquidity sweep window. London banks clear Asian session orders. Best for reversal setups. Vertical line on chart marks open.</td>
+      </tr>
+      <tr>
+        <td><strong>NY Open</strong> <span class="tier-badge tier-watch" style="font-size:9px;padding:1px 5px;margin-left:4px">Updated v3.1</span></td>
+        <td><span style="font-family:'Share Tech Mono',monospace;font-size:12px">9:30 AM–12 PM</span></td>
+        <td><span class="score-val g">+10 pts</span></td>
+        <td>Highest-volume window. US institutional desks fully active. Starts at 9:30 AM in v3.1 — was 8:00 AM in v2. Primary trend signals cluster here.</td>
+      </tr>
+      <tr>
+        <td><strong>London Close</strong> <span class="tier-badge tier-prime" style="font-size:9px;padding:1px 5px;margin-left:4px">New in v3.1</span></td>
+        <td><span style="font-family:'Share Tech Mono',monospace;font-size:12px">11 AM–12 PM</span></td>
+        <td><span class="score-val g">+10 pts</span></td>
+        <td>Subset of NY window. Marked with magenta vertical line (Ldn Cls). London books closing often produce counter-trend reversals. Watch for fade setups.</td>
+      </tr>
+      <tr>
+        <td><strong>Afternoon NY</strong></td>
+        <td><span style="font-family:'Share Tech Mono',monospace;font-size:12px">12 PM – 4 PM</span></td>
+        <td><span class="score-val" style="color:var(--ink-muted)">No bonus</span></td>
+        <td>Lower institutional participation. Signals can fire but score no session bonus. Treat as one grade lower — reduce size by half.</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ════════ 07 EXECUTION ════════ -->
+<section id="execution" class="section">
+  <div class="section-label">Section 07</div>
+  <h2>Live Trade Execution — The Six-Step Workflow</h2>
+  <p class="lead">Every time the USME generates a signal, run the six steps below in order. The first few times this may take 3–5 minutes. After 50 trades, it will take under 20 seconds. Skipping steps is where most execution errors originate.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-content">
+        <h3>Check the HTF Bias Dashboard</h3>
+        <p>Read W:, 4H:, 1H:, and HTF:ALIGNED. If HTF:ALIGNED is green and matches signal direction — proceed with full conviction. If HTF:-- — continue only with halved position size. Also verify STRUCT:UP/DN matches the signal direction.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-content">
+        <h3>Identify the ICT Zone</h3>
+        <p>Look at the signal bar area. Is an active OB cloud or FVG cloud still visible (unmitigated)? Is there an SC bubble confirming the OB origin? Is there a stacked OB + FVG configuration (the most powerful entry type)? A zone must exist — no zone means the structural premise is unclear.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-content">
+        <h3>Read and Grade the Score</h3>
+        <p>Read the score % from the bubble or the SCORE: dashboard label. Determine your position size <em>before proceeding</em>: ≥ 85% = ELITE size · 70–84% = standard · 60–69% = reduced. Do not change this decision as you continue — anchoring bias will push you to increase size regardless of what follows.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <div class="step-content">
+        <h3>Confirm the Session Window</h3>
+        <p>Check the session label: LONDON (2–5 AM) or NY KZ (9:30 AM–12 PM ET)? If yes — killzone +10 is already in the score. If OFF — treat the signal as one grade lower. At 2 PM, a 75% score effectively trades like a 65% in terms of institutional timing. Reduce size by half or skip.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">05</div>
+      <div class="step-content">
+        <h3>Check SMT and SOTD Tier</h3>
+        <p>Read the SMT: label — is SMT:BULL on a buy signal? That's inter-market confirmation. Check for a SOTD tier bubble: ELITE = maximum conviction + full size. PRIME = full SMC stack + standard size. WATCH = valid setup + minimum size. No SMT is fine — it is a bonus, not a requirement.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">06</div>
+      <div class="step-content">
+        <h3>Execute and Manage</h3>
+        <p>Entry: signal bar close (or limit order at OB zone midpoint for a pullback). Stop: BuyStop level on chart (2× ATR). Target: BuyTarget level (3× ATR). During trade: if a △ Fade appears, tighten stop to the midpoint between entry and stop. Log the trade regardless of outcome — score %, SOTD tier, session, zone type, SMT (Y/N), result.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider-label"><span>Common Execution Mistakes</span></div>
+
+  <div class="alert danger">
+    <div class="alert-icon">🚫</div>
+    <p><strong>Mistake 1 — Ignoring HTF:ALIGNED:</strong> Taking a 75% score signal when HTF:-- shows 1H and 4H disagree. Fix: When HTF:ALIGNED is not green, automatically halve intended position size. If that risk is unacceptable, skip the trade entirely.</p>
+  </div>
+  <div class="alert danger">
+    <div class="alert-icon">🚫</div>
+    <p><strong>Mistake 2 — Chasing signals mid-bar:</strong> Entering before the bar closes because "it looks like a signal is forming." The bar reverses and the signal disappears. Fix: USME is bar-close only. If you missed the close, wait for a retest of the OB or FVG zone and enter on the secondary touch.</p>
+  </div>
+  <div class="alert danger">
+    <div class="alert-icon">🚫</div>
+    <p><strong>Mistake 3 — Using v2 ATR assumptions:</strong> Traders upgrading from v2 assume the stop is 1× ATR. In v3.1, <code>atrStopMult = 2.0</code>. The stop is nearly double at the same position size. Always read the actual BuyStop/SellStop from the chart label and resize accordingly.</p>
+  </div>
+  <div class="alert danger">
+    <div class="alert-icon">🚫</div>
+    <p><strong>Mistake 4 — Ignoring the session window:</strong> Taking a high-score signal at 2:00 PM at full size. An 80% score at 2 PM loses 10 points of context — it is effectively a 70% in terms of institutional timing. Reduce size significantly or skip signals in the afternoon.</p>
+  </div>
+
+  <div class="divider-label"><span>Complete Trade Evaluation Scenario</span></div>
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:22px;margin-top:8px">
+    <div class="section-label" style="margin-bottom:12px">Worked Example — Tuesday, 9:48 AM ET</div>
+    <p style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:16px">Dashboard: W:BULL · 4H:BULL · 1H:BULL · HTF:ALIGNED ✓ · STRUCT:UP · DISCOUNT · D:BULL · SCORE:85% · SOTD:PRIME · SMT:BULL</p>
+    <p style="font-size:13px;color:var(--ink-dim);margin-bottom:8px">ES 5M chart. ES swept below a prior swing low (liquidity hunt), reversed immediately. BUY bubble fires. Signal bar closed inside a bullish OB cloud. FVG cloud sits directly above (stacked). NQ held its prior day's low (SMT confirmed). Entry: 5,100.00 · ATR: 8.0 pts</p>
+    <table class="score-table" style="margin:12px 0 0">
+      <thead><tr><th>Step</th><th>Check</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>01 — HTF</td><td>W:BULL, 4H:BULL, 1H:BULL, HTF:ALIGNED ✓, STRUCT:UP</td><td><strong style="color:var(--green)">PASS — full conviction</strong></td></tr>
+        <tr><td>02 — Zone</td><td>Active OB cloud visible. FVG cloud directly above. SC bubble present.</td><td><strong style="color:var(--green)">PASS — stacked zones</strong></td></tr>
+        <tr><td>03 — Score</td><td>85% = ELITE grade</td><td><strong style="color:var(--cyan)">ELITE SIZE</strong></td></tr>
+        <tr><td>04 — Session</td><td>9:48 AM ET = NY Open killzone active (9:30–12:00)</td><td><strong style="color:var(--green)">PASS +10 in score</strong></td></tr>
+        <tr><td>05 — SMT + SOTD</td><td>SMT:BULL confirmed · SOTD:PRIME★</td><td><strong style="color:var(--gold)">PRIME — standard+ size</strong></td></tr>
+        <tr><td>06 — Execute</td><td>Entry 5,100 · Stop 5,084 (−2×8) · Target 5,124 (+3×8)</td><td><strong style="color:var(--green)">R:R 1.5:1 · ENTER</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ════════ 08 SOTD ENGINE ════════ -->
+<section id="sotd" class="section">
+  <div class="section-label">Section 08</div>
+  <h2>The SOTD Engine — Signal-of-the-Day Tiers</h2>
+  <p class="lead">The Signal-of-the-Day (SOTD) Engine is entirely new in v3.1. It runs in parallel with the standard signal system and classifies each day's highest-quality setup into WATCH, PRIME, or ELITE. Once a higher tier fires, the dashboard label upgrades and stays at the highest tier reached for the day.</p>
+
+  <div class="algo-flow">
+    <div class="algo-node"><div class="icon">🔔</div><div class="label">Tier 1</div><div class="val">WATCH</div></div>
+    <div class="algo-node"><div class="icon">→</div><div class="label">Escalates</div><div class="val">if stack</div></div>
+    <div class="algo-node"><div class="icon">🎵</div><div class="label">Tier 2</div><div class="val">PRIME</div></div>
+    <div class="algo-node"><div class="icon">→</div><div class="label">Escalates</div><div class="val">if HTF</div></div>
+    <div class="algo-node"><div class="icon">⚡</div><div class="label">Tier 3</div><div class="val">ELITE</div></div>
+  </div>
+
+  <div class="signal-box trap">
+    <span class="signal-tag tag-white">◈ WATCH — Bell Alert</span>
+    <p style="font-size:13px;color:var(--ink-dim);margin:8px 0 4px">Fires when: A standard BUY/SELL signal is present AND score ≥ 50% (sotdScoreWatch) AND trendState is aligned with signal direction.</p>
+    <p style="font-size:13px;color:var(--ink-dim);margin:0">Optional: <code>sotdRequireKZ</code> (default: off) — when enabled, WATCH also requires a London or NY killzone. Dashboard: <strong>SOTD:WATCH◈</strong>. Sizing: minimum (0.5% risk).</p>
+  </div>
+
+  <div class="signal-box gold">
+    <span class="signal-tag tag-gold">★ PRIME — Chimes Alert</span>
+    <p style="font-size:13px;color:var(--ink-dim);margin:8px 0 4px">Fires when: Full SMC stack confirmed — CHoCH + Sweep + (FVG or OB) + inDisc/inPrem zone + score ≥ 70% (sotdScorePrime).</p>
+    <p style="font-size:13px;color:var(--ink-dim);margin:0">Dashboard: <strong>SOTD:PRIME★</strong> (yellow). Chimes alert is distinct from the standard Bell. Sizing: standard (0.75–1% risk). This is the ideal setup frequency — one PRIME per day.</p>
+  </div>
+
+  <div class="signal-box cyan">
+    <span class="signal-tag tag-cyan">⚡ ELITE — Ring Alert</span>
+    <p style="font-size:13px;color:var(--ink-dim);margin:8px 0 4px">Fires when: PRIME conditions are met AND 1H + 4H are both aligned (HTFtrend + htfBull/htfBear). Optionally requires SMT divergence (<code>sotdRequireSMT</code>, default: off).</p>
+    <p style="font-size:13px;color:var(--ink-dim);margin:0">Dashboard: <strong>SOTD:ELITE⚡</strong> (cyan). Ring alert — highest-priority sound in the system. Alert message includes Weekly bias and SMT status. Sizing: full (1–2% risk). Occurs 1–3× per week across a watchlist.</p>
+  </div>
+
+  <div class="divider-label"><span>Tier Comparison</span></div>
+
+  <table class="score-table">
+    <thead><tr><th>Tier</th><th>Score Required</th><th>SMC Stack</th><th>HTF Alignment</th><th>SMT</th><th>Alert</th><th>Size</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="tier-badge tier-watch">◈ WATCH</span></td>
+        <td><span class="score-val" style="color:var(--ink)">≥ 50%</span></td>
+        <td>Not required</td>
+        <td>Not required</td>
+        <td>Not required</td>
+        <td>Bell</td>
+        <td>0.5%</td>
+      </tr>
+      <tr>
+        <td><span class="tier-badge tier-prime">★ PRIME</span></td>
+        <td><span class="score-val gold">≥ 70%</span></td>
+        <td>CHoCH + Sweep + FVG or OB + zone</td>
+        <td>Not required</td>
+        <td>Not required</td>
+        <td>Chimes</td>
+        <td>0.75–1%</td>
+      </tr>
+      <tr>
+        <td><span class="tier-badge tier-elite">⚡ ELITE</span></td>
+        <td><span class="score-val" style="color:var(--cyan)">≥ 70%</span></td>
+        <td>Full PRIME stack</td>
+        <td><strong>Required</strong></td>
+        <td>Configurable</td>
+        <td>Ring</td>
+        <td>1–2%</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="divider-label"><span>Daily SOTD Protocol</span></div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">AM</div>
+      <div class="step-content">
+        <h3>Pre-Market Review</h3>
+        <p>Check W:, 4H:, 1H:, and HTF:ALIGNED. Note the macro bias direction. Identify key OB and FVG clouds that could be tested during London or NY open. Set alerts for SOTD tiers in your watchlist instruments.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">LDN</div>
+      <div class="step-content">
+        <h3>London Open (2–5 AM ET)</h3>
+        <p>Monitor for WATCH or PRIME tier bubbles. A PRIME signal in London with HTF:ALIGNED is a high-conviction opportunity even at the early hour. London sweeps often set up the NY continuation trade.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">NY</div>
+      <div class="step-content">
+        <h3>NY Open (9:30 AM–12:00 PM ET)</h3>
+        <p>The primary target window. If SOTD:PRIME or SOTD:ELITE fires here with HTF:ALIGNED, this is the day's primary trade. Execute the six-step checklist with full discipline. One good trade executed correctly outperforms five mediocre ones.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">PM</div>
+      <div class="step-content">
+        <h3>After First SOTD Signal</h3>
+        <p>SOTD label remains at the highest tier reached. No new setups recommended unless the morning trade was stopped out and conditions remain pristine. The SOTD framework is built around one primary trade per day — discipline here is the edge.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider-label"><span>SOTD Input Configuration</span></div>
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:22px;margin-top:8px">
+    <table class="score-table" style="margin:0">
+      <thead><tr><th>Input</th><th>Default</th><th>What It Controls</th><th>When to Adjust</th></tr></thead>
+      <tbody>
+        <tr><td><code>sotdScoreWatch</code></td><td>50</td><td>Minimum score % for WATCH tier</td><td>Raise to 60 to match the standard signal gate exactly</td></tr>
+        <tr><td><code>sotdScorePrime</code></td><td>70</td><td>Minimum score % for PRIME tier</td><td>Lower cautiously — below 65% dilutes the full-stack requirement</td></tr>
+        <tr><td><code>sotdRequireKZ</code></td><td>Off</td><td>Forces WATCH to require London or NY killzone</td><td>Enable if you want WATCH signals only during peak session hours</td></tr>
+        <tr><td><code>sotdRequireSMT</code></td><td>Off</td><td>Forces ELITE to require SMT divergence</td><td>Enable for maximum selectivity — ELITE fires very rarely with this on</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="alert info">
+    <div class="alert-icon">💡</div>
+    <p><strong>SOTD Alert Messages:</strong> WATCH fires with direction + score + killzone (Y/N). PRIME fires with direction + score + "Full SMC Stack" confirmation. ELITE fires with direction + score + SMT (Y/N) + Weekly bias (Bull/Bear). The distinct alert sounds — Bell / Chimes / Ring — let you identify the tier by ear without looking at the screen.</p>
+  </div>
+
+  <hr>
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:22px">
+    <div class="section-label" style="margin-bottom:12px">Quick Reference — Full Signal Grading Cheat Sheet</div>
+    <table class="score-table" style="margin:0 0 20px">
+      <thead><tr><th>Grade</th><th>Score</th><th>Killzone</th><th>TF Alignment</th><th>ICT Zone</th><th>SMT</th><th>SOTD</th><th>Size</th></tr></thead>
+      <tbody>
+        <tr><td><strong style="color:var(--cyan)">ELITE</strong></td><td>85–100%</td><td>Active</td><td>All 4 aligned</td><td>OB + FVG stacked</td><td>Confirmed</td><td><span class="tier-badge tier-elite" style="font-size:9px;padding:1px 6px">ELITE⚡</span></td><td>1–2%</td></tr>
+        <tr><td><strong style="color:var(--gold)">PRIME</strong></td><td>70–84%</td><td>Active</td><td>1H + 4H aligned</td><td>OB or FVG</td><td>Optional</td><td><span class="tier-badge tier-prime" style="font-size:9px;padding:1px 6px">PRIME★</span></td><td>0.75%</td></tr>
+        <tr><td><strong style="color:var(--orange)">WATCH</strong></td><td>60–69%</td><td>Near zone</td><td>1H aligned</td><td>Partial</td><td>Absent</td><td><span class="tier-badge tier-watch" style="font-size:9px;padding:1px 6px">WATCH◈</span></td><td>0.5%</td></tr>
+        <tr><td><strong style="color:var(--ink-muted)">NONE</strong></td><td>&lt; 60%</td><td>Any</td><td>Misaligned</td><td>None</td><td>N/A</td><td>—</td><td>NO TRADE</td></tr>
+      </tbody>
+    </table>
+    <div class="setup-grid">
+      <div class="setup-panel long">
+        <div class="panel-title">// Buy Setup — 6-Step Rapid Check</div>
+        <ul class="checklist">
+          <li>W:BULL · 4H:BULL · 1H:BULL · HTF:ALIGNED green</li>
+          <li>STRUCT:UP · DISCOUNT zone active</li>
+          <li>Active OB or FVG cloud at signal bar (cloud visible)</li>
+          <li>Score ≥ 60% — set size before proceeding</li>
+          <li>Session: London 2–5 AM or NY 9:30 AM–12 PM ET</li>
+          <li>Entry = bar close · Stop = BuyStop (2×ATR) · Target = BuyTarget (3×ATR)</li>
+        </ul>
+      </div>
+      <div class="setup-panel short">
+        <div class="panel-title">// Sell Setup — 6-Step Rapid Check</div>
+        <ul class="checklist">
+          <li>W:BEAR · 4H:BEAR · 1H:BEAR · HTF:ALIGNED green</li>
+          <li>STRUCT:DN · PREMIUM zone active</li>
+          <li>Active OB or FVG cloud at signal bar (cloud visible)</li>
+          <li>Score ≥ 60% — set size before proceeding</li>
+          <li>Session: London 2–5 AM or NY 9:30 AM–12 PM ET</li>
+          <li>Entry = bar close · Stop = SellStop (2×ATR) · Target = SellTarget (3×ATR)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-brand"><span>Sniper</span>Trader</div>
+      <p>// USME v3.1 · SMC Toolkit + SOTD Engine · Signal Interpretation Course</p>
+      <div id="page-indicator">01 / 08</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const sections = ['overview','architecture','score','bias','signals','smt','execution','sotd'];
+  const labels   = ['01','02','03','04','05','06','07','08'];
+  function showSection(id, btn) {
+    sections.forEach(s => document.getElementById(s).classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    btn.classList.add('active');
+    document.getElementById('page-indicator').textContent = labels[sections.indexOf(id)] + ' / 08';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+
+</body>
+</html>
