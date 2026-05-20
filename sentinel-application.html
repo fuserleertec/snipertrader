@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sentinel Clearance Application — TradeSniper Intelligence Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --obsidian:   #070a0f;
+  --obs2:       #0c1018;
+  --obs3:       #111620;
+  --obs4:       #161d2b;
+  --cyan:       #00e5ff;
+  --cyan-dim:   #00b8cc;
+  --cyan-glow:  rgba(0,229,255,.18);
+  --cyan-strong:rgba(0,229,255,.38);
+  --gold:       #f0b429;
+  --gold-glow:  rgba(240,180,41,.22);
+  --silver:     #8fa3c0;
+  --white:      #e8f0f8;
+  --muted:      #3a5070;
+  --glass:      #0d141f;
+  --gborder:    rgba(0,229,255,.14);
+  --gborder2:   rgba(0,229,255,.28);
+  --err:        #ff4060;
+  --ok:         #00e5a0;
+  --fmono: 'Space Mono', monospace;
+  --fdisplay:'Orbitron', monospace;
+  --fbody: 'Syne', sans-serif;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--obsidian);color:var(--white);
+  font-family:var(--fbody);overflow-x:hidden;cursor:none;
+  min-height:100vh;
+}
+
+/* ── grid overlay */
+body::before{
+  content:'';position:fixed;inset:0;z-index:1;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(0,229,255,.016) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,229,255,.016) 1px,transparent 1px);
+  background-size:72px 72px;
+}
+
+/* ── CURSOR */
+#cring{position:fixed;top:0;left:0;width:28px;height:28px;border:1.5px solid var(--cyan);border-radius:50%;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);mix-blend-mode:screen;transition:width .15s,height .15s,border-color .15s;}
+#cdot{position:fixed;top:0;left:0;width:4px;height:4px;background:var(--cyan);border-radius:50%;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);}
+body:has(input:focus) #cring,body:has(textarea:focus) #cring,body:has(select:focus) #cring{width:48px;height:48px;border-color:var(--gold);opacity:.5;}
+
+/* ── PARTICLE CANVAS */
+#pcanvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:.45;}
+
+/* ── NAV */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 40px;height:64px;
+  background:rgba(7,10,15,.9);
+  border-bottom:1px solid rgba(0,229,255,.09);
+  backdrop-filter:blur(20px);
+}
+.nav-logo{font-family:var(--fdisplay);font-size:13px;font-weight:700;letter-spacing:.18em;color:var(--white);text-decoration:none;display:flex;align-items:center;gap:10px;}
+.nav-logo span{color:var(--cyan);}
+.nav-logo::before{content:'⊕';font-size:16px;color:var(--cyan);text-shadow:0 0 12px var(--cyan);}
+.nav-links{display:flex;gap:36px;list-style:none;}
+.nav-links a{font-family:var(--fmono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--silver);text-decoration:none;transition:color .2s;}
+.nav-links a:hover{color:var(--cyan);}
+.nav-back{font-family:var(--fdisplay);font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;padding:9px 20px;border:1px solid rgba(0,229,255,.2);color:var(--silver);background:transparent;text-decoration:none;transition:border-color .2s,color .2s;}
+.nav-back:hover{border-color:var(--cyan);color:var(--cyan);}
+
+/* ── PAGE WRAPPER */
+.page{position:relative;z-index:10;padding-top:64px;min-height:100vh;display:flex;flex-direction:column;}
+
+/* ── HEADER BAND */
+.header-band{
+  padding:72px 40px 56px;
+  text-align:center;
+  background:radial-gradient(ellipse 700px 300px at center top,rgba(0,229,255,.07) 0%,transparent 70%);
+  border-bottom:1px solid rgba(0,229,255,.07);
+  position:relative;overflow:hidden;
+}
+.header-band::after{
+  content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+  width:200px;height:1px;background:linear-gradient(to right,transparent,var(--cyan),transparent);
+}
+.hb-eyebrow{
+  font-family:var(--fmono);font-size:9px;letter-spacing:.4em;
+  color:var(--cyan);text-transform:uppercase;margin-bottom:20px;
+  display:flex;align-items:center;justify-content:center;gap:14px;opacity:.8;
+}
+.hb-eyebrow::before,.hb-eyebrow::after{content:'';display:block;width:40px;height:1px;background:var(--cyan);opacity:.4;}
+.hb-title{
+  font-family:var(--fdisplay);font-size:clamp(30px,5vw,58px);
+  font-weight:900;letter-spacing:.05em;text-transform:uppercase;
+  line-height:1.0;margin-bottom:10px;
+}
+.hb-title span{color:var(--cyan);text-shadow:0 0 40px rgba(0,229,255,.4);}
+.hb-sub{
+  font-family:var(--fmono);font-size:10px;letter-spacing:.25em;
+  color:var(--muted);text-transform:uppercase;margin-bottom:0;
+}
+
+/* ── PROGRESS TRACK */
+.progress-track{
+  display:flex;align-items:center;justify-content:center;
+  gap:0;padding:36px 40px 0;
+  max-width:800px;margin:0 auto;width:100%;
+}
+.step-node{
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  flex:1;position:relative;
+}
+.step-node::before{
+  content:'';position:absolute;top:16px;left:50%;
+  width:100%;height:1px;
+  background:rgba(0,229,255,.12);
+  z-index:0;
+}
+.step-node:last-child::before{display:none;}
+.step-circle{
+  width:32px;height:32px;border-radius:50%;
+  border:1px solid rgba(0,229,255,.2);
+  background:var(--glass);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--fmono);font-size:9px;font-weight:700;
+  color:var(--muted);z-index:1;position:relative;
+  transition:border-color .4s,color .4s,background .4s,box-shadow .4s;
+}
+.step-circle.active{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 16px rgba(0,229,255,.3);background:rgba(0,229,255,.06);}
+.step-circle.done{border-color:var(--ok);color:var(--ok);background:rgba(0,229,255,.04);}
+.step-circle.done::after{content:'✓';font-size:11px;}
+.step-label{font-family:var(--fmono);font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);text-align:center;transition:color .4s;}
+.step-node.active .step-label{color:var(--cyan);}
+.step-node.done .step-label{color:var(--ok);}
+.step-line{flex:1;height:1px;background:rgba(0,229,255,.1);transition:background .4s;}
+.step-line.done{background:rgba(0,229,255,.35);}
+
+/* ── FORM SHELL */
+.form-shell{
+  max-width:800px;margin:40px auto 80px;
+  width:100%;padding:0 24px;
+}
+
+/* ── STEP PANEL */
+.step-panel{display:none;}
+.step-panel.active{display:block;}
+
+.panel-header{margin-bottom:40px;}
+.panel-code{
+  font-family:var(--fmono);font-size:9px;letter-spacing:.3em;
+  color:var(--cyan);text-transform:uppercase;opacity:.6;margin-bottom:12px;
+}
+.panel-title{
+  font-family:var(--fdisplay);font-size:22px;font-weight:800;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--white);
+  margin-bottom:10px;
+}
+.panel-desc{font-size:13px;line-height:1.7;color:var(--muted);}
+
+/* ── FIELD GROUP */
+.field-group{display:flex;flex-direction:column;gap:24px;margin-bottom:40px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.field{display:flex;flex-direction:column;gap:8px;}
+.field label{
+  font-family:var(--fmono);font-size:9px;letter-spacing:.25em;
+  text-transform:uppercase;color:var(--silver);
+  display:flex;align-items:center;gap:8px;
+}
+.field label .req{color:var(--cyan);font-size:11px;line-height:1;}
+.field label .hint{color:var(--muted);font-weight:400;margin-left:auto;font-size:8px;letter-spacing:.1em;text-transform:none;font-family:var(--fmono);}
+
+input[type=text],input[type=email],input[type=url],
+input[type=number],textarea,select{
+  background:var(--glass);
+  border:1px solid rgba(0,229,255,.12);
+  color:var(--white);
+  font-family:var(--fbody);font-size:14px;
+  padding:14px 16px;
+  outline:none;
+  transition:border-color .2s,box-shadow .2s,background .2s;
+  width:100%;
+  -webkit-appearance:none;
+  appearance:none;
+}
+input[type=text]::placeholder,input[type=email]::placeholder,
+input[type=url]::placeholder,input[type=number]::placeholder,
+textarea::placeholder{color:var(--muted);font-size:13px;}
+input:focus,textarea:focus,select:focus{
+  border-color:var(--cyan);
+  box-shadow:0 0 0 1px rgba(0,229,255,.2),0 0 20px rgba(0,229,255,.08);
+  background:rgba(0,229,255,.03);
+}
+input.err,textarea.err,select.err{border-color:var(--err)!important;box-shadow:0 0 0 1px rgba(255,64,96,.2)!important;}
+textarea{resize:vertical;min-height:110px;line-height:1.6;}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2300e5ff' opacity='.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center;padding-right:40px;cursor:pointer;}
+select option{background:var(--obs2);}
+
+.field-error{
+  font-family:var(--fmono);font-size:9px;letter-spacing:.1em;
+  color:var(--err);display:none;padding-left:2px;
+}
+.field-error.show{display:block;}
+
+/* ── CHAR COUNTER */
+.char-counter{
+  font-family:var(--fmono);font-size:9px;letter-spacing:.1em;
+  color:var(--muted);text-align:right;margin-top:4px;
+}
+.char-counter.warn{color:var(--gold);}
+.char-counter.over{color:var(--err);}
+
+/* ── PLATFORM ROW */
+.platform-row{
+  display:grid;grid-template-columns:140px 1fr;gap:12px;align-items:start;
+}
+.platform-badge{
+  display:flex;align-items:center;justify-content:center;
+  height:48px;
+  background:rgba(0,229,255,.04);
+  border:1px solid rgba(0,229,255,.1);
+  font-family:var(--fmono);font-size:9px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--silver);gap:8px;
+}
+
+/* ── CHECKBOX / RADIO GRID */
+.check-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.check-item{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:14px 16px;
+  background:var(--glass);border:1px solid rgba(0,229,255,.08);
+  cursor:pointer;transition:border-color .2s,background .2s;
+  user-select:none;
+}
+.check-item:hover{border-color:rgba(0,229,255,.2);background:rgba(0,229,255,.03);}
+.check-item.selected{border-color:rgba(0,229,255,.35);background:rgba(0,229,255,.06);}
+.check-item input{display:none;}
+.check-box{
+  width:16px;height:16px;flex-shrink:0;
+  border:1px solid rgba(0,229,255,.25);
+  background:transparent;margin-top:1px;
+  display:flex;align-items:center;justify-content:center;
+  transition:border-color .2s,background .2s;
+}
+.check-item.selected .check-box{border-color:var(--cyan);background:rgba(0,229,255,.15);}
+.check-box::after{content:'✓';font-size:9px;color:var(--cyan);opacity:0;transition:opacity .2s;}
+.check-item.selected .check-box::after{opacity:1;}
+.check-text{font-size:12px;color:var(--silver);line-height:1.5;}
+.check-text strong{display:block;font-family:var(--fdisplay);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--white);margin-bottom:3px;}
+
+/* ── RADIO TIER CARDS */
+.tier-cards{display:flex;flex-direction:column;gap:8px;}
+.tier-card{
+  display:flex;align-items:center;gap:20px;
+  padding:18px 24px;
+  background:var(--glass);border:1px solid rgba(0,229,255,.08);
+  cursor:pointer;transition:border-color .25s,background .25s,transform .2s;
+  user-select:none;position:relative;overflow:hidden;
+}
+.tier-card::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;
+  width:3px;background:transparent;transition:background .25s;
+}
+.tier-card:hover{border-color:rgba(0,229,255,.2);}
+.tier-card.selected{border-color:rgba(0,229,255,.3);background:rgba(0,229,255,.04);}
+.tier-card.selected::before{background:var(--cyan);}
+.tier-card.gold-card.selected{border-color:rgba(240,180,41,.4);background:rgba(240,180,41,.04);}
+.tier-card.gold-card.selected::before{background:var(--gold);}
+.tier-card input{display:none;}
+.tier-radio{
+  width:18px;height:18px;flex-shrink:0;
+  border:1px solid rgba(0,229,255,.25);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  transition:border-color .2s;
+}
+.tier-card.selected .tier-radio{border-color:var(--cyan);}
+.tier-radio::after{content:'';width:8px;height:8px;border-radius:50%;background:var(--cyan);opacity:0;transition:opacity .2s;}
+.tier-card.selected .tier-radio::after{opacity:1;}
+.tier-card-rank{
+  font-family:var(--fdisplay);font-size:22px;font-weight:900;
+  width:36px;text-align:center;line-height:1;
+}
+.t1 .tier-card-rank{color:#2a3a50;}
+.t2 .tier-card-rank{color:var(--silver);}
+.t3 .tier-card-rank{color:var(--cyan);text-shadow:0 0 16px rgba(0,229,255,.4);}
+.t4 .tier-card-rank{color:var(--gold);text-shadow:0 0 16px rgba(240,180,41,.5);}
+.tier-card-info{flex:1;}
+.tier-card-name{font-family:var(--fdisplay);font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--white);margin-bottom:4px;}
+.tier-card-desc{font-size:11px;color:var(--muted);line-height:1.5;}
+.tier-card-pct{
+  font-family:var(--fdisplay);font-size:15px;font-weight:900;
+  color:var(--muted);white-space:nowrap;text-align:right;
+}
+.tier-card.selected.t3 .tier-card-pct{color:var(--cyan);}
+.tier-card.selected.t4 .tier-card-pct{color:var(--gold);}
+.tier-card.t4 .tier-card-pct::after{content:' ✦';font-size:10px;color:var(--gold);}
+
+/* ── RANGE SLIDER */
+.range-wrap{display:flex;flex-direction:column;gap:8px;}
+input[type=range]{
+  -webkit-appearance:none;appearance:none;
+  width:100%;height:3px;
+  background:rgba(0,229,255,.12);
+  outline:none;cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;
+  width:18px;height:18px;border-radius:50%;
+  background:var(--cyan);border:2px solid var(--obsidian);
+  box-shadow:0 0 12px rgba(0,229,255,.5);
+  transition:box-shadow .2s;
+}
+input[type=range]::-webkit-slider-thumb:hover{box-shadow:0 0 20px rgba(0,229,255,.7);}
+.range-labels{display:flex;justify-content:space-between;}
+.range-labels span{font-family:var(--fmono);font-size:8px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;}
+.range-value{font-family:var(--fdisplay);font-size:20px;font-weight:800;color:var(--cyan);text-align:center;margin-top:4px;}
+
+/* ── AGREEMENT */
+.agree-block{
+  background:var(--glass);border:1px solid rgba(0,229,255,.1);
+  padding:28px 28px 24px;margin-bottom:24px;
+  position:relative;
+}
+.agree-block::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(to right,var(--cyan),transparent);}
+.agree-scroll{
+  max-height:180px;overflow-y:auto;
+  font-size:12px;line-height:1.8;color:#3a5270;
+  margin-bottom:20px;padding-right:8px;
+}
+.agree-scroll::-webkit-scrollbar{width:3px;}
+.agree-scroll::-webkit-scrollbar-track{background:rgba(0,229,255,.04);}
+.agree-scroll::-webkit-scrollbar-thumb{background:rgba(0,229,255,.2);}
+.agree-scroll h4{font-family:var(--fdisplay);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--silver);margin:12px 0 6px;}
+.agree-scroll p{margin-bottom:8px;}
+.agree-check{display:flex;align-items:flex-start;gap:14px;cursor:pointer;user-select:none;}
+.agree-check input{display:none;}
+.agree-check-box{
+  width:18px;height:18px;flex-shrink:0;margin-top:2px;
+  border:1px solid rgba(0,229,255,.25);background:transparent;
+  display:flex;align-items:center;justify-content:center;
+  transition:border-color .2s,background .2s;
+}
+.agree-check.checked .agree-check-box{border-color:var(--cyan);background:rgba(0,229,255,.15);}
+.agree-check-box::after{content:'✓';font-size:10px;color:var(--cyan);opacity:0;transition:opacity .2s;}
+.agree-check.checked .agree-check-box::after{opacity:1;}
+.agree-check-text{font-size:12px;line-height:1.6;color:var(--silver);}
+.agree-check-text strong{color:var(--white);}
+
+/* ── NAV BUTTONS */
+.form-nav{
+  display:flex;gap:12px;align-items:center;
+  padding-top:32px;border-top:1px solid rgba(0,229,255,.07);
+}
+.btn-next{
+  font-family:var(--fdisplay);font-size:10px;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;
+  padding:16px 40px;border:none;cursor:pointer;
+  background:var(--cyan);color:var(--obsidian);
+  transition:box-shadow .25s,transform .2s;
+  flex:1;
+}
+.btn-next:hover{box-shadow:0 0 40px rgba(0,229,255,.45);transform:translateY(-2px);}
+.btn-prev{
+  font-family:var(--fdisplay);font-size:10px;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;
+  padding:16px 28px;border:1px solid rgba(0,229,255,.18);
+  background:transparent;color:var(--silver);cursor:pointer;
+  transition:border-color .2s,color .2s;
+}
+.btn-prev:hover{border-color:var(--cyan);color:var(--cyan);}
+.btn-submit{
+  font-family:var(--fdisplay);font-size:10px;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;
+  padding:16px 40px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,var(--cyan),var(--cyan-dim));
+  color:var(--obsidian);
+  transition:box-shadow .25s,transform .2s;
+  flex:1;position:relative;overflow:hidden;
+}
+.btn-submit::before{
+  content:'';position:absolute;top:-50%;left:-60%;width:40%;height:200%;
+  background:rgba(255,255,255,.15);transform:skewX(-20deg);
+  transition:left .4s;
+}
+.btn-submit:hover::before{left:130%;}
+.btn-submit:hover{box-shadow:0 0 60px rgba(0,229,255,.55);transform:translateY(-2px);}
+.step-counter{
+  font-family:var(--fmono);font-size:9px;letter-spacing:.2em;
+  color:var(--muted);text-transform:uppercase;
+  white-space:nowrap;
+}
+.step-counter span{color:var(--cyan);}
+
+/* ── SUCCESS SCREEN */
+#success-screen{
+  display:none;max-width:600px;margin:80px auto;
+  padding:0 24px;text-align:center;
+}
+#success-screen.show{display:block;}
+.success-ring{
+  width:96px;height:96px;border-radius:50%;
+  border:2px solid var(--cyan);
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 32px;
+  box-shadow:0 0 40px rgba(0,229,255,.3),inset 0 0 20px rgba(0,229,255,.05);
+  animation:pulseRing 2s ease-in-out infinite;
+}
+@keyframes pulseRing{0%,100%{box-shadow:0 0 40px rgba(0,229,255,.3),inset 0 0 20px rgba(0,229,255,.05)}50%{box-shadow:0 0 80px rgba(0,229,255,.5),inset 0 0 30px rgba(0,229,255,.1)}}
+.success-icon{font-size:36px;color:var(--cyan);}
+.success-title{font-family:var(--fdisplay);font-size:32px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--white);margin-bottom:16px;}
+.success-title span{color:var(--cyan);}
+.success-ref{
+  font-family:var(--fmono);font-size:11px;letter-spacing:.25em;
+  color:var(--muted);text-transform:uppercase;margin-bottom:32px;
+}
+.success-ref strong{color:var(--cyan);}
+.success-body{font-size:14px;line-height:1.8;color:#3a5270;margin-bottom:40px;}
+.success-body em{color:var(--white);font-style:normal;font-weight:600;}
+.success-timeline{
+  display:flex;flex-direction:column;gap:0;
+  border:1px solid rgba(0,229,255,.1);
+  margin-bottom:40px;text-align:left;
+}
+.tl-item{
+  display:flex;gap:20px;align-items:flex-start;
+  padding:20px 24px;border-bottom:1px solid rgba(0,229,255,.06);
+}
+.tl-item:last-child{border-bottom:none;}
+.tl-num{
+  font-family:var(--fdisplay);font-size:11px;font-weight:700;
+  letter-spacing:.2em;color:var(--cyan);opacity:.4;flex-shrink:0;padding-top:2px;
+}
+.tl-text{font-size:13px;color:#3a5270;line-height:1.6;}
+.tl-text strong{color:var(--white);}
+.success-cta{
+  font-family:var(--fdisplay);font-size:10px;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;
+  padding:16px 40px;border:1px solid rgba(0,229,255,.25);
+  color:var(--cyan);background:transparent;
+  cursor:pointer;text-decoration:none;
+  transition:background .2s,box-shadow .2s;display:inline-block;
+}
+.success-cta:hover{background:rgba(0,229,255,.08);box-shadow:0 0 20px rgba(0,229,255,.2);}
+
+/* ── SAVE DRAFT BAR */
+.draft-bar{
+  position:fixed;bottom:0;left:0;right:0;z-index:500;
+  background:rgba(7,10,15,.95);border-top:1px solid rgba(0,229,255,.08);
+  backdrop-filter:blur(16px);
+  padding:12px 40px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.draft-status{font-family:var(--fmono);font-size:9px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;display:flex;align-items:center;gap:10px;}
+.draft-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);transition:background .3s;}
+.draft-dot.saved{background:var(--ok);box-shadow:0 0 8px var(--ok);}
+.draft-save-btn{
+  font-family:var(--fmono);font-size:8px;letter-spacing:.2em;text-transform:uppercase;
+  padding:7px 16px;border:1px solid rgba(0,229,255,.15);
+  background:transparent;color:var(--muted);cursor:pointer;
+  transition:border-color .2s,color .2s;
+}
+.draft-save-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+
+/* ── RESPONSIVE */
+@media(max-width:680px){
+  .field-row{grid-template-columns:1fr;}
+  .check-grid{grid-template-columns:1fr;}
+  nav{padding:0 16px;}
+  .nav-links{display:none;}
+  .form-shell{padding:0 16px;}
+  .header-band{padding:60px 20px 48px;}
+  .draft-bar{padding:12px 16px;}
+  .platform-row{grid-template-columns:1fr;}
+  .platform-badge{display:none;}
+}
+
+/* ── SCAN LINES */
+.step-panel::before{
+  content:'';position:absolute;top:0;left:0;right:0;bottom:0;
+  background:repeating-linear-gradient(
+    to bottom,transparent 0,transparent 3px,
+    rgba(0,229,255,.008) 3px,rgba(0,229,255,.008) 4px
+  );pointer-events:none;z-index:-1;
+}
+.step-panel{position:relative;}
+</style>
+</head>
+<body>
+
+<div id="cring"></div>
+<div id="cdot"></div>
+<canvas id="pcanvas"></canvas>
+
+<!-- NAV -->
+<nav>
+  <a href="sentinel-program.html" class="nav-logo">Trade<span>Sniper</span></a>
+  <ul class="nav-links">
+    <li><a href="#">USME Algo</a></li>
+    <li><a href="#">Psych App</a></li>
+    <li><a href="#">Ecosystem</a></li>
+    <li><a href="#">Community</a></li>
+  </ul>
+  <a href="sentinel-program.html" class="nav-back">← Sentinel Program</a>
+</nav>
+
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header-band">
+    <div class="hb-eyebrow">Clearance Intake — Classified</div>
+    <h1 class="hb-title">Sentinel <span>Application</span></h1>
+    <p class="hb-sub">Operative Recruitment · TradeSniper Intelligence Network</p>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-track">
+    <div class="step-node active" id="sn-1">
+      <div class="step-circle active" id="sc-1">01</div>
+      <div class="step-label">Identity</div>
+    </div>
+    <div class="step-line" id="sl-1"></div>
+    <div class="step-node" id="sn-2">
+      <div class="step-circle" id="sc-2">02</div>
+      <div class="step-label">Platforms</div>
+    </div>
+    <div class="step-line" id="sl-2"></div>
+    <div class="step-node" id="sn-3">
+      <div class="step-circle" id="sc-3">03</div>
+      <div class="step-label">Trading</div>
+    </div>
+    <div class="step-line" id="sl-3"></div>
+    <div class="step-node" id="sn-4">
+      <div class="step-circle" id="sc-4">04</div>
+      <div class="step-label">Strategy</div>
+    </div>
+    <div class="step-line" id="sl-4"></div>
+    <div class="step-node" id="sn-5">
+      <div class="step-circle" id="sc-5">05</div>
+      <div class="step-label">Clearance</div>
+    </div>
+  </div>
+
+  <!-- FORM SHELL -->
+  <div class="form-shell">
+
+    <!-- ── STEP 1: IDENTITY ── -->
+    <div class="step-panel active" id="step-1">
+      <div class="panel-header">
+        <div class="panel-code">// STEP 01 — OPERATIVE IDENTITY</div>
+        <h2 class="panel-title">Personal Identification</h2>
+        <p class="panel-desc">Basic identification data for your Sentinel file. All fields marked with <span style="color:var(--cyan)">✦</span> are required for clearance processing.</p>
+      </div>
+      <div class="field-group">
+        <div class="field-row">
+          <div class="field">
+            <label>First Name <span class="req">✦</span></label>
+            <input type="text" id="firstName" placeholder="e.g. Marcus" autocomplete="given-name">
+            <div class="field-error" id="err-firstName">First name required</div>
+          </div>
+          <div class="field">
+            <label>Last Name <span class="req">✦</span></label>
+            <input type="text" id="lastName" placeholder="e.g. Rivera" autocomplete="family-name">
+            <div class="field-error" id="err-lastName">Last name required</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Email Address <span class="req">✦</span> <span class="hint">Used for clearance communications</span></label>
+          <input type="email" id="email" placeholder="your@email.com" autocomplete="email">
+          <div class="field-error" id="err-email">Valid email required</div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Country / Region <span class="req">✦</span></label>
+            <select id="country">
+              <option value="">Select region…</option>
+              <option>United States</option>
+              <option>United Kingdom</option>
+              <option>Canada</option>
+              <option>Australia</option>
+              <option>Germany</option>
+              <option>Netherlands</option>
+              <option>South Africa</option>
+              <option>Nigeria</option>
+              <option>Philippines</option>
+              <option>India</option>
+              <option>Brazil</option>
+              <option>Mexico</option>
+              <option>Other</option>
+            </select>
+            <div class="field-error" id="err-country">Select your region</div>
+          </div>
+          <div class="field">
+            <label>Time Zone <span class="req">✦</span></label>
+            <select id="timezone">
+              <option value="">Select time zone…</option>
+              <option>EST — New York (UTC-5)</option>
+              <option>CST — Chicago (UTC-6)</option>
+              <option>MST — Denver (UTC-7)</option>
+              <option>PST — Los Angeles (UTC-8)</option>
+              <option>GMT — London (UTC+0)</option>
+              <option>CET — Berlin (UTC+1)</option>
+              <option>EAT — Nairobi (UTC+3)</option>
+              <option>IST — Mumbai (UTC+5:30)</option>
+              <option>SGT — Singapore (UTC+8)</option>
+              <option>AEST — Sydney (UTC+10)</option>
+              <option>Other</option>
+            </select>
+            <div class="field-error" id="err-timezone">Select your time zone</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Operative Handle / Alias <span class="hint">Optional — your trading/community name</span></label>
+          <input type="text" id="handle" placeholder="e.g. @snipertrader_x, TheSentinelTrader">
+        </div>
+        <div class="field">
+          <label>How did you learn about The Sentinel Program? <span class="req">✦</span></label>
+          <select id="referral">
+            <option value="">Select source…</option>
+            <option>YouTube — TradeSniper content</option>
+            <option>X / Twitter</option>
+            <option>TikTok</option>
+            <option>Discord / Telegram community</option>
+            <option>Referred by another Sentinel</option>
+            <option>PropFirm Match</option>
+            <option>Google / Web search</option>
+            <option>Other</option>
+          </select>
+          <div class="field-error" id="err-referral">Select a source</div>
+        </div>
+      </div>
+      <div class="form-nav">
+        <span class="step-counter">Step <span>1</span> of 5</span>
+        <button class="btn-next" onclick="nextStep(1)">Confirm Identity →</button>
+      </div>
+    </div>
+
+    <!-- ── STEP 2: PLATFORMS ── -->
+    <div class="step-panel" id="step-2">
+      <div class="panel-header">
+        <div class="panel-code">// STEP 02 — PLATFORM INTELLIGENCE</div>
+        <h2 class="panel-title">Content Channels & Reach</h2>
+        <p class="panel-desc">Sentinel rank is influenced by your content presence. Provide your primary platforms and real audience metrics. Estimated figures accepted.</p>
+      </div>
+      <div class="field-group">
+
+        <div class="field">
+          <label>Primary Content Platform <span class="req">✦</span></label>
+          <select id="primaryPlatform">
+            <option value="">Select primary platform…</option>
+            <option>YouTube</option>
+            <option>X / Twitter</option>
+            <option>TikTok</option>
+            <option>Instagram</option>
+            <option>Discord Community (Owner)</option>
+            <option>Telegram Channel</option>
+            <option>Podcast</option>
+            <option>Substack / Newsletter</option>
+            <option>Website / Blog</option>
+            <option>No active content — apply as affiliate only</option>
+          </select>
+          <div class="field-error" id="err-primaryPlatform">Select a platform</div>
+        </div>
+
+        <div class="field">
+          <label>Primary Platform URL <span class="req">✦</span></label>
+          <input type="url" id="primaryUrl" placeholder="https://youtube.com/c/yourhandle">
+          <div class="field-error" id="err-primaryUrl">Enter a valid URL</div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Subscribers / Followers <span class="req">✦</span></label>
+            <select id="audienceSize">
+              <option value="">Select range…</option>
+              <option>Under 500</option>
+              <option>500 – 2,000</option>
+              <option>2,000 – 5,000</option>
+              <option>5,000 – 15,000</option>
+              <option>15,000 – 50,000</option>
+              <option>50,000 – 150,000</option>
+              <option>150,000+</option>
+            </select>
+            <div class="field-error" id="err-audienceSize">Select audience size</div>
+          </div>
+          <div class="field">
+            <label>Avg. Monthly Content Views <span class="hint">Estimate OK</span></label>
+            <select id="monthlyViews">
+              <option value="">Select range…</option>
+              <option>Under 1,000</option>
+              <option>1,000 – 10,000</option>
+              <option>10,000 – 50,000</option>
+              <option>50,000 – 250,000</option>
+              <option>250,000+</option>
+              <option>Not tracked</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Secondary Platforms <span class="hint">Select all active</span></label>
+          <div class="check-grid">
+            <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox" value="YouTube"><div class="check-box"></div><div class="check-text"><strong>YouTube</strong>Video / Educational</div></div>
+            <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox" value="X/Twitter"><div class="check-box"></div><div class="check-text"><strong>X / Twitter</strong>Market commentary</div></div>
+            <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox" value="TikTok"><div class="check-box"></div><div class="check-text"><strong>TikTok</strong>Short-form content</div></div>
+            <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox" value="Instagram"><div class="check-box"></div><div class="check-text"><strong>Instagram</strong>Charts / Visuals</div></div>
+            <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox" value="Discord"><div class="check-box"></div><div class="check-text"><strong>Discord</strong>Community server</div></div>
+            <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox" value="Telegram"><div class="check-box"></div><div class="check-text"><strong>Telegram</strong>Signal / channel</div></div>
+            <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox" value="Newsletter"><div class="check-box"></div><div class="check-text"><strong>Newsletter</strong>Substack / Email list</div></div>
+            <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox" value="None"><div class="check-box"></div><div class="check-text"><strong>None currently</strong>Applying as link affiliate</div></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Community / Discord Size <span class="hint">If applicable</span></label>
+          <select id="communitySize">
+            <option value="">Not applicable</option>
+            <option>Under 100</option>
+            <option>100 – 500</option>
+            <option>500 – 2,000</option>
+            <option>2,000 – 10,000</option>
+            <option>10,000+</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Describe your audience in one sentence <span class="req">✦</span></label>
+          <textarea id="audienceDesc" placeholder="e.g. Day traders learning ICT/SMC methodology who want to get prop-firm funded…" maxlength="200"></textarea>
+          <div class="char-counter" id="cc-audienceDesc">0 / 200</div>
+          <div class="field-error" id="err-audienceDesc">Describe your audience</div>
+        </div>
+
+      </div>
+      <div class="form-nav">
+        <button class="btn-prev" onclick="prevStep(2)">← Back</button>
+        <span class="step-counter">Step <span>2</span> of 5</span>
+        <button class="btn-next" onclick="nextStep(2)">Continue →</button>
+      </div>
+    </div>
+
+    <!-- ── STEP 3: TRADING ── -->
+    <div class="step-panel" id="step-3">
+      <div class="panel-header">
+        <div class="panel-code">// STEP 03 — TRADING PROFILE</div>
+        <h2 class="panel-title">Methodology & Market Context</h2>
+        <p class="panel-desc">Sentinels earn more when they're authentic traders. Tell us how you actually use ICT/SMC concepts and our tools in your own trading.</p>
+      </div>
+      <div class="field-group">
+
+        <div class="field">
+          <label>Primary Trading Methodology <span class="req">✦</span></label>
+          <select id="methodology">
+            <option value="">Select methodology…</option>
+            <option>ICT / Inner Circle Trader — Primary</option>
+            <option>SMC / Smart Money Concepts</option>
+            <option>Hybrid ICT + Price Action</option>
+            <option>ICT-influenced, developing framework</option>
+            <option>Other structured methodology</option>
+          </select>
+          <div class="field-error" id="err-methodology">Select a methodology</div>
+        </div>
+
+        <div class="field">
+          <label>Markets Traded <span class="hint">Select all that apply</span></label>
+          <div class="check-grid">
+            <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox" value="Forex"><div class="check-box"></div><div class="check-text"><strong>Forex</strong>Major / Minor pairs</div></div>
+            <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox" value="Indices"><div class="check-box"></div><div class="check-text"><strong>Indices</strong>NQ, ES, YM, DAX</div></div>
+            <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox" value="Gold/Metals"><div class="check-box"></div><div class="check-text"><strong>Gold / Metals</strong>XAUUSD, Silver</div></div>
+            <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox" value="Crypto"><div class="check-box"></div><div class="check-text"><strong>Crypto</strong>BTC, ETH, majors</div></div>
+            <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox" value="Equities"><div class="check-box"></div><div class="check-text"><strong>Equities</strong>Individual stocks</div></div>
+            <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox" value="Oil/Energy"><div class="check-box"></div><div class="check-text"><strong>Oil / Energy</strong>WTI, Brent</div></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Trading Experience Level <span class="req">✦</span></label>
+          <select id="experience">
+            <option value="">Select experience…</option>
+            <option>Under 1 year</option>
+            <option>1 – 2 years</option>
+            <option>2 – 4 years</option>
+            <option>4 – 7 years</option>
+            <option>7+ years</option>
+          </select>
+          <div class="field-error" id="err-experience">Select experience level</div>
+        </div>
+
+        <div class="field">
+          <label>Prop Firm Status <span class="req">✦</span></label>
+          <select id="propStatus">
+            <option value="">Select status…</option>
+            <option>Currently funded (active account)</option>
+            <option>Passed evaluation — awaiting payout</option>
+            <option>In evaluation phase</option>
+            <option>Previously funded</option>
+            <option>Preparing for first challenge</option>
+            <option>Not currently pursuing prop firms</option>
+          </select>
+          <div class="field-error" id="err-propStatus">Select prop firm status</div>
+        </div>
+
+        <div class="field">
+          <label>USME Algo Usage <span class="req">✦</span></label>
+          <select id="usmeUsage">
+            <option value="">Select…</option>
+            <option>Active user — daily trading tool</option>
+            <option>Active user — occasional signals</option>
+            <option>Evaluating / trial phase</option>
+            <option>Purchased but not yet active</option>
+            <option>Have not purchased yet</option>
+          </select>
+          <div class="field-error" id="err-usmeUsage">Select USME usage</div>
+        </div>
+
+        <div class="field">
+          <label>How long have you been using TradeSniper products? <span class="hint">Estimate OK</span></label>
+          <div class="range-wrap">
+            <div class="range-value" id="monthsDisplay">6 months</div>
+            <input type="range" id="monthsUsing" min="0" max="36" value="6" step="1"
+              oninput="updateMonths(this.value)">
+            <div class="range-labels">
+              <span>New user</span><span>6 mo</span><span>1 yr</span><span>2 yr</span><span>3+ yr</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="form-nav">
+        <button class="btn-prev" onclick="prevStep(3)">← Back</button>
+        <span class="step-counter">Step <span>3</span> of 5</span>
+        <button class="btn-next" onclick="nextStep(3)">Continue →</button>
+      </div>
+    </div>
+
+    <!-- ── STEP 4: STRATEGY ── -->
+    <div class="step-panel" id="step-4">
+      <div class="panel-header">
+        <div class="panel-code">// STEP 04 — DEPLOYMENT STRATEGY</div>
+        <h2 class="panel-title">Your Affiliate Approach</h2>
+        <p class="panel-desc">Define how you plan to deploy your Sentinel role. Clarity here directly influences which tier you qualify for at onboarding.</p>
+      </div>
+      <div class="field-group">
+
+        <div class="field">
+          <label>Target Sentinel Tier <span class="req">✦</span></label>
+          <div class="tier-cards" id="tierCards">
+            <div class="tier-card t1" onclick="selectTier(this,'recruit')">
+              <input type="radio" name="tier" value="recruit">
+              <div class="tier-radio"></div>
+              <div class="tier-card-rank">01</div>
+              <div class="tier-card-info">
+                <div class="tier-card-name">Recruit</div>
+                <div class="tier-card-desc">Entry-level — link affiliate, no content requirement</div>
+              </div>
+              <div class="tier-card-pct">20%</div>
+            </div>
+            <div class="tier-card t2" onclick="selectTier(this,'operative')">
+              <input type="radio" name="tier" value="operative">
+              <div class="tier-radio"></div>
+              <div class="tier-card-rank">02</div>
+              <div class="tier-card-info">
+                <div class="tier-card-name">Operative</div>
+                <div class="tier-card-desc">Active content creator, 5+ referrals required for unlock</div>
+              </div>
+              <div class="tier-card-pct">25% + 15% rec</div>
+            </div>
+            <div class="tier-card t3" onclick="selectTier(this,'commander')">
+              <input type="radio" name="tier" value="commander">
+              <div class="tier-radio"></div>
+              <div class="tier-card-rank">03</div>
+              <div class="tier-card-info">
+                <div class="tier-card-name">Commander</div>
+                <div class="tier-card-desc">Community leader, 25+ referrals + 500-member community</div>
+              </div>
+              <div class="tier-card-pct">32% + 22% rec</div>
+            </div>
+            <div class="tier-card t4 gold-card" onclick="selectTier(this,'ghost')">
+              <input type="radio" name="tier" value="ghost">
+              <div class="tier-radio"></div>
+              <div class="tier-card-rank">04</div>
+              <div class="tier-card-info">
+                <div class="tier-card-name">Ghost Protocol</div>
+                <div class="tier-card-desc">Flagship operator — 100+ referrals, invite-only nomination</div>
+              </div>
+              <div class="tier-card-pct">40% + 30% rec</div>
+            </div>
+          </div>
+          <div class="field-error" id="err-tier">Select your target tier</div>
+        </div>
+
+        <div class="field">
+          <label>Primary promotion method <span class="req">✦</span></label>
+          <select id="promoMethod">
+            <option value="">Select method…</option>
+            <option>Educational video content (YouTube/TikTok)</option>
+            <option>Live trading streams</option>
+            <option>Written analysis / newsletters</option>
+            <option>Community management / Discord</option>
+            <option>Social media posts (X / Instagram)</option>
+            <option>1-on-1 mentorship referrals</option>
+            <option>Paid ads (own budget)</option>
+            <option>Email list</option>
+            <option>Multiple methods combined</option>
+          </select>
+          <div class="field-error" id="err-promoMethod">Select a promotion method</div>
+        </div>
+
+        <div class="field">
+          <label>Estimated monthly referrals in first 90 days <span class="hint">Honest estimate</span></label>
+          <select id="referralEstimate">
+            <option value="">Select estimate…</option>
+            <option>1 – 3</option>
+            <option>4 – 10</option>
+            <option>11 – 25</option>
+            <option>26 – 50</option>
+            <option>50+</option>
+            <option>Unsure — just getting started</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Deployment Statement <span class="req">✦</span> <span class="hint">Min 80 characters</span></label>
+          <textarea id="deploymentStatement" maxlength="600"
+            placeholder="Describe specifically how you plan to integrate TradeSniper into your content and community. How will you present the USME methodology? What makes your audience a natural fit for this ecosystem?"></textarea>
+          <div class="char-counter" id="cc-deployStatement">0 / 600</div>
+          <div class="field-error" id="err-deploymentStatement">Minimum 80 characters required</div>
+        </div>
+
+        <div class="field">
+          <label>Link one piece of your best trading content <span class="hint">Optional but strongly recommended</span></label>
+          <input type="url" id="contentSample" placeholder="https://youtube.com/watch?v=... or twitter.com/...">
+        </div>
+
+        <div class="field">
+          <label>Any existing TradeSniper referrals or community members? <span class="hint">Optional</span></label>
+          <textarea id="existingReferrals" maxlength="300" style="min-height:72px;"
+            placeholder="If you've already sent anyone to TradeSniper or have community members using the tools, mention it here."></textarea>
+        </div>
+
+      </div>
+      <div class="form-nav">
+        <button class="btn-prev" onclick="prevStep(4)">← Back</button>
+        <span class="step-counter">Step <span>4</span> of 5</span>
+        <button class="btn-next" onclick="nextStep(4)">Continue →</button>
+      </div>
+    </div>
+
+    <!-- ── STEP 5: CLEARANCE ── -->
+    <div class="step-panel" id="step-5">
+      <div class="panel-header">
+        <div class="panel-code">// STEP 05 — FINAL CLEARANCE</div>
+        <h2 class="panel-title">Program Agreement</h2>
+        <p class="panel-desc">Review and accept The Sentinel Program terms before your application is transmitted to the intelligence review team.</p>
+      </div>
+      <div class="field-group">
+
+        <div class="agree-block">
+          <div class="agree-scroll">
+            <h4>1. Program Terms</h4>
+            <p>The Sentinel Program is a performance-based affiliate arrangement offered by TradeSniper Intelligence Platform ("TradeSniper"). Participation is subject to approval and ongoing compliance with these terms.</p>
+            <h4>2. Commission Structure</h4>
+            <p>Commissions are calculated on net sales after refunds and chargebacks. Tier classification is reviewed quarterly. TradeSniper reserves the right to adjust commission rates with 30-day written notice. Recurring commissions apply to active subscriptions only and terminate if a subscription is cancelled or refunded.</p>
+            <h4>3. Promotional Standards</h4>
+            <p>Sentinels must not make exaggerated claims about trading results, guaranteed returns, or misleading characterizations of TradeSniper products. All content must comply with applicable financial promotion regulations in your jurisdiction. Sentinels are responsible for including appropriate risk disclosures in their content.</p>
+            <h4>4. Brand Guidelines</h4>
+            <p>Use of the TradeSniper name, USME brand, or Sentinel Program identity in your content must follow provided brand guidelines. Unauthorized trademarked use, impersonation of TradeSniper, or misrepresentation of your affiliation status will result in immediate program termination.</p>
+            <h4>5. Prohibited Activities</h4>
+            <p>Self-referrals, cookie stuffing, spam, paid search bidding on TradeSniper brand terms, or any fraudulent referral activity is strictly prohibited and will result in forfeiture of earned commissions.</p>
+            <h4>6. Payouts</h4>
+            <p>Commissions are paid monthly, net-15 following month close. Minimum payout threshold is $50 USD. Payouts are processed via bank transfer, PayPal, or cryptocurrency upon request.</p>
+            <h4>7. Termination</h4>
+            <p>Either party may terminate participation with 14 days notice. Accrued commissions on completed sales prior to termination will be honored. TradeSniper may terminate immediately in cases of material breach.</p>
+            <h4>8. Independent Contractor</h4>
+            <p>Sentinels are independent contractors. This agreement does not create an employment, agency, or partnership relationship. Sentinels are responsible for their own tax obligations.</p>
+          </div>
+          <div class="agree-check" id="agree1" onclick="toggleAgree('agree1')">
+            <input type="checkbox" id="agreeCheck1">
+            <div class="agree-check-box"></div>
+            <div class="agree-check-text">I have read and agree to <strong>The Sentinel Program Terms and Commission Structure</strong>. I understand that commissions are based on approved sales and that tier qualifications are reviewed quarterly.</div>
+          </div>
+        </div>
+
+        <div class="agree-block" style="margin-bottom:8px;">
+          <div class="agree-check" id="agree2" onclick="toggleAgree('agree2')">
+            <input type="checkbox" id="agreeCheck2">
+            <div class="agree-check-box"></div>
+            <div class="agree-check-text">I confirm that all information provided in this application is <strong>accurate and truthful</strong>. I understand that misrepresentation may result in permanent disqualification from The Sentinel Program.</div>
+          </div>
+        </div>
+
+        <div class="agree-block" style="margin-bottom:0;">
+          <div class="agree-check" id="agree3" onclick="toggleAgree('agree3')">
+            <input type="checkbox" id="agreeCheck3">
+            <div class="agree-check-box"></div>
+            <div class="agree-check-text">I agree to include appropriate <strong>risk disclosures</strong> in all trading-related promotional content, and I understand that futures, forex, and CFD trading involves significant risk of loss.</div>
+          </div>
+        </div>
+
+        <div class="field-error" id="err-agreements" style="margin-top:8px;font-size:10px;">All three agreements must be accepted to submit</div>
+
+        <div style="background:var(--glass);border:1px solid rgba(0,229,255,.08);padding:24px 28px;margin-top:8px;">
+          <div style="font-family:var(--fmono);font-size:8px;letter-spacing:.25em;color:var(--muted);text-transform:uppercase;margin-bottom:12px;">// Transmission Summary</div>
+          <div id="review-summary" style="font-size:12px;color:#3a5070;line-height:1.8;"></div>
+        </div>
+
+      </div>
+      <div class="form-nav">
+        <button class="btn-prev" onclick="prevStep(5)">← Back</button>
+        <span class="step-counter">Step <span>5</span> of 5</span>
+        <button class="btn-submit" onclick="submitApplication()">Transmit Application ◈</button>
+      </div>
+    </div>
+
+  </div><!-- /form-shell -->
+
+  <!-- SUCCESS SCREEN -->
+  <div id="success-screen">
+    <div class="success-ring"><div class="success-icon">◈</div></div>
+    <h2 class="success-title">Application <span>Transmitted</span></h2>
+    <p class="success-ref">Reference Code: <strong id="refCode">—</strong></p>
+    <p class="success-body">
+      Your Sentinel application has been received and is now in <em>intelligence review</em>. Our team personally evaluates every application to ensure program integrity.<br><br>
+      Expect a clearance decision within <em>48–72 hours</em> via the email you provided. High-tier applicants may receive a follow-up call before final approval.
+    </p>
+    <div class="success-timeline">
+      <div class="tl-item">
+        <div class="tl-num">01</div>
+        <div class="tl-text"><strong>Application Under Review</strong> — Our team is analyzing your profile, content, and deployment strategy.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-num">02</div>
+        <div class="tl-text"><strong>Clearance Decision</strong> — You will receive an approval or feedback email within 48–72 hours.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-num">03</div>
+        <div class="tl-text"><strong>Onboarding Brief</strong> — Approved Sentinels receive their classified asset kit, tracking links, and tier roadmap.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-num">04</div>
+        <div class="tl-text"><strong>Deployment</strong> — Go live, build authority, and begin earning recurring commission inside the MOAT.</div>
+      </div>
+    </div>
+    <a href="sentinel-program.html" class="success-cta">← Return to Sentinel Program</a>
+  </div>
+
+</div><!-- /page -->
+
+<!-- DRAFT BAR -->
+<div class="draft-bar">
+  <div class="draft-status">
+    <div class="draft-dot" id="draftDot"></div>
+    <span id="draftStatus">Draft unsaved</span>
+  </div>
+  <button class="draft-save-btn" onclick="saveDraft()">Save Draft</button>
+</div>
+
+<script>
+// ── CURSOR
+const ring=document.getElementById('cring'),dot=document.getElementById('cdot');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
+(function ac(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;ring.style.left=rx+'px';ring.style.top=ry+'px';dot.style.left=mx+'px';dot.style.top=my+'px';requestAnimationFrame(ac);})();
+
+// ── PARTICLES
+const pc=document.getElementById('pcanvas'),pctx=pc.getContext('2d');
+function resizePC(){pc.width=window.innerWidth;pc.height=window.innerHeight;}
+resizePC();window.addEventListener('resize',resizePC);
+class P{constructor(){this.reset();}reset(){this.x=Math.random()*pc.width;this.y=Math.random()*pc.height;this.vx=(Math.random()-.5)*.35;this.vy=(Math.random()-.5)*.35;this.life=Math.random();this.ml=.4+Math.random()*.6;this.r=Math.random()*1.2+.3;this.g=Math.random()>.88;}update(){this.x+=this.vx;this.y+=this.vy;this.life-=.0012;if(this.life<=0)this.reset();if(this.x<0||this.x>pc.width)this.vx*=-1;if(this.y<0||this.y>pc.height)this.vy*=-1;}draw(){const a=Math.min(this.life/this.ml,1)*(this.g?.45:.3);pctx.beginPath();pctx.arc(this.x,this.y,this.r,0,Math.PI*2);pctx.fillStyle=this.g?`rgba(240,180,41,${a})`:`rgba(0,229,255,${a})`;pctx.fill();}}
+const parts=Array.from({length:140},()=>new P());
+function ap(){pctx.clearRect(0,0,pc.width,pc.height);parts.forEach(p=>{p.update();p.draw();});requestAnimationFrame(ap);}ap();
+
+// ── STEP STATE
+let currentStep=1;
+const STEPS=5;
+
+function showStep(n){
+  document.querySelectorAll('.step-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('step-'+n).classList.add('active');
+  // update progress
+  for(let i=1;i<=STEPS;i++){
+    const sn=document.getElementById('sn-'+i);
+    const sc=document.getElementById('sc-'+i);
+    sn.classList.remove('active','done');
+    sc.classList.remove('active','done');
+    sc.textContent=String(i).padStart(2,'0');
+    if(i<n){sn.classList.add('done');sc.classList.add('done');sc.textContent='';}
+    else if(i===n){sn.classList.add('active');sc.classList.add('active');}
+    if(i<STEPS){
+      const sl=document.getElementById('sl-'+i);
+      sl.classList.toggle('done',i<n);
+    }
+  }
+  window.scrollTo({top:0,behavior:'smooth'});
+  autoDraft();
+}
+
+// ── VALIDATION
+function validateStep(n){
+  let ok=true;
+  const req=(id,errId,check)=>{
+    const el=document.getElementById(id);
+    const err=document.getElementById(errId);
+    const valid=check?check(el):(el.value.trim()!=='');
+    el.classList.toggle('err',!valid);
+    err.classList.toggle('show',!valid);
+    if(!valid)ok=false;
+  };
+  if(n===1){
+    req('firstName','err-firstName');
+    req('lastName','err-lastName');
+    req('email','err-email',el=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(el.value.trim()));
+    req('country','err-country');
+    req('timezone','err-timezone');
+    req('referral','err-referral');
+  }
+  if(n===2){
+    req('primaryPlatform','err-primaryPlatform');
+    req('primaryUrl','err-primaryUrl',el=>el.value.trim()===''||el.value.startsWith('http'));
+    req('audienceSize','err-audienceSize');
+    req('audienceDesc','err-audienceDesc',el=>el.value.trim().length>5);
+  }
+  if(n===3){
+    req('methodology','err-methodology');
+    req('experience','err-experience');
+    req('propStatus','err-propStatus');
+    req('usmeUsage','err-usmeUsage');
+  }
+  if(n===4){
+    const tier=document.querySelector('.tier-card.selected');
+    const terr=document.getElementById('err-tier');
+    if(!tier){terr.classList.add('show');ok=false;}else terr.classList.remove('show');
+    req('promoMethod','err-promoMethod');
+    req('deploymentStatement','err-deploymentStatement',el=>el.value.trim().length>=80);
+  }
+  if(n===5){
+    const a1=document.getElementById('agree1').classList.contains('checked');
+    const a2=document.getElementById('agree2').classList.contains('checked');
+    const a3=document.getElementById('agree3').classList.contains('checked');
+    const aerr=document.getElementById('err-agreements');
+    if(!a1||!a2||!a3){aerr.classList.add('show');ok=false;}else aerr.classList.remove('show');
+  }
+  return ok;
+}
+
+function nextStep(n){
+  if(!validateStep(n))return;
+  currentStep=n+1;
+  if(n===4)buildReviewSummary();
+  showStep(currentStep);
+}
+function prevStep(n){
+  currentStep=n-1;
+  showStep(currentStep);
+}
+
+// ── TOGGLES
+function toggleCheck(el){el.classList.toggle('selected');}
+function toggleAgree(id){document.getElementById(id).classList.toggle('checked');}
+
+let selectedTier='';
+function selectTier(el,tier){
+  document.querySelectorAll('.tier-card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedTier=tier;
+  document.getElementById('err-tier').classList.remove('show');
+}
+
+// ── RANGE
+function updateMonths(v){
+  const n=parseInt(v);
+  let label;
+  if(n===0)label='New user';
+  else if(n<12)label=n+' month'+(n>1?'s':'');
+  else if(n===12)label='1 year';
+  else if(n<24)label=n+' months';
+  else if(n===24)label='2 years';
+  else label=n+' months';
+  document.getElementById('monthsDisplay').textContent=label;
+}
+
+// ── CHAR COUNTERS
+function setupCharCounter(fieldId,counterId,max){
+  const el=document.getElementById(fieldId);
+  const cc=document.getElementById(counterId);
+  if(!el)return;
+  el.addEventListener('input',()=>{
+    const len=el.value.length;
+    cc.textContent=len+' / '+max;
+    cc.classList.toggle('warn',len>max*.8&&len<=max);
+    cc.classList.toggle('over',len>max);
+  });
+}
+setupCharCounter('audienceDesc','cc-audienceDesc',200);
+setupCharCounter('deploymentStatement','cc-deployStatement',600);
+
+// ── REVIEW SUMMARY
+function buildReviewSummary(){
+  const v=id=>document.getElementById(id)?document.getElementById(id).value:'';
+  const tier=document.querySelector('.tier-card.selected');
+  const tierName=tier?tier.querySelector('.tier-card-name').textContent:'—';
+  const html=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 32px;">
+      <div><span style="color:var(--muted);font-family:var(--fmono);font-size:8px;letter-spacing:.15em;text-transform:uppercase">Name</span><br><span style="color:var(--white)">${v('firstName')} ${v('lastName')}</span></div>
+      <div><span style="color:var(--muted);font-family:var(--fmono);font-size:8px;letter-spacing:.15em;text-transform:uppercase">Email</span><br><span style="color:var(--white)">${v('email')}</span></div>
+      <div><span style="color:var(--muted);font-family:var(--fmono);font-size:8px;letter-spacing:.15em;text-transform:uppercase">Region</span><br><span style="color:var(--white)">${v('country')}</span></div>
+      <div><span style="color:var(--muted);font-family:var(--fmono);font-size:8px;letter-spacing:.15em;text-transform:uppercase">Platform</span><br><span style="color:var(--white)">${v('primaryPlatform')}</span></div>
+      <div><span style="color:var(--muted);font-family:var(--fmono);font-size:8px;letter-spacing:.15em;text-transform:uppercase">Audience</span><br><span style="color:var(--white)">${v('audienceSize')}</span></div>
+      <div><span style="color:var(--muted);font-family:var(--fmono);font-size:8px;letter-spacing:.15em;text-transform:uppercase">Target Tier</span><br><span style="color:var(--cyan)">${tierName}</span></div>
+      <div><span style="color:var(--muted);font-family:var(--fmono);font-size:8px;letter-spacing:.15em;text-transform:uppercase">Methodology</span><br><span style="color:var(--white)">${v('methodology')}</span></div>
+      <div><span style="color:var(--muted);font-family:var(--fmono);font-size:8px;letter-spacing:.15em;text-transform:uppercase">USME Status</span><br><span style="color:var(--white)">${v('usmeUsage')}</span></div>
+    </div>
+  `;
+  document.getElementById('review-summary').innerHTML=html;
+}
+
+// ── SUBMIT
+function submitApplication(){
+  if(!validateStep(5))return;
+  const ref='SEN-'+Date.now().toString(36).toUpperCase();
+  document.getElementById('refCode').textContent=ref;
+  document.getElementById('form-shell') && (document.getElementById('form-shell').style.display='none');
+  document.querySelector('.form-shell').style.display='none';
+  document.querySelector('.progress-track').style.display='none';
+  document.getElementById('success-screen').classList.add('show');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── DRAFT
+let draftTimer;
+function autoDraft(){clearTimeout(draftTimer);draftTimer=setTimeout(saveDraft,8000);}
+function saveDraft(){
+  document.getElementById('draftDot').classList.add('saved');
+  document.getElementById('draftStatus').textContent='Draft saved';
+  setTimeout(()=>{document.getElementById('draftDot').classList.remove('saved');document.getElementById('draftStatus').textContent='Draft unsaved';},3000);
+}
+document.querySelectorAll('input,textarea,select').forEach(el=>{
+  el.addEventListener('input',autoDraft);
+  el.addEventListener('change',()=>{
+    el.classList.remove('err');
+    const errEl=document.getElementById('err-'+el.id);
+    if(errEl)errEl.classList.remove('show');
+  });
+});
+</script>
+</body>
+</html>
