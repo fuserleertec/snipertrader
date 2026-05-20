@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>USME v3.1 — Unified Smart Money Engine | SniperTrader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ══ RESET & ROOT ══════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --black:   #040609;
+  --deep:    #070b12;
+  --panel:   #0c1220;
+  --surface: #111827;
+  --border:  rgba(0,229,255,0.10);
+  --cyan:    #00e5ff;
+  --cyan2:   #00b8cc;
+  --gold:    #f0c040;
+  --gold2:   #b8882a;
+  --green:   #00e5a0;
+  --red:     #ff4d6a;
+  --white:   #edf2fb;
+  --sub:     rgba(237,242,251,0.72);
+  --muted:   rgba(237,242,251,0.42);
+  --ff-disp: 'Orbitron', monospace;
+  --ff-mono: 'Space Mono', monospace;
+  --ff-body: 'Syne', sans-serif;
+}
+html{scroll-behavior:smooth}
+body{
+  background: var(--black);
+  color: var(--white);
+  font-family: var(--ff-body);
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* ══ CUSTOM CURSOR ══ */
+#cur{position:fixed;width:8px;height:8px;background:var(--cyan);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);box-shadow:0 0 12px var(--cyan),0 0 30px rgba(0,229,255,.35);transition:width .15s,height .15s}
+#cur-ring{position:fixed;width:32px;height:32px;border:1px solid rgba(0,229,255,.4);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:transform .08s ease,width .2s,height .2s}
+body:has(a:hover) #cur{width:14px;height:14px}
+body:has(button:hover) #cur{background:var(--gold);box-shadow:0 0 14px var(--gold)}
+
+/* ══ GRID BACKGROUND ══ */
+.grid-bg{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(0,229,255,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,229,255,0.03) 1px,transparent 1px);
+  background-size:60px 60px;
+  mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black 30%,transparent 100%);
+}
+
+/* ══ NAV ══ */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  padding:18px 60px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(180deg,rgba(4,6,9,.96) 0%,transparent 100%);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(0,229,255,0.07);
+}
+.nav-logo{
+  font-family:var(--ff-disp);font-size:.85rem;font-weight:900;
+  color:var(--white);letter-spacing:.18em;text-decoration:none;
+}
+.nav-logo span{color:var(--cyan)}
+.nav-badge{
+  font-family:var(--ff-mono);font-size:.5rem;letter-spacing:.2em;
+  color:var(--cyan);background:rgba(0,229,255,.08);
+  border:1px solid rgba(0,229,255,.2);border-radius:3px;
+  padding:3px 7px;margin-left:10px;vertical-align:middle;
+}
+.nav-links{list-style:none;display:flex;gap:32px}
+.nav-links a{
+  font-family:var(--ff-mono);font-size:.6rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--sub);text-decoration:none;
+  transition:color .2s;
+}
+.nav-links a:hover{color:var(--cyan)}
+.nav-cta{
+  font-family:var(--ff-mono);font-size:.6rem;letter-spacing:.15em;
+  text-transform:uppercase;padding:11px 22px;
+  background:linear-gradient(135deg,var(--cyan),var(--cyan2));
+  color:#000;border:none;border-radius:4px;cursor:none;
+  font-weight:700;transition:opacity .2s,transform .15s;
+}
+.nav-cta:hover{opacity:.85;transform:translateY(-1px)}
+
+/* ══ HERO ══ */
+#hero{
+  min-height:100vh;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  text-align:center;padding:120px 60px 80px;
+  position:relative;overflow:hidden;
+}
+.hero-glow{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:900px;height:900px;border-radius:50%;
+  background:radial-gradient(ellipse,rgba(0,229,255,.06) 0%,transparent 65%);
+  pointer-events:none;
+}
+.hero-glow2{
+  position:absolute;top:30%;left:20%;
+  width:400px;height:400px;border-radius:50%;
+  background:radial-gradient(ellipse,rgba(240,192,64,.04) 0%,transparent 70%);
+  pointer-events:none;
+}
+.version-pill{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--ff-mono);font-size:.55rem;letter-spacing:.25em;
+  text-transform:uppercase;
+  background:rgba(0,229,255,.07);border:1px solid rgba(0,229,255,.18);
+  border-radius:40px;padding:7px 18px;margin-bottom:28px;
+  color:var(--cyan);
+  opacity:0;animation:fadeUp .7s .1s forwards;
+}
+.version-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+.hero-eyebrow{
+  font-family:var(--ff-mono);font-size:.6rem;letter-spacing:.3em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:16px;
+  opacity:0;animation:fadeUp .7s .25s forwards;
+}
+h1.hero-title{
+  font-family:var(--ff-disp);font-size:clamp(2.8rem,6vw,5.5rem);
+  font-weight:900;line-height:1.05;letter-spacing:.04em;
+  margin-bottom:12px;
+  opacity:0;animation:fadeUp .8s .35s forwards;
+}
+h1.hero-title .accent{color:var(--cyan)}
+h1.hero-title .v-num{
+  font-size:.45em;vertical-align:middle;
+  color:var(--gold);letter-spacing:.1em;
+}
+.hero-sub-title{
+  font-family:var(--ff-body);font-size:1.1rem;color:var(--sub);
+  font-weight:300;margin-bottom:20px;max-width:640px;
+  line-height:1.7;
+  opacity:0;animation:fadeUp .8s .5s forwards;
+}
+.hero-course-tag{
+  font-family:var(--ff-mono);font-size:.58rem;letter-spacing:.15em;
+  color:var(--gold);text-transform:uppercase;margin-bottom:40px;
+  opacity:0;animation:fadeUp .7s .6s forwards;
+}
+.hero-ctas{
+  display:flex;gap:16px;justify-content:center;flex-wrap:wrap;
+  opacity:0;animation:fadeUp .8s .7s forwards;
+  margin-bottom:60px;
+}
+.btn-primary{
+  font-family:var(--ff-mono);font-size:.65rem;letter-spacing:.14em;
+  text-transform:uppercase;padding:16px 36px;
+  background:linear-gradient(135deg,var(--cyan) 0%,var(--cyan2) 100%);
+  color:#000;border:none;border-radius:5px;cursor:none;font-weight:700;
+  transition:transform .15s,box-shadow .2s;
+  text-decoration:none;display:inline-flex;align-items:center;gap:8px;
+}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,229,255,.3)}
+.btn-secondary{
+  font-family:var(--ff-mono);font-size:.65rem;letter-spacing:.14em;
+  text-transform:uppercase;padding:15px 28px;
+  background:transparent;color:var(--white);
+  border:1px solid rgba(237,242,251,.2);border-radius:5px;cursor:none;
+  transition:border-color .2s,transform .15s;
+  text-decoration:none;display:inline-flex;align-items:center;gap:8px;
+}
+.btn-secondary:hover{border-color:var(--cyan);transform:translateY(-2px)}
+
+/* Trial badge */
+.trial-badge{
+  display:inline-flex;align-items:center;gap:10px;
+  font-family:var(--ff-mono);font-size:.55rem;letter-spacing:.1em;
+  color:var(--green);background:rgba(0,229,160,.07);
+  border:1px solid rgba(0,229,160,.2);border-radius:4px;padding:8px 16px;
+  opacity:0;animation:fadeUp .7s .85s forwards;
+}
+
+/* Hero stat bar */
+.hero-stats{
+  display:flex;gap:48px;justify-content:center;flex-wrap:wrap;
+  padding:28px 0 0;
+  border-top:1px solid rgba(0,229,255,.07);
+  opacity:0;animation:fadeUp .8s 1s forwards;
+}
+.hstat{text-align:center}
+.hstat-n{font-family:var(--ff-disp);font-size:1.6rem;font-weight:900;color:var(--cyan);letter-spacing:.05em}
+.hstat-l{font-family:var(--ff-mono);font-size:.5rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+
+/* scroll indicator */
+.scroll-arrow{
+  position:absolute;bottom:32px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  color:var(--muted);font-family:var(--ff-mono);font-size:.5rem;letter-spacing:.18em;
+  animation:scrollPulse 2.5s ease-in-out infinite;
+  opacity:0;animation:fadeIn 1s 1.4s forwards, scrollPulse 2.5s 2.4s ease-in-out infinite;
+}
+.scroll-arrow svg{opacity:.5}
+
+/* ══ SECTION COMMONS ══ */
+section{position:relative;z-index:1;max-width:1320px;margin:0 auto;padding:100px 60px}
+.section-label{
+  font-family:var(--ff-mono);font-size:.52rem;letter-spacing:.28em;
+  text-transform:uppercase;color:var(--cyan);margin-bottom:14px;
+  display:flex;align-items:center;gap:10px;
+}
+.section-label::before{content:'';display:block;width:28px;height:1px;background:var(--cyan)}
+h2.section-title{
+  font-family:var(--ff-disp);font-size:clamp(1.8rem,3.5vw,3rem);
+  font-weight:900;line-height:1.1;letter-spacing:.04em;margin-bottom:16px;
+}
+h2.section-title em{font-style:normal;color:var(--cyan)}
+h2.section-title .gold{color:var(--gold)}
+p.section-sub{
+  font-size:1rem;color:var(--sub);line-height:1.8;font-weight:300;max-width:560px;
+}
+
+.divider{
+  height:1px;background:linear-gradient(90deg,transparent,rgba(0,229,255,.18),transparent);
+  max-width:1320px;margin:0 auto;
+}
+
+/* ══ WHAT IS USME ══ */
+#what{padding-top:80px}
+.what-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;margin-top:56px}
+.what-text p{font-size:.95rem;color:var(--sub);line-height:1.9;margin-bottom:20px;font-weight:300}
+.what-text p strong{color:var(--white);font-weight:600}
+.engine-visual{
+  position:relative;
+  background:var(--panel);border:1px solid var(--border);border-radius:12px;
+  padding:36px;overflow:hidden;
+}
+.engine-visual::before{
+  content:'';position:absolute;top:-60px;right:-60px;
+  width:200px;height:200px;border-radius:50%;
+  background:radial-gradient(ellipse,rgba(0,229,255,.08),transparent 70%);
+}
+.ev-title{font-family:var(--ff-disp);font-size:.65rem;letter-spacing:.2em;color:var(--cyan);margin-bottom:24px;text-transform:uppercase}
+.subsystem{
+  display:flex;align-items:flex-start;gap:14px;
+  padding:14px 0;border-bottom:1px solid rgba(0,229,255,.06);
+}
+.subsystem:last-child{border-bottom:none}
+.ss-icon{
+  width:36px;height:36px;border-radius:6px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1rem;
+}
+.ss-icon.c{background:rgba(0,229,255,.1)}
+.ss-icon.g{background:rgba(240,192,64,.1)}
+.ss-icon.gr{background:rgba(0,229,160,.1)}
+.ss-icon.r{background:rgba(255,77,106,.1)}
+.ss-name{font-family:var(--ff-mono);font-size:.6rem;font-weight:700;letter-spacing:.1em;color:var(--white);text-transform:uppercase;margin-bottom:4px}
+.ss-desc{font-size:.8rem;color:var(--sub);line-height:1.5}
+
+/* ══ MODULES ══ */
+#modules{background:linear-gradient(180deg,transparent 0%,rgba(0,229,255,.02) 50%,transparent 100%)}
+.modules-intro{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:start;margin-bottom:56px}
+.module-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.mod-card{
+  background:var(--panel);border:1px solid var(--border);border-radius:10px;
+  padding:24px 22px;position:relative;overflow:hidden;
+  transition:border-color .25s,transform .2s;cursor:none;
+}
+.mod-card:hover{border-color:rgba(0,229,255,.28);transform:translateY(-3px)}
+.mod-card::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,rgba(0,229,255,.3),transparent);
+  opacity:0;transition:opacity .25s;
+}
+.mod-card:hover::after{opacity:1}
+.mod-num{
+  font-family:var(--ff-disp);font-size:.55rem;letter-spacing:.2em;
+  color:var(--muted);margin-bottom:10px;
+}
+.mod-title{
+  font-family:var(--ff-body);font-size:.95rem;font-weight:700;
+  color:var(--white);margin-bottom:8px;line-height:1.35;
+}
+.mod-time{font-family:var(--ff-mono);font-size:.52rem;letter-spacing:.1em;color:var(--cyan);margin-bottom:12px}
+.mod-desc{font-size:.82rem;color:var(--sub);line-height:1.6}
+.mod-tag{
+  display:inline-block;margin-top:12px;
+  font-family:var(--ff-mono);font-size:.48rem;letter-spacing:.15em;text-transform:uppercase;
+  padding:3px 8px;border-radius:3px;
+}
+.mod-tag.new{background:rgba(0,229,255,.1);color:var(--cyan);border:1px solid rgba(0,229,255,.2)}
+.mod-tag.core{background:rgba(240,192,64,.08);color:var(--gold);border:1px solid rgba(240,192,64,.2)}
+
+/* ══ SOTD ENGINE (FEATURE HIGHLIGHT) ══ */
+#sotd{
+  background:linear-gradient(135deg,rgba(0,229,255,.03) 0%,transparent 50%,rgba(240,192,64,.02) 100%);
+}
+.sotd-wrap{display:grid;grid-template-columns:1.1fr 1fr;gap:64px;align-items:center;margin-top:56px}
+.tier-stack{display:flex;flex-direction:column;gap:14px}
+.tier-card{
+  border-radius:10px;padding:20px 24px;
+  display:flex;align-items:center;gap:18px;
+  border:1px solid;transition:transform .2s;cursor:none;
+  position:relative;overflow:hidden;
+}
+.tier-card::before{
+  content:'';position:absolute;right:-20px;top:50%;transform:translateY(-50%);
+  width:80px;height:80px;border-radius:50%;opacity:.08;
+}
+.tier-card:hover{transform:translateX(4px)}
+.tier-card.elite{background:rgba(240,192,64,.05);border-color:rgba(240,192,64,.2)}
+.tier-card.elite::before{background:var(--gold)}
+.tier-card.prime{background:rgba(0,229,255,.05);border-color:rgba(0,229,255,.2)}
+.tier-card.prime::before{background:var(--cyan)}
+.tier-card.standard{background:rgba(237,242,251,.03);border-color:rgba(237,242,251,.1)}
+.tier-card.standard::before{background:var(--white)}
+.tier-icon{font-size:1.6rem;flex-shrink:0}
+.tier-name{
+  font-family:var(--ff-disp);font-size:.7rem;font-weight:900;letter-spacing:.15em;
+  text-transform:uppercase;margin-bottom:4px;
+}
+.tier-name.elite{color:var(--gold)}
+.tier-name.prime{color:var(--cyan)}
+.tier-name.standard{color:var(--sub)}
+.tier-score{
+  font-family:var(--ff-mono);font-size:.55rem;letter-spacing:.1em;color:var(--muted);
+  margin-bottom:6px;
+}
+.tier-desc{font-size:.82rem;color:var(--sub);line-height:1.5}
+.tier-badge-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.tbadge{
+  font-family:var(--ff-mono);font-size:.45rem;letter-spacing:.12em;text-transform:uppercase;
+  padding:2px 7px;border-radius:3px;
+}
+.tbadge.gold{background:rgba(240,192,64,.1);color:var(--gold);border:1px solid rgba(240,192,64,.2)}
+.tbadge.cyan{background:rgba(0,229,255,.1);color:var(--cyan);border:1px solid rgba(0,229,255,.2)}
+.tbadge.white{background:rgba(237,242,251,.07);color:var(--sub);border:1px solid rgba(237,242,251,.12)}
+
+/* sotd right panel */
+.sotd-info{display:flex;flex-direction:column;gap:24px}
+.sotd-kv{border-left:2px solid rgba(0,229,255,.2);padding-left:18px}
+.sotd-kv-label{font-family:var(--ff-mono);font-size:.52rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.sotd-kv-val{font-size:.95rem;color:var(--sub);line-height:1.7;font-weight:300}
+.sotd-kv-val strong{color:var(--white)}
+.score-bar-wrap{margin-top:6px}
+.score-label{font-family:var(--ff-mono);font-size:.5rem;letter-spacing:.1em;color:var(--muted);display:flex;justify-content:space-between;margin-bottom:6px}
+.score-bar{height:6px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden}
+.score-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--cyan),var(--cyan2));transition:width 1.5s ease}
+
+/* ══ WORKFLOW ══ */
+#workflow{padding-bottom:80px}
+.wf-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin-top:56px;position:relative}
+.wf-grid::before{
+  content:'';position:absolute;top:28px;left:10%;right:10%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(0,229,255,.2),rgba(0,229,255,.2),rgba(0,229,255,.2),transparent);
+  z-index:0;
+}
+.wf-step{
+  display:flex;flex-direction:column;align-items:center;text-align:center;
+  padding:0 12px;position:relative;z-index:1;
+}
+.wf-circle{
+  width:56px;height:56px;border-radius:50%;
+  background:var(--panel);border:1px solid rgba(0,229,255,.2);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--ff-disp);font-size:.6rem;font-weight:900;color:var(--cyan);
+  margin-bottom:16px;letter-spacing:.1em;
+  transition:background .25s,border-color .25s;
+}
+.wf-step:hover .wf-circle{background:rgba(0,229,255,.1);border-color:var(--cyan)}
+.wf-time{
+  font-family:var(--ff-mono);font-size:.5rem;letter-spacing:.1em;
+  color:var(--cyan);margin-bottom:6px;
+}
+.wf-name{font-size:.88rem;font-weight:700;color:var(--white);margin-bottom:6px;line-height:1.3}
+.wf-desc{font-size:.78rem;color:var(--sub);line-height:1.5}
+
+/* ══ VS TABLE ══ */
+#vs{padding-top:60px}
+.vs-wrap{margin-top:50px;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.vs-header{display:grid;grid-template-columns:1fr 1fr 1fr;background:var(--panel);padding:20px 28px;border-bottom:1px solid var(--border)}
+.vs-col-h{font-family:var(--ff-mono);font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;text-align:center}
+.vs-col-h:first-child{text-align:left;color:var(--muted)}
+.vs-col-h.old{color:var(--muted)}
+.vs-col-h.new{color:var(--cyan)}
+.vs-row{display:grid;grid-template-columns:1fr 1fr 1fr;padding:16px 28px;border-bottom:1px solid rgba(0,229,255,.05)}
+.vs-row:last-child{border-bottom:none}
+.vs-row:hover{background:rgba(0,229,255,.02)}
+.vs-feature{font-size:.88rem;color:var(--sub);display:flex;align-items:center;gap:8px}
+.vs-val{text-align:center;font-family:var(--ff-mono);font-size:.72rem;padding-top:2px}
+.vs-val.old{color:var(--muted)}
+.vs-val.new{color:var(--cyan)}
+.vs-val .check{color:var(--green)}
+.vs-val .cross{color:var(--red)}
+
+/* ══ PRICING ══ */
+#pricing{
+  background:linear-gradient(180deg,rgba(0,229,255,.02),transparent);
+  padding-top:80px;
+}
+.pricing-center{text-align:center;margin-top:56px}
+.price-card{
+  display:inline-block;
+  background:var(--panel);border:1px solid rgba(0,229,255,.2);
+  border-radius:16px;padding:48px 56px;max-width:520px;width:100%;
+  position:relative;overflow:hidden;
+  box-shadow:0 0 60px rgba(0,229,255,.05),0 24px 64px rgba(0,0,0,.4);
+}
+.price-card::before{
+  content:'';position:absolute;top:-2px;left:20%;right:20%;height:2px;
+  background:linear-gradient(90deg,transparent,var(--cyan),transparent);
+}
+.price-card::after{
+  content:'';position:absolute;top:0;left:0;right:0;bottom:0;
+  background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(0,229,255,.04),transparent 60%);
+  pointer-events:none;
+}
+.price-tier{
+  font-family:var(--ff-mono);font-size:.55rem;letter-spacing:.25em;
+  text-transform:uppercase;color:var(--cyan);margin-bottom:20px;
+}
+.price-name{font-family:var(--ff-disp);font-size:1.3rem;font-weight:900;letter-spacing:.08em;margin-bottom:6px}
+.price-version{font-family:var(--ff-mono);font-size:.55rem;letter-spacing:.2em;color:var(--gold);margin-bottom:28px}
+.price-amount{
+  font-family:var(--ff-disp);font-size:3.8rem;font-weight:900;color:var(--cyan);
+  line-height:1;margin-bottom:4px;letter-spacing:.02em;
+}
+.price-amount sup{font-size:.4em;vertical-align:super;margin-right:4px;color:var(--cyan2)}
+.price-cadence{font-family:var(--ff-mono);font-size:.55rem;letter-spacing:.15em;color:var(--muted);margin-bottom:8px}
+.price-trial{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--ff-mono);font-size:.58rem;letter-spacing:.1em;
+  color:var(--green);background:rgba(0,229,160,.07);
+  border:1px solid rgba(0,229,160,.2);border-radius:4px;
+  padding:7px 14px;margin:20px 0 28px;
+}
+.price-divider{height:1px;background:rgba(0,229,255,.08);margin:0 -56px 28px}
+.price-features{list-style:none;text-align:left;margin-bottom:32px;display:flex;flex-direction:column;gap:11px}
+.price-features li{
+  display:flex;align-items:flex-start;gap:12px;
+  font-size:.88rem;color:var(--sub);line-height:1.5;
+}
+.price-features li .chk{color:var(--green);font-size:.8rem;margin-top:1px;flex-shrink:0}
+.price-features li .chk.g{color:var(--gold)}
+.price-cta{
+  width:100%;padding:18px;
+  font-family:var(--ff-mono);font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;
+  background:linear-gradient(135deg,var(--cyan),var(--cyan2));
+  color:#000;border:none;border-radius:6px;cursor:none;font-weight:700;
+  transition:opacity .2s,transform .15s;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.price-cta:hover{opacity:.85;transform:translateY(-2px)}
+.price-note{font-family:var(--ff-mono);font-size:.5rem;letter-spacing:.1em;color:var(--muted);margin-top:14px}
+
+/* ══ PREREQS ══ */
+#prereq{padding-top:60px;padding-bottom:80px}
+.prereq-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:48px}
+.prereq-card{
+  background:var(--panel);border:1px solid var(--border);border-radius:10px;
+  padding:28px 24px;text-align:center;
+  transition:border-color .2s,transform .15s;
+}
+.prereq-card:hover{border-color:rgba(0,229,255,.22);transform:translateY(-2px)}
+.prereq-icon{font-size:2rem;margin-bottom:14px}
+.prereq-title{font-family:var(--ff-body);font-size:.95rem;font-weight:700;color:var(--white);margin-bottom:8px}
+.prereq-desc{font-size:.83rem;color:var(--sub);line-height:1.6}
+
+/* ══ FAQ ══ */
+#faq{padding-top:60px}
+.faq-list{max-width:760px;margin:48px auto 0;display:flex;flex-direction:column;gap:10px}
+.faq-item{
+  background:var(--panel);border:1px solid var(--border);border-radius:8px;overflow:hidden;
+  transition:border-color .2s;cursor:none;
+}
+.faq-item.open{border-color:rgba(0,229,255,.22)}
+.faq-q{
+  padding:20px 24px;display:flex;justify-content:space-between;align-items:center;gap:20px;
+  font-size:.92rem;font-weight:600;color:var(--white);
+}
+.faq-icon{color:var(--cyan);font-size:1.1rem;transition:transform .2s;flex-shrink:0}
+.faq-item.open .faq-icon{transform:rotate(45deg)}
+.faq-a{
+  display:none;padding:0 24px 20px;
+  font-size:.88rem;color:var(--sub);line-height:1.8;
+  border-top:1px solid rgba(0,229,255,.06);padding-top:16px;font-weight:300;
+}
+.faq-item.open .faq-a{display:block}
+
+/* ══ CTA BAND ══ */
+#ctaband{
+  text-align:center;padding:100px 60px;
+  background:radial-gradient(ellipse 70% 60% at 50% 50%,rgba(0,229,255,.05),transparent 70%);
+  position:relative;z-index:1;
+}
+.ctaband-title{
+  font-family:var(--ff-disp);font-size:clamp(1.8rem,4vw,3.4rem);
+  font-weight:900;letter-spacing:.04em;margin-bottom:12px;line-height:1.1;
+}
+.ctaband-sub{font-size:1rem;color:var(--sub);max-width:480px;margin:0 auto 36px;line-height:1.7;font-weight:300}
+
+/* ══ FOOTER ══ */
+footer{
+  border-top:1px solid rgba(0,229,255,.07);
+  padding:60px 60px 32px;max-width:1320px;margin:0 auto;
+}
+.footer-logo{font-family:var(--ff-disp);font-size:.85rem;font-weight:900;color:var(--white);letter-spacing:.18em;margin-bottom:36px}
+.footer-logo span{color:var(--cyan)}
+.footer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:40px;margin-bottom:48px}
+.footer-col-title{
+  font-family:var(--ff-mono);font-size:.52rem;letter-spacing:.25em;text-transform:uppercase;
+  color:var(--cyan);margin-bottom:14px;padding-bottom:10px;
+  border-bottom:1px solid rgba(0,229,255,.1);
+}
+.footer-col a{
+  display:block;font-size:.82rem;color:var(--sub);text-decoration:none;
+  padding:4px 0;transition:color .2s;
+}
+.footer-col a:hover{color:var(--white)}
+.footer-bottom{
+  border-top:1px solid rgba(0,229,255,.06);padding-top:24px;
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;
+}
+.footer-copy{font-family:var(--ff-mono);font-size:.5rem;letter-spacing:.1em;color:var(--muted)}
+.footer-disclaimer{font-family:var(--ff-mono);font-size:.48rem;letter-spacing:.08em;color:var(--muted);max-width:600px;line-height:1.7;margin-top:16px}
+
+/* ══ REVEAL ANIMATION ══ */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes scrollPulse{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(6px)}}
+@keyframes pulse{0%,100%{opacity:.6}50%{opacity:1}}
+
+/* TICKER */
+.ticker-wrap{
+  background:rgba(11,14,26,.9);border-top:1px solid rgba(0,229,255,.07);
+  border-bottom:1px solid rgba(0,229,255,.07);
+  overflow:hidden;padding:10px 0;position:sticky;top:72px;z-index:100;
+  backdrop-filter:blur(8px);
+}
+.ticker{display:flex;gap:0;white-space:nowrap;animation:ticker 30s linear infinite}
+.ticker-item{
+  font-family:var(--ff-mono);font-size:.55rem;letter-spacing:.12em;
+  color:var(--sub);padding:0 36px;
+  display:flex;align-items:center;gap:8px;
+}
+.ticker-item .t-acc{color:var(--cyan)}
+.ticker-item .t-gold{color:var(--gold)}
+.ticker-item .t-green{color:var(--green)}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ══ RESPONSIVE ══ */
+@media(max-width:1024px){
+  .what-grid,.sotd-wrap,.modules-intro{grid-template-columns:1fr}
+  .module-grid{grid-template-columns:repeat(2,1fr)}
+  .wf-grid{grid-template-columns:repeat(3,1fr);gap:24px}
+  .wf-grid::before{display:none}
+  .footer-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:768px){
+  nav{padding:14px 24px}
+  .nav-links{display:none}
+  section{padding:80px 24px}
+  #hero{padding:100px 24px 60px}
+  .hero-stats{gap:28px}
+  .module-grid{grid-template-columns:1fr}
+  .wf-grid{grid-template-columns:1fr 1fr}
+  .vs-row .vs-feature{font-size:.78rem}
+  .price-card{padding:36px 28px}
+  .price-divider{margin:0 -28px 24px}
+  .prereq-grid{grid-template-columns:1fr}
+  footer{padding:48px 24px 24px}
+  .footer-grid{grid-template-columns:1fr 1fr}
+  #ctaband{padding:80px 24px}
+}
+</style>
+</head>
+<body>
+
+<!-- CURSORS -->
+<div id="cur"></div>
+<div id="cur-ring"></div>
+<div class="grid-bg"></div>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">SNIPER<span>TRADER</span><span class="nav-badge">v3.1</span></a>
+  <ul class="nav-links">
+    <li><a href="#what">Overview</a></li>
+    <li><a href="#modules">Course</a></li>
+    <li><a href="#sotd">SOTD Engine</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#faq">FAQ</a></li>
+  </ul>
+  <button class="nav-cta" onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'})">Start Free Trial</button>
+</nav>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker">
+    <span class="ticker-item"><span class="t-acc">◈</span> USME v3.1 — Now Live</span>
+    <span class="ticker-item"><span class="t-gold">◈</span> SOTD Engine: NEW in v3.1</span>
+    <span class="ticker-item"><span class="t-green">◈</span> 2-Week Free Trial — No card required</span>
+    <span class="ticker-item"><span class="t-acc">◈</span> Multi-TF Confluence Scoring</span>
+    <span class="ticker-item"><span class="t-gold">◈</span> ELITE · PRIME · STANDARD Tier System</span>
+    <span class="ticker-item"><span class="t-acc">◈</span> ICT/SMC Methodology Integrated</span>
+    <span class="ticker-item"><span class="t-green">◈</span> ThinkorSwim + TradingView Support</span>
+    <span class="ticker-item"><span class="t-acc">◈</span> USME v3.1 — Now Live</span>
+    <span class="ticker-item"><span class="t-gold">◈</span> SOTD Engine: NEW in v3.1</span>
+    <span class="ticker-item"><span class="t-green">◈</span> 2-Week Free Trial — No card required</span>
+    <span class="ticker-item"><span class="t-acc">◈</span> Multi-TF Confluence Scoring</span>
+    <span class="ticker-item"><span class="t-gold">◈</span> ELITE · PRIME · STANDARD Tier System</span>
+    <span class="ticker-item"><span class="t-acc">◈</span> ICT/SMC Methodology Integrated</span>
+    <span class="ticker-item"><span class="t-green">◈</span> ThinkorSwim + TradingView Support</span>
+  </div>
+</div>
+
+<!-- ═══════════════════ HERO ═══════════════════ -->
+<section id="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-glow2"></div>
+
+  <div class="version-pill">
+    <span class="version-dot"></span>
+    New Release — Unified Smart Money Engine
+  </div>
+
+  <p class="hero-eyebrow">SniperTrader Masterclass Course</p>
+
+  <h1 class="hero-title">
+    USME <span class="v-num">v3.1</span><br>
+    <span class="accent">Signal Mastery.</span><br>Redefined.
+  </h1>
+
+  <p class="hero-sub-title">
+    Learn to read, interpret, and act on every signal the USME generates —
+    from label anatomy to the new SOTD tier system and live trade execution.
+  </p>
+
+  <p class="hero-course-tag">The Complete Signal Interpretation Course</p>
+
+  <div class="hero-ctas">
+    <a href="#pricing" class="btn-primary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      Start 2-Week Free Trial
+    </a>
+    <a href="#modules" class="btn-secondary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+      Explore the Course
+    </a>
+  </div>
+
+  <div class="trial-badge">
+    ✓ &nbsp;2 weeks free · then $179/month · cancel anytime
+  </div>
+
+  <div class="hero-stats">
+    <div class="hstat">
+      <div class="hstat-n">4</div>
+      <div class="hstat-l">Core Subsystems</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-n">3</div>
+      <div class="hstat-l">Signal Tiers</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-n">5+</div>
+      <div class="hstat-l">Course Modules</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-n">NEW</div>
+      <div class="hstat-l">SOTD Engine v3.1</div>
+    </div>
+  </div>
+
+  <div class="scroll-arrow">
+    <span>SCROLL</span>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════ WHAT IS USME ═══════════════════ -->
+<section id="what">
+  <div class="section-label">Overview</div>
+  <div class="what-grid">
+    <div class="what-text">
+      <h2 class="section-title">The Engine Behind<br><em>Institutional Precision</em></h2>
+      <p>The Unified Smart Money Engine v3.1 is a multi-timeframe confluence indicator built on the <strong>Inner Circle Trader (ICT) methodology</strong>. It reads market structure the way institutional money actually moves — not through retail supply/demand myths, but through liquidity manipulation, displacement, and delivery.</p>
+      <p>v3.1 introduces the <strong>Signal-of-the-Day (SOTD) Engine</strong> — a tiered scoring system that grades every signal in real time. You no longer have to wonder if a setup is worth taking. The engine tells you.</p>
+      <p>This course is your complete guide to understanding every label, alert, dashboard element, and workflow that USME v3.1 generates — so you can execute with confidence, not confusion.</p>
+    </div>
+    <div class="engine-visual">
+      <div class="ev-title">USME v3.1 — Core Architecture</div>
+      <div class="subsystem">
+        <div class="ss-icon c">🧠</div>
+        <div>
+          <div class="ss-name">Smart Money Bias Engine</div>
+          <div class="ss-desc">1H / 4H / Daily / Weekly multi-timeframe bias cascade. HTF:ALIGNED gatekeeping — only fires when higher timeframes agree.</div>
+        </div>
+      </div>
+      <div class="subsystem">
+        <div class="ss-icon g">⚡</div>
+        <div>
+          <div class="ss-name">SOTD Engine <span style="font-size:.55rem;color:var(--cyan);font-family:var(--ff-mono);letter-spacing:.1em">NEW v3.1</span></div>
+          <div class="ss-desc">Scores every signal 0–100% across 5+ confluence factors. Awards ELITE, PRIME, or STANDARD tier with distinct alerts.</div>
+        </div>
+      </div>
+      <div class="subsystem">
+        <div class="ss-icon gr">📐</div>
+        <div>
+          <div class="ss-name">Signal, Alerts & SMC Toolkit</div>
+          <div class="ss-desc">BOS · CHoCH · FVG · OB detection. ATR-based dynamic risk levels. Non-repainting pivot logic with configurable lookback.</div>
+        </div>
+      </div>
+      <div class="subsystem">
+        <div class="ss-icon r">🎯</div>
+        <div>
+          <div class="ss-name">Order Flow Detector</div>
+          <div class="ss-desc">Tracks volume divergence, EMA momentum, SMT divergence across correlated instruments (NQ/ES, BTC/ETH).</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════ SOTD ENGINE ═══════════════════ -->
+<section id="sotd">
+  <div class="section-label">The Flagship Feature</div>
+  <h2 class="section-title">Signal-of-the-Day Engine<br><em>The SOTD Tier System</em> <span class="gold">— New in v3.1</span></h2>
+
+  <div class="sotd-wrap reveal">
+    <div class="tier-stack">
+      <div class="tier-card elite">
+        <div class="tier-icon">👑</div>
+        <div>
+          <div class="tier-name elite">ELITE</div>
+          <div class="tier-score">Score ≥ 90% · Gold Bubble · Chimes Alert</div>
+          <div class="tier-desc">The rarest tier. Full SMC Stack confirmed across all primary requirements: CHoCH + Sweep + FVG or OB + correct discount/premium zone. Maximum conviction — reduced position size still recommended.</div>
+          <div class="tier-badge-row">
+            <span class="tbadge gold">Full Stack</span>
+            <span class="tbadge gold">HTF Aligned</span>
+            <span class="tbadge gold">Max Confluence</span>
+          </div>
+        </div>
+      </div>
+      <div class="tier-card prime">
+        <div class="tier-icon">⚡</div>
+        <div>
+          <div class="tier-name prime">PRIME</div>
+          <div class="tier-score">Score 80–89% · Cyan Bubble · Ring Alert</div>
+          <div class="tier-desc">High-conviction. Meets the standard threshold plus additional confluence layers. Distinct from standard bell alert — audible without looking at screen.</div>
+          <div class="tier-badge-row">
+            <span class="tbadge cyan">Standard + Bonus</span>
+            <span class="tbadge cyan">Multi-TF</span>
+            <span class="tbadge cyan">Proceed Cautiously</span>
+          </div>
+        </div>
+      </div>
+      <div class="tier-card standard">
+        <div class="tier-icon">🔔</div>
+        <div>
+          <div class="tier-name standard">STANDARD</div>
+          <div class="tier-score">Score 65–79% · White Bubble · Bell Alert</div>
+          <div class="tier-desc">Valid setup meeting all minimum requirements. Signals below 65% dilute score — reduce position size or skip. Never on a forming candle.</div>
+          <div class="tier-badge-row">
+            <span class="tbadge white">Min Requirements</span>
+            <span class="tbadge white">Confirmed Close</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sotd-info">
+      <div class="sotd-kv">
+        <div class="sotd-kv-label">How the Score Works</div>
+        <div class="sotd-kv-val">Every signal receives a <strong>SCORE: XX%</strong> dashboard label derived from 5 confluence factors. More confluence = higher score. The score is a probability filter — not a guarantee, but a systematic edge.</div>
+      </div>
+
+      <div>
+        <div class="score-label"><span>Score Breakdown (example)</span><span>78%</span></div>
+        <div class="score-bar"><div class="score-fill" id="sb1" style="width:0%"></div></div>
+      </div>
+
+      <div class="sotd-kv">
+        <div class="sotd-kv-label">What Changed in v3.1</div>
+        <div class="sotd-kv-val">The SOTD Engine is the most significant architectural upgrade from v2. <strong>Stop ATR is now 2x ATR(14)</strong> — a deliberate design decision to reduce stop-outs from intraday noise. Consequence: your 1R risk is larger. Size accordingly.</div>
+      </div>
+
+      <div class="sotd-kv">
+        <div class="sotd-kv-label">Critical Rule</div>
+        <div class="sotd-kv-val"><strong>Never take a signal on a forming candle.</strong> The SOTD engine only confirms on closed bars. Chasing mid-bar is listed as a Top-3 mistake in the course — it's how scores shift and setups disappear.</div>
+      </div>
+
+      <div class="sotd-kv">
+        <div class="sotd-kv-label">The Long-Term Blueprint</div>
+        <div class="sotd-kv-val">Weekly structure provides the <strong>Macro Blueprint</strong> — directional context above everything. Daily is the Bias Gate. 4H is Primary Authority. 15M is execution layer. SOTD orchestrates the cascade.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════ MODULES ═══════════════════ -->
+<section id="modules">
+  <div class="modules-intro">
+    <div>
+      <div class="section-label">Course Structure</div>
+      <h2 class="section-title">Progressive<br><em>Learning Path</em></h2>
+    </div>
+    <div>
+      <p class="section-sub">Each module builds on the last. If you have prior ICT/SMC experience and are upgrading from v2, pay particular attention to modules covering the SOTD Engine — these reflect the most significant changes.</p>
+      <p class="section-sub" style="margin-top:16px">Set aside focused, distraction-free study blocks. This is absorbed actively — not passively. Knowledge check quizzes appear at the end of each module.</p>
+    </div>
+  </div>
+
+  <div class="module-grid">
+    <div class="mod-card reveal">
+      <div class="mod-num">MODULE 01</div>
+      <div class="mod-title">ICT/SMC Foundations & Market Structure Theory</div>
+      <div class="mod-time">⏱ 60–90 min · Prereq: None</div>
+      <div class="mod-desc">Why markets move the way they do. The three-phase accumulation / manipulation / real move model. Discount vs. premium zones. How institutional liquidity drives every price swing you see.</div>
+      <span class="mod-tag core">Core</span>
+    </div>
+    <div class="mod-card reveal">
+      <div class="mod-num">MODULE 02</div>
+      <div class="mod-title">Label Anatomy & Dashboard Reading</div>
+      <div class="mod-time">⏱ 45–60 min</div>
+      <div class="mod-desc">Every label the USME plots — BOS, CHoCH, FVG, OB, SMT — decoded. What each element means structurally, how to read the SCORE dashboard, and the difference between a signal and noise.</div>
+      <span class="mod-tag core">Core</span>
+    </div>
+    <div class="mod-card reveal">
+      <div class="mod-num">MODULE 03</div>
+      <div class="mod-title">The Bias Engine — Multi-TF Workflow</div>
+      <div class="mod-time">⏱ 60 min</div>
+      <div class="mod-desc">The Weekly → Daily → 4H → 1H → 15M cascade. How to determine W:BULL / W:BEAR, interpret HTF:ALIGNED, and why ignoring the session window is mistake #2 in the course.</div>
+      <span class="mod-tag core">Core</span>
+    </div>
+    <div class="mod-card reveal">
+      <div class="mod-num">MODULE 05</div>
+      <div class="mod-title">SOTD Engine Deep Dive</div>
+      <div class="mod-time">⏱ 90 min</div>
+      <div class="mod-desc">The full SOTD scoring architecture. How ELITE / PRIME / STANDARD tier labels fire, what conditions must be met, score thresholds, the new 2x ATR stop logic, and why the stop size changed from v2.</div>
+      <span class="mod-tag new">New in v3.1</span>
+    </div>
+    <div class="mod-card reveal">
+      <div class="mod-num">MODULE 08</div>
+      <div class="mod-title">Live Trade Execution Protocol</div>
+      <div class="mod-time">⏱ 75 min</div>
+      <div class="mod-desc">Step-by-step execution: Pre-Market → London Open → First Signal → Noon+ behavior. Entry anatomy, Fade alert management, target protocol, and the post-trade recording system.</div>
+      <span class="mod-tag new">New in v3.1</span>
+    </div>
+    <div class="mod-card reveal">
+      <div class="mod-num">RESOURCES</div>
+      <div class="mod-title">Quick Reference · Cheat Sheets · Glossary</div>
+      <div class="mod-time">⏱ Ongoing reference</div>
+      <div class="mod-desc">The USME Rapid-Reference Cheat Sheet. Full ICT/SMC glossary with your own definition space. Blank trade-record templates. The 5-step signal checklist that fits in 90 seconds.</div>
+      <span class="mod-tag core">Reference</span>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════ WORKFLOW ═══════════════════ -->
+<section id="workflow">
+  <div class="section-label">Execution Framework</div>
+  <h2 class="section-title" style="text-align:center">The 90-Second<br><em>Signal Check Protocol</em></h2>
+  <p class="section-sub" style="text-align:center;margin:12px auto 0">Five checks before you touch the entry button. Every single time.</p>
+
+  <div class="wf-grid reveal">
+    <div class="wf-step">
+      <div class="wf-circle">01</div>
+      <div class="wf-time">5 sec</div>
+      <div class="wf-name">HTF Bias Dashboard</div>
+      <div class="wf-desc">Is W:BULL or W:BEAR active? Is HTF:ALIGNED showing? If not, wait.</div>
+    </div>
+    <div class="wf-step">
+      <div class="wf-circle">02</div>
+      <div class="wf-time">3 sec</div>
+      <div class="wf-name">Session Window</div>
+      <div class="wf-desc">Confirm London Open (2AM ET) or NY session is active. Off-hours signals are filtered.</div>
+    </div>
+    <div class="wf-step">
+      <div class="wf-circle">03</div>
+      <div class="wf-time">30 sec</div>
+      <div class="wf-name">Identify ICT Zone</div>
+      <div class="wf-desc">Locate the FVG or OB. Is price in discount (for buys) or premium (for sells)? Mark origin.</div>
+    </div>
+    <div class="wf-step">
+      <div class="wf-circle">04</div>
+      <div class="wf-time">5 sec</div>
+      <div class="wf-name">Read & Grade Score</div>
+      <div class="wf-desc">Check the SCORE % label. Below 65%? Reduce size or skip. Above 80%? Proceed with focus.</div>
+    </div>
+    <div class="wf-step">
+      <div class="wf-circle">05</div>
+      <div class="wf-time">15 sec</div>
+      <div class="wf-name">SOTD Tier + SMT</div>
+      <div class="wf-desc">Confirm tier. Check SMT divergence on correlated pair. Then execute — never on a forming candle.</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════ V3.1 VS V2 ═══════════════════ -->
+<section id="vs" style="padding-top:80px;padding-bottom:80px">
+  <div class="section-label">What's New</div>
+  <h2 class="section-title">v3.1 vs. <span style="color:var(--muted)">v2</span> — <em>What Changed</em></h2>
+  <p class="section-sub">If you're upgrading from v2, these are the changes that matter most.</p>
+
+  <div class="vs-wrap reveal">
+    <div class="vs-header">
+      <div class="vs-col-h">Feature</div>
+      <div class="vs-col-h old">v2</div>
+      <div class="vs-col-h new">v3.1</div>
+    </div>
+    <div class="vs-row">
+      <div class="vs-feature">📊 Signal Tiering System</div>
+      <div class="vs-val old"><span class="cross">✗</span> None</div>
+      <div class="vs-val new"><span class="check">✓</span> ELITE / PRIME / STANDARD</div>
+    </div>
+    <div class="vs-row">
+      <div class="vs-feature">🎯 SOTD Scoring Engine</div>
+      <div class="vs-val old"><span class="cross">✗</span> Not available</div>
+      <div class="vs-val new"><span class="check">✓</span> 0–100% real-time score</div>
+    </div>
+    <div class="vs-row">
+      <div class="vs-feature">🔔 Distinct Tier Alerts</div>
+      <div class="vs-val old">Single bell</div>
+      <div class="vs-val new">Gold Chimes · Ring · Bell</div>
+    </div>
+    <div class="vs-row">
+      <div class="vs-feature">📏 Stop Loss Calculation</div>
+      <div class="vs-val old">1x ATR</div>
+      <div class="vs-val new"><span class="check">✓</span> 2x ATR(14) — noise filter</div>
+    </div>
+    <div class="vs-row">
+      <div class="vs-feature">🧭 Multi-TF Bias Cascade</div>
+      <div class="vs-val old">2 timeframes</div>
+      <div class="vs-val new">Weekly → Daily → 4H → 1H → 15M</div>
+    </div>
+    <div class="vs-row">
+      <div class="vs-feature">🔗 SMT Divergence Detection</div>
+      <div class="vs-val old">Manual</div>
+      <div class="vs-val new"><span class="check">✓</span> NQ/ES · BTC/ETH · Crypto</div>
+    </div>
+    <div class="vs-row">
+      <div class="vs-feature">📅 Economic Calendar Filter</div>
+      <div class="vs-val old"><span class="cross">✗</span></div>
+      <div class="vs-val new"><span class="check">✓</span> Integrated</div>
+    </div>
+    <div class="vs-row">
+      <div class="vs-feature">🎓 Signal Interpretation Course</div>
+      <div class="vs-val old">Basic guide</div>
+      <div class="vs-val new"><span class="check">✓</span> Full masterclass</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════ PREREQS ═══════════════════ -->
+<section id="prereq">
+  <div class="section-label">Before You Begin</div>
+  <h2 class="section-title">Prerequisites &<br><em>What You'll Need</em></h2>
+  <div class="prereq-grid reveal">
+    <div class="prereq-card">
+      <div class="prereq-icon">📈</div>
+      <div class="prereq-title">Basic Candlestick Literacy</div>
+      <div class="prereq-desc">You should understand how to read a candle chart and identify basic highs, lows, and price action. No advanced knowledge required.</div>
+    </div>
+    <div class="prereq-card">
+      <div class="prereq-icon">🖥</div>
+      <div class="prereq-title">ThinkorSwim Access</div>
+      <div class="prereq-desc">USME v3.1 requires the ThinkorSwim platform. Have your account set up with at least one chart ready before starting Module 1.</div>
+    </div>
+    <div class="prereq-card">
+      <div class="prereq-icon">📦</div>
+      <div class="prereq-title">USME Indicator Installed</div>
+      <div class="prereq-desc">The indicator must be loaded on your chart. Installation instructions are included with your subscription. If upgrading from v2, a fresh install is required.</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════ PRICING ═══════════════════ -->
+<section id="pricing">
+  <div class="section-label">Access</div>
+  <h2 class="section-title" style="text-align:center">One Price.<br><em>Full Access.</em></h2>
+  <p class="section-sub" style="text-align:center;margin:12px auto 0">No tiers. No upsells. Everything in USME v3.1 — the indicator, the course, future updates.</p>
+
+  <div class="pricing-center reveal">
+    <div class="price-card">
+      <div class="price-tier">⚡ Full USME Suite</div>
+      <div class="price-name">UNIFIED SMART MONEY ENGINE</div>
+      <div class="price-version">VERSION 3.1 — SIGNAL INTERPRETATION COURSE</div>
+      <div class="price-amount"><sup>$</sup>179</div>
+      <div class="price-cadence">/ month · billed monthly · cancel anytime</div>
+      <div class="price-trial">✓ &nbsp;2-Week Free Trial — No credit card required to start</div>
+      <div class="price-divider"></div>
+      <ul class="price-features">
+        <li><span class="chk">✓</span> Full USME v3.1 indicator — ThinkorSwim</li>
+        <li><span class="chk">✓</span> Complete Signal Interpretation Course (all modules)</li>
+        <li><span class="chk g">✓</span> SOTD Engine: ELITE · PRIME · STANDARD tier alerts</li>
+        <li><span class="chk">✓</span> Multi-timeframe bias cascade (Weekly → 15M)</li>
+        <li><span class="chk">✓</span> Live trade execution protocol + cheat sheets</li>
+        <li><span class="chk">✓</span> Knowledge-check quizzes + trade record templates</li>
+        <li><span class="chk g">✓</span> All future v3.x updates included</li>
+        <li><span class="chk">✓</span> SniperTrader community access</li>
+      </ul>
+      <button class="price-cta">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Start Free Trial — 2 Weeks Free
+      </button>
+      <div class="price-note">No commitment during trial · Upgrade or cancel before Day 14</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════ FAQ ═══════════════════ -->
+<section id="faq" style="padding-bottom:80px">
+  <div class="section-label">Questions</div>
+  <h2 class="section-title" style="text-align:center">Frequently<br><em>Asked</em></h2>
+  <div class="faq-list">
+    <div class="faq-item">
+      <div class="faq-q">What's the difference between v3.1 and v2? <span class="faq-icon">+</span></div>
+      <div class="faq-a">v3.1 introduces the SOTD (Signal-of-the-Day) Engine — a real-time scoring system that grades every signal 0–100% and awards ELITE, PRIME, or STANDARD tiers with distinct audio alerts. The stop loss logic moved from 1x to 2x ATR(14) to reduce noise-driven stop-outs. The multi-timeframe bias cascade was also extended to include Weekly structure for long-term directional context.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Why did the stop loss change to 2x ATR? <span class="faq-icon">+</span></div>
+      <div class="faq-a">It's a deliberate design decision. 1x ATR stops were frequently tagged by normal intraday volatility before the move played out. 2x ATR(14) creates a wider buffer that filters out noise-based stop-outs. The tradeoff is that your 1R risk is larger — you must size accordingly. This is covered in depth in the Module 5 SOTD deep dive.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Do I need prior ICT/SMC knowledge? <span class="faq-icon">+</span></div>
+      <div class="faq-a">No. Module 1 covers the foundational ICT methodology from scratch — why markets move through accumulation, manipulation, and real delivery. If you already have ICT/SMC experience, you can move quickly through Module 1 and focus on the SOTD-specific modules (3, 5, 8) which contain the most significant changes.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">What platform does USME v3.1 run on? <span class="faq-icon">+</span></div>
+      <div class="faq-a">USME v3.1 is built for ThinkorSwim. You'll need a ThinkorSwim account with at least one chart configured before starting. Installation instructions are included with your subscription access.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">What assets can I trade with it? <span class="faq-icon">+</span></div>
+      <div class="faq-a">USME v3.1 is optimized for NQ (Nasdaq futures), ES (S&P futures), GC (Gold futures), and Forex pairs. The SMT divergence module specifically targets NQ/ES correlation and BTC/ETH for crypto traders. It works on any liquid market with sufficient institutional participation.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Is this a signal service or a learning platform? <span class="faq-icon">+</span></div>
+      <div class="faq-a">Both — and that distinction matters. The course teaches you to understand every signal the indicator fires so you're never dependent on a black box. You learn the structure behind each label, when to take it, and when to pass. The goal is autonomy, not dependency.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ CTA BAND ═══════════════════ -->
+<div class="divider"></div>
+<div id="ctaband">
+  <h2 class="ctaband-title">Ready to Trade with<br><span style="color:var(--cyan)">Institutional Precision?</span></h2>
+  <p class="ctaband-sub">Two weeks free. Full access. No card required. If it doesn't change how you see the chart — cancel. Simple.</p>
+  <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
+    <a href="#pricing" class="btn-primary" style="font-size:.7rem;padding:18px 40px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      Start Free Trial
+    </a>
+    <a href="#modules" class="btn-secondary" style="font-size:.7rem;padding:17px 28px">View Course Modules</a>
+  </div>
+  <p style="font-family:var(--ff-mono);font-size:.5rem;letter-spacing:.1em;color:var(--muted);margin-top:24px">$179/month after trial · Cancel before Day 14 to owe nothing</p>
+</div>
+
+<!-- ═══════════════════ FOOTER ═══════════════════ -->
+<footer>
+  <div class="footer-logo">SNIPER<span>TRADER</span></div>
+  <div class="footer-grid">
+    <div class="footer-col">
+      <div class="footer-col-title">Tools</div>
+      <a href="#">USME Algo</a>
+      <a href="#">Pre-Market Baseline</a>
+      <a href="#">Habit Guardrails</a>
+      <a href="#">Post-Market Review Loop</a>
+      <a href="#">Ai Sentiment Engine</a>
+      <a href="#">Ai Chart Analyzer</a>
+      <a href="#">Prop Firm Command Center</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Ecosystem</div>
+      <a href="#">Ai Smart Glasses</a>
+      <a href="#">Prop Master Plan</a>
+      <a href="#">30-Day Funded Challenge</a>
+      <a href="#">ICT Discipline Engine</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Resources</div>
+      <a href="#">Affiliate Program</a>
+      <a href="#">Trader's Couch</a>
+      <a href="#">Ebook</a>
+      <a href="#">PropFirm Match</a>
+      <a href="#">Shop</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Company</div>
+      <a href="#">About</a>
+      <a href="#">Docs</a>
+      <a href="#">Terms</a>
+      <a href="#">Disclaimer</a>
+      <a href="#">Privacy</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="footer-copy">© 2026 SniperTrader Intelligence Platform — All rights reserved.</div>
+  </div>
+  <p class="footer-disclaimer">Trading futures, forex, and other leveraged instruments involves substantial risk of loss. USME v3.1 is an educational and analytical tool — not financial advice. Past performance of any indicator or methodology does not guarantee future results. Trade responsibly.</p>
+</footer>
+
+<script>
+/* ── CURSOR ── */
+const cur = document.getElementById('cur');
+const ring = document.getElementById('cur-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px'});
+function animRing(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(animRing)}
+animRing();
+
+/* ── REVEAL ON SCROLL ── */
+const revEls = document.querySelectorAll('.reveal');
+const io = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');io.unobserve(e.target)}})
+},{threshold:0.12});
+revEls.forEach(el=>io.observe(el));
+
+/* ── SCORE BAR ANIMATE ── */
+const sb1 = document.getElementById('sb1');
+const sbObs = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){sb1.style.width='78%';sbObs.unobserve(e.target)}})
+},{threshold:.3});
+if(sb1) sbObs.observe(sb1.closest('section'));
+
+/* ── FAQ ACCORDION ── */
+document.querySelectorAll('.faq-item').forEach(item=>{
+  item.querySelector('.faq-q').addEventListener('click',()=>{
+    const wasOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(i=>i.classList.remove('open'));
+    if(!wasOpen) item.classList.add('open');
+  });
+});
+
+/* ── SMOOTH SCROLL ── */
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{
+    const t=document.querySelector(a.getAttribute('href'));
+    if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth',block:'start'})}
+  });
+});
+</script>
+</body>
+</html>
