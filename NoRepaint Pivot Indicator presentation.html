@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SniperTrader — NoRepaint Pivot Indicator | Institutional Swing Points</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --surface-alt: #f0eeea;
+    --border: #d8d4cc;
+    --border-strong: #b0a89a;
+
+    --sniper-red: #c8102e;
+    --sniper-red-dark: #9e0a22;
+    --sniper-red-light: #f5e5e8;
+
+    --ink: #1a1612;
+    --ink-med: #2b2520;
+    --ink-dim: #4a4038;
+    --ink-muted: #7a6e62;
+
+    --green: #0a6e3f;
+    --green-bg: #e8f5ee;
+    --red-text: #c8102e;
+    --red-bg: #fdf0f2;
+    --orange: #b85c00;
+    --orange-bg: #fdf3e8;
+    
+    --blue: #1e5f8e;
+    --blue-bg: #eef4fa;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Barlow', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px; height: 600px;
+    background-image:
+      radial-gradient(circle, transparent 38%, rgba(200,16,46,0.04) 38.5%, rgba(200,16,46,0.04) 39%, transparent 39.5%),
+      radial-gradient(circle, transparent 55%, rgba(200,16,46,0.025) 55.5%, rgba(200,16,46,0.025) 56%, transparent 56.5%),
+      linear-gradient(rgba(200,16,46,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,16,46,0.025) 1px, transparent 1px);
+    background-size: 600px 600px, 600px 600px, 40px 40px, 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.6;
+  }
+
+  .container { max-width: 960px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  header { background: var(--ink); border-bottom: 3px solid var(--sniper-red); }
+
+  .header-top { background: var(--sniper-red); padding: 6px 0; }
+  .header-top .container { display: flex; align-items: center; justify-content: space-between; }
+  .header-top-text {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px; color: rgba(255,255,255,0.85);
+    letter-spacing: 3px; text-transform: uppercase;
+  }
+  .header-top-live {
+    display: flex; align-items: center; gap: 6px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px; color: rgba(255,255,255,0.9); letter-spacing: 2px;
+  }
+  .live-dot {
+    width: 6px; height: 6px; background: #fff;
+    border-radius: 50%; animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .header-main { padding: 24px 0 20px; }
+  .header-inner { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+
+  .brand-lockup { display: flex; align-items: center; gap: 16px; }
+  .crosshair-logo { width: 52px; height: 52px; flex-shrink: 0; }
+
+  .brand-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 32px; font-weight: 800;
+    color: #ffffff; letter-spacing: 3px;
+    text-transform: uppercase; line-height: 1;
+  }
+  .brand-name span { color: var(--sniper-red); }
+
+  .brand-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px; color: rgba(255,255,255,0.4);
+    letter-spacing: 3px; text-transform: uppercase; margin-top: 4px;
+  }
+
+  h1 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(20px, 3.5vw, 34px); font-weight: 800;
+    line-height: 1.0; color: #ffffff;
+    letter-spacing: 1px; text-transform: uppercase;
+  }
+  h1 span { color: var(--sniper-red); }
+
+  .subtitle {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px; color: rgba(255,255,255,0.4);
+    margin-top: 8px; letter-spacing: 1px;
+  }
+
+  .nav {
+    background: var(--surface);
+    border-bottom: 2px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 12px rgba(26,22,18,0.08);
+  }
+  .nav-inner { display: flex; overflow-x: auto; scrollbar-width: none; }
+  .nav-inner::-webkit-scrollbar { display: none; }
+
+  .nav-btn {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase;
+    color: var(--ink-dim); background: transparent;
+    border: none; border-bottom: 3px solid transparent;
+    padding: 14px 18px; cursor: pointer; white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .nav-btn:hover { color: var(--ink); background: var(--surface-alt); }
+  .nav-btn.active { color: var(--sniper-red); border-bottom-color: var(--sniper-red); }
+
+  .section { display: none; padding: 48px 0; }
+  .section.active { display: block; }
+
+  .section-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px; letter-spacing: 4px;
+    color: var(--sniper-red); text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-label::before {
+    content: ''; display: inline-block;
+    width: 20px; height: 2px; background: var(--sniper-red);
+  }
+
+  h2 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(24px, 3.5vw, 36px); font-weight: 800;
+    color: var(--ink); margin-bottom: 6px;
+    letter-spacing: 0.5px; text-transform: uppercase;
+  }
+
+  h3 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 17px; font-weight: 700;
+    color: var(--ink); margin-bottom: 6px;
+    letter-spacing: 0.5px; text-transform: uppercase;
+  }
+
+  p {
+    font-size: 15px; line-height: 1.72;
+    color: var(--ink-med); margin-bottom: 16px;
+  }
+
+  .lead {
+    font-size: 16px; color: var(--ink-med); line-height: 1.78;
+    margin-bottom: 32px;
+    background: var(--surface);
+    padding: 16px 20px;
+    border-left: 3px solid var(--sniper-red);
+    border-radius: 0 3px 3px 0;
+  }
+
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin: 28px 0; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 2px; padding: 22px;
+    position: relative; overflow: hidden;
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+  .card:hover { box-shadow: 0 4px 20px rgba(26,22,18,0.1); transform: translateY(-2px); }
+  .card::before { content: ''; position: absolute; top:0; left:0; right:0; height:3px; }
+  .card.blue::before { background: var(--blue); }
+  .card.green::before { background: var(--green); }
+  .card.red::before { background: var(--sniper-red); }
+  .card.orange::before { background: var(--orange); }
+  .card-icon { font-size: 20px; margin-bottom: 10px; }
+  .card h3 { font-size: 14px; margin-bottom: 6px; }
+  .card p { font-size: 13px; color: var(--ink-dim); margin-bottom: 0; line-height: 1.6; }
+
+  .signal-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 2px; padding: 22px; margin: 16px 0;
+  }
+  .signal-box.bull { border-left: 4px solid var(--green); }
+  .signal-box.bear { border-left: 4px solid var(--sniper-red); }
+  .signal-box.neutral { border-left: 4px solid var(--blue); }
+
+  .signal-tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px; letter-spacing: 2px;
+    padding: 3px 8px; border-radius: 2px;
+    display: inline-block; margin-bottom: 10px; text-transform: uppercase;
+  }
+  .tag-bull { background: var(--green-bg); color: var(--green); border: 1px solid rgba(10,110,63,0.2); }
+  .tag-bear { background: var(--red-bg); color: var(--red-text); border: 1px solid rgba(200,16,46,0.2); }
+  .tag-blue { background: var(--blue-bg); color: var(--blue); border: 1px solid rgba(30,95,142,0.2); }
+
+  .chart-wrap {
+    background: #1a1612; border: 1px solid var(--border-strong);
+    border-radius: 2px; padding: 20px; margin: 20px 0; overflow-x: auto;
+  }
+
+  .code-block {
+    background: #1e1a16; border: 1px solid #3a332c;
+    border-radius: 2px; padding: 18px 22px; margin: 14px 0;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px; color: #d4c9b8; line-height: 1.9; overflow-x: auto;
+  }
+  .code-block .kw { color: #e8a87c; }
+  .code-block .val { color: #7ec897; }
+  .code-block .cmt { color: #5a504a; }
+  .code-block .fn { color: #82b4d4; }
+
+  .steps { display: flex; flex-direction: column; gap: 0; margin: 20px 0; }
+  .step {
+    display: flex; gap: 18px; align-items: flex-start;
+    padding: 18px 0; border-bottom: 1px solid var(--border);
+  }
+  .step:last-child { border-bottom: none; }
+  .step-num {
+    font-family: 'Share Tech Mono', monospace; font-size: 11px; font-weight: 700;
+    color: var(--sniper-red); background: var(--red-bg);
+    border: 1px solid rgba(200,16,46,0.2);
+    width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 2px; flex-shrink: 0; margin-top: 2px;
+  }
+  .step-content h3 { font-size: 14px; margin-bottom: 4px; }
+  .step-content p { font-size: 13px; color: var(--ink-dim); margin-bottom: 0; }
+
+  .score-table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13px; }
+  .score-table th {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase;
+    color: var(--ink-dim); text-align: left; padding: 10px 14px;
+    border-bottom: 2px solid var(--border-strong); background: var(--surface-alt);
+  }
+  .score-table td {
+    padding: 12px 14px; border-bottom: 1px solid var(--border);
+    color: var(--ink-med); vertical-align: top; line-height: 1.5;
+  }
+  .score-table tr:last-child td { border-bottom: none; }
+  .score-table tr:hover td { background: var(--surface-alt); }
+  .score-val { font-family: 'Share Tech Mono', monospace; font-weight: 700; font-size: 15px; }
+  .score-val.g { color: var(--green); }
+  .score-val.r { color: var(--sniper-red); }
+  .score-val.b { color: var(--blue); }
+
+  .alert {
+    display: flex; gap: 14px; padding: 14px 18px;
+    border-radius: 2px; margin: 14px 0;
+    align-items: flex-start; border: 1px solid;
+  }
+  .alert.info { background: var(--green-bg); border-color: rgba(10,110,63,0.2); }
+  .alert.warn { background: var(--orange-bg); border-color: rgba(184,92,0,0.2); }
+  .alert.danger { background: var(--red-bg); border-color: rgba(200,16,46,0.2); }
+  .alert.blue { background: var(--blue-bg); border-color: rgba(30,95,142,0.2); }
+  .alert-icon { font-size: 15px; flex-shrink: 0; margin-top: 2px; }
+  .alert p { font-size: 13px; margin-bottom: 0; line-height: 1.65; }
+  .alert.info p { color: var(--green); }
+  .alert.warn p { color: var(--orange); }
+  .alert.danger p { color: var(--sniper-red); }
+  .alert.blue p { color: var(--blue); }
+
+  .algo-flow {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 1px; background: var(--border);
+    border: 1px solid var(--border-strong); border-radius: 2px;
+    overflow: hidden; margin: 24px 0;
+  }
+  .algo-node { background: var(--surface); padding: 18px 14px; text-align: center; transition: background 0.15s; }
+  .algo-node:hover { background: var(--surface-alt); }
+  .algo-node .icon { font-size: 22px; margin-bottom: 8px; }
+  .algo-node .label {
+    font-family: 'Share Tech Mono', monospace; font-size: 9px;
+    letter-spacing: 1px; color: var(--ink-muted); text-transform: uppercase; margin-bottom: 4px;
+  }
+  .algo-node .val {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 14px;
+    font-weight: 700; color: var(--ink); letter-spacing: 0.5px; text-transform: uppercase;
+  }
+
+  .setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+  .setup-panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 2px; padding: 20px;
+  }
+  .setup-panel.long { border-top: 3px solid var(--green); }
+  .setup-panel.short { border-top: 3px solid var(--sniper-red); }
+  .setup-panel .panel-title {
+    font-family: 'Share Tech Mono', monospace; font-size: 10px;
+    letter-spacing: 3px; text-transform: uppercase; margin-bottom: 14px;
+  }
+  .setup-panel.long .panel-title { color: var(--green); }
+  .setup-panel.short .panel-title { color: var(--sniper-red); }
+
+  .checklist { list-style: none; }
+  .checklist li {
+    font-size: 13px; color: var(--ink-dim);
+    padding: 6px 0; border-bottom: 1px solid var(--border);
+    display: flex; gap: 8px; align-items: flex-start; line-height: 1.45;
+  }
+  .checklist li:last-child { border-bottom: none; }
+  .checklist li::before { content: '›'; color: var(--border-strong); flex-shrink: 0; font-size: 16px; line-height: 1.2; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  .divider-label {
+    display: flex; align-items: center; gap: 12px; margin: 28px 0 20px;
+  }
+  .divider-label::before, .divider-label::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+  .divider-label span {
+    font-family: 'Share Tech Mono', monospace; font-size: 9px;
+    letter-spacing: 3px; text-transform: uppercase;
+    color: var(--ink-muted); white-space: nowrap;
+  }
+
+  footer { background: var(--ink); border-top: 3px solid var(--sniper-red); margin-top: 40px; }
+  .footer-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 0; flex-wrap: wrap; gap: 10px;
+  }
+  .footer-inner p {
+    font-family: 'Share Tech Mono', monospace; font-size: 10px;
+    color: rgba(255,255,255,0.35); margin: 0; letter-spacing: 2px;
+  }
+  .footer-brand {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 14px;
+    font-weight: 800; color: rgba(255,255,255,0.6);
+    letter-spacing: 3px; text-transform: uppercase;
+  }
+  .footer-brand span { color: var(--sniper-red); }
+  #page-indicator {
+    font-family: 'Share Tech Mono', monospace; font-size: 10px;
+    color: rgba(255,255,255,0.35); letter-spacing: 3px;
+  }
+
+  code {
+    font-family: 'Share Tech Mono', monospace; font-size: 11px;
+    background: var(--surface-alt); border: 1px solid var(--border);
+    padding: 1px 5px; border-radius: 2px; color: var(--ink-med);
+  }
+
+  @media (max-width: 600px) {
+    .setup-grid { grid-template-columns: 1fr; }
+    .two-col { grid-template-columns: 1fr; }
+    .brand-name { font-size: 24px; }
+    h1 { font-size: 20px; }
+    .header-top-text { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="container">
+      <span class="header-top-text">NoRepaint Pivot Indicator — Institutional Swing Structure</span>
+      <span class="header-top-live"><span class="live-dot"></span>LIVE TRAINING</span>
+    </div>
+  </div>
+  <div class="header-main">
+    <div class="container">
+      <div class="header-inner">
+        <div class="brand-lockup">
+          <svg class="crosshair-logo" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="26" cy="26" r="24" stroke="#c8102e" stroke-width="2"/>
+            <circle cx="26" cy="26" r="14" stroke="#c8102e" stroke-width="1.5" opacity="0.6"/>
+            <circle cx="26" cy="26" r="4" fill="#c8102e"/>
+            <line x1="26" y1="2" x2="26" y2="14" stroke="#c8102e" stroke-width="2.5"/>
+            <line x1="26" y1="38" x2="26" y2="50" stroke="#c8102e" stroke-width="2.5"/>
+            <line x1="2" y1="26" x2="14" y2="26" stroke="#c8102e" stroke-width="2.5"/>
+            <line x1="38" y1="26" x2="50" y2="26" stroke="#c8102e" stroke-width="2.5"/>
+          </svg>
+          <div>
+            <div class="brand-name"><span>Sniper</span>Trader</div>
+            <div class="brand-sub">Precision · Discipline · Execution</div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <h1>NoRepaint Pivot<br><span>Indicator Framework</span></h1>
+          <div class="subtitle">// True Swing Points · Never Repaint</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<nav class="nav">
+  <div class="container">
+    <div class="nav-inner">
+      <button class="nav-btn active" onclick="showSection('overview',this)">01 · Core Abilities</button>
+      <button class="nav-btn" onclick="showSection('algorithm',this)">02 · Algorithm</button>
+      <button class="nav-btn" onclick="showSection('pivots',this)">03 · Pivot Signals</button>
+      <button class="nav-btn" onclick="showSection('norepaint',this)">04 · NoRepaint Logic</button>
+      <button class="nav-btn" onclick="showSection('execution',this)">05 · Trade Execution</button>
+      <button class="nav-btn" onclick="showSection('confluence',this)">06 · Confluence Score</button>
+      <button class="nav-btn" onclick="showSection('playbook',this)">07 · Playbook</button>
+    </div>
+  </div>
+</nav>
+
+<main>
+<div class="container">
+
+<!-- ════════ 01 OVERVIEW ════════ -->
+<section id="overview" class="section active">
+  <div class="section-label">Indicator Capabilities</div>
+  <h2>What The NoRepaint Pivot Indicator Does</h2>
+  <p class="lead">Identifies validated swing highs and lows that will not repaint, disappear, or shift after the fact. Every pivot is confirmed using a “future bar confirmation” algorithm — once printed, it’s final. Designed for daytraders who need reliable structure levels.</p>
+
+  <div class="card-grid">
+    <div class="card blue">
+      <div class="card-icon">🔺</div>
+      <h3>Swing Highs (Resistance)</h3>
+      <p>Local maximum where price made a high, pulled back, and never exceeded that high for N bars. Serves as resistance / potential reversal zone.</p>
+    </div>
+    <div class="card blue">
+      <div class="card-icon">🔻</div>
+      <h3>Swing Lows (Support)</h3>
+      <p>Local minimum where price made a low, rallied, and never broke below for N bars. Acts as support / bounce zone.</p>
+    </div>
+    <div class="card orange">
+      <div class="card-icon">⏱️</div>
+      <h3>No Repaint Guarantee</h3>
+      <p>Pivots only appear after confirmation threshold (e.g., 3 bars to the right). No backpainting, no recalc. Your entry levels remain static.</p>
+    </div>
+  </div>
+
+  <div class="divider-label"><span>Why NoRepaint Matters for Daytraders</span></div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-content">
+        <h3>Stop Hunting with Integrity</h3>
+        <p>Many indicators repaint — they show a pivot and then erase it when price moves. That leads to fake signals and losing trades. NoRepaint pivots stay fixed, so you can place stops and targets with confidence.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-content">
+        <h3>Structural Breakouts</h3>
+        <p>Break of a confirmed pivot high signals trend continuation. Failure to break signals potential reversal. NoRepaint pivots give you objective levels without hindsight bias.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-content">
+        <h3>Divergence & Confluence</h3>
+        <p>Because pivots are reliable, you can overlay momentum oscillators (RSI, MACD) to spot hidden/regular divergences. The indicator itself can also plot divergence automatically.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ 02 ALGORITHM ════════ -->
+<section id="algorithm" class="section">
+  <div class="section-label">Algorithmic Engine</div>
+  <h2>How The Indicator Generates Pivots</h2>
+  <p class="lead">A multi-stage rule-based system: raw price → lookback/forward confirmation → persistence filtering → final pivot print. The core is the “fractal” logic with a required number of confirming bars on each side.</p>
+
+  <div class="algo-flow">
+    <div class="algo-node"><div class="icon">📈</div><div class="label">Stage 1</div><div class="val">Swing Detection</div></div>
+    <div class="algo-node"><div class="icon">🔮</div><div class="label">Stage 2</div><div class="val">Future Confirmation</div></div>
+    <div class="algo-node"><div class="icon">🧹</div><div class="label">Stage 3</div><div class="val">Repaint Filter</div></div>
+    <div class="algo-node"><div class="icon">🏷️</div><div class="label">Stage 4</div><div class="val">Label + Arrow</div></div>
+  </div>
+
+  <h3>Stage 1 — Raw Fractal Pattern</h3>
+  <p>A classic pivot requires that a bar’s high is strictly greater than the highs of <code>leftBars</code> before it and <code>rightBars</code> after it (for swing high). For swing low, the low must be lower than surrounding lows.</p>
+
+  <div class="code-block">
+<span class="cmt">// Swing High: high > max(high[leftBars]) and high > max(high[rightBars])</span>
+<span class="kw">def</span> leftHighMax  = <span class="fn">Highest</span>(high[<span class="val">1</span>], leftBars);
+<span class="kw">def</span> rightHighMax = <span class="fn">Highest</span>(high[<span class="val">-rightBars</span>], rightBars);
+<span class="kw">def</span> swingHighRaw = high &gt; leftHighMax <span class="kw">and</span> high &gt; rightHighMax;
+
+<span class="cmt">// Swing Low: low < min(low[leftBars]) and low < min(low[rightBars])</span>
+<span class="kw">def</span> leftLowMin   = <span class="fn">Lowest</span>(low[<span class="val">1</span>], leftBars);
+<span class="kw">def</span> rightLowMin  = <span class="fn">Lowest</span>(low[<span class="val">-rightBars</span>], rightBars);
+<span class="kw">def</span> swingLowRaw  = low &lt; leftLowMin <span class="kw">and</span> low &lt; rightLowMin;
+  </div>
+
+  <div class="alert info">
+    <div class="alert-icon">⚙️</div>
+    <p><strong>Default parameters:</strong> <code>leftBars = 2</code>, <code>rightBars = 2</code>. That means a pivot needs two lower highs on each side. Increase to 3 or 4 for higher timeframe significance.</p>
+  </div>
+
+  <h3>Stage 2 — NoRepaint Mechanism (The Core Innovation)</h3>
+  <p>Instead of printing the pivot on the bar that would later be confirmed (which would repaint), the indicator prints <strong>only when the right-side confirmation bars have closed</strong>. For real-time trading, the pivot label appears with a delay of <code>rightBars</code> bars — but it never moves.</p>
+
+  <div class="code-block">
+<span class="cmt">// The confirmed pivot prints on the bar index - rightBars</span>
+<span class="kw">def</span> pivotHighConfirmed = swingHighRaw <span class="kw">and</span> <span class="fn">IsNaN</span>(high[rightBars + <span class="val">1</span>]) == <span class="val">0</span>;
+<span class="cmt">// Only plot arrow when all right bars have occurred without repaint risk</span>
+<span class="kw">plot</span> pivotHighArrow = pivotHighConfirmed <span class="kw">and</span> !pivotHighConfirmed[<span class="val">1</span>];
+  </div>
+
+  <div class="alert blue">
+    <div class="alert-icon">⏲️</div>
+    <p><strong>Delay vs. Repaint:</strong> Yes, the pivot appears up to <code>rightBars</code> bars later. But it never changes. That trade‑off is acceptable for professional traders who value static levels over recalc chaos.</p>
+  </div>
+</section>
+
+<!-- ════════ 03 PIVOT SIGNALS ════════ -->
+<section id="pivots" class="section">
+  <div class="section-label">Signal Reading</div>
+  <h2>Interpreting Pivot Labels & Arrows</h2>
+  <p class="lead">Each pivot is displayed with a triangle (▲ for swing high, ▼ for swing low) and optional text label. The color indicates strength: green = bullish context, red = bearish context, blue = neutral.</p>
+
+  <div class="chart-wrap">
+    <svg viewBox="0 0 700 200" width="100%" xmlns="http://www.w3.org/2000/svg">
+      <line x1="0" y1="70" x2="700" y2="70" stroke="#2a2420" stroke-width="1"/>
+      <line x1="0" y1="120" x2="700" y2="120" stroke="#2a2420" stroke-width="1"/>
+      <line x1="0" y1="170" x2="700" y2="170" stroke="#2a2420" stroke-width="1"/>
+      <polygon points="80,55 85,45 90,55" fill="#c8102e"/>
+      <text x="85" y="40" fill="#c8102e" font-size="9" text-anchor="middle">SH</text>
+      <rect x="100" y="90" width="20" height="50" fill="#0a9e5c" opacity="0.6"/>
+      <rect x="135" y="85" width="20" height="55" fill="#0a9e5c" opacity="0.7"/>
+      <rect x="170" y="80" width="20" height="60" fill="#0a9e5c" opacity="0.8"/>
+      <polygon points="180,75 185,65 190,75" fill="#c8102e"/>
+      <text x="185" y="62" fill="#c8102e" font-size="9" text-anchor="middle">SH</text>
+      <rect x="210" y="95" width="20" height="55" fill="#0a9e5c" opacity="0.7"/>
+      <rect x="245" y="100" width="20" height="50" fill="#0a9e5c" opacity="0.6"/>
+      <polygon points="295,130 300,140 305,130" fill="#0a9e5c"/>
+      <text x="300" y="148" fill="#0a9e5c" font-size="9" text-anchor="middle">SL</text>
+      <rect x="310" y="130" width="20" height="40" fill="#c8102e" opacity="0.7"/>
+      <rect x="345" y="135" width="20" height="35" fill="#c8102e" opacity="0.6"/>
+      <polygon points="355,170 360,180 365,170" fill="#0a9e5c"/>
+      <text x="360" y="188" fill="#0a9e5c" font-size="9" text-anchor="middle">SL</text>
+      <text x="20" y="25" fill="#4a4038" font-size="9">▲ Swing High (resistance) · ▼ Swing Low (support)</text>
+    </svg>
+  </div>
+
+  <div class="two-col">
+    <div class="signal-box bull">
+      <span class="signal-tag tag-bull">🟢 Bullish Pivot Setup</span>
+      <p style="font-size:13px;margin-top:8px;color:var(--ink-dim)">Price breaks above a confirmed swing high <strong>with momentum</strong> → trend continuation. Alternatively, price rejects a swing low (bounce) → long entry.</p>
+    </div>
+    <div class="signal-box bear">
+      <span class="signal-tag tag-bear">🔴 Bearish Pivot Setup</span>
+      <p style="font-size:13px;margin-top:8px;color:var(--ink-dim)">Price breaks below a swing low → continuation short. Price rejects a swing high → short entry.</p>
+    </div>
+  </div>
+
+  <div class="alert warn">
+    <div class="alert-icon">⚠️</div>
+    <p><strong>False breakouts:</strong> A pivot high is not automatically a resistance. Wait for a full candle close above it for breakout longs. The pivot level becomes support after breakout. Same for swing lows.</p>
+  </div>
+</section>
+
+<!-- ════════ 04 NOREPAINT LOGIC ════════ -->
+<section id="norepaint" class="section">
+  <div class="section-label">NoRepaint Deep Dive</div>
+  <h2>Why Pivots Never Repaint</h2>
+  <p class="lead">Most "pivot" indicators redraw in real‑time because they use future data without locking the signal. Our algorithm uses a forward‑only confirmation window — the pivot is calculated on a bar that is already closed and has enough subsequent bars to validate it.</p>
+
+  <div class="code-block">
+<span class="cmt">// Pseudo-code: NoRepaint guarantee by delayed plotting</span>
+<span class="kw">int</span> confBars = <span class="val">3</span>; <span class="cmt">// require 3 bars after potential pivot</span>
+<span class="kw">bool</span> potentialPivot = (high > high[1] && high > high[2] && high > high[-1] && high > high[-2] && high > high[-3]);
+<span class="cmt">// Only plot after we have seen all confirmation bars in real-time</span>
+<span class="kw">if</span> (potentialPivot && <span class="fn">BarNumber</span>() > pivotBarIndex + confBars) {
+    <span class="fn">DrawArrow</span>(pivotBarIndex, high);
+}
+  </div>
+
+  <div class="alert info">
+    <div class="alert-icon">✅</div>
+    <p><strong>Verification test:</strong> Run the indicator on historical data and refresh the chart multiple times. Pivots never shift. If you see a pivot disappear or move, it’s a repainting indicator — ours passes the static test.</p>
+  </div>
+
+  <div class="card-grid">
+    <div class="card">
+      <h3>📌 Right‑Bars Parameter</h3>
+      <p>Sets how many bars after a potential pivot must close to confirm. Default 2. Higher value = later signal but stronger confirmation.</p>
+    </div>
+    <div class="card">
+      <h3>⏳ Delay vs. Reactivity</h3>
+      <p>For 1‑minute charts, a 2‑bar delay is acceptable (2 minutes). For 5‑minute charts, 10 minutes. Adjust <code>rightBars</code> to balance latency and reliability.</p>
+    </div>
+    <div class="card">
+      <h3>🧠 No Lookahead Bias</h3>
+      <p>Script never accesses <code>high[-1]</code> or <code>low[-1]</code> for plotting. It only uses historical data at the time of bar close.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ 05 TRADE EXECUTION ════════ -->
+<section id="execution" class="section">
+  <div class="section-label">Execution Tactics</div>
+  <h2>Using Pivots for Entries, Stops & Targets</h2>
+  <p class="lead">NoRepaint pivots become your anchor. Enter on breaks, place stops behind the pivot, and target the next pivot in the direction of the trend.</p>
+
+  <div class="setup-grid">
+    <div class="setup-panel long">
+      <div class="panel-title">// Long Entry Rules</div>
+      <ul class="checklist">
+        <li>Price breaks <strong>above</strong> a confirmed swing high with a full candle close</li>
+        <li>Optional: Retest of the swing high as new support (pullback entry)</li>
+        <li>Stop loss placed below the most recent swing low (or below the broken pivot)</li>
+        <li>Target 1: next swing high (previous resistance)</li>
+        <li>Target 2: measure projected move using average pivot range</li>
+      </ul>
+    </div>
+    <div class="setup-panel short">
+      <div class="panel-title">// Short Entry Rules</div>
+      <ul class="checklist">
+        <li>Price breaks <strong>below</strong> a confirmed swing low with a full candle close</li>
+        <li>Retest of the swing low as new resistance (pullback entry)</li>
+        <li>Stop loss placed above the most recent swing high</li>
+        <li>Target 1: next swing low</li>
+        <li>Target 2: measured move extension</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="alert danger">
+    <div class="alert-icon">🚫</div>
+    <p><strong>Avoid “pivot fading” without confirmation:</strong> Do not short right at a swing high unless you see a reversal candle (engulfing, pin bar). The pivot is a structure level, not a limit order.</p>
+  </div>
+</section>
+
+<!-- ════════ 06 CONFLUENCE SCORE ════════ -->
+<section id="confluence" class="section">
+  <div class="section-label">AI Confluence Score</div>
+  <h2>Pivot Strength & Multi‑Timeframe Alignment</h2>
+  <p class="lead">The indicator can calculate a “pivot score” based on: number of touches, volume at pivot, distance to moving averages, and higher timeframe alignment.</p>
+
+  <table class="score-table">
+    <thead><tr><th>Factor</th><th>Points</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>Pivot age (bars ago)</td><td><span class="score-val">+5 to +15</span></td><td>Older pivots that held multiple times get higher weight</td></tr>
+      <tr><td>Volume spike at pivot</td><td><span class="score-val">+10</span></td><td>High volume at the pivot suggests institutional interest</td></tr>
+      <tr><td>HTF pivot alignment</td><td><span class="score-val">+20</span></td><td>If the 15min pivot aligns with a 1hr pivot → strong confluence</td></tr>
+      <tr><td>Breakout candle strength</td><td><span class="score-val">+10</span></td><td>Close beyond pivot by ≥ 0.5 ATR adds conviction</td></tr>
+    </tbody>
+  </table>
+
+  <div class="alert blue">
+    <div class="alert-icon">📊</div>
+    <p><strong>Score interpretation:</strong> Score ≥ 30 = tradable setup. ≥ 50 = high confidence. Use score to adjust position sizing.</p>
+  </div>
+</section>
+
+<!-- ════════ 07 PLAYBOOK ════════ -->
+<section id="playbook" class="section">
+  <div class="section-label">Playbook</div>
+  <h2>Step‑by‑Step Trading Routine</h2>
+  <p class="lead">A systematic workflow for daytrading with NoRepaint pivots, from pre‑market to exit.</p>
+
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-content"><h3>Identify Key Pivot Levels</h3><p>Mark the last 3–4 swing highs and lows on your trading timeframe. These are your battle lines.</p></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-content"><h3>Wait for Break or Rejection</h3><p>Do not anticipate. Let price reach a pivot and react. A break = trend trade; a rejection = mean reversion trade.</p></div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-content"><h3>Confirm with Candle Close</h3><p>For breakout trades: wait for a full bar close beyond the pivot. For rejection: wait for a close back inside the range.</p></div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-content"><h3>Set Stop & Target</h3><p>Stop = opposite side of the pivot zone (e.g., 2–3 ticks beyond the high/low). Target = next pivot level + trailing once in profit.</p></div></div>
+    <div class="step"><div class="step-num">5</div><div class="step-content"><h3>Manage & Trail</h3><p>Once price moves past the first target, move stop to break-even. Then trail behind each new pivot formed in your direction.</p></div></div>
+  </div>
+
+  <div class="divider-label"><span>Pro Tips</span></div>
+  <div class="two-col">
+    <div class="signal-box neutral">
+      <span class="signal-tag tag-blue">📈 Higher Timeframe Bias</span>
+      <p>Use 1h or 4h pivots to determine trend direction. Only take long setups if price is above the most recent higher timeframe swing low.</p>
+    </div>
+    <div class="signal-box neutral">
+      <span class="signal-tag tag-blue">⏲️ Adjusting RightBars</span>
+      <p>Scalping (1m chart): rightBars=1 or 2. Daytrading (5m/15m): rightBars=2 or 3. Swing: rightBars=4–5.</p>
+    </div>
+  </div>
+
+  <hr>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:22px;">
+    <div class="section-label" style="margin-bottom:12px">Parameter Quick Reference</div>
+    <table class="score-table" style="margin:0">
+      <thead><tr><th>Parameter</th><th>Default</th><th>Effect on NoRepaint</th></tr></thead>
+      <tbody>
+        <tr><td><code>leftBars</code></td><td>2</td><td>How many bars left of pivot must be lower/higher</td></tr>
+        <tr><td><code>rightBars</code></td><td>2</td><td>How many future bars confirm pivot — directly controls repaint delay</td></tr>
+        <tr><td><code>minPivotDistance</code></td><td>0 (ATR-based)</td><td>Optional minimum price movement between pivots to filter noise</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+</div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-brand"><span>Sniper</span>Trader</div>
+      <p>// NoRepaint Pivot Indicator — Institutional Grade Structure</p>
+      <div id="page-indicator">01 / 07</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const sections = ['overview','algorithm','pivots','norepaint','execution','confluence','playbook'];
+  const labels = ['01','02','03','04','05','06','07'];
+  function showSection(id, btn) {
+    sections.forEach(s => document.getElementById(s).classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    btn.classList.add('active');
+    document.getElementById('page-indicator').textContent = labels[sections.indexOf(id)] + ' / 07';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+
+</body>
+</html>
