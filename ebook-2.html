@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>From Broke to Funded — ICT SMC Playbook | SniperTrader.ai</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --obsidian: #060a0f;
+  --obsidian2: #0a1018;
+  --obsidian3: #0f1822;
+  --surface: #111c28;
+  --surface2: #162030;
+  --surface3: #1c2a3a;
+  --cyan: #00e5ff;
+  --cyan-dim: rgba(0,229,255,0.08);
+  --cyan-glow: rgba(0,229,255,0.15);
+  --gold: #f5c842;
+  --gold-dim: rgba(245,200,66,0.1);
+  --crimson: #ff3d5a;
+  --text: #f0f6fc;
+  --text2: #a8c0d4;
+  --text3: #6b8fa8;
+  --border: rgba(0,229,255,0.07);
+  --border2: rgba(0,229,255,0.14);
+  --border3: rgba(0,229,255,0.22);
+  --font-hud: 'Orbitron', monospace;
+  --font-mono: 'Space Mono', monospace;
+  --font-body: 'Syne', sans-serif;
+}
+
+/* ── LIGHT MODE ── */
+body.light-mode {
+  --obsidian: #f0f4f8;
+  --obsidian2: #e8edf3;
+  --obsidian3: #dde4ec;
+  --surface: #d8e2ec;
+  --surface2: #cdd8e4;
+  --surface3: #c2cfdd;
+  --text: #0d1f2d;
+  --text2: #2e4a62;
+  --text3: #4a6a84;
+  --border: rgba(0,100,160,0.12);
+  --border2: rgba(0,100,160,0.2);
+  --border3: rgba(0,100,160,0.32);
+  --cyan-dim: rgba(0,150,200,0.1);
+  --cyan-glow: rgba(0,150,200,0.2);
+  background: var(--obsidian);
+  color: var(--text);
+}
+body.light-mode nav { background: rgba(240,244,248,0.95); }
+body.light-mode .nav-mobile-drawer { background: rgba(240,244,248,0.98); }
+body.light-mode .book-cover-card { background: #ddeaf5; }
+body.light-mode .for-card { background: #e4eef7; }
+body.light-mode .learn-item { background: #e4eef7; }
+body.light-mode .testi { background: #e4eef7; }
+body.light-mode .cta-block { background: #ddeaf5; }
+body.light-mode .sample-terminal { background: #d0dce8; }
+body.light-mode .chapters-two .chapters-row { background: #e8f0f8; }
+body.light-mode footer { background: var(--obsidian2); }
+body.light-mode #particle-canvas { opacity: 0.15; }
+
+/* ── THEME TOGGLE BUTTON ── */
+#theme-toggle {
+  position: fixed; bottom: 28px; right: 28px; z-index: 9000;
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--surface2);
+  border: 1px solid var(--border3);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.35), 0 0 16px rgba(0,229,255,0.1);
+  transition: background 0.25s, border-color 0.25s, box-shadow 0.25s, transform 0.15s;
+  color: var(--text);
+}
+#theme-toggle:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 30px rgba(0,0,0,0.4), 0 0 24px rgba(0,229,255,0.2);
+  border-color: var(--cyan);
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--obsidian);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* ── CUSTOM CURSOR ── */
+#cursor {
+  position: fixed; width: 8px; height: 8px;
+  background: var(--cyan); border-radius: 50%;
+  pointer-events: none; z-index: 9999;
+  transform: translate(-50%,-50%);
+  transition: transform 0.1s, background 0.2s;
+  box-shadow: 0 0 12px var(--cyan), 0 0 24px rgba(0,229,255,0.4);
+}
+#cursor-ring {
+  position: fixed; width: 32px; height: 32px;
+  border: 1px solid rgba(0,229,255,0.4); border-radius: 50%;
+  pointer-events: none; z-index: 9998;
+  transform: translate(-50%,-50%);
+  transition: transform 0.18s cubic-bezier(0.25,0.46,0.45,0.94), width 0.2s, height 0.2s, border-color 0.2s;
+}
+
+/* ── CANVAS PARTICLES ── */
+#particle-canvas {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  opacity: 0.55;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 56px; height: 72px;
+  background: rgba(6,10,15,0.92);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border);
+}
+nav::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  opacity: 0.25;
+  pointer-events: none;
+}
+.nav-logo {
+  font-family: var(--font-hud); font-size: 18px; font-weight: 700;
+  color: var(--text); text-decoration: none; letter-spacing: 1px;
+  flex-shrink: 0;
+}
+.nav-logo span { color: var(--cyan); }
+
+.nav-links {
+  display: flex; align-items: center; gap: 4px;
+  list-style: none;
+}
+.nav-links a {
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase; text-decoration: none;
+  color: var(--text2); padding: 8px 14px; border-radius: 3px;
+  transition: color 0.2s, background 0.2s;
+  position: relative;
+}
+.nav-links a::after {
+  content: ''; position: absolute; bottom: 4px; left: 50%; right: 50%;
+  height: 1px; background: var(--cyan);
+  transition: left 0.25s ease, right 0.25s ease;
+}
+.nav-links a:hover { color: var(--text); }
+.nav-links a:hover::after { left: 14px; right: 14px; }
+
+.nav-cta {
+  font-family: var(--font-hud); font-size: 10px; font-weight: 700;
+  letter-spacing: 1.5px; text-decoration: none;
+  padding: 9px 22px; border-radius: 3px;
+  background: transparent; color: var(--cyan);
+  border: 1px solid rgba(0,229,255,0.5);
+  position: relative; overflow: hidden;
+  transition: color 0.25s, box-shadow 0.25s, border-color 0.25s;
+  flex-shrink: 0;
+}
+.nav-cta::before {
+  content: ''; position: absolute; inset: 0;
+  background: var(--cyan); transform: translateX(-101%);
+  transition: transform 0.25s ease;
+}
+.nav-cta:hover { color: #000; border-color: var(--cyan); box-shadow: 0 0 24px var(--cyan-glow); }
+.nav-cta:hover::before { transform: translateX(0); }
+.nav-cta span { position: relative; z-index: 1; }
+
+/* mobile hamburger */
+.nav-hamburger {
+  display: none; flex-direction: column; gap: 5px; cursor: none;
+  background: none; border: none; padding: 8px;
+}
+.nav-hamburger span {
+  display: block; width: 22px; height: 1.5px;
+  background: var(--text2); border-radius: 2px;
+  transition: transform 0.2s, opacity 0.2s;
+}
+.nav-hamburger.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+.nav-hamburger.open span:nth-child(2) { opacity: 0; }
+.nav-hamburger.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+.nav-mobile-drawer {
+  display: none; position: fixed; top: 72px; left: 0; right: 0; z-index: 499;
+  background: rgba(6,10,15,0.97); backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border);
+  padding: 20px 24px 28px; flex-direction: column; gap: 4px;
+}
+.nav-mobile-drawer.open { display: flex; }
+.nav-mobile-drawer a {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase; text-decoration: none;
+  color: var(--text2); padding: 12px 8px;
+  border-bottom: 1px solid var(--border);
+  transition: color 0.2s;
+}
+.nav-mobile-drawer a:hover { color: var(--cyan); }
+.nav-mobile-drawer a.cta-mobile {
+  color: var(--cyan); margin-top: 12px; border: 1px solid rgba(0,229,255,0.3);
+  border-radius: 3px; text-align: center; padding: 14px;
+}
+
+/* ── SCANLINE OVERLAY ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+}
+
+/* ── HERO ── */
+.hero {
+  min-height: 100vh;
+  padding: 140px 56px 80px;
+  position: relative; overflow: hidden;
+  display: flex; align-items: center;
+}
+.hero-ambient {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 70% at 10% 50%, rgba(0,229,255,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 60% at 90% 20%, rgba(245,200,66,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(0,229,255,0.06) 0%, transparent 70%);
+}
+.hero-grid-lines {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(0,229,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,255,0.025) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(ellipse 100% 80% at 50% 50%, black 20%, transparent 85%);
+}
+.hero-inner {
+  max-width: 1200px; margin: 0 auto; width: 100%;
+  display: grid; grid-template-columns: 1fr 440px; gap: 72px;
+  align-items: center; position: relative; z-index: 2;
+}
+
+/* hero left */
+.hero-tag {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--cyan);
+  border: 1px solid rgba(0,229,255,0.2); border-radius: 2px;
+  padding: 6px 14px; margin-bottom: 32px;
+  background: rgba(0,229,255,0.05);
+}
+.hero-tag::before { content: '▶'; font-size: 8px; }
+.hero-eyebrow {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--gold);
+  margin-bottom: 16px;
+}
+.hero h1 {
+  font-family: var(--font-hud); font-size: clamp(42px, 5.5vw, 76px);
+  font-weight: 900; letter-spacing: -2px; line-height: 0.95;
+  color: var(--text); margin-bottom: 28px;
+}
+.hero h1 .line-cyan { color: var(--cyan); display: block; }
+.hero h1 .line-gold { color: var(--gold); display: block; }
+.hero h1 .line-dim { color: var(--text2); display: block; font-size: 0.72em; font-weight: 600; letter-spacing: -1px; margin-top: 8px; }
+.hero-rule {
+  width: 64px; height: 2px; margin-bottom: 24px;
+  background: linear-gradient(90deg, var(--cyan), transparent);
+}
+.hero-sub {
+  font-size: 16px; color: var(--text2); line-height: 1.8;
+  max-width: 500px; margin-bottom: 36px;
+}
+.hero-stats {
+  display: flex; gap: 0; margin-bottom: 40px;
+  border: 1px solid var(--border2); border-radius: 4px; overflow: hidden;
+}
+.stat-box {
+  flex: 1; padding: 16px 18px; text-align: center;
+  border-right: 1px solid var(--border2);
+  background: rgba(0,229,255,0.03);
+}
+.stat-box:last-child { border-right: none; }
+.stat-num {
+  font-family: var(--font-hud); font-size: 20px; font-weight: 700;
+  color: var(--cyan); display: block; margin-bottom: 4px;
+}
+.stat-label {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--text3);
+}
+.hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+
+/* BUTTONS */
+.btn-primary {
+  font-family: var(--font-hud); font-size: 12px; font-weight: 700;
+  letter-spacing: 1.5px; text-decoration: none;
+  padding: 16px 36px; border-radius: 4px; border: none; cursor: none;
+  background: var(--cyan); color: #000;
+  display: inline-flex; align-items: center; gap: 10px;
+  transition: transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 0 0 rgba(0,229,255,0);
+  position: relative; overflow: hidden;
+}
+.btn-primary::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
+  pointer-events: none;
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 40px rgba(0,229,255,0.3); }
+.btn-secondary {
+  font-family: var(--font-hud); font-size: 11px; font-weight: 700;
+  letter-spacing: 1.5px; text-decoration: none;
+  padding: 16px 28px; border-radius: 4px;
+  border: 1px solid var(--border3); color: var(--text2);
+  display: inline-flex; align-items: center; gap: 8px;
+  transition: border-color 0.2s, color 0.2s, box-shadow 0.2s;
+  background: transparent; cursor: none;
+}
+.btn-secondary:hover { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 20px rgba(0,229,255,0.08); }
+
+/* ── BOOK COVER 3D ── */
+.book-3d-scene {
+  perspective: 1200px;
+  perspective-origin: 50% 50%;
+}
+.book-3d-wrapper {
+  transform-style: preserve-3d;
+  transition: transform 0.08s ease-out;
+  position: relative;
+}
+.book-cover-card {
+  background: #0c1520;
+  border: 1px solid rgba(0,229,255,0.2);
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  box-shadow:
+    0 40px 100px rgba(0,0,0,0.8),
+    0 0 0 1px rgba(0,229,255,0.05),
+    inset 0 0 60px rgba(0,0,0,0.4);
+}
+.book-cover-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent 0%, var(--cyan) 30%, var(--gold) 70%, transparent 100%);
+}
+.book-cover-card::after {
+  content: '';
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(135deg, rgba(0,229,255,0.04) 0%, transparent 50%, rgba(245,200,66,0.03) 100%);
+}
+.book-spine {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 6px;
+  background: linear-gradient(180deg, var(--cyan) 0%, rgba(0,229,255,0.3) 50%, var(--cyan) 100%);
+  box-shadow: 2px 0 16px rgba(0,229,255,0.3);
+}
+.book-inner { padding: 44px 36px 36px; position: relative; z-index: 1; }
+
+.book-hud-top {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 28px;
+}
+.book-brand-tag {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 2px;
+  text-transform: uppercase; color: rgba(0,229,255,0.5);
+}
+.book-badge {
+  font-family: var(--font-hud); font-size: 13px; font-weight: 900;
+  color: #000; background: var(--gold);
+  width: 52px; height: 52px; border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  line-height: 1; box-shadow: 0 0 20px rgba(245,200,66,0.4);
+}
+.book-badge small { font-size: 8px; font-weight: 700; }
+
+.book-title-block { margin-bottom: 24px; }
+.book-series { font-family: var(--font-mono); font-size: 9px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--cyan); margin-bottom: 10px; }
+.book-main-title { font-family: var(--font-hud); font-size: 30px; font-weight: 900; line-height: 1; color: var(--text); letter-spacing: -1px; margin-bottom: 6px; }
+.book-main-title span { color: var(--cyan); }
+.book-subtitle { font-family: var(--font-mono); font-size: 10px; color: var(--text3); letter-spacing: 1px; }
+
+.book-divider {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 24px;
+}
+.book-divider-line { flex: 1; height: 1px; background: linear-gradient(90deg, var(--cyan), transparent); opacity: 0.3; }
+.book-divider-icon { font-family: var(--font-mono); font-size: 9px; color: rgba(0,229,255,0.4); letter-spacing: 2px; }
+
+.book-covers-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 24px; }
+.book-covers-item {
+  background: rgba(0,229,255,0.05); border: 1px solid rgba(0,229,255,0.1);
+  border-radius: 4px; padding: 8px 10px;
+}
+.bci-label { font-family: var(--font-mono); font-size: 8px; letter-spacing: 1.5px; color: rgba(0,229,255,0.4); text-transform: uppercase; margin-bottom: 3px; }
+.bci-val { font-family: var(--font-body); font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.7); }
+
+.book-footer-hud {
+  border-top: 1px solid rgba(0,229,255,0.1);
+  padding-top: 16px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.book-footer-spec { font-family: var(--font-mono); font-size: 9px; color: var(--text3); letter-spacing: 1px; }
+.book-glint {
+  position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+  animation: bookGlint 4s ease-in-out infinite 1s;
+  pointer-events: none;
+}
+@keyframes bookGlint { 0%,100% { left: -60%; } 50% { left: 120%; } }
+
+/* floating glow behind book */
+.book-glow {
+  position: absolute; inset: -40px; border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(0,229,255,0.08) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
+  animation: bookGlowPulse 3s ease-in-out infinite;
+}
+@keyframes bookGlowPulse { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
+
+/* ── SECTION BASE ── */
+.section-wrap { position: relative; z-index: 2; }
+.section-inner { max-width: 1200px; margin: 0 auto; padding: 96px 56px; }
+
+.section-eyebrow {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+}
+.eyebrow-line { width: 32px; height: 1px; background: var(--cyan); opacity: 0.5; }
+.eyebrow-text {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--cyan);
+}
+
+.section-title {
+  font-family: var(--font-hud); font-size: clamp(30px, 3.5vw, 50px);
+  font-weight: 800; letter-spacing: -1.5px; line-height: 1.05;
+  color: var(--text); margin-bottom: 18px;
+}
+.section-title .accent-cyan { color: var(--cyan); }
+.section-title .accent-gold { color: var(--gold); }
+.section-desc { font-size: 16px; color: var(--text2); line-height: 1.75; max-width: 620px; }
+
+/* ── DIVIDER ── */
+.section-divider {
+  width: 100%; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,229,255,0.15), transparent);
+  position: relative; z-index: 2;
+}
+
+/* ── WHO FOR ── */
+.for-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 56px; }
+.for-card {
+  background: #0c1520;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 32px 28px;
+  position: relative; overflow: hidden;
+  transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+  cursor: none;
+}
+.for-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  transform: scaleX(0); transition: transform 0.3s;
+}
+.for-card:hover { border-color: var(--border3); transform: translateY(-4px); box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 30px rgba(0,229,255,0.05); }
+.for-card:hover::before { transform: scaleX(1); }
+.for-card-id {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 2px;
+  color: var(--text3); margin-bottom: 16px;
+}
+.for-icon { font-size: 32px; margin-bottom: 16px; display: block; }
+.for-title { font-family: var(--font-hud); font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 10px; letter-spacing: 0.5px; }
+.for-desc { font-size: 13px; color: var(--text2); line-height: 1.65; }
+
+/* ── CHAPTERS ── */
+.chapters-table { margin-top: 56px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.chapters-row {
+  display: grid; grid-template-columns: 80px 1fr;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.2s;
+  cursor: none;
+}
+.chapters-row:last-child { border-bottom: none; }
+.chapters-row:hover { background: rgba(0,229,255,0.03); }
+.ch-num-col {
+  background: rgba(0,229,255,0.04);
+  border-right: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px 10px;
+}
+.ch-num {
+  font-family: var(--font-hud); font-size: 11px; font-weight: 700;
+  color: var(--cyan); letter-spacing: 1px; text-align: center;
+  writing-mode: horizontal-tb;
+}
+.ch-content { padding: 22px 28px; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.ch-title { font-family: var(--font-body); font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 5px; }
+.ch-desc { font-size: 12px; color: var(--text3); line-height: 1.55; }
+.ch-pages { font-family: var(--font-mono); font-size: 9px; color: var(--text3); white-space: nowrap; margin-top: 2px; padding: 3px 8px; border: 1px solid var(--border); border-radius: 3px; flex-shrink: 0; }
+
+/* chapters two-col */
+.chapters-two { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--border); margin-top: 56px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.chapters-two .chapters-row { border-bottom: none; background: #0a1018; }
+.chapters-two .chapters-row:hover { background: rgba(0,229,255,0.04); }
+
+/* ── LEARN ── */
+.learn-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 56px; }
+.learn-item {
+  display: flex; gap: 16px; align-items: flex-start;
+  background: #0c1520; border: 1px solid var(--border);
+  border-radius: 6px; padding: 22px 20px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  cursor: none;
+}
+.learn-item:hover { border-color: rgba(0,229,255,0.18); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+.learn-icon {
+  width: 40px; height: 40px; border-radius: 4px;
+  background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.12);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.learn-title { font-family: var(--font-body); font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 5px; }
+.learn-desc { font-size: 12px; color: var(--text3); line-height: 1.6; }
+
+/* ── SAMPLE EXCERPT ── */
+.sample-terminal {
+  margin-top: 56px;
+  background: #08121a;
+  border: 1px solid rgba(0,229,255,0.15);
+  border-radius: 6px; overflow: hidden;
+}
+.terminal-titlebar {
+  background: rgba(0,229,255,0.05);
+  border-bottom: 1px solid rgba(0,229,255,0.1);
+  padding: 12px 20px;
+  display: flex; align-items: center; gap: 12px;
+}
+.terminal-dots { display: flex; gap: 6px; }
+.terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
+.terminal-dot.red { background: #ff3d5a; }
+.terminal-dot.yellow { background: var(--gold); }
+.terminal-dot.green { background: #00d97e; }
+.terminal-tab {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--cyan);
+  background: rgba(0,229,255,0.08); border-radius: 3px; padding: 3px 10px;
+  margin-left: 8px;
+}
+.terminal-body { padding: 32px 36px; }
+.terminal-prompt {
+  font-family: var(--font-mono); font-size: 10px; color: var(--cyan);
+  letter-spacing: 1px; margin-bottom: 20px; opacity: 0.6;
+}
+.terminal-heading {
+  font-family: var(--font-hud); font-size: 20px; font-weight: 700;
+  color: var(--text); margin-bottom: 24px; letter-spacing: -0.5px;
+}
+.terminal-body p {
+  font-size: 14px; color: var(--text2); line-height: 1.9; margin-bottom: 18px;
+}
+.terminal-body strong { color: var(--text); font-weight: 600; }
+.terminal-highlight { color: var(--cyan); font-weight: 500; }
+.terminal-cursor {
+  display: inline-block; width: 8px; height: 14px;
+  background: var(--cyan); vertical-align: middle; margin-left: 4px;
+  animation: blink 1.1s step-end infinite;
+}
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+/* ── TESTIMONIALS ── */
+.testi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 56px; }
+.testi {
+  background: #0c1520; border: 1px solid var(--border);
+  border-radius: 6px; padding: 28px;
+  position: relative; overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.testi:hover { border-color: rgba(245,200,66,0.2); transform: translateY(-3px); }
+.testi::before {
+  content: '"'; position: absolute; top: 12px; right: 20px;
+  font-family: var(--font-hud); font-size: 72px; font-weight: 900;
+  color: rgba(0,229,255,0.04); line-height: 1;
+}
+.testi-stars { color: var(--gold); font-size: 11px; letter-spacing: 3px; margin-bottom: 16px; }
+.testi-text { font-size: 13px; color: var(--text2); line-height: 1.75; margin-bottom: 22px; font-style: italic; }
+.testi-divider { height: 1px; background: var(--border); margin-bottom: 16px; }
+.testi-name { font-family: var(--font-body); font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+.testi-role { font-family: var(--font-mono); font-size: 10px; color: var(--cyan); letter-spacing: 0.5px; }
+
+/* ── CTA SECTION ── */
+.cta-block {
+  position: relative; margin-top: 80px;
+  background: #0a1520;
+  border: 1px solid rgba(0,229,255,0.15);
+  border-radius: 8px; padding: 72px 60px;
+  text-align: center; overflow: hidden;
+}
+.cta-block::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan) 30%, var(--gold) 70%, transparent);
+}
+.cta-block::after {
+  content: '';
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 0%, rgba(0,229,255,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 60% at 80% 100%, rgba(245,200,66,0.04) 0%, transparent 60%);
+}
+.cta-block > * { position: relative; z-index: 1; }
+.cta-label {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--cyan); margin-bottom: 20px;
+}
+.cta-block h2 {
+  font-family: var(--font-hud); font-size: clamp(28px, 4vw, 52px);
+  font-weight: 900; letter-spacing: -2px; color: var(--text);
+  margin-bottom: 16px; line-height: 1.05;
+}
+.cta-block h2 em { font-style: normal; color: var(--cyan); }
+.cta-block p { font-size: 15px; color: var(--text2); margin-bottom: 40px; }
+.cta-price-display { margin-bottom: 12px; }
+.cta-price {
+  font-family: var(--font-hud); font-size: 72px; font-weight: 900;
+  color: var(--gold); letter-spacing: -3px;
+  text-shadow: 0 0 40px rgba(245,200,66,0.3);
+}
+.cta-price-note { font-family: var(--font-mono); font-size: 11px; color: var(--text3); letter-spacing: 1.5px; margin-bottom: 36px; }
+.cta-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+/* ── FOOTER ── */
+footer {
+  background: var(--obsidian2);
+  border-top: 1px solid var(--border);
+  position: relative; z-index: 2;
+  padding: 72px 56px 40px;
+}
+.footer-inner {
+  max-width: 1200px; margin: 0 auto;
+}
+.footer-top {
+  display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 48px;
+  padding-bottom: 56px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 36px;
+}
+.footer-col-label {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--cyan);
+  margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
+}
+.footer-col-label::before { content: '//'; opacity: 0.5; }
+.footer-links { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.footer-links li a {
+  font-family: var(--font-body); font-size: 13px; color: var(--text2);
+  text-decoration: none; transition: color 0.2s;
+  display: flex; align-items: center; gap: 8px;
+}
+.footer-links li a:hover { color: var(--cyan); }
+.footer-links li a.soon {
+  color: var(--text3); cursor: default; pointer-events: none;
+}
+.footer-links li a.soon::after {
+  content: 'SOON'; font-family: var(--font-mono); font-size: 8px;
+  letter-spacing: 1.5px; color: var(--text3);
+  border: 1px solid var(--text3); border-radius: 2px;
+  padding: 1px 5px; opacity: 0.6;
+}
+.footer-bottom {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 16px;
+}
+.footer-logo {
+  font-family: var(--font-hud); font-size: 16px; font-weight: 700;
+  color: var(--text3); text-decoration: none; letter-spacing: 1px;
+}
+.footer-logo span { color: rgba(0,229,255,0.4); }
+.footer-legal {
+  font-family: var(--font-mono); font-size: 9px; color: var(--text3);
+  letter-spacing: 0.5px; line-height: 1.8; text-align: right;
+}
+.footer-legal a { color: var(--text3); text-decoration: none; }
+.footer-legal a:hover { color: var(--text2); }
+
+@media (max-width: 900px) {
+  nav { padding: 0 24px; }
+  .nav-links, .nav-cta { display: none; }
+  .nav-hamburger { display: flex; }
+  .hero { padding: 120px 24px 72px; }
+  .hero-inner { grid-template-columns: 1fr; gap: 48px; }
+  .book-3d-scene { max-width: 360px; }
+  .for-grid { grid-template-columns: 1fr; }
+  .chapters-two { grid-template-columns: 1fr; }
+  .learn-grid { grid-template-columns: 1fr; }
+  .testi-grid { grid-template-columns: 1fr; }
+  .section-inner { padding: 72px 24px; }
+  .cta-block { padding: 48px 28px; }
+  footer { padding: 56px 24px 36px; }
+  .footer-top { grid-template-columns: 1fr 1fr; gap: 40px; }
+  .footer-bottom { flex-direction: column; align-items: flex-start; }
+  .footer-legal { text-align: left; }
+}
+@media (max-width: 480px) {
+  .footer-top { grid-template-columns: 1fr; gap: 32px; }
+}
+
+/* ── SCROLL REVEAL ── */
+.reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+.reveal-delay-4 { transition-delay: 0.4s; }
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+<canvas id="particle-canvas"></canvas>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo">Sniper<span>Trader</span></a>
+
+  <ul class="nav-links">
+    <li><a href="usme.html">USME Algo</a></li>
+    <li><a href="psych.html">Psych App</a></li>
+    <li><a href="ecosystem.html">Ecosystem</a></li>
+    <li><a href="community.html">Community</a></li>
+  </ul>
+
+  <a href="checkout.html" class="nav-cta"><span>BUY NOW — $19 →</span></a>
+
+  <button class="nav-hamburger" id="hamburger" aria-label="Toggle menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="nav-mobile-drawer" id="mobileDrawer">
+  <a href="usme.html">USME Algo</a>
+  <a href="psych.html">Psych App</a>
+  <a href="ecosystem.html">Ecosystem</a>
+  <a href="community.html">Community</a>
+  <a href="checkout.html" class="cta-mobile">BUY NOW — $19 →</a>
+</div>
+
+<!-- ═══════════════════════════════ HERO ═══════════════════════════════ -->
+<section class="hero">
+  <div class="hero-ambient"></div>
+  <div class="hero-grid-lines"></div>
+
+  <div class="hero-inner">
+    <!-- LEFT -->
+    <div>
+      <div class="hero-tag reveal">EBOOK · INSTANT PDF DOWNLOAD</div>
+      <div class="hero-eyebrow reveal reveal-delay-1">SNIPERTRADER.AI PRESENTS</div>
+      <h1 class="reveal reveal-delay-2">
+        <span class="line-cyan">FROM BROKE</span>
+        <span class="line-gold">TO FUNDED</span>
+        <span class="line-dim">ICT SMC PLAYBOOK</span>
+      </h1>
+      <div class="hero-rule reveal reveal-delay-3"></div>
+      <p class="hero-sub reveal reveal-delay-3">
+        The no-fluff, step-by-step blueprint that takes you from complete ICT beginner to executing funded-level Smart Money trades — with a clear path to passing your prop firm evaluation.
+      </p>
+      <div class="hero-stats reveal reveal-delay-4">
+        <div class="stat-box">
+          <span class="stat-num">200+</span>
+          <span class="stat-label">Pages</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-num">12</span>
+          <span class="stat-label">Chapters</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-num">40+</span>
+          <span class="stat-label">Chart Studies</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-num">PDF</span>
+          <span class="stat-label">Instant</span>
+        </div>
+      </div>
+      <div class="hero-actions reveal reveal-delay-4">
+        <a href="checkout.html" class="btn-primary">
+          GET THE EBOOK — $19
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a href="#chapters" class="btn-secondary">
+          BROWSE CHAPTERS
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- RIGHT: 3D BOOK -->
+    <div class="book-3d-scene reveal reveal-delay-2" id="bookScene">
+      <div class="book-3d-wrapper" id="book3d">
+        <div class="book-glow"></div>
+        <div class="book-cover-card">
+          <div class="book-spine"></div>
+          <div class="book-glint"></div>
+          <div class="book-inner">
+            <div class="book-hud-top">
+              <div class="book-brand-tag">SNIPERTRADER.AI</div>
+              <div class="book-badge">$19<small>ONLY</small></div>
+            </div>
+            <div class="book-title-block">
+              <div class="book-series">— THE ICT/SMC MASTERCLASS —</div>
+              <div class="book-main-title"><span>FROM BROKE</span><br>TO FUNDED</div>
+              <div class="book-subtitle">COMPLETE TRADER'S BLUEPRINT</div>
+            </div>
+            <div class="book-divider">
+              <div class="book-divider-line"></div>
+              <div class="book-divider-icon">◆</div>
+              <div class="book-divider-line" style="background:linear-gradient(90deg,transparent,var(--gold));"></div>
+            </div>
+            <div class="book-covers-grid">
+              <div class="book-covers-item">
+                <div class="bci-label">COVERS</div>
+                <div class="bci-val">ICT Foundations</div>
+              </div>
+              <div class="book-covers-item">
+                <div class="bci-label">COVERS</div>
+                <div class="bci-val">Prop Firm Strategy</div>
+              </div>
+              <div class="book-covers-item">
+                <div class="bci-label">COVERS</div>
+                <div class="bci-val">SMC Execution</div>
+              </div>
+              <div class="book-covers-item">
+                <div class="bci-label">COVERS</div>
+                <div class="bci-val">Funded in 30 Days</div>
+              </div>
+            </div>
+            <div class="book-footer-hud">
+              <div class="book-footer-spec">200+ PG · PDF · INSTANT ACCESS</div>
+              <div class="book-footer-spec" style="color:var(--cyan);">v2026.1</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ═══════════════════════════════ WHO IS THIS FOR ═══════════════════════════════ -->
+<section class="section-wrap" style="background: var(--obsidian2);">
+  <div class="section-inner">
+    <div class="section-eyebrow reveal">
+      <div class="eyebrow-line"></div>
+      <div class="eyebrow-text">Target Audience</div>
+    </div>
+    <h2 class="section-title reveal reveal-delay-1">Built for Traders Who Are<br><span class="accent-cyan">Done Losing</span></h2>
+    <p class="section-desc reveal reveal-delay-2">This book was written for one type of trader: the one who's serious about turning the corner.</p>
+    <div class="for-grid">
+      <div class="for-card reveal reveal-delay-1">
+        <div class="for-card-id">PROFILE_01</div>
+        <span class="for-icon">🌱</span>
+        <div class="for-title">ICT Beginners</div>
+        <p class="for-desc">You've heard of Order Blocks and Fair Value Gaps but can't consistently apply them. This book builds your framework from the ground up — no assumed knowledge, no jargon without explanation.</p>
+      </div>
+      <div class="for-card reveal reveal-delay-2">
+        <div class="for-card-id">PROFILE_02</div>
+        <span class="for-icon">📉</span>
+        <div class="for-title">Struggling Retail Traders</div>
+        <p class="for-desc">You've tried indicators, signals, and courses but still lose more than you win. This book exposes why retail setups fail and shows you the institutional side of the same market you've been trading wrong.</p>
+      </div>
+      <div class="for-card reveal reveal-delay-3">
+        <div class="for-card-id">PROFILE_03</div>
+        <span class="for-icon">🏆</span>
+        <div class="for-title">Prop Firm Challengers</div>
+        <p class="for-desc">You want to trade someone else's capital but keep blowing evaluations. Chapters 9–12 are dedicated entirely to the mindset, risk rules, and setup selection strategy for passing funded account challenges.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ═══════════════════════════════ CHAPTERS ═══════════════════════════════ -->
+<section class="section-wrap" id="chapters">
+  <div class="section-inner">
+    <div class="section-eyebrow reveal">
+      <div class="eyebrow-line"></div>
+      <div class="eyebrow-text">Table of Contents</div>
+    </div>
+    <h2 class="section-title reveal reveal-delay-1">12 Chapters.<br><span class="accent-gold">One Complete System.</span></h2>
+    <p class="section-desc reveal reveal-delay-2">Each chapter builds on the last — from foundational market theory to live execution and funded account strategy.</p>
+
+    <div class="chapters-two reveal reveal-delay-2">
+      <div class="chapters-row">
+        <div class="ch-num-col"><div class="ch-num">CH<br>01</div></div>
+        <div class="ch-content">
+          <div>
+            <div class="ch-title">Why Retail Traders Lose (And Institutions Win)</div>
+            <div class="ch-desc">The uncomfortable truth about how markets actually work — liquidity engineering, stop hunts, and why your indicators keep you on the losing side.</div>
+          </div>
+          <div class="ch-pages">~18 pg</div>
+        </div>
+      </div>
+      <div class="chapters-row">
+        <div class="ch-num-col"><div class="ch-num">CH<br>02</div></div>
+        <div class="ch-content">
+          <div>
+            <div class="ch-title">ICT Core Concepts: The Framework</div>
+            <div class="ch-desc">Premium and discount arrays, institutional reference points, and the three questions every trade must answer before entry.</div>
+          </div>
+          <div class="ch-pages">~16 pg</div>
+        </div>
+      </div>
+      <div class="chapters-row">
+        <div class="ch-num-col"><div class="ch-num">CH<br>03</div></div>
+        <div class="ch-content">
+          <div>
+            <div class="ch-title">Market Structure: BOS, CHoCH & MSS</div>
+            <div class="ch-desc">Reading structural shifts on multiple timeframes. How to identify genuine trend changes versus traps.</div>
+          </div>
+          <div class="ch-pages">~20 pg</div>
+        </div>
+      </div>
+      <div class="chapters-row">
+        <div class="ch-num-col"><div class="ch-num">CH<br>04</div></div>
+        <div class="ch-content">
+          <div>
+            <div class="ch-title">Order Blocks: The Institutional Footprint</div>
+            <div class="ch-desc">Identifying, grading (A/B/C), and trading Order Blocks on NQ, ES, and GC with real annotated chart examples.</div>
+          </div>
+          <div class="ch-pages">~22 pg</div>
+        </div>
+      </div>
+      <div class="chapters-row">
+        <div class="ch-num-col"><div class="ch-num">CH<br>05</div></div>
+        <div class="ch-content">
+          <div>
+            <div class="ch-title">Fair Value Gaps & Imbalances</div>
+            <div class="ch-desc">How FVGs are created, why price returns to fill them, and how to use unmitigated FVGs as precision entry zones.</div>
+          </div>
+          <div class="ch-pages">~16 pg</div>
+        </div>
+      </div>
+      <div class="chapters-row">
+        <div class="ch-num-col"><div class="ch-num">CH<br>06</div></div>
+        <div class="ch-content">
+          <div>
+            <div class="ch-title">Liquidity: SSL, BSL & The Real Hunt</div>
+            <div class="ch-desc">Buy-side and sell-side liquidity pools, equal highs/lows as engineering targets, and how to trade the raid.</div>
+          </div>
+          <div class="ch-pages">~18 pg</div>
+        </div>
+      </div>
+      <div class="chapters-row">
+        <div class="ch-num-col"><div class="ch-num">CH<br>07</div></div>
+        <div class="ch-content">
+          <div>
+            <div class="ch-title">Killzones & The Silver Bullet</div>
+            <div class="ch-desc">London Open, NYSE Open, and the 10am–11am Silver Bullet window. Why timing entries to these sessions multiplies probability.</div>
+          </div>
+          <div class="ch-pages">~14 pg</div>
+        </div>
+      </div>
+      <div class="chapters-row">
+        <div class="ch-num-col"><div class="ch-num">CH<br>08</div></div>
+        <div class="ch-content">
+          <div>
+            <div class="ch-title">Multi-Timeframe Analysis & IPDA</div>
+            <div class="ch-desc">Top-down analysis from Weekly/Daily through 15m execution. IPDA range mapping and 20/40/60-day draw-on-liquidity.</div>
+          </div>
+          <div class="ch-pages">~20 pg</div>
+        </div>
+      </div>
+      <div class="chapters-row">
+        <div class="ch-num-col"><div class="ch-num">CH<br>09</div></div>
+        <div class="ch-content">
+          <div>
+            <div class="ch-title">Prop Firm Evaluation Strategy</div>
+            <div class="ch-desc">The exact approach for passing Apex, Topstep, and Earn2Trade challenges. Daily loss management and drawdown arithmetic.</div>
+          </div>
+          <div class="ch-pages">~22 pg</div>
+        </div>
+      </div>
+      <div class="chapters-row">
+        <div class="ch-num-col"><div class="ch-num">CH<br>10</div></div>
+        <div class="ch-content">
+          <div>
+            <div class="ch-title">Risk Management for Smart Money Traders</div>
+            <div class="ch-desc">ATR-based position sizing, the 1% rule adapted for futures, trailing stops on partial closes, and protecting profits on runners.</div>
+          </div>
+          <div class="ch-pages">~16 pg</div>
+        </div>
+      </div>
+      <div class="chapters-row">
+        <div class="ch-num-col"><div class="ch-num">CH<br>11</div></div>
+        <div class="ch-content">
+          <div>
+            <div class="ch-title">The Trader's Mindset: Discipline Over Signals</div>
+            <div class="ch-desc">Why most traders who understand ICT still blow accounts. The psychological patterns and the daily pre-market routine that builds consistency.</div>
+          </div>
+          <div class="ch-pages">~14 pg</div>
+        </div>
+      </div>
+      <div class="chapters-row">
+        <div class="ch-num-col"><div class="ch-num">CH<br>12</div></div>
+        <div class="ch-content">
+          <div>
+            <div class="ch-title">The 30-Day Funded Roadmap</div>
+            <div class="ch-desc">A day-by-day structured plan to go from opening your first SMC trade to being funded in 30 days — including recovery protocols.</div>
+          </div>
+          <div class="ch-pages">~18 pg</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ═══════════════════════════════ WHAT YOU'LL LEARN ═══════════════════════════════ -->
+<section class="section-wrap" style="background: var(--obsidian2);">
+  <div class="section-inner">
+    <div class="section-eyebrow reveal">
+      <div class="eyebrow-line"></div>
+      <div class="eyebrow-text">Key Takeaways</div>
+    </div>
+    <h2 class="section-title reveal reveal-delay-1">What You'll <span class="accent-cyan">Walk Away With</span></h2>
+    <div class="learn-grid">
+      <div class="learn-item reveal reveal-delay-1">
+        <div class="learn-icon">🗺️</div>
+        <div>
+          <div class="learn-title">A Complete ICT Framework</div>
+          <div class="learn-desc">Not isolated concepts — a cohesive, interconnected system where every component (OB, FVG, BOS, Killzone) works together to generate high-probability setups.</div>
+        </div>
+      </div>
+      <div class="learn-item reveal reveal-delay-2">
+        <div class="learn-icon">📐</div>
+        <div>
+          <div class="learn-title">Precision Entry & Exit Rules</div>
+          <div class="learn-desc">Exact criteria for pulling the trigger — not "wait for confirmation" vagueness. Specific conditions that must be met before entering any SMC trade.</div>
+        </div>
+      </div>
+      <div class="learn-item reveal reveal-delay-3">
+        <div class="learn-icon">🏦</div>
+        <div>
+          <div class="learn-title">Prop Firm-Ready Risk Protocol</div>
+          <div class="learn-desc">The complete daily loss limit management system, drawdown-adjusted sizing formula, and the evaluation mindset that separates funded traders from blown challengers.</div>
+        </div>
+      </div>
+      <div class="learn-item reveal reveal-delay-4">
+        <div class="learn-icon">📊</div>
+        <div>
+          <div class="learn-title">40+ Annotated Chart Studies</div>
+          <div class="learn-desc">Real NQ, ES, GC, and EUR/USD trades walked through in detail — showing the exact thought process from HTF bias down to the 1-minute entry trigger.</div>
+        </div>
+      </div>
+      <div class="learn-item reveal reveal-delay-1">
+        <div class="learn-icon">🧠</div>
+        <div>
+          <div class="learn-title">Trader Psychology Toolkit</div>
+          <div class="learn-desc">The pre-market routine, post-session review system, and the three mental rules that prevent the emotional trades responsible for 80% of blown accounts.</div>
+        </div>
+      </div>
+      <div class="learn-item reveal reveal-delay-2">
+        <div class="learn-icon">⚡</div>
+        <div>
+          <div class="learn-title">The Silver Bullet Playbook</div>
+          <div class="learn-desc">A dedicated section on the 10am–11am ICT Silver Bullet window — the single most consistent setup in the methodology with the fewest variables to manage.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ═══════════════════════════════ SAMPLE EXCERPT ═══════════════════════════════ -->
+<section class="section-wrap">
+  <div class="section-inner">
+    <div class="section-eyebrow reveal">
+      <div class="eyebrow-line"></div>
+      <div class="eyebrow-text">Sample Content — Chapter 01 Excerpt</div>
+    </div>
+    <h2 class="section-title reveal reveal-delay-1">A Taste of What's<br><span class="accent-cyan">Inside the Book</span></h2>
+    <div class="sample-terminal reveal reveal-delay-2">
+      <div class="terminal-titlebar">
+        <div class="terminal-dots">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+        </div>
+        <div class="terminal-tab">CHAPTER_01 · WHY_RETAIL_TRADERS_LOSE</div>
+      </div>
+      <div class="terminal-body">
+        <div class="terminal-prompt">// EXCERPT · snipertrader.ai/ebook · PAGE 12</div>
+        <div class="terminal-heading">The Market Is Not Random — It's Engineered</div>
+        <p>Every retail trader is taught the same thing: support and resistance, moving averages, RSI divergence. These aren't bad tools. They're just the <strong>wrong side of the trade</strong>. The market doesn't move because of supply and demand in the way your first trading book described. It moves because <span class="terminal-highlight">large institutional participants need liquidity</span> — and retail traders, with their predictable stop losses clustered below every obvious level, are the liquidity.</p>
+        <p>Think about the last time price broke below a key support level, stopped you out, then reversed and ran without you. That wasn't bad luck. That was a <strong>buy-side liquidity raid</strong> — a deliberate engineered sweep of retail stops. Institutions don't buy at support. They buy <em>after</em> they've swept the retail stops below support, using that wave of sell orders to fill their buy positions at scale.</p>
+        <p>This is the first and most important mental shift in the ICT methodology: <span class="terminal-highlight">price does not go where demand is strongest. Price goes where liquidity is.</span> Once you see this, you can never unsee it. The rest of this book will show you how to use that knowledge to put yourself on the right side of every move.<span class="terminal-cursor"></span></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ═══════════════════════════════ TESTIMONIALS ═══════════════════════════════ -->
+<section class="section-wrap" style="background: var(--obsidian2);">
+  <div class="section-inner">
+    <div class="section-eyebrow reveal">
+      <div class="eyebrow-line"></div>
+      <div class="eyebrow-text">Reader Results</div>
+    </div>
+    <h2 class="section-title reveal reveal-delay-1">Traders Who Read It<br><span class="accent-gold">And Traded Differently</span></h2>
+    <div class="testi-grid">
+      <div class="testi reveal reveal-delay-1">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-text">"I've bought four ICT courses. This $19 book explained the framework more clearly than all of them combined. Chapter 6 on liquidity alone changed how I see every single chart. Passed my Apex eval two weeks after reading it."</p>
+        <div class="testi-divider"></div>
+        <div class="testi-name">Marcus J.</div>
+        <div class="testi-role">Funded NQ Trader · Apex Trader</div>
+      </div>
+      <div class="testi reveal reveal-delay-2">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-text">"The prop firm chapter is worth 100× the price. I'd blown three evaluations before reading this. The drawdown management system in Chapter 10 is something nobody talks about openly. I'm now 6 months funded."</p>
+        <div class="testi-divider"></div>
+        <div class="testi-name">Priya N.</div>
+        <div class="testi-role">Topstep Funded Trader · ES Futures</div>
+      </div>
+      <div class="testi reveal reveal-delay-3">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-text">"I was purely a retail indicator trader for 3 years. This book made me feel like I'd been lied to the whole time — in a good way. The Silver Bullet chapter is now my entire trading strategy. Simple. Consistent. Finally profitable."</p>
+        <div class="testi-divider"></div>
+        <div class="testi-name">Tyler B.</div>
+        <div class="testi-role">Day Trader · Austin, TX</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ═══════════════════════════════ CTA ═══════════════════════════════ -->
+<section class="section-wrap">
+  <div class="section-inner">
+    <div class="cta-block reveal">
+      <div class="cta-label">// INSTANT PDF DOWNLOAD</div>
+      <h2>Ready to Trade Like<br><em>You Know What You're Doing?</em></h2>
+      <p>200+ pages. 12 chapters. 40+ chart studies. One price.</p>
+      <div class="cta-price-display">
+        <div class="cta-price">$19</div>
+      </div>
+      <div class="cta-price-note">ONE-TIME · INSTANT PDF · NO SUBSCRIPTION</div>
+      <div class="cta-actions">
+        <a href="checkout.html" class="btn-primary">
+          BUY NOW — INSTANT DOWNLOAD
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a href="tradevisor-clone.html" class="btn-secondary">← BACK TO ALL PRODUCTS</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- THEME TOGGLE -->
+<button id="theme-toggle" title="Toggle light/dark mode">🌙</button>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+
+      <!-- Col 1: Tools -->
+      <div>
+        <div class="footer-col-label">Tools</div>
+        <ul class="footer-links">
+          <li><a href="usme.html">USME Algo</a></li>
+          <li><a href="pre-market.html">Pre-Market Baseline</a></li>
+          <li><a href="habit-guardrails.html">Habit Guardrails</a></li>
+          <li><a href="post-market.html">Post-Market Review Loop</a></li>
+          <li><a href="sentiment.html">AI Sentiment Engine</a></li>
+          <li><a href="chart-analyzer.html">AI Chart Analyzer</a></li>
+          <li><a href="prop-command.html">Prop Firm Command Center</a></li>
+        </ul>
+      </div>
+
+      <!-- Col 2: Ecosystem -->
+      <div>
+        <div class="footer-col-label">Ecosystem</div>
+        <ul class="footer-links">
+          <li><a href="glasses.html">AI Smart Glasses</a></li>
+          <li><a href="prop-master.html">Prop Master Plan</a></li>
+          <li><a href="30-day.html">30-Day Funded Challenge</a></li>
+          <li><a href="discipline.html">ICT Discipline Engine</a></li>
+        </ul>
+      </div>
+
+      <!-- Col 3: Resources -->
+      <div>
+        <div class="footer-col-label">Resources</div>
+        <ul class="footer-links">
+          <li><a href="community.html">Community</a></li>
+          <li><a href="traders-couch.html">Trader's Couch</a></li>
+          <li><a href="ebook.html" class="soon">Ebook</a></li>
+          <li><a href="propfirm-match.html" class="soon">PropFirm Match</a></li>
+          <li><a href="shop.html" class="soon">Shop</a></li>
+        </ul>
+      </div>
+
+      <!-- Col 4: Company -->
+      <div>
+        <div class="footer-col-label">Company</div>
+        <ul class="footer-links">
+          <li><a href="about.html" class="soon">About</a></li>
+          <li><a href="docs.html" class="soon">Docs</a></li>
+          <li><a href="terms.html" class="soon">Terms</a></li>
+          <li><a href="disclaimer.html" class="soon">Disclaimer</a></li>
+          <li><a href="privacy.html" class="soon">Privacy</a></li>
+        </ul>
+      </div>
+
+    </div>
+    <div class="footer-bottom">
+      <a href="index.html" class="footer-logo">Sniper<span>Trader</span></a>
+      <div class="footer-legal">
+        © 2026 SniperTrader.ai · Not affiliated with ICT / The Inner Circle Trader<br>
+        For educational purposes only ·
+        <a href="terms.html">Terms</a> ·
+        <a href="privacy.html">Privacy</a> ·
+        <a href="disclaimer.html">Disclaimer</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ════════════════════════════ SCRIPTS ════════════════════════════ -->
+<script>
+// ── CURSOR ──
+const cursor = document.getElementById('cursor');
+const ring = document.getElementById('cursor-ring');
+let mx = -100, my = -100, rx = -100, ry = -100;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+(function animateCursor() {
+  cursor.style.left = mx + 'px'; cursor.style.top = my + 'px';
+  rx += (mx - rx) * 0.12; ry += (my - ry) * 0.12;
+  ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+  requestAnimationFrame(animateCursor);
+})();
+document.querySelectorAll('a, button, .for-card, .learn-item, .testi, .chapters-row').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    ring.style.width = '48px'; ring.style.height = '48px';
+    ring.style.borderColor = 'rgba(0,229,255,0.7)';
+  });
+  el.addEventListener('mouseleave', () => {
+    ring.style.width = '32px'; ring.style.height = '32px';
+    ring.style.borderColor = 'rgba(0,229,255,0.4)';
+  });
+});
+
+// ── PARTICLE CANVAS ──
+const canvas = document.getElementById('particle-canvas');
+const ctx = canvas.getContext('2d');
+let W, H, particles = [];
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+resize();
+window.addEventListener('resize', () => { resize(); initParticles(); });
+class Particle {
+  constructor() { this.reset(true); }
+  reset(init) {
+    this.x = Math.random() * W;
+    this.y = init ? Math.random() * H : H + 10;
+    this.vx = (Math.random() - 0.5) * 0.3;
+    this.vy = -(Math.random() * 0.5 + 0.1);
+    this.alpha = Math.random() * 0.5 + 0.1;
+    this.size = Math.random() * 1.5 + 0.4;
+    this.color = Math.random() > 0.72 ? '#f5c842' : '#00e5ff';
+    this.life = 0; this.maxLife = Math.random() * 400 + 200;
+  }
+  update() {
+    this.x += this.vx; this.y += this.vy; this.life++;
+    const p = this.life / this.maxLife;
+    this.alpha = p < 0.2 ? p / 0.2 * 0.5 : p > 0.8 ? (1 - p) / 0.2 * 0.5 : 0.5;
+    if (this.life > this.maxLife || this.y < -10) this.reset(false);
+  }
+  draw() {
+    ctx.save();
+    ctx.globalAlpha = this.alpha;
+    ctx.fillStyle = this.color;
+    ctx.shadowColor = this.color;
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+function initParticles() {
+  particles = [];
+  const count = Math.floor((W * H) / 12000);
+  for (let i = 0; i < count; i++) particles.push(new Particle());
+}
+initParticles();
+function animateParticles() {
+  ctx.clearRect(0, 0, W, H);
+  particles.forEach(p => { p.update(); p.draw(); });
+  requestAnimationFrame(animateParticles);
+}
+animateParticles();
+
+// ── 3D BOOK MOUSE TRACKING ──
+const scene = document.getElementById('bookScene');
+const book3d = document.getElementById('book3d');
+if (scene && book3d) {
+  document.addEventListener('mousemove', e => {
+    const r = scene.getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    const dx = (e.clientX - cx) / (W / 2);
+    const dy = (e.clientY - cy) / (H / 2);
+    const rotY = dx * 14;
+    const rotX = -dy * 8;
+    book3d.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+  });
+  scene.addEventListener('mouseleave', () => {
+    book3d.style.transform = 'rotateX(0deg) rotateY(0deg)';
+    book3d.style.transition = 'transform 0.6s ease';
+    setTimeout(() => book3d.style.transition = 'transform 0.08s ease-out', 650);
+  });
+}
+
+// ── SCROLL REVEAL ──
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+}, { threshold: 0.08 });
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+// ── THEME TOGGLE ──
+const themeBtn = document.getElementById('theme-toggle');
+const savedTheme = localStorage.getItem('theme');
+if (savedTheme === 'light') {
+  document.body.classList.add('light-mode');
+  themeBtn.textContent = '☀️';
+}
+themeBtn.addEventListener('click', () => {
+  const isLight = document.body.classList.toggle('light-mode');
+  themeBtn.textContent = isLight ? '☀️' : '🌙';
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
+});
+
+// ── HAMBURGER ──
+const ham = document.getElementById('hamburger');
+const drawer = document.getElementById('mobileDrawer');
+if (ham && drawer) {
+  ham.addEventListener('click', () => {
+    ham.classList.toggle('open');
+    drawer.classList.toggle('open');
+  });
+  drawer.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', () => { ham.classList.remove('open'); drawer.classList.remove('open'); });
+  });
+}
+</script>
+</body>
+</html>
