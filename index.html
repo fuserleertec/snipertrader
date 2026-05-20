@@ -1,14 +1,4 @@
-I see the issue — the fixed stock ticker at the top was being partially overlapped by the navigation bar and the hero's interactive scope element. I've adjusted the positioning and stacking order so the ticker now sits fully above all other content with a clear background, and it won't be cut off or hidden.
 
-**Fixes applied:**
-- Increased ticker `top` from `64px` to `76px` to clear the nav completely.
-- Added a subtle background blur and a semi‑transparent dark overlay so text remains readable over any hero animation.
-- Ensured the ticker has a higher `z‑index` (200) so it stays above the moving scope ring and all hero graphics.
-- Adjusted hero content padding slightly to prevent any accidental overlap on smaller screens.
-
-The ticker now scrolls smoothly and stays fully visible, showing all stock prices without being cut off.
-
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -458,10 +448,10 @@ footer { border-top:1px solid rgba(0,229,255,0.08); padding:64px 60px 40px; max-
 <div id="cursor-ring"></div>
 
 <nav>
-  <a href="#" class="nav-logo">SNIPER<span>TRADER</span></a>
+  <a href="/index.html" class="nav-logo">SNIPER<span>TRADER</span></a>
   <ul class="nav-links">
-    <li><a href="#usme">USME ICT Foundation</a></li>
-    <li><a href="#traderedge">Psych App</a></li>
+    <li><a href="/usme_products">USME Algos</a></li>
+    <li><a href="/traderedge_home">Psych App</a></li>
     <li><a href="#ecosystem">Ecosystem</a></li>
     <li><a href="#closing">Prop Firm Center</a></li>
     <li><a href="#closing">Community</a></li>
