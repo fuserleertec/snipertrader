@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sentinel Program Brief — snipertrader.ai Intelligence Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --obsidian:  #070a0f;
+  --obs2:      #0c1018;
+  --obs3:      #111620;
+  --obs4:      #161d2b;
+  --cyan:      #00e5ff;
+  --cyan-dim:  #00b8cc;
+  --cyan-glow: rgba(0,229,255,.16);
+  --gold:      #f0b429;
+  --gold-glow: rgba(240,180,41,.18);
+  --silver:    #c8d8ee;
+  --white:     #f0f6ff;
+  --muted:     #7a99bc;
+  --muted2:    #9ab4d0;
+  --glass:     #0d141f;
+  --gborder:   rgba(0,229,255,.12);
+  --ok:        #00e5a0;
+  --warn:      #f0b429;
+  --fdisplay:  'Orbitron', monospace;
+  --fmono:     'Space Mono', monospace;
+  --fbody:     'Syne', sans-serif;
+}
+
+/* ── LIGHT MODE */
+body.light-mode {
+  --obsidian:  #f0f4f8;
+  --obs2:      #e4eaf2;
+  --obs3:      #d8e0ec;
+  --obs4:      #ccd6e8;
+  --cyan:      #0077aa;
+  --cyan-dim:  #005f88;
+  --cyan-glow: rgba(0,119,170,.16);
+  --gold:      #b07800;
+  --gold-glow: rgba(176,120,0,.18);
+  --silver:    #2a3a4a;
+  --white:     #0a1520;
+  --muted:     #4a6070;
+  --muted2:    #2a3a4a;
+  --glass:     #e8eef6;
+  --gborder:   rgba(0,119,170,.15);
+  --ok:        #007a44;
+  --warn:      #b07800;
+  background:var(--obsidian);
+  color:var(--white);
+}
+body.light-mode #pcanvas { opacity: .15; }
+body.light-mode .classified-banner {
+  background: repeating-linear-gradient(-45deg,rgba(176,120,0,.06) 0,rgba(176,120,0,.06) 12px,transparent 12px,transparent 24px);
+}
+body.light-mode nav { background: rgba(240,244,248,.95); }
+body.light-mode .cover { background: radial-gradient(ellipse 900px 500px at center,rgba(0,119,170,.07) 0%,transparent 65%); }
+body.light-mode .comp-badge.prohibited { color: #cc2040; border-color: rgba(204,32,64,.3); }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--obsidian);color:var(--white);
+  font-family:var(--fbody);overflow-x:hidden;cursor:none;
+}
+
+/* ── GRID OVERLAY */
+body::before{
+  content:'';position:fixed;inset:0;z-index:1;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(0,229,255,.014) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,229,255,.014) 1px,transparent 1px);
+  background-size:80px 80px;
+}
+
+/* ── CURSOR */
+#cring{position:fixed;top:0;left:0;width:28px;height:28px;border:1.5px solid var(--cyan);border-radius:50%;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);mix-blend-mode:screen;}
+#cdot{position:fixed;top:0;left:0;width:4px;height:4px;background:var(--cyan);border-radius:50%;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);}
+
+/* ── PARTICLE BG */
+#pcanvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:.4;}
+
+/* ── NAV */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 40px;height:64px;
+  background:rgba(7,10,15,.92);
+  border-bottom:1px solid rgba(0,229,255,.08);
+  backdrop-filter:blur(20px);
+}
+.nav-logo{font-family:var(--fdisplay);font-size:13px;font-weight:700;letter-spacing:.18em;color:var(--white);text-decoration:none;display:flex;align-items:center;gap:10px;}
+.nav-logo span{color:var(--cyan);}
+.nav-logo::before{content:'⊕';font-size:16px;color:var(--cyan);text-shadow:0 0 12px var(--cyan);}
+.nav-links{display:flex;gap:36px;list-style:none;}
+.nav-links a{font-family:var(--fmono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--silver);text-decoration:none;transition:color .2s;}
+.nav-links a:hover{color:var(--cyan);}
+.nav-back{font-family:var(--fdisplay);font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;padding:9px 20px;border:1px solid rgba(0,229,255,.18);color:var(--silver);background:transparent;text-decoration:none;transition:border-color .2s,color .2s;}
+.nav-back:hover{border-color:var(--cyan);color:var(--cyan);}
+.theme-toggle{
+  font-size:16px;background:transparent;border:1px solid rgba(0,229,255,.18);
+  color:var(--silver);cursor:pointer;padding:7px 12px;margin-left:12px;
+  transition:border-color .2s,color .2s,transform .3s;line-height:1;
+}
+.theme-toggle:hover{border-color:var(--cyan);color:var(--cyan);}
+body.light-mode .theme-toggle{border-color:rgba(0,119,170,.3);}
+
+/* ── LAYOUT */
+.page{position:relative;z-index:10;padding-top:64px;}
+
+/* ── CLASSIFIED BANNER */
+.classified-banner{
+  background:repeating-linear-gradient(
+    -45deg,
+    rgba(240,180,41,.06) 0,rgba(240,180,41,.06) 12px,
+    transparent 12px,transparent 24px
+  );
+  border-top:1px solid rgba(240,180,41,.2);
+  border-bottom:1px solid rgba(240,180,41,.2);
+  padding:10px 40px;
+  display:flex;align-items:center;justify-content:center;gap:32px;
+}
+.classified-text{
+  font-family:var(--fmono);font-size:9px;letter-spacing:.4em;
+  text-transform:uppercase;color:var(--gold);
+  display:flex;align-items:center;gap:12px;
+}
+.classified-text::before,.classified-text::after{content:'◈';color:var(--gold);opacity:.6;}
+
+/* ── COVER */
+.cover{
+  min-height:90vh;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  text-align:center;padding:80px 40px 60px;
+  position:relative;overflow:hidden;
+  background:radial-gradient(ellipse 900px 500px at center,rgba(0,229,255,.05) 0%,transparent 65%);
+}
+.cover-meta{
+  font-family:var(--fmono);font-size:8px;letter-spacing:.3em;
+  color:var(--muted);text-transform:uppercase;margin-bottom:40px;
+  border:1px solid rgba(0,229,255,.08);padding:10px 24px;
+  display:inline-flex;gap:32px;
+}
+.cover-meta span{color:var(--muted2);}
+.cover-seal{
+  width:80px;height:80px;border-radius:50%;
+  border:1px solid rgba(0,229,255,.2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:32px;margin:0 auto 32px;
+  background:rgba(0,229,255,.03);
+  box-shadow:0 0 40px rgba(0,229,255,.1),inset 0 0 20px rgba(0,229,255,.04);
+  animation:sealPulse 3s ease-in-out infinite;
+}
+@keyframes sealPulse{0%,100%{box-shadow:0 0 40px rgba(0,229,255,.1),inset 0 0 20px rgba(0,229,255,.04)}50%{box-shadow:0 0 80px rgba(0,229,255,.2),inset 0 0 30px rgba(0,229,255,.08)}}
+.cover-eyebrow{
+  font-family:var(--fmono);font-size:9px;letter-spacing:.4em;
+  color:var(--cyan);text-transform:uppercase;margin-bottom:20px;
+  opacity:.7;
+}
+.cover-title{
+  font-family:var(--fdisplay);font-size:clamp(36px,6vw,72px);
+  font-weight:900;letter-spacing:.05em;text-transform:uppercase;
+  line-height:1.0;margin-bottom:10px;
+}
+.cover-title .t1{color:var(--white);}
+.cover-title .t2{color:var(--cyan);text-shadow:0 0 40px rgba(0,229,255,.4),0 0 80px rgba(0,229,255,.15);}
+.cover-sub{
+  font-family:var(--fmono);font-size:10px;letter-spacing:.25em;
+  color:var(--muted2);text-transform:uppercase;margin-bottom:48px;
+}
+.cover-desc{
+  font-size:16px;line-height:1.8;color:var(--muted2);
+  max-width:600px;margin:0 auto 56px;
+}
+.cover-desc em{color:var(--cyan);font-style:normal;font-weight:600;}
+
+/* ── TOC */
+.toc-block{
+  border:1px solid rgba(0,229,255,.1);
+  background:rgba(0,229,255,.02);
+  padding:40px 48px;max-width:600px;margin:0 auto;
+  text-align:left;
+}
+.toc-title{
+  font-family:var(--fdisplay);font-size:9px;font-weight:700;
+  letter-spacing:.3em;text-transform:uppercase;
+  color:var(--cyan);margin-bottom:24px;opacity:.7;
+}
+.toc-list{list-style:none;display:flex;flex-direction:column;gap:0;}
+.toc-list li{
+  display:flex;align-items:center;gap:16px;
+  padding:10px 0;border-bottom:1px solid rgba(0,229,255,.05);
+  cursor:pointer;transition:all .2s;
+}
+.toc-list li:last-child{border-bottom:none;}
+.toc-list li:hover .toc-link{color:var(--cyan);}
+.toc-list li:hover .toc-num{opacity:1;}
+.toc-num{
+  font-family:var(--fdisplay);font-size:9px;font-weight:700;
+  letter-spacing:.2em;color:var(--cyan);opacity:.35;
+  width:28px;flex-shrink:0;transition:opacity .2s;
+}
+.toc-link{
+  font-family:var(--fmono);font-size:11px;letter-spacing:.1em;
+  color:var(--muted2);text-decoration:none;
+  transition:color .2s;flex:1;
+}
+.toc-dot{
+  width:4px;height:4px;border-radius:50%;
+  background:var(--muted);opacity:.3;flex-shrink:0;
+}
+
+/* ── DIVIDER */
+.divider{width:100%;height:1px;background:linear-gradient(to right,transparent,rgba(0,229,255,.15),transparent);}
+
+/* ── SECTION */
+.section{
+  max-width:1100px;margin:0 auto;
+  padding:100px 48px;
+}
+.section-header{margin-bottom:64px;}
+.section-code{
+  font-family:var(--fmono);font-size:8px;letter-spacing:.35em;
+  color:var(--cyan);text-transform:uppercase;opacity:.55;
+  margin-bottom:12px;display:flex;align-items:center;gap:10px;
+}
+.section-code::before{content:'//';}
+.section-title{
+  font-family:var(--fdisplay);font-size:clamp(24px,3.5vw,42px);
+  font-weight:900;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--white);line-height:1.0;margin-bottom:16px;
+}
+.section-title span{color:var(--cyan);}
+.section-lead{
+  font-size:15px;line-height:1.8;color:var(--muted2);
+  max-width:680px;
+}
+.section-lead em{color:var(--white);font-style:normal;font-weight:600;}
+
+/* ── PROSE */
+.prose{
+  font-size:14px;line-height:1.9;color:var(--muted2);
+  max-width:760px;
+}
+.prose p{margin-bottom:20px;}
+.prose p:last-child{margin-bottom:0;}
+.prose em{color:var(--white);font-style:normal;font-weight:600;}
+.prose strong{color:var(--cyan);}
+.prose a{color:var(--cyan);text-decoration:none;border-bottom:1px solid rgba(0,229,255,.2);}
+
+/* ── CALLOUT */
+.callout{
+  border-left:2px solid var(--cyan);
+  background:rgba(0,229,255,.03);
+  padding:20px 24px;margin:28px 0;
+  font-size:14px;line-height:1.7;color:var(--silver);
+}
+.callout.gold{border-left-color:var(--gold);background:rgba(240,180,41,.03);}
+.callout-label{
+  font-family:var(--fmono);font-size:8px;letter-spacing:.25em;
+  text-transform:uppercase;color:var(--cyan);margin-bottom:8px;
+  display:flex;align-items:center;gap:8px;
+}
+.callout.gold .callout-label{color:var(--gold);}
+
+/* ── INFO GRID */
+.info-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:2px;
+  margin-top:40px;
+}
+.info-cell{
+  background:var(--glass);
+  border:1px solid rgba(0,229,255,.07);
+  padding:32px 36px;
+  transition:border-color .25s;
+  position:relative;overflow:hidden;
+}
+.info-cell::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;
+  height:1px;background:linear-gradient(to right,var(--cyan),transparent);
+  transform:scaleX(0);transform-origin:left;
+  transition:transform .3s;
+}
+.info-cell:hover{border-color:rgba(0,229,255,.2);}
+.info-cell:hover::after{transform:scaleX(1);}
+.info-cell-icon{font-size:22px;margin-bottom:16px;display:block;}
+.info-cell h4{
+  font-family:var(--fdisplay);font-size:11px;font-weight:700;
+  letter-spacing:.15em;text-transform:uppercase;
+  color:var(--white);margin-bottom:10px;
+}
+.info-cell p{font-size:13px;line-height:1.7;color:var(--muted2);}
+.info-cell p strong{color:var(--cyan);}
+
+/* ── TIER TABLE */
+.tier-table{width:100%;border-collapse:collapse;margin-top:40px;}
+.tier-table thead tr{border-bottom:1px solid rgba(0,229,255,.15);}
+.tier-table th{
+  font-family:var(--fmono);font-size:8px;letter-spacing:.25em;
+  text-transform:uppercase;color:var(--cyan);opacity:.6;
+  padding:12px 20px;text-align:left;font-weight:400;
+}
+.tier-table tbody tr{
+  border-bottom:1px solid rgba(0,229,255,.05);
+  transition:background .2s;
+}
+.tier-table tbody tr:hover{background:rgba(0,229,255,.025);}
+.tier-table td{
+  padding:20px;font-size:13px;color:var(--muted2);
+  vertical-align:top;
+}
+.tier-table td:first-child{width:100px;}
+.tier-name-tag{
+  font-family:var(--fdisplay);font-size:10px;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;
+  padding:5px 12px;display:inline-block;
+  border:1px solid;
+}
+.tier-name-tag.r{color:#3a5070;border-color:#1a2a3a;}
+.tier-name-tag.o{color:var(--silver);border-color:rgba(143,163,192,.3);}
+.tier-name-tag.c{color:var(--cyan);border-color:rgba(0,229,255,.3);background:rgba(0,229,255,.04);}
+.tier-name-tag.g{color:var(--gold);border-color:rgba(240,180,41,.35);background:rgba(240,180,41,.04);}
+.tier-pct{
+  font-family:var(--fdisplay);font-size:15px;font-weight:900;
+  color:var(--white);white-space:nowrap;
+}
+.tier-table td.cyan .tier-pct{color:var(--cyan);}
+.tier-table td.gold-c .tier-pct{color:var(--gold);}
+
+/* ── COMMISSION BREAKDOWN */
+.commission-stack{
+  display:flex;flex-direction:column;gap:2px;margin-top:40px;
+}
+.com-row{
+  display:grid;grid-template-columns:220px 1fr auto;
+  align-items:center;gap:0;
+  background:var(--glass);
+  border:1px solid rgba(0,229,255,.07);
+  padding:22px 28px;
+  transition:border-color .2s;
+}
+.com-row:hover{border-color:rgba(0,229,255,.18);}
+.com-label{
+  font-family:var(--fdisplay);font-size:10px;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--white);
+}
+.com-desc{font-size:12px;color:var(--muted2);line-height:1.5;padding:0 24px;}
+.com-value{
+  font-family:var(--fdisplay);font-size:18px;font-weight:900;
+  color:var(--cyan);text-align:right;white-space:nowrap;
+}
+.com-value.gold-v{color:var(--gold);}
+.com-value.silver-v{color:var(--silver);}
+.com-value.muted-v{color:var(--muted2);}
+
+/* ── CONTENT PLAYBOOK */
+.playbook-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:2px;
+  margin-top:40px;
+}
+.playbook-card{
+  background:var(--glass);border:1px solid rgba(0,229,255,.07);
+  padding:36px 28px;
+  transition:border-color .25s,transform .25s;
+  position:relative;overflow:hidden;
+}
+.playbook-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;
+  height:2px;background:transparent;transition:background .3s;
+}
+.playbook-card:hover{border-color:rgba(0,229,255,.22);transform:translateY(-3px);}
+.playbook-card:hover::before{background:linear-gradient(to right,var(--cyan),transparent);}
+.playbook-tag{
+  font-family:var(--fmono);font-size:8px;letter-spacing:.25em;
+  text-transform:uppercase;color:var(--cyan);opacity:.55;
+  margin-bottom:14px;
+}
+.playbook-card h4{
+  font-family:var(--fdisplay);font-size:12px;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;
+  color:var(--white);margin-bottom:14px;
+}
+.playbook-card ul{
+  list-style:none;display:flex;flex-direction:column;gap:10px;
+}
+.playbook-card li{
+  font-size:12px;color:var(--muted2);line-height:1.5;
+  padding-left:14px;position:relative;
+}
+.playbook-card li::before{content:'›';position:absolute;left:0;color:var(--cyan);opacity:.5;}
+.playbook-card li strong{color:var(--silver);}
+
+/* ── COMPLIANCE TABLE */
+.compliance-block{
+  display:flex;flex-direction:column;gap:2px;margin-top:40px;
+}
+.comp-row{
+  display:grid;grid-template-columns:28px 1fr auto;
+  align-items:flex-start;gap:20px;
+  padding:20px 24px;
+  background:var(--glass);border:1px solid rgba(0,229,255,.07);
+}
+.comp-icon{
+  font-size:14px;padding-top:2px;flex-shrink:0;
+}
+.comp-text{font-size:13px;color:var(--muted2);line-height:1.6;}
+.comp-text strong{color:var(--white);}
+.comp-badge{
+  font-family:var(--fmono);font-size:8px;letter-spacing:.15em;
+  text-transform:uppercase;padding:5px 10px;flex-shrink:0;
+  border:1px solid;white-space:nowrap;
+}
+.comp-badge.required{color:var(--cyan);border-color:rgba(0,229,255,.25);}
+.comp-badge.prohibited{color:#ff4060;border-color:rgba(255,64,96,.25);}
+.comp-badge.best{color:var(--ok);border-color:rgba(0,229,160,.25);}
+
+/* ── PAYOUT TIMELINE */
+.payout-track{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:2px;
+  margin-top:40px;position:relative;
+}
+.payout-track::before{
+  content:'';position:absolute;top:32px;left:10%;right:10%;
+  height:1px;background:linear-gradient(to right,var(--cyan),rgba(0,229,255,.2));
+  z-index:0;
+}
+.payout-node{
+  background:var(--glass);border:1px solid rgba(0,229,255,.08);
+  padding:28px 24px;position:relative;z-index:1;
+  text-align:center;transition:border-color .2s;
+}
+.payout-node:hover{border-color:rgba(0,229,255,.25);}
+.payout-circle{
+  width:32px;height:32px;border-radius:50%;
+  border:1px solid var(--cyan);background:rgba(0,229,255,.07);
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 16px;
+  font-family:var(--fdisplay);font-size:9px;font-weight:700;
+  color:var(--cyan);
+}
+.payout-month{
+  font-family:var(--fdisplay);font-size:10px;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;
+  color:var(--white);margin-bottom:8px;
+}
+.payout-desc{font-size:11px;color:var(--muted2);line-height:1.5;}
+
+/* ── TOOLS LIST */
+.tools-list{
+  display:grid;grid-template-columns:1fr 1fr;gap:2px;
+  margin-top:40px;
+}
+.tool-item{
+  display:flex;align-items:flex-start;gap:16px;
+  background:var(--glass);border:1px solid rgba(0,229,255,.07);
+  padding:24px 28px;transition:border-color .2s;
+}
+.tool-item:hover{border-color:rgba(0,229,255,.2);}
+.tool-icon{font-size:20px;flex-shrink:0;padding-top:2px;}
+.tool-info h5{
+  font-family:var(--fdisplay);font-size:10px;font-weight:700;
+  letter-spacing:.15em;text-transform:uppercase;
+  color:var(--white);margin-bottom:6px;
+}
+.tool-info p{font-size:12px;color:var(--muted2);line-height:1.5;}
+.tool-info p strong{color:var(--cyan);}
+
+/* ── FAQ */
+.faq-list{display:flex;flex-direction:column;gap:2px;margin-top:40px;}
+.faq-item{
+  background:var(--glass);border:1px solid rgba(0,229,255,.07);
+  overflow:hidden;
+}
+.faq-q{
+  display:flex;align-items:center;justify-content:space-between;gap:20px;
+  padding:22px 28px;cursor:pointer;
+  transition:background .2s;
+}
+.faq-q:hover{background:rgba(0,229,255,.025);}
+.faq-q-text{
+  font-family:var(--fdisplay);font-size:11px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--white);
+}
+.faq-toggle{
+  width:24px;height:24px;flex-shrink:0;
+  border:1px solid rgba(0,229,255,.2);color:var(--cyan);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;transition:transform .3s,background .2s;
+}
+.faq-item.open .faq-toggle{transform:rotate(45deg);background:rgba(0,229,255,.08);}
+.faq-a{
+  display:none;padding:0 28px 22px;
+  font-size:13px;line-height:1.8;color:var(--muted2);
+  border-top:1px solid rgba(0,229,255,.05);padding-top:18px;
+}
+.faq-item.open .faq-a{display:block;}
+.faq-a strong{color:var(--white);}
+.faq-a em{color:var(--cyan);font-style:normal;}
+
+/* ── FINAL CTA */
+.final{
+  text-align:center;padding:120px 40px;
+  background:radial-gradient(ellipse 800px 400px at center,rgba(0,229,255,.06) 0%,transparent 70%);
+  border-top:1px solid rgba(0,229,255,.07);
+}
+.final h2{
+  font-family:var(--fdisplay);font-size:clamp(28px,4vw,52px);
+  font-weight:900;letter-spacing:.05em;text-transform:uppercase;
+  line-height:1.0;margin-bottom:20px;
+}
+.final h2 span{color:var(--cyan);}
+.final p{font-size:15px;color:var(--muted2);max-width:500px;margin:0 auto 44px;line-height:1.7;}
+.final-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;}
+.btn-p{
+  font-family:var(--fdisplay);font-size:10px;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;
+  padding:16px 40px;background:var(--cyan);color:var(--obsidian);
+  text-decoration:none;border:none;cursor:pointer;
+  transition:box-shadow .25s,transform .2s;
+}
+.btn-p:hover{box-shadow:0 0 50px rgba(0,229,255,.45);transform:translateY(-2px);}
+.btn-o{
+  font-family:var(--fdisplay);font-size:10px;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;
+  padding:16px 40px;background:transparent;color:var(--white);
+  border:1px solid rgba(255,255,255,.12);text-decoration:none;
+  transition:border-color .2s,color .2s;
+}
+.btn-o:hover{border-color:var(--cyan);color:var(--cyan);}
+
+/* ── FOOTER */
+footer{
+  background:var(--obs2);border-top:1px solid rgba(0,229,255,.07);
+  padding:72px 80px 40px;position:relative;z-index:10;
+}
+.footer-top{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:48px;margin-bottom:56px;}
+.footer-brand{display:flex;flex-direction:column;gap:14px;}
+.footer-logo{font-family:var(--fdisplay);font-size:12px;font-weight:700;letter-spacing:.2em;color:var(--white);display:flex;align-items:center;gap:10px;}
+.footer-logo span{color:var(--cyan);}
+.footer-logo::before{content:'⊕';font-size:18px;color:var(--cyan);text-shadow:0 0 12px var(--cyan);}
+.footer-tagline{font-family:var(--fmono);font-size:10px;letter-spacing:.12em;color:var(--muted);line-height:1.6;}
+.footer-col h4{font-family:var(--fdisplay);font-size:8px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:var(--cyan);margin-bottom:18px;}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:9px;}
+.footer-col a{font-size:12px;color:var(--muted);text-decoration:none;transition:color .2s;letter-spacing:.02em;}
+.footer-col a:hover{color:var(--cyan);}
+.footer-bottom{border-top:1px solid rgba(255,255,255,.04);padding-top:28px;display:flex;align-items:center;justify-content:space-between;}
+.footer-copy{font-family:var(--fmono);font-size:9px;letter-spacing:.12em;color:var(--muted);}
+.footer-legal{display:flex;gap:20px;}
+.footer-legal a{font-family:var(--fmono);font-size:9px;letter-spacing:.1em;color:var(--muted);text-decoration:none;transition:color .2s;}
+.footer-legal a:hover{color:var(--cyan);}
+
+/* ── SIDEBAR ANCHORS */
+.side-anchors{
+  position:fixed;right:28px;top:50%;transform:translateY(-50%);
+  z-index:500;display:flex;flex-direction:column;gap:10px;
+}
+.anchor-pip{
+  width:6px;height:6px;border-radius:50%;
+  background:rgba(0,229,255,.2);border:none;
+  cursor:pointer;transition:background .2s,transform .2s;
+  padding:0;
+}
+.anchor-pip:hover,.anchor-pip.active{background:var(--cyan);transform:scale(1.5);}
+
+/* ── PRINT STRIP */
+.print-strip{
+  display:flex;align-items:center;justify-content:flex-end;
+  gap:12px;padding:12px 48px;
+  border-bottom:1px solid rgba(0,229,255,.06);
+  background:rgba(0,229,255,.015);
+}
+.print-btn{
+  font-family:var(--fmono);font-size:8px;letter-spacing:.2em;
+  text-transform:uppercase;padding:7px 16px;
+  border:1px solid rgba(0,229,255,.15);background:transparent;
+  color:var(--muted2);cursor:pointer;transition:border-color .2s,color .2s;
+}
+.print-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+
+/* ── ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease;}
+.reveal.in{opacity:1;transform:none;}
+
+/* ── RESPONSIVE */
+@media(max-width:900px){
+  .info-grid,.playbook-grid,.tools-list{grid-template-columns:1fr;}
+  .payout-track{grid-template-columns:1fr 1fr;}
+  .payout-track::before{display:none;}
+  .footer-top{grid-template-columns:1fr 1fr;}
+  .com-row{grid-template-columns:1fr;gap:8px;}
+  nav{padding:0 16px;}
+  .nav-links{display:none;}
+  .section{padding:72px 20px;}
+  .side-anchors{display:none;}
+  footer{padding:60px 20px 32px;}
+}
+</style>
+</head>
+<body>
+
+<div id="cring"></div>
+<div id="cdot"></div>
+<canvas id="pcanvas"></canvas>
+
+<!-- SIDE ANCHORS -->
+<div class="side-anchors" id="sideAnchors"></div>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">Sniper<span>Trader</span></a>
+  <ul class="nav-links">
+    <li><a href="#">USME Algo</a></li>
+    <li><a href="#">Psych App</a></li>
+    <li><a href="#">Ecosystem</a></li>
+    <li><a href="#">Community</a></li>
+  </ul>
+  <a href="sentinel-program.html" class="nav-back">← Sentinel Program</a>
+  <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle light/dark mode">◑</button>
+</nav>
+
+<div class="page">
+
+  <!-- CLASSIFIED BANNER -->
+  <div class="classified-banner">
+    <div class="classified-text">Classified — Approved Sentinels Only</div>
+  </div>
+
+  <!-- PRINT STRIP -->
+  <div class="print-strip">
+    <button class="print-btn" onclick="window.print()">⊙ Print Brief</button>
+    <button class="print-btn" onclick="downloadBrief()">↓ Save PDF</button>
+  </div>
+
+  <!-- COVER -->
+  <div class="cover" id="sec-cover">
+    <div class="cover-meta">
+      <span>Issue: Q2 2026</span>
+      <span>Version: 2.1</span>
+      <span>Classification: Restricted</span>
+    </div>
+    <div class="cover-seal">◈</div>
+    <div class="cover-eyebrow">The Sentinel Program — Onboarding Brief</div>
+    <h1 class="cover-title">
+      <div class="t1">Operative</div>
+      <div class="t2">Intelligence Brief</div>
+    </h1>
+    <p class="cover-sub">snipertrader.ai Intelligence Platform · Affiliate Division</p>
+    <p class="cover-desc">
+      This document is your complete operational guide to deploying as a Sentinel.
+      It covers <em>commission architecture</em>, <em>content playbooks</em>,
+      <em>brand compliance rules</em>, and the <em>payout system</em>—everything
+      you need to build authority and generate income inside the snipertrader.ai MOAT.
+    </p>
+    <div class="toc-block">
+      <div class="toc-title">// Document Contents</div>
+      <ul class="toc-list">
+        <li onclick="scrollTo('sec-mission')"><span class="toc-num">01</span><a class="toc-link" href="#sec-mission">Mission & Philosophy</a><div class="toc-dot"></div></li>
+        <li onclick="scrollTo('sec-tiers')"><span class="toc-num">02</span><a class="toc-link" href="#sec-tiers">Tier Structure & Requirements</a><div class="toc-dot"></div></li>
+        <li onclick="scrollTo('sec-commission')"><span class="toc-num">03</span><a class="toc-link" href="#sec-commission">Commission Architecture</a><div class="toc-dot"></div></li>
+        <li onclick="scrollTo('sec-playbook')"><span class="toc-num">04</span><a class="toc-link" href="#sec-playbook">Content Playbooks by Platform</a><div class="toc-dot"></div></li>
+        <li onclick="scrollTo('sec-compliance')"><span class="toc-num">05</span><a class="toc-link" href="#sec-compliance">Brand & Compliance Rules</a><div class="toc-dot"></div></li>
+        <li onclick="scrollTo('sec-payout')"><span class="toc-num">06</span><a class="toc-link" href="#sec-payout">Payout System & Timelines</a><div class="toc-dot"></div></li>
+        <li onclick="scrollTo('sec-tools')"><span class="toc-num">07</span><a class="toc-link" href="#sec-tools">Sentinel Asset Toolkit</a><div class="toc-dot"></div></li>
+        <li onclick="scrollTo('sec-faq')"><span class="toc-num">08</span><a class="toc-link" href="#sec-faq">FAQ & Intelligence Notes</a><div class="toc-dot"></div></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ── 01 MISSION ── -->
+  <div class="section reveal" id="sec-mission">
+    <div class="section-header">
+      <div class="section-code">01 — Mission & Philosophy</div>
+      <h2 class="section-title">Why The <span>Sentinel Program</span><br>Is Different</h2>
+      <p class="section-lead">Most affiliate programs pay you to paste links. The Sentinel Program pays you to <em>become an authority</em>. There is a significant difference—and it shows in what you earn.</p>
+    </div>
+    <div class="prose">
+      <p>The snipertrader.ai ecosystem was built for a specific operator: a disciplined day trader who uses ICT/SMC methodology and wants an institutional-grade edge—precision entries via the USME Algo, psychological discipline via the Psych App, and the infrastructure to get and stay funded at a prop firm.</p>
+      <p>That specificity is the Sentinel Program's greatest asset. When you build authority in the ICT/SMC space and authentically integrate snipertrader.ai products into your content and community, you are not running ads—you are demonstrating mastery. Your audience converts at dramatically higher rates because they trust your judgment as a fellow trader.</p>
+      <div class="callout">
+        <div class="callout-label">◈ Core Principle</div>
+        The Sentinel Program rewards <strong>depth of integration</strong>, not volume of links. A Sentinel who teaches USME methodology, runs a Discord, and posts consistent chart analysis will outperform a high-follower influencer who drops a link twice a month—every time.
+      </div>
+      <p>Your role as a Sentinel is threefold: <strong>educator</strong>, <strong>community builder</strong>, and <strong>authentic advocate</strong>. You are not a middleman. You are an extension of the snipertrader.ai intelligence network—and you are compensated accordingly.</p>
+      <div class="callout gold">
+        <div class="callout-label">✦ Ghost Protocol Note</div>
+        The highest tier in the program—Ghost Protocol—is not sold or applied for directly. It is earned through demonstrated impact and nominated by the snipertrader.ai team. <strong>Build your authority. The nomination finds you.</strong>
+      </div>
+    </div>
+    <div class="info-grid">
+      <div class="info-cell">
+        <span class="info-cell-icon">◎</span>
+        <h4>Authentic Operator Model</h4>
+        <p>We exclusively recruit <strong>active traders</strong> who use ICT/SMC concepts in their own trading. Your credibility is built on actual methodology—not marketing copy.</p>
+      </div>
+      <div class="info-cell">
+        <span class="info-cell-icon">⬡</span>
+        <h4>Ecosystem-Depth Rewards</h4>
+        <p>Commissions increase when referrals purchase <strong>multiple products</strong>. Teaching the full ecosystem—USME + Psych App + Prop tools—maximizes your earning per referral.</p>
+      </div>
+      <div class="info-cell">
+        <span class="info-cell-icon">◈</span>
+        <h4>Lifetime Recurring Revenue</h4>
+        <p>Every active subscriber you refer pays commission <strong>every single month</strong>. Your revenue compounds as long as they stay subscribed—zero additional effort required.</p>
+      </div>
+      <div class="info-cell">
+        <span class="info-cell-icon">⟡</span>
+        <h4>Intelligence Network Effects</h4>
+        <p>Commander and Ghost tiers earn override commissions on every Sentinel they bring in. <strong>Your network's performance becomes your passive income layer.</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ── 02 TIERS ── -->
+  <div class="section reveal" id="sec-tiers">
+    <div class="section-header">
+      <div class="section-code">02 — Tier Structure & Requirements</div>
+      <h2 class="section-title">The Four <span>Intelligence Ranks</span></h2>
+      <p class="section-lead">Tier advancement is <em>automatic</em> once qualifications are met. There are no applications, no waiting periods, and no arbitrary gatekeeping—your metrics trigger the upgrade.</p>
+    </div>
+    <table class="tier-table">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Codename</th>
+          <th>Qualification Requirements</th>
+          <th>Commission</th>
+          <th>Recurring</th>
+          <th>Sub-Affiliate</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="tier-name-tag r">01</span></td>
+          <td style="color:var(--silver);font-family:var(--fdisplay);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;">Recruit</td>
+          <td>Application approved · Onboarding brief completed</td>
+          <td class=""><span class="tier-pct" style="color:var(--muted2);">20%</span></td>
+          <td style="color:var(--muted)">—</td>
+          <td style="color:var(--muted)">—</td>
+        </tr>
+        <tr>
+          <td><span class="tier-name-tag o">02</span></td>
+          <td style="color:var(--silver);font-family:var(--fdisplay);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;">Operative</td>
+          <td>5+ active referrals · Published content (YouTube / X / TikTok) · snipertrader.ai in bio</td>
+          <td class="cyan"><span class="tier-pct" style="color:var(--silver);">25%</span></td>
+          <td style="color:var(--silver);font-family:var(--fdisplay);font-size:13px;font-weight:700;">15%</td>
+          <td style="color:var(--muted)">—</td>
+        </tr>
+        <tr>
+          <td><span class="tier-name-tag c">03</span></td>
+          <td style="color:var(--cyan);font-family:var(--fdisplay);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;">Commander</td>
+          <td>25+ active referrals · Community / Discord 500+ members · Regular USME/ICT content</td>
+          <td><span class="tier-pct" style="color:var(--cyan);">32%</span></td>
+          <td style="color:var(--cyan);font-family:var(--fdisplay);font-size:13px;font-weight:700;">22%</td>
+          <td style="color:var(--cyan);font-family:var(--fdisplay);font-size:13px;font-weight:700;">5%</td>
+        </tr>
+        <tr>
+          <td><span class="tier-name-tag g">04</span></td>
+          <td style="color:var(--gold);font-family:var(--fdisplay);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;">Ghost Protocol</td>
+          <td>100+ active referrals · Flagship content creator · Co-developed content · <strong style="color:var(--gold)">Invite only</strong></td>
+          <td><span class="tier-pct" style="color:var(--gold);">40%</span></td>
+          <td style="color:var(--gold);font-family:var(--fdisplay);font-size:13px;font-weight:700;">30%</td>
+          <td style="color:var(--gold);font-family:var(--fdisplay);font-size:13px;font-weight:700;">10%</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="callout" style="margin-top:32px;">
+      <div class="callout-label">◈ Rank Protection Policy</div>
+      Achieved tier status is protected for <strong>90 days</strong> during low-activity periods. We do not penalize Sentinels for a single slow month. Sustained contribution over a rolling quarter determines rank maintenance.
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ── 03 COMMISSION ── -->
+  <div class="section reveal" id="sec-commission">
+    <div class="section-header">
+      <div class="section-code">03 — Commission Architecture</div>
+      <h2 class="section-title">How Your <span>Revenue Stacks</span></h2>
+      <p class="section-lead">The Sentinel commission model is <em>additive</em>—multiple income streams compound simultaneously. Here is every layer broken down.</p>
+    </div>
+    <div class="commission-stack">
+      <div class="com-row">
+        <div class="com-label">Base Commission</div>
+        <div class="com-desc">Earned on every completed sale attributed to your link. Calculated on <strong>net revenue</strong> after refunds, chargebacks, and processing fees. Paid monthly, net-15 after close.</div>
+        <div class="com-value">20–40%</div>
+      </div>
+      <div class="com-row">
+        <div class="com-label">Recurring Commission</div>
+        <div class="com-desc">Operative+ tiers earn a percentage of every renewal charge while the referred customer remains subscribed. No action required—compounds automatically each billing cycle.</div>
+        <div class="com-value silver-v">15–30%</div>
+      </div>
+      <div class="com-row">
+        <div class="com-label">Ecosystem Bundle Bonus</div>
+        <div class="com-desc">When a referred customer purchases multiple snipertrader.ai products in the same session or within a 30-day window, you earn a bonus on the combined basket value.</div>
+        <div class="com-value gold-v">+3–8%</div>
+      </div>
+      <div class="com-row">
+        <div class="com-label">Sub-Affiliate Override</div>
+        <div class="com-desc">Commander and Ghost tiers earn an override on every sale made by Sentinels they directly sponsored into the program. Paid on top of the sub-affiliate's own commission—not deducted from it.</div>
+        <div class="com-value" style="color:var(--ok)">5–10%</div>
+      </div>
+      <div class="com-row">
+        <div class="com-label">Content Authority Bonus</div>
+        <div class="com-desc">Verified content creators who publish original USME/ICT methodology content earn a monthly performance bonus based on referral attribution from published content. Requires Operative or higher.</div>
+        <div class="com-value muted-v">Variable</div>
+      </div>
+      <div class="com-row">
+        <div class="com-label">Prop Firm Track Commission</div>
+        <div class="com-desc">Referrals who join the 30-Day Funded Challenge or use the Prop Firm Command Center generate a dedicated commission stream separate from product commissions.</div>
+        <div class="com-value muted-v">Dedicated</div>
+      </div>
+      <div class="com-row">
+        <div class="com-label">Ghost Revenue Share</div>
+        <div class="com-desc">Ghost Protocol Sentinels who co-develop content, courses, or product integrations with snipertrader.ai earn a revenue share on all sales that product generates—in perpetuity.</div>
+        <div class="com-value gold-v">Negotiated</div>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:32px;">
+      <div class="callout-label">◈ Attribution Window</div>
+      Recruit: <strong>60-day</strong> cookie. Operative: <strong>90-day</strong> cookie. Commander & Ghost: <strong>180-day</strong> persistent attribution. Last-click wins unless the original attribution is within a Commander/Ghost window—in which case the senior attribution takes precedence.
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ── 04 PLAYBOOK ── -->
+  <div class="section reveal" id="sec-playbook">
+    <div class="section-header">
+      <div class="section-code">04 — Content Playbooks by Platform</div>
+      <h2 class="section-title">Deployment <span>Strategies</span></h2>
+      <p class="section-lead">The most effective Sentinels integrate snipertrader.ai into their content <em>authentically</em>—as a tool they actually use, not a product they sell. These playbooks show you how.</p>
+    </div>
+    <div class="playbook-grid">
+      <div class="playbook-card">
+        <div class="playbook-tag">Platform 01</div>
+        <h4>YouTube / Long-Form</h4>
+        <ul>
+          <li><strong>USME Setup Walkthroughs</strong> — Show SOTD alerts in live chart analysis</li>
+          <li><strong>Prop Firm Challenge Series</strong> — Document a funded challenge using USME signals</li>
+          <li><strong>ICT Concept + Tool Integration</strong> — Teach a concept, show how USME identifies it automatically</li>
+          <li><strong>Weekly Market Briefings</strong> — Use USME's Pre-Market Baseline as the foundation</li>
+          <li>Place affiliate link in pinned comment, description (first 150 chars), and end-screen</li>
+        </ul>
+      </div>
+      <div class="playbook-card">
+        <div class="playbook-tag">Platform 02</div>
+        <h4>X / Twitter</h4>
+        <ul>
+          <li><strong>Trade Recaps</strong> — Post chart screenshots with USME signal visible, link in bio or reply</li>
+          <li><strong>Daily Pre-Market Posts</strong> — Share your baseline read, mention the tool</li>
+          <li><strong>ICT Thread Series</strong> — Teach a concept per week, link snipertrader.ai in final tweet</li>
+          <li><strong>Prop Firm Progress Updates</strong> — Public accountability builds trust and referrals</li>
+          <li>Pin a master thread to profile: "Tools I Use to Stay Funded"</li>
+        </ul>
+      </div>
+      <div class="playbook-card">
+        <div class="playbook-tag">Platform 03</div>
+        <h4>TikTok / Short-Form</h4>
+        <ul>
+          <li><strong>60-Second ICT Concepts</strong> — Teach one concept, end with "I use USME for this"</li>
+          <li><strong>Trade Result Reveals</strong> — Show entry/exit, reveal the signal source</li>
+          <li><strong>Prop Firm Challenge Clips</strong> — Day-in-life of a funded trader using the tools</li>
+          <li><strong>Algo vs. Manual Comparisons</strong> — Side-by-side entry quality demonstrations</li>
+          <li>Link in bio with Linktree or direct affiliate URL</li>
+        </ul>
+      </div>
+      <div class="playbook-card">
+        <div class="playbook-tag">Platform 04</div>
+        <h4>Discord / Community</h4>
+        <ul>
+          <li><strong>Daily Signal Channel</strong> — Post USME alerts in real time (with disclaimer)</li>
+          <li><strong>USME Setup-of-the-Day</strong> — Teach one SOTD setup per session to your community</li>
+          <li><strong>Funded Trader Tracker</strong> — Track members who pass props using snipertrader.ai</li>
+          <li><strong>Weekly snipertrader.ai Review</strong> — Dedicated channel for product discussion and Q&A</li>
+          <li>Pin affiliate link in #resources channel and server description</li>
+        </ul>
+      </div>
+      <div class="playbook-card">
+        <div class="playbook-tag">Platform 05</div>
+        <h4>Newsletter / Substack</h4>
+        <ul>
+          <li><strong>Weekly Market Narrative</strong> — Structure around Pre-Market Baseline framework</li>
+          <li><strong>Monthly Toolkit Reviews</strong> — Honest deep-dive on USME updates and use cases</li>
+          <li><strong>Subscriber Case Studies</strong> — Feature community members who got funded</li>
+          <li><strong>ICT Education Series</strong> — Written curriculum with snipertrader.ai integration notes</li>
+          <li>Embed affiliate link naturally within content—never as isolated banner ads</li>
+        </ul>
+      </div>
+      <div class="playbook-card">
+        <div class="playbook-tag">Platform 06</div>
+        <h4>Telegram / Signal Channel</h4>
+        <ul>
+          <li><strong>Live Signal Commentary</strong> — Explain the USME signal context as it fires</li>
+          <li><strong>Pre-Market Broadcast</strong> — Daily structure read using snipertrader.ai baseline</li>
+          <li><strong>Educational Snippets</strong> — Quick ICT concept refreshers tied to live setups</li>
+          <li><strong>Results Pinboard</strong> — Showcase funded outcomes from channel members</li>
+          <li>Pinned message: full affiliate link with channel description</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:32px;">
+      <div class="callout-label">◈ Universal Best Practice</div>
+      The highest-converting Sentinel content always follows this formula: <strong>Teach → Show → Link</strong>. Educate your audience on an ICT/SMC concept, demonstrate it using snipertrader.ai tools in a real or recent trade, then provide the link as a logical next step—not an interruption.
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ── 05 COMPLIANCE ── -->
+  <div class="section reveal" id="sec-compliance">
+    <div class="section-header">
+      <div class="section-code">05 — Brand & Compliance Rules</div>
+      <h2 class="section-title">Operational <span>Standards</span></h2>
+      <p class="section-lead">Sentinel status comes with brand authority—and brand responsibility. These rules protect you, your audience, and the integrity of the program.</p>
+    </div>
+    <div class="compliance-block">
+      <div class="comp-row">
+        <div class="comp-icon">✓</div>
+        <div class="comp-text"><strong>Disclose your affiliate relationship</strong> in every piece of content containing your Sentinel link. A simple "affiliate link" or "I earn commission if you purchase" in captions, descriptions, or bio is sufficient and legally required in most jurisdictions.</div>
+        <div class="comp-badge required">Required</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-icon">✓</div>
+        <div class="comp-text"><strong>Include trading risk disclosures</strong> on all content that discusses trading results, signals, or strategies. Minimum: "Trading involves significant risk of loss. Past results are not indicative of future performance."</div>
+        <div class="comp-badge required">Required</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-icon">✓</div>
+        <div class="comp-text"><strong>Present snipertrader.ai products accurately.</strong> You may describe the USME Algo's features, methodology foundation (ICT/SMC), and your personal experience with it. Do not claim it generates guaranteed profits or eliminates trading risk.</div>
+        <div class="comp-badge required">Required</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-icon">✓</div>
+        <div class="comp-text"><strong>Use the official brand name</strong> "snipertrader.ai" or "snipertrader.ai Intelligence Platform" in your content. The USME Algo's full name is "Unified Smart Money Engine." Avoid informal abbreviations that could confuse audiences.</div>
+        <div class="comp-badge best">Best Practice</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-icon">✗</div>
+        <div class="comp-text"><strong>Do not make specific return claims</strong> such as "I made $X with this tool" in isolation without full context, disclaimers, and evidence that it is a genuine, verifiable outcome—not a cherry-picked screenshot.</div>
+        <div class="comp-badge prohibited">Prohibited</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-icon">✗</div>
+        <div class="comp-text"><strong>Do not self-refer.</strong> Purchasing through your own affiliate link, directly or through a third party, constitutes fraud and will result in immediate program termination and forfeiture of all accrued commissions.</div>
+        <div class="comp-badge prohibited">Prohibited</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-icon">✗</div>
+        <div class="comp-text"><strong>Do not bid on snipertrader.ai brand keywords</strong> in paid search advertising. Sentinel links may not be used in Google Ads, Meta Ads, or other paid channels targeting brand terms including "snipertrader.ai," "USME Algo," or "Sentinel Program."</div>
+        <div class="comp-badge prohibited">Prohibited</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-icon">✗</div>
+        <div class="comp-text"><strong>Do not impersonate snipertrader.ai staff, the platform, or other Sentinels.</strong> Creating accounts, channels, or content that implies you are an official snipertrader.ai representative beyond your Sentinel status is prohibited.</div>
+        <div class="comp-badge prohibited">Prohibited</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-icon">◎</div>
+        <div class="comp-text"><strong>Branded content partnerships</strong> (e.g., sponsored video with snipertrader.ai as the advertiser) are available to Commander and Ghost tiers and require pre-approval. These are separate from affiliate commissions and governed by individual partnership agreements.</div>
+        <div class="comp-badge best">Commander+</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ── 06 PAYOUT ── -->
+  <div class="section reveal" id="sec-payout">
+    <div class="section-header">
+      <div class="section-code">06 — Payout System & Timelines</div>
+      <h2 class="section-title">Commission <span>Flow</span></h2>
+      <p class="section-lead">Commissions are calculated, validated, and paid on a monthly cycle. Here is exactly how the money moves from your referral to your account.</p>
+    </div>
+    <div class="payout-track">
+      <div class="payout-node">
+        <div class="payout-circle">01</div>
+        <div class="payout-month">Month Close</div>
+        <div class="payout-desc">All sales, renewals, and bundle bonuses from the calendar month are tallied. Refunds and chargebacks within the window are deducted.</div>
+      </div>
+      <div class="payout-node">
+        <div class="payout-circle">02</div>
+        <div class="payout-month">Validation Period</div>
+        <div class="payout-desc">Days 1–10 of the following month. Fraud checks, attribution review, and refund window clears. No Sentinel action required.</div>
+      </div>
+      <div class="payout-node">
+        <div class="payout-circle">03</div>
+        <div class="payout-month">Payout Dispatch</div>
+        <div class="payout-desc">Net-15 after month close. Payment dispatched to your configured payout method if balance meets minimum threshold ($50 USD).</div>
+      </div>
+      <div class="payout-node">
+        <div class="payout-circle">04</div>
+        <div class="payout-month">Confirmation</div>
+        <div class="payout-desc">Payment confirmation email sent with full commission breakdown. Accessible in Sentinel Dashboard under Commission History.</div>
+      </div>
+    </div>
+    <div class="info-grid" style="margin-top:32px;">
+      <div class="info-cell">
+        <span class="info-cell-icon">◎</span>
+        <h4>Accepted Payout Methods</h4>
+        <p>Bank transfer (ACH / SWIFT) · PayPal · USDC / cryptocurrency · Wise for international Sentinels. Configure your method in the Sentinel Dashboard before your first payout cycle.</p>
+      </div>
+      <div class="info-cell">
+        <span class="info-cell-icon">⬡</span>
+        <h4>Minimum & Rollover</h4>
+        <p>Minimum payout threshold: <strong>$50 USD</strong>. Balances below threshold roll over to the following month automatically. No earnings are forfeited due to low balance—only program termination causes forfeiture.</p>
+      </div>
+      <div class="info-cell">
+        <span class="info-cell-icon">◇</span>
+        <h4>International Currency</h4>
+        <p>All commissions are calculated and paid in <strong>USD</strong>. Wise and cryptocurrency payouts minimize FX conversion loss for international Sentinels. Bank transfer payouts in local currency available on request.</p>
+      </div>
+      <div class="info-cell">
+        <span class="info-cell-icon">⊛</span>
+        <h4>Tax Documentation</h4>
+        <p>US-based Sentinels earning $600+ annually will receive a <strong>1099-NEC</strong>. International Sentinels must complete a W-8BEN prior to first payout. All tax obligations are the Sentinel's responsibility as an independent contractor.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ── 07 TOOLS ── -->
+  <div class="section reveal" id="sec-tools">
+    <div class="section-header">
+      <div class="section-code">07 — Sentinel Asset Toolkit</div>
+      <h2 class="section-title">Your <span>Deployment Kit</span></h2>
+      <p class="section-lead">Every approved Sentinel receives access to a curated set of assets and resources. Higher tiers unlock progressively more powerful tools.</p>
+    </div>
+    <div class="tools-list">
+      <div class="tool-item">
+        <div class="tool-icon">⊙</div>
+        <div class="tool-info">
+          <h5>Sentinel Dashboard</h5>
+          <p>Your central command — real-time referral tracking, commission ledger, link generator, and payout history. Available at <strong>dashboard.snipertrader.ai</strong> post-approval.</p>
+        </div>
+      </div>
+      <div class="tool-item">
+        <div class="tool-icon">◈</div>
+        <div class="tool-info">
+          <h5>Branded Asset Library</h5>
+          <p>Logos, banners, chart overlays, thumbnail templates, and motion graphics in snipertrader.ai obsidian/cyan palette. Includes <strong>Operative-specific</strong> branded kit for approved content creators.</p>
+        </div>
+      </div>
+      <div class="tool-item">
+        <div class="tool-icon">⬡</div>
+        <div class="tool-info">
+          <h5>Custom Landing Pages</h5>
+          <p>Commander+ Sentinels receive a <strong>personalized landing page</strong> at snipertrader.ai/sentinel/[yourhandle]—co-branded with your identity and pre-loaded with your affiliate tracking.</p>
+        </div>
+      </div>
+      <div class="tool-item">
+        <div class="tool-icon">⟡</div>
+        <div class="tool-info">
+          <h5>USME Product Deep-Dives</h5>
+          <p>Internal documentation, methodology explainers, and setup guides for the USME Algo's full feature set—including SOTD tiers, WATCH/PRIME/ELITE alerts, and institutional structure signals. <strong>Not public-facing.</strong></p>
+        </div>
+      </div>
+      <div class="tool-item">
+        <div class="tool-icon">◇</div>
+        <div class="tool-info">
+          <h5>Email Swipe Copy</h5>
+          <p>Tested email templates for newsletter Sentinels. Covering: product launches, re-engagement, funded challenge promotions, and ecosystem bundle campaigns. Editable for your voice.</p>
+        </div>
+      </div>
+      <div class="tool-item">
+        <div class="tool-icon">⊛</div>
+        <div class="tool-info">
+          <h5>Pre-Release Access</h5>
+          <p>Commander+ Sentinels receive <strong>advance notice and access</strong> to new product launches, indicator updates, and ecosystem additions before public release—enabling first-mover content advantage.</p>
+        </div>
+      </div>
+      <div class="tool-item">
+        <div class="tool-icon">◉</div>
+        <div class="tool-info">
+          <h5>Sentinel Slack Channel</h5>
+          <p>Private Sentinel-only Slack workspace for direct communication with the snipertrader.ai team, coordination with other Sentinels, and real-time updates. Operative tier and above.</p>
+        </div>
+      </div>
+      <div class="tool-item">
+        <div class="tool-icon">✦</div>
+        <div class="tool-info">
+          <h5>Quarterly Strategy Calls</h5>
+          <p>Commander+ Sentinels receive <strong>quarterly 1:1 calls</strong> with the snipertrader.ai affiliate team to review performance, plan content strategy, and discuss co-marketing opportunities for the upcoming quarter.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ── 08 FAQ ── -->
+  <div class="section reveal" id="sec-faq">
+    <div class="section-header">
+      <div class="section-code">08 — FAQ & Intelligence Notes</div>
+      <h2 class="section-title">Sentinel <span>Intelligence Notes</span></h2>
+      <p class="section-lead">Answers to the most critical operational questions. If your question is not covered here, contact your Sentinel handler directly via the Dashboard.</p>
+    </div>
+    <div class="faq-list">
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <div class="faq-q-text">How long does tier advancement take once I hit the requirements?</div>
+          <div class="faq-toggle">+</div>
+        </div>
+        <div class="faq-a">Tier upgrades are reviewed on the <strong>1st and 15th of each month</strong>. Once your metrics cross the threshold, the upgrade is reflected in your next review cycle—typically within 7 business days. You will receive a notification email and your commission rate adjusts retroactively to the date you hit the requirement within that billing period.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <div class="faq-q-text">Can I promote multiple products simultaneously?</div>
+          <div class="faq-toggle">+</div>
+        </div>
+        <div class="faq-a">Yes—and you should. The ecosystem bundle bonus is triggered specifically when a referral purchases <em>two or more products</em>. Promoting the USME Algo alongside the Psych App, or pairing either with the 30-Day Funded Challenge, earns you an additional <strong>+3–8%</strong> on the combined transaction. Your Sentinel Dashboard generates separate tracking links per product and a unified ecosystem link.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <div class="faq-q-text">What happens if a referral requests a refund?</div>
+          <div class="faq-toggle">+</div>
+        </div>
+        <div class="faq-a">Commissions on refunded orders are deducted from your next payout cycle. If the refund occurs after your commission has already been paid, the amount is offset against future earnings. <strong>Recurring commissions on a refunded subscription cease immediately upon refund processing.</strong> Chargebacks are treated identically to refunds. Your dashboard displays your running net commission balance in real time.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <div class="faq-q-text">Can I participate if I am not yet funded or a beginner trader?</div>
+          <div class="faq-toggle">+</div>
+        </div>
+        <div class="faq-a">Yes. Recruit tier has no trading milestone requirement beyond holding an active snipertrader.ai account. However, <strong>we strongly recommend developing real experience with the USME Algo</strong> before creating promotional content—your audience will sense inauthenticity immediately. The most effective Sentinels are genuine users who integrate the tools into their actual trading process. We prefer one authentic Recruit over ten uninformed link-droppers.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <div class="faq-q-text">How does the sub-affiliate override work exactly?</div>
+          <div class="faq-toggle">+</div>
+        </div>
+        <div class="faq-a">When you directly sponsor a new Sentinel into the program—meaning you referred them to the Sentinel Program specifically and they list you as their referral source on their application—you earn an <em>override commission</em> on all sales generated by that sub-affiliate. <strong>This does not reduce their commission in any way.</strong> It is a separate performance bonus paid by snipertrader.ai. Commander Sentinels earn 5% override; Ghost Protocol Sentinels earn 10%. The override applies to new sales only, not recurring commissions from the sub-affiliate's referrals.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <div class="faq-q-text">What qualifies as "published content" for Operative tier?</div>
+          <div class="faq-toggle">+</div>
+        </div>
+        <div class="faq-a">Content must be <strong>publicly accessible, indexed, and attributable to you</strong>. Minimum requirements: at least 3 pieces of content (videos, posts, newsletters, or threads) that feature or substantively reference snipertrader.ai or USME methodology within the 90 days preceding your upgrade review. Private Discord posts, DMs, or paywalled content do not qualify. Stories and short-form posts that expire within 24 hours do not count toward the minimum.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <div class="faq-q-text">Is there a limit to how much I can earn?</div>
+          <div class="faq-toggle">+</div>
+        </div>
+        <div class="faq-a"><strong>No cap exists on Sentinel earnings.</strong> Commission percentages are fixed per tier, but there is no ceiling on the volume of referrals, the compounding of recurring commissions, or the accumulation of ecosystem bonuses. Ghost Protocol Sentinels have generated five-figure monthly recurring income through a combination of their own referral base, sub-affiliate overrides, and co-product revenue sharing. This is the ceiling-free income model the program was designed around.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <div class="faq-q-text">How do I get nominated for Ghost Protocol?</div>
+          <div class="faq-toggle">+</div>
+        </div>
+        <div class="faq-a">Ghost Protocol nominations are initiated by the snipertrader.ai team—you cannot apply directly. Nominations are triggered by a combination of: <strong>(1)</strong> consistently hitting or exceeding Commander-tier referral metrics, <strong>(2)</strong> producing flagship-quality content that authentically represents the ecosystem, <strong>(3)</strong> demonstrated community leadership, and <strong>(4)</strong> either an existing or proposed co-content initiative. The team reviews the Commander roster quarterly and extends invitations to candidates who embody all four criteria. <em>Build the thing. The nomination follows.</em></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINAL CTA -->
+  <div class="final reveal">
+    <h2>You're <span>Deployed</span></h2>
+    <p>Your brief is complete. Access your Sentinel Dashboard, grab your tracking links, and begin building authority inside the MOAT.</p>
+    <div class="final-btns">
+      <a href="#" class="btn-p">Access Sentinel Dashboard</a>
+      <a href="sentinel-application.html" class="btn-o">View Application</a>
+      <a href="sentinel-program.html" class="btn-o">Program Page</a>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="footer-logo">Sniper<span>Trader</span></div>
+        <p class="footer-tagline">The institutional-grade intelligence<br>platform for serious ICT/SMC traders.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Tools</h4>
+        <ul>
+          <li><a href="#">USME Algo</a></li>
+          <li><a href="#">Pre-Market Baseline</a></li>
+          <li><a href="#">Habit Guardrails</a></li>
+          <li><a href="#">Post-Market Review Loop</a></li>
+          <li><a href="#">AI Sentiment Engine</a></li>
+          <li><a href="#">AI Chart Analyzer</a></li>
+          <li><a href="#">Prop Firm Command Center</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Ecosystem</h4>
+        <ul>
+          <li><a href="#">AI Smart Glasses</a></li>
+          <li><a href="#">Prop Master Plan</a></li>
+          <li><a href="#">30-Day Funded Challenge</a></li>
+          <li><a href="#">ICT Discipline Engine</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="#">Affiliate Program</a></li>
+          <li><a href="#">Trader's Couch</a></li>
+          <li><a href="#">Ebook</a></li>
+          <li><a href="#">PropFirm Match</a></li>
+          <li><a href="#">Shop</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#">About</a></li>
+          <li><a href="#">Docs</a></li>
+          <li><a href="#">Terms</a></li>
+          <li><a href="#">Disclaimer</a></li>
+          <li><a href="#">Privacy</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-copy">© 2026 snipertrader.ai Intelligence Platform — All rights reserved.</div>
+      <div class="footer-legal">
+        <a href="#">Terms</a><a href="#">Privacy</a><a href="#">Disclaimer</a>
+      </div>
+    </div>
+  </footer>
+
+</div><!-- /page -->
+
+<script>
+// ── THEME TOGGLE
+function toggleTheme(){
+  const isLight = document.body.classList.toggle('light-mode');
+  const btn = document.getElementById('themeToggle');
+  btn.textContent = isLight ? '◐' : '◑';
+  btn.title = isLight ? 'Switch to dark mode' : 'Switch to light mode';
+  localStorage.setItem('sentinelTheme', isLight ? 'light' : 'dark');
+}
+// Restore saved preference
+(function(){
+  const saved = localStorage.getItem('sentinelTheme');
+  if(saved === 'light'){
+    document.body.classList.add('light-mode');
+    const btn = document.getElementById('themeToggle');
+    if(btn){ btn.textContent = '◐'; btn.title = 'Switch to dark mode'; }
+  }
+})();
+
+// ── CURSOR
+const ring=document.getElementById('cring'),dot=document.getElementById('cdot');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
+(function ac(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;ring.style.left=rx+'px';ring.style.top=ry+'px';dot.style.left=mx+'px';dot.style.top=my+'px';requestAnimationFrame(ac);})();
+
+// ── PARTICLES
+const pc=document.getElementById('pcanvas'),pctx=pc.getContext('2d');
+function rz(){pc.width=window.innerWidth;pc.height=window.innerHeight;}rz();
+window.addEventListener('resize',rz);
+class P{constructor(){this.reset();}reset(){this.x=Math.random()*pc.width;this.y=Math.random()*pc.height;this.vx=(Math.random()-.5)*.3;this.vy=(Math.random()-.5)*.3;this.life=Math.random();this.ml=.4+Math.random()*.6;this.r=Math.random()*1.2+.3;this.g=Math.random()>.88;}update(){this.x+=this.vx;this.y+=this.vy;this.life-=.001;if(this.life<=0)this.reset();if(this.x<0||this.x>pc.width)this.vx*=-1;if(this.y<0||this.y>pc.height)this.vy*=-1;}draw(){const a=Math.min(this.life/this.ml,1)*(this.g?.4:.25);pctx.beginPath();pctx.arc(this.x,this.y,this.r,0,Math.PI*2);pctx.fillStyle=this.g?`rgba(240,180,41,${a})`:`rgba(0,229,255,${a})`;pctx.fill();}}
+const ps=Array.from({length:120},()=>new P());
+function ap(){pctx.clearRect(0,0,pc.width,pc.height);ps.forEach(p=>{p.update();p.draw();});requestAnimationFrame(ap);}ap();
+
+// ── SIDE ANCHORS
+const secs=['sec-cover','sec-mission','sec-tiers','sec-commission','sec-playbook','sec-compliance','sec-payout','sec-tools','sec-faq'];
+const anchors=document.getElementById('sideAnchors');
+secs.forEach((id,i)=>{
+  const btn=document.createElement('button');
+  btn.className='anchor-pip';btn.title='Section '+(i+1);
+  btn.onclick=()=>document.getElementById(id).scrollIntoView({behavior:'smooth'});
+  anchors.appendChild(btn);
+});
+function updateAnchors(){
+  secs.forEach((id,i)=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    const rect=el.getBoundingClientRect();
+    anchors.children[i].classList.toggle('active',rect.top<=200&&rect.bottom>200);
+  });
+}
+window.addEventListener('scroll',updateAnchors);updateAnchors();
+
+// ── SCROLL REVEALS
+const reveals=document.querySelectorAll('.reveal');
+const io=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in');});
+},{threshold:.08});
+reveals.forEach(r=>io.observe(r));
+
+// ── FAQ
+function toggleFaq(q){
+  const item=q.parentElement;
+  const wasOpen=item.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(i=>i.classList.remove('open'));
+  if(!wasOpen)item.classList.add('open');
+}
+
+// ── SCROLL TO
+function scrollTo(id){
+  document.getElementById(id).scrollIntoView({behavior:'smooth'});
+}
+
+// ── DOWNLOAD
+function downloadBrief(){
+  const a=document.createElement('a');
+  a.href=window.location.href;
+  a.download='snipertrader-ai-Sentinel-Brief-Q2-2026.html';
+  a.click();
+}
+</script>
+</body>
+</html>
