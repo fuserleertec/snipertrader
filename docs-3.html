@@ -1,0 +1,2388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Documentation — SniperTrader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════════════════════════
+   VARIABLES
+═══════════════════════════════════════════════════════════ */
+:root {
+  --obsidian:      #0a0b0e;
+  --obsidian-2:    #0f1014;
+  --obsidian-3:    #13151a;
+  --glass-bg:      #12151c;
+  --glass-bg-2:    #0e1118;
+  --glass-border:  rgba(0,229,255,0.13);
+  --glass-hover:   rgba(0,229,255,0.22);
+  --cyan:          #00e5ff;
+  --cyan-dim:      #00b8d4;
+  --cyan-ghost:    rgba(0,229,255,0.08);
+  --cyan-glow:     rgba(0,229,255,0.35);
+  --gold:          #ffc107;
+  --gold-ghost:    rgba(255,193,7,0.08);
+  --gold-glow:     rgba(255,193,7,0.35);
+  --emerald:       #00e5a0;
+  --emerald-ghost: rgba(0,229,160,0.08);
+  --emerald-glow:  rgba(0,229,160,0.28);
+  --red:           #ff3d5a;
+  --red-ghost:     rgba(255,61,90,0.08);
+  --white:         #f0f4f8;
+  --white-dim:     rgba(240,244,248,0.90);
+  --white-muted:   rgba(240,244,248,0.62);
+  --sidebar-w:     280px;
+  --nav-h:         64px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESET
+═══════════════════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--obsidian);
+  color:var(--white);
+  font-family:'Syne',sans-serif;
+  font-size:15px;
+  line-height:1.7;
+  overflow-x:hidden;
+  cursor:none;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CURSOR
+═══════════════════════════════════════════════════════════ */
+.cursor-dot{
+  position:fixed;width:6px;height:6px;
+  background:var(--cyan);border-radius:50%;
+  pointer-events:none;z-index:9999;
+  transform:translate(-50%,-50%);
+  box-shadow:0 0 10px var(--cyan),0 0 22px var(--cyan-glow);
+}
+.cursor-ring{
+  position:fixed;width:30px;height:30px;
+  border:1px solid rgba(0,229,255,0.5);border-radius:50%;
+  pointer-events:none;z-index:9998;
+  transform:translate(-50%,-50%);
+  transition:width .18s,height .18s,border-color .18s;
+}
+.cursor-ring.hover{width:46px;height:46px;border-color:var(--gold);}
+
+/* ═══════════════════════════════════════════════════════════
+   CANVAS & ATMOSPHERE
+═══════════════════════════════════════════════════════════ */
+#particle-canvas{
+  position:fixed;inset:0;z-index:0;
+  pointer-events:none;opacity:0.45;
+}
+.grid-overlay{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(0,229,255,0.018) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,229,255,0.018) 1px,transparent 1px);
+  background-size:60px 60px;
+  mask-image:radial-gradient(ellipse 100% 80% at 50% 0%,black 30%,transparent 100%);
+}
+.scanlines{
+  position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,
+    rgba(0,0,0,0.022) 2px,rgba(0,0,0,0.022) 4px);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SCROLL PROGRESS
+═══════════════════════════════════════════════════════════ */
+.scroll-progress{
+  position:fixed;top:0;left:0;height:2px;
+  background:linear-gradient(90deg,var(--cyan),var(--emerald),var(--gold));
+  z-index:300;box-shadow:0 0 10px var(--cyan-glow);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOP NAV
+═══════════════════════════════════════════════════════════ */
+nav.topnav{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  height:var(--nav-h);padding:0 32px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(10,11,14,0.92);backdrop-filter:blur(24px);
+  border-bottom:1px solid rgba(0,229,255,0.1);
+}
+.nav-left{display:flex;align-items:center;gap:20px;}
+.nav-logo{
+  font-family:'Orbitron',sans-serif;font-weight:900;font-size:1rem;
+  letter-spacing:.12em;text-decoration:none;
+  background:linear-gradient(135deg,var(--cyan) 0%,var(--gold) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.nav-sep{width:1px;height:20px;background:rgba(0,229,255,0.2);}
+.nav-section-label{
+  font-family:'Space Mono',monospace;font-size:.62rem;
+  color:var(--emerald);letter-spacing:.2em;text-transform:uppercase;
+}
+.nav-right{display:flex;align-items:center;gap:16px;}
+.nav-version{
+  font-family:'Space Mono',monospace;font-size:.6rem;
+  color:var(--white-muted);letter-spacing:.12em;
+  padding:4px 10px;border:1px solid rgba(0,229,255,0.15);border-radius:20px;
+}
+.nav-home-btn{
+  font-family:'Space Mono',monospace;font-size:.6rem;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);
+  text-decoration:none;padding:6px 14px;
+  border:1px solid rgba(0,229,255,0.25);border-radius:6px;
+  transition:background .2s,border-color .2s,box-shadow .2s;
+}
+.nav-home-btn:hover{
+  background:rgba(0,229,255,0.07);border-color:var(--cyan);
+  box-shadow:0 0 16px var(--cyan-glow);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LAYOUT SHELL
+═══════════════════════════════════════════════════════════ */
+.docs-shell{
+  display:flex;
+  margin-top:var(--nav-h);
+  min-height:calc(100vh - var(--nav-h));
+  position:relative;z-index:2;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════════════════════════ */
+.sidebar{
+  width:var(--sidebar-w);
+  flex-shrink:0;
+  position:sticky;
+  top:var(--nav-h);
+  height:calc(100vh - var(--nav-h));
+  overflow-y:auto;
+  background:var(--glass-bg-2);
+  border-right:1px solid rgba(0,229,255,0.08);
+  padding:28px 0 60px;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(0,229,255,0.15) transparent;
+}
+.sidebar::-webkit-scrollbar{width:3px;}
+.sidebar::-webkit-scrollbar-track{background:transparent;}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(0,229,255,0.2);border-radius:2px;}
+
+.sb-search{
+  margin:0 16px 20px;
+  position:relative;
+}
+.sb-search input{
+  width:100%;padding:8px 12px 8px 32px;
+  background:rgba(0,229,255,0.04);
+  border:1px solid rgba(0,229,255,0.12);
+  border-radius:8px;color:var(--white);
+  font-family:'Space Mono',monospace;font-size:.68rem;
+  letter-spacing:.05em;outline:none;
+  transition:border-color .2s,box-shadow .2s;
+}
+.sb-search input:focus{border-color:rgba(0,229,255,0.35);box-shadow:0 0 12px var(--cyan-ghost);}
+.sb-search input::placeholder{color:var(--white-muted);}
+.sb-search-icon{
+  position:absolute;left:10px;top:50%;transform:translateY(-50%);
+  color:var(--white-muted);font-size:.7rem;pointer-events:none;
+}
+
+.sb-group{margin-bottom:6px;}
+.sb-group-label{
+  font-family:'Orbitron',sans-serif;font-size:.52rem;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--cyan);
+  padding:10px 20px 6px;opacity:.7;
+  display:flex;align-items:center;gap:8px;
+}
+.sb-group-label::after{content:'';flex:1;height:1px;background:rgba(0,229,255,0.1);}
+
+.sb-link{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 20px;
+  font-family:'Space Mono',monospace;font-size:.7rem;
+  color:var(--white-muted);text-decoration:none;letter-spacing:.04em;
+  cursor:none;transition:color .18s,background .18s;
+  border-left:2px solid transparent;
+  position:relative;
+}
+.sb-link:hover{color:var(--white);background:rgba(0,229,255,0.04);}
+.sb-link.active{
+  color:var(--cyan);background:rgba(0,229,255,0.07);
+  border-left-color:var(--cyan);
+}
+.sb-link .sb-icon{font-size:.75rem;width:16px;text-align:center;flex-shrink:0;}
+.sb-badge{
+  margin-left:auto;
+  font-family:'Orbitron',monospace;font-size:.5rem;font-weight:700;
+  padding:2px 6px;border-radius:3px;letter-spacing:.08em;
+}
+.badge-new{background:rgba(0,229,160,0.12);color:var(--emerald);border:1px solid rgba(0,229,160,0.2);}
+.badge-v2{background:rgba(0,229,255,0.1);color:var(--cyan);border:1px solid rgba(0,229,255,0.2);}
+.badge-pro{background:rgba(255,193,7,0.1);color:var(--gold);border:1px solid rgba(255,193,7,0.2);}
+
+/* ═══════════════════════════════════════════════════════════
+   MAIN CONTENT
+═══════════════════════════════════════════════════════════ */
+.docs-main{
+  flex:1;
+  min-width:0;
+  padding:48px 56px 120px;
+}
+
+/* doc sections — hidden by default, shown via JS */
+.doc-section{display:none;}
+.doc-section.active{display:block;}
+
+/* ── Page Header ── */
+.doc-header{margin-bottom:40px;animation:fadeUp .6s ease both;}
+.doc-eyebrow{
+  font-family:'Space Mono',monospace;font-size:.6rem;
+  letter-spacing:.28em;text-transform:uppercase;
+  color:var(--emerald);margin-bottom:12px;
+}
+.doc-title{
+  font-family:'Orbitron',sans-serif;font-weight:900;
+  font-size:clamp(1.8rem,3.5vw,2.8rem);letter-spacing:.04em;line-height:1.15;
+  background:linear-gradient(135deg,#fff 30%,var(--cyan) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.doc-subtitle{
+  margin-top:12px;color:var(--white-dim);
+  font-size:.9rem;line-height:1.7;max-width:620px;
+}
+.doc-divider{
+  margin-top:28px;height:1px;
+  background:linear-gradient(90deg,var(--cyan-dim),rgba(0,229,255,0.1),transparent);
+}
+
+/* ── Info Cards ── */
+.info-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+  gap:16px;margin:28px 0;
+}
+.info-card{
+  padding:20px;background:var(--glass-bg);
+  border:1px solid var(--glass-border);border-radius:12px;
+  transition:border-color .25s,transform .25s,box-shadow .25s;
+  position:relative;overflow:hidden;
+}
+.info-card::before{
+  content:'';position:absolute;inset:0;border-radius:inherit;
+  background:radial-gradient(500px circle at var(--mx,50%) var(--my,50%),
+    rgba(0,229,255,0.05),transparent 65%);
+  opacity:0;transition:opacity .3s;pointer-events:none;
+}
+.info-card:hover::before{opacity:1;}
+.info-card:hover{
+  border-color:var(--glass-hover);transform:translateY(-3px);
+  box-shadow:0 8px 32px rgba(0,229,255,0.08);
+}
+.info-card .ic-label{
+  font-family:'Space Mono',monospace;font-size:.58rem;
+  letter-spacing:.15em;text-transform:uppercase;color:var(--white-muted);
+  margin-bottom:6px;
+}
+.info-card .ic-val{
+  font-family:'Orbitron',sans-serif;font-weight:700;font-size:1.1rem;
+  color:var(--cyan);letter-spacing:.05em;
+}
+.info-card .ic-sub{
+  font-family:'Space Mono',monospace;font-size:.62rem;
+  color:var(--white-muted);margin-top:4px;
+}
+
+/* ── Content Typography ── */
+.doc-body h2{
+  font-family:'Orbitron',sans-serif;font-weight:700;font-size:.92rem;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);
+  margin:36px 0 14px;display:flex;align-items:center;gap:10px;
+}
+.doc-body h2::before{
+  content:'';width:3px;height:18px;background:var(--cyan);
+  border-radius:2px;flex-shrink:0;
+  box-shadow:0 0 8px var(--cyan-glow);
+}
+.doc-body h3{
+  font-family:'Orbitron',sans-serif;font-weight:600;font-size:.78rem;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--gold);
+  margin:24px 0 10px;
+}
+.doc-body p{
+  color:var(--white-dim);font-size:.9rem;line-height:1.85;margin-bottom:14px;
+}
+.doc-body ul,.doc-body ol{margin:10px 0 16px;padding-left:0;list-style:none;}
+.doc-body ul li,.doc-body ol li{
+  position:relative;padding-left:22px;
+  color:var(--white-dim);font-size:.88rem;line-height:1.8;margin-bottom:6px;
+}
+.doc-body ul li::before{
+  content:'▸';position:absolute;left:0;color:var(--cyan);font-size:.65rem;top:5px;
+}
+.doc-body ol{counter-reset:ol;}
+.doc-body ol li::before{
+  counter-increment:ol;content:counter(ol)'.';
+  position:absolute;left:0;
+  color:var(--gold);font-family:'Space Mono',monospace;
+  font-size:.68rem;font-weight:700;top:3px;
+}
+strong{color:var(--white);font-weight:600;}
+.hl-c{color:var(--cyan);font-weight:600;}
+.hl-g{color:var(--gold);font-weight:600;}
+.hl-e{color:var(--emerald);font-weight:600;}
+.hl-r{color:var(--red);font-weight:600;}
+
+/* ── Code blocks ── */
+code{
+  font-family:'Space Mono',monospace;font-size:.75rem;
+  background:rgba(0,229,255,0.07);border:1px solid rgba(0,229,255,0.15);
+  padding:2px 7px;border-radius:4px;color:var(--cyan);
+}
+pre{
+  margin:16px 0;padding:20px 22px;
+  background:#0b0e14;border:1px solid rgba(0,229,255,0.12);border-radius:10px;
+  overflow-x:auto;position:relative;
+}
+pre::before{
+  content:'SCRIPT';position:absolute;top:10px;right:14px;
+  font-family:'Orbitron',monospace;font-size:.48rem;letter-spacing:.18em;
+  color:rgba(0,229,255,0.25);
+}
+pre code{
+  background:none;border:none;padding:0;
+  font-size:.75rem;line-height:1.7;
+  color:#a8d8ea;display:block;
+}
+.kw{color:#00e5ff;} /* keywords */
+.fn{color:#ffc107;} /* functions */
+.str{color:#00e5a0;} /* strings */
+.cm{color:#4a5568;font-style:italic;} /* comments */
+.num{color:#fc8181;} /* numbers */
+.var{color:#e2e8f0;} /* variables */
+
+/* ── Callout boxes ── */
+.callout{
+  margin:20px 0;padding:16px 20px;
+  border-radius:10px;border-left:3px solid;
+  display:flex;gap:12px;align-items:flex-start;
+}
+.callout-icon{font-size:1rem;flex-shrink:0;margin-top:1px;}
+.callout-body{font-size:.85rem;line-height:1.7;color:var(--white-dim);}
+.callout-body strong{display:block;margin-bottom:3px;}
+.callout.tip{background:rgba(0,229,255,0.05);border-color:var(--cyan);}
+.callout.tip .callout-icon{color:var(--cyan);}
+.callout.warning{background:rgba(255,193,7,0.05);border-color:var(--gold);}
+.callout.warning .callout-icon{color:var(--gold);}
+.callout.danger{background:rgba(255,61,90,0.05);border-color:var(--red);}
+.callout.danger .callout-icon{color:var(--red);}
+.callout.success{background:rgba(0,229,160,0.05);border-color:var(--emerald);}
+.callout.success .callout-icon{color:var(--emerald);}
+
+/* ── Tables ── */
+.doc-table{width:100%;border-collapse:collapse;margin:16px 0;}
+.doc-table th{
+  font-family:'Space Mono',monospace;font-size:.65rem;
+  letter-spacing:.12em;text-transform:uppercase;
+  padding:10px 14px;background:rgba(0,229,255,0.07);
+  border-bottom:1px solid rgba(0,229,255,0.18);color:var(--cyan);text-align:left;
+}
+.doc-table td{
+  padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.04);
+  color:var(--white-dim);font-size:.85rem;vertical-align:top;
+}
+.doc-table tr:last-child td{border-bottom:none;}
+.doc-table tr:hover td{background:rgba(0,229,255,0.025);}
+
+/* ── Signal tier badges ── */
+.tier-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 10px;border-radius:4px;
+  font-family:'Orbitron',monospace;font-size:.55rem;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;
+}
+.tier-watch{background:rgba(0,229,255,0.1);color:var(--cyan);border:1px solid rgba(0,229,255,0.25);}
+.tier-prime{background:rgba(255,193,7,0.1);color:var(--gold);border:1px solid rgba(255,193,7,0.25);}
+.tier-elite{background:rgba(0,229,160,0.1);color:var(--emerald);border:1px solid rgba(0,229,160,0.25);}
+
+/* ── Step cards ── */
+.steps{display:flex;flex-direction:column;gap:14px;margin:20px 0;}
+.step{
+  display:flex;gap:16px;padding:18px 20px;
+  background:var(--glass-bg);border:1px solid var(--glass-border);
+  border-radius:12px;align-items:flex-start;
+  transition:border-color .25s,transform .2s;
+}
+.step:hover{border-color:var(--glass-hover);transform:translateX(4px);}
+.step-num{
+  width:32px;height:32px;border-radius:50%;
+  background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.25);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-family:'Orbitron',monospace;font-size:.65rem;font-weight:700;color:var(--cyan);
+}
+.step-content{flex:1;}
+.step-title{
+  font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem;
+  color:var(--white);margin-bottom:4px;
+}
+.step-desc{font-size:.83rem;color:var(--white-dim);line-height:1.65;}
+
+/* ── Signal flow diagram ── */
+.signal-flow{
+  display:flex;align-items:center;gap:0;
+  margin:20px 0;flex-wrap:wrap;
+  padding:20px;background:var(--glass-bg);
+  border:1px solid var(--glass-border);border-radius:12px;
+}
+.flow-step{
+  flex:1;min-width:100px;text-align:center;
+  padding:12px 8px;
+}
+.flow-icon{
+  width:44px;height:44px;border-radius:10px;
+  margin:0 auto 8px;display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;border:1px solid;
+}
+.flow-label{
+  font-family:'Orbitron',sans-serif;font-size:.52rem;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px;
+}
+.flow-sub{font-family:'Space Mono',monospace;font-size:.58rem;color:var(--white-muted);}
+.flow-arrow{
+  font-size:1.2rem;color:rgba(0,229,255,0.3);
+  padding:0 4px;flex-shrink:0;align-self:center;
+  animation:arrowPulse 2s ease infinite;
+}
+.flow-s1 .flow-icon{background:rgba(0,229,255,0.08);border-color:rgba(0,229,255,0.3);color:var(--cyan);}
+.flow-s1 .flow-label{color:var(--cyan);}
+.flow-s2 .flow-icon{background:rgba(0,229,255,0.06);border-color:rgba(0,229,255,0.2);color:var(--cyan-dim);}
+.flow-s2 .flow-label{color:var(--cyan-dim);}
+.flow-s3 .flow-icon{background:rgba(255,193,7,0.08);border-color:rgba(255,193,7,0.3);color:var(--gold);}
+.flow-s3 .flow-label{color:var(--gold);}
+.flow-s4 .flow-icon{background:rgba(0,229,160,0.08);border-color:rgba(0,229,160,0.3);color:var(--emerald);}
+.flow-s4 .flow-label{color:var(--emerald);}
+
+/* ── Alert tier visual ── */
+.alert-tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:20px 0;}
+.alert-tier{
+  padding:20px;border-radius:12px;text-align:center;
+  border:1px solid;transition:transform .25s,box-shadow .25s;
+}
+.alert-tier:hover{transform:translateY(-4px);}
+.at-watch{background:#0a1216;border-color:rgba(0,229,255,0.25);}
+.at-watch:hover{box-shadow:0 8px 32px rgba(0,229,255,0.12);}
+.at-prime{background:#141209;border-color:rgba(255,193,7,0.25);}
+.at-prime:hover{box-shadow:0 8px 32px rgba(255,193,7,0.12);}
+.at-elite{background:#0a1410;border-color:rgba(0,229,160,0.25);}
+.at-elite:hover{box-shadow:0 8px 32px rgba(0,229,160,0.12);}
+.at-icon{font-size:1.8rem;margin-bottom:10px;}
+.at-name{
+  font-family:'Orbitron',sans-serif;font-weight:800;font-size:.75rem;
+  letter-spacing:.18em;margin-bottom:8px;
+}
+.at-watch .at-name{color:var(--cyan);}
+.at-prime .at-name{color:var(--gold);}
+.at-elite .at-name{color:var(--emerald);}
+.at-desc{font-family:'Space Mono',monospace;font-size:.63rem;color:var(--white-muted);line-height:1.6;}
+.at-criteria{
+  margin-top:10px;padding-top:10px;
+  border-top:1px solid rgba(255,255,255,0.05);
+  font-family:'Space Mono',monospace;font-size:.6rem;
+  color:var(--white-muted);
+}
+
+/* ── Pagination ── */
+.doc-pagination{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-top:60px;padding-top:28px;
+  border-top:1px solid rgba(0,229,255,0.08);
+}
+.page-nav-btn{
+  display:flex;align-items:center;gap:8px;
+  text-decoration:none;padding:10px 16px;
+  background:var(--glass-bg);border:1px solid var(--glass-border);
+  border-radius:8px;cursor:none;
+  transition:border-color .2s,box-shadow .2s,transform .2s;
+}
+.page-nav-btn:hover{
+  border-color:var(--glass-hover);
+  box-shadow:0 4px 20px rgba(0,229,255,0.08);
+  transform:translateX(var(--tx,0));
+}
+.page-nav-btn.prev{--tx:-4px;}
+.page-nav-btn.next{--tx:4px;}
+.pnb-dir{font-family:'Space Mono',monospace;font-size:.58rem;letter-spacing:.12em;color:var(--white-muted);text-transform:uppercase;}
+.pnb-title{font-family:'Syne',sans-serif;font-weight:600;font-size:.85rem;color:var(--white);}
+.pnb-arrow{color:var(--cyan);font-size:.9rem;}
+
+/* ─── BACK TO TOP ─── */
+.back-top{
+  position:fixed;bottom:28px;right:28px;z-index:50;
+  width:42px;height:42px;background:var(--glass-bg);
+  border:1px solid var(--glass-border);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  cursor:none;font-size:.85rem;color:var(--cyan);
+  opacity:0;transform:translateY(12px);
+  transition:opacity .3s,transform .3s,border-color .2s,box-shadow .2s;
+  text-decoration:none;
+}
+.back-top.visible{opacity:1;transform:translateY(0);}
+.back-top:hover{border-color:var(--cyan);box-shadow:0 0 18px var(--cyan-glow);}
+
+/* ═══════════════════════════════════════════════════════════
+   KEYFRAMES
+═══════════════════════════════════════════════════════════ */
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+@keyframes arrowPulse{0%,100%{opacity:.3;}50%{opacity:.9;}}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(1.5);}}
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE
+═══════════════════════════════════════════════════════════ */
+@media(max-width:768px){
+  :root{--sidebar-w:240px;}
+  .docs-main{padding:32px 20px 80px;}
+  .alert-tiers{grid-template-columns:1fr;}
+  .info-grid{grid-template-columns:1fr 1fr;}
+  .signal-flow{flex-direction:column;}
+  .flow-arrow{transform:rotate(90deg);}
+  .doc-pagination{flex-direction:column;gap:12px;}
+}
+@media(max-width:600px){
+  .sidebar{display:none;}
+  .nav-version{display:none;}
+  .docs-main{padding:24px 16px 60px;}
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIGHT MODE
+═══════════════════════════════════════════════════════════ */
+body.light-mode {
+  --obsidian:      #eef1f5;
+  --obsidian-2:    #e4e9ef;
+  --obsidian-3:    #d8dfe8;
+  --glass-bg:      #ffffff;
+  --glass-bg-2:    #f3f6fa;
+  --glass-border:  rgba(0,100,160,0.18);
+  --glass-hover:   rgba(0,100,160,0.28);
+  --white:         #0a0e14;
+  --white-dim:     rgba(10,14,20,0.92);
+  --white-muted:   rgba(10,14,20,0.68);
+  --cyan:          #005f8a;
+  --cyan-dim:      #004d70;
+  --cyan-ghost:    rgba(0,95,138,0.08);
+  --cyan-glow:     rgba(0,95,138,0.22);
+  --gold:          #8a6200;
+  --gold-ghost:    rgba(138,98,0,0.08);
+  --gold-glow:     rgba(138,98,0,0.22);
+  --emerald:       #005c3a;
+  --emerald-ghost: rgba(0,92,58,0.08);
+  --emerald-glow:  rgba(0,92,58,0.20);
+  --red:           #a8001f;
+  --red-ghost:     rgba(168,0,31,0.08);
+}
+body.light-mode { background: var(--obsidian); color: var(--white); }
+body.light-mode nav.topnav {
+  background: rgba(240,244,248,0.95);
+  border-bottom-color: rgba(0,119,168,0.15);
+}
+body.light-mode .sidebar {
+  background: var(--glass-bg-2);
+  border-right-color: rgba(0,119,168,0.12);
+}
+body.light-mode .sb-search input {
+  background: rgba(0,119,168,0.05);
+  border-color: rgba(0,119,168,0.18);
+  color: var(--white);
+}
+body.light-mode .grid-overlay {
+  background-image:
+    linear-gradient(rgba(0,100,140,0.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,100,140,0.04) 1px,transparent 1px);
+}
+body.light-mode pre { background: #e8edf2; border-color: rgba(0,119,168,0.18); }
+body.light-mode pre code { color: #2d5a7a; }
+body.light-mode .kw { color: #0077a8; }
+body.light-mode .fn { color: #b8860b; }
+body.light-mode .str { color: #007a50; }
+body.light-mode .cm { color: #8899aa; }
+body.light-mode .num { color: #cc1f38; }
+body.light-mode .var { color: #2d3748; }
+body.light-mode code {
+  background: rgba(0,119,168,0.07);
+  border-color: rgba(0,119,168,0.18);
+  color: var(--cyan);
+}
+body.light-mode .at-watch { background: #e8f4f8; }
+body.light-mode .at-prime { background: #f8f3e0; }
+body.light-mode .at-elite { background: #e4f5ee; }
+body.light-mode .cursor-dot { background: var(--cyan); box-shadow: 0 0 10px var(--cyan-glow); }
+body.light-mode .cursor-ring { border-color: rgba(0,119,168,0.5); }
+body.light-mode .scanlines { display: none; }
+
+
+/* ═══ LIGHT MODE — EXPLICIT TEXT CONTRAST OVERRIDES ═══ */
+
+/* Base body text */
+body.light-mode { color: #0a0e14; }
+
+/* Headings */
+body.light-mode h1,
+body.light-mode h2,
+body.light-mode h3,
+body.light-mode h4 { color: #0a0e14; }
+
+/* Doc titles & eyebrows */
+body.light-mode .doc-title   { color: #0a0e14; }
+body.light-mode .doc-subtitle{ color: rgba(10,14,20,0.78); }
+body.light-mode .doc-eyebrow { color: var(--cyan); }
+
+/* Paragraphs & list items */
+body.light-mode p,
+body.light-mode li { color: rgba(10,14,20,0.88); }
+
+/* Sidebar */
+body.light-mode .sb-group-label { color: rgba(10,14,20,0.55); }
+body.light-mode .sb-link        { color: rgba(10,14,20,0.82); }
+body.light-mode .sb-link:hover,
+body.light-mode .sb-link.active { color: var(--cyan); }
+body.light-mode .sb-search input{ color: #0a0e14; }
+body.light-mode .sb-search input::placeholder { color: rgba(10,14,20,0.45); }
+
+/* Nav */
+body.light-mode .nav-logo    { color: #0a0e14; }
+body.light-mode .nav-version { color: rgba(10,14,20,0.60); }
+body.light-mode .nav-home-btn{ color: rgba(10,14,20,0.70); }
+body.light-mode .nav-home-btn:hover { color: var(--cyan); }
+
+/* Info cards */
+body.light-mode .ic-label { color: rgba(10,14,20,0.58); }
+body.light-mode .ic-val   { color: #0a0e14; }
+body.light-mode .ic-sub   { color: rgba(10,14,20,0.62); }
+
+/* Steps */
+body.light-mode .step-title { color: #0a0e14; }
+body.light-mode .step-desc  { color: rgba(10,14,20,0.80); }
+body.light-mode .step-num   { color: var(--cyan); border-color: var(--cyan); }
+
+/* Callouts */
+body.light-mode .callout-body        { color: rgba(10,14,20,0.86); }
+body.light-mode .callout-body strong { color: #0a0e14; }
+
+/* Tables */
+body.light-mode table th { color: #0a0e14; background: rgba(0,95,138,0.08); }
+body.light-mode table td { color: rgba(10,14,20,0.85); }
+body.light-mode table tr:hover td { color: #0a0e14; }
+
+/* Inline code */
+body.light-mode code { color: #005080; background: rgba(0,95,138,0.08); border-color: rgba(0,95,138,0.20); }
+
+/* Code blocks */
+body.light-mode pre              { background: #e2e8f0; border-color: rgba(0,95,138,0.20); }
+body.light-mode pre code         { color: #1a2a3a; background: transparent; border: none; }
+body.light-mode .kw  { color: #005080; }
+body.light-mode .fn  { color: #7a4e00; }
+body.light-mode .str { color: #004d30; }
+body.light-mode .cm  { color: #5a6a78; font-style: italic; }
+body.light-mode .num { color: #8a001a; }
+body.light-mode .var { color: #1a2a3a; }
+
+/* Highlight spans */
+body.light-mode .hl-c { color: #005080; }
+body.light-mode .hl-g { color: #7a4e00; }
+body.light-mode .hl-e { color: #004d30; }
+body.light-mode .hl-r { color: #8a001a; }
+
+/* Signal flow labels */
+body.light-mode .flow-label { color: #0a0e14; font-weight: 700; }
+body.light-mode .flow-sub   { color: rgba(10,14,20,0.65); }
+body.light-mode .flow-arrow { color: rgba(10,14,20,0.40); }
+
+/* Alert tier cards */
+body.light-mode .at-watch { background: #dff0f8; }
+body.light-mode .at-prime { background: #f5edcf; }
+body.light-mode .at-elite { background: #d5f0e4; }
+body.light-mode .at-name  { font-weight: 700; }
+body.light-mode .at-watch .at-name { color: #005080; }
+body.light-mode .at-prime .at-name { color: #7a4e00; }
+body.light-mode .at-elite .at-name { color: #004d30; }
+body.light-mode .at-desc  { color: rgba(10,14,20,0.72); }
+
+/* Pagination buttons */
+body.light-mode .pnb-dir   { color: rgba(10,14,20,0.55); }
+body.light-mode .pnb-title { color: #0a0e14; }
+body.light-mode .pnb-arrow { color: var(--cyan); }
+body.light-mode .page-nav-btn { border-color: rgba(0,95,138,0.22); }
+body.light-mode .page-nav-btn:hover { border-color: var(--cyan); }
+
+/* Footer */
+body.light-mode .footer-copy { color: rgba(10,14,20,0.58); }
+body.light-mode .footer-link { color: rgba(10,14,20,0.68); }
+body.light-mode .footer-link:hover { color: var(--cyan); }
+
+/* Back-to-top */
+body.light-mode .back-top { color: var(--cyan); border-color: var(--cyan); background: rgba(0,95,138,0.08); }
+
+/* strong globally in light mode */
+body.light-mode strong { color: #0a0e14; }
+
+/* doc-divider */
+body.light-mode .doc-divider { background: linear-gradient(90deg, var(--cyan), transparent); opacity: 0.4; }
+
+/* ── Theme Toggle Button ── */
+.theme-toggle {
+  display: flex; align-items: center; gap: 7px;
+  font-family: 'Space Mono', monospace; font-size: .6rem;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--white-muted);
+  background: rgba(0,229,255,0.05);
+  border: 1px solid rgba(0,229,255,0.18); border-radius: 20px;
+  padding: 5px 12px; cursor: none;
+  transition: border-color .2s, color .2s, background .2s, box-shadow .2s;
+  user-select: none;
+}
+.theme-toggle:hover {
+  border-color: var(--cyan); color: var(--cyan);
+  background: rgba(0,229,255,0.07);
+  box-shadow: 0 0 14px var(--cyan-glow);
+}
+.theme-toggle .tt-icon { font-size: .85rem; transition: transform .35s; }
+.theme-toggle:hover .tt-icon { transform: rotate(20deg); }
+body.light-mode .theme-toggle {
+  border-color: rgba(0,119,168,0.25);
+  background: rgba(0,119,168,0.06);
+}
+body.light-mode .theme-toggle:hover {
+  border-color: var(--cyan); color: var(--cyan);
+  box-shadow: 0 0 14px var(--cyan-glow);
+}
+
+/* ── Footer ── */
+.docs-footer {
+  position: relative; z-index: 2;
+  border-top: 1px solid rgba(0,229,255,0.08);
+  padding: 28px 40px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 14px;
+  background: var(--glass-bg-2);
+}
+body.light-mode .docs-footer { border-top-color: rgba(0,119,168,0.12); }
+.footer-logo {
+  font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: .85rem;
+  letter-spacing: .12em; text-decoration: none;
+  background: linear-gradient(135deg, var(--cyan) 0%, var(--gold) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.footer-copy {
+  font-family: 'Space Mono', monospace; font-size: .58rem;
+  color: var(--white-muted); letter-spacing: .08em;
+}
+.footer-links {
+  display: flex; align-items: center; gap: 16px;
+}
+.footer-link {
+  font-family: 'Space Mono', monospace; font-size: .6rem;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--white-muted); text-decoration: none;
+  transition: color .18s;
+}
+.footer-link:hover { color: var(--cyan); }
+
+</style>
+</head>
+<body>
+
+<!-- Cursor -->
+<div class="cursor-dot" id="cursorDot"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- Canvas -->
+<canvas id="particle-canvas"></canvas>
+<div class="grid-overlay"></div>
+<div class="scanlines"></div>
+
+<!-- Scroll progress -->
+<div class="scroll-progress" id="scrollBar"></div>
+
+<!-- Back to top -->
+<a href="#" class="back-top" id="backTop">↑</a>
+
+<!-- ═══════════════ TOP NAV ═══════════════ -->
+<nav class="topnav">
+  <div class="nav-left">
+    <a href="index.html" class="nav-logo">SNIPERTRADER</a>
+    <div class="nav-sep"></div>
+    <span class="nav-section-label">// DOCUMENTATION</span>
+  </div>
+  <div class="nav-right">
+    <span class="nav-version">USME v3.1 · VWAP Elite · NT8</span>
+    <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">
+      <span class="tt-icon" id="themeIcon">☽</span>
+      <span id="themeLabel">DARK</span>
+    </button>
+    <a href="index.html" class="nav-home-btn">← Back to Site</a>
+  </div>
+</nav>
+
+<!-- ═══════════════ DOCS SHELL ═══════════════ -->
+<div class="docs-shell">
+
+  <!-- ─────────── SIDEBAR ─────────── -->
+  <aside class="sidebar">
+    <div class="sb-search">
+      <span class="sb-search-icon">⌕</span>
+      <input type="text" id="sbSearch" placeholder="Search docs..." autocomplete="off"/>
+    </div>
+
+    <div class="sb-group">
+      <div class="sb-group-label">Getting Started</div>
+      <a href="#" class="sb-link active" data-section="overview">
+        <span class="sb-icon">◈</span>Overview
+      </a>
+      <a href="#" class="sb-link" data-section="installation">
+        <span class="sb-icon">⊕</span>Installation
+        <span class="sb-badge badge-new">NEW</span>
+      </a>
+      <a href="#" class="sb-link" data-section="quickstart">
+        <span class="sb-icon">⚡</span>Quick Start
+      </a>
+    </div>
+
+    <div class="sb-group">
+      <div class="sb-group-label">USME Indicator</div>
+      <a href="#" class="sb-link" data-section="usme-core">
+        <span class="sb-icon">⊡</span>Core Engine
+        <span class="sb-badge badge-v2">v3.1</span>
+      </a>
+      <a href="#" class="sb-link" data-section="signal-logic">
+        <span class="sb-icon">◎</span>Signal Logic
+      </a>
+      <a href="#" class="sb-link" data-section="sotd">
+        <span class="sb-icon">🎯</span>SOTD Alerts
+        <span class="sb-badge badge-new">NEW</span>
+      </a>
+      <a href="#" class="sb-link" data-section="settings">
+        <span class="sb-icon">⚙</span>Settings & Inputs
+      </a>
+    </div>
+
+    <div class="sb-group">
+      <div class="sb-group-label">Platform Guides</div>
+      <a href="#" class="sb-link" data-section="thinkorswim">
+        <span class="sb-icon">🖥</span>ThinkorSwim
+      </a>
+      <a href="#" class="sb-link" data-section="tradingview">
+        <span class="sb-icon">📊</span>TradingView
+      </a>
+      <a href="#" class="sb-link" data-section="ninjatrader">
+        <span class="sb-icon">⚔</span>NinjaTrader 8
+        <span class="sb-badge badge-new">NEW</span>
+      </a>
+    </div>
+
+    <div class="sb-group">
+      <div class="sb-group-label">VWAP Elite Suite</div>
+      <a href="#" class="sb-link" data-section="vwap-overview">
+        <span class="sb-icon">〜</span>Overview
+        <span class="sb-badge badge-new">NEW</span>
+      </a>
+      <a href="#" class="sb-link" data-section="vwap-install">
+        <span class="sb-icon">⊕</span>Installation
+      </a>
+      <a href="#" class="sb-link" data-section="vwap-settings">
+        <span class="sb-icon">⚙</span>Settings &amp; Bands
+      </a>
+    </div>
+
+    <div class="sb-group">
+      <div class="sb-group-label">Strategy</div>
+      <a href="#" class="sb-link" data-section="methodology">
+        <span class="sb-icon">◉</span>ICT / SMC Basis
+      </a>
+      <a href="#" class="sb-link" data-section="playbook">
+        <span class="sb-icon">📖</span>Trade Playbook
+        <span class="sb-badge badge-pro">PRO</span>
+      </a>
+    </div>
+
+    <div class="sb-group">
+      <div class="sb-group-label">Resources</div>
+      <a href="#" class="sb-link" data-section="faq">
+        <span class="sb-icon">❓</span>FAQ
+      </a>
+      <a href="#" class="sb-link" data-section="changelog">
+        <span class="sb-icon">↻</span>Changelog
+      </a>
+    </div>
+  </aside>
+
+  <!-- ─────────── MAIN CONTENT ─────────── -->
+  <main class="docs-main" id="docsMain">
+
+    <!-- ══ OVERVIEW ══════════════════════════════════════════ -->
+    <div class="doc-section active" id="sec-overview">
+      <div class="doc-header">
+        <p class="doc-eyebrow">// GETTING STARTED — 01</p>
+        <h1 class="doc-title">SniperTrader Documentation</h1>
+        <p class="doc-subtitle">Everything you need to install, configure, and master the full SniperTrader suite — including the Unified Smart Money Engine (USME), the VWAP Elite Suite, and the new NinjaTrader 8 NinjaScript edition.</p>
+        <div class="doc-divider"></div>
+      </div>
+
+      <div class="info-grid" style="grid-template-columns:repeat(5,1fr);">
+        <div class="info-card tilt-card">
+          <div class="ic-label">USME Version</div>
+          <div class="ic-val">v3.1</div>
+          <div class="ic-sub">Optimized — 462 lines</div>
+        </div>
+        <div class="info-card tilt-card">
+          <div class="ic-label">Platforms</div>
+          <div class="ic-val">3</div>
+          <div class="ic-sub">TOS · TradingView · NT8</div>
+        </div>
+        <div class="info-card tilt-card">
+          <div class="ic-label">Alert Tiers</div>
+          <div class="ic-val">3</div>
+          <div class="ic-sub">WATCH / PRIME / ELITE</div>
+        </div>
+        <div class="info-card tilt-card">
+          <div class="ic-label">VWAP Suite</div>
+          <div class="ic-val">✓</div>
+          <div class="ic-sub">Elite institutional bands</div>
+        </div>
+        <div class="info-card tilt-card">
+          <div class="ic-label">Signal Layers</div>
+          <div class="ic-val">4+</div>
+          <div class="ic-sub">OB · FVG · LIQ · BOS</div>
+        </div>
+      </div>
+
+      <div class="doc-body">
+        <h2>What is USME?</h2>
+        <p>The <span class="hl-c">Unified Smart Money Engine (USME)</span> is a multi-layer institutional signal indicator built on the <strong>Inner Circle Trader (ICT)</strong> and <strong>Smart Money Concepts (SMC)</strong> methodology. It synthesizes the four core institutional confluences into a single, clean signal — eliminating the noise of looking at each component in isolation.</p>
+        <p>USME was engineered specifically for <span class="hl-g">prop firm funded traders</span> who need precision entries with defined risk and high-probability setups. The engine enforces a strict four-step confluence requirement before firing any signal, dramatically reducing false entries and improving trade quality.</p>
+
+        <h2>What's in This Documentation</h2>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Installation & Setup</div>
+              <div class="step-desc">Step-by-step guides for both ThinkorSwim (ThinkScript) and TradingView (Pine Script) platforms.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Signal Logic Deep Dive</div>
+              <div class="step-desc">Understand exactly what each of the four signal layers checks and how they combine to produce WATCH, PRIME, and ELITE signals.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">SOTD Alert System</div>
+              <div class="step-desc">Full documentation on the Setup of the Day (SOTD) tiered alert framework, once-per-session firing gates, and on-chart callout labels.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Trade Playbook</div>
+              <div class="step-desc">Real-world application: how to use USME signals within a complete SMC trade plan including stop placement, targets, and session filtering.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-content">
+              <div class="step-title">VWAP Elite Suite</div>
+              <div class="step-desc">Full documentation for the institutional VWAP band system — session VWAP, anchored VWAP, and multi-deviation bands used as dynamic confluence zones alongside USME signals.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">6</div>
+            <div class="step-content">
+              <div class="step-title">NinjaTrader 8 Guide</div>
+              <div class="step-desc">Platform-specific installation, NinjaScript architecture, ATM Strategy auto-trigger, and configuration guide for NinjaTrader 8 futures traders.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout tip">
+          <span class="callout-icon">💡</span>
+          <div class="callout-body"><strong>New to ICT/SMC?</strong> Start with the <a href="#" class="sb-link" onclick="switchSection('methodology');return false;" style="display:inline;padding:0;border:none;background:none;color:var(--cyan);font-family:inherit;font-size:inherit;">ICT/SMC Methodology</a> section before diving into the signal logic. Understanding the underlying concepts will dramatically improve how you use USME.</div>
+        </div>
+      </div>
+
+      <div class="doc-pagination">
+        <div></div>
+        <a href="#" class="page-nav-btn next" onclick="switchSection('installation');return false;">
+          <div><div class="pnb-dir">Next</div><div class="pnb-title">Installation</div></div>
+          <span class="pnb-arrow">→</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ══ INSTALLATION ══════════════════════════════════════ -->
+    <div class="doc-section" id="sec-installation">
+      <div class="doc-header">
+        <p class="doc-eyebrow">// GETTING STARTED — 02</p>
+        <h1 class="doc-title">Installation</h1>
+        <p class="doc-subtitle">Get USME running on ThinkorSwim, TradingView, or NinjaTrader 8 in under 5 minutes. Follow the platform-specific guide for your setup.</p>
+        <div class="doc-divider"></div>
+      </div>
+
+      <div class="doc-body">
+        <h2>Before You Begin</h2>
+        <div class="callout warning">
+          <span class="callout-icon">⚠</span>
+          <div class="callout-body"><strong>License Required.</strong> USME requires an active license key. Purchase at <code>snipertrader.com/checkout</code> — your key will be delivered to your email within minutes of purchase.</div>
+        </div>
+
+        <h2>ThinkorSwim (ThinkScript)</h2>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Open ThinkScript Editor</div>
+              <div class="step-desc">In ThinkorSwim, go to <code>Studies → Edit Studies → Create</code>. Alternatively, use the ThinkScript Editor via <code>Tools → ThinkScript Editor</code>.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Paste the Script</div>
+              <div class="step-desc">Clear the default code in the editor and paste the full USME ThinkScript code delivered in your purchase email. Do not modify any code before first run.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Enter License Key</div>
+              <div class="step-desc">In the script inputs panel, locate the <code>LicenseKey</code> field and paste your key exactly as delivered. The key is case-sensitive.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Save & Apply</div>
+              <div class="step-desc">Click <code>Save</code> then <code>Apply</code>. Add the study to your chart. On first load, USME will validate your license against our server — ensure internet connectivity.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-content">
+              <div class="step-title">Verify Activation</div>
+              <div class="step-desc">A green <code>USME v3.1 — ACTIVE</code> label will appear in the top-left of your chart. If you see a red validation error, double-check your license key and contact support.</div>
+            </div>
+          </div>
+        </div>
+
+        <h2>TradingView (Pine Script)</h2>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Open Pine Script Editor</div>
+              <div class="step-desc">In TradingView, click <code>Pine Script Editor</code> at the bottom of the chart window. Create a new script with <code>+ New Script</code>.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Paste the Pine Script</div>
+              <div class="step-desc">Clear existing code and paste the USME Pine Script v3.1 code from your delivery email. The script begins with <code>//@version=5</code>.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Click "Add to Chart"</div>
+              <div class="step-desc">Hit <code>Add to chart</code> (or <code>Ctrl+Enter</code>). The indicator settings panel will open automatically.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Enter License Key in Settings</div>
+              <div class="step-desc">In the indicator settings, find the <code>License Key</code> input field and paste your key. Hit OK to apply.</div>
+            </div>
+          </div>
+        </div>
+
+        <h2>NinjaTrader 8 (NinjaScript)</h2>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Import the NinjaScript Add-On</div>
+              <div class="step-desc">In NinjaTrader 8, go to <code>Tools → Import → NinjaScript Add-On</code>. Select the <code>USME_NT8.zip</code> file delivered in your purchase email. NT8 will compile and install the indicator automatically.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Add to Chart</div>
+              <div class="step-desc">Right-click your chart → <code>Indicators</code>. Under the <em>SniperTrader</em> category, find <code>USME_v31</code> and double-click to add. The settings panel opens automatically.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Enter License Key</div>
+              <div class="step-desc">In the <strong>License</strong> section of the indicator inputs, paste your SniperTrader license key into the <code>LicenseKey</code> field. Click <code>OK</code> — activation occurs on chart load with outbound internet access.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Verify Activation</div>
+              <div class="step-desc">A green <code>USME v3.1 NT8 — ACTIVE</code> watermark will appear in the chart panel. If you see a red error, ensure NT8 has outbound internet access enabled under <code>Tools → Options → General</code>.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-content">
+              <div class="step-title">Install VWAP Elite Suite (Pro licenses)</div>
+              <div class="step-desc">Repeat the import step with <code>USME_VWAP_NT8.zip</code>. The VWAP indicator appears as <code>USME_VWAP_Elite</code> in the SniperTrader category. Add it to the same chart as USME for automatic Confluence Mode activation.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout danger">
+          <span class="callout-icon">🚫</span>
+          <div class="callout-body"><strong>Do Not Share Your Script.</strong> Your license key is bound to your machine fingerprint. Sharing the script or key with others will trigger an automatic license revocation. See our <a href="terms.html" style="color:var(--red);">Terms of Service</a> for details.</div>
+        </div>
+      </div>
+
+      <div class="doc-pagination">
+        <a href="#" class="page-nav-btn prev" onclick="switchSection('overview');return false;">
+          <span class="pnb-arrow">←</span>
+          <div><div class="pnb-dir">Previous</div><div class="pnb-title">Overview</div></div>
+        </a>
+        <a href="#" class="page-nav-btn next" onclick="switchSection('quickstart');return false;">
+          <div><div class="pnb-dir">Next</div><div class="pnb-title">Quick Start</div></div>
+          <span class="pnb-arrow">→</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ══ QUICK START ═══════════════════════════════════════ -->
+    <div class="doc-section" id="sec-quickstart">
+      <div class="doc-header">
+        <p class="doc-eyebrow">// GETTING STARTED — 03</p>
+        <h1 class="doc-title">Quick Start</h1>
+        <p class="doc-subtitle">Your first trade setup with USME — from chart open to signal confirmed in under 10 minutes.</p>
+        <div class="doc-divider"></div>
+      </div>
+
+      <div class="doc-body">
+        <h2>Recommended Chart Configuration</h2>
+        <table class="doc-table">
+          <thead><tr><th>Setting</th><th>Recommended</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Timeframe</strong></td><td>15m primary, 1H bias</td><td>USME is optimized for 5m–1H execution</td></tr>
+            <tr><td><strong>Session</strong></td><td>London / NY Kill Zone</td><td>02:00–05:00 EST / 08:30–11:00 EST</td></tr>
+            <tr><td><strong>Instrument</strong></td><td>NQ, ES, GC, EURUSD</td><td>High-liquidity instruments perform best</td></tr>
+            <tr><td><strong>Bars Back</strong></td><td>500+</td><td>Needed for accurate OB/FVG detection</td></tr>
+            <tr><td><strong>Chart Type</strong></td><td>Candlestick</td><td>Heikin Ashi not recommended</td></tr>
+          </tbody>
+        </table>
+
+        <h2>Reading Your First Signal</h2>
+        <p>Once USME is running, you will see colored dots appearing below or above candles. Each dot represents a completed institutional confluence check:</p>
+        <ul>
+          <li><strong>Cyan dot below candle</strong> — Bullish WATCH signal. 1–2 confluences confirmed.</li>
+          <li><strong>Gold dot below candle</strong> — Bullish PRIME signal. 3 confluences confirmed.</li>
+          <li><strong>Emerald dot below candle</strong> — Bullish ELITE signal. All 4 confluences confirmed.</li>
+          <li><strong>Red dots above candle</strong> — Bearish equivalents of the above.</li>
+        </ul>
+
+        <div class="callout success">
+          <span class="callout-icon">✓</span>
+          <div class="callout-body"><strong>ELITE signals only.</strong> For prop firm trading, we recommend trading exclusively on <span class="hl-e">ELITE</span> signals during confirmed Kill Zone windows. This maximizes your win rate and protects your funded account evaluation.</div>
+        </div>
+
+        <h2>Setting Up Your First Alert</h2>
+        <p>USME includes the <strong>Setup of the Day (SOTD)</strong> alert system. To activate on TradingView:</p>
+        <ol>
+          <li>Right-click on the chart and select <code>Add Alert</code></li>
+          <li>In the Condition dropdown, select <code>USME v3.1</code></li>
+          <li>Choose from: <code>SOTD Watch</code>, <code>SOTD Prime</code>, or <code>SOTD Elite</code></li>
+          <li>Set notification method (popup, email, webhook)</li>
+          <li>Click <code>Create</code> — alerts are automatically gated to once per session</li>
+        </ol>
+      </div>
+
+      <div class="doc-pagination">
+        <a href="#" class="page-nav-btn prev" onclick="switchSection('installation');return false;">
+          <span class="pnb-arrow">←</span>
+          <div><div class="pnb-dir">Previous</div><div class="pnb-title">Installation</div></div>
+        </a>
+        <a href="#" class="page-nav-btn next" onclick="switchSection('usme-core');return false;">
+          <div><div class="pnb-dir">Next</div><div class="pnb-title">Core Engine</div></div>
+          <span class="pnb-arrow">→</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ══ USME CORE ══════════════════════════════════════════ -->
+    <div class="doc-section" id="sec-usme-core">
+      <div class="doc-header">
+        <p class="doc-eyebrow">// USME INDICATOR — 01</p>
+        <h1 class="doc-title">Core Engine</h1>
+        <p class="doc-subtitle">The architectural overview of USME v3.1 — how the four institutional confluence layers are wired together into a unified signal engine, now with MAX-efficiency ThinkScript optimization.</p>
+        <div class="doc-divider"></div>
+      </div>
+
+      <div class="doc-body">
+        <h2>Architecture Overview</h2>
+        <p>USME v3.1 builds on the v2.0 lean foundation with a full MAX-efficiency ThinkScript optimization pass, expanding to a precise <strong>462-line engine</strong> that adds new confluence refinements, enhanced session logic, and tighter signal filtering — without adding rendering overhead. Every added line earns its place.</p>
+
+        <div class="info-grid" style="grid-template-columns:repeat(4,1fr);">
+          <div class="info-card tilt-card">
+            <div class="ic-label">v1.0 Lines</div>
+            <div class="ic-val">~900</div>
+            <div class="ic-sub">Original prototype</div>
+          </div>
+          <div class="info-card tilt-card">
+            <div class="ic-label">v2.0 Lines</div>
+            <div class="ic-val">377</div>
+            <div class="ic-sub">Lean refactor</div>
+          </div>
+          <div class="info-card tilt-card">
+            <div class="ic-label">v3.1 Lines</div>
+            <div class="ic-val">462</div>
+            <div class="ic-sub">MAX-efficiency optimized</div>
+          </div>
+          <div class="info-card tilt-card">
+            <div class="ic-label">ThinkScript Build</div>
+            <div class="ic-val">✓</div>
+            <div class="ic-sub">Fully optimized</div>
+          </div>
+        </div>
+
+        <div class="callout success" style="margin-bottom:2rem;">
+          <span class="callout-icon">⚡</span>
+          <div class="callout-body"><strong>v3.1 MAX-Efficiency Highlights.</strong> The 462-line optimized build adds: adaptive ATR-based FVG filtering, OB partial-mitigation tracking, dealing range auto-lines, dual-symbol SMT, a Premium/Discount confluence layer, Asian Kill Zone support, and a tighter BOS/CHoCH closed-candle confirmation rule. See the <a href="#" onclick="switchSection('changelog');return false;" style="color:var(--cyan);display:inline;padding:0;border:none;background:none;font-family:inherit;font-size:inherit;">Changelog</a> for the full list.</div>
+        </div>
+
+        <h2>The Four Signal Layers</h2>
+        <p>Every USME signal requires all four of the following institutional confluences to be satisfied in sequence. Missing any layer resets the confluence counter — the engine is uncompromising about signal quality.</p>
+
+        <div class="signal-flow">
+          <div class="flow-step flow-s1">
+            <div class="flow-icon">🏛</div>
+            <div class="flow-label">L1 — OB</div>
+            <div class="flow-sub">Order Block<br>Price at institutional OB</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step flow-s2">
+            <div class="flow-icon">📊</div>
+            <div class="flow-label">L2 — FVG</div>
+            <div class="flow-sub">Fair Value Gap<br>Unmitigated imbalance</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step flow-s3">
+            <div class="flow-icon">💧</div>
+            <div class="flow-label">L3 — LIQ</div>
+            <div class="flow-sub">Liquidity Sweep<br>BSL / SSL taken</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step flow-s4">
+            <div class="flow-icon">🔄</div>
+            <div class="flow-label">L4 — BOS</div>
+            <div class="flow-sub">Structure Shift<br>BOS or CHoCH confirmed</div>
+          </div>
+        </div>
+
+        <h2>Layer Definitions</h2>
+
+        <h3>Layer 1 — Order Block (OB)</h3>
+        <p>An <strong>Order Block</strong> is the last opposing candle before a strong impulsive move that creates an imbalance. USME detects both <span class="hl-c">bullish OBs</span> (last bearish candle before bullish expansion) and <span class="hl-r">bearish OBs</span> (last bullish candle before bearish expansion). Price returning to the OB zone activates Layer 1.</p>
+
+        <h3>Layer 2 — Fair Value Gap (FVG)</h3>
+        <p>A <strong>Fair Value Gap</strong> is a three-candle imbalance where the wick of candle 1 does not overlap the wick of candle 3, leaving an unfilled price region. USME identifies unmitigated FVGs and triggers Layer 2 when price re-enters the gap, seeking to fill it.</p>
+
+        <h3>Layer 3 — Liquidity Sweep</h3>
+        <p>USME monitors <strong>Buy Side Liquidity (BSL)</strong> and <strong>Sell Side Liquidity (SSL)</strong> pools — equal highs, equal lows, prior session highs/lows, and swing points. Layer 3 fires when price raids a liquidity pool and shows rejection evidence (wick through the level, return inside range).</p>
+
+        <h3>Layer 4 — Break of Structure / CHoCH</h3>
+        <p>The final layer confirms institutional intent via either a <strong>Break of Structure (BOS)</strong> — price continuing in the expected direction past the last swing high/low — or a <strong>Change of Character (CHoCH)</strong> — the first opposing structural break after a trend, signaling a potential reversal.</p>
+
+        <div class="callout tip">
+          <span class="callout-icon">💡</span>
+          <div class="callout-body"><strong>SMT Divergence.</strong> USME optionally incorporates <strong>Smart Money Tool (SMT) divergence</strong> — comparing correlated pairs (e.g., NQ vs ES, EURUSD vs DXY) to confirm institutional participation. When SMT is active, a divergence confirmation adds additional weight to the signal tier calculation.</div>
+        </div>
+      </div>
+
+      <div class="doc-pagination">
+        <a href="#" class="page-nav-btn prev" onclick="switchSection('quickstart');return false;">
+          <span class="pnb-arrow">←</span>
+          <div><div class="pnb-dir">Previous</div><div class="pnb-title">Quick Start</div></div>
+        </a>
+        <a href="#" class="page-nav-btn next" onclick="switchSection('signal-logic');return false;">
+          <div><div class="pnb-dir">Next</div><div class="pnb-title">Signal Logic</div></div>
+          <span class="pnb-arrow">→</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ══ SIGNAL LOGIC ═══════════════════════════════════════ -->
+    <div class="doc-section" id="sec-signal-logic">
+      <div class="doc-header">
+        <p class="doc-eyebrow">// USME INDICATOR — 02</p>
+        <h1 class="doc-title">Signal Logic</h1>
+        <p class="doc-subtitle">The precise conditions that produce each signal tier — from WATCH to ELITE — and how the confluence scoring system works.</p>
+        <div class="doc-divider"></div>
+      </div>
+
+      <div class="doc-body">
+        <h2>Confluence Scoring</h2>
+        <p>USME runs a <strong>confluence score</strong> on every completed candle. The score accumulates points based on which of the four layers are satisfied, with optional bonus conditions for SMT divergence and Kill Zone timing. The final score determines the signal tier:</p>
+
+        <table class="doc-table">
+          <thead><tr><th>Condition</th><th>Points</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>Layer 1 — Order Block hit</td><td>+1</td><td>Required base condition</td></tr>
+            <tr><td>Layer 2 — FVG entry</td><td>+1</td><td>Can stack with OB</td></tr>
+            <tr><td>Layer 3 — Liquidity sweep</td><td>+1</td><td>Sweep + return inside</td></tr>
+            <tr><td>Layer 4 — BOS / CHoCH</td><td>+1</td><td>Structure confirmation</td></tr>
+            <tr><td>Kill Zone active</td><td>+0.5 bonus</td><td>London / NY sessions</td></tr>
+            <tr><td>SMT Divergence present</td><td>+0.5 bonus</td><td>If SMT mode enabled</td></tr>
+          </tbody>
+        </table>
+
+        <h2>Signal Tiers</h2>
+        <div class="alert-tiers">
+          <div class="alert-tier at-watch">
+            <div class="at-icon">◎</div>
+            <div class="at-name">WATCH</div>
+            <div class="at-desc">1–2 confluences active. Market structure is aligning but not fully confirmed. Monitor for continuation.</div>
+            <div class="at-criteria">Score: 1.0 – 2.4</div>
+          </div>
+          <div class="alert-tier at-prime">
+            <div class="at-icon">◈</div>
+            <div class="at-name">PRIME</div>
+            <div class="at-desc">3 confluences confirmed. High-probability setup forming. Can begin preparing entry criteria.</div>
+            <div class="at-criteria">Score: 2.5 – 3.4</div>
+          </div>
+          <div class="alert-tier at-elite">
+            <div class="at-icon">⬡</div>
+            <div class="at-name">ELITE</div>
+            <div class="at-desc">All 4 confluences confirmed. Maximum institutional conviction. Optimal signal for funded account trading.</div>
+            <div class="at-criteria">Score: 3.5+</div>
+          </div>
+        </div>
+
+        <h2>Signal Invalidation</h2>
+        <p>A signal is invalidated and the confluence counter resets under the following conditions:</p>
+        <ul>
+          <li>Price closes beyond the Order Block invalidation level (typically 50% of the OB body or the full OB wick for aggressive mode)</li>
+          <li>The FVG is fully mitigated (price fills the entire gap)</li>
+          <li>A opposing BOS occurs before entry trigger fires</li>
+          <li>Session closes without an entry trigger (daily reset)</li>
+        </ul>
+
+        <div class="callout warning">
+          <span class="callout-icon">⚠</span>
+          <div class="callout-body"><strong>No Signal = No Trade.</strong> USME will produce zero signals on many candles — this is by design. A quiet indicator is a healthy indicator. Forcing trades outside of USME signals is the primary cause of funded account failures.</div>
+        </div>
+      </div>
+
+      <div class="doc-pagination">
+        <a href="#" class="page-nav-btn prev" onclick="switchSection('usme-core');return false;">
+          <span class="pnb-arrow">←</span>
+          <div><div class="pnb-dir">Previous</div><div class="pnb-title">Core Engine</div></div>
+        </a>
+        <a href="#" class="page-nav-btn next" onclick="switchSection('sotd');return false;">
+          <div><div class="pnb-dir">Next</div><div class="pnb-title">SOTD Alerts</div></div>
+          <span class="pnb-arrow">→</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ══ SOTD ALERTS ════════════════════════════════════════ -->
+    <div class="doc-section" id="sec-sotd">
+      <div class="doc-header">
+        <p class="doc-eyebrow">// USME INDICATOR — 03</p>
+        <h1 class="doc-title">SOTD Alert System</h1>
+        <p class="doc-subtitle">The Setup of the Day (SOTD) is USME's intelligent alert framework — once-per-session firing gates, three tier alerts, and on-chart callout labels.</p>
+        <div class="doc-divider"></div>
+      </div>
+
+      <div class="doc-body">
+        <h2>What is SOTD?</h2>
+        <p>The <span class="hl-c">Setup of the Day (SOTD)</span> is a special alert mode within USME that identifies the single highest-quality signal in a given trading session and fires a tiered alert — exactly once. This prevents alert fatigue from multiple lower-quality signals throughout the day and ensures you're notified only when a truly actionable institutional setup has formed.</p>
+
+        <h2>How the Firing Gate Works</h2>
+        <p>The once-per-session firing gate uses a <code>rec</code> variable that persists across bars within the same session. The logic is:</p>
+        <ol>
+          <li>At session open, the <code>sotdFired</code> flag resets to <code>false</code></li>
+          <li>On each bar, USME evaluates the current confluence score</li>
+          <li>The first bar that meets the tier threshold triggers the alert AND sets <code>sotdFired = true</code></li>
+          <li>Subsequent bars, even if they produce higher scores, do not re-trigger the SOTD alert</li>
+          <li>The session reset occurs at the configurable <code>SessionResetTime</code> input (default: 17:00 EST)</li>
+        </ol>
+
+        <pre><code><span class="cm">// SOTD firing gate — ThinkScript equivalent logic</span>
+<span class="kw">rec</span> <span class="var">sotdFired</span> = <span class="kw">if</span> <span class="fn">IsNaN</span>(<span class="var">sotdFired</span>[<span class="num">1</span>]) <span class="kw">then</span> <span class="num">0</span>
+              <span class="kw">else if</span> <span class="var">sessionReset</span> <span class="kw">then</span> <span class="num">0</span>
+              <span class="kw">else if</span> <span class="var">sotdFired</span>[<span class="num">1</span>] == <span class="num">1</span> <span class="kw">then</span> <span class="num">1</span>
+              <span class="kw">else if</span> <span class="var">confluenceScore</span> >= <span class="var">watchThreshold</span> <span class="kw">then</span> <span class="num">1</span>
+              <span class="kw">else</span> <span class="num">0</span>;
+
+<span class="kw">def</span> <span class="var">fireSOTD</span> = <span class="var">confluenceScore</span> >= <span class="var">watchThreshold</span>
+              <span class="kw">and</span> <span class="var">sotdFired</span>[<span class="num">1</span>] == <span class="num">0</span>;</code></pre>
+
+        <h2>On-Chart Callout Labels</h2>
+        <p>When an SOTD alert fires, USME renders a floating callout label directly on the chart at the signal bar. Each tier has a distinct visual style:</p>
+
+        <table class="doc-table">
+          <thead><tr><th>Tier</th><th>Label Text</th><th>Color</th><th>Position</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="tier-badge tier-watch">⬤ WATCH</span></td>
+              <td><code>SOTD WATCH ◎</code></td>
+              <td>Cyan</td>
+              <td>Below bar (bull) / Above bar (bear)</td>
+            </tr>
+            <tr>
+              <td><span class="tier-badge tier-prime">⬤ PRIME</span></td>
+              <td><code>SOTD PRIME ◈</code></td>
+              <td>Gold</td>
+              <td>Below bar (bull) / Above bar (bear)</td>
+            </tr>
+            <tr>
+              <td><span class="tier-badge tier-elite">⬤ ELITE</span></td>
+              <td><code>SOTD ELITE ⬡</code></td>
+              <td>Emerald</td>
+              <td>Below bar (bull) / Above bar (bear)</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2>Configuring Alerts</h2>
+        <p>You can configure SOTD to fire on specific tiers. In the USME settings panel, find <strong>SOTD Alert Mode</strong>:</p>
+        <ul>
+          <li><code>ALL</code> — Fires on WATCH, PRIME, or ELITE (first qualifying signal each session)</li>
+          <li><code>PRIME+</code> — Only fires on PRIME or ELITE signals</li>
+          <li><code>ELITE_ONLY</code> — Fires only when all four confluences are confirmed</li>
+        </ul>
+
+        <div class="callout success">
+          <span class="callout-icon">✓</span>
+          <div class="callout-body"><strong>Recommended for funded traders:</strong> Set SOTD Alert Mode to <code>ELITE_ONLY</code> during your evaluation phase. This filters out lower-probability setups and keeps you focused on only the highest-conviction institutional entries.</div>
+        </div>
+      </div>
+
+      <div class="doc-pagination">
+        <a href="#" class="page-nav-btn prev" onclick="switchSection('signal-logic');return false;">
+          <span class="pnb-arrow">←</span>
+          <div><div class="pnb-dir">Previous</div><div class="pnb-title">Signal Logic</div></div>
+        </a>
+        <a href="#" class="page-nav-btn next" onclick="switchSection('settings');return false;">
+          <div><div class="pnb-dir">Next</div><div class="pnb-title">Settings & Inputs</div></div>
+          <span class="pnb-arrow">→</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ══ SETTINGS ═══════════════════════════════════════════ -->
+    <div class="doc-section" id="sec-settings">
+      <div class="doc-header">
+        <p class="doc-eyebrow">// USME INDICATOR — 04</p>
+        <h1 class="doc-title">Settings &amp; Inputs</h1>
+        <p class="doc-subtitle">Complete reference for every configurable input in USME v3.1. Defaults are optimized for most users — change only what you understand.</p>
+        <div class="doc-divider"></div>
+      </div>
+
+      <div class="doc-body">
+        <h2>License</h2>
+        <table class="doc-table">
+          <thead><tr><th>Input</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>LicenseKey</code></td><td><em>empty</em></td><td>Your SniperTrader license key. Required for activation.</td></tr>
+          </tbody>
+        </table>
+
+        <h2>Signal Engine</h2>
+        <table class="doc-table">
+          <thead><tr><th>Input</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>OB_LookbackBars</code></td><td>50</td><td>How many bars back to scan for valid Order Blocks.</td></tr>
+            <tr><td><code>FVG_MinSize</code></td><td>0.0005</td><td>Minimum FVG gap size as a decimal (e.g., 5 pips for FX). Filters micro-gaps.</td></tr>
+            <tr><td><code>LiqSweepBars</code></td><td>20</td><td>Number of bars back for liquidity pool detection (equal highs/lows).</td></tr>
+            <tr><td><code>BOSStrength</code></td><td>STRONG</td><td><code>STRONG</code> requires a full close beyond structure. <code>AGGRESSIVE</code> triggers on wick.</td></tr>
+            <tr><td><code>SMT_Enabled</code></td><td>false</td><td>Enable SMT Divergence layer. Requires a secondary correlation symbol input.</td></tr>
+            <tr><td><code>SMT_Symbol</code></td><td>NQ1!</td><td>Correlation symbol for SMT comparison (e.g., ES1! vs NQ1!, EURUSD vs DXY).</td></tr>
+          </tbody>
+        </table>
+
+        <h2>SOTD Alert System</h2>
+        <table class="doc-table">
+          <thead><tr><th>Input</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>SOTD_Enabled</code></td><td>true</td><td>Toggle the entire SOTD alert system on/off.</td></tr>
+            <tr><td><code>SOTD_Mode</code></td><td>PRIME+</td><td><code>ALL</code> / <code>PRIME+</code> / <code>ELITE_ONLY</code> — minimum tier to trigger SOTD.</td></tr>
+            <tr><td><code>SOTD_SessionReset</code></td><td>1700</td><td>Military time for daily session reset (default 17:00 EST = futures session open).</td></tr>
+            <tr><td><code>SOTD_ShowLabel</code></td><td>true</td><td>Show on-chart callout label when SOTD fires.</td></tr>
+            <tr><td><code>SOTD_LabelSize</code></td><td>SMALL</td><td>Label size: <code>TINY</code> / <code>SMALL</code> / <code>NORMAL</code>.</td></tr>
+          </tbody>
+        </table>
+
+        <h2>Visual</h2>
+        <table class="doc-table">
+          <thead><tr><th>Input</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>Show_OB_Zones</code></td><td>true</td><td>Draw Order Block zones on chart.</td></tr>
+            <tr><td><code>Show_FVG_Zones</code></td><td>true</td><td>Draw unmitigated FVG zones on chart.</td></tr>
+            <tr><td><code>Show_LiqLines</code></td><td>true</td><td>Draw liquidity pool dashed lines.</td></tr>
+            <tr><td><code>Show_KillZones</code></td><td>true</td><td>Shade Kill Zone session windows.</td></tr>
+            <tr><td><code>Show_DealingRange</code></td><td>true</td><td>Draw session dealing range lines at session open (NY AM, London, Asian).</td></tr>
+            <tr><td><code>ColorScheme</code></td><td>DARK</td><td><code>DARK</code> / <code>LIGHT</code> / <code>CUSTOM</code> — affects all zone colors.</td></tr>
+          </tbody>
+        </table>
+
+        <h2>NinjaTrader 8 — Additional Inputs</h2>
+        <div class="callout info">
+          <span class="callout-icon">⚔</span>
+          <div class="callout-body"><strong>NT8-specific inputs.</strong> These settings appear only in the NinjaScript edition and replace or extend Pine/ThinkScript equivalents handled differently by the NT8 rendering engine.</div>
+        </div>
+        <table class="doc-table">
+          <thead><tr><th>Input</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>RenderMode</code></td><td>NATIVE</td><td><code>NATIVE</code> uses NT8 drawing objects. <code>CANVAS</code> uses SharpDX Direct2D for improved performance on dense/tick charts.</td></tr>
+            <tr><td><code>AlertSoundFile</code></td><td><em>empty</em></td><td>Optional path to a custom <code>.wav</code> played on SOTD alert. Leave empty to use NT8 default alert sound.</td></tr>
+            <tr><td><code>EnableATM</code></td><td>false</td><td>When enabled, USME ELITE signals auto-trigger an NT8 ATM Strategy. Requires a configured ATM template.</td></tr>
+            <tr><td><code>ATM_TemplateName</code></td><td>USME_Default</td><td>Name of the ATM Strategy template to use when <code>EnableATM</code> is true.</td></tr>
+            <tr><td><code>Calculate</code></td><td>OnBarClose</td><td><code>OnBarClose</code> (recommended) or <code>OnEachTick</code> for real-time intra-bar signal updates.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="doc-pagination">
+        <a href="#" class="page-nav-btn prev" onclick="switchSection('sotd');return false;">
+          <span class="pnb-arrow">←</span>
+          <div><div class="pnb-dir">Previous</div><div class="pnb-title">SOTD Alerts</div></div>
+        </a>
+        <a href="#" class="page-nav-btn next" onclick="switchSection('thinkorswim');return false;">
+          <div><div class="pnb-dir">Next</div><div class="pnb-title">ThinkorSwim Guide</div></div>
+          <span class="pnb-arrow">→</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ══ THINKORSWIM ════════════════════════════════════════ -->
+    <div class="doc-section" id="sec-thinkorswim">
+      <div class="doc-header">
+        <p class="doc-eyebrow">// PLATFORM GUIDES — 01</p>
+        <h1 class="doc-title">ThinkorSwim Guide</h1>
+        <p class="doc-subtitle">Platform-specific tips, ThinkScript quirks, and best practices for running USME on TD Ameritrade's ThinkorSwim.</p>
+        <div class="doc-divider"></div>
+      </div>
+      <div class="doc-body">
+        <h2>ThinkScript Specifics</h2>
+        <p>USME's ThinkScript edition was built to handle several TOS-specific challenges that required deliberate engineering decisions:</p>
+        <ul>
+          <li><strong>Namespace collisions:</strong> TOS has reserved function names that conflict with common variable names. USME uses prefixed variable names (e.g., <code>usme_ob</code>, <code>usme_fvg</code>) throughout to prevent conflicts.</li>
+          <li><strong><code>rec</code> vs <code>def</code>:</strong> Self-referencing variables in TOS require the <code>rec</code> keyword instead of <code>def</code>. The SOTD firing gate and all session-persistent state variables use <code>rec</code> correctly.</li>
+          <li><strong>Bar offset handling:</strong> Dynamic bar offsets require careful handling in TOS. All lookback logic uses fixed integer offsets or <code>Highest()</code>/<code>Lowest()</code> built-ins where dynamic offsets would cause errors.</li>
+        </ul>
+        <h2>Performance Tips</h2>
+        <ul>
+          <li>Set chart to <strong>Day</strong> aggregation for context, switch to your execution timeframe for signals</li>
+          <li>Limit bars loaded to 1,000 max — TOS performance degrades with very large histories on complex studies</li>
+          <li>Disable <code>Show_KillZones</code> if you experience chart lag — shaded regions are the most rendering-intensive element</li>
+        </ul>
+        <div class="callout tip">
+          <span class="callout-icon">💡</span>
+          <div class="callout-body"><strong>TOS Beachhead.</strong> The TOS ecosystem has minimal ICT/SMC competition compared to TradingView, making USME the dominant institutional indicator on the platform. If you're trading futures on TOS, you have a significant edge.</div>
+        </div>
+      </div>
+      <div class="doc-pagination">
+        <a href="#" class="page-nav-btn prev" onclick="switchSection('settings');return false;">
+          <span class="pnb-arrow">←</span>
+          <div><div class="pnb-dir">Previous</div><div class="pnb-title">Settings & Inputs</div></div>
+        </a>
+        <a href="#" class="page-nav-btn next" onclick="switchSection('tradingview');return false;">
+          <div><div class="pnb-dir">Next</div><div class="pnb-title">TradingView Guide</div></div>
+          <span class="pnb-arrow">→</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ══ TRADINGVIEW ════════════════════════════════════════ -->
+    <div class="doc-section" id="sec-tradingview">
+      <div class="doc-header">
+        <p class="doc-eyebrow">// PLATFORM GUIDES — 02</p>
+        <h1 class="doc-title">TradingView Guide</h1>
+        <p class="doc-subtitle">Pine Script v5 edition specifics, alert configuration, and multi-timeframe analysis tips for TradingView users.</p>
+        <div class="doc-divider"></div>
+      </div>
+      <div class="doc-body">
+        <h2>Pine Script v5 Notes</h2>
+        <p>USME Pine Script runs on <code>//@version=5</code>. Key Pine-specific implementation details:</p>
+        <ul>
+          <li><strong>Dynamic bar offsets:</strong> Pine Script v5 does not support dynamic series offsets with <code>[]</code>. USME uses <code>ta.valuewhen()</code> and <code>array</code> storage for all lookback operations that require dynamic indexing.</li>
+          <li><strong>Security calls:</strong> SMT Divergence mode uses <code>request.security()</code> for the correlation symbol. To avoid repainting, all security calls are made with <code>barmerge.gaps_off, barmerge.lookahead_off</code>.</li>
+          <li><strong>Alerts:</strong> Alert conditions are exported via <code>alertcondition()</code> for all three SOTD tiers plus raw signal conditions.</li>
+        </ul>
+        <h2>Multi-Timeframe Setup</h2>
+        <p>For the most powerful use of USME on TradingView, run two chart instances:</p>
+        <ol>
+          <li><strong>1H chart</strong> — USME for bias direction (bullish or bearish structural context)</li>
+          <li><strong>15m chart</strong> — USME for execution entries (refined OB/FVG entries in the direction of 1H bias)</li>
+        </ol>
+        <div class="callout success">
+          <span class="callout-icon">✓</span>
+          <div class="callout-body"><strong>Only take 15m ELITE signals that align with 1H bias.</strong> This top-down alignment filter alone can dramatically improve your win rate on funded evaluations.</div>
+        </div>
+      </div>
+      <div class="doc-pagination">
+        <a href="#" class="page-nav-btn prev" onclick="switchSection('thinkorswim');return false;">
+          <span class="pnb-arrow">←</span>
+          <div><div class="pnb-dir">Previous</div><div class="pnb-title">ThinkorSwim Guide</div></div>
+        </a>
+        <a href="#" class="page-nav-btn next" onclick="switchSection('ninjatrader');return false;">
+          <div><div class="pnb-dir">Next</div><div class="pnb-title">NinjaTrader 8 Guide</div></div>
+          <span class="pnb-arrow">→</span>
+        </a>
+      </div>
+    </div>
+
+
+    <!-- ══ NINJATRADER ═══════════════════════════════════════ -->
+    <div class="doc-section" id="sec-ninjatrader">
+      <div class="doc-header">
+        <p class="doc-eyebrow">// PLATFORM GUIDES — 03</p>
+        <h1 class="doc-title">NinjaTrader 8 Guide</h1>
+        <p class="doc-subtitle">NinjaScript edition specifics, ATM Strategy integration, rendering modes, and performance best practices for NinjaTrader 8 futures traders.</p>
+        <div class="doc-divider"></div>
+      </div>
+      <div class="doc-body">
+        <div class="callout success">
+          <span class="callout-icon">⚔</span>
+          <div class="callout-body"><strong>New Platform.</strong> USME is now available as a native NinjaScript indicator for NinjaTrader 8 — the platform of choice for serious futures traders. The NT8 edition includes all v3.1 signal logic plus exclusive ATM Strategy auto-trigger support.</div>
+        </div>
+        <h2>NinjaScript Architecture</h2>
+        <p>The NT8 edition is written in <strong>NinjaScript</strong> (C#-based), compiled natively inside NinjaTrader's runtime. Unlike ThinkScript or Pine Script, NinjaScript indicators run as fully compiled .NET assemblies — giving USME on NT8 the fastest execution and most responsive real-time signal detection of any platform edition.</p>
+        <div class="info-grid" style="grid-template-columns:repeat(3,1fr);">
+          <div class="info-card tilt-card">
+            <div class="ic-label">Language</div>
+            <div class="ic-val">C#</div>
+            <div class="ic-sub">Compiled NinjaScript</div>
+          </div>
+          <div class="info-card tilt-card">
+            <div class="ic-label">Render Engine</div>
+            <div class="ic-val">SharpDX</div>
+            <div class="ic-sub">Direct2D hardware</div>
+          </div>
+          <div class="info-card tilt-card">
+            <div class="ic-label">ATM Support</div>
+            <div class="ic-val">✓</div>
+            <div class="ic-sub">Auto-trigger on ELITE</div>
+          </div>
+        </div>
+        <h2>NinjaScript Specifics</h2>
+        <p>Key engineering decisions in the NT8 edition that differ from the TOS/TradingView versions:</p>
+        <ul>
+          <li><strong>Rendering:</strong> OB and FVG zones use NT8 <code>Draw.Rectangle()</code> in <code>NATIVE</code> mode, or direct <code>SharpDX.Direct2D1</code> in <code>CANVAS</code> mode. Canvas mode recommended for charts with 1,000+ bars.</li>
+          <li><strong>Session state:</strong> NT8 has no <code>rec</code> equivalent — session-persistent state is managed via C# class-level fields (<code>private bool sotdFired</code>) reset in the <code>OnSessionUpdate()</code> handler.</li>
+          <li><strong>Bar series access:</strong> All lookback logic uses NT8's <code>BarsArray</code> and <code>CurrentBar</code> with integer offsets — no dynamic offset limitations unlike Pine Script.</li>
+          <li><strong>Multi-timeframe:</strong> HTF bias accessed via NT8's native <code>AddDataSeries()</code> — cleaner and repainting-free versus Pine Script's <code>request.security()</code>.</li>
+          <li><strong>SMT Divergence:</strong> Secondary correlation symbol added as a second data series via <code>AddDataSeries(SMT_Symbol)</code>, eliminating repainting risk entirely.</li>
+        </ul>
+        <h2>ATM Strategy Auto-Trigger</h2>
+        <p>The NT8 edition's most powerful exclusive feature: when <code>EnableATM = true</code> and a <span class="hl-e">SOTD ELITE</span> signal fires, USME automatically submits an ATM Strategy order to your broker — placing entry, stop, and targets in a single action without manual intervention.</p>
+        <div class="callout warning">
+          <span class="callout-icon">⚠</span>
+          <div class="callout-body"><strong>ATM auto-trigger: test in Sim Mode first.</strong> Always validate your ATM template on a Simulated account for a minimum of 5 full sessions before enabling on a live or funded account. SniperTrader is not responsible for losses from ATM misconfigurations.</div>
+        </div>
+        <h2>Performance Tips</h2>
+        <ul>
+          <li>Use <code>RenderMode = CANVAS</code> on tick or volume charts — NT8 drawing objects accumulate rapidly on high-frequency data</li>
+          <li>Set <code>Calculate = OnBarClose</code> unless you need real-time intra-bar updates</li>
+          <li>Disable <code>EnableATM</code> during replay sessions to prevent phantom order submissions</li>
+          <li>Limit simultaneous USME instances to 3 per workspace</li>
+        </ul>
+        <div class="callout tip">
+          <span class="callout-icon">💡</span>
+          <div class="callout-body"><strong>NT8 + Rithmic / Tradovate.</strong> USME NT8 has been validated with Rithmic and Tradovate data connections — the two most common futures broker feeds for prop firm traders. Tick data mode with Rithmic is recommended for NQ/ES scalping setups.</div>
+        </div>
+        <h2>Supported Data Connections</h2>
+        <table class="doc-table">
+          <thead><tr><th>Connection</th><th>Status</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>Rithmic</td><td><span class="hl-e">Fully Tested</span></td><td>Recommended for futures. Tick-accurate data.</td></tr>
+            <tr><td>Tradovate</td><td><span class="hl-e">Fully Tested</span></td><td>Fully compatible. CME micro futures supported.</td></tr>
+            <tr><td>Interactive Brokers</td><td><span class="hl-g">Compatible</span></td><td>Tested on ES, NQ. Minor pacing delay on historical loads.</td></tr>
+            <tr><td>TD Ameritrade / Schwab</td><td><span class="hl-g">Compatible</span></td><td>Futures only. Equities not recommended with USME.</td></tr>
+            <tr><td>Kinetick</td><td><span class="hl-c">Limited</span></td><td>NT8 native feed. Works but lower tick resolution than Rithmic.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="doc-pagination">
+        <a href="#" class="page-nav-btn prev" onclick="switchSection('tradingview');return false;">
+          <span class="pnb-arrow">←</span>
+          <div><div class="pnb-dir">Previous</div><div class="pnb-title">TradingView Guide</div></div>
+        </a>
+        <a href="#" class="page-nav-btn next" onclick="switchSection('vwap-overview');return false;">
+          <div><div class="pnb-dir">Next</div><div class="pnb-title">VWAP Elite Suite</div></div>
+          <span class="pnb-arrow">→</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ══ VWAP OVERVIEW ══════════════════════════════════════ -->
+    <div class="doc-section" id="sec-vwap-overview">
+      <div class="doc-header">
+        <p class="doc-eyebrow">// VWAP ELITE SUITE — 01</p>
+        <h1 class="doc-title">VWAP Elite Suite</h1>
+        <p class="doc-subtitle">Institutional-grade VWAP with multi-deviation bands, anchored VWAP, and USME confluence integration — the complete volume-weighted confluence layer for ICT/SMC traders.</p>
+        <div class="doc-divider"></div>
+      </div>
+      <div class="doc-body">
+        <div class="callout success">
+          <span class="callout-icon">〜</span>
+          <div class="callout-body"><strong>New Product.</strong> The VWAP Elite Suite is a standalone add-on included with USME Pro licenses, available for ThinkorSwim, TradingView, and NinjaTrader 8. It adds institutional VWAP analysis as a dedicated confluence layer alongside USME.</div>
+        </div>
+        <h2>What is the VWAP Elite Suite?</h2>
+        <p>The <span class="hl-c">VWAP Elite Suite</span> is a dedicated institutional VWAP indicator that goes far beyond the standard single-line VWAP. It provides:</p>
+        <ul>
+          <li><strong>Session VWAP</strong> — Volume-weighted average price reset at each session open (RTH, ETH, or custom)</li>
+          <li><strong>Anchored VWAP (AVWAP)</strong> — VWAP anchored to user-defined price events: swing highs/lows, SOTD signal bars, macro event dates, or manual anchor points</li>
+          <li><strong>Multi-deviation bands</strong> — Up to ±4 standard deviation bands above and below VWAP, forming institutional support/resistance zones</li>
+          <li><strong>USME Confluence Mode</strong> — VWAP band touches automatically add +0.5 to the USME confluence scoring engine when both indicators are on the same chart</li>
+        </ul>
+        <div class="info-grid" style="grid-template-columns:repeat(4,1fr);">
+          <div class="info-card tilt-card">
+            <div class="ic-label">VWAP Types</div>
+            <div class="ic-val">3</div>
+            <div class="ic-sub">Session · Anchored · Rolling</div>
+          </div>
+          <div class="info-card tilt-card">
+            <div class="ic-label">SD Bands</div>
+            <div class="ic-val">±4σ</div>
+            <div class="ic-sub">Up to 4 deviation levels</div>
+          </div>
+          <div class="info-card tilt-card">
+            <div class="ic-label">Platforms</div>
+            <div class="ic-val">3</div>
+            <div class="ic-sub">TOS · TV · NT8</div>
+          </div>
+          <div class="info-card tilt-card">
+            <div class="ic-label">USME Sync</div>
+            <div class="ic-val">+0.5</div>
+            <div class="ic-sub">Confluence score bonus</div>
+          </div>
+        </div>
+        <h2>Why VWAP Matters for ICT/SMC</h2>
+        <p>While VWAP is not an ICT-native concept, institutional order flow is inherently VWAP-driven — large buy-side institutions benchmark execution to VWAP. VWAP and its standard deviation bands function as <strong>dynamic institutional order zones</strong> that align tightly with ICT's Order Block and Fair Value Gap concepts. When an USME ELITE signal fires at a VWAP standard deviation band, confluence is at its absolute maximum.</p>
+        <h2>VWAP + USME: The Combined Signal</h2>
+        <div class="signal-flow">
+          <div class="flow-step flow-s1">
+            <div class="flow-icon">〜</div>
+            <div class="flow-label">VWAP SD Band</div>
+            <div class="flow-sub">Price at ±2σ or ±3σ<br>institutional zone</div>
+          </div>
+          <div class="flow-arrow">+</div>
+          <div class="flow-step flow-s2">
+            <div class="flow-icon">🏛</div>
+            <div class="flow-label">OB / FVG</div>
+            <div class="flow-sub">USME layers 1–2<br>confirmed</div>
+          </div>
+          <div class="flow-arrow">+</div>
+          <div class="flow-step flow-s3">
+            <div class="flow-icon">💧</div>
+            <div class="flow-label">Liquidity Sweep</div>
+            <div class="flow-sub">BSL / SSL taken<br>at VWAP level</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step flow-s4">
+            <div class="flow-icon">⬡</div>
+            <div class="flow-label">ELITE + VWAP</div>
+            <div class="flow-sub">Maximum conviction<br>institutional entry</div>
+          </div>
+        </div>
+        <div class="callout tip">
+          <span class="callout-icon">💡</span>
+          <div class="callout-body"><strong>Best setup: AVWAP anchored to prior day high/low.</strong> Anchoring VWAP to the prior session's key structural level (PDH/PDL) creates an institutional reference line that large players actively defend. An USME ELITE signal at an AVWAP anchored to PDH/PDL is among the highest-conviction setups in the suite.</div>
+        </div>
+      </div>
+      <div class="doc-pagination">
+        <a href="#" class="page-nav-btn prev" onclick="switchSection('ninjatrader');return false;">
+          <span class="pnb-arrow">←</span>
+          <div><div class="pnb-dir">Previous</div><div class="pnb-title">NinjaTrader 8 Guide</div></div>
+        </a>
+        <a href="#" class="page-nav-btn next" onclick="switchSection('vwap-install');return false;">
+          <div><div class="pnb-dir">Next</div><div class="pnb-title">VWAP Installation</div></div>
+          <span class="pnb-arrow">→</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ══ VWAP INSTALL ═══════════════════════════════════════ -->
+    <div class="doc-section" id="sec-vwap-install">
+      <div class="doc-header">
+        <p class="doc-eyebrow">// VWAP ELITE SUITE — 02</p>
+        <h1 class="doc-title">VWAP Elite Installation</h1>
+        <p class="doc-subtitle">Installing the VWAP Elite Suite on ThinkorSwim, TradingView, and NinjaTrader 8. The suite installs independently from USME and is designed to run alongside it on the same chart.</p>
+        <div class="doc-divider"></div>
+      </div>
+      <div class="doc-body">
+        <div class="callout warning">
+          <span class="callout-icon">⚠</span>
+          <div class="callout-body"><strong>USME Pro License Required.</strong> The VWAP Elite Suite is included with USME Pro licenses. Upgrade at <code>snipertrader.com/upgrade</code> — your existing license key is retained and updated in-place.</div>
+        </div>
+        <h2>ThinkorSwim</h2>
+        <p>Go to <code>Studies → Edit Studies → Create</code>, paste the <code>USME_VWAP_Elite.ts</code> ThinkScript code from your delivery email, and enter your license key. The VWAP Suite uses the same key as USME — no separate key is issued.</p>
+        <p>To enable <strong>USME Confluence Mode</strong>: in the VWAP Elite settings, set <code>USME_Sync = true</code>. Both studies must be on the same chart and same aggregation period.</p>
+        <h2>TradingView</h2>
+        <p>The VWAP Elite Suite ships as a separate Pine Script indicator (<code>USME_VWAP_Elite_v1.pine</code>). Add it to the same chart as USME following standard Pine Script installation steps. Confluence Mode activates automatically when both indicators are present — no additional configuration required.</p>
+        <h2>NinjaTrader 8</h2>
+        <p>Import <code>USME_VWAP_NT8.zip</code> via <code>Tools → Import → NinjaScript Add-On</code>. The indicator appears as <code>USME_VWAP_Elite</code> under the SniperTrader category. Add it to any chart running USME NT8 — Confluence Mode auto-detects the USME instance and passes band-touch events to the USME scoring engine automatically.</p>
+        <div class="callout tip">
+          <span class="callout-icon">💡</span>
+          <div class="callout-body"><strong>Recommended layout.</strong> Run USME and VWAP Elite both on the main price panel — not a separate sub-panel. This makes the visual confluence between OB/FVG zones and VWAP bands immediately apparent in a single glance.</div>
+        </div>
+      </div>
+      <div class="doc-pagination">
+        <a href="#" class="page-nav-btn prev" onclick="switchSection('vwap-overview');return false;">
+          <span class="pnb-arrow">←</span>
+          <div><div class="pnb-dir">Previous</div><div class="pnb-title">VWAP Overview</div></div>
+        </a>
+        <a href="#" class="page-nav-btn next" onclick="switchSection('vwap-settings');return false;">
+          <div><div class="pnb-dir">Next</div><div class="pnb-title">VWAP Settings &amp; Bands</div></div>
+          <span class="pnb-arrow">→</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ══ VWAP SETTINGS ══════════════════════════════════════ -->
+    <div class="doc-section" id="sec-vwap-settings">
+      <div class="doc-header">
+        <p class="doc-eyebrow">// VWAP ELITE SUITE — 03</p>
+        <h1 class="doc-title">VWAP Settings &amp; Bands</h1>
+        <p class="doc-subtitle">Complete reference for every input in the VWAP Elite Suite — VWAP type, anchor configuration, standard deviation bands, and USME confluence integration settings.</p>
+        <div class="doc-divider"></div>
+      </div>
+      <div class="doc-body">
+        <h2>VWAP Configuration</h2>
+        <table class="doc-table">
+          <thead><tr><th>Input</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>VWAP_Type</code></td><td>SESSION</td><td><code>SESSION</code> resets at session open. <code>ROLLING</code> uses a fixed lookback window. <code>ANCHORED</code> requires <code>Anchor_Mode</code> configuration.</td></tr>
+            <tr><td><code>Session_Type</code></td><td>RTH</td><td><code>RTH</code> (Regular Trading Hours) or <code>ETH</code> (Extended / 24H). Use ETH for crypto and overnight futures setups.</td></tr>
+            <tr><td><code>Rolling_Period</code></td><td>20</td><td>Number of sessions for rolling VWAP. Only active when <code>VWAP_Type = ROLLING</code>.</td></tr>
+          </tbody>
+        </table>
+        <h2>Anchored VWAP</h2>
+        <table class="doc-table">
+          <thead><tr><th>Input</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>Anchor_Mode</code></td><td>MANUAL</td><td><code>MANUAL</code> — anchor to specific date/time. <code>AUTO_SWING</code> — auto-anchors to most recent swing high/low. <code>SOTD_BAR</code> — anchors to last USME SOTD signal bar.</td></tr>
+            <tr><td><code>Anchor_Date</code></td><td><em>today</em></td><td>Date for manual anchor in <code>YYYY-MM-DD</code> format.</td></tr>
+            <tr><td><code>Anchor_Time</code></td><td>0930</td><td>Time for manual anchor in military format (EST). Default anchors to NY session open.</td></tr>
+            <tr><td><code>Show_Second_AVWAP</code></td><td>false</td><td>Display a second independent anchored VWAP line simultaneously.</td></tr>
+          </tbody>
+        </table>
+        <h2>Standard Deviation Bands</h2>
+        <table class="doc-table">
+          <thead><tr><th>Input</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>Show_1SD</code></td><td>true</td><td>Show ±1σ bands. Institutional value area edge.</td></tr>
+            <tr><td><code>Show_2SD</code></td><td>true</td><td>Show ±2σ bands. Primary institutional reversal zone.</td></tr>
+            <tr><td><code>Show_3SD</code></td><td>true</td><td>Show ±3σ bands. Extended move / overextension zone.</td></tr>
+            <tr><td><code>Show_4SD</code></td><td>false</td><td>Show ±4σ bands. Extreme outlier — rarely reached intraday.</td></tr>
+            <tr><td><code>Band_Style</code></td><td>DASHED</td><td><code>SOLID</code> / <code>DASHED</code> / <code>DOTTED</code></td></tr>
+            <tr><td><code>Band_Fill</code></td><td>true</td><td>Fill space between adjacent bands with low-opacity color shading.</td></tr>
+            <tr><td><code>Fill_Opacity</code></td><td>0.04</td><td>Opacity of band fill shading (0.01–0.15). Keep low to avoid obscuring price action.</td></tr>
+          </tbody>
+        </table>
+        <h2>USME Confluence Integration</h2>
+        <table class="doc-table">
+          <thead><tr><th>Input</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>USME_Sync</code></td><td>true</td><td>Enable USME Confluence Mode. VWAP SD band touches add +0.5 to the USME confluence score.</td></tr>
+            <tr><td><code>Sync_SD_Min</code></td><td>2</td><td>Minimum SD band level triggering the confluence bonus. Default: ±2σ+ only.</td></tr>
+            <tr><td><code>Highlight_Confluence</code></td><td>true</td><td>Draw a subtle highlight on VWAP bands where USME confluence is simultaneously active.</td></tr>
+            <tr><td><code>Confluence_Color</code></td><td>GOLD</td><td>Color for confluence highlight markers. <code>GOLD</code> / <code>CYAN</code> / <code>EMERALD</code> / <code>CUSTOM</code>.</td></tr>
+          </tbody>
+        </table>
+        <div class="callout success">
+          <span class="callout-icon">✓</span>
+          <div class="callout-body"><strong>Recommended band setup for prop firm traders:</strong> Enable ±1σ, ±2σ, ±3σ with Band Fill at 0.03 opacity. Set <code>Sync_SD_Min = 2</code> so only high-conviction ±2σ+ band touches boost your USME score. Keeps the chart clean while maximizing signal quality.</div>
+        </div>
+      </div>
+      <div class="doc-pagination">
+        <a href="#" class="page-nav-btn prev" onclick="switchSection('vwap-install');return false;">
+          <span class="pnb-arrow">←</span>
+          <div><div class="pnb-dir">Previous</div><div class="pnb-title">VWAP Installation</div></div>
+        </a>
+        <a href="#" class="page-nav-btn next" onclick="switchSection('methodology');return false;">
+          <div><div class="pnb-dir">Next</div><div class="pnb-title">ICT / SMC Basis</div></div>
+          <span class="pnb-arrow">→</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ══ METHODOLOGY ════════════════════════════════════════ -->
+    <div class="doc-section" id="sec-methodology">
+      <div class="doc-header">
+        <p class="doc-eyebrow">// STRATEGY — 01</p>
+        <h1 class="doc-title">ICT / SMC Methodology Basis</h1>
+        <p class="doc-subtitle">The foundational concepts from Inner Circle Trader and Smart Money Concepts that power every layer of the USME engine.</p>
+        <div class="doc-divider"></div>
+      </div>
+      <div class="doc-body">
+        <h2>The Institutional Framework</h2>
+        <p>USME is built entirely on the <span class="hl-c">Inner Circle Trader (ICT)</span> methodology developed by Michael J. Huddleston, combined with the broader <span class="hl-g">Smart Money Concepts (SMC)</span> framework. The core premise: <strong>retail traders lose because they follow retail indicators. Institutional traders win because they understand where liquidity is and how large players must move price to fill their orders.</strong></p>
+        <h2>Core Concepts Referenced by USME</h2>
+        <ul>
+          <li><strong>Order Blocks (OB):</strong> The institutional equivalent of supply/demand zones — the last opposing candle before an impulsive move, where smart money entered large positions.</li>
+          <li><strong>Fair Value Gaps (FVG / IFVG):</strong> Three-candle imbalances representing inefficient price delivery. Institutions return to fill these gaps before continuing their directional move.</li>
+          <li><strong>Liquidity (BSL / SSL):</strong> Pools of stop orders sitting above equal highs (BSL) and below equal lows (SSL). Institutions sweep these pools to fill large orders before reversing.</li>
+          <li><strong>Market Structure (BOS / CHoCH):</strong> The language of institutional intent. A Break of Structure (BOS) confirms trend continuation; a Change of Character (CHoCH) signals the first structural evidence of reversal.</li>
+          <li><strong>Kill Zones:</strong> ICT-defined high-probability time windows — London Open (02:00–05:00 EST), NY Open (08:30–11:00 EST), and NY PM (13:30–16:00 EST) — where institutional participation is highest.</li>
+          <li><strong>SMT Divergence:</strong> When correlated instruments (NQ vs ES, EURUSD vs DXY) fail to confirm each other's structural move, it signals institutional manipulation — one of the highest-conviction entry triggers in ICT methodology.</li>
+        </ul>
+        <div class="callout tip">
+          <span class="callout-icon">📖</span>
+          <div class="callout-body"><strong>Deeper Learning.</strong> The "From Broke to Funded" eBook available on the SniperTrader store covers all these concepts in narrative + tutorial format, written specifically for prop firm evaluation traders.</div>
+        </div>
+      </div>
+      <div class="doc-pagination">
+        <a href="#" class="page-nav-btn prev" onclick="switchSection('vwap-settings');return false;">
+          <span class="pnb-arrow">←</span>
+          <div><div class="pnb-dir">Previous</div><div class="pnb-title">VWAP Settings &amp; Bands</div></div>
+        </a>
+        <a href="#" class="page-nav-btn next" onclick="switchSection('playbook');return false;">
+          <div><div class="pnb-dir">Next</div><div class="pnb-title">Trade Playbook</div></div>
+          <span class="pnb-arrow">→</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ══ PLAYBOOK ════════════════════════════════════════════ -->
+    <div class="doc-section" id="sec-playbook">
+      <div class="doc-header">
+        <p class="doc-eyebrow">// STRATEGY — 02</p>
+        <h1 class="doc-title">Trade Playbook</h1>
+        <p class="doc-subtitle">The complete USME trade execution framework — from signal to entry, stop placement, target selection, and position sizing for prop firm evaluations.</p>
+        <div class="doc-divider"></div>
+      </div>
+      <div class="doc-body">
+        <h2>The USME Trade Template</h2>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Confirm Higher Timeframe Bias</div>
+              <div class="step-desc">Check 1H or 4H chart. Is price in a bullish or bearish market structure? Only take execution signals that align with HTF bias. Counter-trend ELITE signals exist but require extra confirmation.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Wait for Kill Zone</div>
+              <div class="step-desc">Do not enter outside of London (02:00–05:00 EST) or NY (08:30–11:00 EST) kill zones. USME signals during dead sessions have significantly lower follow-through rates.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">ELITE Signal Fires</div>
+              <div class="step-desc">SOTD ELITE callout appears on chart. All four confluences confirmed. Candle close or first retracement to the OB/FVG zone is your entry trigger.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Place Stop Below OB / FVG</div>
+              <div class="step-desc">Stop loss goes 1–3 ticks below the Order Block invalidation level (for bull trades) or above OB for bear trades. Never place stops at round numbers.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-content">
+              <div class="step-title">Target the Next Liquidity Pool</div>
+              <div class="step-desc">First target: nearest equal highs (bull) or equal lows (bear) above entry. Second target: prior session high/low. Minimum 2:1 RR required; 3:1+ preferred for evaluation accounts.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">6</div>
+            <div class="step-content">
+              <div class="step-title">Manage to Breakeven</div>
+              <div class="step-desc">Once price reaches 1:1 RR, move stop to breakeven. Let the trade run to target 2 or use a trailing stop above/below each successive BOS candle close.</div>
+            </div>
+          </div>
+        </div>
+        <div class="callout danger">
+          <span class="callout-icon">⚠</span>
+          <div class="callout-body"><strong>Prop Firm Risk Rules.</strong> Always check your prop firm's daily drawdown limit before sizing positions. USME does not manage position sizing — that is your responsibility. Use a maximum of 1–2% account risk per USME signal.</div>
+        </div>
+      </div>
+      <div class="doc-pagination">
+        <a href="#" class="page-nav-btn prev" onclick="switchSection('methodology');return false;">
+          <span class="pnb-arrow">←</span>
+          <div><div class="pnb-dir">Previous</div><div class="pnb-title">ICT / SMC Basis</div></div>
+        </a>
+        <a href="#" class="page-nav-btn next" onclick="switchSection('faq');return false;">
+          <div><div class="pnb-dir">Next</div><div class="pnb-title">FAQ</div></div>
+          <span class="pnb-arrow">→</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ══ FAQ ════════════════════════════════════════════════ -->
+    <div class="doc-section" id="sec-faq">
+      <div class="doc-header">
+        <p class="doc-eyebrow">// RESOURCES — 01</p>
+        <h1 class="doc-title">Frequently Asked Questions</h1>
+        <p class="doc-subtitle">Common questions from the SniperTrader community — answered.</p>
+        <div class="doc-divider"></div>
+      </div>
+      <div class="doc-body">
+        <h2>Licensing</h2>
+        <h3>Can I use USME on multiple devices?</h3>
+        <p>Yes — your license supports up to <strong>2 simultaneous devices</strong>. If you need additional seats (e.g., a desktop and a trading laptop plus a mobile setup), contact support for a multi-seat upgrade.</p>
+        <h3>Can I share my license with a friend?</h3>
+        <p><span class="hl-r">No.</span> Each license is bound to your machine fingerprint. Sharing will trigger automatic revocation. There are no refunds for revoked licenses. See the <a href="terms.html" style="color:var(--cyan);">Terms of Service</a>.</p>
+
+        <h2>Technical</h2>
+        <h3>Why am I getting a license validation error?</h3>
+        <ul>
+          <li>Ensure internet connectivity during activation</li>
+          <li>Double-check the license key — it is case-sensitive</li>
+          <li>If you've recently reformatted your computer, contact support — fingerprint resets are available once per 6 months</li>
+        </ul>
+        <h3>USME shows no signals on my chart — is it working?</h3>
+        <p>Yes — this is normal. USME is selective by design. Check: (1) Is your license active (green label visible)? (2) Are you on a sufficient timeframe (5m–1H)? (3) Is the instrument highly liquid? (4) Is the current session a Kill Zone? Low-activity sessions and illiquid instruments produce few signals.</p>
+        <h3>Does USME repaint?</h3>
+        <p><span class="hl-e">No.</span> USME signals are confirmed on candle close. No signal is drawn or modified after the candle that generated it closes. The Pine Script version explicitly uses <code>barmerge.lookahead_off</code> on all security calls.</p>
+
+        <h2>NinjaTrader 8</h2>
+        <h3>Does the NT8 edition have all the same features as TOS/TradingView?</h3>
+        <p>Yes — all v3.1 signal layers, SOTD alerts, SMT Divergence, and dealing range lines are fully implemented in the NT8 NinjaScript edition. The NT8 version additionally includes ATM Strategy auto-trigger and SharpDX Canvas rendering mode, which are exclusive to the NinjaTrader platform.</p>
+        <h3>Can I use the ATM auto-trigger on a prop firm funded account?</h3>
+        <p><span class="hl-g">Yes, with caution.</span> ATM auto-trigger is supported on any NT8-connected broker, including prop firm platforms using Rithmic. However, always run a minimum of 5 sessions in Sim Mode to validate your ATM template before enabling on a live evaluation. Misconfigurations are your responsibility — not SniperTrader's.</p>
+        <h3>USME NT8 shows a license error after my broker restores a session — what do I do?</h3>
+        <p>This is a known issue with session restores on some Rithmic connections. Reload the indicator by right-clicking the chart → <code>Reload NinjaScript</code>. If the error persists, restart NT8 fully — the license validation re-runs on each indicator initialization.</p>
+
+        <h2>VWAP Elite Suite</h2>
+        <h3>Is the VWAP Elite Suite included with my license?</h3>
+        <p>The VWAP Elite Suite is included with <strong>USME Pro</strong> licenses. Standard licenses cover USME only. Upgrade at <code>snipertrader.com/upgrade</code> — your license key is retained and updated in-place, no re-installation required.</p>
+        <h3>Does the VWAP Suite work without USME running on the same chart?</h3>
+        <p><span class="hl-e">Yes</span> — the VWAP Elite Suite is fully standalone. It operates independently as a standard VWAP indicator. USME Confluence Mode (the +0.5 score bonus) only activates when both indicators are loaded on the same chart, but the VWAP bands themselves are always visible and functional on their own.</p>
+        <h3>Can I anchor VWAP to a specific news event or earnings date?</h3>
+        <p>Yes — set <code>Anchor_Mode = MANUAL</code> and enter the date and time of the event in <code>Anchor_Date</code> and <code>Anchor_Time</code>. The AVWAP will calculate from that exact bar forward. This is a powerful technique for tracking institutional positioning after high-impact macro events (FOMC, CPI, NFP).</p>
+
+        <h2>Strategy</h2>
+        <h3>What instruments work best with USME?</h3>
+        <p>USME performs best on high-liquidity instruments: <strong>NQ, ES, GC, CL, EURUSD, GBP/USD, DXY</strong>. Crypto instruments (BTC, ETH) work but produce more noise due to 24/7 trading and thinner institutional participation.</p>
+        <h3>Can I use USME on crypto?</h3>
+        <p>Yes, but with caution. Disable Kill Zone filtering for crypto (set <code>KillZoneFilter = false</code>) and increase the <code>BOSStrength</code> to <code>STRONG</code> to reduce false signals in volatile sessions.</p>
+      </div>
+      <div class="doc-pagination">
+        <a href="#" class="page-nav-btn prev" onclick="switchSection('playbook');return false;">
+          <span class="pnb-arrow">←</span>
+          <div><div class="pnb-dir">Previous</div><div class="pnb-title">Trade Playbook</div></div>
+        </a>
+        <a href="#" class="page-nav-btn next" onclick="switchSection('changelog');return false;">
+          <div><div class="pnb-dir">Next</div><div class="pnb-title">Changelog</div></div>
+          <span class="pnb-arrow">→</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ══ CHANGELOG ══════════════════════════════════════════ -->
+    <div class="doc-section" id="sec-changelog">
+      <div class="doc-header">
+        <p class="doc-eyebrow">// RESOURCES — 02</p>
+        <h1 class="doc-title">Changelog</h1>
+        <p class="doc-subtitle">Full version history and release notes for the USME indicator suite — including USME v3.1, VWAP Elite Suite, and NinjaTrader 8 NinjaScript edition.</p>
+        <div class="doc-divider"></div>
+      </div>
+      <div class="doc-body">
+        <h2>v3.1 — Optimized ThinkScript Build</h2>
+        <div class="callout success">
+          <span class="callout-icon">⬡</span>
+          <div class="callout-body"><strong>Current Version.</strong> Released 2025. MAX-efficiency ThinkScript optimization — 462 lines. Active development branch.</div>
+        </div>
+        <ul>
+          <li><span class="hl-e">NEW</span> — <strong>VWAP Elite Suite launch.</strong> Standalone institutional VWAP add-on with session VWAP, anchored VWAP, ±1σ–±4σ standard deviation bands, and USME Confluence Mode (+0.5 score bonus on SD band touches). Available on TOS, TradingView, and NT8.</li>
+          <li><span class="hl-e">NEW</span> — <strong>NinjaTrader 8 NinjaScript edition launch.</strong> Full USME v3.1 signal engine compiled as a native C#/NinjaScript indicator for NT8. Includes ATM Strategy auto-trigger on ELITE signals, SharpDX Canvas render mode, and Rithmic/Tradovate validated data connections.</li>
+          <li><span class="hl-e">NEW</span> — Full MAX-efficiency ThinkScript optimization pass. Code expanded from 377 → <strong>462 lines</strong> with all additions earning measurable signal improvement.</li>
+          <li><span class="hl-e">NEW</span> — Enhanced Order Block zone persistence: OB boxes now track partial mitigation and display remaining OB strength as a fill opacity gradient.</li>
+          <li><span class="hl-e">NEW</span> — Refined FVG size filtering with adaptive ATR-based minimum gap threshold — eliminates micro-gaps on low-volatility sessions without manual tuning.</li>
+          <li><span class="hl-e">NEW</span> — Expanded session logic: added Asian Kill Zone window as optional Layer 3 confluence boost for overnight setups.</li>
+          <li><span class="hl-e">NEW</span> — SMT Divergence engine upgraded — now supports up to two correlated comparison symbols simultaneously.</li>
+          <li><span class="hl-e">NEW</span> — Confluence score now includes a Premium/Discount Array check (price position relative to 50% of the dealing range) as a fifth optional layer.</li>
+          <li><span class="hl-e">NEW</span> — On-chart dealing range (DR) lines drawn automatically at session open for NY AM, London, and Asian sessions.</li>
+          <li><span class="hl-g">IMPROVED</span> — BOS/CHoCH detection rewritten with stricter confirmation: requires a closed candle beyond the structural level (not just a wick pierce).</li>
+          <li><span class="hl-g">IMPROVED</span> — SOTD callout label rendering refactored — labels now use <code>text_halign</code> anchoring to prevent overlap on narrow charts.</li>
+          <li><span class="hl-g">IMPROVED</span> — Kill Zone shading further optimized; rendering overhead reduced an additional ~20% on top of v2.0 gains.</li>
+          <li><span class="hl-g">IMPROVED</span> — Liquidity pool line drawing now auto-expires swept levels to prevent visual clutter on extended sessions.</li>
+          <li><span class="hl-c">FIX</span> — ThinkScript: resolved edge case where <code>rec</code> session-state variables would reset mid-session on chart timeframe switches.</li>
+          <li><span class="hl-c">FIX</span> — Pine Script: corrected <code>ta.valuewhen()</code> offset drift on HTF bias aggregation at session boundaries.</li>
+          <li><span class="hl-c">FIX</span> — SMT divergence false positive on gap-up opens corrected by adding pre-market range exclusion filter.</li>
+        </ul>
+
+        <h2>v2.1 — Patch Release</h2>
+        <ul>
+          <li><span class="hl-c">FIX</span> — ThinkScript: <code>rec</code> SOTD gate variable reset logic corrected for extended-hours sessions.</li>
+          <li><span class="hl-c">FIX</span> — Pine Script: HTF bias aggregation offset drift on session boundaries resolved.</li>
+          <li><span class="hl-g">IMPROVED</span> — FVG detection stability improved on 1-minute timeframes during high-spread news events.</li>
+          <li><span class="hl-g">IMPROVED</span> — SOTD label positioning adjusted to avoid overlap with native TOS labels.</li>
+        </ul>
+
+        <h2>v2.0 — Major Release</h2>
+        <div class="callout info">
+          <span class="callout-icon">◈</span>
+          <div class="callout-body"><strong>Prior Version.</strong> Released June 2025. Superseded by v3.1.</div>
+        </div>
+        <ul>
+          <li><span class="hl-e">NEW</span> — Complete refactor from ~900 lines to 377 lines. Same capability, dramatically cleaner architecture.</li>
+          <li><span class="hl-e">NEW</span> — Setup of the Day (SOTD) alert system with three tiers (WATCH / PRIME / ELITE).</li>
+          <li><span class="hl-e">NEW</span> — Once-per-session firing gate with configurable reset time.</li>
+          <li><span class="hl-e">NEW</span> — On-chart callout labels for each SOTD tier.</li>
+          <li><span class="hl-e">NEW</span> — SMT Divergence layer as optional confluence boost.</li>
+          <li><span class="hl-c">FIX</span> — Resolved all TOS namespace collisions from v1.x.</li>
+          <li><span class="hl-c">FIX</span> — Corrected <code>rec</code> vs <code>def</code> usage for self-referencing session state variables.</li>
+          <li><span class="hl-c">FIX</span> — Pine Script dynamic bar offset handling rewritten using <code>ta.valuewhen()</code>.</li>
+          <li><span class="hl-g">IMPROVED</span> — FVG detection now filters micro-gaps below configurable minimum size.</li>
+          <li><span class="hl-g">IMPROVED</span> — Kill Zone shading performance optimized (reduced rendering load ~40%).</li>
+        </ul>
+
+        <h2>v1.5 — Feature Update</h2>
+        <ul>
+          <li><span class="hl-e">NEW</span> — CHoCH detection added alongside BOS for Layer 4.</li>
+          <li><span class="hl-e">NEW</span> — Session kill zone highlighting (London / NY / PM).</li>
+          <li><span class="hl-g">IMPROVED</span> — Order Block detection accuracy improved for nested structures.</li>
+          <li><span class="hl-c">FIX</span> — Liquidity sweep detection false positives on high-volatility news bars.</li>
+        </ul>
+
+        <h2>v1.0 — Initial Release</h2>
+        <ul>
+          <li>Four-layer institutional signal engine: OB → FVG → Liquidity Sweep → BOS</li>
+          <li>ThinkScript (ThinkorSwim) edition</li>
+          <li>Pine Script v5 (TradingView) edition</li>
+          <li>License key validation and machine fingerprinting</li>
+          <li>Basic signal dot visualization (cyan / gold / red)</li>
+        </ul>
+      </div>
+      <div class="doc-pagination">
+        <a href="#" class="page-nav-btn prev" onclick="switchSection('faq');return false;">
+          <span class="pnb-arrow">←</span>
+          <div><div class="pnb-dir">Previous</div><div class="pnb-title">FAQ</div></div>
+        </a>
+        <a href="#" class="page-nav-btn next" onclick="switchSection('overview');return false;">
+          <div><div class="pnb-dir">Back to Start</div><div class="pnb-title">Overview</div></div>
+          <span class="pnb-arrow">→</span>
+        </a>
+      </div>
+    </div>
+
+  </main><!-- /docs-main -->
+</div><!-- /docs-shell -->
+
+<a href="#" class="back-top" id="backTop">↑</a>
+
+<!-- ═══════════════ JAVASCRIPT ═══════════════ -->
+<script>
+/* ── Cursor ─────────────────────────────────────────────── */
+const dot=document.getElementById('cursorDot'),ring=document.getElementById('cursorRing');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;dot.style.left=mx+'px';dot.style.top=my+'px';});
+(function loop(){rx+=(mx-rx)*0.13;ry+=(my-ry)*0.13;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(loop);})();
+document.querySelectorAll('a,button,.sb-link,.page-nav-btn,.info-card,.step,.commit-item').forEach(el=>{
+  el.addEventListener('mouseenter',()=>ring.classList.add('hover'));
+  el.addEventListener('mouseleave',()=>ring.classList.remove('hover'));
+});
+
+/* ── Section Switching ──────────────────────────────────── */
+function switchSection(id){
+  // hide all
+  document.querySelectorAll('.doc-section').forEach(s=>s.classList.remove('active'));
+  // show target
+  const sec=document.getElementById('sec-'+id);
+  if(sec){sec.classList.add('active');}
+  // update sidebar active state
+  document.querySelectorAll('.sb-link').forEach(l=>l.classList.remove('active'));
+  const activeLink=document.querySelector(`.sb-link[data-section="${id}"]`);
+  if(activeLink)activeLink.classList.add('active');
+  // scroll main content to top
+  document.getElementById('docsMain').scrollTo({top:0,behavior:'smooth'});
+  window.scrollTo({top:0,behavior:'smooth'});
+  // re-init tilt for new cards
+  initTilt();
+}
+
+// Sidebar link handlers
+document.querySelectorAll('.sb-link[data-section]').forEach(link=>{
+  link.addEventListener('click',e=>{
+    e.preventDefault();
+    switchSection(link.dataset.section);
+  });
+});
+
+/* ── Sidebar Search ─────────────────────────────────────── */
+document.getElementById('sbSearch').addEventListener('input',function(){
+  const q=this.value.toLowerCase();
+  document.querySelectorAll('.sb-link').forEach(link=>{
+    const txt=link.textContent.toLowerCase();
+    link.style.display=(!q||txt.includes(q))?'flex':'none';
+  });
+  document.querySelectorAll('.sb-group').forEach(group=>{
+    const visible=[...group.querySelectorAll('.sb-link')].some(l=>l.style.display!=='none');
+    group.style.display=visible?'':'none';
+  });
+});
+
+/* ── Scroll Progress ────────────────────────────────────── */
+const bar=document.getElementById('scrollBar');
+window.addEventListener('scroll',()=>{
+  bar.style.width=(scrollY/(document.body.scrollHeight-innerHeight)*100)+'%';
+});
+
+/* ── Back To Top ────────────────────────────────────────── */
+const bt=document.getElementById('backTop');
+window.addEventListener('scroll',()=>bt.classList.toggle('visible',scrollY>300));
+bt.addEventListener('click',e=>{e.preventDefault();scrollTo({top:0,behavior:'smooth'});});
+
+/* ── 3D Tilt on Cards ───────────────────────────────────── */
+function initTilt(){
+  document.querySelectorAll('.tilt-card').forEach(card=>{
+    if(card._tiltBound)return;
+    card._tiltBound=true;
+    card.addEventListener('mousemove',e=>{
+      const r=card.getBoundingClientRect();
+      const dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);
+      card.style.transform=`perspective(600px) rotateX(${-(dy/(r.height/2))*6}deg) rotateY(${(dx/(r.width/2))*6}deg) translateZ(6px)`;
+      card.style.setProperty('--mx',((e.clientX-r.left)/r.width*100).toFixed(1)+'%');
+      card.style.setProperty('--my',((e.clientY-r.top)/r.height*100).toFixed(1)+'%');
+    });
+    card.addEventListener('mouseleave',()=>{card.style.transform='';});
+  });
+}
+initTilt();
+
+/* ── Particle System ────────────────────────────────────── */
+const canvas=document.getElementById('particle-canvas');
+const ctx=canvas.getContext('2d');
+let W,H;
+const mouse={x:-9999,y:-9999};
+function resize(){W=canvas.width=innerWidth;H=canvas.height=innerHeight;}
+resize();window.addEventListener('resize',resize);
+document.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY;});
+
+const COLS=['#00e5ff','#00b8d4','#ffc107','#00e5a0','#ffffff'];
+
+class Particle{
+  constructor(){this.reset(true);}
+  reset(init){
+    this.x=init?Math.random()*W:Math.random()<0.5?0:W;
+    this.y=Math.random()*H;
+    this.vx=(Math.random()-.5)*.3;this.vy=(Math.random()-.5)*.3;
+    this.r=Math.random()*1.2+.3;this.a=Math.random()*.45+.08;
+    this.col=COLS[Math.floor(Math.random()*COLS.length)];
+    this.life=Math.random()*260+130;this.age=0;
+  }
+  update(){
+    this.age++;
+    if(this.age>this.life){this.reset(false);return;}
+    const dx=this.x-mouse.x,dy=this.y-mouse.y,d=Math.hypot(dx,dy);
+    if(d<100){const f=(100-d)/100*.3;this.vx+=dx/d*f;this.vy+=dy/d*f;}
+    this.vx*=.979;this.vy*=.979;
+    this.x+=this.vx;this.y+=this.vy;
+    if(this.x<0)this.x=W;if(this.x>W)this.x=0;
+    if(this.y<0)this.y=H;if(this.y>H)this.y=0;
+  }
+  draw(){
+    const f=this.age<30?this.age/30:this.age>this.life-30?(this.life-this.age)/30:1;
+    ctx.globalAlpha=this.a*f;ctx.fillStyle=this.col;
+    ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);ctx.fill();
+  }
+}
+
+const particles=Array.from({length:180},()=>new Particle());
+
+function drawLines(){
+  ctx.lineWidth=.3;
+  for(let i=0;i<particles.length;i++){
+    for(let j=i+1;j<particles.length;j++){
+      const d=Math.hypot(particles[i].x-particles[j].x,particles[i].y-particles[j].y);
+      if(d<80){
+        ctx.globalAlpha=(1-d/80)*.09;ctx.strokeStyle='#00e5ff';
+        ctx.beginPath();ctx.moveTo(particles[i].x,particles[i].y);
+        ctx.lineTo(particles[j].x,particles[j].y);ctx.stroke();
+      }
+    }
+  }
+}
+
+function animate(){
+  ctx.clearRect(0,0,W,H);
+  drawLines();
+  particles.forEach(p=>{p.update();p.draw();});
+  ctx.globalAlpha=1;
+  requestAnimationFrame(animate);
+}
+animate();
+</script>
+
+<!-- ═══════════════ FOOTER ═══════════════ -->
+<footer class="docs-footer">
+  <a href="index.html" class="footer-logo">SNIPERTRADER</a>
+  <div class="footer-links">
+    <a href="index.html" class="footer-link">Home</a>
+    <a href="terms.html" class="footer-link">Terms</a>
+    <a href="#" class="footer-link" onclick="switchSection('faq');return false;">FAQ</a>
+<a href="#" class="footer-link" onclick="switchSection('vwap-overview');return false;">VWAP Suite</a>
+    <a href="#" class="footer-link" onclick="switchSection('ninjatrader');return false;">NinjaTrader</a>
+    <a href="#" class="footer-link" onclick="switchSection('changelog');return false;">Changelog</a>
+    <button class="theme-toggle" id="themeToggleFooter" title="Toggle light/dark mode" style="margin-left:8px;">
+      <span class="tt-icon" id="themeIconFooter">☽</span>
+      <span id="themeLabelFooter">DARK</span>
+    </button>
+  </div>
+  <span class="footer-copy">© 2025 SniperTrader — All rights reserved.</span>
+</footer>
+
+<script>
+/* ── Theme Toggle ───────────────────────────────────────── */
+(function(){
+  const body = document.body;
+  const toggle = document.getElementById('themeToggle');
+  const icon = document.getElementById('themeIcon');
+  const label = document.getElementById('themeLabel');
+  const toggleF = document.getElementById('themeToggleFooter');
+  const iconF = document.getElementById('themeIconFooter');
+  const labelF = document.getElementById('themeLabelFooter');
+
+  function setTheme(light){
+    if(light){
+      body.classList.add('light-mode');
+      icon.textContent = '☀'; label.textContent = 'LIGHT';
+      if(iconF){ iconF.textContent = '☀'; labelF.textContent = 'LIGHT'; }
+      localStorage.setItem('st-theme','light');
+    } else {
+      body.classList.remove('light-mode');
+      icon.textContent = '☽'; label.textContent = 'DARK';
+      if(iconF){ iconF.textContent = '☽'; labelF.textContent = 'DARK'; }
+      localStorage.setItem('st-theme','dark');
+    }
+  }
+
+  // Restore saved preference
+  setTheme(localStorage.getItem('st-theme') === 'light');
+
+  toggle.addEventListener('click', () => setTheme(!body.classList.contains('light-mode')));
+  if(toggleF) toggleF.addEventListener('click', () => setTheme(!body.classList.contains('light-mode')));
+})();
+</script>
+</body>
+</html>
