@@ -191,17 +191,132 @@
     <div class="logo">TRADER<span>EDGE</span> · PSYCH OS</div>
     <div class="neural-badge"><div class="pulse-dot"></div>NEURAL STATE: ACTIVE</div>
   </div>
-  <div class="nav" id="nav">
-    <button class="nav-tab active" data-tab="baseline">⬡ BASELINE</button>
-    <button class="nav-tab" data-tab="guardrails">☑ GUARDRAILS</button>
-    <button class="nav-tab" data-tab="review">◎ REVIEW LOOP</button>
-    <button class="nav-tab" data-tab="sentiment">⬡ SENTIMENT</button>
-    <button class="nav-tab" data-tab="chart">⬡ CHART AI</button>
-    <button class="nav-tab" data-tab="couch">♫ COUCH</button>
-    <button class="nav-tab" data-tab="propfirms">⬡ PROP FIRMS</button>
-  </div>
-  <div class="content">
+<div class="nav" id="nav">
+  <button class="nav-tab active" data-tab="dashboard">⬡ DASHBOARD</button>
+  <button class="nav-tab" data-tab="pnlwidget">📊 AI P&L WIDGET</button>
+  <button class="nav-tab" data-tab="baseline">⬡ BASELINE</button>
+  <button class="nav-tab" data-tab="guardrails">☑ GUARDRAILS</button>
+  <button class="nav-tab" data-tab="review">◎ REVIEW LOOP</button>
+  <button class="nav-tab" data-tab="sentiment">⬡ SENTIMENT</button>
+  <button class="nav-tab" data-tab="couch">♫ COUCH</button>
+  <button class="nav-tab" data-tab="propfirms">⬡ PROP FIRMS</button>
+</div>
+<div class="content">
 
+  <!-- DASHBOARD TAB (overview) -->
+  <div class="tab-panel active" id="tab-dashboard">
+    <div class="gap-col">
+      <div class="glass">
+        <div class="section-label">Welcome Back, Trader</div>
+        <div class="section-title">Today's Trading Readiness</div>
+        <div class="stats-row">
+          <div class="stat-card"><span class="stat-val" id="dashTrades">0</span><span class="stat-label">TODAY'S TRADES</span></div>
+          <div class="stat-card"><span class="stat-val gold" id="dashPnL">$0</span><span class="stat-label">SESSION P&L</span></div>
+          <div class="stat-card"><span class="stat-val" id="dashStreak">7</span><span class="stat-label">DAY STREAK</span></div>
+        </div>
+        <button class="btn-primary" onclick="document.querySelector('.nav-tab[data-tab=pnlwidget]').click()">▶ LAUNCH AI P&L WIDGET</button>
+      </div>
+      <div class="glass">
+        <div class="section-label">Quick Psych Check</div>
+        <div class="emo-grid">
+          <div class="emo-btn" onclick="setQuickEmo('flow')">🟢 FLOW</div>
+          <div class="emo-btn" onclick="setQuickEmo('focused')">🔵 FOCUSED</div>
+          <div class="emo-btn" onclick="setQuickEmo('neutral')">⬜ NEUTRAL</div>
+          <div class="emo-btn" onclick="setQuickEmo('anxious')">🟡 ANXIOUS</div>
+          <div class="emo-btn" onclick="setQuickEmo('revenge')">🔴 REVENGE</div>
+        </div>
+        <div id="quickStateMsg" style="font-size: 11px; color: var(--text-muted); text-align: center;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI P&L WIDGET - STANDALONE MODULE -->
+  <div class="tab-panel" id="tab-pnlwidget">
+    <div class="pnl-widget">
+      <div class="flex-between" style="margin-bottom: 16px;">
+        <div class="section-label">⚡ SNIPERTRADER.AI | P&L ENFORCER</div>
+        <div class="neural-badge" id="sessionPLDisplay" style="color: var(--gold2); font-size: 14px;">$0.00</div>
+      </div>
+
+      <!-- Editable Stats Grid -->
+      <div class="pnl-stats-grid">
+        <div class="pnl-stat-card">
+          <div class="pnl-stat-label">💰 FUNDED ACCOUNT</div>
+          <div class="pnl-stat-value" id="accountDisplay">$50,000</div>
+          <div class="pnl-stat-sub"><span class="edit-icon" onclick="editFundedAccount()">✎ edit</span> risk ≤1%</div>
+        </div>
+        <div class="pnl-stat-card">
+          <div class="pnl-stat-label">📊 DAILY TRADES</div>
+          <div class="pnl-stat-value" id="tradeCounter">0</div>
+          <div class="pnl-stat-sub">max <span id="maxTradesDisplay">3</span> <span class="edit-icon" onclick="editMaxTrades()">✎</span></div>
+        </div>
+        <div class="pnl-stat-card">
+          <div class="pnl-stat-label">📈 DAILY P&L</div>
+          <div class="pnl-stat-value" id="dailyPnL">$0</div>
+          <div class="pnl-stat-sub">ceiling: <span id="lossLimitPctDisplay">2</span>% = <span id="lossLimitDollarDisplay">$1,000</span> <span class="edit-icon" onclick="editLossCeiling()">✎</span></div>
+        </div>
+        <div class="pnl-stat-card">
+          <div class="pnl-stat-label">🎯 CONSISTENCY</div>
+          <div class="pnl-stat-value" id="consistencyPct">0%</div>
+          <div class="pnl-stat-sub">max 35% of target <span class="edit-icon" onclick="editTargetProfit()">✎</span><br><span id="targetProfitHint">target: $2,000</span></div>
+        </div>
+      </div>
+
+      <!-- Killzone & News -->
+      <div class="killzone-bar">
+        <span class="section-label" style="margin:0;">⏱️ SESSION KILLZONE</span>
+        <span class="pill" id="killzoneStatus">⛔ OFF-WINDOW</span>
+        <button id="newsToggleBtn" style="background: var(--obs4); color: var(--text-muted); padding: 5px 12px; font-size: 0.65rem;">📰 RED NEWS (manual)</button>
+      </div>
+      <div id="newsWarning" style="font-size:0.7rem; margin-bottom: 12px; padding-left: 8px;"></div>
+
+      <!-- Psychology & AI Gate -->
+      <div style="display: flex; gap: 14px; margin-bottom: 16px;">
+        <div style="flex:1; background: var(--obs4); border-radius: 1rem; padding: 8px 12px;">
+          <span style="font-size:0.7rem; font-weight:600;">🧠 PSYCH SCORE</span>
+          <input type="range" id="sentimentSlider" min="0" max="100" value="85" style="width:100%; margin-top: 4px;">
+          <div id="sentimentValue" style="font-size:0.65rem;">85% - ALLOWED</div>
+        </div>
+        <div style="flex:1; background: var(--obs4); border-radius: 1rem; padding: 8px 12px;">
+          <span style="font-size:0.7rem; font-weight:600;">🎯 AI SCORE (≥70 needed)</span>
+          <input type="range" id="aiScoreSlider" min="0" max="100" value="72" style="width:100%; margin-top: 4px;">
+          <div id="aiScoreValue" style="font-size:0.65rem;">72% - gate open</div>
+        </div>
+      </div>
+
+      <!-- Trade Entry Form -->
+      <div class="trade-panel">
+        <div style="font-weight:700; font-size:0.75rem; margin-bottom: 12px;">📈 EXECUTE SETUP (SMC Journal)</div>
+        <div class="input-group">
+          <div class="input-field"><label>Direction</label><select id="tradeDir"><option value="long">LONG (BUY)</option><option value="short">SHORT (SELL)</option></select></div>
+          <div class="input-field"><label>Entry Price</label><input type="number" id="entryPrice" placeholder="0.0000" step="any"></div>
+          <div class="input-field"><label>Stop Loss (SL)</label><input type="number" id="stopLoss" placeholder="price"></div>
+          <div class="input-field"><label>Take Profit (TP)</label><input type="number" id="takeProfit" placeholder="price"></div>
+        </div>
+        <div class="input-group">
+          <div class="input-field"><label>ATR-based Risk ($)</label><input type="number" id="atrValue" placeholder="risk amount"></div>
+          <div class="input-field"><label>Setup Type (SMC)</label><select id="setupType"><option value="OB">OB (Order Block)</option><option value="FVG">FVG</option><option value="CHoCH">CHoCH</option><option value="BOS">BOS</option></select></div>
+        </div>
+        <div style="display: flex; gap: 12px; margin: 12px 0 8px;">
+          <button id="executeBtn">⚡ EXECUTE TRADE</button>
+          <button id="resetDayBtn" class="btn-secondary" style="background:var(--obs4);">🔄 RESET DAY</button>
+        </div>
+        <div id="violationMessage" class="rule-violation" style="display: none;"></div>
+        <div id="rrDisplay" style="font-size:0.7rem; background: var(--obs4); padding: 6px 12px; border-radius: 20px; margin-top: 8px;"></div>
+      </div>
+
+      <!-- Trade Journal -->
+      <div class="journal-section">
+        <div class="flex-between" style="margin-bottom: 8px;">
+          <span class="section-label" style="margin-bottom:0;">📔 SMC JOURNAL</span>
+          <span class="section-label" style="color: var(--gold2);">tag: OB / FVG / CHoCH / BOS</span>
+        </div>
+        <div class="trade-log" id="tradeLogList">
+          <div style="color: var(--text-dim);">— No trades today —</div>
+        </div>
+      </div>
+    </div>
+  </div>
     <!-- BASELINE -->
     <div class="tab-panel active" id="tab-baseline">
       <div class="gap-col">
