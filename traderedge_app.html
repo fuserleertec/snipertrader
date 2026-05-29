@@ -131,7 +131,6 @@
   .tag { background: var(--cyan-dim); border: 1px solid rgba(0,212,255,0.3); color: #FFFFFF; border-radius: 4px; padding: 3px 10px; font-size: 10px; font-family: 'Space Mono', monospace; }
   .tag.gold { background: var(--gold-dim); border-color: rgba(201,168,76,0.3); color: #FFFFFF; }
   .gap-col { display: flex; flex-direction: column; gap: 12px; }
-  /* PROP FIRM */
   .firm-card { background: var(--obs3); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
   .firm-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border); cursor: pointer; }
   .firm-header:hover { background: var(--obs4); }
@@ -286,37 +285,7 @@
 
       <!-- Trade Entry Form -->
       <div class="trade-panel">
-        <div style="font-weight:700; font-size:0.75rem; margin-bottom: 12px;">📈 EXECUTE SETUP (SMC Journal)</div>
-        <div class="input-group">
-          <div class="input-field"><label>Direction</label><select id="tradeDir"><option value="long">LONG (BUY)</option><option value="short">SHORT (SELL)</option></select></div>
-          <div class="input-field"><label>Entry Price</label><input type="number" id="entryPrice" placeholder="0.0000" step="any"></div>
-          <div class="input-field"><label>Stop Loss (SL)</label><input type="number" id="stopLoss" placeholder="price"></div>
-          <div class="input-field"><label>Take Profit (TP)</label><input type="number" id="takeProfit" placeholder="price"></div>
-        </div>
-        <div class="input-group">
-          <div class="input-field"><label>ATR-based Risk ($)</label><input type="number" id="atrValue" placeholder="risk amount"></div>
-          <div class="input-field"><label>Setup Type (SMC)</label><select id="setupType"><option value="OB">OB (Order Block)</option><option value="FVG">FVG</option><option value="CHoCH">CHoCH</option><option value="BOS">BOS</option></select></div>
-        </div>
-        <div style="display: flex; gap: 12px; margin: 12px 0 8px;">
-          <button id="executeBtn">⚡ EXECUTE TRADE</button>
-          <button id="resetDayBtn" class="btn-secondary" style="background:var(--obs4);">🔄 RESET DAY</button>
-        </div>
-        <div id="violationMessage" class="rule-violation" style="display: none;"></div>
-        <div id="rrDisplay" style="font-size:0.7rem; background: var(--obs4); padding: 6px 12px; border-radius: 20px; margin-top: 8px;"></div>
-      </div>
-
-      <!-- Trade Journal -->
-      <div class="journal-section">
-        <div class="flex-between" style="margin-bottom: 8px;">
-          <span class="section-label" style="margin-bottom:0;">📔 SMC JOURNAL</span>
-          <span class="section-label" style="color: var(--gold2);">tag: OB / FVG / CHoCH / BOS</span>
-        </div>
-        <div class="trade-log" id="tradeLogList">
-          <div style="color: var(--text-dim);">— No trades today —</div>
-        </div>
-      </div>
-    </div>
-  </div>
+        <div style="font-weight:700; font-size:0.75rem
     <!-- BASELINE -->
     <div class="tab-panel active" id="tab-baseline">
       <div class="gap-col">
