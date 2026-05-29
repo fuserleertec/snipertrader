@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TraderEdge Psych OS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>TraderEdge Psych OS + SniperTrader.ai P&L</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Space+Mono:wght@400;700&family=Syne:wght@400;600&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -19,7 +19,7 @@
     --border: rgba(0,212,255,0.15); --border-gold: rgba(201,168,76,0.2);
   }
   body { background: var(--obs); min-height: 100vh; font-family: 'Syne', sans-serif; color: var(--text); }
-  .header { background: var(--obs2); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .header { background: var(--obs2); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; flex-wrap: wrap; gap: 10px; }
   .logo { font-family: 'Orbitron', sans-serif; font-size: 13px; font-weight: 700; color: var(--cyan); letter-spacing: 2px; text-transform: uppercase; }
   .logo span { color: var(--gold2); }
   .neural-badge { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--green); font-family: 'Space Mono', monospace; }
@@ -30,177 +30,310 @@
   .nav-tab { padding: 10px 14px; font-size: 9px; font-family: 'Orbitron', monospace; font-weight: 600; letter-spacing: 1px; color: #8899AA; cursor: pointer; border: none; background: none; border-bottom: 2px solid transparent; white-space: nowrap; transition: all 0.2s; text-transform: uppercase; }
   .nav-tab:hover { color: #FFFFFF; }
   .nav-tab.active { color: #FFFFFF; border-bottom-color: var(--cyan); }
-  .content { padding: 20px; max-width: 900px; margin: 0 auto; }
+  .content { padding: 20px; max-width: 1200px; margin: 0 auto; }
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
+  
   .glass { background: var(--obs3); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
   .glass-gold { background: var(--obs3); border: 1px solid var(--border-gold); border-radius: 12px; padding: 18px; }
   .section-label { font-family: 'Orbitron', monospace; font-size: 9px; letter-spacing: 2.5px; color: var(--cyan); text-transform: uppercase; margin-bottom: 6px; }
   .section-title { font-family: 'Orbitron', sans-serif; font-size: 16px; font-weight: 700; color: #FFFFFF; margin-bottom: 4px; }
   .section-desc { font-size: 12px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px; }
-  .emo-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 16px; }
-  .emo-btn { background: var(--obs4); border: 1px solid var(--border); border-radius: 10px; padding: 12px 8px; text-align: center; cursor: pointer; transition: all 0.2s; color: var(--text-muted); font-size: 10px; font-family: 'Space Mono', monospace; }
-  .emo-btn:hover { border-color: var(--cyan); color: #FFFFFF; }
-  .emo-btn.selected { border-color: var(--cyan); background: var(--cyan-dim); color: #FFFFFF; }
-  .emo-btn.danger.selected { border-color: var(--red); background: var(--red-dim); color: #FFFFFF; }
-  .emo-icon { font-size: 22px; margin-bottom: 4px; display: block; }
-  .meter-wrap { margin-bottom: 16px; }
-  .meter-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-  .meter-name { font-size: 11px; color: var(--text-muted); font-family: 'Space Mono', monospace; }
-  .meter-val { font-size: 11px; font-family: 'Orbitron', monospace; font-weight: 700; }
-  .meter-track { height: 5px; background: var(--obs4); border-radius: 3px; overflow: hidden; }
-  .meter-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
-  .trade-alert { border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 14px; border: 1px solid; }
-  .trade-alert.green { background: var(--green-dim); border-color: rgba(0,255,136,0.3); }
-  .trade-alert.red { background: var(--red-dim); border-color: rgba(255,68,68,0.3); }
-  .trade-alert.gold { background: var(--gold-dim); border-color: rgba(201,168,76,0.3); }
-  .alert-icon { font-size: 20px; }
-  .alert-title { font-family: 'Orbitron', monospace; font-size: 11px; font-weight: 700; margin-bottom: 2px; color: #FFFFFF; }
-  .alert-msg { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
-  .checklist { display: flex; flex-direction: column; gap: 8px; }
-  .check-item { display: flex; align-items: flex-start; gap: 12px; background: var(--obs4); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: all 0.2s; }
-  .check-item:hover { border-color: var(--cyan); }
-  .check-item.checked { border-color: rgba(0,255,136,0.4); background: var(--green-dim); }
-  .check-box { width: 18px; height: 18px; border-radius: 4px; border: 1.5px solid var(--text-dim); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; transition: all 0.2s; margin-top: 1px; }
-  .check-item.checked .check-box { background: var(--green); border-color: var(--green); color: #000; }
-  .check-item.danger-item.checked { border-color: rgba(255,68,68,0.4); background: var(--red-dim); }
-  .check-item.danger-item.checked .check-box { background: var(--red); border-color: var(--red); }
-  .check-label { font-size: 12px; color: #FFFFFF; line-height: 1.5; }
-  .check-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; font-family: 'Space Mono', monospace; }
-  .streak-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 14px; }
-  .streak-day { aspect-ratio: 1; border-radius: 6px; background: var(--obs4); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 9px; font-family: 'Space Mono', monospace; color: var(--text-dim); cursor: pointer; }
-  .streak-day.done { background: var(--cyan-dim); border-color: var(--cyan); color: #FFFFFF; }
-  .streak-day.perfect { background: linear-gradient(135deg, rgba(0,212,255,0.2), rgba(201,168,76,0.2)); border-color: var(--gold2); color: #FFFFFF; }
-  .streak-day.today { border-color: var(--cyan); box-shadow: 0 0 8px rgba(0,212,255,0.3); color: #FFFFFF; }
-  .journal-field { margin-bottom: 14px; }
-  .journal-label { font-size: 10px; font-family: 'Orbitron', monospace; color: var(--cyan); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; display: block; }
-  .journal-textarea { width: 100%; background: var(--obs4); border: 1px solid var(--border); border-radius: 8px; padding: 12px; color: #FFFFFF; font-family: 'Syne', sans-serif; font-size: 12px; line-height: 1.6; resize: vertical; outline: none; min-height: 72px; transition: border-color 0.2s; }
-  .journal-textarea:focus { border-color: var(--cyan); }
-  .journal-textarea::placeholder { color: var(--text-dim); }
-  .score-row { display: flex; gap: 8px; margin-bottom: 14px; }
-  .score-btn { flex: 1; background: var(--obs4); border: 1px solid var(--border); border-radius: 8px; padding: 10px 6px; text-align: center; cursor: pointer; font-size: 10px; font-family: 'Orbitron', monospace; color: #FFFFFF; transition: all 0.2s; }
-  .score-btn.selected { border-color: var(--cyan); background: var(--cyan-dim); color: #FFFFFF; }
-  .score-num { font-size: 16px; font-weight: 700; display: block; margin-bottom: 2px; }
-  .sentiment-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
-  .sent-card { background: var(--obs4); border-radius: 10px; padding: 14px; border: 1px solid var(--border); }
-  .sent-ticker { font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 700; color: var(--gold2); margin-bottom: 4px; }
-  .sent-score { font-size: 28px; font-family: 'Orbitron', monospace; font-weight: 700; margin-bottom: 4px; }
-  .sent-score.bullish { color: var(--green); }
-  .sent-score.bearish { color: var(--red); }
-  .sent-score.neutral { color: var(--gold2); }
-  .sent-bar-track { height: 4px; background: var(--obs3); border-radius: 2px; margin-bottom: 8px; overflow: hidden; }
-  .sent-bar-fill { height: 100%; border-radius: 2px; }
-  .sent-catalysts { font-size: 10px; color: var(--text-muted); line-height: 1.7; font-family: 'Space Mono', monospace; }
-  .sent-catalyst-item { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 2px; }
-  .upload-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 32px 20px; text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 14px; }
-  .upload-zone:hover { border-color: var(--cyan); background: var(--cyan-dim); }
-  .upload-title { font-family: 'Orbitron', monospace; font-size: 12px; color: var(--cyan); margin-bottom: 4px; }
-  .upload-sub { font-size: 11px; color: var(--text-muted); }
-  .audio-grid { display: flex; flex-direction: column; gap: 8px; }
-  .audio-item { display: flex; align-items: center; gap: 14px; background: var(--obs4); border: 1px solid var(--border); border-radius: 10px; padding: 14px; cursor: pointer; transition: all 0.2s; }
-  .audio-item:hover { border-color: var(--gold); }
-  .audio-item.playing { border-color: var(--gold); background: var(--gold-dim); }
-  .audio-play-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--obs3); border: 1px solid var(--border-gold); display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; color: var(--gold2); }
-  .audio-item.playing .audio-play-btn { background: var(--gold2); color: #000; }
-  .audio-title { font-size: 12px; font-weight: 600; color: #FFFFFF; margin-bottom: 2px; }
-  .audio-desc { font-size: 10px; color: var(--text-muted); font-family: 'Space Mono', monospace; }
-  .audio-dur { font-size: 10px; color: var(--text-muted); font-family: 'Space Mono', monospace; flex-shrink: 0; }
-  .btn-primary { background: var(--cyan); color: #000000; border: none; border-radius: 8px; padding: 11px 20px; font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; cursor: pointer; width: 100%; transition: all 0.2s; text-transform: uppercase; margin-top: 6px; }
-  .btn-primary:hover { background: #00EEFF; }
-  .btn-gold { background: var(--gold2); color: #000000; border: none; border-radius: 8px; padding: 11px 20px; font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; cursor: pointer; width: 100%; transition: all 0.2s; text-transform: uppercase; margin-top: 6px; }
-  .btn-gold:hover { background: #FFD040; }
-  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
-  .stat-card { background: var(--obs4); border-radius: 10px; padding: 14px 12px; text-align: center; border: 1px solid var(--border); }
-  .stat-val { font-family: 'Orbitron', monospace; font-size: 22px; font-weight: 700; color: var(--cyan); display: block; }
-  .stat-val.gold { color: var(--gold2); }
-  .stat-val.green { color: var(--green); }
-  .stat-label { font-size: 9px; color: var(--text-muted); font-family: 'Space Mono', monospace; letter-spacing: 0.5px; margin-top: 4px; display: block; }
-  .ai-bubble { background: var(--obs4); border: 1px solid var(--border-gold); border-radius: 10px; padding: 14px; margin-top: 12px; font-size: 12px; line-height: 1.7; color: #FFFFFF; }
-  .ai-label { font-family: 'Orbitron', monospace; font-size: 9px; color: var(--gold2); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
-  .spinner { width: 20px; height: 20px; border: 2px solid var(--obs4); border-top-color: var(--cyan); border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle; margin-right: 8px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .select-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-  .select-pill { background: var(--obs4); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 11px; font-family: 'Space Mono', monospace; color: var(--text-muted); cursor: pointer; transition: all 0.2s; }
-  .select-pill:hover { border-color: var(--cyan); color: #FFFFFF; }
-  .select-pill.active { background: var(--cyan-dim); border-color: var(--cyan); color: #FFFFFF; }
-  input[type="range"] { flex: 1; accent-color: var(--cyan); }
-  input[type="text"], input[type="number"], input[type="password"] { background: var(--obs4); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: #FFFFFF; font-family: 'Syne', sans-serif; font-size: 12px; width: 100%; outline: none; margin-bottom: 10px; }
-  input[type="text"]:focus, input[type="number"]:focus, input[type="password"]:focus { border-color: var(--cyan); }
-  input::placeholder { color: var(--text-dim); }
-  .tag-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
-  .tag { background: var(--cyan-dim); border: 1px solid rgba(0,212,255,0.3); color: #FFFFFF; border-radius: 4px; padding: 3px 10px; font-size: 10px; font-family: 'Space Mono', monospace; }
-  .tag.gold { background: var(--gold-dim); border-color: rgba(201,168,76,0.3); color: #FFFFFF; }
-  .gap-col { display: flex; flex-direction: column; gap: 12px; }
-  /* PROP FIRM */
-  .firm-card { background: var(--obs3); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
-  .firm-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border); cursor: pointer; }
-  .firm-header:hover { background: var(--obs4); }
-  .firm-info { display: flex; align-items: center; gap: 12px; }
-  .firm-logo { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700; flex-shrink: 0; color: #FFFFFF; }
-  .firm-name { font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; color: #FFFFFF; }
-  .firm-type { font-size: 10px; color: var(--text-muted); font-family: 'Space Mono', monospace; margin-top: 2px; }
-  .status-badge { font-size: 9px; font-family: 'Orbitron', monospace; font-weight: 700; letter-spacing: 1px; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; color: #FFFFFF; }
-  .status-badge.connected { background: var(--green-dim); border: 1px solid rgba(0,255,136,0.3); }
-  .status-badge.disconnected { background: var(--red-dim); border: 1px solid rgba(255,68,68,0.3); }
-  .status-badge.pending { background: var(--gold-dim); border: 1px solid rgba(201,168,76,0.3); }
-  .firm-body { padding: 16px; display: none; }
-  .firm-body.open { display: block; }
-  .firm-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
-  .firm-metric { background: var(--obs4); border-radius: 8px; padding: 12px 10px; text-align: center; border: 1px solid var(--border); }
-  .fm-val { font-family: 'Orbitron', monospace; font-size: 16px; font-weight: 700; display: block; }
-  .fm-label { font-size: 9px; color: var(--text-muted); font-family: 'Space Mono', monospace; margin-top: 3px; display: block; }
-  .pnl-bar-wrap { margin-bottom: 14px; }
-  .pnl-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; font-size: 10px; font-family: 'Space Mono', monospace; color: var(--text-muted); }
-  .pnl-track { height: 6px; background: var(--obs4); border-radius: 3px; overflow: hidden; }
-  .pnl-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
-  .firm-connect-form { background: var(--obs4); border-radius: 8px; padding: 14px; border: 1px solid var(--border); }
-  .connect-label { font-size: 10px; font-family: 'Orbitron', monospace; color: var(--cyan); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; display: block; }
-  .btn-sm { background: var(--cyan); color: #000; border: none; border-radius: 6px; padding: 8px 16px; font-family: 'Orbitron', monospace; font-size: 9px; font-weight: 700; letter-spacing: 1px; cursor: pointer; text-transform: uppercase; transition: all 0.2s; }
-  .btn-sm:hover { background: #00EEFF; }
-  .btn-sm.danger { background: var(--red); color: #fff; }
-  .btn-sm.danger:hover { background: #FF6666; }
-  .btn-sm.gold { background: var(--gold2); color: #000; }
-  .trade-log-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 11px; }
-  .trade-log-row:last-child { border-bottom: none; }
-  .tl-sym { font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700; color: #FFFFFF; }
-  .tl-type { font-size: 9px; font-family: 'Space Mono', monospace; padding: 2px 8px; border-radius: 3px; color: #FFFFFF; }
-  .tl-type.long { background: var(--green-dim); }
-  .tl-type.short { background: var(--red-dim); }
-  .tl-pnl { font-family: 'Orbitron', monospace; font-size: 11px; font-weight: 700; }
-  .tl-pnl.pos { color: var(--green); }
-  .tl-pnl.neg { color: var(--red); }
-  .firm-summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
-  .summary-stat { background: var(--obs4); border-radius: 10px; padding: 14px; border: 1px solid var(--border); }
-  .ss-val { font-family: 'Orbitron', monospace; font-size: 20px; font-weight: 700; display: block; margin-bottom: 3px; }
-  .ss-label { font-size: 9px; color: var(--text-muted); font-family: 'Space Mono', monospace; letter-spacing: 0.5px; display: block; }
-  .add-firm-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: var(--obs4); border: 1px dashed rgba(0,212,255,0.3); border-radius: 10px; padding: 16px; cursor: pointer; font-family: 'Orbitron', monospace; font-size: 10px; color: var(--text-muted); letter-spacing: 1px; transition: all 0.2s; margin-bottom: 12px; }
-  .add-firm-btn:hover { border-color: var(--cyan); color: #FFFFFF; background: var(--cyan-dim); }
-  .alert-banner { padding: 10px 14px; border-radius: 8px; font-size: 11px; font-family: 'Space Mono', monospace; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; color: #FFFFFF; }
-  .alert-banner.warn { background: var(--red-dim); border: 1px solid rgba(255,68,68,0.3); }
-  .alert-banner.ok { background: var(--green-dim); border: 1px solid rgba(0,255,136,0.3); }
-  @media (max-width: 540px) {
-    .emo-grid { grid-template-columns: repeat(3,1fr); }
-    .sentiment-grid { grid-template-columns: 1fr; }
-    .firm-metrics { grid-template-columns: repeat(3,1fr); }
-    .firm-summary-grid { grid-template-columns: 1fr; }
+  
+  /* P&L Widget specific styles */
+  .pnl-widget {
+    background: var(--obs3);
+    border-radius: 1.5rem;
+    border: 1px solid var(--border);
+    padding: 1.5rem;
   }
+  .pnl-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .pnl-stat-card {
+    background: var(--obs4);
+    border-radius: 1rem;
+    padding: 1rem;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+  .pnl-stat-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+  .pnl-stat-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    font-family: 'Orbitron', monospace;
+    color: var(--cyan);
+    margin: 6px 0;
+  }
+  .pnl-stat-sub {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+  }
+  .edit-icon {
+    font-size: 0.6rem;
+    background: var(--obs4);
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 20px;
+    cursor: pointer;
+    color: var(--cyan);
+    margin-left: 6px;
+    border: 1px solid var(--border);
+  }
+  .edit-icon:hover { background: var(--cyan-dim); }
+  .killzone-bar {
+    background: var(--obs4);
+    border-radius: 2rem;
+    padding: 0.6rem 1rem;
+    margin-bottom: 1.2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    border-left: 4px solid var(--green);
+  }
+  .pill {
+    background: var(--obs2);
+    padding: 0.3rem 0.8rem;
+    border-radius: 30px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-muted);
+  }
+  .pill.active { background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,255,136,0.3); }
+  .pill.danger { background: var(--red-dim); color: var(--red); }
+  .trade-panel {
+    background: var(--obs4);
+    border-radius: 1.2rem;
+    padding: 1.2rem;
+    margin: 1rem 0;
+  }
+  .input-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 1rem;
+  }
+  .input-field { flex: 1; min-width: 100px; }
+  .input-field label { font-size: 0.65rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px; }
+  input, select {
+    width: 100%;
+    background: var(--obs2);
+    border: 1px solid var(--border);
+    padding: 0.6rem;
+    border-radius: 0.8rem;
+    color: white;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+  }
+  button {
+    background: linear-gradient(95deg, var(--cyan), var(--cyan2));
+    border: none;
+    font-weight: 700;
+    padding: 0.6rem 1.4rem;
+    border-radius: 2rem;
+    color: #000;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: 0.15s;
+  }
+  button:active { transform: scale(0.97); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .rule-violation {
+    background: var(--red-dim);
+    border-left: 4px solid var(--red);
+    padding: 0.7rem;
+    border-radius: 0.8rem;
+    font-size: 0.7rem;
+    margin: 10px 0;
+    color: #ffaaaa;
+  }
+  .journal-section {
+    border-top: 1px solid var(--border);
+    margin-top: 1rem;
+    padding-top: 1rem;
+  }
+  .trade-log {
+    background: var(--obs2);
+    max-height: 200px;
+    overflow-y: auto;
+    border-radius: 0.8rem;
+    padding: 0.6rem;
+    font-size: 0.65rem;
+    font-family: 'Space Mono', monospace;
+  }
+  .log-entry {
+    border-bottom: 1px solid var(--border);
+    padding: 8px 0;
+    display: flex;
+    justify-content: space-between;
+  }
+  .profit-green { color: var(--green); font-weight: 700; }
+  .loss-red { color: var(--red); font-weight: 700; }
+  .btn-sm { background: var(--cyan); color: #000; border: none; border-radius: 6px; padding: 6px 12px; font-family: 'Orbitron', monospace; font-size: 8px; font-weight: 700; cursor: pointer; }
+  .btn-secondary { background: var(--obs4); color: var(--text-muted); border: 1px solid var(--border); }
+  
+  /* Psych slider styles */
+  .meter-wrap { margin-bottom: 14px; }
+  .meter-label { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
+  .meter-track { height: 4px; background: var(--obs4); border-radius: 3px; overflow: hidden; }
+  .meter-fill { height: 100%; border-radius: 3px; transition: width 0.2s; }
+  .emo-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 16px; }
+  .emo-btn { background: var(--obs4); border: 1px solid var(--border); border-radius: 10px; padding: 10px 5px; text-align: center; cursor: pointer; font-size: 9px; font-family: 'Space Mono', monospace; color: var(--text-muted); }
+  .emo-btn.selected { border-color: var(--cyan); background: var(--cyan-dim); color: #FFF; }
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+  .stat-card { background: var(--obs4); border-radius: 10px; padding: 12px; text-align: center; }
+  .stat-val { font-family: 'Orbitron', monospace; font-size: 22px; font-weight: 700; display: block; }
+  .stat-val.gold { color: var(--gold2); }
+  .stat-label { font-size: 9px; color: var(--text-muted); margin-top: 4px; }
+  .btn-primary { background: var(--cyan); color: #000; width: 100%; padding: 12px; font-size: 10px; margin-top: 8px; }
+  .flex-between { display: flex; justify-content: space-between; align-items: center; }
+  .gap-col { display: flex; flex-direction: column; gap: 16px; }
 </style>
 </head>
 <body>
-  <div class="header">
-    <div class="logo">TRADER<span>EDGE</span> · PSYCH OS</div>
-    <div class="neural-badge"><div class="pulse-dot"></div>NEURAL STATE: ACTIVE</div>
+<div class="header">
+  <div class="logo">TRADER<span>EDGE</span> · PSYCH OS + SNIPERTRADER<span>.AI</span></div>
+  <div class="neural-badge"><div class="pulse-dot"></div>NEURAL STATE: ACTIVE</div>
+</div>
+<div class="nav" id="nav">
+  <button class="nav-tab active" data-tab="dashboard">⬡ DASHBOARD</button>
+  <button class="nav-tab" data-tab="pnlwidget">📊 AI P&L WIDGET</button>
+  <button class="nav-tab" data-tab="baseline">⬡ BASELINE</button>
+  <button class="nav-tab" data-tab="guardrails">☑ GUARDRAILS</button>
+  <button class="nav-tab" data-tab="review">◎ REVIEW LOOP</button>
+  <button class="nav-tab" data-tab="sentiment">⬡ SENTIMENT</button>
+  <button class="nav-tab" data-tab="couch">♫ COUCH</button>
+  <button class="nav-tab" data-tab="propfirms">⬡ PROP FIRMS</button>
+</div>
+<div class="content">
+
+  <!-- DASHBOARD TAB (overview) -->
+  <div class="tab-panel active" id="tab-dashboard">
+    <div class="gap-col">
+      <div class="glass">
+        <div class="section-label">Welcome Back, Trader</div>
+        <div class="section-title">Today's Trading Readiness</div>
+        <div class="stats-row">
+          <div class="stat-card"><span class="stat-val" id="dashTrades">0</span><span class="stat-label">TODAY'S TRADES</span></div>
+          <div class="stat-card"><span class="stat-val gold" id="dashPnL">$0</span><span class="stat-label">SESSION P&L</span></div>
+          <div class="stat-card"><span class="stat-val" id="dashStreak">7</span><span class="stat-label">DAY STREAK</span></div>
+        </div>
+        <button class="btn-primary" onclick="document.querySelector('.nav-tab[data-tab=pnlwidget]').click()">▶ LAUNCH AI P&L WIDGET</button>
+      </div>
+      <div class="glass">
+        <div class="section-label">Quick Psych Check</div>
+        <div class="emo-grid">
+          <div class="emo-btn" onclick="setQuickEmo('flow')">🟢 FLOW</div>
+          <div class="emo-btn" onclick="setQuickEmo('focused')">🔵 FOCUSED</div>
+          <div class="emo-btn" onclick="setQuickEmo('neutral')">⬜ NEUTRAL</div>
+          <div class="emo-btn" onclick="setQuickEmo('anxious')">🟡 ANXIOUS</div>
+          <div class="emo-btn" onclick="setQuickEmo('revenge')">🔴 REVENGE</div>
+        </div>
+        <div id="quickStateMsg" style="font-size: 11px; color: var(--text-muted); text-align: center;"></div>
+      </div>
+    </div>
   </div>
-  <div class="nav" id="nav">
-    <button class="nav-tab active" data-tab="baseline">⬡ BASELINE</button>
-    <button class="nav-tab" data-tab="guardrails">☑ GUARDRAILS</button>
-    <button class="nav-tab" data-tab="review">◎ REVIEW LOOP</button>
-    <button class="nav-tab" data-tab="sentiment">⬡ SENTIMENT</button>
-    <button class="nav-tab" data-tab="chart">⬡ CHART AI</button>
-    <button class="nav-tab" data-tab="couch">♫ COUCH</button>
-    <button class="nav-tab" data-tab="propfirms">⬡ PROP FIRMS</button>
+
+  <!-- AI P&L WIDGET - STANDALONE MODULE -->
+  <div class="tab-panel" id="tab-pnlwidget">
+    <div class="pnl-widget">
+      <div class="flex-between" style="margin-bottom: 16px;">
+        <div class="section-label">⚡ SNIPERTRADER.AI | P&L ENFORCER</div>
+        <div class="neural-badge" id="sessionPLDisplay" style="color: var(--gold2); font-size: 14px;">$0.00</div>
+      </div>
+
+      <!-- Editable Stats Grid -->
+      <div class="pnl-stats-grid">
+        <div class="pnl-stat-card">
+          <div class="pnl-stat-label">💰 FUNDED ACCOUNT</div>
+          <div class="pnl-stat-value" id="accountDisplay">$50,000</div>
+          <div class="pnl-stat-sub"><span class="edit-icon" onclick="editFundedAccount()">✎ edit</span> risk ≤1%</div>
+        </div>
+        <div class="pnl-stat-card">
+          <div class="pnl-stat-label">📊 DAILY TRADES</div>
+          <div class="pnl-stat-value" id="tradeCounter">0</div>
+          <div class="pnl-stat-sub">max <span id="maxTradesDisplay">3</span> <span class="edit-icon" onclick="editMaxTrades()">✎</span></div>
+        </div>
+        <div class="pnl-stat-card">
+          <div class="pnl-stat-label">📈 DAILY P&L</div>
+          <div class="pnl-stat-value" id="dailyPnL">$0</div>
+          <div class="pnl-stat-sub">ceiling: <span id="lossLimitPctDisplay">2</span>% = <span id="lossLimitDollarDisplay">$1,000</span> <span class="edit-icon" onclick="editLossCeiling()">✎</span></div>
+        </div>
+        <div class="pnl-stat-card">
+          <div class="pnl-stat-label">🎯 CONSISTENCY</div>
+          <div class="pnl-stat-value" id="consistencyPct">0%</div>
+          <div class="pnl-stat-sub">max 35% of target <span class="edit-icon" onclick="editTargetProfit()">✎</span><br><span id="targetProfitHint">target: $2,000</span></div>
+        </div>
+      </div>
+
+      <!-- Killzone & News -->
+      <div class="killzone-bar">
+        <span class="section-label" style="margin:0;">⏱️ SESSION KILLZONE</span>
+        <span class="pill" id="killzoneStatus">⛔ OFF-WINDOW</span>
+        <button id="newsToggleBtn" style="background: var(--obs4); color: var(--text-muted); padding: 5px 12px; font-size: 0.65rem;">📰 RED NEWS (manual)</button>
+      </div>
+      <div id="newsWarning" style="font-size:0.7rem; margin-bottom: 12px; padding-left: 8px;"></div>
+
+      <!-- Psychology & AI Gate -->
+      <div style="display: flex; gap: 14px; margin-bottom: 16px;">
+        <div style="flex:1; background: var(--obs4); border-radius: 1rem; padding: 8px 12px;">
+          <span style="font-size:0.7rem; font-weight:600;">🧠 PSYCH SCORE</span>
+          <input type="range" id="sentimentSlider" min="0" max="100" value="85" style="width:100%; margin-top: 4px;">
+          <div id="sentimentValue" style="font-size:0.65rem;">85% - ALLOWED</div>
+        </div>
+        <div style="flex:1; background: var(--obs4); border-radius: 1rem; padding: 8px 12px;">
+          <span style="font-size:0.7rem; font-weight:600;">🎯 AI SCORE (≥70 needed)</span>
+          <input type="range" id="aiScoreSlider" min="0" max="100" value="72" style="width:100%; margin-top: 4px;">
+          <div id="aiScoreValue" style="font-size:0.65rem;">72% - gate open</div>
+        </div>
+      </div>
+
+      <!-- Trade Entry Form -->
+      <div class="trade-panel">
+        <div style="font-weight:700; font-size:0.75rem; margin-bottom: 12px;">📈 EXECUTE SETUP (SMC Journal)</div>
+        <div class="input-group">
+          <div class="input-field"><label>Direction</label><select id="tradeDir"><option value="long">LONG (BUY)</option><option value="short">SHORT (SELL)</option></select></div>
+          <div class="input-field"><label>Entry Price</label><input type="number" id="entryPrice" placeholder="0.0000" step="any"></div>
+          <div class="input-field"><label>Stop Loss (SL)</label><input type="number" id="stopLoss" placeholder="price"></div>
+          <div class="input-field"><label>Take Profit (TP)</label><input type="number" id="takeProfit" placeholder="price"></div>
+        </div>
+        <div class="input-group">
+          <div class="input-field"><label>ATR-based Risk ($)</label><input type="number" id="atrValue" placeholder="risk amount"></div>
+          <div class="input-field"><label>Setup Type (SMC)</label><select id="setupType"><option value="OB">OB (Order Block)</option><option value="FVG">FVG</option><option value="CHoCH">CHoCH</option><option value="BOS">BOS</option></select></div>
+        </div>
+        <div style="display: flex; gap: 12px; margin: 12px 0 8px;">
+          <button id="executeBtn">⚡ EXECUTE TRADE</button>
+          <button id="resetDayBtn" class="btn-secondary" style="background:var(--obs4);">🔄 RESET DAY</button>
+        </div>
+        <div id="violationMessage" class="rule-violation" style="display: none;"></div>
+        <div id="rrDisplay" style="font-size:0.7rem; background: var(--obs4); padding: 6px 12px; border-radius: 20px; margin-top: 8px;"></div>
+      </div>
+
+      <!-- Trade Journal -->
+      <div class="journal-section">
+        <div class="flex-between" style="margin-bottom: 8px;">
+          <span class="section-label" style="margin-bottom:0;">📔 SMC JOURNAL</span>
+          <span class="section-label" style="color: var(--gold2);">tag: OB / FVG / CHoCH / BOS</span>
+        </div>
+        <div class="trade-log" id="tradeLogList">
+          <div style="color: var(--text-dim);">— No trades today —</div>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="content">
+
 
     <!-- BASELINE -->
     <div class="tab-panel active" id="tab-baseline">
