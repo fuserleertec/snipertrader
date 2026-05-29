@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TraderEdge Psych OS</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Space+Mono:wght@400;700&family=Syne:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --obs: #0A0C10; --obs2: #0F1218; --obs3: #161B24; --obs4: #1E2530;
+    --cyan: #00D4FF; --cyan2: #00A8CC; --cyan-dim: rgba(0,212,255,0.12);
+    --gold: #C9A84C; --gold2: #F0C040; --gold-dim: rgba(201,168,76,0.12);
+    --red: #FF4444; --red-dim: rgba(255,68,68,0.12);
+    --green: #00FF88; --green-dim: rgba(0,255,136,0.12);
+    --text: #FFFFFF;
+    --text-muted: #A0AEBB;
+    --text-dim: #5A6A7A;
+    --border: rgba(0,212,255,0.15); --border-gold: rgba(201,168,76,0.2);
+  }
+  body { background: var(--obs); min-height: 100vh; font-family: 'Syne', sans-serif; color: var(--text); }
+  .header { background: var(--obs2); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .logo { font-family: 'Orbitron', sans-serif; font-size: 13px; font-weight: 700; color: var(--cyan); letter-spacing: 2px; text-transform: uppercase; }
+  .logo span { color: var(--gold2); }
+  .neural-badge { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--green); font-family: 'Space Mono', monospace; }
+  .pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 1.8s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
+  .nav { display: flex; background: var(--obs2); border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav-tab { padding: 10px 14px; font-size: 9px; font-family: 'Orbitron', monospace; font-weight: 600; letter-spacing: 1px; color: #8899AA; cursor: pointer; border: none; background: none; border-bottom: 2px solid transparent; white-space: nowrap; transition: all 0.2s; text-transform: uppercase; }
+  .nav-tab:hover { color: #FFFFFF; }
+  .nav-tab.active { color: #FFFFFF; border-bottom-color: var(--cyan); }
+  .content { padding: 20px; max-width: 900px; margin: 0 auto; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  .glass { background: var(--obs3); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  .glass-gold { background: var(--obs3); border: 1px solid var(--border-gold); border-radius: 12px; padding: 18px; }
+  .section-label { font-family: 'Orbitron', monospace; font-size: 9px; letter-spacing: 2.5px; color: var(--cyan); text-transform: uppercase; margin-bottom: 6px; }
+  .section-title { font-family: 'Orbitron', sans-serif; font-size: 16px; font-weight: 700; color: #FFFFFF; margin-bottom: 4px; }
+  .section-desc { font-size: 12px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px; }
+  .emo-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 16px; }
+  .emo-btn { background: var(--obs4); border: 1px solid var(--border); border-radius: 10px; padding: 12px 8px; text-align: center; cursor: pointer; transition: all 0.2s; color: var(--text-muted); font-size: 10px; font-family: 'Space Mono', monospace; }
+  .emo-btn:hover { border-color: var(--cyan); color: #FFFFFF; }
+  .emo-btn.selected { border-color: var(--cyan); background: var(--cyan-dim); color: #FFFFFF; }
+  .emo-btn.danger.selected { border-color: var(--red); background: var(--red-dim); color: #FFFFFF; }
+  .emo-icon { font-size: 22px; margin-bottom: 4px; display: block; }
+  .meter-wrap { margin-bottom: 16px; }
+  .meter-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .meter-name { font-size: 11px; color: var(--text-muted); font-family: 'Space Mono', monospace; }
+  .meter-val { font-size: 11px; font-family: 'Orbitron', monospace; font-weight: 700; }
+  .meter-track { height: 5px; background: var(--obs4); border-radius: 3px; overflow: hidden; }
+  .meter-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+  .trade-alert { border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 14px; border: 1px solid; }
+  .trade-alert.green { background: var(--green-dim); border-color: rgba(0,255,136,0.3); }
+  .trade-alert.red { background: var(--red-dim); border-color: rgba(255,68,68,0.3); }
+  .trade-alert.gold { background: var(--gold-dim); border-color: rgba(201,168,76,0.3); }
+  .alert-icon { font-size: 20px; }
+  .alert-title { font-family: 'Orbitron', monospace; font-size: 11px; font-weight: 700; margin-bottom: 2px; color: #FFFFFF; }
+  .alert-msg { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+  .checklist { display: flex; flex-direction: column; gap: 8px; }
+  .check-item { display: flex; align-items: flex-start; gap: 12px; background: var(--obs4); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: all 0.2s; }
+  .check-item:hover { border-color: var(--cyan); }
+  .check-item.checked { border-color: rgba(0,255,136,0.4); background: var(--green-dim); }
+  .check-box { width: 18px; height: 18px; border-radius: 4px; border: 1.5px solid var(--text-dim); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; transition: all 0.2s; margin-top: 1px; }
+  .check-item.checked .check-box { background: var(--green); border-color: var(--green); color: #000; }
+  .check-item.danger-item.checked { border-color: rgba(255,68,68,0.4); background: var(--red-dim); }
+  .check-item.danger-item.checked .check-box { background: var(--red); border-color: var(--red); }
+  .check-label { font-size: 12px; color: #FFFFFF; line-height: 1.5; }
+  .check-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; font-family: 'Space Mono', monospace; }
+  .streak-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 14px; }
+  .streak-day { aspect-ratio: 1; border-radius: 6px; background: var(--obs4); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 9px; font-family: 'Space Mono', monospace; color: var(--text-dim); cursor: pointer; }
+  .streak-day.done { background: var(--cyan-dim); border-color: var(--cyan); color: #FFFFFF; }
+  .streak-day.perfect { background: linear-gradient(135deg, rgba(0,212,255,0.2), rgba(201,168,76,0.2)); border-color: var(--gold2); color: #FFFFFF; }
+  .streak-day.today { border-color: var(--cyan); box-shadow: 0 0 8px rgba(0,212,255,0.3); color: #FFFFFF; }
+  .journal-field { margin-bottom: 14px; }
+  .journal-label { font-size: 10px; font-family: 'Orbitron', monospace; color: var(--cyan); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; display: block; }
+  .journal-textarea { width: 100%; background: var(--obs4); border: 1px solid var(--border); border-radius: 8px; padding: 12px; color: #FFFFFF; font-family: 'Syne', sans-serif; font-size: 12px; line-height: 1.6; resize: vertical; outline: none; min-height: 72px; transition: border-color 0.2s; }
+  .journal-textarea:focus { border-color: var(--cyan); }
+  .journal-textarea::placeholder { color: var(--text-dim); }
+  .score-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .score-btn { flex: 1; background: var(--obs4); border: 1px solid var(--border); border-radius: 8px; padding: 10px 6px; text-align: center; cursor: pointer; font-size: 10px; font-family: 'Orbitron', monospace; color: #FFFFFF; transition: all 0.2s; }
+  .score-btn.selected { border-color: var(--cyan); background: var(--cyan-dim); color: #FFFFFF; }
+  .score-num { font-size: 16px; font-weight: 700; display: block; margin-bottom: 2px; }
+  .sentiment-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
+  .sent-card { background: var(--obs4); border-radius: 10px; padding: 14px; border: 1px solid var(--border); }
+  .sent-ticker { font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 700; color: var(--gold2); margin-bottom: 4px; }
+  .sent-score { font-size: 28px; font-family: 'Orbitron', monospace; font-weight: 700; margin-bottom: 4px; }
+  .sent-score.bullish { color: var(--green); }
+  .sent-score.bearish { color: var(--red); }
+  .sent-score.neutral { color: var(--gold2); }
+  .sent-bar-track { height: 4px; background: var(--obs3); border-radius: 2px; margin-bottom: 8px; overflow: hidden; }
+  .sent-bar-fill { height: 100%; border-radius: 2px; }
+  .sent-catalysts { font-size: 10px; color: var(--text-muted); line-height: 1.7; font-family: 'Space Mono', monospace; }
+  .sent-catalyst-item { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 2px; }
+  .upload-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 32px 20px; text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 14px; }
+  .upload-zone:hover { border-color: var(--cyan); background: var(--cyan-dim); }
+  .upload-title { font-family: 'Orbitron', monospace; font-size: 12px; color: var(--cyan); margin-bottom: 4px; }
+  .upload-sub { font-size: 11px; color: var(--text-muted); }
+  .audio-grid { display: flex; flex-direction: column; gap: 8px; }
+  .audio-item { display: flex; align-items: center; gap: 14px; background: var(--obs4); border: 1px solid var(--border); border-radius: 10px; padding: 14px; cursor: pointer; transition: all 0.2s; }
+  .audio-item:hover { border-color: var(--gold); }
+  .audio-item.playing { border-color: var(--gold); background: var(--gold-dim); }
+  .audio-play-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--obs3); border: 1px solid var(--border-gold); display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; color: var(--gold2); }
+  .audio-item.playing .audio-play-btn { background: var(--gold2); color: #000; }
+  .audio-title { font-size: 12px; font-weight: 600; color: #FFFFFF; margin-bottom: 2px; }
+  .audio-desc { font-size: 10px; color: var(--text-muted); font-family: 'Space Mono', monospace; }
+  .audio-dur { font-size: 10px; color: var(--text-muted); font-family: 'Space Mono', monospace; flex-shrink: 0; }
+  .btn-primary { background: var(--cyan); color: #000000; border: none; border-radius: 8px; padding: 11px 20px; font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; cursor: pointer; width: 100%; transition: all 0.2s; text-transform: uppercase; margin-top: 6px; }
+  .btn-primary:hover { background: #00EEFF; }
+  .btn-gold { background: var(--gold2); color: #000000; border: none; border-radius: 8px; padding: 11px 20px; font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; cursor: pointer; width: 100%; transition: all 0.2s; text-transform: uppercase; margin-top: 6px; }
+  .btn-gold:hover { background: #FFD040; }
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+  .stat-card { background: var(--obs4); border-radius: 10px; padding: 14px 12px; text-align: center; border: 1px solid var(--border); }
+  .stat-val { font-family: 'Orbitron', monospace; font-size: 22px; font-weight: 700; color: var(--cyan); display: block; }
+  .stat-val.gold { color: var(--gold2); }
+  .stat-val.green { color: var(--green); }
+  .stat-label { font-size: 9px; color: var(--text-muted); font-family: 'Space Mono', monospace; letter-spacing: 0.5px; margin-top: 4px; display: block; }
+  .ai-bubble { background: var(--obs4); border: 1px solid var(--border-gold); border-radius: 10px; padding: 14px; margin-top: 12px; font-size: 12px; line-height: 1.7; color: #FFFFFF; }
+  .ai-label { font-family: 'Orbitron', monospace; font-size: 9px; color: var(--gold2); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+  .spinner { width: 20px; height: 20px; border: 2px solid var(--obs4); border-top-color: var(--cyan); border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle; margin-right: 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .select-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .select-pill { background: var(--obs4); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 11px; font-family: 'Space Mono', monospace; color: var(--text-muted); cursor: pointer; transition: all 0.2s; }
+  .select-pill:hover { border-color: var(--cyan); color: #FFFFFF; }
+  .select-pill.active { background: var(--cyan-dim); border-color: var(--cyan); color: #FFFFFF; }
+  input[type="range"] { flex: 1; accent-color: var(--cyan); }
+  input[type="text"], input[type="number"], input[type="password"] { background: var(--obs4); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: #FFFFFF; font-family: 'Syne', sans-serif; font-size: 12px; width: 100%; outline: none; margin-bottom: 10px; }
+  input[type="text"]:focus, input[type="number"]:focus, input[type="password"]:focus { border-color: var(--cyan); }
+  input::placeholder { color: var(--text-dim); }
+  .tag-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .tag { background: var(--cyan-dim); border: 1px solid rgba(0,212,255,0.3); color: #FFFFFF; border-radius: 4px; padding: 3px 10px; font-size: 10px; font-family: 'Space Mono', monospace; }
+  .tag.gold { background: var(--gold-dim); border-color: rgba(201,168,76,0.3); color: #FFFFFF; }
+  .gap-col { display: flex; flex-direction: column; gap: 12px; }
+  /* PROP FIRM */
+  .firm-card { background: var(--obs3); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
+  .firm-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .firm-header:hover { background: var(--obs4); }
+  .firm-info { display: flex; align-items: center; gap: 12px; }
+  .firm-logo { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700; flex-shrink: 0; color: #FFFFFF; }
+  .firm-name { font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; color: #FFFFFF; }
+  .firm-type { font-size: 10px; color: var(--text-muted); font-family: 'Space Mono', monospace; margin-top: 2px; }
+  .status-badge { font-size: 9px; font-family: 'Orbitron', monospace; font-weight: 700; letter-spacing: 1px; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; color: #FFFFFF; }
+  .status-badge.connected { background: var(--green-dim); border: 1px solid rgba(0,255,136,0.3); }
+  .status-badge.disconnected { background: var(--red-dim); border: 1px solid rgba(255,68,68,0.3); }
+  .status-badge.pending { background: var(--gold-dim); border: 1px solid rgba(201,168,76,0.3); }
+  .firm-body { padding: 16px; display: none; }
+  .firm-body.open { display: block; }
+  .firm-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+  .firm-metric { background: var(--obs4); border-radius: 8px; padding: 12px 10px; text-align: center; border: 1px solid var(--border); }
+  .fm-val { font-family: 'Orbitron', monospace; font-size: 16px; font-weight: 700; display: block; }
+  .fm-label { font-size: 9px; color: var(--text-muted); font-family: 'Space Mono', monospace; margin-top: 3px; display: block; }
+  .pnl-bar-wrap { margin-bottom: 14px; }
+  .pnl-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; font-size: 10px; font-family: 'Space Mono', monospace; color: var(--text-muted); }
+  .pnl-track { height: 6px; background: var(--obs4); border-radius: 3px; overflow: hidden; }
+  .pnl-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+  .firm-connect-form { background: var(--obs4); border-radius: 8px; padding: 14px; border: 1px solid var(--border); }
+  .connect-label { font-size: 10px; font-family: 'Orbitron', monospace; color: var(--cyan); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; display: block; }
+  .btn-sm { background: var(--cyan); color: #000; border: none; border-radius: 6px; padding: 8px 16px; font-family: 'Orbitron', monospace; font-size: 9px; font-weight: 700; letter-spacing: 1px; cursor: pointer; text-transform: uppercase; transition: all 0.2s; }
+  .btn-sm:hover { background: #00EEFF; }
+  .btn-sm.danger { background: var(--red); color: #fff; }
+  .btn-sm.danger:hover { background: #FF6666; }
+  .btn-sm.gold { background: var(--gold2); color: #000; }
+  .trade-log-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 11px; }
+  .trade-log-row:last-child { border-bottom: none; }
+  .tl-sym { font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700; color: #FFFFFF; }
+  .tl-type { font-size: 9px; font-family: 'Space Mono', monospace; padding: 2px 8px; border-radius: 3px; color: #FFFFFF; }
+  .tl-type.long { background: var(--green-dim); }
+  .tl-type.short { background: var(--red-dim); }
+  .tl-pnl { font-family: 'Orbitron', monospace; font-size: 11px; font-weight: 700; }
+  .tl-pnl.pos { color: var(--green); }
+  .tl-pnl.neg { color: var(--red); }
+  .firm-summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+  .summary-stat { background: var(--obs4); border-radius: 10px; padding: 14px; border: 1px solid var(--border); }
+  .ss-val { font-family: 'Orbitron', monospace; font-size: 20px; font-weight: 700; display: block; margin-bottom: 3px; }
+  .ss-label { font-size: 9px; color: var(--text-muted); font-family: 'Space Mono', monospace; letter-spacing: 0.5px; display: block; }
+  .add-firm-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: var(--obs4); border: 1px dashed rgba(0,212,255,0.3); border-radius: 10px; padding: 16px; cursor: pointer; font-family: 'Orbitron', monospace; font-size: 10px; color: var(--text-muted); letter-spacing: 1px; transition: all 0.2s; margin-bottom: 12px; }
+  .add-firm-btn:hover { border-color: var(--cyan); color: #FFFFFF; background: var(--cyan-dim); }
+  .alert-banner { padding: 10px 14px; border-radius: 8px; font-size: 11px; font-family: 'Space Mono', monospace; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; color: #FFFFFF; }
+  .alert-banner.warn { background: var(--red-dim); border: 1px solid rgba(255,68,68,0.3); }
+  .alert-banner.ok { background: var(--green-dim); border: 1px solid rgba(0,255,136,0.3); }
+  @media (max-width: 540px) {
+    .emo-grid { grid-template-columns: repeat(3,1fr); }
+    .sentiment-grid { grid-template-columns: 1fr; }
+    .firm-metrics { grid-template-columns: repeat(3,1fr); }
+    .firm-summary-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">TRADER<span>EDGE</span> · PSYCH OS</div>
+    <div class="neural-badge"><div class="pulse-dot"></div>NEURAL STATE: ACTIVE</div>
+  </div>
+  <div class="nav" id="nav">
+    <button class="nav-tab active" data-tab="baseline">⬡ BASELINE</button>
+    <button class="nav-tab" data-tab="guardrails">☑ GUARDRAILS</button>
+    <button class="nav-tab" data-tab="review">◎ REVIEW LOOP</button>
+    <button class="nav-tab" data-tab="sentiment">⬡ SENTIMENT</button>
+    <button class="nav-tab" data-tab="chart">⬡ CHART AI</button>
+    <button class="nav-tab" data-tab="couch">♫ COUCH</button>
+    <button class="nav-tab" data-tab="propfirms">⬡ PROP FIRMS</button>
+  </div>
+  <div class="content">
+
+    <!-- BASELINE -->
+    <div class="tab-panel active" id="tab-baseline">
+      <div class="gap-col">
+        <div><div class="section-label">Module 01</div><div class="section-title">Pre-Session Baseline</div><div class="section-desc">How are you showing up today? Your emotional state is market data. Log it before the open.</div></div>
+        <div class="stats-row">
+          <div class="stat-card"><span class="stat-val">7</span><span class="stat-label">DAY STREAK</span></div>
+          <div class="stat-card"><span class="stat-val gold">84</span><span class="stat-label">DISCIPLINE %</span></div>
+          <div class="stat-card"><span class="stat-val green">23</span><span class="stat-label">SESSIONS</span></div>
+        </div>
+        <div class="glass">
+          <div class="section-label">Emotional State</div>
+          <div class="emo-grid">
+            <div class="emo-btn" onclick="setEmo(this,'flow')"><span class="emo-icon">🟢</span>FLOW</div>
+            <div class="emo-btn" onclick="setEmo(this,'focused')"><span class="emo-icon">🔵</span>FOCUSED</div>
+            <div class="emo-btn" onclick="setEmo(this,'neutral')"><span class="emo-icon">⬜</span>NEUTRAL</div>
+            <div class="emo-btn danger" onclick="setEmo(this,'anxious')"><span class="emo-icon">🟡</span>ANXIOUS</div>
+            <div class="emo-btn danger" onclick="setEmo(this,'revenge')"><span class="emo-icon">🔴</span>REVENGE</div>
+          </div>
+          <div id="trade-alert-area"></div>
+        </div>
+        <div class="glass">
+          <div class="section-label">Biometric Inputs</div>
+          <div class="meter-wrap">
+            <div class="meter-label"><span class="meter-name">HEART RATE (BPM)</span><span class="meter-val" id="hr-val" style="color:var(--green)">72</span></div>
+            <div class="meter-track"><div class="meter-fill" id="hr-fill" style="width:36%;background:var(--green)"></div></div>
+          </div>
+          <div style="margin-bottom:12px"><input type="range" min="50" max="140" value="72" step="1" style="width:100%" oninput="updateHR(this.value)"></div>
+          <div class="meter-wrap">
+            <div class="meter-label"><span class="meter-name">SLEEP QUALITY</span><span class="meter-val" id="sleep-val" style="color:var(--cyan)">7/10</span></div>
+            <div class="meter-track"><div class="meter-fill" id="sleep-fill" style="width:70%;background:var(--cyan)"></div></div>
+          </div>
+          <div style="margin-bottom:12px"><input type="range" min="1" max="10" value="7" step="1" style="width:100%" oninput="updateSleep(this.value)"></div>
+          <div class="meter-wrap">
+            <div class="meter-label"><span class="meter-name">STRESS LEVEL</span><span class="meter-val" id="stress-val" style="color:var(--gold2)">3/10</span></div>
+            <div class="meter-track"><div class="meter-fill" id="stress-fill" style="width:30%;background:var(--gold2)"></div></div>
+          </div>
+          <div><input type="range" min="1" max="10" value="3" step="1" style="width:100%" oninput="updateStress(this.value)"></div>
+        </div>
+        <button class="btn-primary" onclick="document.querySelector('.nav-tab[data-tab=guardrails]').click()">▶ LOG BASELINE & ENTER MARKET</button>
+      </div>
+    </div>
+
+    <!-- GUARDRAILS -->
+    <div class="tab-panel" id="tab-guardrails">
+      <div class="gap-col">
+        <div><div class="section-label">Module 02</div><div class="section-title">Habit Guardrails</div><div class="section-desc">Your ICT/SMC discipline checklist. Do not enter a trade until all green.</div></div>
+        <div class="glass">
+          <div class="section-label">Entry Criteria</div>
+          <div class="checklist" id="entry-checklist">
+            <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><div><div class="check-label">LEVEL — Price at OB, FVG, or OTE</div><div class="check-sub">Order Block / Fair Value Gap / Optimal Trade Entry</div></div></div>
+            <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><div><div class="check-label">LIQUIDITY — BSL or SSL swept</div><div class="check-sub">Buy-Side or Sell-Side Liquidity confirmed</div></div></div>
+            <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><div><div class="check-label">THE DOJI — Wick ≥ 2× body size</div><div class="check-sub">Institutional rejection candle confirmed</div></div></div>
+            <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><div><div class="check-label">THE CLOSE — Candle fully formed</div><div class="check-sub">Never trade a developing wick — wait for close</div></div></div>
+            <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><div><div class="check-label">THE ENTRY — Break of wick, not market order</div><div class="check-sub">Limit entry on wick break confirmation only</div></div></div>
+          </div>
+        </div>
+        <div class="glass">
+          <div class="section-label">Discipline Guards</div>
+          <div class="checklist" id="discipline-checklist">
+            <div class="check-item danger-item" onclick="toggleCheck(this)"><div class="check-box"></div><div><div class="check-label">STOP-LOSS — Did I move my stop?</div><div class="check-sub">Never widened SL after entry</div></div></div>
+            <div class="check-item danger-item" onclick="toggleCheck(this)"><div class="check-box"></div><div><div class="check-label">DAILY DRAWDOWN — Limit not breached</div><div class="check-sub">Stop trading if daily loss limit hit</div></div></div>
+            <div class="check-item danger-item" onclick="toggleCheck(this)"><div class="check-box"></div><div><div class="check-label">REVENGE TRADING — Emotional state checked</div><div class="check-sub">No trades after 2 losses without reset</div></div></div>
+            <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><div><div class="check-label">ENTRY RULES — Followed my plan</div><div class="check-sub">Did not deviate from pre-session trade plan</div></div></div>
+          </div>
+        </div>
+        <div class="glass-gold">
+          <div class="section-label">Weekly Discipline Streak</div>
+          <div style="margin-bottom:10px;font-size:11px;color:var(--text-muted)">Cyan = followed rules · Gold = perfect session</div>
+          <div class="streak-grid" id="streak-grid"></div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);font-family:'Space Mono',monospace"><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span></div>
+        </div>
+        <div class="glass" style="text-align:center">
+          <div class="section-label" style="text-align:center;margin-bottom:8px">READINESS SCORE</div>
+          <div id="readiness-val" style="font-family:'Orbitron',monospace;font-size:36px;font-weight:700;color:var(--text-muted)">0 / 9</div>
+          <div id="readiness-msg" style="font-size:11px;color:var(--text-muted);margin-top:6px;font-family:'Space Mono',monospace">Complete checklist before trading</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REVIEW LOOP -->
+    <div class="tab-panel" id="tab-review">
+      <div class="gap-col">
+        <div><div class="section-label">Module 03</div><div class="section-title">Post-Market Review Loop</div><div class="section-desc">Plan → Act → Review. The performance loop that compounds your edge.</div></div>
+        <div class="glass">
+          <div class="section-label">Market</div>
+          <div class="select-group" id="market-select">
+            <div class="select-pill active" onclick="togglePill(this,'market-select')">NQ/QQQ</div>
+            <div class="select-pill" onclick="togglePill(this,'market-select')">ES/SPY</div>
+            <div class="select-pill" onclick="togglePill(this,'market-select')">GC/GOLD</div>
+            <div class="select-pill" onclick="togglePill(this,'market-select')">CL/OIL</div>
+            <div class="select-pill" onclick="togglePill(this,'market-select')">BTC</div>
+            <div class="select-pill" onclick="togglePill(this,'market-select')">FOREX</div>
+          </div>
+        </div>
+        <div class="glass">
+          <div class="section-label">Execution Gap Analysis</div>
+          <div class="journal-field"><label class="journal-label">WHAT WAS MY PLAN?</label><textarea class="journal-textarea" placeholder="I planned to enter long at the 4H OB on NQ after a liquidity sweep..."></textarea></div>
+          <div class="journal-field"><label class="journal-label">WHAT DID I ACTUALLY DO?</label><textarea class="journal-textarea" placeholder="I entered early before the liquidity sweep was confirmed..."></textarea></div>
+          <div class="journal-field"><label class="journal-label">THE GAP — Why did plan ≠ execution?</label><textarea class="journal-textarea" placeholder="FOMO. I saw price approaching and panicked..."></textarea></div>
+        </div>
+        <div class="glass">
+          <div class="section-label">Emotional Trigger Log</div>
+          <div class="tag-row" id="trigger-tags"><div class="tag">FOMO</div><div class="tag">EARLY ENTRY</div><div class="tag gold">IMPATIENCE</div></div>
+          <div style="display:flex;gap:8px"><input type="text" id="new-trigger" placeholder="Add trigger (e.g. OVERCONFIDENCE)..." style="margin:0;flex:1"><button class="btn-sm" onclick="addTrigger()">ADD</button></div>
+        </div>
+        <div class="glass">
+          <div class="section-label">Session Self-Score</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Rate your execution discipline (not P&L)</div>
+          <div class="score-row" id="session-score">
+            <div class="score-btn" onclick="setScore(this)"><span class="score-num" style="color:var(--red)">1</span>BLOWN</div>
+            <div class="score-btn" onclick="setScore(this)"><span class="score-num" style="color:var(--red)">3</span>POOR</div>
+            <div class="score-btn" onclick="setScore(this)"><span class="score-num" style="color:var(--gold2)">5</span>OK</div>
+            <div class="score-btn" onclick="setScore(this)"><span class="score-num" style="color:var(--cyan)">7</span>SOLID</div>
+            <div class="score-btn" onclick="setScore(this)"><span class="score-num" style="color:var(--green)">9</span>ELITE</div>
+          </div>
+        </div>
+        <div class="glass"><div class="section-label">Key Lesson</div><textarea class="journal-textarea" placeholder="Next session I will wait for the candle to fully close before entering..."></textarea></div>
+        <button class="btn-primary" onclick="document.querySelector('.nav-tab[data-tab=sentiment]').click()">▶ SAVE REVIEW & COMPOUND EDGE</button>
+      </div>
+    </div>
+
+    <!-- SENTIMENT -->
+    <div class="tab-panel" id="tab-sentiment">
+      <div class="gap-col">
+        <div><div class="section-label">Module 04</div><div class="section-title">Market Sentiment Engine</div><div class="section-desc">AI-powered real-time sentiment across major markets.</div></div>
+        <div id="sentiment-loading" style="text-align:center;padding:20px;display:none"><span class="spinner"></span><span style="font-size:12px;color:var(--text-muted);font-family:'Space Mono',monospace">Scanning financial headlines...</span></div>
+        <div id="sentiment-data">
+          <div class="sentiment-grid">
+            <div class="sent-card"><div class="sent-ticker">NQ / QQQ</div><div class="sent-score bullish" id="nq-score">+0.65</div><div class="sent-bar-track"><div class="sent-bar-fill" style="width:83%;background:var(--green)"></div></div><div class="sent-catalysts" id="nq-cats"><div class="sent-catalyst-item"><span style="color:var(--green)">▲</span> AI sector earnings beat expectations</div><div class="sent-catalyst-item"><span style="color:var(--green)">▲</span> Fed hold — risk-on environment</div><div class="sent-catalyst-item"><span style="color:var(--red)">▼</span> Geopolitical tension caps upside</div></div></div>
+            <div class="sent-card"><div class="sent-ticker">XAU / GOLD</div><div class="sent-score bullish" id="gold-score">+0.42</div><div class="sent-bar-track"><div class="sent-bar-fill" style="width:71%;background:var(--green)"></div></div><div class="sent-catalysts" id="gold-cats"><div class="sent-catalyst-item"><span style="color:var(--green)">▲</span> Safe-haven demand elevated</div><div class="sent-catalyst-item"><span style="color:var(--green)">▲</span> DXY weakness supports metals</div><div class="sent-catalyst-item"><span style="color:var(--gold2)">~</span> Inverse to NQ sentiment</div></div></div>
+            <div class="sent-card"><div class="sent-ticker">CL / OIL</div><div class="sent-score bearish" id="oil-score">-0.28</div><div class="sent-bar-track"><div class="sent-bar-fill" style="width:36%;background:var(--red)"></div></div><div class="sent-catalysts" id="oil-cats"><div class="sent-catalyst-item"><span style="color:var(--red)">▼</span> OPEC+ supply increase announced</div><div class="sent-catalyst-item"><span style="color:var(--red)">▼</span> Demand outlook softened</div><div class="sent-catalyst-item"><span style="color:var(--gold2)">~</span> Below 200-day MA</div></div></div>
+            <div class="sent-card"><div class="sent-ticker">BTC / USD</div><div class="sent-score neutral" id="btc-score">+0.15</div><div class="sent-bar-track"><div class="sent-bar-fill" style="width:58%;background:var(--gold2)"></div></div><div class="sent-catalysts" id="btc-cats"><div class="sent-catalyst-item"><span style="color:var(--green)">▲</span> ETF inflows remain consistent</div><div class="sent-catalyst-item"><span style="color:var(--gold2)">~</span> Consolidation — range-bound</div><div class="sent-catalyst-item"><span style="color:var(--red)">▼</span> EU regulatory overhang</div></div></div>
+          </div>
+          <div class="glass"><div class="section-label">Market Correlation</div><div style="font-size:12px;color:#FFFFFF;line-height:1.7"><span style="color:var(--gold2);font-family:'Orbitron',monospace;font-size:10px">NQ ↔ GOLD:</span> <span style="color:var(--text-muted)">Currently inverse — risk-on NASDAQ bid suppressing safe-haven demand slightly.</span><br><span style="color:var(--gold2);font-family:'Orbitron',monospace;font-size:10px">CL OUTLOOK:</span> <span style="color:var(--text-muted)">Bearish divergence from equity strength. Supply-side pressure dominant.</span></div></div>
+        </div>
+        <button class="btn-gold" onclick="refreshSentiment()">⬡ REFRESH AI SENTIMENT SCAN</button>
+      </div>
+    </div>
+
+    <!-- CHART AI -->
+    <div class="tab-panel" id="tab-chart">
+      <div class="gap-col">
+        <div><div class="section-label">Module 05</div><div class="section-title">AI Chart Analyzer</div><div class="section-desc">Upload a chart screenshot. Claude identifies trend, key levels, patterns, and technical outlook using ICT/SMC lens.</div></div>
+        <div class="upload-zone" onclick="document.getElementById('chart-file').click()">
+          <div style="font-size:32px;margin-bottom:8px">📊</div>
+          <div class="upload-title">DROP CHART SCREENSHOT HERE</div>
+          <div class="upload-sub">Click to upload · JPG, PNG · NQ, ES, GC, CL, BTC, Forex</div>
+          <input type="file" id="chart-file" accept="image/*" style="display:none" onchange="handleChartUpload(this)">
+        </div>
+        <div id="chart-preview-wrap" style="display:none">
+          <div class="glass" style="padding:10px"><img id="chart-preview" style="width:100%;border-radius:8px;display:block" alt="chart"></div>
+          <button class="btn-primary" onclick="analyzeChart()" style="margin-top:12px">▶ ANALYZE WITH AI</button>
+        </div>
+        <div id="chart-analysis-area"></div>
+        <div class="glass" style="border-color:var(--border-gold)"><div class="section-label" style="color:var(--gold2)">Analysis Coverage</div><div style="font-size:11px;color:var(--text-muted);line-height:1.7">Asset & Timeframe · Trend Direction · OB/FVG/OTE Levels · Liquidity Zones · Pattern Recognition · Technical Outlook<br><br><span style="color:var(--red);font-size:10px">⚠ Educational use only. Not financial advice.</span></div></div>
+      </div>
+    </div>
+
+    <!-- COUCH -->
+    <div class="tab-panel" id="tab-couch">
+      <div class="gap-col">
+        <div><div class="section-label">Bonus Module</div><div class="section-title">The Trader's Couch</div><div class="section-desc">Psychological audio resets inspired by Brett Steenbarger's performance loop. Queue one before the open.</div></div>
+        <div class="glass"><div class="section-label">Today's Recommended Reset</div><div class="trade-alert gold"><div class="alert-icon">🧠</div><div><div class="alert-title" style="color:var(--gold2)">OVERCONFIDENCE DETECTED</div><div class="alert-msg">Based on your 7-day win streak, listen to "Staying Grounded After Wins" before today's open.</div></div></div></div>
+        <div class="audio-grid">
+          <div class="audio-item playing" onclick="playAudio(this)"><div class="audio-play-btn">▶</div><div style="flex:1"><div class="audio-title">Staying Grounded After Wins</div><div class="audio-desc">OVERCONFIDENCE · DISCIPLINE RESET</div></div><div class="audio-dur">8:14</div></div>
+          <div class="audio-item" onclick="playAudio(this)"><div class="audio-play-btn">▶</div><div style="flex:1"><div class="audio-title">Managing Anxiety Before the Open</div><div class="audio-desc">ANXIETY · BREATHWORK PROTOCOL</div></div><div class="audio-dur">6:42</div></div>
+          <div class="audio-item" onclick="playAudio(this)"><div class="audio-play-btn">▶</div><div style="flex:1"><div class="audio-title">Revenge Trading Cooldown</div><div class="audio-desc">LOSS RECOVERY · EMOTIONAL RESET</div></div><div class="audio-dur">10:05</div></div>
+          <div class="audio-item" onclick="playAudio(this)"><div class="audio-play-btn">▶</div><div style="flex:1"><div class="audio-title">The Funded Trader Mindset</div><div class="audio-desc">PEAK PERFORMANCE · FOCUS PROTOCOL</div></div><div class="audio-dur">12:30</div></div>
+          <div class="audio-item" onclick="playAudio(this)"><div class="audio-play-btn">▶</div><div style="flex:1"><div class="audio-title">Accepting Losses as Data</div><div class="audio-desc">LOSS PSYCHOLOGY · STEENBARGER METHOD</div></div><div class="audio-dur">7:55</div></div>
+        </div>
+        <div class="glass">
+          <div class="section-label">AI Psych Coach</div>
+          <div class="section-desc" style="margin-bottom:12px">Ask the AI coach anything about trading psychology, mindset, or your patterns.</div>
+          <textarea class="journal-textarea" id="psych-question" placeholder="I keep revenge trading after 2 losses. What psychological pattern is this and how do I break it?"></textarea>
+          <button class="btn-gold" onclick="askPsychCoach()">▶ ASK PSYCH COACH</button>
+          <div id="psych-response"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROP FIRMS -->
+    <div class="tab-panel" id="tab-propfirms">
+      <div class="gap-col">
+        <div><div class="section-label">Module 06</div><div class="section-title">Prop Firm Account Monitor</div><div class="section-desc">Connect your prop firm accounts via API to track P&L, drawdown limits, daily loss, and account health in real time.</div></div>
+        <div class="firm-summary-grid">
+          <div class="summary-stat"><span class="ss-val" style="color:var(--green)">+$3,847</span><span class="ss-label">TOTAL NET P&L</span></div>
+          <div class="summary-stat"><span class="ss-val" style="color:var(--cyan)">3</span><span class="ss-label">CONNECTED ACCOUNTS</span></div>
+          <div class="summary-stat"><span class="ss-val" style="color:var(--gold2)">$280K</span><span class="ss-label">TOTAL BUYING POWER</span></div>
+          <div class="summary-stat"><span class="ss-val" style="color:#FF8888">1</span><span class="ss-label">ACCOUNTS AT RISK</span></div>
+        </div>
+        <div class="alert-banner warn">⚠ APEX — Daily loss limit 78% consumed. 1 more losing trade may breach rules.</div>
+        <div class="alert-banner ok">✓ TOPSTEP — All thresholds healthy. Trailing drawdown intact.</div>
+
+        <div class="firm-card">
+          <div class="firm-header" onclick="toggleFirm('ts')">
+            <div class="firm-info">
+              <div class="firm-logo" style="background:#0a2a1f;border:1px solid rgba(0,255,136,0.3)">TS</div>
+              <div><div class="firm-name">TOPSTEP</div><div class="firm-type">FUTURES · $150K ACCOUNT · PHASE: FUNDED</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px"><div class="status-badge connected">CONNECTED</div><span style="color:var(--text-muted);font-size:12px" id="ts-chevron">▼</span></div>
+          </div>
+          <div class="firm-body open" id="ts-body">
+            <div class="firm-metrics">
+              <div class="firm-metric"><span class="fm-val" style="color:var(--green)">+$2,140</span><span class="fm-label">NET P&L</span></div>
+              <div class="firm-metric"><span class="fm-val" style="color:var(--cyan)">$4,200</span><span class="fm-label">DRAWDOWN LEFT</span></div>
+              <div class="firm-metric"><span class="fm-val" style="color:var(--gold2)">-$310</span><span class="fm-label">TODAY'S P&L</span></div>
+            </div>
+            <div class="pnl-bar-wrap">
+              <div class="pnl-row"><span>Daily Loss Used</span><span style="color:var(--green)">31% of $1,000 limit</span></div>
+              <div class="pnl-track"><div class="pnl-fill" style="width:31%;background:var(--green)"></div></div>
+            </div>
+            <div class="pnl-bar-wrap">
+              <div class="pnl-row"><span>Trailing Drawdown</span><span style="color:var(--cyan)">$4,200 / $4,500 remaining</span></div>
+              <div class="pnl-track"><div class="pnl-fill" style="width:93%;background:var(--cyan)"></div></div>
+            </div>
+            <div style="margin-bottom:12px">
+              <div class="section-label" style="margin-bottom:8px">Recent Trades</div>
+              <div class="trade-log-row"><span class="tl-sym">NQ</span><span class="tl-type long">LONG</span><span style="font-size:10px;color:var(--text-muted)">Apr 02 09:34</span><span class="tl-pnl pos">+$520</span></div>
+              <div class="trade-log-row"><span class="tl-sym">ES</span><span class="tl-type short">SHORT</span><span style="font-size:10px;color:var(--text-muted)">Apr 02 10:12</span><span class="tl-pnl neg">-$310</span></div>
+              <div class="trade-log-row"><span class="tl-sym">NQ</span><span class="tl-type long">LONG</span><span style="font-size:10px;color:var(--text-muted)">Apr 01 14:20</span><span class="tl-pnl pos">+$1,930</span></div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn-sm" onclick="refreshFirm(event)">↻ REFRESH</button>
+              <button class="btn-sm gold">⬡ VIEW FULL ACCOUNT</button>
+              <button class="btn-sm danger">✕ DISCONNECT</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="firm-card">
+          <div class="firm-header" onclick="toggleFirm('apex')">
+            <div class="firm-info">
+              <div class="firm-logo" style="background:#1a0a00;border:1px solid rgba(255,68,68,0.3)">AP</div>
+              <div><div class="firm-name">APEX TRADER FUNDING</div><div class="firm-type">FUTURES · $100K ACCOUNT · PHASE: FUNDED</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px"><div class="status-badge connected">CONNECTED</div><span style="color:var(--text-muted);font-size:12px" id="apex-chevron">▶</span></div>
+          </div>
+          <div class="firm-body" id="apex-body">
+            <div class="firm-metrics">
+              <div class="firm-metric"><span class="fm-val" style="color:var(--red)">-$420</span><span class="fm-label">NET P&L</span></div>
+              <div class="firm-metric"><span class="fm-val" style="color:var(--red)">$230</span><span class="fm-label">DAILY LOSS LEFT</span></div>
+              <div class="firm-metric"><span class="fm-val" style="color:var(--gold2)">-$1,050</span><span class="fm-label">TODAY'S P&L</span></div>
+            </div>
+            <div class="pnl-bar-wrap">
+              <div class="pnl-row"><span>Daily Loss Used</span><span style="color:var(--red)">78% of $1,000 limit — CAUTION</span></div>
+              <div class="pnl-track"><div class="pnl-fill" style="width:78%;background:var(--red)"></div></div>
+            </div>
+            <div class="pnl-bar-wrap">
+              <div class="pnl-row"><span>Overall Drawdown</span><span style="color:var(--gold2)">$2,080 / $3,000 used</span></div>
+              <div class="pnl-track"><div class="pnl-fill" style="width:69%;background:var(--gold2)"></div></div>
+            </div>
+            <div style="margin-bottom:12px">
+              <div class="section-label" style="margin-bottom:8px">Recent Trades</div>
+              <div class="trade-log-row"><span class="tl-sym">NQ</span><span class="tl-type short">SHORT</span><span style="font-size:10px;color:var(--text-muted)">Apr 02 09:50</span><span class="tl-pnl neg">-$650</span></div>
+              <div class="trade-log-row"><span class="tl-sym">ES</span><span class="tl-type long">LONG</span><span style="font-size:10px;color:var(--text-muted)">Apr 02 10:30</span><span class="tl-pnl neg">-$400</span></div>
+              <div class="trade-log-row"><span class="tl-sym">GC</span><span class="tl-type long">LONG</span><span style="font-size:10px;color:var(--text-muted)">Apr 01 11:05</span><span class="tl-pnl pos">+$630</span></div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn-sm" onclick="refreshFirm(event)">↻ REFRESH</button>
+              <button class="btn-sm gold">⬡ VIEW FULL ACCOUNT</button>
+              <button class="btn-sm danger">✕ DISCONNECT</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="firm-card">
+          <div class="firm-header" onclick="toggleFirm('e8')">
+            <div class="firm-info">
+              <div class="firm-logo" style="background:#0a0a20;border:1px solid rgba(0,212,255,0.2)">E8</div>
+              <div><div class="firm-name">E8 FUNDING</div><div class="firm-type">FUTURES · $50K ACCOUNT · PHASE: EVALUATION</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px"><div class="status-badge pending">CONNECTING</div><span style="color:var(--text-muted);font-size:12px" id="e8-chevron">▶</span></div>
+          </div>
+          <div class="firm-body" id="e8-body">
+            <div class="firm-metrics">
+              <div class="firm-metric"><span class="fm-val" style="color:var(--green)">+$2,127</span><span class="fm-label">NET P&L</span></div>
+              <div class="firm-metric"><span class="fm-val" style="color:var(--cyan)">6%</span><span class="fm-label">PROFIT TARGET</span></div>
+              <div class="firm-metric"><span class="fm-val" style="color:var(--gold2)">4.3%</span><span class="fm-label">PROGRESS</span></div>
+            </div>
+            <div class="pnl-bar-wrap">
+              <div class="pnl-row"><span>Profit Target Progress</span><span style="color:var(--cyan)">4.3% / 6%</span></div>
+              <div class="pnl-track"><div class="pnl-fill" style="width:72%;background:var(--cyan)"></div></div>
+            </div>
+            <div class="firm-connect-form">
+              <span class="connect-label">API CONNECTION</span>
+              <input type="text" placeholder="E8 Account ID (e.g. E8-123456)">
+              <input type="password" placeholder="API Key from E8 dashboard">
+              <div style="font-size:10px;color:var(--text-muted);margin-bottom:10px;font-family:'Space Mono',monospace">Find your API key: dashboard.e8funding.com → Settings → API Access</div>
+              <div style="display:flex;gap:8px"><button class="btn-sm" onclick="connectFirm('e8')">⬡ CONNECT ACCOUNT</button><button class="btn-sm danger">REMOVE</button></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="add-firm-panel">
+          <div class="add-firm-btn" onclick="showAddFirm()">+ ADD PROP FIRM ACCOUNT</div>
+        </div>
+        <div id="new-firm-form" style="display:none">
+          <div class="glass">
+            <div class="section-label">Connect New Prop Firm</div>
+            <div style="margin-bottom:12px;font-size:11px;color:var(--text-muted)">Select your firm to see connection instructions.</div>
+            <div class="select-group" id="firm-select">
+              <div class="select-pill" onclick="togglePill(this,'firm-select')">TopStep</div>
+              <div class="select-pill" onclick="togglePill(this,'firm-select')">Apex</div>
+              <div class="select-pill" onclick="togglePill(this,'firm-select')">FTMO</div>
+              <div class="select-pill" onclick="togglePill(this,'firm-select')">MyFundedFx</div>
+              <div class="select-pill" onclick="togglePill(this,'firm-select')">E8 Funding</div>
+              <div class="select-pill" onclick="togglePill(this,'firm-select')">The5ers</div>
+              <div class="select-pill" onclick="togglePill(this,'firm-select')">Other</div>
+            </div>
+            <input type="text" placeholder="Account ID / Login">
+            <input type="password" placeholder="API Key or Password">
+            <input type="text" placeholder="Account nickname (optional)">
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:12px;font-family:'Space Mono',monospace;line-height:1.6">⚠ Credentials are encrypted locally and never stored on external servers. Read-only permissions only.</div>
+            <div style="display:flex;gap:8px">
+              <button class="btn-primary" style="margin:0" onclick="cancelAddFirm()">▶ CONNECT & MONITOR</button>
+              <button class="btn-sm danger" style="padding:11px 16px" onclick="cancelAddFirm()">CANCEL</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass" style="border-color:var(--border-gold)">
+          <div class="section-label" style="color:var(--gold2)">AI ACCOUNT HEALTH ANALYSIS</div>
+          <div style="font-size:11px;color:var(--text-muted);line-height:1.7;margin-bottom:12px">Ask the AI to analyze your prop firm performance, identify rule violations, or flag risk across all accounts.</div>
+          <button class="btn-gold" onclick="analyzeAccounts()">⬡ ANALYZE ALL ACCOUNTS WITH AI</button>
+          <div id="accounts-analysis"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+<script>
+  document.querySelectorAll('.nav-tab').forEach(t=>{t.addEventListener('click',()=>{document.querySelectorAll('.nav-tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tab-panel').forEach(x=>x.classList.remove('active'));t.classList.add('active');document.getElementById('tab-'+t.dataset.tab).classList.add('active');});});
+  const emoAlerts={flow:{type:'green',icon:'✓',title:'FLOW STATE CONFIRMED',msg:'Neural baseline optimal. Market entry authorized.'},focused:{type:'green',icon:'✓',title:'FOCUSED — ENTRY AUTHORIZED',msg:'Disciplined state detected. Follow your plan.'},neutral:{type:'gold',icon:'~',title:'NEUTRAL BASELINE',msg:'Acceptable to trade. Run full checklist. Max 2 trades.'},anxious:{type:'red',icon:'⚠',title:'ANXIETY DETECTED — CAUTION',msg:"Do not size up. Consider Trader's Couch reset before entering."},revenge:{type:'red',icon:'✖',title:'REVENGE TRADE RISK — STAND DOWN',msg:'Listen to Cooldown Audio NOW. No trades until baseline resets.'}};
+  function setEmo(el,state){document.querySelectorAll('.emo-btn').forEach(b=>b.classList.remove('selected'));el.classList.add('selected');const a=emoAlerts[state];const c=a.type==='green'?'var(--green)':a.type==='gold'?'var(--gold2)':'var(--red)';document.getElementById('trade-alert-area').innerHTML=`<div class="trade-alert ${a.type}"><div class="alert-icon">${a.icon}</div><div><div class="alert-title" style="color:${c}">${a.title}</div><div class="alert-msg">${a.msg}</div></div></div>`;}
+  function updateHR(v){const p=((v-50)/90*100).toFixed(0);const c=v<80?'var(--green)':v<100?'var(--gold2)':'var(--red)';document.getElementById('hr-val').textContent=v;document.getElementById('hr-val').style.color=c;document.getElementById('hr-fill').style.width=p+'%';document.getElementById('hr-fill').style.background=c;}
+  function updateSleep(v){document.getElementById('sleep-val').textContent=v+'/10';document.getElementById('sleep-fill').style.width=(v/10*100)+'%';}
+  function updateStress(v){const c=v<=4?'var(--green)':v<=7?'var(--gold2)':'var(--red)';document.getElementById('stress-val').textContent=v+'/10';document.getElementById('stress-val').style.color=c;document.getElementById('stress-fill').style.width=(v/10*100)+'%';document.getElementById('stress-fill').style.background=c;}
+  function toggleCheck(el){el.classList.toggle('checked');el.querySelector('.check-box').textContent=el.classList.contains('checked')?'✓':'';const total=document.querySelectorAll('#entry-checklist .check-item,#discipline-checklist .check-item').length;const done=document.querySelectorAll('#entry-checklist .check-item.checked,#discipline-checklist .check-item.checked').length;document.getElementById('readiness-val').textContent=done+' / '+total;const c=done<total*0.5?'var(--red)':done<total?'var(--gold2)':'var(--green)';document.getElementById('readiness-val').style.color=c;const msgs=['Complete checklist before trading','Keep going — discipline is your edge','Almost locked in...','Fully locked. ENTER THE MARKET.'];document.getElementById('readiness-msg').textContent=done===total?msgs[3]:done>total*0.6?msgs[2]:done>0?msgs[1]:msgs[0];}
+  (function(){const g=document.getElementById('streak-grid');const st=['perfect','done','done','done','today','','','done','done','perfect','done','done','done','','','done','done','done','done','done','today'];for(let i=0;i<28;i++){const d=document.createElement('div');d.className='streak-day'+(st[i]?' '+st[i]:'');d.textContent=i<21?(i+1):'';g.appendChild(d);}})();
+  function togglePill(el,gid){document.querySelectorAll('#'+gid+' .select-pill').forEach(p=>p.classList.remove('active'));el.classList.add('active');}
+  function addTrigger(){const inp=document.getElementById('new-trigger');const val=inp.value.trim().toUpperCase();if(!val)return;const t=document.createElement('div');t.className='tag';t.textContent=val;document.getElementById('trigger-tags').appendChild(t);inp.value='';}
+  function setScore(el){document.querySelectorAll('#session-score .score-btn').forEach(b=>b.classList.remove('selected'));el.classList.add('selected');}
+  async function refreshSentiment(){const loading=document.getElementById('sentiment-loading'),data=document.getElementById('sentiment-data');loading.style.display='block';data.style.opacity='0.3';try{const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:'You are a senior macro strategist. Return ONLY valid JSON, no markdown, no backticks.',messages:[{role:'user',content:'April 2026. Return sentiment JSON: {"nasdaq":{"score":0.0,"status":"Bullish","catalysts":["c1","c2","c3"]},"gold":{"score":0.0,"status":"Bullish","catalysts":["c1","c2","c3"]},"oil":{"score":0.0,"status":"Bearish","catalysts":["c1","c2","c3"]},"btc":{"score":0.0,"status":"Neutral","catalysts":["c1","c2","c3"]},"correlation":"one sentence"}'}]})});const d=await res.json();const p=JSON.parse(d.content[0].text);['nasdaq','gold','oil','btc'].forEach(m=>{const id={nasdaq:'nq',gold:'gold',oil:'oil',btc:'btc'}[m];const s=p[m];const sc=parseFloat(s.score);const el=document.getElementById(id+'-score');el.textContent=(sc>=0?'+':'')+sc.toFixed(2);el.className='sent-score '+(sc>0.1?'bullish':sc<-0.1?'bearish':'neutral');const ce=document.getElementById(id+'-cats');if(ce&&s.catalysts)ce.innerHTML=s.catalysts.slice(0,3).map((c,i)=>{const ic=sc>0.1&&i<2?'▲':sc<-0.1&&i<2?'▼':'~';const col=sc>0.1&&i<2?'var(--green)':sc<-0.1&&i<2?'var(--red)':'var(--gold2)';return`<div class="sent-catalyst-item"><span style="color:${col}">${ic}</span> ${c}</div>`;}).join('');});}catch(e){console.error(e);}loading.style.display='none';data.style.opacity='1';}
+  let chartBase64=null,chartMediaType=null;
+  function handleChartUpload(input){const file=input.files[0];if(!file)return;chartMediaType=file.type;const r=new FileReader();r.onload=e=>{chartBase64=e.target.result.split(',')[1];document.getElementById('chart-preview').src=e.target.result;document.getElementById('chart-preview-wrap').style.display='block';document.getElementById('chart-analysis-area').innerHTML='';};r.readAsDataURL(file);}
+  async function analyzeChart(){if(!chartBase64)return;const area=document.getElementById('chart-analysis-area');area.innerHTML='<div class="ai-bubble"><div class="ai-label">AI ANALYSIS</div><span class="spinner"></span><span style="font-size:12px;color:var(--text-muted)">Claude is reading the chart...</span></div>';try{const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:chartMediaType,data:chartBase64}},{type:'text',text:'Role: Expert Technical Market Analyst specializing in ICT/SMC methodology. Analyze this chart. Identify: 1) Asset and timeframe 2) Trend direction 3) Order Blocks, Fair Value Gaps, OTE zones 4) Liquidity zones BSL/SSL 5) Notable patterns 6) Technical outlook. Structured and specific. Educational only, not financial advice.'}]}]})});const d=await res.json();const text=d.content.filter(c=>c.type==='text').map(c=>c.text).join('');area.innerHTML=`<div class="ai-bubble"><div class="ai-label">⬡ AI CHART ANALYSIS</div><div style="white-space:pre-wrap;font-size:12px;line-height:1.7">${text}</div></div>`;}catch(e){area.innerHTML='<div class="ai-bubble"><div class="ai-label" style="color:var(--red)">ERROR</div><div style="font-size:12px;color:var(--text-muted)">Analysis failed.</div></div>';}}
+  async function askPsychCoach(){const q=document.getElementById('psych-question').value.trim();if(!q)return;const area=document.getElementById('psych-response');area.innerHTML='<div class="ai-bubble"><div class="ai-label">AI PSYCH COACH</div><span class="spinner"></span><span style="font-size:12px;color:var(--text-muted)">Coach is thinking...</span></div>';try{const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:"You are a trading psychology coach versed in Brett Steenbarger's Performance Loop. You understand ICT/SMC and prop firm pressures. Give practical, direct, compassionate advice with 2-3 concrete action steps.",messages:[{role:'user',content:q}]})});const d=await res.json();const text=d.content.filter(c=>c.type==='text').map(c=>c.text).join('');area.innerHTML=`<div class="ai-bubble"><div class="ai-label">⬡ PSYCH COACH RESPONSE</div><div style="white-space:pre-wrap;font-size:12px;line-height:1.7">${text}</div></div>`;}catch(e){area.innerHTML='<div class="ai-bubble"><div class="ai-label" style="color:var(--red)">ERROR</div></div>';}}
+  function playAudio(el){document.querySelectorAll('.audio-item').forEach(a=>a.classList.remove('playing'));el.classList.add('playing');}
+  function toggleFirm(id){const body=document.getElementById(id+'-body');const chev=document.getElementById(id+'-chevron');const isOpen=body.classList.contains('open');body.classList.toggle('open');chev.textContent=isOpen?'▶':'▼';}
+  function refreshFirm(e){const btn=e.target;btn.textContent='↻ REFRESHING...';btn.disabled=true;setTimeout(()=>{btn.textContent='↻ REFRESH';btn.disabled=false;btn.style.background='var(--green)';setTimeout(()=>{btn.style.background='';},1200);},1500);}
+  function showAddFirm(){document.getElementById('add-firm-panel').style.display='none';document.getElementById('new-firm-form').style.display='block';}
+  function cancelAddFirm(){document.getElementById('new-firm-form').style.display='none';document.getElementById('add-firm-panel').style.display='block';}
+  function connectFirm(id){const badge=document.querySelector('#'+id+'-body').closest('.firm-card').querySelector('.status-badge');badge.textContent='CONNECTING...';badge.className='status-badge pending';setTimeout(()=>{badge.textContent='CONNECTED';badge.className='status-badge connected';},2000);}
+  async function analyzeAccounts(){const area=document.getElementById('accounts-analysis');area.innerHTML='<div class="ai-bubble" style="margin-top:12px"><div class="ai-label">AI ACCOUNT ANALYSIS</div><span class="spinner"></span><span style="font-size:12px;color:var(--text-muted)">Analyzing all prop firm accounts...</span></div>';const accountData='TopStep $150K Funded: Net P&L +$2,140, daily loss 31% consumed, trailing drawdown $4,200/$4,500 remaining. Apex $100K Funded: Net P&L -$420, daily loss 78% consumed CRITICAL, drawdown $920/$3,000 used. E8 $50K Evaluation: P&L +$2,127, profit target 4.3% of 6% reached.';try{const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:'You are a prop firm risk advisor specializing in futures trading. Analyze account health, flag rule breach risks, and give specific action items for each account. Be direct and concise.',messages:[{role:'user',content:`Analyze these prop firm accounts and flag any risks: ${accountData}. Give a brief risk assessment for each account and 1-2 specific actions the trader should take today.`}]})});const d=await res.json();const text=d.content.filter(c=>c.type==='text').map(c=>c.text).join('');area.innerHTML=`<div class="ai-bubble" style="margin-top:12px"><div class="ai-label">⬡ AI ACCOUNT HEALTH REPORT</div><div style="white-space:pre-wrap;font-size:12px;line-height:1.7">${text}</div></div>`;}catch(e){area.innerHTML='<div class="ai-bubble" style="margin-top:12px"><div class="ai-label" style="color:var(--red)">ERROR</div><div style="font-size:12px;color:var(--text-muted)">Analysis failed.</div></div>';}}
+</script>
+</body>
+</html>
