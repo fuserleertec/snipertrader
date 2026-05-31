@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SniperTrader.ai // Institutional News Execution Architecture</title>
+    <style>
+        :root {
+            --bg-color: #030712;
+            --panel-bg: #0b0f19;
+            --panel-border: #1e293b;
+            --accent-glow: #00ffaa;
+            --accent-dim: #00a877;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --text-alert: #ef4444;
+            --font-mono: 'SF Mono', Monaco, Consolas, 'Liberation Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            font-size: 13px;
+            line-height: 1.5;
+            letter-spacing: -0.02em;
+            padding: 24px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--panel-border);
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-mark {
+            width: 12px;
+            height: 12px;
+            background-color: var(--accent-glow);
+            box-shadow: 0 0 10px var(--accent-glow);
+            border-radius: 50%;
+        }
+
+        .brand-name {
+            font-size: 16px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .brand-tag {
+            color: var(--text-muted);
+            font-size: 11px;
+        }
+
+        .system-status {
+            display: flex;
+            gap: 24px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .status-item span {
+            color: var(--accent-glow);
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 1024px) {
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 4px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3px;
+            height: 100%;
+            background-color: var(--accent-dim);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 16px;
+            border-bottom: 1px dashed var(--panel-border);
+            padding-bottom: 8px;
+        }
+
+        .panel-title {
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-main);
+        }
+
+        .panel-id {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .metric-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 10px;
+            border-radius: 2px;
+        }
+
+        .metric-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .metric-value.highlight {
+            color: var(--accent-glow);
+        }
+
+        .code-block {
+            background-color: #02040a;
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 12px;
+            border-radius: 3px;
+            font-size: 11px;
+            color: #adbac7;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            max-height: 220px;
+        }
+
+        .code-comment { color: #768390; }
+        .code-keyword { color: #f47067; }
+        .code-var { color: #6cb6ff; }
+        .code-string { color: #96d0ff; }
+
+        .concept-body p {
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .order-book-visual {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin-top: 12px;
+            font-size: 11px;
+        }
+
+        .ob-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 6px;
+            background: rgba(255,255,255,0.02);
+        }
+
+        .ob-row.ask { background: rgba(239, 68, 68, 0.08); border-left: 2px solid var(--text-alert); }
+        .ob-row.bid { background: rgba(0, 255, 170, 0.08); border-left: 2px solid var(--accent-glow); }
+        
+        .footer-banner {
+            margin-top: 24px;
+            text-align: center;
+            font-size: 11px;
+            color: var(--text-muted);
+            border-top: 1px solid var(--panel-border);
+            padding-top: 16px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-container">
+            <div class="logo-mark"></div>
+            <div>
+                <div class="brand-name">SNIPER<span>NEWS</span></div>
+                <div class="brand-tag">Institutional News Liquidity Engine // Quantitative Model Spec v4.02</div>
+            </div>
+        </div>
+        <div class="system-status">
+            <div class="status-item">LATENCY: <span>0.18ms</span></div>
+            <div class="status-item">FEED: <span>FIX/FAST DIRECT</span></div>
+            <div class="status-item">ENGINE: <span>ACTIVE</span></div>
+        </div>
+    </header>
+
+    <div class="grid-container">
+
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">01 // Cross-Asset Order Flow Model</div>
+                <div class="panel-id">SYS_REF: X_ASSET_OFI</div>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Primary Asset</div>
+                    <div class="metric-value">XAUUSD</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Leading Indicators</div>
+                    <div class="metric-value highlight">DXY / US10Y</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Sampling Freq</div>
+                    <div class="metric-value">500 μs</div>
+                </div>
+            </div>
+
+            <div class="concept-body">
+                <p>
+                    <strong>The Institutional Paradigm:</strong> Retail bots wait for structural price change on a single asset chart. Institutional models measure the instantaneous transmission of news via Order Flow Imbalance (OFI) across highly correlated assets before the domestic asset matching engine even updates its BBO (Best Bid/Offer).
+                </p>
+                <p>
+                    When Tier-1 high-impact macroeconomic data (e.g., Non-Farm Payrolls, CPI) drops, institutional algorithms read the immediate sweep in highly liquid proxy instruments (like 10-Year Treasury Note Futures or the Dollar Index) to calculate a predictive delta vector for gold and indices.
+                </p>
+            </div>
+
+            <div class="code-block">
+<span class="code-comment">// Pseudo-logic for cross-asset volume delta tracking</span>
+<span class="code-keyword">def</span> <span class="code-var">calculate_cross_asset_ofi</span>(book_dxy, book_us10y):
+    dxy_delta = (book_dxy.bid_vol_change - book_dxy.ask_vol_change)
+    us10y_delta = (book_us10y.bid_vol_change - book_us10y.ask_vol_change)
+    
+    <span class="code-comment"># Generate instant pressure score for XAUUSD pricing skew</span>
+    skew_vector = (dxy_delta * <span class="code-var">W_DXY</span>) + (us10y_delta * <span class="code-var">W_10Y</span>)
+    
+    <span class="code-keyword">if</span> abs(skew_vector) > <span class="code-var">INSTITUTIONAL_THRESHOLD</span>:
+        <span class="code-keyword">return</span> <span class="code-string">"ROUTE_IMMEDIATE_SWEEP"</span>
+            </div>
+
+            <div class="order-book-visual">
+                <div class="ob-row ask"><span>DXY Ask Sweep Detected</span><span>104.215</span><span>420 Lots</span></div>
+                <div class="ob-row ask"><span>US10Y Yield Surging</span><span>4.122%</span><span>1,150 Lots</span></div>
+                <div class="ob-row bid" style="opacity: 0.4;"><span>XAUUSD Lagging Bid (Target)</span><span>$2,342.10</span><span>15 Lots</span></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">02 // High-Frequency Straddle & Limit Array Models</div>
+                <div class="panel-id">SYS_REF: HFT_VACUUM_ARR</div>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Execution Mechanism</div>
+                    <div class="metric-value">Limit Array</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Cancellation Speed</div>
+                    <div class="metric-value highlight">FOK / IOC</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Slippage Tolerance</div>
+                    <div class="metric-value">0.02% Max</div>
+                </div>
+            </div>
+
+            <div class="concept-body">
+                <p>
+                    <strong>The Institutional Paradigm:</strong> Avoid chasing market orders into an empty depth of market (DOM). High-impact events wipe out top-of-book liquidity instantaneously. Instead of a naive "stop-entry straddle" which triggers toxic adverse selection slippage, institutional models deploy passive multi-layered limit price arrays inside the anticipated liquidity vacuum.
+                </p>
+                <p>
+                    By identifying the systemic "exhaustion bounds" using historical news volatility distributions, the model steps inside the spread *after* the initial algorithmic sweep depletion occurs—capturing severe mean-reversion premiums from market-maker stop-outs.
+                </p>
+            </div>
+
+            <div class="code-block">
+<span class="code-comment">// High-Frequency Array Deployment Sequence</span>
+<span class="code-keyword">void</span> <span class="code-var">deploy_vacuum_array</span>(double mid_price) {
+    <span class="code-keyword">double</span> step = <span class="code-var">get_volatility_step</span>();
+    
+    <span class="code-comment">// Array deployment bypassing retail stop-hunt levels</span>
+    <span class="code-keyword">for</span>(<span class="code-keyword">int</span> i = 1; i <= <span class="code-var">MAX_LAYERS</span>; i++) {
+        <span class="code-var">place_limit_order</span>(BUY_LIMIT, mid_price - (i * step), <span class="code-var">LOT_SIZE</span> * i);
+        <span class="code-var">place_limit_order</span>(SELL_LIMIT, mid_price + (i * step), <span class="code-var">LOT_SIZE</span> * i);
+    }
+    <span class="code-comment">// Auto-purge unexecuted layers within 450 milliseconds</span>
+    <span class="code-var">schedule_purge_timer</span>(450, <span class="code-string">"MS"</span>);
+}
+            </div>
+
+            <div class="order-book-visual">
+                <div class="ob-row ask"><span>Limit Array Layer 3 [Passive Offer]</span><span>$2,355.00</span><span>120 Lots</span></div>
+                <div class="ob-row ask"><span>Limit Array Layer 2 [Passive Offer]</span><span>$2,350.00</span><span>80 Lots</span></div>
+                <div class="ob-row" style="text-align:center; color:var(--text-alert); font-weight:bold; background:rgba(255,255,255,0.02)">--- [ HIGH DURATION LIQUIDITY VACUUM ZONE ] ---</div>
+                <div class="ob-row bid"><span>Limit Array Layer 2 [Passive Bid]</span><span>$2,330.00</span><span>80 Lots</span></div>
+                <div class="ob-row bid"><span>Limit Array Layer 3 [Passive Bid]</span><span>$2,325.00</span><span>120 Lots</span></div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="footer-banner">
+        CONFIDENTIAL // SNIPERTRADER.AI INTERNAL QUANT DEVELOPMENT DOCUMENTATION // PROP INTELLECTUAL PROPERTY PRIVILEGES APPLY
+    </div>
+
+</body>
+</html>
