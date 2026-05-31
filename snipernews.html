@@ -1,347 +1,1021 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SniperTrader.ai // Institutional News Execution Architecture</title>
-    <style>
-        :root {
-            --bg-color: #030712;
-            --panel-bg: #0b0f19;
-            --panel-border: #1e293b;
-            --accent-glow: #00ffaa;
-            --accent-dim: #00a877;
-            --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
-            --text-alert: #ef4444;
-            --font-mono: 'SF Mono', Monaco, Consolas, 'Liberation Mono', monospace;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="SniperTrader.ai — Institutional-grade news trading execution platform with cross-asset order flow analysis">
+<meta name="theme-color" content="#020508">
+<title>SniperTrader.ai — Institutional News Execution</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #020508;
+    --bg-secondary: #060d14;
+    --bg-panel: #080f18;
+    --bg-card: #0a1520;
+    --accent-cyan: #00d4ff;
+    --accent-gold: #ffc300;
+    --accent-red: #ff2442;
+    --accent-green: #00ff88;
+    --accent-orange: #ff6b1a;
+    --text-primary: #e8f4ff;
+    --text-secondary: #7a9db8;
+    --text-muted: #3a5570;
+    --border-subtle: rgba(0,212,255,0.08);
+    --border-glow: rgba(0,212,255,0.25);
+    --grid-line: rgba(0,212,255,0.04);
+  }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: var(--font-mono);
-            font-size: 13px;
-            line-height: 1.5;
-            letter-spacing: -0.02em;
-            padding: 24px;
-        }
+  body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    overflow-x: hidden;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--panel-border);
-            padding-bottom: 16px;
-            margin-bottom: 24px;
-        }
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
 
-        .logo-container {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+  /* Radial glow */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 500px;
+    background: radial-gradient(ellipse, rgba(0,100,180,0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
 
-        .logo-mark {
-            width: 12px;
-            height: 12px;
-            background-color: var(--accent-glow);
-            box-shadow: 0 0 10px var(--accent-glow);
-            border-radius: 50%;
-        }
+  /* Skip navigation link for accessibility */
+  .skip-nav {
+    position: absolute;
+    top: -100%;
+    left: 16px;
+    z-index: 1000;
+    background: var(--accent-cyan);
+    color: #000;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    text-decoration: none;
+    transition: top 0.2s;
+  }
+  .skip-nav:focus { top: 8px; }
 
-        .brand-name {
-            font-size: 16px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-        }
+  /* ===== HEADER ===== */
+  header {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    height: 56px;
+    border-bottom: 1px solid var(--border-glow);
+    background: rgba(2,5,8,0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
 
-        .brand-tag {
-            color: var(--text-muted);
-            font-size: 11px;
-        }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
 
-        .system-status {
-            display: flex;
-            gap: 24px;
-            font-size: 11px;
-            color: var(--text-muted);
-        }
+  .logo-mark {
+    width: 32px;
+    height: 32px;
+    position: relative;
+  }
 
-        .status-item span {
-            color: var(--accent-glow);
-        }
+  .logo-mark svg { width: 100%; height: 100%; }
 
-        .grid-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
-        }
+  .logo-text {
+    font-family: 'Orbitron', monospace;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--text-primary);
+  }
 
-        @media (max-width: 1024px) {
-            .grid-container {
-                grid-template-columns: 1fr;
-            }
-        }
+  .logo-text span { color: var(--accent-cyan); }
 
-        .panel {
-            background-color: var(--panel-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: 4px;
-            padding: 20px;
-            position: relative;
-            overflow: hidden;
-        }
+  .logo-badge {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--accent-gold);
+    background: rgba(255,195,0,0.08);
+    border: 1px solid rgba(255,195,0,0.2);
+    padding: 2px 7px;
+    border-radius: 2px;
+    text-transform: uppercase;
+  }
 
-        .panel::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 3px;
-            height: 100%;
-            background-color: var(--accent-dim);
-        }
+  .header-center {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+  }
 
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            margin-bottom: 16px;
-            border-bottom: 1px dashed var(--panel-border);
-            padding-bottom: 8px;
-        }
+  .live-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--accent-green);
+  }
 
-        .panel-title {
-            font-size: 14px;
-            font-weight: 600;
-            text-transform: uppercase;
-            color: var(--text-main);
-        }
+  .live-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--accent-green);
+    border-radius: 50%;
+    animation: livePulse 1.5s ease-in-out infinite;
+    box-shadow: 0 0 8px var(--accent-green);
+  }
 
-        .panel-id {
-            font-size: 10px;
-            color: var(--text-muted);
-        }
+  @keyframes livePulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
 
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-bottom: 20px;
-        }
+  .header-time {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    color: var(--accent-cyan);
+    letter-spacing: 0.1em;
+  }
 
-        .metric-card {
-            background: rgba(255,255,255,0.02);
-            border: 1px solid rgba(255,255,255,0.05);
-            padding: 10px;
-            border-radius: 2px;
-        }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
 
-        .metric-label {
-            font-size: 10px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            margin-bottom: 4px;
-        }
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    padding: 4px 10px;
+    border-radius: 2px;
+    user-select: none;
+  }
 
-        .metric-value {
-            font-size: 16px;
-            font-weight: 600;
-            color: #ffffff;
-        }
+  .status-pill.armed {
+    background: rgba(255,36,66,0.1);
+    border: 1px solid rgba(255,36,66,0.3);
+    color: var(--accent-red);
+  }
 
-        .metric-value.highlight {
-            color: var(--accent-glow);
-        }
+  .status-pill.scanning {
+    background: rgba(0,212,255,0.07);
+    border: 1px solid rgba(0,212,255,0.2);
+    color: var(--accent-cyan);
+  }
 
-        .code-block {
-            background-color: #02040a;
-            border: 1px solid rgba(255,255,255,0.05);
-            padding: 12px;
-            border-radius: 3px;
-            font-size: 11px;
-            color: #adbac7;
-            overflow-x: auto;
-            margin-bottom: 16px;
-            max-height: 220px;
-        }
+  /* ===== TICKER TAPE ===== */
+  .ticker-bar {
+    position: relative;
+    z-index: 9;
+    height: 32px;
+    background: rgba(6,13,20,0.95);
+    border-bottom: 1px solid var(--border-subtle);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+  }
 
-        .code-comment { color: #768390; }
-        .code-keyword { color: #f47067; }
-        .code-var { color: #6cb6ff; }
-        .code-string { color: #96d0ff; }
+  .ticker-label {
+    flex-shrink: 0;
+    padding: 0 14px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--accent-gold);
+    background: rgba(255,195,0,0.06);
+    border-right: 1px solid rgba(255,195,0,0.2);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    z-index: 1;
+  }
 
-        .concept-body p {
-            color: var(--text-muted);
-            margin-bottom: 12px;
-            font-size: 12px;
-            line-height: 1.6;
-        }
+  .ticker-scroll {
+    flex: 1;
+    overflow: hidden;
+  }
 
-        .order-book-visual {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            margin-top: 12px;
-            font-size: 11px;
-        }
+  .ticker-track {
+    display: flex;
+    gap: 0;
+    animation: tickerScroll 40s linear infinite;
+    white-space: nowrap;
+    will-change: transform;
+  }
 
-        .ob-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 3px 6px;
-            background: rgba(255,255,255,0.02);
-        }
+  /* Pause ticker on hover */
+  .ticker-bar:hover .ticker-track {
+    animation-play-state: paused;
+  }
 
-        .ob-row.ask { background: rgba(239, 68, 68, 0.08); border-left: 2px solid var(--text-alert); }
-        .ob-row.bid { background: rgba(0, 255, 170, 0.08); border-left: 2px solid var(--accent-glow); }
-        
-        .footer-banner {
-            margin-top: 24px;
-            text-align: center;
-            font-size: 11px;
-            color: var(--text-muted);
-            border-top: 1px solid var(--panel-border);
-            padding-top: 16px;
-        }
-    </style>
-</head>
-<body>
+  @keyframes tickerScroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
 
-    <header>
-        <div class="logo-container">
-            <div class="logo-mark"></div>
-            <div>
-                <div class="brand-name">SNIPER<span>NEWS</span></div>
-                <div class="brand-tag">Institutional News Liquidity Engine // Quantitative Model Spec v4.02</div>
-            </div>
-        </div>
-        <div class="system-status">
-            <div class="status-item">LATENCY: <span>0.18ms</span></div>
-            <div class="status-item">FEED: <span>FIX/FAST DIRECT</span></div>
-            <div class="status-item">ENGINE: <span>ACTIVE</span></div>
-        </div>
-    </header>
+  .ticker-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 24px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    border-right: 1px solid var(--border-subtle);
+  }
 
-    <div class="grid-container">
+  .ticker-item .sym { color: var(--text-secondary); }
+  .ticker-item .val { color: var(--text-primary); }
+  .ticker-item .chg.up { color: var(--accent-green); }
+  .ticker-item .chg.dn { color: var(--accent-red); }
 
-        <div class="panel">
-            <div class="panel-header">
-                <div class="panel-title">01 // Cross-Asset Order Flow Model</div>
-                <div class="panel-id">SYS_REF: X_ASSET_OFI</div>
-            </div>
+  /* ===== MAIN LAYOUT ===== */
+  .main-layout {
+    position: relative;
+    z-index: 5;
+    display: grid;
+    grid-template-columns: 260px 1fr 300px;
+    grid-template-rows: auto 1fr auto;
+    height: calc(100vh - 88px);
+    overflow: hidden;
+  }
 
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <div class="metric-label">Primary Asset</div>
-                    <div class="metric-value">XAUUSD</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Leading Indicators</div>
-                    <div class="metric-value highlight">DXY / US10Y</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Sampling Freq</div>
-                    <div class="metric-value">500 μs</div>
-                </div>
-            </div>
+  /* ===== COUNTDOWN BANNER ===== */
+  .countdown-banner {
+    grid-column: 1 / -1;
+    background: linear-gradient(90deg,
+      rgba(255,36,66,0.03) 0%,
+      rgba(255,36,66,0.08) 50%,
+      rgba(255,36,66,0.03) 100%);
+    border-bottom: 1px solid rgba(255,36,66,0.2);
+    padding: 10px 24px;
+    display: flex;
+    align-items: center;
+    gap: 32px;
+  }
 
-            <div class="concept-body">
-                <p>
-                    <strong>The Institutional Paradigm:</strong> Retail bots wait for structural price change on a single asset chart. Institutional models measure the instantaneous transmission of news via Order Flow Imbalance (OFI) across highly correlated assets before the domestic asset matching engine even updates its BBO (Best Bid/Offer).
-                </p>
-                <p>
-                    When Tier-1 high-impact macroeconomic data (e.g., Non-Farm Payrolls, CPI) drops, institutional algorithms read the immediate sweep in highly liquid proxy instruments (like 10-Year Treasury Note Futures or the Dollar Index) to calculate a predictive delta vector for gold and indices.
-                </p>
-            </div>
+  .next-event-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--accent-red);
+    text-transform: uppercase;
+  }
 
-            <div class="code-block">
-<span class="code-comment">// Pseudo-logic for cross-asset volume delta tracking</span>
-<span class="code-keyword">def</span> <span class="code-var">calculate_cross_asset_ofi</span>(book_dxy, book_us10y):
-    dxy_delta = (book_dxy.bid_vol_change - book_dxy.ask_vol_change)
-    us10y_delta = (book_us10y.bid_vol_change - book_us10y.ask_vol_change)
-    
-    <span class="code-comment"># Generate instant pressure score for XAUUSD pricing skew</span>
-    skew_vector = (dxy_delta * <span class="code-var">W_DXY</span>) + (us10y_delta * <span class="code-var">W_10Y</span>)
-    
-    <span class="code-keyword">if</span> abs(skew_vector) > <span class="code-var">INSTITUTIONAL_THRESHOLD</span>:
-        <span class="code-keyword">return</span> <span class="code-string">"ROUTE_IMMEDIATE_SWEEP"</span>
-            </div>
+  .next-event-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 0.05em;
+  }
 
-            <div class="order-book-visual">
-                <div class="ob-row ask"><span>DXY Ask Sweep Detected</span><span>104.215</span><span>420 Lots</span></div>
-                <div class="ob-row ask"><span>US10Y Yield Surging</span><span>4.122%</span><span>1,150 Lots</span></div>
-                <div class="ob-row bid" style="opacity: 0.4;"><span>XAUUSD Lagging Bid (Target)</span><span>$2,342.10</span><span>15 Lots</span></div>
-            </div>
-        </div>
+  .impact-bar {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+  }
 
-        <div class="panel">
-            <div class="panel-header">
-                <div class="panel-title">02 // High-Frequency Straddle & Limit Array Models</div>
-                <div class="panel-id">SYS_REF: HFT_VACUUM_ARR</div>
-            </div>
+  .impact-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 1px;
+    background: rgba(255,36,66,0.2);
+    border: 1px solid rgba(255,36,66,0.4);
+  }
 
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <div class="metric-label">Execution Mechanism</div>
-                    <div class="metric-value">Limit Array</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Cancellation Speed</div>
-                    <div class="metric-value highlight">FOK / IOC</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Slippage Tolerance</div>
-                    <div class="metric-value">0.02% Max</div>
-                </div>
-            </div>
+  .impact-dot.filled { background: var(--accent-red); border-color: var(--accent-red); box-shadow: 0 0 6px var(--accent-red); }
 
-            <div class="concept-body">
-                <p>
-                    <strong>The Institutional Paradigm:</strong> Avoid chasing market orders into an empty depth of market (DOM). High-impact events wipe out top-of-book liquidity instantaneously. Instead of a naive "stop-entry straddle" which triggers toxic adverse selection slippage, institutional models deploy passive multi-layered limit price arrays inside the anticipated liquidity vacuum.
-                </p>
-                <p>
-                    By identifying the systemic "exhaustion bounds" using historical news volatility distributions, the model steps inside the spread *after* the initial algorithmic sweep depletion occurs—capturing severe mean-reversion premiums from market-maker stop-outs.
-                </p>
-            </div>
+  .countdown-digits {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'Orbitron', monospace;
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--accent-red);
+    text-shadow: 0 0 20px rgba(255,36,66,0.5);
+    letter-spacing: 0.05em;
+  }
 
-            <div class="code-block">
-<span class="code-comment">// High-Frequency Array Deployment Sequence</span>
-<span class="code-keyword">void</span> <span class="code-var">deploy_vacuum_array</span>(double mid_price) {
-    <span class="code-keyword">double</span> step = <span class="code-var">get_volatility_step</span>();
-    
-    <span class="code-comment">// Array deployment bypassing retail stop-hunt levels</span>
-    <span class="code-keyword">for</span>(<span class="code-keyword">int</span> i = 1; i <= <span class="code-var">MAX_LAYERS</span>; i++) {
-        <span class="code-var">place_limit_order</span>(BUY_LIMIT, mid_price - (i * step), <span class="code-var">LOT_SIZE</span> * i);
-        <span class="code-var">place_limit_order</span>(SELL_LIMIT, mid_price + (i * step), <span class="code-var">LOT_SIZE</span> * i);
-    }
-    <span class="code-comment">// Auto-purge unexecuted layers within 450 milliseconds</span>
-    <span class="code-var">schedule_purge_timer</span>(450, <span class="code-string">"MS"</span>);
-}
-            </div>
+  .countdown-unit {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+  }
 
-            <div class="order-book-visual">
-                <div class="ob-row ask"><span>Limit Array Layer 3 [Passive Offer]</span><span>$2,355.00</span><span>120 Lots</span></div>
-                <div class="ob-row ask"><span>Limit Array Layer 2 [Passive Offer]</span><span>$2,350.00</span><span>80 Lots</span></div>
-                <div class="ob-row" style="text-align:center; color:var(--text-alert); font-weight:bold; background:rgba(255,255,255,0.02)">--- [ HIGH DURATION LIQUIDITY VACUUM ZONE ] ---</div>
-                <div class="ob-row bid"><span>Limit Array Layer 2 [Passive Bid]</span><span>$2,330.00</span><span>80 Lots</span></div>
-                <div class="ob-row bid"><span>Limit Array Layer 3 [Passive Bid]</span><span>$2,325.00</span><span>120 Lots</span></div>
-            </div>
-        </div>
+  .countdown-sep {
+    font-size: 18px;
+    opacity: 0.5;
+    animation: sepBlink 1s step-end infinite;
+  }
 
-    </div>
+  @keyframes sepBlink { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.1; } }
 
-    <div class="footer-banner">
-        CONFIDENTIAL // SNIPERTRADER.AI INTERNAL QUANT DEVELOPMENT DOCUMENTATION // PROP INTELLECTUAL PROPERTY PRIVILEGES APPLY
-    </div>
+  .banner-models {
+    margin-left: auto;
+    display: flex;
+    gap: 10px;
+  }
 
-</body>
-</html>
+  .model-tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    padding: 3px 8px;
+    border-radius: 2px;
+    text-transform: uppercase;
+  }
+
+  .model-tag.active {
+    background: rgba(0,212,255,0.08);
+    border: 1px solid rgba(0,212,255,0.3);
+    color: var(--accent-cyan);
+  }
+
+  .model-tag.standby {
+    background: rgba(255,195,0,0.06);
+    border: 1px solid rgba(255,195,0,0.2);
+    color: var(--accent-gold);
+  }
+
+  /* ===== LEFT PANEL ===== */
+  .panel-left {
+    border-right: 1px solid var(--border-subtle);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-muted) transparent;
+    background: rgba(8,15,24,0.6);
+  }
+
+  .panel-left::-webkit-scrollbar { width: 4px; }
+  .panel-left::-webkit-scrollbar-track { background: transparent; }
+  .panel-left::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 2px; }
+
+  .panel-header {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: rgba(8,15,24,0.95);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 2;
+  }
+
+  .panel-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--accent-gold);
+    text-transform: uppercase;
+  }
+
+  .event-count {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  .event-list { padding: 8px 0; }
+
+  .event-item {
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(0,212,255,0.03);
+    cursor: pointer;
+    transition: background 0.15s;
+    position: relative;
+  }
+
+  .event-item:hover { background: rgba(0,212,255,0.04); }
+
+  .event-item.high-impact {
+    border-left: 2px solid var(--accent-red);
+  }
+
+  .event-item.med-impact {
+    border-left: 2px solid var(--accent-orange);
+  }
+
+  .event-item.selected {
+    background: rgba(0,212,255,0.06);
+    border-left: 2px solid var(--accent-cyan);
+  }
+
+  .event-item-time {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+    margin-bottom: 3px;
+  }
+
+  .event-item-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: 0.03em;
+    margin-bottom: 4px;
+  }
+
+  .event-item-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .event-currency {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--accent-cyan);
+    letter-spacing: 0.08em;
+  }
+
+  .event-impact-dots {
+    display: flex;
+    gap: 2px;
+  }
+
+  .sm-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+  }
+
+  .sm-dot.red { background: var(--accent-red); }
+  .sm-dot.empty { background: var(--text-muted); opacity: 0.3; }
+
+  .forecast-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 4px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--text-muted);
+  }
+
+  .forecast-row span { color: var(--text-secondary); }
+
+  /* ===== CENTER PANEL ===== */
+  .panel-center {
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-muted) transparent;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .panel-center::-webkit-scrollbar { width: 4px; }
+  .panel-center::-webkit-scrollbar-track { background: transparent; }
+  .panel-center::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 2px; }
+
+  /* ===== MODEL SECTION ===== */
+  .model-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .model-section-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(0,212,255,0.02);
+  }
+
+  .model-section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .model-number {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    background: rgba(0,212,255,0.1);
+    border: 1px solid rgba(0,212,255,0.2);
+    padding: 2px 8px;
+    border-radius: 2px;
+    letter-spacing: 0.1em;
+  }
+
+  .model-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 0.05em;
+  }
+
+  .model-status-badge {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    padding: 3px 10px;
+    border-radius: 2px;
+  }
+
+  .model-status-badge.armed {
+    background: rgba(255,36,66,0.1);
+    border: 1px solid rgba(255,36,66,0.35);
+    color: var(--accent-red);
+    animation: badgePulse 2s ease-in-out infinite;
+  }
+
+  .model-status-badge.analyzing {
+    background: rgba(0,212,255,0.08);
+    border: 1px solid rgba(0,212,255,0.25);
+    color: var(--accent-cyan);
+  }
+
+  @keyframes badgePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  .model-body { padding: 16px; }
+
+  .model-description {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 16px;
+    letter-spacing: 0.02em;
+  }
+
+  .model-description strong {
+    color: var(--accent-cyan);
+    font-weight: 600;
+  }
+
+  /* ===== METRICS GRID ===== */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .metric-cell {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: 2px;
+    padding: 10px 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .metric-cell::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--accent-cyan);
+    opacity: 0.3;
+  }
+
+  .metric-cell.gold::before { background: var(--accent-gold); }
+  .metric-cell.green::before { background: var(--accent-green); }
+  .metric-cell.red::before { background: var(--accent-red); }
+
+  .metric-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+
+  .metric-value {
+    font-family: 'Orbitron', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+  }
+
+  .metric-value.cyan { color: var(--accent-cyan); }
+  .metric-value.gold { color: var(--accent-gold); }
+  .metric-value.green { color: var(--accent-green); }
+  .metric-value.red { color: var(--accent-red); }
+
+  .metric-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--text-muted);
+    margin-top: 3px;
+  }
+
+  /* ===== ASSET MATRIX ===== */
+  .asset-matrix {
+    border: 1px solid var(--border-subtle);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+
+  .matrix-row {
+    display: grid;
+    grid-template-columns: 100px 1fr 80px 80px 80px;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(0,212,255,0.03);
+    gap: 8px;
+  }
+
+  .matrix-row.header {
+    background: rgba(0,212,255,0.03);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+  }
+
+  .matrix-row:last-child { border-bottom: none; }
+  .matrix-row:hover { background: rgba(0,212,255,0.03); }
+
+  .asset-name {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--accent-cyan);
+    letter-spacing: 0.06em;
+  }
+
+  .imbalance-bar-wrap {
+    height: 4px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .imbalance-bar {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.8s ease;
+    position: relative;
+  }
+
+  .imbalance-bar.buy { background: linear-gradient(90deg, var(--accent-green), rgba(0,255,136,0.5)); }
+  .imbalance-bar.sell { background: linear-gradient(90deg, var(--accent-red), rgba(255,36,66,0.5)); }
+
+  .asset-flow {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    text-align: right;
+  }
+
+  .asset-flow.buy-flow { color: var(--accent-green); }
+  .asset-flow.sell-flow { color: var(--accent-red); }
+
+  .asset-spread {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-align: right;
+  }
+
+  .signal-chip {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    padding: 3px 7px;
+    border-radius: 2px;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .signal-chip.long {
+    background: rgba(0,255,136,0.1);
+    border: 1px solid rgba(0,255,136,0.25);
+    color: var(--accent-green);
+  }
+
+  .signal-chip.short {
+    background: rgba(255,36,66,0.1);
+    border: 1px solid rgba(255,36,66,0.25);
+    color: var(--accent-red);
+  }
+
+  .signal-chip.neutral {
+    background: rgba(122,157,184,0.06);
+    border: 1px solid rgba(122,157,184,0.15);
+    color: var(--text-secondary);
+  }
+
+  /* ===== STRADDLE MODEL ===== */
+  .straddle-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .straddle-side {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: 2px;
+    padding: 12px;
+  }
+
+  .straddle-side.buy-side {
+    border-top: 2px solid rgba(0,255,136,0.4);
+  }
+
+  .straddle-side.sell-side {
+    border-top: 2px solid rgba(255,36,66,0.4);
+  }
+
+  .straddle-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    margin-bottom: 10px;
+  }
+
+  .straddle-label.buy { color: var(--accent-green); }
+  .straddle-label.sell { color: var(--accent-red); }
+
+  .limit-levels {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .limit-level {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 8px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 2px;
+    border-left: 2px solid transparent;
+  }
+
+  .limit-level.l1 { border-left-color: rgba(0,255,136,0.8); }
+  .limit-level.l2 { border-left-color: rgba(0,255,136,0.5); }
+  .limit-level.l3 { border-left-color: rgba(0,255,136,0.25); }
+  .limit-level.s1 { border-left-color: rgba(255,36,66,0.8); }
+  .limit-level.s2 { border-left-color: rgba(255,36,66,0.5); }
+  .limit-level.s3 { border-left-color: rgba(255,36,66,0.25); }
+
+  .level-price {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .level-size {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  .level-status {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+  }
+
+  .level-status.armed { color: var(--accent-gold); }
+  .level-status.filled { color: var(--accent-green); }
+  .level-status.pending { color: var(--text-muted); }
+
+  /* ===== EXECUTION LOG ===== */
+  .exec-log {
+    border: 1px solid var(--border-subtle);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .exec-log-header {
+    background: rgba(0,212,255,0.03);
+    padding: 8px 12px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .log-entries {
+    max-height: 180px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-muted) transparent;
+  }
+
+  .log-entries::-webkit-scrollbar { width: 3px; }
+  .log-entries::-webkit-scrollbar-track { background: transparent; }
+  .log-entries::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 2px; }
+
+  .log-entry {
+    display: flex;
+    gap: 12px;
+    padding: 6px 12px;
+    border-bottom: 1px solid rgba(0,212,255,0.02);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    align-items: center;
+    animation: logFadeIn 0.4s ease;
+  }
+
+  @keyframes logFadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .log-time { color: var(--text-muted); min-width: 55px; }
+  .log-type {
+    min-width: 60px;
+    padding: 1px 5px;
+    border-radius: 1px;
+    text-align: center;
+    letter-spacing: 0.08em;
+  }
+
+  .log-type.sweep { background: rgba(255,36,66,0.1); color: var(--accent-red); border: 1px solid rgba(255,36,66,0.2); }
+  .log-type.fill { background: rgba(0,255,136,0.1); color: var(--accent-green); border: 1px solid rgba(0,255,136,0.2); }
+  .log-type.delta { background: rgba(0,212,255,0.08); color: var(--accent-cyan); border: 1px solid rgba(0,212,255,0.2); }
+  .log-type.abort { background: rgba(255,107,26,0.1); color: var(--accent-orange); border: 1px solid rgba(255,107,26,0.2); }
+
+  .log-msg { color: var(--text-secondary); flex: 1; }
+  .log-pnl { min-width: 60px; text-align: right; }
+  .log-pnl.pos { color: var(--accent-green); }
+  .log-pnl.neg { color: var(--accent-red); }
+
+  /* ===== RIGHT PANEL ===== */
+  .panel-right {
+    border-left: 1px solid var(--border-subtle);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-muted) transparent;
+    background: rgba(8,15,24,0.6);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel-right::-webkit-scrollbar { width: 4px; }
+  .panel-right::-webkit-scrollbar-track { background: transparent; }
+  .panel-right::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 2px; }
+
+  /* ===== VOLATILITY GAUGE ===== */
+  .vol-gauge-section {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .section-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .gauge-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .gauge-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .gauge-sym {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-secondary);
+    min-width: 50px;
+    letter-spacing: 0.06em;
+  }
+
+  .gauge-track {
+    flex: 1;
+    height: 6px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .gauge-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-gold));
+    transition: width 1s ease;
+    position: relative;
+  }
+
+  .gauge-fill::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: -1px;
+    width: 3px;
+    height: 8px;
+    background: white;
+    border-radius: 1px;
+    opacity: 0.8;
+  }
+
+  .gauge-pct {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--accent-gold);
+    min-width: 32px;
+    text-align: right;
+  }
+
+  /* ===== CORRELATION MATRIX ===== */
+  .correlation-section {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .corr-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 3px;
+  }
+
+  .corr-cell {
+    aspect-ratio: 1;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+
+  .corr-cell:hover { transform: scale(1.1); }
+
+  .
