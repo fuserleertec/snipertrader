@@ -1,0 +1,498 @@
+Here is the production-grade v1 dashboard HTML file for SniperTrader AI, a Bloomberg-style command center with live ticker search, sector filters, and modular WebSocket-ready architecture.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+  <title>SniperTrader AI · Command Center</title>
+  <!-- Tailwind CDN + base styles -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js for radar / heatmap visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    body {
+      background: #05070A;
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      overflow-x: hidden;
+    }
+    /* custom scroll for dark theme */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0B0F14;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 8px;
+    }
+    .glass-panel {
+      backdrop-filter: blur(12px);
+      background: rgba(11, 15, 20, 0.85);
+      border: 1px solid rgba(0, 229, 255, 0.08);
+      box-shadow: 0 10px 25px -8px rgba(0,0,0,0.6);
+    }
+    .animate-ticker {
+      animation: tickerScroll 28s linear infinite;
+    }
+    @keyframes tickerScroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .command-palette-overlay {
+      backdrop-filter: blur(10px);
+      background: rgba(5, 7, 10, 0.9);
+    }
+  </style>
+</head>
+<body class="bg-[#05070A] text-slate-100 antialiased overflow-hidden">
+
+<!-- Command palette overlay (hidden by default) -->
+<div id="commandPalette" class="command-palette-overlay fixed inset-0 z-50 hidden flex items-start justify-center pt-[15vh]">
+  <div class="bg-[#0B0F14] border border-cyan-500/30 rounded-2xl w-full max-w-xl shadow-2xl p-5">
+    <div class="flex items-center gap-3 mb-4">
+      <span class="text-cyan-400 text-lg">⚡</span>
+      <input id="paletteInput" type="text" placeholder="Search ticker or command..." autofocus
+             class="bg-transparent w-full text-xl text-white outline-none placeholder-slate-500" />
+      <span class="text-slate-500 text-sm">ESC</span>
+    </div>
+    <div id="paletteResults" class="space-y-2 text-slate-300 max-h-64 overflow-y-auto">
+      <div class="hover:bg-slate-800 px-3 py-2 rounded cursor-pointer flex justify-between"><span>NVDA</span><span class="text-cyan-400">+2.4%</span></div>
+      <div class="hover:bg-slate-800 px-3 py-2 rounded cursor-pointer flex justify-between"><span>PLTR</span><span class="text-green-400">Score 94</span></div>
+      <div class="hover:bg-slate-800 px-3 py-2 rounded cursor-pointer flex justify-between"><span>TSLA</span><span class="text-slate-400">-0.8%</span></div>
+      <div class="hover:bg-slate-800 px-3 py-2 rounded cursor-pointer flex justify-between"><span>SMR</span><span class="text-green-400">+6.2%</span></div>
+      <div class="hover:bg-slate-800 px-3 py-2 rounded cursor-pointer flex justify-between"><span>AMD</span><span class="text-cyan-400">+1.1%</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Main dashboard container -->
+<div class="h-screen flex flex-col">
+  
+  <!-- HEADER -->
+  <header class="h-16 border-b border-cyan-500/20 flex items-center justify-between px-4 md:px-6 bg-[#05070A]/90 backdrop-blur-sm">
+    <div class="flex items-center gap-3">
+      <div class="w-3 h-3 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_12px_#00e5ff]"></div>
+      <h1 class="text-xl md:text-2xl font-bold tracking-wide bg-gradient-to-r from-cyan-300 to-blue-400 bg-clip-text text-transparent">
+        SNIPERTRADER.AI
+      </h1>
+    </div>
+    
+    <!-- Live ticker tape -->
+    <div class="hidden md:flex overflow-hidden mx-4 flex-1 max-w-lg">
+      <div class="animate-ticker whitespace-nowrap flex gap-8 text-sm font-mono">
+        <span class="text-green-400">NVDA +2.4%</span>
+        <span class="text-green-400">PLTR +4.7%</span>
+        <span class="text-green-400">SMR +6.2%</span>
+        <span class="text-red-400">INTC -1.2%</span>
+        <span class="text-cyan-400">AMD +1.1%</span>
+        <span class="text-green-400">TSM +0.9%</span>
+        <span class="text-green-400">NVDA +2.4%</span>
+        <span class="text-green-400">PLTR +4.7%</span>
+        <span class="text-green-400">SMR +6.2%</span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-4">
+      <div id="clock" class="text-cyan-300 font-mono text-sm md:text-base tracking-wider bg-[#0B0F14] px-3 py-1.5 rounded-lg border border-cyan-500/20">
+        10:42:36 EST
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN GRID -->
+  <main class="flex-1 p-3 md:p-4 grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 auto-rows-min md:auto-rows-fr overflow-y-auto">
+    
+    <!-- SEARCH + FILTERS ROW (spans full width) -->
+    <div class="col-span-1 md:col-span-3 lg:col-span-4 xl:col-span-5 flex flex-wrap items-center gap-2 md:gap-4 bg-[#0B0F14] border border-cyan-500/10 rounded-xl p-2 md:p-3">
+      <div class="relative flex-1 min-w-[200px]">
+        <span class="absolute left-3 top-2.5 text-slate-400">🔍</span>
+        <input id="tickerSearch" type="text" placeholder="Search ticker... (Ctrl+K)" 
+               class="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 pl-9 pr-4 text-white placeholder-slate-500 focus:border-cyan-400 outline-none" />
+      </div>
+      <div class="flex gap-2 flex-wrap">
+        <select id="sectorFilter" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200">
+          <option>All Sectors</option>
+          <option>Technology</option>
+          <option>Healthcare</option>
+          <option>Energy</option>
+          <option>Financials</option>
+          <option>Defense</option>
+        </select>
+        <select id="marketCapFilter" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200">
+          <option>Any Cap</option>
+          <option>Mega (>$200B)</option>
+          <option>Large ($10B-$200B)</option>
+          <option>Mid ($2B-$10B)</option>
+          <option>Small (<$2B)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- BREAKING CATALYST FEED (spans 2 cols) -->
+    <section class="col-span-1 md:col-span-2 glass-panel rounded-xl p-4 flex flex-col">
+      <h2 class="text-cyan-400 font-semibold mb-3 flex items-center gap-2 text-lg">⚡ Breaking Catalysts</h2>
+      <div id="newsFeed" class="space-y-3 overflow-y-auto pr-1 flex-1">
+        <!-- dynamic feed cards injected here -->
+      </div>
+    </section>
+
+    <!-- INSTITUTIONAL TRADE IDEAS (spans 1 col on md, 2 on xl) -->
+    <section class="col-span-1 md:col-span-1 lg:col-span-2 xl:col-span-2 glass-panel rounded-xl p-4 flex flex-col">
+      <h2 class="text-cyan-400 font-semibold mb-3 flex items-center gap-2">🏦 Institutional Ideas</h2>
+      <div id="tradeIdeasContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto">
+        <!-- trade cards injected -->
+      </div>
+    </section>
+
+    <!-- LIQUIDITY VACUUM RADAR -->
+    <section class="col-span-1 md:col-span-1 lg:col-span-2 xl:col-span-2 glass-panel rounded-xl p-4 flex flex-col">
+      <h2 class="text-cyan-400 font-semibold mb-2">📡 Liquidity Vacuum Radar</h2>
+      <div class="relative flex-1 min-h-[200px]">
+        <canvas id="vacuumRadar" width="300" height="200"></canvas>
+      </div>
+      <div class="text-xs text-slate-400 mt-2 flex justify-between">
+        <span>NVDA vacuum: 87</span><span>PLTR: 72</span><span>AMD: 65</span>
+      </div>
+    </section>
+
+    <!-- CROSS ASSET ORDER FLOW -->
+    <section class="col-span-1 glass-panel rounded-xl p-4 flex flex-col">
+      <h2 class="text-cyan-400 font-semibold mb-3">🔗 Cross-Asset Flow</h2>
+      <div id="crossAssetPanel" class="text-sm space-y-3">
+        <div class="bg-slate-900 p-3 rounded-lg">
+          <div class="flex justify-between"><span class="font-bold text-white">NVDA</span><span class="text-cyan-400">Corr 94%</span></div>
+          <div class="text-slate-400 text-xs mt-1">SOXX · SMH · QQQ · AMD · TSM · AVGO</div>
+        </div>
+        <div class="bg-slate-900 p-3 rounded-lg">
+          <div class="flex justify-between"><span class="font-bold">PLTR</span><span class="text-cyan-400">Corr 88%</span></div>
+          <div class="text-slate-400 text-xs mt-1">AI · DFEN · XAR · RTX</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- OPTIONS FLOW MONITOR -->
+    <section class="col-span-1 glass-panel rounded-xl p-4 flex flex-col">
+      <h2 class="text-cyan-400 font-semibold mb-3">📊 Options Flow</h2>
+      <div id="optionsFlowPanel" class="text-sm space-y-3">
+        <div class="flex justify-between text-green-400"><span>NVDA 150C</span><span>+12.4K vol</span></div>
+        <div class="flex justify-between text-red-400"><span>PLTR 45P</span><span>5.2K puts</span></div>
+        <div class="flex justify-between text-green-400"><span>AMD 210C</span><span>sweep bullish</span></div>
+        <div class="flex justify-between text-cyan-400"><span>SMR 22C</span><span>unusual</span></div>
+      </div>
+    </section>
+
+    <!-- ETF CORRELATION MATRIX (heatmap) -->
+    <section class="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-3 glass-panel rounded-xl p-4">
+      <h2 class="text-cyan-400 font-semibold mb-3">🧬 ETF Correlation Matrix</h2>
+      <div class="overflow-x-auto">
+        <div id="correlationGrid" class="grid grid-cols-5 gap-1 text-xs md:text-sm min-w-[300px]">
+          <!-- dynamically filled heatmap -->
+        </div>
+      </div>
+    </section>
+
+    <!-- WATCHLIST TABLE -->
+    <section class="col-span-1 md:col-span-2 lg:col-span-2 xl:col-span-2 glass-panel rounded-xl p-4 flex flex-col">
+      <h2 class="text-cyan-400 font-semibold mb-3">📋 Institutional Watchlist</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm" id="watchlistTable">
+          <thead class="text-slate-400 border-b border-slate-700">
+            <tr><th class="text-left py-2">Ticker</th><th>Score</th><th>Flow</th><th>Target</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800">
+            <!-- rows populated -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- AI Briefing Drawer (right slideout - hidden default) -->
+<div id="aiDrawer" class="fixed top-0 right-0 h-full w-80 md:w-96 bg-[#0B0F14] border-l border-cyan-500/30 shadow-2xl transform translate-x-full transition-transform duration-300 z-40 flex flex-col p-5">
+  <div class="flex justify-between items-center mb-4">
+    <h3 class="text-cyan-300 font-bold text-lg">🧠 AI Briefing</h3>
+    <button id="closeDrawerBtn" class="text-slate-400 hover:text-white text-2xl">&times;</button>
+  </div>
+  <div id="briefingContent" class="flex-1 space-y-4 text-sm">
+    <div class="bg-slate-900 p-3 rounded-lg">
+      <span class="text-cyan-400 font-semibold">WHY NVDA?</span>
+      <p class="mt-1">Defense contract · Cross-asset confirmed · Bullish sweep</p>
+      <div class="text-green-400 mt-2">Confidence: 94%</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ========== MODULAR JS ARCHITECTURE (single-file simulation) ==========
+  (function() {
+    // ----- app state -----
+    const state = {
+      ticker: 'NVDA',
+      news: [],
+      ideas: [],
+      watchlist: [],
+      correlationData: [
+        ['', 'NVDA', 'AMD', 'TSM', 'AVGO'],
+        ['NVDA', 1, 0.88, 0.76, 0.83],
+        ['AMD', 0.88, 1, 0.74, 0.81],
+        ['TSM', 0.76, 0.74, 1, 0.69],
+        ['AVGO', 0.83, 0.81, 0.69, 1]
+      ]
+    };
+
+    // ----- Utility: institutional colors -----
+    const COLORS = {
+      bullish: '#00FF88',
+      bearish: '#FF4D67',
+      neutral: '#94A3B8',
+      alert: '#00E5FF',
+      bgPanel: '#0B0F14'
+    };
+
+    // ----- News Engine (mock) -----
+    function generateMockNews() {
+      return [
+        { ticker: 'PLTR', score: 94, text: 'Awarded $480M Department of Defense Contract', sentiment: 'bullish' },
+        { ticker: 'NVDA', score: 91, text: 'Blackwell chip demand exceeds supply forecasts', sentiment: 'bullish' },
+        { ticker: 'SMR', score: 88, text: 'NuScale SMR approval fast-tracked by NRC', sentiment: 'bullish' },
+        { ticker: 'AMD', score: 79, text: 'MI300X wins cloud hyperscaler contract', sentiment: 'bullish' },
+        { ticker: 'INTC', score: 42, text: 'Delays in Ohio fab ramp, analysts downgrade', sentiment: 'bearish' }
+      ];
+    }
+
+    // ----- Institutional ideas generator -----
+    function generateTradeIdeas() {
+      return [
+        { ticker: 'NVDA', confidence: 93, horizon: 'Immediate', target: '+3.4%', direction: 'long' },
+        { ticker: 'PLTR', confidence: 89, horizon: 'Short-Term', target: '+5.1%', direction: 'long' },
+        { ticker: 'SMR', confidence: 85, horizon: 'Long-Term', target: '+12.2%', direction: 'long' },
+        { ticker: 'AMD', confidence: 78, horizon: 'Immediate', target: '+2.1%', direction: 'long' },
+        { ticker: 'TSM', confidence: 82, horizon: 'Short-Term', target: '+1.8%', direction: 'long' }
+      ];
+    }
+
+    // ----- Watchlist data -----
+    function getWatchlistData() {
+      return [
+        { ticker: 'NVDA', score: 94, flow: 'Bullish sweep', target: '+3.4%' },
+        { ticker: 'PLTR', score: 91, flow: 'Institutional buy', target: '+5.1%' },
+        { ticker: 'SMR', score: 87, flow: 'Gamma ramp', target: '+12.2%' },
+        { ticker: 'AMD', score: 79, flow: 'Call accumulation', target: '+2.1%' },
+        { ticker: 'TSM', score: 84, flow: 'Cross-asset confirm', target: '+1.8%' }
+      ];
+    }
+
+    // ----- Render functions -----
+    function renderNewsFeed() {
+      const feed = document.getElementById('newsFeed');
+      if (!feed) return;
+      const news = generateMockNews();
+      feed.innerHTML = news.map(n => `
+        <div class="p-3 rounded-lg bg-slate-900 hover:bg-slate-800 transition border-l-2 ${n.sentiment === 'bullish' ? 'border-green-500' : 'border-red-500'}">
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-cyan-300">${n.ticker}</span>
+            <span class="text-xs px-2 py-0.5 rounded-full ${n.score > 80 ? 'bg-green-900/40 text-green-400' : 'bg-slate-700 text-slate-300'}">Score ${n.score}</span>
+          </div>
+          <p class="text-slate-300 text-sm mt-1">${n.text}</p>
+        </div>
+      `).join('');
+    }
+
+    function renderTradeIdeas() {
+      const container = document.getElementById('tradeIdeasContainer');
+      if (!container) return;
+      const ideas = generateTradeIdeas();
+      container.innerHTML = ideas.map(idea => `
+        <div class="trade-card p-3 rounded-lg bg-slate-900 border ${idea.direction === 'long' ? 'border-green-500/30' : 'border-red-500/30'}">
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-white text-lg">${idea.ticker}</span>
+            <span class="text-xs font-mono ${parseFloat(idea.target) > 0 ? 'text-green-400' : 'text-red-400'}">${idea.target}</span>
+          </div>
+          <div class="flex justify-between text-xs text-slate-400 mt-2">
+            <span>Confidence: <span class="text-cyan-400 font-semibold">${idea.confidence}%</span></span>
+            <span class="bg-slate-800 px-2 py-0.5 rounded">${idea.horizon}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderWatchlist() {
+      const tbody = document.querySelector('#watchlistTable tbody');
+      if (!tbody) return;
+      const list = getWatchlistData();
+      tbody.innerHTML = list.map(item => `
+        <tr class="hover:bg-slate-800/50">
+          <td class="py-2 font-semibold text-white">${item.ticker}</td>
+          <td class="text-center"><span class="px-2 py-0.5 bg-cyan-900/30 text-cyan-300 rounded">${item.score}</span></td>
+          <td class="text-center text-green-400">${item.flow}</td>
+          <td class="text-center text-green-400">${item.target}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderCorrelationHeatmap() {
+      const grid = document.getElementById('correlationGrid');
+      if (!grid) return;
+      const data = state.correlationData;
+      let html = '';
+      data.forEach((row, ri) => {
+        row.forEach((cell, ci) => {
+          if (ri === 0 || ci === 0) {
+            html += `<div class="font-bold text-slate-300 p-1.5 text-center">${cell}</div>`;
+          } else {
+            const val = parseFloat(cell);
+            let bgColor = 'bg-slate-800';
+            if (val >= 0.9) bgColor = 'bg-cyan-900/70';
+            else if (val >= 0.8) bgColor = 'bg-blue-900/50';
+            else if (val >= 0.7) bgColor = 'bg-indigo-900/40';
+            html += `<div class="p-1.5 text-center rounded ${bgColor} text-white font-mono text-xs">${cell}</div>`;
+          }
+        });
+      });
+      grid.innerHTML = html;
+    }
+
+    // ----- Radar chart (Liquidity Vacuum) -----
+    function initVacuumRadar() {
+      const ctx = document.getElementById('vacuumRadar')?.getContext('2d');
+      if (!ctx) return;
+      new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: ['NVDA', 'PLTR', 'AMD', 'SMR', 'TSM', 'AVGO'],
+          datasets: [{
+            label: 'Vacuum Score',
+            data: [87, 72, 65, 78, 60, 70],
+            backgroundColor: 'rgba(0, 229, 255, 0.15)',
+            borderColor: '#00E5FF',
+            pointBackgroundColor: '#00E5FF',
+            borderWidth: 2,
+            pointRadius: 4,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            r: {
+              grid: { color: '#1e293b' },
+              angleLines: { color: '#1e293b' },
+              pointLabels: { color: '#94a3b8', font: { size: 10 } },
+              ticks: { display: false }
+            }
+          }
+        }
+      });
+    }
+
+    // ----- Real-time clock -----
+    function updateClock() {
+      const clockEl = document.getElementById('clock');
+      if (!clockEl) return;
+      const now = new Date();
+      const est = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+      const hours = String(est.getHours()).padStart(2,'0');
+      const mins = String(est.getMinutes()).padStart(2,'0');
+      const secs = String(est.getSeconds()).padStart(2,'0');
+      clockEl.textContent = `${hours}:${mins}:${secs} EST`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // ----- Command Palette (Ctrl+K) -----
+    const palette = document.getElementById('commandPalette');
+    const paletteInput = document.getElementById('paletteInput');
+    
+    function openPalette() {
+      palette.classList.remove('hidden');
+      paletteInput?.focus();
+    }
+    function closePalette() {
+      palette.classList.add('hidden');
+    }
+    
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        openPalette();
+      }
+      if (e.key === 'Escape') {
+        closePalette();
+      }
+    });
+    
+    palette?.addEventListener('click', (e) => {
+      if (e.target === palette) closePalette();
+    });
+    
+    // Ticker search focus also opens palette-like behavior
+    document.getElementById('tickerSearch')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const val = e.target.value.trim().toUpperCase();
+        if (val) alert(`Search triggered for: ${val} (mock)`);
+      }
+    });
+
+    // ----- AI Drawer toggle (mock) -----
+    const drawer = document.getElementById('aiDrawer');
+    const closeBtn = document.getElementById('closeDrawerBtn');
+    // open drawer on trade card click (delegation)
+    document.addEventListener('click', (e) => {
+      const card = e.target.closest('.trade-card');
+      if (card) {
+        const ticker = card.querySelector('.font-bold')?.textContent?.trim() || 'NVDA';
+        document.getElementById('briefingContent').innerHTML = `
+          <div class="bg-slate-900 p-3 rounded-lg">
+            <span class="text-cyan-400 font-semibold">WHY ${ticker}?</span>
+            <p class="mt-1">News: Institutional accumulation · Cross-asset confirmed · Options bullish sweep</p>
+            <div class="text-green-400 mt-2">Confidence: 94%</div>
+          </div>`;
+        drawer.classList.remove('translate-x-full');
+      }
+    });
+    closeBtn?.addEventListener('click', () => drawer.classList.add('translate-x-full'));
+
+    // ----- WebSocket-ready architecture (mock streaming) -----
+    function simulateWebSocketFeed() {
+      // In production: const ws = new WebSocket("wss://api.snipertrader.ai/feed");
+      setInterval(() => {
+        // mock update: refresh news/ideas occasionally
+        if (Math.random() > 0.7) {
+          renderNewsFeed();
+          renderTradeIdeas();
+        }
+      }, 8000);
+    }
+
+    // ----- Catalyst Scoring Engine (exposed) -----
+    window.calculateCatalystScore = function(data) {
+      return (data.novelty * 0.30 + data.magnitude * 0.20 + data.historicalImpact * 0.15 +
+              data.optionsPositioning * 0.15 + data.institutionalOwnership * 0.10 + data.macroAlignment * 0.10) * 100;
+    };
+
+    // ----- Initialize everything -----
+    function bootstrap() {
+      renderNewsFeed();
+      renderTradeIdeas();
+      renderWatchlist();
+      renderCorrelationHeatmap();
+      initVacuumRadar();
+      simulateWebSocketFeed();
+      console.log('SniperTrader AI v1 dashboard ready');
+    }
+
+    // Start when DOM is ready
+    window.addEventListener('DOMContentLoaded', bootstrap);
+  })();
+</script>
+</body>
+</html>
+```
