@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMC Algorithmic Execution Engine</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        .mono { font-family: 'Courier New', Courier, monospace; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-6">
+
+    <div class="max-w-7xl mx-auto space-y-6">
+        
+        <header class="flex justify-between items-center border-b border-slate-800 pb-4">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-emerald-400">TradeSniper Engine v4.0</h1>
+                <p class="text-slate-400 text-sm">Automated Liquidity Sweep & FVG Confluence Matrix</p>
+            </div>
+            <div class="flex items-center space-x-3">
+                <span class="flex h-3 w-3 relative">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </span>
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 bg-slate-900 px-3 py-1.5 rounded border border-slate-800">Engine Live</span>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+                <div class="text-xs text-slate-400 font-semibold uppercase">Lookback Period</div>
+                <div class="text-xl font-bold text-slate-200 mt-1">15 Candles</div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+                <div class="text-xs text-slate-400 font-semibold uppercase">Confluence Window</div>
+                <div class="text-xl font-bold text-slate-200 mt-1">5 Candles Max</div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+                <div class="text-xs text-slate-400 font-semibold uppercase">Execution Rules</div>
+                <div class="text-xl font-bold text-emerald-400 mt-1">No Martingale / Strict SL</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col h-[520px]">
+                <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider border-b border-slate-800 pb-2 mb-3">Live Order Routing Logs</h2>
+                <div id="log-container" class="space-y-2 overflow-y-auto flex-1 text-xs mono pr-2">
+                    </div>
+            </div>
+
+            <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col h-[520px]">
+                <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider border-b border-slate-800 pb-2 mb-3">Market Microstructure Matrix</h2>
+                <div class="overflow-auto flex-1 rounded border border-slate-800">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead class="bg-slate-950 sticky top-0 border-b border-slate-800 text-slate-400 uppercase tracking-wider">
+                            <tr>
+                                <th class="p-2.5">Idx</th>
+                                <th class="p-2.5">Open</th>
+                                <th class="p-2.5">High</th>
+                                <th class="p-2.5">Low</th>
+                                <th class="p-2.5">Close</th>
+                                <th class="p-2.5 text-center">Liquidity Sweep</th>
+                                <th class="p-2.5 text-center">FVG Gap Zone</th>
+                                <th class="p-2.5 text-right">Execution Signal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="matrix-body" class="divide-y divide-slate-800/50 mono">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Generate Mock Data designed to force a liquidity sweep and a subsequent FVG trigger
+        function generateMarketData() {
+            let data = [];
+            let basePrice = 150.00;
+            
+            for (let i = 0; i < 35; i++) {
+                // Baseline structural price behavior
+                let change = (Math.sin(i * 0.4) * 1.5) + (Math.random() - 0.5) * 0.4;
+                let close = basePrice + change;
+                let open = close - (Math.random() - 0.5) * 0.6;
+                let high = Math.max(open, close) + Math.random() * 0.3;
+                let low = Math.min(open, close) - Math.random() * 0.3;
+                
+                // Force an explicit Bearish Sweep at Index 25
+                if (i === 25) {
+                    let historicalHigh = Math.max(...data.map(d => d.high));
+                    high = historicalHigh + 1.25; // Stop hunt print
+                    open = historicalHigh + 0.80;
+                    close = historicalHigh - 0.40; // Aggressive rejection close
+                    low = close - 0.20;
+                }
+                
+                // Force a massive institutional Bearish Imbalance (Candle 2 of FVG) at Index 26
+                if (i === 26) {
+                    open = data[25].close - 0.10;
+                    close = open - 3.50; // Massive expansion downward
+                    high = open + 0.15;
+                    low = close - 0.15;
+                }
+
+                // Force FVG validation candle (Candle 3 of FVG) at Index 27
+                if (i === 27) {
+                    open = data[26].close - 0.05;
+                    close = open - 0.80;
+                    high = open + 0.40; // High stays significantly below Candle 25's Low (creates FVG)
+                    low = close - 0.20;
+                }
+
+                data.push({ index: i, open, high, low, close });
+            }
+            return data;
+        }
+
+        // Process algorithmic logic on array
+        function processSMCEngine(data, lookback = 15) {
+            let logs = [];
+            
+            for (let i = 0; i < data.length; i++) {
+                if (i < lookback) {
+                    data[i].sweep = "None";
+                    data[i].fvg = "None";
+                    data[i].signal = "HOLD";
+                    continue;
+                }
+
+                // --- 1. Sweep Logic Math ---
+                let slice = data.slice(i - lookback, i);
+                let structHigh = Math.max(...slice.map(d => d.high));
+                let structLow = Math.min(...slice.map(d => d.low));
+
+                let sweep = "None";
+                if (data[i].low < structLow && data[i].close > structLow) {
+                    sweep = "BULLISH";
+                    logs.push(`[SWEEP DETECTED] Index ${i}: Liquidity swept below key structural low (${structLow.toFixed(2)}). Rejection confirmed.`);
+                } else if (data[i].high > structHigh && data[i].close < structHigh) {
+                    sweep = "BEARISH";
+                    logs.push(`[SWEEP DETECTED] Index ${i}: Liquidity swept above key structural high (${structHigh.toFixed(2)}). Rejection confirmed.`);
+                }
+                data[i].sweep = sweep;
+
+                // --- 2. FVG Logic Math ---
+                let fvg = "None";
+                let fvgZone = "";
+                if (i >= 2) {
+                    let candle1 = data[i-2];
+                    let candle3 = data[i];
+                    
+                    if (candle3.low > candle1.high) {
+                        fvg = "BULLISH";
+                        fvgZone = `${candle1.high.toFixed(2)} - ${candle3.low.toFixed(2)}`;
+                    } else if (candle3.high < candle1.low) {
+                        fvg = "BEARISH";
+                        fvgZone = `${candle3.high.toFixed(2)} - ${candle1.low.toFixed(2)}`;
+                    }
+                }
+                data[i].fvg = fvg;
+                data[i].fvgZone = fvgZone;
+
+                // --- 3. Confluence Execution Tracking ---
+                let signal = "HOLD";
+                if (data[i].fvg === "BEARISH") {
+                    // Scan historical 5 frames for structural sweep match
+                    let recentSweep = data.slice(Math.max(0, i - 4), i + 1).some(d => d.sweep === "BEARISH");
+                    if (recentSweep) {
+                        signal = "SELL / SHORT";
+                        logs.push(`[ORDER EXECUTION] Index ${i}: SELL Order sent. Reason: FVG Imbalance confirmed directly inside Bearish Sweep Zone.`);
+                    }
+                } else if (data[i].fvg === "BULLISH") {
+                    let recentSweep = data.slice(Math.max(0, i - 4), i + 1).some(d => d.sweep === "BULLISH");
+                    if (recentSweep) {
+                        signal = "BUY / LONG";
+                        logs.push(`[ORDER EXECUTION] Index ${i}: BUY Order sent. Reason: FVG Imbalance confirmed directly inside Bullish Sweep Zone.`);
+                    }
+                }
+                data[i].signal = signal;
+            }
+            return { processedData: data, logs };
+        }
+
+        // Render data layers into HTML DOM elements
+        function runDashboard() {
+            const rawData = generateMarketData();
+            const { processedData, logs } = processSMCEngine(rawData);
+
+            // Populate Table
+            const tbody = document.getElementById("matrix-body");
+            processedData.forEach(row => {
+                let tr = document.createElement("tr");
+                tr.className = "hover:bg-slate-900/50 transition-colors";
+
+                let sweepBadge = `<span class="text-slate-600">-</span>`;
+                if (row.sweep === "BEARISH") sweepBadge = `<span class="bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded border border-amber-500/20 font-bold text-[10px]">BEARISH SWEEP</span>`;
+                if (row.sweep === "BULLISH") sweepBadge = `<span class="bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20 font-bold text-[10px]">BULLISH SWEEP</span>`;
+
+                let fvgBadge = `<span class="text-slate-600">-</span>`;
+                if (row.fvg !== "None") {
+                    let colorClass = row.fvg === "BEARISH" ? "text-amber-500" : "text-emerald-500";
+                    fvgBadge = `<div class="flex flex-col items-center"><span class="${colorClass} font-semibold">${row.fvg} FVG</span><span class="text-[10px] text-slate-500">${row.fvgZone}</span></div>`;
+                }
+
+                let signalBadge = `<span class="text-slate-500 font-medium">HOLD</span>`;
+                if (row.signal.includes("SELL")) {
+                    tr.className = "bg-rose-950/20 hover:bg-rose-950/30 transition-colors border-y border-rose-900/30";
+                    signalBadge = `<span class="bg-rose-500 text-white font-bold px-2 py-1 rounded text-[10px] tracking-wide animate-pulse">EXECUTE SELL</span>`;
+                } else if (row.signal.includes("BUY")) {
+                    tr.className = "bg-emerald-950/20 hover:bg-emerald-950/30 transition-colors border-y border-emerald-900/30";
+                    signalBadge = `<span class="bg-emerald-500 text-white font-bold px-2 py-1 rounded text-[10px] tracking-wide animate-pulse">EXECUTE BUY</span>`;
+                }
+
+                tr.innerHTML = `
+                    <td class="p-2.5 text-slate-500 font-semibold">${row.index}</td>
+                    <td class="p-2.5 text-slate-300">${row.open.toFixed(2)}</td>
+                    <td class="p-2.5 text-slate-300">${row.high.toFixed(2)}</td>
+                    <td class="p-2.5 text-slate-300">${row.low.toFixed(2)}</td>
+                    <td class="p-2.5 text-slate-100 font-medium">${row.close.toFixed(2)}</td>
+                    <td class="p-2.5 text-center">${sweepBadge}</td>
+                    <td class="p-2.5 text-center">${fvgBadge}</td>
+                    <td class="p-2.5 text-right">${signalBadge}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Populate Console Terminal logs
+            const logContainer = document.getElementById("log-container");
+            if (logs.length === 0) {
+                logContainer.innerHTML = `<div class="text-slate-600 italic">Listening for incoming exchange feeds...</div>`;
+            } else {
+                logs.forEach(log => {
+                    let logDiv = document.createElement("div");
+                    if (log.includes("ORDER")) {
+                        logDiv.className = "p-2 rounded bg-slate-950 text-emerald-400 border border-emerald-500/20 leading-relaxed font-bold";
+                    } else {
+                        logDiv.className = "text-slate-400 border-l-2 border-slate-700 pl-2 py-0.5";
+                    }
+                    logDiv.innerText = log;
+                    logContainer.appendChild(logDiv);
+                });
+            }
+        }
+
+        // Initialize engine on window load
+        window.onload = runDashboard;
+    </script>
+</body>
+</html>
