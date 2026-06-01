@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <title>SNIPERNEWS • snipertrader.ai | Institutional News & Liquidity</title>
+  <!-- Tailwind via CDN + custom fine-tuning -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome for sharp icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap');
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: #0B0F15;
+      letter-spacing: -0.01em;
+    }
+    .terminal-card {
+      background: #12171F;
+      border: 1px solid rgba(55, 65, 81, 0.5);
+      backdrop-filter: blur(2px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.7);
+    }
+    .glass-panel {
+      background: rgba(18, 23, 31, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(75, 85, 99, 0.3);
+    }
+    .news-item {
+      border-left: 3px solid #3B82F6;
+      transition: background 0.2s ease;
+    }
+    .news-item.high-impact {
+      border-left-color: #EF4444;
+      box-shadow: 0 0 12px rgba(239,68,68,0.3);
+    }
+    .grid-matrix th, .grid-matrix td {
+      padding: 8px 4px;
+      text-align: center;
+      font-feature-settings: "tnum";
+    }
+    .pulse-dot {
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 0.6; transform: scale(0.9); }
+      50% { opacity: 1; transform: scale(1.2); background: #10B981; }
+      100% { opacity: 0.6; transform: scale(0.9); }
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #0F172A;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 8px;
+    }
+    .badge-active {
+      background: #065F46;
+      color: #6EE7B7;
+      border: 1px solid #10B981;
+    }
+    .tag-removable {
+      transition: all 0.2s;
+    }
+    .tag-removable:hover {
+      background: #7F1D1D;
+      color: white;
+    }
+  </style>
+</head>
+<body class="text-slate-200 antialiased p-4 md:p-6 min-h-screen flex flex-col">
+
+  <!-- ========== STATE MANAGEMENT (Vanilla JS) ========== -->
+  <script>
+    // ---------- CORE STATE: Market Configuration ----------
+    const DEFAULT_INSTRUMENTS = [
+      { ticker: '/NQ', name: 'Nasdaq', class: 'Equities', active: true },
+      { ticker: '/ES', name: 'S&P 500', class: 'Equities', active: true },
+      { ticker: '/YM', name: 'Dow', class: 'Equities', active: true },
+      { ticker: '/CL', name: 'Crude Oil', class: 'Commodities', active: true },
+      { ticker: '/GC', name: 'Gold', class: 'Metals', active: true },
+      { ticker: '/SI', name: 'Silver', class: 'Metals', active: true },
+      { ticker: 'USD', name: 'US Dollar', class: 'FX', active: true },
+      { ticker: 'BTC', name: 'Bitcoin', class: 'Crypto', active: true }
+    ];
+
+    // State object
+    let marketState = JSON.parse(JSON.stringify(DEFAULT_INSTRUMENTS)); // deep copy
+
+    // Simulated real-time imbalance data store (per ticker)
+    let imbalanceData = {};
+
+    // News feed simulation
+    let newsFeed = [];
+
+    // Helper: get active tickers
+    function getActiveTickers() {
+      return marketState.filter(m => m.active).map(m => m.ticker);
+    }
+
+    // Helper: find instrument by ticker
+    function findInstrument(ticker) {
+      return marketState.find(m => m.ticker === ticker);
+    }
+
+    // Update imbalance mock data
+    function updateImbalanceData() {
+      const active = getActiveTickers();
+      active.forEach(ticker => {
+        if (!imbalanceData[ticker]) {
+          imbalanceData[ticker] = { bid: 0, ask: 0, imbalance: 0, spread: 0 };
+        }
+        // simulate millisecond changes
+        const bidVol = Math.floor(Math.random() * 2000) + 200;
+        const askVol = Math.floor(Math.random() * 1800) + 150;
+        const imb = bidVol - askVol;
+        imbalanceData[ticker] = {
+          bid: bidVol,
+          ask: askVol,
+          imbalance: imb,
+          spread: (Math.random() * 0.8 + 0.1).toFixed(2),
+          direction: imb > 200 ? '🟢' : (imb < -200 ? '🔴' : '⚪')
+        };
+      });
+    }
+
+    // Generate simulated news based on active tickers
+    function generateNewsItem() {
+      const active = getActiveTickers();
+      if (active.length === 0) return null;
+      const randomTicker = active[Math.floor(Math.random() * active.length)];
+      const headlines = [
+        `${randomTicker} liquidity vacuum detected ahead of CPI print`,
+        `Order book imbalance > 65% on ${randomTicker} – institutional flow`,
+        `${randomTicker} straddle array triggered at 09:30:12.440`,
+        `Cross-asset correlation break: ${randomTicker} vs Gold divergence`,
+        `High-frequency signal: ${randomTicker} limit array repositioned`
+      ];
+      const sources = ['Bloomberg Terminal', 'Reuters Eikon', 'snipertrader flow', 'NY Fed Desk', 'CME Globex'];
+      return {
+        id: Date.now() + Math.random(),
+        ticker: randomTicker,
+        headline: headlines[Math.floor(Math.random() * headlines.length)],
+        source: sources[Math.floor(Math.random() * sources.length)],
+        timestamp: new Date().toLocaleTimeString('en-US', { hour12: false }),
+        impact: Math.random() > 0.7 ? 'high' : 'medium'
+      };
+    }
+
+    // Add news periodically (simulated real-time)
+    function pushNews() {
+      const item = generateNewsItem();
+      if (item) {
+        newsFeed.unshift(item);
+        if (newsFeed.length > 25) newsFeed.pop();
+        renderNewsFeed();
+      }
+    }
+  </script>
+
+  <!-- ========== HEADER ========== -->
+  <header class="flex flex-wrap items-center justify-between mb-5 gap-3">
+    <div class="flex items-center gap-3">
+      <div class="text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
+        <i class="fas fa-crosshairs mr-2 text-blue-400"></i>snipertrader.ai
+      </div>
+      <span class="bg-slate-800/80 px-3 py-1 rounded-full text-xs font-semibold text-emerald-300 border border-emerald-700/50">
+        SNIPERNEWS
+      </span>
+    </div>
+    <div class="flex items-center gap-4 text-sm">
+      <div class="flex items-center gap-2 bg-slate-900/70 px-3 py-1.5 rounded-lg">
+        <span class="h-2.5 w-2.5 rounded-full bg-emerald-500 pulse-dot"></span>
+        <span class="text-slate-300">LATENCY <span class="font-mono text-emerald-400">0.8 ms</span></span>
+      </div>
+      <div class="flex items-center gap-2 bg-slate-900/70 px-3 py-1.5 rounded-lg">
+        <i class="fas fa-shield-alt text-blue-400"></i>
+        <span class="text-slate-300">NQ/ES <span class="text-white font-medium">LIVE</span></span>
+      </div>
+      <div class="text-slate-400 text-xs hidden sm:block">
+        <i class="far fa-clock"></i> <span id="liveTime">--:--:--</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========== MARKET CONFIGURATION MANAGER ========== -->
+  <div class="glass-panel rounded-xl p-4 mb-5">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+      <h2 class="text-lg font-semibold flex items-center gap-2">
+        <i class="fas fa-sliders-h text-blue-400"></i> Market Configuration
+      </h2>
+      <button id="openAddTickerModal" class="bg-blue-600 hover:bg-blue-500 transition px-4 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2">
+        <i class="fas fa-plus-circle"></i> Add Instrument
+      </button>
+    </div>
+
+    <!-- Active Tickers grouped by class -->
+    <div id="activeTickerDisplay" class="flex flex-wrap gap-2 mb-4">
+      <!-- dynamic chips rendered by JS -->
+    </div>
+
+    <!-- Group filter buttons & toggle grid -->
+    <div class="flex flex-wrap items-center gap-2 text-xs">
+      <span class="text-slate-400 mr-1">Filter:</span>
+      <button data-class="all" class="class-filter-btn bg-slate-800 px-3 py-1 rounded-full hover:bg-slate-700 transition">All</button>
+      <button data-class="Equities" class="class-filter-btn bg-slate-800 px-3 py-1 rounded-full hover:bg-slate-700 transition">Equities</button>
+      <button data-class="Metals" class="class-filter-btn bg-slate-800 px-3 py-1 rounded-full hover:bg-slate-700 transition">Metals</button>
+      <button data-class="Energy" class="class-filter-btn bg-slate-800 px-3 py-1 rounded-full hover:bg-slate-700 transition">Energy</button>
+      <button data-class="Commodities" class="class-filter-btn bg-slate-800 px-3 py-1 rounded-full hover:bg-slate-700 transition">Commodities</button>
+      <button data-class="FX" class="class-filter-btn bg-slate-800 px-3 py-1 rounded-full hover:bg-slate-700 transition">FX</button>
+      <button data-class="Crypto" class="class-filter-btn bg-slate-800 px-3 py-1 rounded-full hover:bg-slate-700 transition">Crypto</button>
+    </div>
+  </div>
+
+  <!-- ========== MAIN DASHBOARD GRID ========== -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 flex-grow">
+    
+    <!-- LEFT COLUMN: High-Impact News Feed -->
+    <div class="lg:col-span-1 terminal-card rounded-xl p-4 flex flex-col h-[500px] lg:h-auto">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-bold text-blue-300 flex items-center gap-2"><i class="fas fa-newspaper"></i> High-Impact Feed</h3>
+        <span class="text-xs bg-red-900/60 text-red-300 px-2 py-0.5 rounded">LIVE</span>
+      </div>
+      <div id="newsFeedContainer" class="flex-1 overflow-y-auto custom-scroll space-y-2 pr-1">
+        <!-- dynamic news items -->
+      </div>
+      <div class="text-xs text-slate-500 mt-2 text-center">filtered by active instruments</div>
+    </div>
+
+    <!-- MIDDLE COLUMN: Cross-Asset Imbalance Matrix -->
+    <div class="lg:col-span-1 terminal-card rounded-xl p-4 flex flex-col h-[500px] lg:h-auto">
+      <h3 class="font-bold text-purple-300 flex items-center gap-2 mb-3"><i class="fas fa-table"></i> Imbalance Matrix (ms)</h3>
+      <div class="overflow-x-auto custom-scroll flex-1">
+        <table class="w-full text-xs grid-matrix" id="imbalanceTable">
+          <thead>
+            <tr class="text-slate-400 border-b border-slate-700">
+              <th class="text-left">Ticker</th>
+              <th>Bid Vol</th>
+              <th>Ask Vol</th>
+              <th>Imbalance</th>
+              <th>Spread</th>
+            </tr>
+          </thead>
+          <tbody id="imbalanceBody">
+            <!-- dynamic rows -->
+          </tbody>
+        </table>
+      </div>
+      <div class="text-xs text-slate-500 mt-2">Model 1: Order flow correlation</div>
+    </div>
+
+    <!-- RIGHT COLUMN: Liquidity Vacuum / Limit Array Visualizer -->
+    <div class="lg:col-span-1 terminal-card rounded-xl p-4 flex flex-col h-[500px] lg:h-auto">
+      <h3 class="font-bold text-emerald-300 flex items-center gap-2 mb-3"><i class="fas fa-chart-area"></i> Liquidity Vacuum & Arrays</h3>
+      <div id="limitArrayContainer" class="flex-1 overflow-y-auto custom-scroll space-y-3">
+        <!-- dynamic mock DOM per active ticker -->
+      </div>
+      <div class="text-xs text-slate-500 mt-2">Model 2: Straddle & limit placement</div>
+    </div>
+  </div>
+
+  <!-- ========== ADD TICKER MODAL (hidden by default) ========== -->
+  <div id="addTickerModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-bold text-white">Add Custom Instrument</h3>
+        <button id="closeModalBtn" class="text-slate-400 hover:text-white text-2xl">&times;</button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="text-sm text-slate-300">Ticker (e.g., /RTY, ETH)</label>
+          <input type="text" id="newTickerInput" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white mt-1" placeholder="/RTY">
+        </div>
+        <div>
+          <label class="text-sm text-slate-300">Asset Class</label>
+          <select id="newTickerClass" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white mt-1">
+            <option value="Equities">Equities</option>
+            <option value="Metals">Metals</option>
+            <option value="Energy">Energy</option>
+            <option value="Commodities">Commodities</option>
+            <option value="FX">FX</option>
+            <option value="Crypto">Crypto</option>
+          </select>
+        </div>
+        <button id="confirmAddTicker" class="w-full bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-lg font-medium transition mt-2">
+          Add & Activate
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ---------- DOM REFERENCES ----------
+    const activeTickerDisplay = document.getElementById('activeTickerDisplay');
+    const newsFeedContainer = document.getElementById('newsFeedContainer');
+    const imbalanceBody = document.getElementById('imbalanceBody');
+    const limitArrayContainer = document.getElementById('limitArrayContainer');
+    const addModal = document.getElementById('addTickerModal');
+    const openModalBtn = document.getElementById('openAddTickerModal');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const confirmAddBtn = document.getElementById('confirmAddTicker');
+    const newTickerInput = document.getElementById('newTickerInput');
+    const newTickerClass = document.getElementById('newTickerClass');
+    const liveTimeSpan = document.getElementById('liveTime');
+
+    // ---------- RENDER FUNCTIONS (fully dynamic based on state) ----------
+    function renderActiveTickers() {
+      if (!activeTickerDisplay) return;
+      const active = marketState.filter(m => m.active);
+      const inactive = marketState.filter(m => !m.active);
+      
+      let html = '';
+      // Active chips
+      active.forEach(instr => {
+        html += `<span class="inline-flex items-center gap-1.5 bg-emerald-900/60 text-emerald-200 border border-emerald-700/70 px-3 py-1.5 rounded-full text-sm font-medium">
+          <i class="fas fa-check-circle text-emerald-400 text-xs"></i> ${instr.ticker} 
+          <span class="text-xs text-emerald-300/70">${instr.class}</span>
+          <button data-toggle="${instr.ticker}" class="toggle-ticker ml-1 text-slate-300 hover:text-red-400 transition"><i class="fas fa-times-circle"></i></button>
+        </span>`;
+      });
+      // Inactive chips
+      inactive.forEach(instr => {
+        html += `<span class="inline-flex items-center gap-1.5 bg-slate-800/80 text-slate-400 border border-slate-700/60 px-3 py-1.5 rounded-full text-sm">
+          <i class="far fa-circle text-slate-500 text-xs"></i> ${instr.ticker}
+          <span class="text-xs text-slate-500">${instr.class}</span>
+          <button data-toggle="${instr.ticker}" class="toggle-ticker ml-1 text-slate-500 hover:text-emerald-400 transition"><i class="fas fa-plus-circle"></i></button>
+        </span>`;
+      });
+      activeTickerDisplay.innerHTML = html;
+
+      // Attach toggle events
+      document.querySelectorAll('.toggle-ticker').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const ticker = btn.getAttribute('data-toggle');
+          toggleTickerActive(ticker);
+        });
+      });
+    }
+
+    function toggleTickerActive(ticker) {
+      const instr = marketState.find(m => m.ticker === ticker);
+      if (instr) {
+        instr.active = !instr.active;
+        // Re-initialize imbalance data if newly active
+        if (instr.active && !imbalanceData[ticker]) {
+          imbalanceData[ticker] = { bid: 500, ask: 400, imbalance: 100, spread: '0.25' };
+        }
+        renderAll();
+      }
+    }
+
+    function renderNewsFeed() {
+      if (!newsFeedContainer) return;
+      const activeTickers = getActiveTickers();
+      const filteredNews = newsFeed.filter(item => activeTickers.includes(item.ticker));
+      
+      if (filteredNews.length === 0) {
+        newsFeedContainer.innerHTML = '<div class="text-slate-500 text-sm italic p-4">No news for active instruments.</div>';
+        return;
+      }
+      
+      newsFeedContainer.innerHTML = filteredNews.slice(0, 15).map(item => {
+        const impactClass = item.impact === 'high' ? 'high-impact' : '';
+        return `<div class="news-item ${impactClass} bg-slate-800/60 p-3 rounded-r-lg text-xs">
+          <div class="flex justify-between text-slate-400 mb-1">
+            <span class="font-bold text-blue-300">${item.ticker}</span>
+            <span>${item.timestamp}</span>
+          </div>
+          <p class="text-slate-200 font-medium">${item.headline}</p>
+          <div class="flex justify-between items-center mt-1">
+            <span class="text-slate-500">${item.source}</span>
+            ${item.impact === 'high' ? '<span class="text-red-400 bg-red-900/40 px-1.5 rounded text-[10px]">HIGH IMPACT</span>' : ''}
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function renderImbalanceMatrix() {
+      if (!imbalanceBody) return;
+      const activeTickers = getActiveTickers();
+      updateImbalanceData(); // refresh mock data
+      
+      if (activeTickers.length === 0) {
+        imbalanceBody.innerHTML = '<tr><td colspan="5" class="text-slate-500 py-4">No active instruments</td></tr>';
+        return;
+      }
+      
+      imbalanceBody.innerHTML = activeTickers.map(ticker => {
+        const data = imbalanceData[ticker] || { bid: 0, ask: 0, imbalance: 0, spread: '-' };
+        const dirIcon = data.imbalance > 150 ? '🟢' : (data.imbalance < -150 ? '🔴' : '⚪');
+        return `<tr class="border-b border-slate-800/80 hover:bg-slate-800/40">
+          <td class="text-left font-semibold text-white">${ticker}</td>
+          <td>${data.bid}</td>
+          <td>${data.ask}</td>
+          <td class="${data.imbalance > 0 ? 'text-emerald-400' : 'text-red-400'}">${dirIcon} ${data.imbalance}</td>
+          <td>${data.spread}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderLimitArrays() {
+      if (!limitArrayContainer) return;
+      const activeTickers = getActiveTickers();
+      if (activeTickers.length === 0) {
+        limitArrayContainer.innerHTML = '<div class="text-slate-500 text-sm p-2">Select instruments to visualize limit arrays.</div>';
+        return;
+      }
+      
+      limitArrayContainer.innerHTML = activeTickers.map(ticker => {
+        const mockPrice = (Math.random() * 200 + 50).toFixed(2);
+        const gapUp = (Math.random() * 1.2).toFixed(2);
+        const gapDown = (Math.random() * 1.1).toFixed(2);
+        return `<div class="bg-slate-800/70 border border-slate-700/70 rounded-lg p-3">
+          <div class="flex justify-between items-center text-sm font-bold text-emerald-300 mb-2">
+            <span>${ticker} <span class="text-slate-400 text-xs ml-1">DOM</span></span>
+            <span class="text-white">${mockPrice}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-[10px]">
+            <div><span class="text-slate-400">Bid vacuum:</span> <span class="text-red-300">-${gapDown}</span></div>
+            <div><span class="text-slate-400">Ask vacuum:</span> <span class="text-green-300">+${gapUp}</span></div>
+          </div>
+          <div class="mt-2 flex gap-2 text-xs">
+            <span class="bg-blue-900/40 text-blue-300 px-2 py-0.5 rounded">Limit Buy @ ${(mockPrice - 0.45).toFixed(2)}</span>
+            <span class="bg-purple-900/40 text-purple-300 px-2 py-0.5 rounded">Straddle @ ${mockPrice}</span>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function renderAll() {
+      renderActiveTickers();
+      renderNewsFeed();
+      renderImbalanceMatrix();
+      renderLimitArrays();
+    }
+
+    // ---------- ADD CUSTOM TICKER LOGIC ----------
+    function addCustomTicker(ticker, assetClass) {
+      const formatted = ticker.trim().toUpperCase();
+      if (!formatted) return alert('Enter a valid ticker');
+      if (marketState.some(m => m.ticker === formatted)) {
+        alert('Ticker already exists.');
+        return;
+      }
+      marketState.push({
+        ticker: formatted,
+        name: formatted,
+        class: assetClass,
+        active: true
+      });
+      // init imbalance data
+      imbalanceData[formatted] = { bid: 400, ask: 350, imbalance: 50, spread: '0.30' };
+      renderAll();
+    }
+
+    // ---------- CLASS FILTER (visual grouping) ----------
+    function filterByClass(assetClass) {
+      // highlight active filter buttons
+      document.querySelectorAll('.class-filter-btn').forEach(btn => {
+        if (btn.getAttribute('data-class') === assetClass) {
+          btn.classList.add('bg-blue-700', 'text-white');
+        } else {
+          btn.classList.remove('bg-blue-700', 'text-white');
+        }
+      });
+      
+      // We don't remove instruments, but we could visually emphasize.
+      // For a more advanced UI, highlight matrix rows. Here we simply re-render.
+      // The active tickers remain; but we can add a subtle effect.
+      renderAll();
+    }
+
+    // ---------- EVENT LISTENERS ----------
+    openModalBtn.addEventListener('click', () => {
+      addModal.classList.remove('hidden');
+      newTickerInput.value = '';
+      newTickerInput.focus();
+    });
+    
+    closeModalBtn.addEventListener('click', () => addModal.classList.add('hidden'));
+    window.addEventListener('click', (e) => {
+      if (e.target === addModal) addModal.classList.add('hidden');
+    });
+
+    confirmAddBtn.addEventListener('click', () => {
+      const ticker = newTickerInput.value.trim();
+      const assetClass = newTickerClass.value;
+      if (ticker) {
+        addCustomTicker(ticker, assetClass);
+        addModal.classList.add('hidden');
+      }
+    });
+
+    newTickerInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        confirmAddBtn.click();
+      }
+    });
+
+    // Class filter buttons
+    document.querySelectorAll('.class-filter-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const assetClass = e.currentTarget.getAttribute('data-class');
+        filterByClass(assetClass);
+      });
+    });
+
+    // Live clock
+    function updateClock() {
+      const now = new Date();
+      liveTimeSpan.textContent = now.toLocaleTimeString('en-US', { hour12: false });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Simulate real-time news every 4-7 seconds
+    setInterval(() => {
+      pushNews();
+    }, 4800);
+
+    // Simulate imbalance updates every 1.8 seconds
+    setInterval(() => {
+      renderImbalanceMatrix();
+    }, 2100);
+
+    // Initial data seeding
+    (function initializeData() {
+      // Pre-populate imbalance data for defaults
+      marketState.forEach(m => {
+        if (!imbalanceData[m.ticker]) {
+          imbalanceData[m.ticker] = { bid: 700, ask: 600, imbalance: 100, spread: '0.15' };
+        }
+      });
+      // Generate initial news items
+      for (let i = 0; i < 8; i++) {
+        const item = generateNewsItem();
+        if (item) newsFeed.push(item);
+      }
+      renderAll();
+      // activate 'all' filter style
+      document.querySelector('.class-filter-btn[data-class="all"]').classList.add('bg-blue-700', 'text-white');
+    })();
+  </script>
+</body>
+</html>
