@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SniperTrader.AI | Institutional Order Flow Intelligence</title>
+    <style>
+        :root {
+            --bg-obsidian: #060b10;
+            --panel-bg: rgba(0, 20, 30, 0.4);
+            --glass-border: rgba(0, 255, 255, 0.2);
+            --cyan: #00e5ff;
+            --cyan-dim: #00b8d4;
+            --text-primary: #e0f0f5;
+            --text-secondary: #8899a6;
+            --accent-red: #ff3b5c;
+            --accent-green: #00e676;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg-obsidian);
+            color: var(--text-primary);
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        /* Glassmorphic base */
+        .glass-card {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+        }
+
+        /* Hero Section */
+        .hero {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: radial-gradient(ellipse at 30% 20%, rgba(0, 229, 255, 0.06) 0%, transparent 60%),
+                        radial-gradient(ellipse at 80% 60%, rgba(0, 255, 200, 0.04) 0%, transparent 60%),
+                        var(--bg-obsidian);
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" opacity="0.03"><path d="M0 0h100v100H0z" fill="none"/><path d="M10 10 L90 10 L90 90 L10 90 Z" stroke="%2300e5ff" fill="none" stroke-width="0.3"/></svg>') repeat;
+            pointer-events: none;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 1200px;
+            width: 100%;
+            padding: 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 3rem;
+        }
+
+        .hero-text {
+            flex: 1 1 500px;
+        }
+
+        .hero-title {
+            font-size: clamp(2.8rem, 6vw, 4.4rem);
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+            background: linear-gradient(to right, #e0f0f5, #00e5ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            margin-bottom: 2.5rem;
+            max-width: 600px;
+        }
+
+        .cta-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 1rem 2.2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            border: 1px solid transparent;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            color: var(--text-primary);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: rgba(0, 229, 255, 0.15);
+            border-color: var(--cyan);
+            color: var(--cyan);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);
+        }
+
+        .btn-primary:hover {
+            background: rgba(0, 229, 255, 0.25);
+            box-shadow: 0 0 35px rgba(0, 229, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            border-color: rgba(255, 255, 255, 0.15);
+            color: #b0c7d4;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .glass-viewport {
+            flex: 1 1 450px;
+            height: 380px;
+            perspective: 1000px;
+        }
+
+        .viewport-inner {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform: rotateY(-4deg) rotateX(3deg);
+            transform-style: preserve-3d;
+            transition: transform 0.3s;
+        }
+
+        .viewport-inner:hover {
+            transform: rotateY(-2deg) rotateX(1deg);
+        }
+
+        .dashboard-mock {
+            background: rgba(10, 25, 35, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 1.2rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            color: #ccdee8;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        }
+
+        .dash-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.8rem;
+            font-size: 0.75rem;
+            color: var(--cyan);
+        }
+
+        .dash-chart {
+            flex: 1;
+            background: rgba(0, 10, 20, 0.6);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #dashboardChart {
+            width: 100%;
+            height: 100%;
+        }
+
+        .dash-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1rem;
+            font-size: 0.8rem;
+        }
+
+        .stat span {
+            color: var(--cyan);
+            font-weight: 600;
+        }
+
+        /* Live Structural Terminal */
+        .terminal-section {
+            padding: 4rem 2rem;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        .section-label {
+            font-size: 0.75rem;
+            letter-spacing: 0.15em;
+            color: var(--cyan);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(0, 229, 255, 0.2);
+            padding-bottom: 0.5rem;
+        }
+
+        .market-map-container {
+            position: relative;
+            height: 420px;
+        }
+
+        #marketStructureCanvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 16px;
+            background: rgba(0, 10, 20, 0.65);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--glass-border);
+        }
+
+        .legend {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .legend span::before {
+            content: "●";
+            margin-right: 0.4rem;
+            color: var(--cyan);
+        }
+
+        /* Proof Matrix */
+        .proof-section {
+            padding: 2rem 2rem 4rem;
+            max-width: 1300px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        .proof-card {
+            padding: 1.8rem;
+            backdrop-filter: blur(12px);
+            background: var(--panel-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 22px;
+        }
+
+        .equity-chart-container {
+            height: 220px;
+            margin: 1rem 0;
+        }
+
+        .ticker {
+            height: 180px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: #a0b8c5;
+            border-left: 2px solid var(--cyan);
+            padding-left: 1rem;
+        }
+
+        .ticker-entry {
+            margin-bottom: 0.7rem;
+            opacity: 0.85;
+            animation: fadeIn 0.4s;
+        }
+
+        .highlight {
+            color: var(--cyan);
+            font-weight: 600;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 0.85; transform: translateX(0); }
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.35s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .diagnostics-modal {
+            background: rgba(6, 20, 28, 0.9);
+            backdrop-filter: blur(24px);
+            border: 1px solid var(--glass-border);
+            border-radius: 28px;
+            padding: 2.5rem;
+            max-width: 550px;
+            width: 90%;
+            box-shadow: 0 30px 50px rgba(0,0,0,0.8);
+            color: #e0f0f5;
+        }
+
+        .modal-header {
+            font-family: 'JetBrains Mono', monospace;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .modal-header h2 {
+            font-size: 1.6rem;
+            font-weight: 400;
+            letter-spacing: 0.1em;
+            color: var(--cyan);
+        }
+
+        .modal-header p {
+            font-size: 0.8rem;
+            color: #7f99a8;
+        }
+
+        .option-card {
+            background: rgba(0, 20, 30, 0.5);
+            border: 1px solid rgba(0, 229, 255, 0.15);
+            border-radius: 14px;
+            padding: 1rem 1.3rem;
+            margin-bottom: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .option-card:hover {
+            background: rgba(0, 229, 255, 0.08);
+            border-color: var(--cyan);
+            transform: translateX(6px);
+        }
+
+        .option-letter {
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: var(--cyan);
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--cyan);
+            border-radius: 8px;
+        }
+
+        .option-text {
+            font-weight: 500;
+        }
+
+        .close-modal {
+            float: right;
+            background: none;
+            border: none;
+            color: #7f99a8;
+            font-size: 1.4rem;
+            cursor: pointer;
+        }
+
+        .disclaimer {
+            margin-top: 3rem;
+            font-size: 0.7rem;
+            color: #4a5e68;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding-top: 1rem;
+            text-align: center;
+        }
+
+        @media (max-width: 800px) {
+            .hero-content {
+                flex-direction: column;
+            }
+            .proof-section {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-text">
+                <h1 class="hero-title">Engineered for Institutional Order Flow.<br>Formulated for the 2022 Framework.</h1>
+                <p class="hero-subtitle">Stop chasing lagging indicators. Automate true algorithmic liquidity sweeps, order blocks, and premium/discount fair value gaps with precision execution signatures.</p>
+                <div class="cta-group">
+                    <a href="#" class="btn btn-primary" id="initProtocolBtn">
+                        <span>⚡</span> Initialize System Protocol
+                    </a>
+                    <a href="#" class="btn btn-secondary" id="propFirmBtn">
+                        <span>📊</span> Prop Firm Validation
+                    </a>
+                </div>
+            </div>
+            <div class="glass-viewport">
+                <div class="viewport-inner">
+                    <div class="dashboard-mock">
+                        <div class="dash-header">
+                            <span>TRADEREDGE // XAU/USD</span>
+                            <span>LIVE</span>
+                        </div>
+                        <div class="dash-chart">
+                            <canvas id="dashboardChart"></canvas>
+                        </div>
+                        <div class="dash-stats">
+                            <div class="stat">BAL: <span>$102,483</span></div>
+                            <div class="stat">DD: <span>2.1%</span></div>
+                            <div class="stat">RR: <span>3.8</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Live Structural Terminal -->
+    <div class="terminal-section">
+        <div class="section-label">Live Market Structure Map (XAU/USD) – Internal vs. Swing</div>
+        <div class="market-map-container">
+            <canvas id="marketStructureCanvas"></canvas>
+        </div>
+        <div class="legend">
+            <span>Fair Value Gap</span>
+            <span style="color:#ff3b5c;">● Order Block</span>
+            <span style="color:#00e5ff;">● Liquidity Sweep</span>
+        </div>
+    </div>
+
+    <!-- Institutional Proof Matrix -->
+    <div class="proof-section">
+        <div class="proof-card">
+            <div class="section-label" style="margin-top:0;">Verified Equity Curve (Myfxbook)</div>
+            <div class="equity-chart-container">
+                <canvas id="equityCanvas"></canvas>
+            </div>
+            <p style="font-size:0.8rem; color:#8899a6;">Audited performance · Risk of loss exists · CFTC Rule 4.41</p>
+        </div>
+        <div class="proof-card">
+            <div class="section-label" style="margin-top:0;">Live Funding Milestones</div>
+            <div class="ticker" id="fundingTicker">
+                <div class="ticker-entry">User #1804 passed <span class="highlight">200k Funded Session</span> via Nova Funding · 4 min ago</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="disclaimer">
+        HYPOTHETICAL PERFORMANCE RESULTS HAVE MANY INHERENT LIMITATIONS. CFTC RULE 4.41 – NO REPRESENTATION IS BEING MADE THAT ANY ACCOUNT WILL OR IS LIKELY TO ACHIEVE PROFITS OR LOSSES SIMILAR TO THOSE SHOWN.
+    </div>
+
+    <!-- Intent Diagnostics Modal -->
+    <div class="modal-overlay" id="diagnosticsModal">
+        <div class="diagnostics-modal">
+            <button class="close-modal" id="closeModalBtn">&times;</button>
+            <div class="modal-header">
+                <h2>SNIPERTRADER.AI</h2>
+                <p>[ System Initialization ]</p>
+            </div>
+            <p style="margin-bottom:1.5rem; color:#a0b8c5;">Select your primary operational directive:</p>
+            <div class="option-card" data-route="prop-firm">
+                <div class="option-letter">A</div>
+                <div class="option-text">Secure Prop Firm Capitalization (30-Day)</div>
+            </div>
+            <div class="option-card" data-route="alerts">
+                <div class="option-letter">B</div>
+                <div class="option-text">Automate Pure ICT Market Structure Alerts</div>
+            </div>
+            <div class="option-card" data-route="mobile">
+                <div class="option-letter">C</div>
+                <div class="option-text">Deploy Wearable Mobile Alpha Streams</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ---------- Interactive 3D Dashboard Chart (Hero) ----------
+        const dashCanvas = document.getElementById('dashboardChart');
+        const dashCtx = dashCanvas.getContext('2d');
+        let dashData = [];
+        const maxPoints = 80;
+        function generateDashPoint(last) {
+            const change = (Math.random() - 0.48) * 2.5;
+            return last + change;
+        }
+        let lastPrice = 1950;
+        for (let i = 0; i < maxPoints; i++) {
+            lastPrice = generateDashPoint(lastPrice);
+            dashData.push(lastPrice);
+        }
+        function drawDashboard() {
+            const w = dashCanvas.width = dashCanvas.clientWidth;
+            const h = dashCanvas.height = dashCanvas.clientHeight;
+            dashCtx.clearRect(0, 0, w, h);
+            const min = Math.min(...dashData) - 5;
+            const max = Math.max(...dashData) + 5;
+            const range = max - min;
+            dashCtx.beginPath();
+            dashCtx.strokeStyle = '#00e5ff';
+            dashCtx.lineWidth = 2;
+            dashCtx.shadowColor = '#00e5ff';
+            dashCtx.shadowBlur = 8;
+            for (let i = 0; i < dashData.length; i++) {
+                const x = (i / (dashData.length - 1)) * w;
+                const y = h - ((dashData[i] - min) / range) * h;
+                if (i === 0) dashCtx.moveTo(x, y);
+                else dashCtx.lineTo(x, y);
+            }
+            dashCtx.stroke();
+            dashCtx.shadowBlur = 0;
+        }
+        setInterval(() => {
+            lastPrice = generateDashPoint(dashData[dashData.length-1]);
+            dashData.push(lastPrice);
+            if (dashData.length > maxPoints) dashData.shift();
+            drawDashboard();
+        }, 600);
+        window.addEventListener('resize', drawDashboard);
+        drawDashboard();
+
+        // ---------- Live Market Structure Map (Interactive) ----------
+        const msCanvas = document.getElementById('marketStructureCanvas');
+        const msCtx = msCanvas.getContext('2d');
+        let priceSeries = [];
+        let msPoints = 150;
+        let msPrice = 1950;
+        function generateSwingPrice(prev) {
+            return prev + (Math.random() - 0.5) * 8;
+        }
+        for (let i = 0; i < msPoints; i++) {
+            msPrice = generateSwingPrice(msPrice);
+            priceSeries.push(msPrice);
+        }
+        function drawMarketStructure() {
+            const w = msCanvas.width = msCanvas.clientWidth;
+            const h = msCanvas.height = msCanvas.clientHeight;
+            msCtx.clearRect(0, 0, w, h);
+            const min = Math.min(...priceSeries) - 10;
+            const max = Math.max(...priceSeries) + 10;
+            const range = max - min;
+            // Draw price line
+            msCtx.beginPath();
+            msCtx.strokeStyle = '#00b8d4';
+            msCtx.lineWidth = 1.5;
+            for (let i = 0; i < priceSeries.length; i++) {
+                const x = (i / (priceSeries.length - 1)) * w;
+                const y = h - ((priceSeries[i] - min) / range) * h;
+                if (i === 0) msCtx.moveTo(x, y);
+                else msCtx.lineTo(x, y);
+            }
+            msCtx.stroke();
+
+            // Draw FVG zones (simple rectangles between swing points)
+            for (let i = 5; i < priceSeries.length - 5; i += 15) {
+                const a = priceSeries[i];
+                const b = priceSeries[i+1];
+                if (Math.abs(a - b) > 2.5) {
+                    const gapLow = Math.min(a, b);
+                    const gapHigh = Math.max(a, b);
+                    const x1 = (i / (priceSeries.length - 1)) * w;
+                    const x2 = ((i+1) / (priceSeries.length - 1)) * w;
+                    const yLow = h - ((gapLow - min) / range) * h;
+                    const yHigh = h - ((gapHigh - min) / range) * h;
+                    msCtx.fillStyle = 'rgba(0, 229, 255, 0.15)';
+                    msCtx.fillRect(x1, yHigh, x2 - x1, yLow - yHigh);
+                }
+            }
+
+            // Mark order blocks (red circles at swing highs)
+            for (let i = 10; i < priceSeries.length - 10; i += 20) {
+                const prev = priceSeries[i-1];
+                const curr = priceSeries[i];
+                const next = priceSeries[i+1];
+                if (curr > prev && curr > next) {
+                    const x = (i / (priceSeries.length - 1)) * w;
+                    const y = h - ((curr - min) / range) * h;
+                    msCtx.beginPath();
+                    msCtx.arc(x, y, 4, 0, Math.PI*2);
+                    msCtx.fillStyle = '#ff3b5c';
+                    msCtx.fill();
+                    msCtx.strokeStyle = '#fff';
+                    msCtx.lineWidth = 1;
+                    msCtx.stroke();
+                }
+            }
+        }
+        setInterval(() => {
+            priceSeries.push(generateSwingPrice(priceSeries[priceSeries.length-1]));
+            if (priceSeries.length > msPoints) priceSeries.shift();
+            drawMarketStructure();
+        }, 1200);
+        window.addEventListener('resize', drawMarketStructure);
+        drawMarketStructure();
+
+        // ---------- Equity Curve Widget ----------
+        const eqCanvas = document.getElementById('equityCanvas');
+        const eqCtx = eqCanvas.getContext('2d');
+        let equityData = [10000];
+        function drawEquity() {
+            const w = eqCanvas.width = eqCanvas.clientWidth;
+            const h = eqCanvas.height = eqCanvas.clientHeight;
+            eqCtx.clearRect(0, 0, w, h);
+            const min = Math.min(...equityData) - 200;
+            const max = Math.max(...equityData) + 200;
+            const range = max - min || 1;
+            eqCtx.beginPath();
+            eqCtx.strokeStyle = '#00e676';
+            eqCtx.lineWidth = 2.5;
+            for (let i = 0; i < equityData.length; i++) {
+                const x = (i / (equityData.length - 1)) * w;
+                const y = h - ((equityData[i] - min) / range) * h;
+                if (i === 0) eqCtx.moveTo(x, y);
+                else eqCtx.lineTo(x, y);
+            }
+            eqCtx.stroke();
+        }
+        setInterval(() => {
+            const last = equityData[equityData.length-1];
+            const change = (Math.random() - 0.45) * 120;
+            equityData.push(last + change);
+            if (equityData.length > 100) equityData.shift();
+            drawEquity();
+        }, 1500);
+        window.addEventListener('resize', drawEquity);
+        drawEquity();
+
+        // ---------- Funding Ticker ----------
+        const ticker = document.getElementById('fundingTicker');
+        const users = ['#1823','#2045','#2156','#2301','#2412','#2550','#2677','#2733'];
+        const amounts = ['100k','200k','300k','400k','500k'];
+        const firms = ['Nova Funding','FTMO','The Funded Trader','E8 Funding'];
+        function addTickerEntry() {
+            const user = users[Math.floor(Math.random()*users.length)];
+            const amount = amounts[Math.floor(Math.random()*amounts.length)];
+            const firm = firms[Math.floor(Math.random()*firms.length)];
+            const mins = Math.floor(Math.random()*30)+1;
+            const div = document.createElement('div');
+            div.className = 'ticker-entry';
+            div.innerHTML = `User ${user} passed <span class="highlight">${amount} Funded Session</span> via ${firm} · ${mins} min ago`;
+            ticker.prepend(div);
+            if (ticker.children.length > 12) ticker.lastChild.remove();
+        }
+        setInterval(addTickerEntry, 4500);
+        addTickerEntry(); addTickerEntry();
+
+        // ---------- Intent Diagnostics Modal ----------
+        const modalOverlay = document.getElementById('diagnosticsModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const optionCards = document.querySelectorAll('.option-card');
+
+        function openModal() {
+            modalOverlay.classList.add('active');
+        }
+        function closeModal() {
+            modalOverlay.classList.remove('active');
+        }
+
+        closeModalBtn.addEventListener('click', closeModal);
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) closeModal();
+        });
+
+        // Time trigger (8s) & exit intent
+        setTimeout(() => {
+            if (!modalOverlay.classList.contains('active')) openModal();
+        }, 8000);
+
+        document.addEventListener('mouseleave', (e) => {
+            if (e.clientY <= 0 && !modalOverlay.classList.contains('active')) {
+                openModal();
+            }
+        });
+
+        optionCards.forEach(card => {
+            card.addEventListener('click', () => {
+                const route = card.dataset.route;
+                // Simulate dynamic route morphing / CRM tagging
+                let msg = '';
+                if (route === 'prop-firm') {
+                    msg = 'Prop Firm Capitalization Protocol activated. Loading drawdown parameters...';
+                } else if (route === 'alerts') {
+                    msg = 'ICT Market Structure Alert system configured. Deploying precision alerts...';
+                } else if (route === 'mobile') {
+                    msg = 'Wearable Alpha Streams paired. Syncing mobile execution...';
+                }
+                // Visual feedback
+                alert(`[SNIPERTRADER.AI] ${msg} (In production, this redirects to a tailored terminal.)`);
+                closeModal();
+                // Additional dynamic effect: change hero subtext briefly
+                const sub = document.querySelector('.hero-subtitle');
+                sub.style.transition = '0.3s';
+                sub.textContent = msg;
+                setTimeout(() => {
+                    sub.textContent = 'Stop chasing lagging indicators. Automate true algorithmic liquidity sweeps, order blocks, and premium/discount fair value gaps with precision execution signatures.';
+                }, 4000);
+            });
+        });
+
+        // Button interactions (mock navigation)
+        document.getElementById('initProtocolBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            openModal();
+        });
+        document.getElementById('propFirmBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            alert('Redirecting to Prop Firm Validation Terminal...');
+        });
+    </script>
+</body>
+</html>
