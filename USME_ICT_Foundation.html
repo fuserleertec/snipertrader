@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-<title>USME ICT Foundation — Smart Money Intelligence | Institutional Concepts</title>
+<title>USME ICT Foundation — Smart Money Intelligence | TOS · PINE · NINJA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <style>
-/* ══ RESET & ROOT – signature cyber-institutional aesthetic ═══════════════════ */
+/* ══ RESET & ROOT DARK (DEFAULT) ═══════════════════════════════════════ */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --black:   #040609;
@@ -28,14 +28,46 @@
   --ff-disp: 'Orbitron', monospace;
   --ff-mono: 'Space Mono', monospace;
   --ff-body: 'Syne', sans-serif;
+  --bg-grid-line: rgba(0,229,255,0.03);
+  --hero-glow: radial-gradient(ellipse,rgba(0,229,255,.06) 0%,transparent 65%);
+  --hero-glow2: radial-gradient(ellipse,rgba(240,192,64,.04) 0%,transparent 70%);
+  --card-shadow: 0 0 60px rgba(0,229,255,.05), 0 24px 64px rgba(0,0,0,.4);
 }
-html{scroll-behavior:smooth}
 body{
   background: var(--black);
   color: var(--white);
   font-family: var(--ff-body);
   overflow-x: hidden;
   cursor: none;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+/* Light mode override */
+body.light-mode {
+  --black: #f8fafc;
+  --deep: #eef2f5;
+  --panel: #ffffff;
+  --surface: #f1f5f9;
+  --border: rgba(0,100,120,0.12);
+  --cyan: #0077b6;
+  --cyan2: #0096c7;
+  --gold: #c47e2e;
+  --gold2: #a5682a;
+  --green: #2e7d32;
+  --red: #c62828;
+  --white: #0f172a;
+  --sub: rgba(15,23,42,0.75);
+  --muted: rgba(15,23,42,0.55);
+  --bg-grid-line: rgba(0,119,182,0.08);
+  --hero-glow: radial-gradient(ellipse,rgba(0,119,182,.06) 0%,transparent 65%);
+  --hero-glow2: radial-gradient(ellipse,rgba(196,126,46,.05) 0%,transparent 70%);
+  --card-shadow: 0 0 30px rgba(0,119,182,.08), 0 12px 40px rgba(0,0,0,.08);
+}
+/* Custom cursor also adapts in light mode */
+body.light-mode #cur{ background: var(--cyan); box-shadow:0 0 12px var(--cyan),0 0 30px rgba(0,119,182,.35);}
+body.light-mode #cur-ring{ border-color: rgba(0,119,182,.5);}
+body.light-mode .grid-bg{
+  background-image: linear-gradient(var(--bg-grid-line) 1px,transparent 1px),
+                    linear-gradient(90deg,var(--bg-grid-line) 1px,transparent 1px);
 }
 #cur{position:fixed;width:8px;height:8px;background:var(--cyan);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);box-shadow:0 0 12px var(--cyan),0 0 30px rgba(0,229,255,.35);transition:width .15s,height .15s}
 #cur-ring{position:fixed;width:32px;height:32px;border:1px solid rgba(0,229,255,.4);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:transform .08s ease,width .2s,height .2s}
