@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SniperTrader VWAP Masterplan – Funded Account Playbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+:root {
+  --bg-body: #040609;
+  --bg-panel: #0c1220;
+  --bg-card: #111827;
+  --border: rgba(0,229,255,0.10);
+  --cyan: #00e5ff;
+  --cyan2: #00b8cc;
+  --gold: #f0c040;
+  --gold2: #b8882a;
+  --green: #00e5a0;
+  --red: #ff4d6a;
+  --white: #edf2fb;
+  --sub: rgba(237,242,251,0.72);
+  --muted: rgba(237,242,251,0.42);
+  --ff-disp: 'Orbitron', monospace;
+  --ff-mono: 'Space Mono', monospace;
+  --ff-body: 'Syne', sans-serif;
+}
+body {
+  background: var(--bg-body);
+  color: var(--white);
+  font-family: var(--ff-body);
+  padding: 40px 20px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.playbook {
+  max-width: 1100px;
+  width: 100%;
+}
+header {
+  text-align: center;
+  padding: 40px 0 30px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 40px;
+}
+header h1 {
+  font-family: var(--ff-disp);
+  font-size: clamp(1.8rem, 4vw, 3.2rem);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: var(--white);
+}
+header h1 span { color: var(--cyan); }
+header .badge {
+  font-family: var(--ff-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  color: var(--gold);
+  background: rgba(240,192,64,0.08);
+  border: 1px solid rgba(240,192,64,0.2);
+  padding: 6px 18px;
+  border-radius: 40px;
+  display: inline-block;
+  margin-top: 12px;
+}
+header .sub {
+  font-family: var(--ff-mono);
+  font-size: 0.65rem;
+  color: var(--muted);
+  margin-top: 12px;
+  letter-spacing: 0.1em;
+}
+
+/* Section Tabs */
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+.tab-btn {
+  font-family: var(--ff-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 12px 28px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.25s;
+  font-weight: 700;
+  flex: 1;
+  min-width: 140px;
+  text-align: center;
+}
+.tab-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+.tab-btn.active {
+  background: rgba(0,229,255,0.06);
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: 0 0 30px rgba(0,229,255,0.04);
+}
+.tab-btn .num {
+  display: inline-block;
+  background: rgba(0,229,255,0.12);
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  line-height: 22px;
+  text-align: center;
+  font-size: 0.55rem;
+  margin-right: 8px;
+  color: var(--cyan);
+}
+.tab-btn.active .num { background: var(--cyan); color: #000; }
+
+/* Content panels */
+.panel {
+  display: none;
+  animation: fadeUp 0.5s ease;
+}
+.panel.active { display: block; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Card styles */
+.card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px 32px;
+  margin-bottom: 20px;
+  transition: border-color 0.2s;
+}
+.card:hover { border-color: rgba(0,229,255,0.15); }
+.card-title {
+  font-family: var(--ff-disp);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--cyan);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.card-title .icon { font-size: 1.2rem; }
+.card p, .card li {
+  font-size: 0.92rem;
+  color: var(--sub);
+  line-height: 1.7;
+}
+.card ul, .card ol {
+  padding-left: 24px;
+  margin: 8px 0;
+}
+.card li { margin-bottom: 6px; }
+.card strong { color: var(--white); }
+.highlight-box {
+  background: rgba(0,229,255,0.04);
+  border-left: 3px solid var(--cyan);
+  padding: 14px 18px;
+  border-radius: 0 8px 8px 0;
+  margin: 12px 0;
+}
+.highlight-box.gold { border-left-color: var(--gold); background: rgba(240,192,64,0.04); }
+.highlight-box.green { border-left-color: var(--green); background: rgba(0,229,160,0.04); }
+.highlight-box.red { border-left-color: var(--red); background: rgba(255,77,106,0.04); }
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+@media (max-width: 768px) {
+  .grid-2 { grid-template-columns: 1fr; }
+  .tab-btn { min-width: 100px; padding: 10px 16px; font-size: 0.5rem; }
+  .card { padding: 20px; }
+}
+
+/* Rule badges */
+.rule-badge {
+  display: inline-block;
+  font-family: var(--ff-mono);
+  font-size: 0.45rem;
+  letter-spacing: 0.1em;
+  padding: 2px 10px;
+  border-radius: 20px;
+  margin-right: 6px;
+  font-weight: 700;
+}
+.rule-badge.gold { background: rgba(240,192,64,0.12); color: var(--gold); border: 1px solid rgba(240,192,64,0.15); }
+.rule-badge.cyan { background: rgba(0,229,255,0.08); color: var(--cyan); border: 1px solid rgba(0,229,255,0.12); }
+.rule-badge.green { background: rgba(0,229,160,0.08); color: var(--green); border: 1px solid rgba(0,229,160,0.12); }
+.rule-badge.red { background: rgba(255,77,106,0.08); color: var(--red); border: 1px solid rgba(255,77,106,0.12); }
+
+/* Checklist */
+.checklist { list-style: none; padding: 0; }
+.checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0,229,255,0.04);
+}
+.checklist li:last-child { border-bottom: none; }
+.checklist .check {
+  color: var(--cyan);
+  font-size: 1.1rem;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.progress-bar {
+  height: 4px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 4px;
+  margin-top: 16px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--cyan), var(--cyan2));
+  width: 0%;
+  transition: width 1s ease;
+}
+</style>
+</head>
+<body>
+<div class="playbook">
+
+<header>
+  <h1>SNIPER<span>TRADER</span> VWAP <span style="color:var(--gold);">MASTERPLAN</span></h1>
+  <div class="badge">⚡ FUNDED ACCOUNT PLAYBOOK ⚡</div>
+  <div class="sub">A systematic framework to pass prop firm challenges using VWAP-based sniper entries</div>
+</header>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab-btn active" data-panel="setup"><span class="num">1</span> The Setup</button>
+  <button class="tab-btn" data-panel="execution"><span class="num">2</span> The Execution</button>
+  <button class="tab-btn" data-panel="risk"><span class="num">3</span> The Risk Plan</button>
+</div>
+
+<!-- ============================================================ -->
+<!-- PANEL 1: THE SETUP -->
+<!-- ============================================================ -->
+<div class="panel active" id="panel-setup">
+  <div class="card">
+    <div class="card-title"><span class="icon">🎯</span> Identifying VWAP-Based Sniper Entries</div>
+    <p>The goal of The Setup is to <strong>filter out noise</strong> and only act on VWAP signals with the highest probability of success. Every entry must pass a 5-step verification process before execution.</p>
+
+    <div class="highlight-box">
+      <strong>Core Philosophy:</strong> <em>"We don't chase price. We let price come to our VWAP zones."</em>
+    </div>
+
+    <h3 style="color:var(--gold); margin-top:20px; font-family:var(--ff-mono); font-size:0.7rem; letter-spacing:0.12em;">📋 THE 5-STEP SETUP CHECKLIST</h3>
+    <ul class="checklist">
+      <li><span class="check">❶</span> <div><strong>HTF Bias Alignment</strong> — Weekly and Daily VWAP must agree on direction. If Weekly VWAP is bullish, only take long signals. If bearish, only short. No counter-trend trading.</div></li>
+      <li><span class="check">❷</span> <div><strong>VWAP Deviation Band</strong> — Price must be trading at <strong>±1σ or ±2σ</strong> from the anchored VWAP. This is where institutional orders cluster. Signals inside the VWAP core are low probability — skip them.</div></li>
+      <li><span class="check">❸</span> <div><strong>Confluence Score ≥ 80%</strong> — Only trade signals with ELITE (90%+) or PRIME (80–89%) tiers. STANDARD (65–79%) can be considered with reduced size. Signals below 65% are automatically discarded.</div></li>
+      <li><span class="check">❹</span> <div><strong>Volume Confirmation</strong> — Look for a volume spike at the VWAP band. If volume is declining while price approaches the band, the signal is weak. Institutional volume should validate the reaction.</div></li>
+      <li><span class="check">❺</span> <div><strong>Closed Candle Rule</strong> — <span style="color:var(--red);">NEVER</span> enter on a forming candle. Wait for the bar to close at or beyond the VWAP band. This prevents fakeouts and premature entries.</div></li>
+    </ul>
+
+    <div class="highlight-box gold">
+      <strong>🔑 The Sniper Mindset:</strong> "We wait for the exact moment when price touches our VWAP zone with volume, HTF alignment, and a closed candle. If any condition is missing, we stand aside."
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="icon">📊</span> VWAP Signal Tiers</div>
+      <table style="width:100%; border-collapse:collapse; font-size:0.82rem; color:var(--sub);">
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="text-align:left; padding:6px 0; font-family:var(--ff-mono); color:var(--white);">Tier</th>
+          <th style="text-align:left; padding:6px 0; font-family:var(--ff-mono); color:var(--white);">Score</th>
+          <th style="text-align:left; padding:6px 0; font-family:var(--ff-mono); color:var(--white);">Action</th>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(0,229,255,0.05);">
+          <td style="padding:8px 0; color:var(--gold); font-weight:700;">ELITE</td>
+          <td style="padding:8px 0;">≥ 90%</td>
+          <td style="padding:8px 0; color:var(--green);">Full position</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(0,229,255,0.05);">
+          <td style="padding:8px 0; color:var(--cyan); font-weight:700;">PRIME</td>
+          <td style="padding:8px 0;">80–89%</td>
+          <td style="padding:8px 0; color:var(--gold);">50–75% position</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0; color:var(--sub); font-weight:700;">STANDARD</td>
+          <td style="padding:8px 0;">65–79%</td>
+          <td style="padding:8px 0; color:var(--muted);">25% or skip</td>
+        </tr>
+      </table>
+      <div style="margin-top:12px; font-size:0.75rem; color:var(--muted);">* ELITE signals are rare — they require full HTF alignment + deviation + volume spike.</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="icon">⏰</span> Optimal Trading Sessions</div>
+      <ul style="list-style:none; padding:0;">
+        <li style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(0,229,255,0.04);">
+          <span style="color:var(--white);">London Open</span>
+          <span style="color:var(--cyan);">2:00 AM – 5:00 AM ET</span>
+        </li>
+        <li style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(0,229,255,0.04);">
+          <span style="color:var(--white);">NY Open</span>
+          <span style="color:var(--gold);">8:30 AM – 11:00 AM ET</span>
+        </li>
+        <li style="display:flex; justify-content:space-between; padding:8px 0;">
+          <span style="color:var(--white);">Post-News (30 min after)</span>
+          <span style="color:var(--green);">High volatility · proceed with caution</span>
+        </li>
+      </ul>
+      <div class="highlight-box" style="margin-top:12px;">
+        <strong>⛔ Avoid:</strong> Off-hours, lunch break (12–1:30 PM ET), and 15 minutes before major news.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PANEL 2: THE EXECUTION -->
+<!-- ============================================================ -->
+<div class="panel" id="panel-execution">
+  <div class="card">
+    <div class="card-title"><span class="icon">⚡</span> Execution Rules — Taking the Trade</div>
+    <p>Execution is where discipline separates funded traders from blown accounts. Follow these rules <strong>without exception</strong>.</p>
+
+    <h3 style="color:var(--cyan); margin-top:20px; font-family:var(--ff-mono); font-size:0.7rem; letter-spacing:0.12em;">📋 THE 4-STEP EXECUTION PROTOCOL</h3>
+    <ul class="checklist">
+      <li><span class="check">❶</span> <div><strong>Entry Trigger</strong> — Enter only on the <strong>open of the next bar</strong> after the signal candle closes at or beyond the VWAP band. Use a limit order at the VWAP level for better fill.</div></li>
+      <li><span class="check">❷</span> <div><strong>Initial Stop Loss</strong> — Place the stop <strong>1.5x ATR(14) beyond the VWAP band</strong> on the opposite side. This gives the trade room to breathe while protecting capital. <span class="rule-badge gold">GOLD</span></div></li>
+      <li><span class="check">❸</span> <div><strong>Position Sizing</strong> — Risk <strong>0.5% of the account</strong> per trade on ELITE signals, 0.35% on PRIME, and 0.2% on STANDARD. This keeps drawdown manageable.</div></li>
+      <li><span class="check">❹</span> <div><strong>Targets & Exit</strong> — Set <strong>three targets</strong>: T1 = 1.5x risk (move stop to breakeven), T2 = 3x risk (take 50% off), T3 = 5x risk (let remainder run with trailing stop).</div></li>
+    </ul>
+
+    <div class="highlight-box green">
+      <strong>📈 Trailing Stop Protocol:</strong> After T2 is hit, activate a trailing stop of <strong>1.5x ATR</strong>. This locks in profits while allowing the trade to run.
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="icon">📐</span> Position Sizing Matrix</div>
+      <table style="width:100%; border-collapse:collapse; font-size:0.8rem; color:var(--sub);">
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="text-align:left; padding:6px 0; font-family:var(--ff-mono); color:var(--white);">Tier</th>
+          <th style="text-align:left; padding:6px 0; font-family:var(--ff-mono); color:var(--white);">Risk %</th>
+          <th style="text-align:left; padding:6px 0; font-family:var(--ff-mono); color:var(--white);">Position Size</th>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(0,229,255,0.05);">
+          <td style="padding:8px 0; color:var(--gold);">ELITE</td>
+          <td style="padding:8px 0;">0.50%</td>
+          <td style="padding:8px 0; color:var(--green);">100%</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(0,229,255,0.05);">
+          <td style="padding:8px 0; color:var(--cyan);">PRIME</td>
+          <td style="padding:8px 0;">0.35%</td>
+          <td style="padding:8px 0; color:var(--gold);">75%</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0; color:var(--sub);">STANDARD</td>
+          <td style="padding:8px 0;">0.20%</td>
+          <td style="padding:8px 0; color:var(--muted);">25–50%</td>
+        </tr>
+      </table>
+      <div style="margin-top:12px; font-size:0.7rem; color:var(--muted);">* Risk % is based on the total account balance. For a $100,000 account, 0.5% = $500 risk per trade.</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="icon">🚦</span> Trade Management Rules</div>
+      <ul style="list-style:none; padding:0;">
+        <li style="padding:8px 0; border-bottom:1px solid rgba(0,229,255,0.04); display:flex; gap:10px;">
+          <span style="color:var(--green);">✓</span>
+          <div><strong>Move to Breakeven</strong> — Once price moves 1.5x risk in your favor, move stop to entry.</div>
+        </li>
+        <li style="padding:8px 0; border-bottom:1px solid rgba(0,229,255,0.04); display:flex; gap:10px;">
+          <span style="color:var(--gold);">◆</span>
+          <div><strong>Partial Take Profit</strong> — Take 50% off at 3x risk. Let the remainder run with a trailing stop.</div>
+        </li>
+        <li style="padding:8px 0; display:flex; gap:10px;">
+          <span style="color:var(--red);">✕</span>
+          <div><strong>Maximum Loss Per Day</strong> — If you lose <strong>2% of the account</strong> in a single day, stop trading for the day. Review your setups.</div>
+        </li>
+      </ul>
+      <div class="highlight-box red" style="margin-top:12px;">
+        <strong>⛔ Hard Rule:</strong> Never add to a losing position. No averaging down. Let the trade play out or stop out.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PANEL 3: THE RISK PLAN -->
+<!-- ============================================================ -->
+<div class="panel" id="panel-risk">
+  <div class="card">
+    <div class="card-title"><span class="icon">🛡️</span> Managing Risk to Pass Prop Firm Drawdown Limits</div>
+    <p>Prop firms impose strict drawdown limits. The SniperTrader Risk Plan is designed to <strong>protect capital</strong> and ensure you stay within the limits while growing the account.</p>
+
+    <div class="highlight-box">
+      <strong>🎯 The Goal:</strong> Reach <span style="color:var(--gold);">+10% profit</span> while keeping drawdown below <span style="color:var(--green);">8%</span> from the peak equity.
+    </div>
+
+    <h3 style="color:var(--gold); margin-top:20px; font-family:var(--ff-mono); font-size:0.7rem; letter-spacing:0.12em;">📋 THE 6 PILLARS OF RISK MANAGEMENT</h3>
+    <ul class="checklist">
+      <li><span class="check">❶</span> <div><strong>Per-Trade Risk Limit</strong> — Never risk more than <span style="color:var(--gold);">0.5%</span> of the account on any single trade. This means you can withstand 16 consecutive losses before hitting the 8% drawdown limit.</div></li>
+      <li><span class="check">❷</span> <div><strong>Daily Risk Budget</strong> — Cap daily losses at <span style="color:var(--red);">1.5%</span> of the account. If you lose 1.5% in a day, shut down the terminal and review your entries.</div></li>
+      <li><span class="check">❸</span> <div><strong>Weekly Risk Budget</strong> — Do not exceed <span style="color:var(--gold);">3%</span> loss per week. This keeps you far below the 8% maximum drawdown.</div></li>
+      <li><span class="check">❹</span> <div><strong>Drawdown Reset</strong> — When equity hits a new high, reset your drawdown calculation. The 8% limit applies from the <strong>peak equity</strong>, not the starting balance.</div></li>
+      <li><span class="check">❺</span> <div><strong>Risk-to-Reward Ratio</strong> — Only take trades with a minimum <span style="color:var(--green);">1:3</span> risk-to-reward ratio. ELITE signals often provide 1:5 or better.</div></li>
+      <li><span class="check">❻</span> <div><strong>Pause & Reflect</strong> — After 3 consecutive losing trades, pause for 30 minutes. Review your signals and ensure you're not forcing entries.</div></li>
+    </ul>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="icon">📊</span> Drawdown Protection Strategy</div>
+      <div style="background:rgba(0,0,0,0.2); border-radius:8px; padding:16px; margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; font-size:0.7rem; font-family:var(--ff-mono); color:var(--muted);">
+          <span>Current Drawdown</span>
+          <span id="ddSim">3.2%</span>
+        </div>
+        <div class="progress-bar" style="margin-top:4px;">
+          <div class="progress-fill" id="ddFill" style="width:40%;"></div>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:0.5rem; color:var(--muted); margin-top:4px;">
+          <span>0%</span>
+          <span style="color:var(--red);">8% LIMIT</span>
+        </div>
+      </div>
+      <ul style="list-style:none; padding:0; font-size:0.82rem; color:var(--sub);">
+        <li style="padding:6px 0; border-bottom:1px solid rgba(0,229,255,0.04);">🔹 If drawdown exceeds <span style="color:var(--gold);">5%</span>, reduce position size by 50%.</li>
+        <li style="padding:6px 0; border-bottom:1px solid rgba(0,229,255,0.04);">🔹 If drawdown exceeds <span style="color:var(--red);">6.5%</span>, stop trading and review all setups.</li>
+        <li style="padding:6px 0;">🔹 <span style="color:var(--red);">If drawdown hits 8%</span> — you have failed the challenge. Protect the account at all costs.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="icon">📈</span> Funded Account Simulation</div>
+      <div style="background:rgba(0,0,0,0.2); border-radius:8px; padding:14px; margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; font-size:0.75rem;">
+          <span style="color:var(--muted);">Starting Balance</span>
+          <span style="color:var(--white);">$100,000</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-top:4px;">
+          <span style="color:var(--muted);">Target to Pass</span>
+          <span style="color:var(--gold);">$110,000 (+10%)</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-top:4px;">
+          <span style="color:var(--muted);">Max Drawdown</span>
+          <span style="color:var(--red);">-$8,000 (8%)</span>
+        </div>
+      </div>
+      <div class="highlight-box green">
+        <strong>✅ Path to Funded:</strong> With 0.5% risk per trade, you need <span style="color:var(--gold);">20 winning trades</span> at 1:3 RR to pass the challenge (assuming 50% win rate = ~40 trades).
+      </div>
+      <div style="margin-top:10px; font-family:var(--ff-mono); font-size:0.55rem; color:var(--muted);">
+        * Based on the SniperTrader VWAP Masterplan. Consistency > Aggression.
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="border-color:rgba(240,192,64,0.2); background:rgba(240,192,64,0.02);">
+    <div class="card-title" style="color:var(--gold);"><span class="icon">🏆</span> The Funded Mindset</div>
+    <p style="font-size:0.95rem; line-height:1.8;">
+      <strong>“The goal is not to make money. The goal is to <span style="color:var(--gold);">make the right decisions</span> consistently. The money follows.”</strong>
+    </p>
+    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:12px;">
+      <span class="rule-badge gold">DISCIPLINE</span>
+      <span class="rule-badge cyan">PATIENCE</span>
+      <span class="rule-badge green">CONSISTENCY</span>
+      <span class="rule-badge red">PROTECT CAPITAL</span>
+    </div>
+    <div style="margin-top:12px; font-size:0.78rem; color:var(--sub);">
+      <strong>Daily Review Checklist:</strong>
+      <ul style="margin-top:4px;">
+        <li>✓ Did I follow the 5-step setup checklist?</li>
+        <li>✓ Did I respect my position sizing?</li>
+        <li>✓ Did I manage the trade according to the protocol?</li>
+        <li>✓ What could I improve tomorrow?</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div style="margin-top:48px; padding-top:24px; border-top:1px solid var(--border); text-align:center; font-family:var(--ff-mono); font-size:0.5rem; color:var(--muted); letter-spacing:0.08em;">
+  <span style="color:var(--cyan);">SNIPERTRADER</span> VWAP MASTERPLAN v2.0 · Funded Account Edition
+  <br>Trade responsibly. Past performance does not guarantee future results.
+</div>
+
+</div>
+
+<script>
+// Tab switching
+const tabs = document.querySelectorAll('.tab-btn');
+const panels = {
+  setup: document.getElementById('panel-setup'),
+  execution: document.getElementById('panel-execution'),
+  risk: document.getElementById('panel-risk')
+};
+
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    // Update active tab
+    tabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+
+    // Show corresponding panel
+    const panelName = tab.dataset.panel;
+    Object.keys(panels).forEach(key => {
+      panels[key].classList.toggle('active', key === panelName);
+    });
+  });
+});
+
+// Simulate drawdown progress (cosmetic)
+const ddFill = document.getElementById('ddFill');
+let progress = 40;
+setInterval(() => {
+  // random walk between 15% and 85%
+  progress += (Math.random() - 0.48) * 8;
+  progress = Math.max(12, Math.min(88, progress));
+  ddFill.style.width = progress + '%';
+  const ddSim = document.getElementById('ddSim');
+  if (ddSim) {
+    const val = (progress / 100 * 8).toFixed(1);
+    ddSim.textContent = val + '%';
+    ddSim.style.color = val > 6.5 ? 'var(--red)' : val > 5 ? 'var(--gold)' : 'var(--sub)';
+  }
+}, 3000);
+</script>
+
+</body>
+</html>
