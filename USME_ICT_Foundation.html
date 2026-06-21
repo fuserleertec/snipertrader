@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-<title>USME ICT Foundation — Smart Money Intelligence | TOS · PINE · NINJA</title>
+<title>USME ICT Foundation — Smart Money Intelligence | Institutional Concepts</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <style>
-/* ══ RESET & ROOT DARK (DEFAULT) ═══════════════════════════════════════ */
+/* ══ RESET & ROOT – signature cyber-institutional aesthetic ═══════════════════ */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --black:   #040609;
@@ -28,46 +28,14 @@
   --ff-disp: 'Orbitron', monospace;
   --ff-mono: 'Space Mono', monospace;
   --ff-body: 'Syne', sans-serif;
-  --bg-grid-line: rgba(0,229,255,0.03);
-  --hero-glow: radial-gradient(ellipse,rgba(0,229,255,.06) 0%,transparent 65%);
-  --hero-glow2: radial-gradient(ellipse,rgba(240,192,64,.04) 0%,transparent 70%);
-  --card-shadow: 0 0 60px rgba(0,229,255,.05), 0 24px 64px rgba(0,0,0,.4);
 }
+html{scroll-behavior:smooth}
 body{
   background: var(--black);
   color: var(--white);
   font-family: var(--ff-body);
   overflow-x: hidden;
   cursor: none;
-  transition: background 0.2s ease, color 0.2s ease;
-}
-/* Light mode override */
-body.light-mode {
-  --black: #f8fafc;
-  --deep: #eef2f5;
-  --panel: #ffffff;
-  --surface: #f1f5f9;
-  --border: rgba(0,100,120,0.12);
-  --cyan: #0077b6;
-  --cyan2: #0096c7;
-  --gold: #c47e2e;
-  --gold2: #a5682a;
-  --green: #2e7d32;
-  --red: #c62828;
-  --white: #0f172a;
-  --sub: rgba(15,23,42,0.75);
-  --muted: rgba(15,23,42,0.55);
-  --bg-grid-line: rgba(0,119,182,0.08);
-  --hero-glow: radial-gradient(ellipse,rgba(0,119,182,.06) 0%,transparent 65%);
-  --hero-glow2: radial-gradient(ellipse,rgba(196,126,46,.05) 0%,transparent 70%);
-  --card-shadow: 0 0 30px rgba(0,119,182,.08), 0 12px 40px rgba(0,0,0,.08);
-}
-/* Custom cursor also adapts in light mode */
-body.light-mode #cur{ background: var(--cyan); box-shadow:0 0 12px var(--cyan),0 0 30px rgba(0,119,182,.35);}
-body.light-mode #cur-ring{ border-color: rgba(0,119,182,.5);}
-body.light-mode .grid-bg{
-  background-image: linear-gradient(var(--bg-grid-line) 1px,transparent 1px),
-                    linear-gradient(90deg,var(--bg-grid-line) 1px,transparent 1px);
 }
 #cur{position:fixed;width:8px;height:8px;background:var(--cyan);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);box-shadow:0 0 12px var(--cyan),0 0 30px rgba(0,229,255,.35);transition:width .15s,height .15s}
 #cur-ring{position:fixed;width:32px;height:32px;border:1px solid rgba(0,229,255,.4);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:transform .08s ease,width .2s,height .2s}
@@ -75,8 +43,9 @@ body:has(a:hover) #cur{width:14px;height:14px}
 body:has(button:hover) #cur{background:var(--gold);box-shadow:0 0 14px var(--gold)}
 .grid-bg{
   position:fixed;inset:0;z-index:0;pointer-events:none;
-  background-image: linear-gradient(var(--bg-grid-line) 1px,transparent 1px),
-                    linear-gradient(90deg,var(--bg-grid-line) 1px,transparent 1px);
+  background-image:
+    linear-gradient(rgba(0,229,255,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,229,255,0.03) 1px,transparent 1px);
   background-size:60px 60px;
   mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black 30%,transparent 100%);
 }
@@ -84,155 +53,193 @@ nav{
   position:fixed;top:0;left:0;right:0;z-index:200;
   padding:18px 60px;
   display:flex;align-items:center;justify-content:space-between;
-  background:linear-gradient(180deg, rgba(var(--black-rgb),0.96) 0%, transparent 100%);
+  background:linear-gradient(180deg,rgba(4,6,9,.96) 0%,transparent 100%);
   backdrop-filter:blur(12px);
-  border-bottom:1px solid var(--border);
-  background-color: rgba(0,0,0,0.6);
+  border-bottom:1px solid rgba(0,229,255,0.07);
 }
-body.light-mode nav{
-  background: rgba(255,255,255,0.92);
-  border-bottom:1px solid rgba(0,0,0,0.08);
+.nav-logo{
+  font-family:var(--ff-disp);font-size:.85rem;font-weight:900;
+  color:var(--white);letter-spacing:.18em;text-decoration:none;
 }
-.nav-logo{ font-family:var(--ff-disp);font-size:.85rem;font-weight:900;color:var(--white);letter-spacing:.18em;text-decoration:none;}
 .nav-logo span{color:var(--cyan)}
-.nav-badge{ font-family:var(--ff-mono);font-size:.5rem;letter-spacing:.2em;color:var(--cyan);background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.2);border-radius:3px;padding:3px 7px;margin-left:10px;vertical-align:middle;}
+.nav-badge{
+  font-family:var(--ff-mono);font-size:.5rem;letter-spacing:.2em;
+  color:var(--cyan);background:rgba(0,229,255,.08);
+  border:1px solid rgba(0,229,255,.2);border-radius:3px;
+  padding:3px 7px;margin-left:10px;vertical-align:middle;
+}
 .nav-links{list-style:none;display:flex;gap:32px}
-.nav-links a{ font-family:var(--ff-mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--sub);text-decoration:none;transition:color .2s;}
+.nav-links a{
+  font-family:var(--ff-mono);font-size:.6rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--sub);text-decoration:none;
+  transition:color .2s;
+}
 .nav-links a:hover{color:var(--cyan)}
-.nav-cta{ font-family:var(--ff-mono);font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;padding:11px 22px;background:linear-gradient(135deg,var(--cyan),var(--cyan2));color:#000;border:none;border-radius:4px;cursor:none;font-weight:700;transition:opacity .2s,transform .15s;}
+.nav-cta{
+  font-family:var(--ff-mono);font-size:.6rem;letter-spacing:.15em;
+  text-transform:uppercase;padding:11px 22px;
+  background:linear-gradient(135deg,var(--cyan),var(--cyan2));
+  color:#000;border:none;border-radius:4px;cursor:none;
+  font-weight:700;transition:opacity .2s,transform .15s;
+}
 .nav-cta:hover{opacity:.85;transform:translateY(-1px)}
-.theme-toggle{
-  background: transparent;
-  border:1px solid var(--border);
-  border-radius: 40px;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: none;
-  font-size: 1.2rem;
-  transition: all 0.2s;
-  color: var(--cyan);
-}
-.theme-toggle:hover{
-  transform: scale(0.96);
-  background: rgba(0,229,255,0.08);
-}
-/* ===== NEW BANNER (multi-product announcement) ===== */
-.platform-banner {
-  position: relative;
-  z-index: 150;
-  background: linear-gradient(135deg, rgba(0,229,255,0.12), rgba(240,192,64,0.08));
-  border-bottom: 1px solid var(--border);
-  border-top: 1px solid var(--border);
-  padding: 12px 20px;
-  text-align: center;
-  font-family: var(--ff-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  backdrop-filter: blur(8px);
-  margin-top: 72px; /* nav height compensation */
-}
-body.light-mode .platform-banner {
-  background: linear-gradient(135deg, rgba(0,119,182,0.08), rgba(196,126,46,0.05));
-}
-.banner-content {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 28px;
-  align-items: baseline;
-}
-.banner-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-.badge-platform {
-  background: rgba(0,229,255,0.2);
-  border-radius: 40px;
-  padding: 4px 12px;
-  font-size: 0.6rem;
-  font-weight: 700;
-  color: var(--cyan);
-  font-family: var(--ff-mono);
-}
-.badge-vwap {
-  background: rgba(240,192,64,0.2);
-  color: var(--gold);
-  border-radius: 40px;
-  padding: 4px 12px;
-  font-size: 0.6rem;
-}
-.banner-text {
-  font-weight: 500;
-  color: var(--white);
-  letter-spacing: 0.05em;
-}
-body.light-mode .banner-text { color: #0f172a; }
-.banner-sep {
-  color: var(--muted);
-  font-size: 0.8rem;
-  margin: 0 4px;
-}
-@media (max-width: 768px) {
-  .platform-banner { margin-top: 68px; padding: 8px 12px; }
-  .banner-item { gap: 8px; }
-  .banner-text { font-size: 0.65rem; }
-}
 #hero{
   min-height:100vh;display:flex;flex-direction:column;
   align-items:center;justify-content:center;
   text-align:center;padding:120px 60px 80px;
   position:relative;overflow:hidden;
 }
-.hero-glow{ position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:900px;height:900px;border-radius:50%;background:var(--hero-glow);pointer-events:none;}
-.hero-glow2{ position:absolute;top:30%;left:20%;width:400px;height:400px;border-radius:50%;background:var(--hero-glow2);pointer-events:none;}
-.version-pill{ display:inline-flex;align-items:center;gap:8px;font-family:var(--ff-mono);font-size:.55rem;letter-spacing:.25em;text-transform:uppercase;background:rgba(0,229,255,.07);border:1px solid rgba(0,229,255,.18);border-radius:40px;padding:7px 18px;margin-bottom:28px;color:var(--cyan);opacity:0;animation:fadeUp .7s .1s forwards;}
+.hero-glow{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:900px;height:900px;border-radius:50%;
+  background:radial-gradient(ellipse,rgba(0,229,255,.06) 0%,transparent 65%);
+  pointer-events:none;
+}
+.hero-glow2{
+  position:absolute;top:30%;left:20%;
+  width:400px;height:400px;border-radius:50%;
+  background:radial-gradient(ellipse,rgba(240,192,64,.04) 0%,transparent 70%);
+  pointer-events:none;
+}
+.version-pill{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--ff-mono);font-size:.55rem;letter-spacing:.25em;
+  text-transform:uppercase;
+  background:rgba(0,229,255,.07);border:1px solid rgba(0,229,255,.18);
+  border-radius:40px;padding:7px 18px;margin-bottom:28px;
+  color:var(--cyan);
+  opacity:0;animation:fadeUp .7s .1s forwards;
+}
 .version-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
-.hero-eyebrow{ font-family:var(--ff-mono);font-size:.6rem;letter-spacing:.3em;text-transform:uppercase;color:var(--muted);margin-bottom:16px;opacity:0;animation:fadeUp .7s .25s forwards;}
-h1.hero-title{ font-family:var(--ff-disp);font-size:clamp(2.8rem,6vw,5.5rem);font-weight:900;line-height:1.05;letter-spacing:.04em;margin-bottom:12px;opacity:0;animation:fadeUp .8s .35s forwards;}
+.hero-eyebrow{
+  font-family:var(--ff-mono);font-size:.6rem;letter-spacing:.3em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:16px;
+  opacity:0;animation:fadeUp .7s .25s forwards;
+}
+h1.hero-title{
+  font-family:var(--ff-disp);font-size:clamp(2.8rem,6vw,5.5rem);
+  font-weight:900;line-height:1.05;letter-spacing:.04em;
+  margin-bottom:12px;
+  opacity:0;animation:fadeUp .8s .35s forwards;
+}
 h1.hero-title .accent{color:var(--cyan)}
-h1.hero-title .v-num{ font-size:.45em;vertical-align:middle;color:var(--gold);letter-spacing:.1em;}
-.hero-sub-title{ font-family:var(--ff-body);font-size:1.1rem;color:var(--sub);font-weight:300;margin-bottom:20px;max-width:640px;line-height:1.7;opacity:0;animation:fadeUp .8s .5s forwards;}
-.hero-course-tag{ font-family:var(--ff-mono);font-size:.58rem;letter-spacing:.15em;color:var(--gold);text-transform:uppercase;margin-bottom:40px;opacity:0;animation:fadeUp .7s .6s forwards;}
-.hero-ctas{ display:flex;gap:16px;justify-content:center;flex-wrap:wrap;opacity:0;animation:fadeUp .8s .7s forwards;margin-bottom:60px;}
-.btn-primary{ font-family:var(--ff-mono);font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;padding:16px 36px;background:linear-gradient(135deg,var(--cyan) 0%,var(--cyan2) 100%);color:#000;border:none;border-radius:5px;cursor:none;font-weight:700;transition:transform .15s,box-shadow .2s;text-decoration:none;display:inline-flex;align-items:center;gap:8px;}
+h1.hero-title .v-num{
+  font-size:.45em;vertical-align:middle;
+  color:var(--gold);letter-spacing:.1em;
+}
+.hero-sub-title{
+  font-family:var(--ff-body);font-size:1.1rem;color:var(--sub);
+  font-weight:300;margin-bottom:20px;max-width:640px;
+  line-height:1.7;
+  opacity:0;animation:fadeUp .8s .5s forwards;
+}
+.hero-course-tag{
+  font-family:var(--ff-mono);font-size:.58rem;letter-spacing:.15em;
+  color:var(--gold);text-transform:uppercase;margin-bottom:40px;
+  opacity:0;animation:fadeUp .7s .6s forwards;
+}
+.hero-ctas{
+  display:flex;gap:16px;justify-content:center;flex-wrap:wrap;
+  opacity:0;animation:fadeUp .8s .7s forwards;
+  margin-bottom:60px;
+}
+.btn-primary{
+  font-family:var(--ff-mono);font-size:.65rem;letter-spacing:.14em;
+  text-transform:uppercase;padding:16px 36px;
+  background:linear-gradient(135deg,var(--cyan) 0%,var(--cyan2) 100%);
+  color:#000;border:none;border-radius:5px;cursor:none;font-weight:700;
+  transition:transform .15s,box-shadow .2s;
+  text-decoration:none;display:inline-flex;align-items:center;gap:8px;
+}
 .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,229,255,.3)}
-.btn-secondary{ font-family:var(--ff-mono);font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;padding:15px 28px;background:transparent;color:var(--white);border:1px solid rgba(237,242,251,.2);border-radius:5px;cursor:none;transition:border-color .2s,transform .15s;text-decoration:none;display:inline-flex;align-items:center;gap:8px;}
+.btn-secondary{
+  font-family:var(--ff-mono);font-size:.65rem;letter-spacing:.14em;
+  text-transform:uppercase;padding:15px 28px;
+  background:transparent;color:var(--white);
+  border:1px solid rgba(237,242,251,.2);border-radius:5px;cursor:none;
+  transition:border-color .2s,transform .15s;
+  text-decoration:none;display:inline-flex;align-items:center;gap:8px;
+}
 .btn-secondary:hover{border-color:var(--cyan);transform:translateY(-2px)}
-.trial-badge{ display:inline-flex;align-items:center;gap:10px;font-family:var(--ff-mono);font-size:.55rem;letter-spacing:.1em;color:var(--green);background:rgba(0,229,160,.07);border:1px solid rgba(0,229,160,.2);border-radius:4px;padding:8px 16px;opacity:0;animation:fadeUp .7s .85s forwards;}
-.hero-stats{ display:flex;gap:48px;justify-content:center;flex-wrap:wrap;padding:28px 0 0;border-top:1px solid var(--border);opacity:0;animation:fadeUp .8s 1s forwards;}
+.trial-badge{
+  display:inline-flex;align-items:center;gap:10px;
+  font-family:var(--ff-mono);font-size:.55rem;letter-spacing:.1em;
+  color:var(--green);background:rgba(0,229,160,.07);
+  border:1px solid rgba(0,229,160,.2);border-radius:4px;padding:8px 16px;
+  opacity:0;animation:fadeUp .7s .85s forwards;
+}
+.hero-stats{
+  display:flex;gap:48px;justify-content:center;flex-wrap:wrap;
+  padding:28px 0 0;
+  border-top:1px solid rgba(0,229,255,.07);
+  opacity:0;animation:fadeUp .8s 1s forwards;
+}
 .hstat{text-align:center}
 .hstat-n{font-family:var(--ff-disp);font-size:1.6rem;font-weight:900;color:var(--cyan);letter-spacing:.05em}
 .hstat-l{font-family:var(--ff-mono);font-size:.5rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-top:4px}
-.scroll-arrow{ position:absolute;bottom:32px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--muted);font-family:var(--ff-mono);font-size:.5rem;letter-spacing:.18em;animation:scrollPulse 2.5s ease-in-out infinite;opacity:0;animation:fadeIn 1s 1.4s forwards, scrollPulse 2.5s 2.4s ease-in-out infinite;}
+.scroll-arrow{
+  position:absolute;bottom:32px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  color:var(--muted);font-family:var(--ff-mono);font-size:.5rem;letter-spacing:.18em;
+  animation:scrollPulse 2.5s ease-in-out infinite;
+  opacity:0;animation:fadeIn 1s 1.4s forwards, scrollPulse 2.5s 2.4s ease-in-out infinite;
+}
 section{position:relative;z-index:1;max-width:1320px;margin:0 auto;padding:100px 60px}
-.section-label{ font-family:var(--ff-mono);font-size:.52rem;letter-spacing:.28em;text-transform:uppercase;color:var(--cyan);margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.section-label{
+  font-family:var(--ff-mono);font-size:.52rem;letter-spacing:.28em;
+  text-transform:uppercase;color:var(--cyan);margin-bottom:14px;
+  display:flex;align-items:center;gap:10px;
+}
 .section-label::before{content:'';display:block;width:28px;height:1px;background:var(--cyan)}
-h2.section-title{ font-family:var(--ff-disp);font-size:clamp(1.8rem,3.5vw,3rem);font-weight:900;line-height:1.1;letter-spacing:.04em;margin-bottom:16px;}
+h2.section-title{
+  font-family:var(--ff-disp);font-size:clamp(1.8rem,3.5vw,3rem);
+  font-weight:900;line-height:1.1;letter-spacing:.04em;margin-bottom:16px;
+}
 h2.section-title em{font-style:normal;color:var(--cyan)}
 h2.section-title .gold{color:var(--gold)}
-p.section-sub{ font-size:1rem;color:var(--sub);line-height:1.8;font-weight:300;max-width:560px;}
-.divider{ height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);max-width:1320px;margin:0 auto;}
+p.section-sub{
+  font-size:1rem;color:var(--sub);line-height:1.8;font-weight:300;max-width:560px;
+}
+.divider{
+  height:1px;background:linear-gradient(90deg,transparent,rgba(0,229,255,.18),transparent);
+  max-width:1320px;margin:0 auto;
+}
 .what-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;margin-top:56px}
 .what-text p{font-size:.95rem;color:var(--sub);line-height:1.9;margin-bottom:20px;font-weight:300}
 .what-text p strong{color:var(--white);font-weight:600}
-.engine-visual{ background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:36px;overflow:hidden;position:relative;}
+.engine-visual{
+  background:var(--panel);border:1px solid var(--border);border-radius:12px;
+  padding:36px;overflow:hidden;position:relative;
+}
+.engine-visual::before{
+  content:'';position:absolute;top:-60px;right:-60px;
+  width:200px;height:200px;border-radius:50%;
+  background:radial-gradient(ellipse,rgba(0,229,255,.08),transparent 70%);
+}
 .ev-title{font-family:var(--ff-disp);font-size:.65rem;letter-spacing:.2em;color:var(--cyan);margin-bottom:24px;text-transform:uppercase}
-.subsystem{display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);}
+.subsystem{
+  display:flex;align-items:flex-start;gap:14px;
+  padding:14px 0;border-bottom:1px solid rgba(0,229,255,.06);
+}
 .subsystem:last-child{border-bottom:none}
-.ss-icon{ width:36px;height:36px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1rem;}
+.ss-icon{
+  width:36px;height:36px;border-radius:6px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1rem;
+}
 .ss-icon.c{background:rgba(0,229,255,.1)}
 .ss-icon.g{background:rgba(240,192,64,.1)}
+.ss-icon.gr{background:rgba(0,229,160,.1)}
+.ss-icon.r{background:rgba(255,77,106,.1)}
 .ss-name{font-family:var(--ff-mono);font-size:.6rem;font-weight:700;letter-spacing:.1em;color:var(--white);text-transform:uppercase;margin-bottom:4px}
 .ss-desc{font-size:.8rem;color:var(--sub);line-height:1.5}
 #modules{background:linear-gradient(180deg,transparent 0%,rgba(0,229,255,.02) 50%,transparent 100%)}
+.modules-intro{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:start;margin-bottom:56px}
 .module-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-.mod-card{ background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:24px 22px;transition:border-color .25s,transform .2s;cursor:none;}
+.mod-card{
+  background:var(--panel);border:1px solid var(--border);border-radius:10px;
+  padding:24px 22px;transition:border-color .25s,transform .2s;cursor:none;
+}
 .mod-card:hover{border-color:rgba(0,229,255,.28);transform:translateY(-3px)}
 .mod-num{font-family:var(--ff-disp);font-size:.55rem;letter-spacing:.2em;color:var(--muted);margin-bottom:10px}
 .mod-title{font-family:var(--ff-body);font-size:.95rem;font-weight:700;color:var(--white);margin-bottom:8px}
@@ -244,7 +251,10 @@ p.section-sub{ font-size:1rem;color:var(--sub);line-height:1.8;font-weight:300;m
 #sotd-engine{background:linear-gradient(135deg,rgba(0,229,255,.03) 0%,transparent 50%,rgba(240,192,64,.02) 100%)}
 .sotd-wrap{display:grid;grid-template-columns:1.1fr 1fr;gap:64px;align-items:center;margin-top:56px}
 .tier-stack{display:flex;flex-direction:column;gap:14px}
-.tier-card{ border-radius:10px;padding:20px 24px;display:flex;align-items:center;gap:18px;border:1px solid;transition:transform .2s;cursor:none;position:relative;}
+.tier-card{
+  border-radius:10px;padding:20px 24px;display:flex;align-items:center;gap:18px;
+  border:1px solid;transition:transform .2s;cursor:none;position:relative;overflow:hidden;
+}
 .tier-card:hover{transform:translateX(4px)}
 .tier-card.elite{background:rgba(240,192,64,.05);border-color:rgba(240,192,64,.2)}
 .tier-card.prime{background:rgba(0,229,255,.05);border-color:rgba(0,229,255,.2)}
@@ -256,45 +266,60 @@ p.section-sub{ font-size:1rem;color:var(--sub);line-height:1.8;font-weight:300;m
 .tier-name.standard{color:var(--sub)}
 .tier-score{font-family:var(--ff-mono);font-size:.55rem;letter-spacing:.1em;color:var(--muted);margin-bottom:6px}
 .tier-desc{font-size:.82rem;color:var(--sub);line-height:1.5}
-.tbadge{ font-family:var(--ff-mono);font-size:.45rem;letter-spacing:.12em;text-transform:uppercase;padding:2px 7px;border-radius:3px;}
+.tier-badge-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.tbadge{
+  font-family:var(--ff-mono);font-size:.45rem;letter-spacing:.12em;text-transform:uppercase;
+  padding:2px 7px;border-radius:3px;
+}
 .tbadge.gold{background:rgba(240,192,64,.1);color:var(--gold);border:1px solid rgba(240,192,64,.2)}
 .tbadge.cyan{background:rgba(0,229,255,.1);color:var(--cyan);border:1px solid rgba(0,229,255,.2)}
 .sotd-info{display:flex;flex-direction:column;gap:24px}
-.sotd-kv{border-left:2px solid var(--border);padding-left:18px}
+.sotd-kv{border-left:2px solid rgba(0,229,255,.2);padding-left:18px}
 .sotd-kv-label{font-family:var(--ff-mono);font-size:.52rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
 .sotd-kv-val{font-size:.95rem;color:var(--sub);line-height:1.7;font-weight:300}
-.score-bar{height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden;margin:12px 0}
+.score-bar{height:6px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;margin:12px 0}
 .score-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--cyan),var(--cyan2));width:0%;transition:width 1.5s ease}
 .wf-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin-top:56px;position:relative}
 .wf-step{display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 12px}
-.wf-circle{ width:56px;height:56px;border-radius:50%;background:var(--panel);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--ff-disp);font-size:.6rem;font-weight:900;color:var(--cyan);margin-bottom:16px;}
+.wf-circle{
+  width:56px;height:56px;border-radius:50%;background:var(--panel);border:1px solid rgba(0,229,255,.2);
+  display:flex;align-items:center;justify-content:center;font-family:var(--ff-disp);font-size:.6rem;font-weight:900;color:var(--cyan);
+  margin-bottom:16px;
+}
 .wf-name{font-size:.88rem;font-weight:700;color:var(--white);margin-bottom:6px}
 .wf-desc{font-size:.78rem;color:var(--sub);line-height:1.5}
+#vs{padding-top:60px}
 .vs-wrap{margin-top:50px;border:1px solid var(--border);border-radius:12px;overflow:hidden}
 .vs-header{display:grid;grid-template-columns:1fr 1fr 1fr;background:var(--panel);padding:20px 28px}
-.vs-row{display:grid;grid-template-columns:1fr 1fr 1fr;padding:16px 28px;border-bottom:1px solid var(--border)}
+.vs-col-h{font-family:var(--ff-mono);font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;text-align:center}
+.vs-row{display:grid;grid-template-columns:1fr 1fr 1fr;padding:16px 28px;border-bottom:1px solid rgba(0,229,255,.05)}
 .vs-feature{font-size:.88rem;color:var(--sub);display:flex;align-items:center;gap:8px}
 .vs-val{text-align:center;font-family:var(--ff-mono);font-size:.72rem}
 .vs-val .check{color:var(--green)}
 .vs-val .cross{color:var(--red)}
 .price-cards{display:flex;flex-wrap:wrap;justify-content:center;gap:32px;margin-top:48px}
-.price-card{ background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:40px 32px;max-width:380px;width:100%;transition:transform .2s;}
+.price-card{
+  background:var(--panel);border:1px solid rgba(0,229,255,.2);border-radius:16px;
+  padding:40px 32px;max-width:380px;width:100%;position:relative;transition:transform .2s;
+}
 .price-card:hover{transform:translateY(-5px);border-color:rgba(0,229,255,.4)}
 .price-name{font-family:var(--ff-disp);font-size:1.2rem;font-weight:900;letter-spacing:.08em;margin-bottom:12px}
 .price-amount{font-family:var(--ff-disp);font-size:2.6rem;font-weight:900;color:var(--cyan);line-height:1;margin:16px 0 8px}
-.price-amount small{font-size:1rem}
+.price-amount small{font-size:1rem;font-weight:400}
+.price-cadence{font-family:var(--ff-mono);font-size:.55rem;color:var(--muted)}
 .price-features{list-style:none;margin:24px 0;text-align:left;}
 .price-features li{display:flex;gap:10px;font-size:.8rem;color:var(--sub);margin-bottom:10px}
+.price-features li .chk{color:var(--green)}
 .price-cta-block{margin-top:20px;width:100%;padding:14px;background:linear-gradient(135deg,var(--cyan),var(--cyan2));border:none;border-radius:6px;font-family:var(--ff-mono);font-weight:700;cursor:none;color:#000;}
 .faq-list{max-width:760px;margin:48px auto 0;display:flex;flex-direction:column;gap:10px}
 .faq-item{background:var(--panel);border:1px solid var(--border);border-radius:8px;overflow:hidden}
 .faq-q{padding:20px 24px;display:flex;justify-content:space-between;align-items:center;font-weight:600;color:var(--white);cursor:pointer}
 .faq-icon{color:var(--cyan);transition:transform .2s}
 .faq-item.open .faq-icon{transform:rotate(45deg)}
-.faq-a{display:none;padding:0 24px 20px;font-size:.88rem;color:var(--sub);border-top:1px solid var(--border);padding-top:16px}
+.faq-a{display:none;padding:0 24px 20px;font-size:.88rem;color:var(--sub);border-top:1px solid rgba(0,229,255,.06);padding-top:16px}
 .faq-item.open .faq-a{display:block}
-#ctaband{text-align:center;padding:100px 60px;background:radial-gradient(ellipse 70% 60% at 50% 50%, rgba(0,229,255,.05), transparent 70%);}
-footer{border-top:1px solid var(--border);padding:60px 60px 32px;max-width:1320px;margin:0 auto}
+#ctaband{text-align:center;padding:100px 60px;background:radial-gradient(ellipse 70% 60% at 50% 50%,rgba(0,229,255,.05),transparent 70%)}
+footer{border-top:1px solid rgba(0,229,255,.07);padding:60px 60px 32px;max-width:1320px;margin:0 auto}
 .footer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:40px;margin-bottom:48px}
 .footer-col-title{font-family:var(--ff-mono);font-size:.52rem;letter-spacing:.25em;color:var(--cyan);margin-bottom:14px}
 .footer-col a{display:block;font-size:.82rem;color:var(--sub);text-decoration:none;padding:4px 0}
@@ -305,43 +330,26 @@ footer{border-top:1px solid var(--border);padding:60px 60px 32px;max-width:1320p
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes scrollPulse{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(6px)}}
-.ticker-wrap{ background:var(--panel);border-top:1px solid var(--border);border-bottom:1px solid var(--border);overflow:hidden;padding:10px 0;position:sticky;top:72px;z-index:100;backdrop-filter:blur(8px);}
+.ticker-wrap{background:rgba(11,14,26,.9);border-top:1px solid rgba(0,229,255,.07);border-bottom:1px solid rgba(0,229,255,.07);overflow:hidden;padding:10px 0;position:sticky;top:72px;z-index:100;backdrop-filter:blur(8px)}
 .ticker{display:flex;white-space:nowrap;animation:ticker 30s linear infinite}
 .ticker-item{font-family:var(--ff-mono);font-size:.55rem;color:var(--sub);padding:0 36px;display:inline-flex;gap:8px}
 @keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-@media(max-width:1024px){.what-grid,.sotd-wrap{grid-template-columns:1fr}.module-grid{grid-template-columns:repeat(2,1fr)}.wf-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:1024px){.what-grid,.sotd-wrap,.modules-intro{grid-template-columns:1fr}.module-grid{grid-template-columns:repeat(2,1fr)}.wf-grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:768px){nav{padding:14px 24px}.nav-links{display:none}section{padding:80px 24px}.module-grid{grid-template-columns:1fr}.price-cards{flex-direction:column;align-items:center}.footer-grid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
 <div id="cur"></div><div id="cur-ring"></div><div class="grid-bg"></div>
-<nav><a href="#" class="nav-logo">SNIPER<span>TRADER</span><span class="nav-badge">ICT Foundation</span></a>
+<nav><a href="/index.html" class="nav-logo">SNIPER<span>TRADER</span><span class="nav-badge">ICT Foundation</span></a>
   <ul class="nav-links"><li><a href="#what">Overview</a></li><li><a href="#modules">Course</a></li><li><a href="#sotd-engine">SOTD Engine</a></li><li><a href="#pricing">Pricing</a></li><li><a href="#faq">FAQ</a></li></ul>
-  <div style="display: flex; gap: 12px; align-items: center;">
-    <button class="theme-toggle" id="themeToggleBtn" aria-label="Dark/Light mode">🌙</button>
-    <button class="nav-cta" onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'})">Start Free Trial</button>
-  </div>
+  <button class="nav-cta" onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'})">Start Free Trial</button>
 </nav>
-<!-- NEW BANNER: ICT Foundation + VWAP ELITE multi-platform announcement -->
-<div class="platform-banner">
-  <div class="banner-content">
-    <div class="banner-item">
-      <span class="badge-platform">⚡ ICT Foundation</span>
-      <span class="banner-text">TOS · PINE (TradingView) · NINJA</span>
-    </div>
-    <span class="banner-sep">|</span>
-    <div class="banner-item">
-      <span class="badge-vwap">📊 VWAP ELITE</span>
-      <span class="banner-text">Institutional Edge · TOS · PINE · NINJA</span>
-    </div>
-  </div>
-</div>
-<div class="ticker-wrap"><div class="ticker"><span class="ticker-item"><span class="t-acc">◈</span> USME ICT Foundation — Smart Money Core</span><span class="ticker-item"><span class="t-gold">◈</span> SOTD Tier System: ELITE · PRIME · STANDARD</span><span class="ticker-item"><span class="t-green">◈</span> 2-Week Free Trial — $199/mo or $1999/year</span><span class="ticker-item"><span class="t-acc">◈</span> Bias Cascade + SMT Divergence</span><span class="ticker-item"><span class="t-gold">◈</span> Non-Repainting Signals | ICT/SMC Aligned</span><span class="ticker-item"><span class="t-green">◈</span> ThinkorSwim + TradingView + NinjaTrader ready</span><span class="ticker-item"><span class="t-acc">◈</span> VWAP ELITE also available — multi-platform</span></div></div>
+<div class="ticker-wrap"><div class="ticker"><span class="ticker-item"><span class="t-acc">◈</span> USME ICT Foundation — Smart Money Core</span><span class="ticker-item"><span class="t-gold">◈</span> SOTD Tier System: ELITE · PRIME · STANDARD</span><span class="ticker-item"><span class="t-green">◈</span> 2-Week Free Trial — $199/mo or $1999/year</span><span class="ticker-item"><span class="t-acc">◈</span> Bias Cascade + SMT Divergence</span><span class="ticker-item"><span class="t-gold">◈</span> Non-Repainting Signals | ICT/SMC Aligned</span><span class="ticker-item"><span class="t-green">◈</span> ThinkorSwim + TradingView</span><span class="ticker-item"><span class="t-acc">◈</span> USME ICT Foundation — Smart Money Core</span><span class="ticker-item"><span class="t-gold">◈</span> SOTD Tier System: ELITE · PRIME · STANDARD</span><span class="ticker-item"><span class="t-green">◈</span> 2-Week Free Trial — $199/mo or $1999/year</span></div></div>
 <section id="hero"><div class="hero-glow"></div><div class="hero-glow2"></div>
   <div class="version-pill"><span class="version-dot"></span>Foundational Release — Institutional Concepts</div>
   <p class="hero-eyebrow">SniperTrader | ICT Methodology Core</p>
   <h1 class="hero-title">USME <span class="v-num">ICT Foundation</span><br><span class="accent">Smart Money Structure.</span><br>Signal Certainty.</h1>
-  <p class="hero-sub-title">Learn to read liquidity, displacement, and order flow through the Unified Smart Money Engine — bias cascade, SOTD tier scoring, and non-repainting signals. Compatible with ThinkorSwim, TradingView (Pine), and NinjaTrader.</p>
+  <p class="hero-sub-title">Learn to read liquidity, displacement, and order flow through the Unified Smart Money Engine — bias cascade, SOTD tier scoring, and non-repainting signals.</p>
   <p class="hero-course-tag">The Complete ICT Foundation & Signal Mastery</p>
   <div class="hero-ctas"><a href="#pricing" class="btn-primary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>Start 2-Week Free Trial</a><a href="#modules" class="btn-secondary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>Explore Foundation Course</a></div>
   <div class="trial-badge">✓ &nbsp;2 weeks free · then $199/month or $1999/year · cancel anytime</div>
@@ -349,42 +357,29 @@ footer{border-top:1px solid var(--border);padding:60px 60px 32px;max-width:1320p
   <div class="scroll-arrow"><span>SCROLL</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div>
 </section>
 <div class="divider"></div>
-<section id="what"><div class="section-label">Core Architecture</div><div class="what-grid"><div class="what-text"><h2 class="section-title">The Engine Behind<br><em>Institutional Framework</em></h2><p>The USME ICT Foundation is built on pure ICT & Smart Money Concepts: liquidity voids, market structure shifts, optimal trade entry zones. It reads price action through a multi-timeframe lens and provides real-time <strong>SOTD scoring</strong> from 65% to 100%.</p><p>You no longer guess if a setup is valid. The engine grades ELITE, PRIME, or STANDARD with distinct alerts. This course teaches you the what, why, and how behind each label. Available for <strong>ThinkorSwim, TradingView (Pine Script), and NinjaTrader</strong> — same logic, seamless workflow.</p></div><div class="engine-visual"><div class="ev-title">USME ICT Foundation — Core Subsystems</div><div class="subsystem"><div class="ss-icon c">🧠</div><div><div class="ss-name">Multi‑TF Bias Engine</div><div class="ss-desc">Weekly → Daily bias gate, 4H primary trend.</div></div></div><div class="subsystem"><div class="ss-icon g">⚡</div><div><div class="ss-name">SOTD Scoring Engine</div><div class="ss-desc">Real‑time confluence score (0–100%). ELITE ≥90% · PRIME 80-89% · STANDARD 65-79%.</div></div></div></div></div></section>
+<section id="what"><div class="section-label">Core Architecture</div><div class="what-grid"><div class="what-text"><h2 class="section-title">The Engine Behind<br><em>Institutional Framework</em></h2><p>The USME ICT Foundation is built on pure ICT & Smart Money Concepts: liquidity voids, market structure shifts, optimal trade entry zones. It reads price action through a multi-timeframe lens (Weekly → 15m) and provides real-time <strong>SOTD (Signal-of-the-Day) scoring</strong> from 65% to 100%.</p><p>You no longer guess if a setup is valid. The engine grades ELITE, PRIME, or STANDARD with distinct alerts. v3.1 core logic includes 2x ATR stops, SMT divergence detection, and bias gatekeeping. This course teaches you the what, why, and how behind each label.</p><p>No black box dependency — you learn to interpret everything yourself.</p></div><div class="engine-visual"><div class="ev-title">USME ICT Foundation — Core Subsystems</div><div class="subsystem"><div class="ss-icon c">🧠</div><div><div class="ss-name">Multi‑TF Bias Engine</div><div class="ss-desc">Weekly → Daily bias gate, 4H primary trend, 1H/15M execution filter. HTF:ALIGNED signal.</div></div></div><div class="subsystem"><div class="ss-icon g">⚡</div><div><div class="ss-name">SOTD Scoring Engine</div><div class="ss-desc">Real‑time confluence score (0–100%). ELITE ≥90% · PRIME 80-89% · STANDARD 65-79%.</div></div></div><div class="subsystem"><div class="ss-icon gr">📐</div><div><div class="ss-name">SMC Toolkit</div><div class="ss-desc">BOS/CHoCH, FVG, OB, liquidity sweeps. Non‑repainting alerts on closed bars.</div></div></div><div class="subsystem"><div class="ss-icon r">🎯</div><div><div class="ss-name">Order Flow + SMT</div><div class="ss-desc">Divergence detection on correlated pairs (NQ/ES, BTC/ETH). Volume divergence filter.</div></div></div></div></div></section>
 <div class="divider"></div>
-<section id="sotd-engine"><div class="section-label">Flagship — SOTD™</div><h2 class="section-title">Signal‑of‑the‑Day Engine<br><em>Tier Scoring System</em> <span class="gold">Foundation v3.1</span></h2><div class="sotd-wrap reveal"><div class="tier-stack"><div class="tier-card elite"><div class="tier-icon">👑</div><div><div class="tier-name elite">ELITE</div><div class="tier-score">Score ≥90% · Gold Chimes · Max Confluence</div><div class="tier-desc">Full SMC stack: CHoCH + sweep + FVG/OB + HTF alignment.</div></div></div><div class="tier-card prime"><div class="tier-icon">⚡</div><div><div class="tier-name prime">PRIME</div><div class="tier-score">Score 80–89% · Ring Alert · Strong Edge</div><div class="tier-desc">Standard requirements plus extra confluence layers.</div></div></div><div class="tier-card standard"><div class="tier-icon">🔔</div><div><div class="tier-name standard">STANDARD</div><div class="tier-score">Score 65–79% · Bell Alert · Valid Setup</div><div class="tier-desc">Minimum conditions met. Reduce size if below 70%.</div></div></div></div><div class="sotd-info"><div class="sotd-kv"><div class="sotd-kv-label">Score Composition</div><div class="sotd-kv-val">5 confluence factors: bias, liquidity sweep, FVG/OB, session filter, SMT divergence.</div><div class="score-bar"><div class="score-fill" id="scoreDemoFill" style="width:0%"></div><div style="font-size:.65rem;margin-top:4px">Example: 86% (PRIME)</div></div></div><div class="sotd-kv"><div class="sotd-kv-label">Critical Rule</div><div class="sotd-kv-val">Signals confirmed only on closed bars — no mid-candle entries.</div></div></div></div></section>
+<section id="sotd-engine"><div class="section-label">Flagship — SOTD™</div><h2 class="section-title">Signal‑of‑the‑Day Engine<br><em>Tier Scoring System</em> <span class="gold">Foundation v3.1</span></h2><div class="sotd-wrap reveal"><div class="tier-stack"><div class="tier-card elite"><div class="tier-icon">👑</div><div><div class="tier-name elite">ELITE</div><div class="tier-score">Score ≥90% · Gold Chimes · Max Confluence</div><div class="tier-desc">Full SMC stack: CHoCH + sweep + FVG/OB + discount/premium + HTF alignment. Rare, high-probability.</div><div class="tier-badge-row"><span class="tbadge gold">Full Stack</span><span class="tbadge gold">Institutional Grade</span></div></div></div><div class="tier-card prime"><div class="tier-icon">⚡</div><div><div class="tier-name prime">PRIME</div><div class="tier-score">Score 80–89% · Ring Alert · Strong Edge</div><div class="tier-desc">Standard requirements plus extra confluence layers. High-conviction with manageable risk.</div><div class="tier-badge-row"><span class="tbadge cyan">Multi‑TF Confirmed</span><span class="tbadge cyan">Proceed Cautiously</span></div></div></div><div class="tier-card standard"><div class="tier-icon">🔔</div><div><div class="tier-name standard">STANDARD</div><div class="tier-score">Score 65–79% · Bell Alert · Valid Setup</div><div class="tier-desc">Minimum conditions met. Reduce position size or skip if score drifts below 70%.</div><div class="tier-badge-row"><span class="tbadge cyan">Confirmed Close</span><span class="tbadge cyan">Baseline Edge</span></div></div></div></div><div class="sotd-info"><div class="sotd-kv"><div class="sotd-kv-label">Score Composition</div><div class="sotd-kv-val">The SOTD engine evaluates <strong>5 confluence factors</strong>: bias alignment, liquidity sweep confirmation, FVG/OB proximity, session filter, and SMT divergence. Higher score = higher statistical edge.</div><div class="score-bar"><div class="score-fill" id="scoreDemoFill" style="width:0%"></div><div style="font-size:.65rem;font-family:monospace;margin-top:4px">Example: 86% (PRIME)</div></div></div><div class="sotd-kv"><div class="sotd-kv-label">Critical Rule — Never Chase</div><div class="sotd-kv-val"><strong>Signals only confirmed on closed bars.</strong> The SOTD engine does not repaint, but mid-candle entries cause score instability. Absolute rule #1 in the course.</div></div><div class="sotd-kv"><div class="sotd-kv-label">2x ATR Stop Logic</div><div class="sotd-kv-val">Stop loss = 2× ATR(14) — wider than typical retail to survive intraday noise. Adjust size accordingly: mechanical edge requires trust in the buffer.</div></div></div></div></section>
 <div class="divider"></div>
-<section id="pricing"><div class="section-label">Access Plans</div><h2 class="section-title" style="text-align:center">One Engine.<br><em>Two Commitments.</em></h2><div class="price-cards reveal"><div class="price-card"><div class="price-name">MONTHLY FLEX</div><div class="price-amount"><sup>$</sup>199<small>/mo</small></div><div class="price-cadence">billed monthly · cancel anytime</div><ul class="price-features"><li><span class="chk">✓</span> Full indicator + course</li><li><span class="chk">✓</span> SOTD ELITE/PRIME/STANDARD</li><li><span class="chk">✓</span> Community access</li></ul><button class="price-cta-block" onclick="alert('2-week trial activated')">Start Free Trial →</button></div><div class="price-card"><div class="price-name">YEARLY ELITE</div><div class="price-amount"><sup>$</sup>1999<small>/year</small></div><div class="price-cadence">save 16% · 2 weeks trial</div><ul class="price-features"><li><span class="chk">✓</span> All monthly features + priority support</li><li><span class="chk">✓</span> Annual webinars & updates</li></ul><button class="price-cta-block" style="background:linear-gradient(135deg,var(--gold),#b8882a);" onclick="alert('14-day free trial for yearly')">Start Annual Trial →</button></div></div></section>
+<section id="modules"><div class="modules-intro"><div><div class="section-label">Learning Path</div><h2 class="section-title">Progressive<br><em>ICT Foundation</em></h2></div><div><p class="section-sub">6 in‑depth modules + resource vault. From market structure to live execution. For beginners and experienced traders upgrading to SOTD logic.</p></div></div><div class="module-grid"><div class="mod-card reveal"><div class="mod-num">MODULE 01</div><div class="mod-title">Market Structure & Liquidity Theory</div><div class="mod-time">⏱ 70 min</div><div class="mod-desc">Accumulation, manipulation, distribution. Why smart money hunts liquidity. Discount/premium zones explained.</div><span class="mod-tag core">Core</span></div><div class="mod-card reveal"><div class="mod-num">MODULE 02</div><div class="mod-title">Label Anatomy & Dashboard Interpretation</div><div class="mod-time">⏱ 50 min</div><div class="mod-desc">BOS, CHoCH, FVG, OB, SMT labels. Reading the score dashboard and bias cascade values.</div><span class="mod-tag core">Core</span></div><div class="mod-card reveal"><div class="mod-num">MODULE 03</div><div class="mod-title">Multi‑Timeframe Bias Cascade</div><div class="mod-time">⏱ 55 min</div><div class="mod-desc">Weekly blueprint → Daily gate → 4H authority → 15M execution. Avoiding conflicting TF signals.</div><span class="mod-tag core">Core</span></div><div class="mod-card reveal"><div class="mod-num">MODULE 04</div><div class="mod-title">SOTD Engine Deep Dive</div><div class="mod-time">⏱ 90 min</div><div class="mod-desc">ELITE/PRIME/STANDARD firing conditions, score thresholds, 2× ATR reasoning, alert distinction.</div><span class="mod-tag new">v3.1 Focus</span></div><div class="mod-card reveal"><div class="mod-num">MODULE 05</div><div class="mod-title">Live Execution Protocol</div><div class="mod-time">⏱ 70 min</div><div class="mod-desc">Pre‑market → London open → signal management → post‑trade review. Position sizing based on tier strength.</div><span class="mod-tag new">Execution</span></div><div class="mod-card reveal"><div class="mod-num">RESOURCES</div><div class="mod-title">Cheat Sheets + Trade Logs</div><div class="mod-time">Reference</div><div class="mod-desc">SOTD scoring card, glossary, 5‑step checklist, weekly review templates.</div><span class="mod-tag core">Reference</span></div></div></section>
 <div class="divider"></div>
-<footer><div class="footer-logo">SNIPER<span>TRADER</span></div><div class="footer-grid"><div class="footer-col"><div class="footer-col-title">ICT Foundation</div><a href="#">SOTD Engine</a><a href="#">Bias Dashboard</a><a href="#">TOS · PINE · NINJA</a></div><div class="footer-col"><div class="footer-col-title">Resources</div><a href="#">Affiliate</a><a href="#">Trade Recorder</a><a href="#">VWAP Elite Suite</a></div><div class="footer-col"><div class="footer-col-title">Legal</div><a href="#">Terms</a><a href="#">Privacy</a></div></div><p class="footer-disclaimer">Trading involves substantial risk. Educational tool — not financial advice. USME ICT Foundation and VWAP Elite are available for ThinkorSwim, TradingView (Pine), and NinjaTrader.</p></footer>
+<section id="workflow" style="padding-bottom:80px"><div class="section-label">Execution Framework</div><h2 class="section-title" style="text-align:center">The <em>90‑Second Signal Check</em></h2><p class="section-sub" style="text-align:center;margin:0 auto 40px">Five checks before touching the entry button.</p><div class="wf-grid reveal"><div class="wf-step"><div class="wf-circle">01</div><div class="wf-name">HTF Bias Gate</div><div class="wf-desc">Weekly/Daily alignment? HTF:ALIGNED must be true.</div></div><div class="wf-step"><div class="wf-circle">02</div><div class="wf-name">Session Window</div><div class="wf-desc">London or NY active? Avoid off‑hours noise.</div></div><div class="wf-step"><div class="wf-circle">03</div><div class="wf-name">Zone & Sweep</div><div class="wf-desc">Identify FVG/OB + liquidity sweep. Discount for buys, premium for sells.</div></div><div class="wf-step"><div class="wf-circle">04</div><div class="wf-name">Read Score</div><div class="wf-desc">Below 65% skip. 80%+ high conviction.</div></div><div class="wf-step"><div class="wf-circle">05</div><div class="wf-name">SOTD Tier + SMT</div><div class="wf-desc">Confirm tier, check divergence. Execute on closed candle.</div></div></div></section>
+<div class="divider"></div>
+<section id="vs"><div class="section-label">Edge Evolution</div><h2 class="section-title">USME ICT Foundation vs.<br><span style="color:var(--muted)">Legacy Indicators</span></h2><div class="vs-wrap"><div class="vs-header"><div class="vs-col-h">Feature</div><div class="vs-col-h old">Standard SMC Tools</div><div class="vs-col-h new">ICT Foundation</div></div><div class="vs-row"><div class="vs-feature">📊 Signal Tiering</div><div class="vs-val old"><span class="cross">✗</span> None</div><div class="vs-val new"><span class="check">✓</span> ELITE/PRIME/STANDARD</div></div><div class="vs-row"><div class="vs-feature">🎯 Real‑time Scoring</div><div class="vs-val old"><span class="cross">✗</span> No</div><div class="vs-val new"><span class="check">✓</span> 0-100% confluence score</div></div><div class="vs-row"><div class="vs-feature">📏 Stop logic</div><div class="vs-val old">Subjective</div><div class="vs-val new">2x ATR(14) systematic</div></div><div class="vs-row"><div class="vs-feature">🌀 Multi‑TF Cascade</div><div class="vs-val old">1 or 2 TFs</div><div class="vs-val new">Weekly → 15M (5 layers)</div></div><div class="vs-row"><div class="vs-feature">🔗 SMT Divergence</div><div class="vs-val old">Manual</div><div class="vs-val new">Auto NQ/ES, BTC/ETH</div></div></div></div></section>
+<div class="divider"></div>
+<section id="pricing"><div class="section-label">Access Plans</div><h2 class="section-title" style="text-align:center">One Engine.<br><em>Two Commitments.</em></h2><div class="price-cards reveal"><div class="price-card"><div class="price-name">MONTHLY FLEX</div><div class="price-amount"><sup>$</sup>199<small>/mo</small></div><div class="price-cadence">billed monthly · cancel anytime</div><div class="price-trial" style="margin:12px 0;background:rgba(0,229,160,.08);border-color:rgba(0,229,160,.2);color:var(--green);padding:5px 12px;display:inline-block;">✓ 2 weeks free trial</div><ul class="price-features"><li><span class="chk">✓</span> Full USME ICT Foundation indicator</li><li><span class="chk">✓</span> Complete 6‑module course + resources</li><li><span class="chk">✓</span> SOTD ELITE/PRIME/STANDARD alerts</li><li><span class="chk">✓</span> Bias cascade & SMT divergence</li><li><span class="chk">✓</span> Community & trade reviews</li></ul><button class="price-cta-block" onclick="alert('2-week trial activated — full access for 14 days')">Start Free Trial →</button></div><div class="price-card"><div class="price-name">YEARLY ELITE</div><div class="price-amount"><sup>$</sup>1999<small>/year</small></div><div class="price-cadence">save 16% vs monthly · 2 weeks trial</div><div class="price-trial" style="margin:12px 0;background:rgba(240,192,64,.08);border-color:rgba(240,192,64,.2);color:var(--gold);padding:5px 12px;display:inline-block;">✓ 2 weeks free trial</div><ul class="price-features"><li><span class="chk">✓</span> Everything in Monthly + priority support</li><li><span class="chk">✓</span> Annual membership + advanced webinars</li><li><span class="chk">✓</span> Future v3.x updates included</li><li><span class="chk">✓</span> 1‑on‑1 onboarding session</li></ul><button class="price-cta-block" style="background:linear-gradient(135deg,var(--gold),#b8882a);color:#000;" onclick="alert('14-day free trial for yearly plan — full access.')">Start Annual Trial →</button></div></div><p style="text-align:center;font-family:var(--ff-mono);font-size:.5rem;color:var(--muted);margin-top:24px">No credit card required during trial · cancel before day 14 to owe nothing</p></section>
+<div class="divider"></div>
+<section id="faq"><div class="section-label">Common Questions</div><h2 class="section-title" style="text-align:center">ICT Foundation<br><em>Answered</em></h2><div class="faq-list"><div class="faq-item"><div class="faq-q">What is the difference between USME v3.1 and ICT Foundation?<span class="faq-icon">+</span></div><div class="faq-a">ICT Foundation is the rebranded, refined v3.1 core focused on pure ICT methodology — bias cascade, SOTD engine, non‑repainting signals. It includes everything from the original v3.1 but with streamlined educational content and the new $199/mo pricing.</div></div><div class="faq-item"><div class="faq-q">Do I need prior ICT knowledge?<span class="faq-icon">+</span></div><div class="faq-a">No. Module 1 covers the entire framework from accumulation to manipulation to delivery. Existing ICT traders will appreciate the SOTD tiered scoring and automated SMT detection.</div></div><div class="faq-item"><div class="faq-q">Which platforms are supported?<span class="faq-icon">+</span></div><div class="faq-a">ThinkorSwim (primary) and TradingView. Both versions feature identical scoring, labels, and alert logic.</div></div><div class="faq-item"><div class="faq-q">What’s the 2‑week trial policy?<span class="faq-icon">+</span></div><div class="faq-a">Full access to indicator + course for 14 days. No charge, cancel anytime during trial. After trial: monthly $199 or annual $1999.</div></div><div class="faq-item"><div class="faq-q">Why 2x ATR stop?<span class="faq-icon">+</span></div><div class="faq-a">Reduces stop‑outs from normal intraday volatility. Wider buffer increases survival rate of valid setups. Position size accordingly — it’s covered in module 4.</div></div></div></section>
+<div class="divider"></div>
+<div id="ctaband"><h2 class="ctaband-title">Master Smart Money.<br><span style="color:var(--cyan)">Start With SOTD Precision.</span></h2><p class="ctaband-sub">Two‑week trial, full course and indicator. Experience institutional edge without the guesswork.</p><div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap"><a href="#pricing" class="btn-primary" style="font-size:.7rem;padding:18px 40px">Claim 2-Week Trial →</a><a href="#modules" class="btn-secondary" style="font-size:.7rem;padding:17px 28px">View Course Modules</a></div><p style="font-family:var(--ff-mono);font-size:.5rem;color:var(--muted);margin-top:24px">$199/month or $1999/year after trial · cancel within 14 days, $0 charged.</p></div>
+<footer><div class="footer-logo">SNIPER<span>TRADER</span></div><div class="footer-grid"><div class="footer-col"><div class="footer-col-title">ICT Foundation</div><a href="#">SOTD Engine</a><a href="#">Bias Dashboard</a><a href="#">Market Structure Toolkit</a></div><div class="footer-col"><div class="footer-col-title">Resources</div><a href="#">Affiliate Program</a><a href="#">Trade Recorder</a><a href="#">Propfirm Pass Guide</a></div><div class="footer-col"><div class="footer-col-title">Support</div><a href="#">Docs</a><a href="#">Discord</a><a href="#">Contact</a></div><div class="footer-col"><div class="footer-col-title">Legal</div><a href="#">Terms</a><a href="#">Disclaimer</a><a href="#">Privacy</a></div></div><div class="footer-copy" style="margin-top:20px;">© 2026 SniperTrader — USME ICT Foundation. All rights reserved.</div><p class="footer-disclaimer">Trading involves substantial risk. USME ICT Foundation is an educational indicator suite — not financial advice. Past performance does not guarantee future results.</p></footer>
 <script>
-// theme toggle
-const toggleBtn = document.getElementById('themeToggleBtn');
-const body = document.body;
-function setTheme(theme) {
-  if(theme === 'light') {
-    body.classList.add('light-mode');
-    toggleBtn.innerHTML = '☀️';
-    localStorage.setItem('usmeTheme', 'light');
-  } else {
-    body.classList.remove('light-mode');
-    toggleBtn.innerHTML = '🌙';
-    localStorage.setItem('usmeTheme', 'dark');
-  }
-}
-const savedTheme = localStorage.getItem('usmeTheme');
-if(savedTheme === 'light') setTheme('light');
-else setTheme('dark');
-toggleBtn.addEventListener('click', () => {
-  if(body.classList.contains('light-mode')) setTheme('dark');
-  else setTheme('light');
-});
-// reveal & score bar
-const revEls = document.querySelectorAll('.reveal');
-const io = new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');io.unobserve(e.target)}})},{threshold:0.12});
-revEls.forEach(el=>io.observe(el));
-const sbFill = document.getElementById('scoreDemoFill');
-if(sbFill){ const obs = new IntersectionObserver(e=>{if(e[0].isIntersecting){sbFill.style.width='86%';obs.disconnect()}},{threshold:.3}); obs.observe(sbFill.closest('.sotd-wrap')) }
-document.querySelectorAll('.faq-item').forEach(item=>{item.querySelector('.faq-q')?.addEventListener('click',()=>{const open=item.classList.contains('open');document.querySelectorAll('.faq-item').forEach(i=>i.classList.remove('open'));if(!open) item.classList.add('open');})});
+const cur=document.getElementById('cur'),ring=document.getElementById('cur-ring');let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px'});
+function animRing(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(animRing)} animRing();
+const revEls=document.querySelectorAll('.reveal');const io=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');io.unobserve(e.target)}})},{threshold:0.12});revEls.forEach(el=>io.observe(el));
+const sbFill=document.getElementById('scoreDemoFill');if(sbFill){const obs=new IntersectionObserver(e=>{if(e[0].isIntersecting){sbFill.style.width='86%';obs.disconnect()}},{threshold:.3});obs.observe(sbFill.closest('.sotd-wrap'))}
+document.querySelectorAll('.faq-item').forEach(item=>{item.querySelector('.faq-q').addEventListener('click',()=>{const open=item.classList.contains('open');document.querySelectorAll('.faq-item').forEach(i=>i.classList.remove('open'));if(!open) item.classList.add('open');})});
 document.querySelectorAll('a[href^="#"]').forEach(anchor=>{anchor.addEventListener('click',function(e){const target=document.querySelector(this.getAttribute('href'));if(target){e.preventDefault();target.scrollIntoView({behavior:'smooth',block:'start'})}})});
 </script>
 </body>
