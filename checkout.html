@@ -1,399 +1,596 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-<title>SniperTrader.ai — Crypto Checkout | USME Indicators</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<style>
-/* ═══════════════════════════════════════════════════
-   RESET & VARIABLES
-═══════════════════════════════════════════════════ */
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --obsidian: #03070d;
-  --deep:     #060e1a;
-  --panel:    #0a1628;
-  --glass:    rgba(8,18,36,.72);
-  --glass2:   rgba(8,18,36,.45);
-  --cyan:     #00e5ff;
-  --cyan-d:   rgba(0,229,255,.12);
-  --cyan-g:   rgba(0,229,255,.35);
-  --gold:     #f5c518;
-  --gold-d:   rgba(245,197,24,.12);
-  --gold-g:   rgba(245,197,24,.30);
-  --red:      #ff2d55;
-  --red-d:    rgba(255,45,85,.12);
-  --green:    #00ff9d;
-  --green-d:  rgba(0,255,157,.10);
-  --purple:   #9b5cff;
-  --purp-d:   rgba(155,92,255,.12);
-  --bc:  rgba(0,229,255,.18);
-  --bh:  rgba(0,229,255,.44);
-  --txt: #e2f0fc;
-  --tb:  #ffffff;
-  --mut: #a8c8e0;
-  --wh:  #ffffff;
-}
-html.light{
-  --obsidian: #eef3f9;
-  --deep:     #e2eaf4;
-  --panel:    #d5e1ef;
-  --glass:    rgba(255,255,255,.78);
-  --glass2:   rgba(255,255,255,.55);
-  --cyan:     #0080a8;
-  --cyan-d:   rgba(0,128,168,.10);
-  --cyan-g:   rgba(0,128,168,.30);
-  --gold:     #b8860b;
-  --gold-d:   rgba(184,134,11,.10);
-  --gold-g:   rgba(184,134,11,.28);
-  --red:      #cc1a36;
-  --red-d:    rgba(204,26,54,.10);
-  --green:    #007a4a;
-  --green-d:  rgba(0,122,74,.08);
-  --purple:   #6a3abf;
-  --purp-d:   rgba(106,58,191,.10);
-  --bc:  rgba(0,100,140,.18);
-  --bh:  rgba(0,100,140,.38);
-  --txt: #0e2236;
-  --tb:  #040e18;
-  --mut: #2e5470;
-  --wh:  #040e18;
-}
-html{scroll-behavior:smooth}
-body{background:var(--obsidian);color:var(--txt);font-family:'Syne',sans-serif;overflow-x:hidden;cursor:none;transition:background .4s,color .4s}
-html.light body{cursor:auto}
-html.light #cdot,html.light #cring{display:none}
-html.light .sgrid{background-image:linear-gradient(rgba(0,100,140,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(0,100,140,.06) 1px,transparent 1px)}
-html.light .svig{background:radial-gradient(ellipse 100% 100% at 50% 50%,transparent 45%,rgba(238,243,249,.6) 100%)}
-#cdot{position:fixed;width:8px;height:8px;background:var(--cyan);border-radius:50%;pointer-events:none;z-index:10000;transform:translate(-50%,-50%);box-shadow:0 0 12px var(--cyan);transition:width .15s,height .15s,background .2s}
-#cring{position:fixed;width:40px;height:40px;border:1px solid rgba(0,229,255,.5);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:width .22s,height .22s,border-color .2s}
-#cdot.h{width:16px;height:16px;background:var(--gold)}
-#cring.h{width:58px;height:58px;border-color:rgba(245,197,24,.5)}
-.sgrid{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(0,229,255,.026) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.026) 1px,transparent 1px);background-size:64px 64px;mask-image:radial-gradient(ellipse 90% 90% at 50% 50%,black 30%,transparent 100%)}
-.stop{position:fixed;top:0;left:0;right:0;height:55vh;background:radial-gradient(ellipse 80% 100% at 50% 0%,rgba(0,229,255,.038),transparent 70%);pointer-events:none;z-index:1}
-.slines{position:fixed;inset:0;z-index:3;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.016) 3px,rgba(0,0,0,.016) 4px)}
-.svig{position:fixed;inset:0;z-index:3;pointer-events:none;background:radial-gradient(ellipse 100% 100% at 50% 50%,transparent 45%,rgba(3,7,13,.75) 100%)}
-.wrap{position:relative;z-index:10;max-width:1400px;margin:0 auto;padding:0 40px 100px}
-@media(max-width:1200px){.wrap{padding:0 24px 100px}}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>SniperTrader · USME Checkout</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #f5f7fb;
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
+      padding: 2rem 1.5rem 4rem;
+      color: #0b1b2b;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      max-width: 1120px;
+      width: 100%;
+    }
 
-/* navigation */
-nav{position:fixed;top:0;left:0;right:0;z-index:500;padding:18px 40px;display:flex;justify-content:space-between;align-items:center;background:linear-gradient(to bottom,rgba(3,7,13,.92),transparent);backdrop-filter:blur(10px);transition:background .3s}
-nav.solid{background:rgba(3,7,13,.96);border-bottom:1px solid rgba(0,229,255,.08)}
-html.light nav{background:linear-gradient(to bottom,rgba(238,243,249,.98),rgba(238,243,249,.9));backdrop-filter:blur(10px);border-bottom:1px solid rgba(0,100,140,.12)}
-html.light nav.solid{background:rgba(238,243,249,.98);border-bottom:1px solid rgba(0,100,140,.2)}
-.nbrand{font-family:'Orbitron',sans-serif;font-size:15px;font-weight:900;letter-spacing:3px;color:var(--wh);text-transform:uppercase}
-.nbrand span{color:var(--cyan)}
-.nlinks{display:flex;gap:8px}
-.nlink{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--mut);padding:7px 14px;border:1px solid transparent;cursor:pointer}
-.nlink:hover{color:var(--cyan);border-color:rgba(0,229,255,.22)}
-.npill{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;background:rgba(245,197,24,.08);border:1px solid rgba(245,197,24,.28);color:var(--gold);padding:6px 16px;border-radius:2px}
-.theme-toggle{position:relative;width:56px;height:28px;background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.3);border-radius:14px;cursor:pointer}
-.theme-toggle .tknob{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#00e5ff,#0088aa);transition:transform .35s;display:flex;align-items:center;justify-content:center}
-.theme-toggle .tknob::after{content:'🌙';font-size:11px}
-html.light .theme-toggle{background:rgba(255,200,0,.08);border-color:rgba(255,180,0,.4)}
-html.light .theme-toggle .tknob{transform:translateX(28px);background:linear-gradient(135deg,#ffd700,#ff9900)}
-html.light .theme-toggle .tknob::after{content:'☀️'}
+    /* header / brand */
+    .brand {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2.2rem;
+      flex-wrap: wrap;
+      gap: 0.8rem 1.5rem;
+    }
+    .brand h1 {
+      font-weight: 700;
+      font-size: 1.6rem;
+      letter-spacing: -0.02em;
+      color: #0b1b2b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .brand h1 span { color: #0066ff; }
+    .brand-tag {
+      background: #eef2f6;
+      padding: 0.4rem 1.2rem;
+      border-radius: 40px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      color: #1f3a57;
+    }
+    .platform-tabs {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 2.2rem;
+      border-bottom: 1px solid #dce3ec;
+      padding-bottom: 0.75rem;
+    }
+    .platform-tab {
+      background: transparent;
+      border: none;
+      padding: 0.5rem 1.2rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      border-radius: 40px;
+      color: #4a627a;
+      cursor: pointer;
+      transition: 0.2s;
+      font-family: 'Inter', sans-serif;
+    }
+    .platform-tab:hover { background: #e9eef4; color: #0b1b2b; }
+    .platform-tab.active {
+      background: #0b1b2b;
+      color: white;
+    }
 
-/* layout core */
-.slbl{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:5px;color:var(--cyan);margin-bottom:12px;display:flex;align-items:center;gap:14px}
-.slbl::before{content:'';width:28px;height:1px;background:var(--cyan)}
-.stit{font-family:'Orbitron',sans-serif;font-size:clamp(28px,3vw,42px);font-weight:900;color:var(--wh);margin-bottom:28px}
-.stit .c{color:var(--cyan)}.stit .g{color:var(--gold)}
-.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
-@media(max-width:1000px){.g3{grid-template-columns:1fr 1fr}}
-@media(max-width:680px){.g3{grid-template-columns:1fr}}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:28px}
-@media(max-width:880px){.g2{grid-template-columns:1fr}}
+    /* two‑card row */
+    .plan-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin: 1.8rem 0 2.5rem;
+    }
+    @media (max-width: 700px) {
+      .plan-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+    }
 
-/* product cards - cleaner layout */
-.platform-card{background:var(--glass);border:1px solid var(--bc);border-radius:24px;padding:24px;backdrop-filter:blur(20px);transition:transform .25s,border-color .25s;height:100%}
-.platform-card:hover{border-color:var(--bh);transform:translateY(-4px)}
-.platform-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;padding-bottom:12px;border-bottom:1px solid rgba(0,229,255,.15)}
-.platform-name{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:800;color:var(--wh)}
-.platform-badge{background:var(--cyan-d);color:var(--cyan);font-family:'Space Mono',monospace;font-size:8px;padding:4px 12px;border-radius:20px}
-.product-item{margin-bottom:28px;border-radius:16px;background:rgba(0,0,0,.2);padding:4px}
-.product-item:last-child{margin-bottom:0}
-.product-title{font-family:'Orbitron',sans-serif;font-size:15px;font-weight:700;color:var(--cyan);margin:12px 12px 8px 12px;letter-spacing:-0.2px}
-.pricing-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 12px 12px 12px}
-.price-card{background:rgba(0,0,0,.25);border-radius:14px;padding:12px;transition:all .2s;border:1px solid transparent}
-.price-card:hover{background:rgba(0,229,255,.05);border-color:rgba(0,229,255,.2)}
-.price-amount{font-size:22px;font-weight:800;color:var(--tb);margin-bottom:4px}
-.price-amount small{font-size:11px;font-weight:400;color:var(--txt)}
-.price-features{list-style:none;margin:8px 0 12px;font-size:10px;color:var(--txt);line-height:1.5}
-.price-features li{padding:2px 0 2px 14px;position:relative}
-.price-features li::before{content:'▹';position:absolute;left:0;color:var(--cyan);font-size:9px}
-.select-plan-btn{background:rgba(0,229,255,.12);border:1px solid var(--cyan);color:var(--cyan);font-family:'Space Mono',monospace;font-size:10px;font-weight:700;padding:6px 12px;border-radius:30px;width:100%;cursor:pointer;transition:all .2s;margin-top:6px}
-.select-plan-btn:hover{background:rgba(0,229,255,.3);color:#000;box-shadow:0 0 8px var(--cyan)}
+    .plan-card {
+      background: white;
+      border-radius: 28px;
+      padding: 2rem 1.8rem 2.2rem;
+      box-shadow: 0 8px 28px rgba(0,20,40,0.06);
+      border: 1px solid #e8edf4;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+    }
+    .plan-card:hover {
+      border-color: #b6ccff;
+      box-shadow: 0 12px 32px rgba(0,60,180,0.08);
+    }
+    .plan-card .badge {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: #eef4ff;
+      color: #0066ff;
+      padding: 0.2rem 1rem;
+      border-radius: 40px;
+      align-self: flex-start;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+    .plan-card .badge.gold {
+      background: #fef2d6;
+      color: #b2700a;
+    }
+    .plan-name {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.4rem;
+    }
+    .plan-price {
+      font-size: 2.3rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #0b1b2b;
+      margin: 0.4rem 0 0.2rem;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .plan-price small {
+      font-size: 1rem;
+      font-weight: 500;
+      color: #4f6b86;
+    }
+    .plan-desc {
+      color: #2e4a67;
+      font-size: 0.9rem;
+      margin-bottom: 0.6rem;
+    }
+    .feature-list {
+      list-style: none;
+      margin: 1rem 0 1.6rem;
+      flex: 1;
+    }
+    .feature-list li {
+      padding: 0.35rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      color: #1b344d;
+    }
+    .feature-list li::before {
+      content: "✓";
+      color: #0066ff;
+      font-weight: 700;
+      font-size: 1rem;
+    }
+    .btn-primary {
+      background: #0b1b2b;
+      border: none;
+      padding: 0.9rem 1.2rem;
+      border-radius: 60px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: white;
+      cursor: pointer;
+      transition: 0.15s;
+      font-family: 'Inter', sans-serif;
+      margin-top: 0.5rem;
+      width: 100%;
+      text-align: center;
+    }
+    .btn-primary:hover { background: #1e3450; transform: scale(1.01); }
+    .btn-primary.outline {
+      background: transparent;
+      color: #0b1b2b;
+      border: 1px solid #cbd7e6;
+    }
+    .btn-primary.outline:hover { background: #f0f4fa; border-color: #8aa3c0; }
 
-.extra-product{background:linear-gradient(135deg,var(--glass),var(--glass2));border-radius:20px;padding:28px;margin-top:20px}
-.cart-summary{position:sticky;top:100px;background:var(--glass);border:1px solid var(--gold-g);border-radius:24px;padding:28px;backdrop-filter:blur(24px)}
-.cart-item{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(0,229,255,.1);font-size:13px}
-.cart-total{font-family:'Orbitron',sans-serif;font-size:24px;color:var(--gold);margin:20px 0}
-.checkout-btn{background:linear-gradient(135deg,var(--cyan),#0088aa);border:none;width:100%;padding:14px;font-family:'Orbitron',sans-serif;font-weight:800;border-radius:40px;color:#000;cursor:pointer;transition:all .2s}
-.checkout-btn:hover{transform:scale(1.01);box-shadow:0 0 20px var(--cyan);}
-.platform-banner{display:flex;justify-content:center;gap:32px;margin:32px 0 40px;flex-wrap:wrap;}
-.platform-logo{background:rgba(0,0,0,.3);backdrop-filter:blur(8px);border-radius:60px;padding:8px 24px;font-family:'Space Mono',monospace;font-weight:700;letter-spacing:2px;border:1px solid var(--bc);color:var(--txt);transition:all .2s;display:inline-flex;align-items:center;gap:12px;}
-.platform-logo span{font-size:24px;}
-.platform-logo:hover{border-color:var(--cyan);background:rgba(0,229,255,.1);transform:translateY(-2px);}
-.div{height:1px;margin:50px 0;background:linear-gradient(90deg,transparent,rgba(0,229,255,.2) 20%,rgba(0,229,255,.6) 50%,rgba(0,229,255,.2) 80%,transparent)}
-.payment-methods{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:16px;margin-top:24px;padding-top:16px;border-top:1px solid rgba(0,229,255,.15);font-family:'Space Mono',monospace;font-size:10px;color:var(--txt)}
-.payment-icon{display:inline-flex;align-items:center;gap:8px;background:rgba(0,0,0,.3);padding:6px 14px;border-radius:40px;backdrop-filter:blur(4px);cursor:pointer;transition:all .2s}
-.payment-icon.active{border:1px solid var(--cyan);background:rgba(0,229,255,.2);box-shadow:0 0 8px var(--cyan);}
-.payment-icon span{font-size:14px;font-weight:600;}
-.crypto-address-area{background:rgba(0,0,0,.4);border-radius:16px;padding:14px;margin-top:16px;text-align:center;font-size:11px;font-family:'Space Mono';word-break:break-all;border:1px dashed var(--gold);}
-</style>
+    .platform-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+      color: #5b7a97;
+      margin-bottom: 0.2rem;
+    }
+
+    /* cart summary – minimal */
+    .cart-mini {
+      margin-top: 2.8rem;
+      background: white;
+      border-radius: 40px;
+      padding: 1.2rem 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid #dce3ec;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+      gap: 1rem 1.5rem;
+    }
+    .cart-mini .items {
+      display: flex;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+    .cart-mini .items .item-pill {
+      background: #f0f4fa;
+      padding: 0.2rem 1rem 0.2rem 1.2rem;
+      border-radius: 40px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .cart-mini .items .item-pill button {
+      background: none;
+      border: none;
+      color: #8f9fb2;
+      font-size: 1.1rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .cart-mini .items .item-pill button:hover { color: #cc2233; }
+    .cart-total {
+      font-weight: 700;
+      font-size: 1.3rem;
+      letter-spacing: -0.01em;
+    }
+    .checkout-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .btn-checkout {
+      background: #0066ff;
+      border: none;
+      padding: 0.6rem 1.8rem;
+      border-radius: 60px;
+      font-weight: 700;
+      color: white;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: 0.15s;
+      font-family: 'Inter', sans-serif;
+    }
+    .btn-checkout:hover { background: #004fd1; transform: scale(1.02); }
+    .btn-checkout:disabled { opacity: 0.4; pointer-events: none; }
+
+    .crypto-toggle {
+      background: #f0f4fa;
+      border: 1px solid #d0dcec;
+      border-radius: 40px;
+      padding: 0.3rem 1.2rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: 0.1s;
+      font-family: 'Inter', sans-serif;
+      color: #1f3a57;
+    }
+    .crypto-toggle.active {
+      background: #0b1b2b;
+      border-color: #0b1b2b;
+      color: white;
+    }
+    .crypto-addr {
+      background: #f5f8fc;
+      padding: 0.3rem 0.9rem;
+      border-radius: 40px;
+      font-size: 0.75rem;
+      font-family: monospace;
+      border: 1px dashed #b0c8e0;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .crypto-addr button {
+      background: none;
+      border: none;
+      font-weight: 600;
+      color: #0066ff;
+      cursor: pointer;
+      font-size: 0.7rem;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0b1b2b;
+      color: white;
+      padding: 0.6rem 1.8rem;
+      border-radius: 60px;
+      font-weight: 500;
+      font-size: 0.9rem;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+      z-index: 999;
+      transition: opacity 0.25s;
+    }
+
+    .footnote {
+      text-align: center;
+      margin-top: 2.5rem;
+      font-size: 0.75rem;
+      color: #6a85a0;
+      border-top: 1px solid #dce3ec;
+      padding-top: 2rem;
+    }
+  </style>
 </head>
 <body>
-<div id="cdot"></div><div id="cring"></div>
-<div class="sgrid"></div><div class="stop"></div><div class="slines"></div><div class="svig"></div>
+<div class="container" id="app">
 
-<nav id="nav">
-  <a href="/index.html"><div class="nbrand">SNIPER<span>TRADER</span></div></a>
-  <div class="nlinks">
-    <A href="/traderedge_landing.html"><span class="nlink">Ecosystem</span></A>
-   <a href="/usme_products.html"><span class="nlink">USME</span></a>
-    <span class="nlink">Checkout</span>
-  </div>
-  <div style="display:flex;gap:14px;align-items:center">
-    <button class="theme-toggle" id="themeToggle"><span class="tknob"></span></button>
-    <div class="npill">Crypto · Fiat Checkout</div>
-  </div>
-</nav>
-
-<div class="wrap">
-  <div style="margin-top:120px;"></div>
-  <div class="slbl"><span>₿</span> Crypto & Secure Checkout</div>
-  <h1 class="stit">USME Indicators · <span class="c">ThinkScript</span> / <span class="g">PineScript</span> / <span class="c">NinjaScript</span></h1>
-  
-  <!-- Platform logos banner -->
-  <div class="platform-banner">
-    <div class="platform-logo"><span>📊</span> thinkorswim</div>
-    <div class="platform-logo"><span>📈</span> TradingView</div>
-    <div class="platform-logo"><span>⚙️</span> NinjaTrader</div>
+  <!-- brand -->
+  <div class="brand">
+    <h1>⚡ Sniper<span>Trader</span>.ai</h1>
+    <div class="brand-tag">USME · Pivot Suite</div>
   </div>
 
-  <!-- THREE CLEAN PLATFORM BLOCKS -->
-  <div class="g3">
-    <!-- ThinkScript Block -->
-    <div class="platform-card">
-      <div class="platform-header"><div class="platform-name">thinkorswim</div><div class="platform-badge">ThinkScript</div></div>
-      <div class="product-item">
-        <div class="product-title">NoRepainting Pivot</div>
-        <div class="pricing-row">
-          <div class="price-card"><div class="price-amount">$79 <small>/month</small></div><ul class="price-features"><li>2 weeks free trial</li><li>Free 1 month TraderEdge</li></ul><button class="select-plan-btn" data-name="NoRepainting Pivot (ThinkScript)" data-price="79" data-script="thinkscript">Select Monthly</button></div>
-          <div class="price-card"><div class="price-amount">$599 <small>/year</small></div><ul class="price-features"><li>2 weeks trial + 2 mo free</li><li>Free ebook + 3 mo TraderEdge</li></ul><button class="select-plan-btn" data-name="NoRepainting Pivot (ThinkScript)" data-price="599" data-script="thinkscript">Select Annual</button></div>
-        </div>
-      </div>
-      <div class="product-item">
-        <div class="product-title">ICT Foundation</div>
-        <div class="pricing-row">
-          <div class="price-card"><div class="price-amount">$199 <small>/month</small></div><ul class="price-features"><li>2 weeks free trial</li><li>Free 1 month TraderEdge</li></ul><button class="select-plan-btn" data-name="ICT Foundation (ThinkScript)" data-price="199" data-script="thinkscript">Select Monthly</button></div>
-          <div class="price-card"><div class="price-amount">$1,999 <small>/year</small></div><ul class="price-features"><li>2 weeks trial + 2 mo free</li><li>Free ebook + 1 year TraderEdge</li></ul><button class="select-plan-btn" data-name="ICT Foundation (ThinkScript)" data-price="1999" data-script="thinkscript">Select Annual</button></div>
-        </div>
-      </div>
-      <div class="product-item">
-        <div class="product-title">VWAP Elite Suite</div>
-        <div class="pricing-row">
-          <div class="price-card"><div class="price-amount">$479 <small>/month</small></div><ul class="price-features"><li>2 weeks free trial</li><li>Free 1 month TraderEdge</li></ul><button class="select-plan-btn" data-name="VWAP Elite Suite (ThinkScript)" data-price="479" data-script="thinkscript">Select Monthly</button></div>
-          <div class="price-card"><div class="price-amount">$4,700 <small>/year</small></div><ul class="price-features"><li>2 weeks trial + 2 mo free</li><li>Free ebook + 1 year TraderEdge</li></ul><button class="select-plan-btn" data-name="VWAP Elite Suite (ThinkScript)" data-price="4700" data-script="thinkscript">Select Annual</button></div>
-        </div>
-      </div>
+  <!-- platform tabs -->
+  <div class="platform-tabs" id="platformTabs">
+    <button class="platform-tab active" data-platform="thinkscript">📊 thinkorswim</button>
+    <button class="platform-tab" data-platform="pinescript">📈 TradingView</button>
+    <button class="platform-tab" data-platform="ninjascript">⚙️ NinjaTrader</button>
+  </div>
+
+  <!-- dynamic plan cards -->
+  <div class="plan-grid" id="planGrid">
+    <!-- rendered by JS -->
+  </div>
+
+  <!-- minimal cart -->
+  <div class="cart-mini" id="cartMini">
+    <div class="items" id="cartItems">
+      <span style="color:#4f6b86;">Cart</span>
+      <span id="emptyCartMsg" style="color:#8aa0b8;">empty</span>
     </div>
-
-    <!-- PineScript Block -->
-    <div class="platform-card">
-      <div class="platform-header"><div class="platform-name">TradingView</div><div class="platform-badge">PineScript</div></div>
-      <div class="product-item">
-        <div class="product-title">NoRepainting Pivot</div>
-        <div class="pricing-row">
-          <div class="price-card"><div class="price-amount">$79 <small>/month</small></div><ul class="price-features"><li>2 weeks free trial</li><li>Free 1 month TraderEdge</li></ul><button class="select-plan-btn" data-name="NoRepainting Pivot (PineScript)" data-price="79" data-script="pinescript">Select Monthly</button></div>
-          <div class="price-card"><div class="price-amount">$599 <small>/year</small></div><ul class="price-features"><li>2 weeks trial + 2 mo free</li><li>Free ebook + 3 mo TraderEdge</li></ul><button class="select-plan-btn" data-name="NoRepainting Pivot (PineScript)" data-price="599" data-script="pinescript">Select Annual</button></div>
-        </div>
-      </div>
-      <div class="product-item">
-        <div class="product-title">ICT Foundation</div>
-        <div class="pricing-row">
-          <div class="price-card"><div class="price-amount">$199 <small>/month</small></div><ul class="price-features"><li>2 weeks free trial</li><li>Free 1 month TraderEdge</li></ul><button class="select-plan-btn" data-name="ICT Foundation (PineScript)" data-price="199" data-script="pinescript">Select Monthly</button></div>
-          <div class="price-card"><div class="price-amount">$1,999 <small>/year</small></div><ul class="price-features"><li>2 weeks trial + 2 mo free</li><li>Free ebook + 1 year TraderEdge</li></ul><button class="select-plan-btn" data-name="ICT Foundation (PineScript)" data-price="1999" data-script="pinescript">Select Annual</button></div>
-        </div>
-      </div>
-      <div class="product-item">
-        <div class="product-title">VWAP Elite Suite</div>
-        <div class="pricing-row">
-          <div class="price-card"><div class="price-amount">$479 <small>/month</small></div><ul class="price-features"><li>2 weeks free trial</li><li>Free 1 month TraderEdge</li></ul><button class="select-plan-btn" data-name="VWAP Elite Suite (PineScript)" data-price="479" data-script="pinescript">Select Monthly</button></div>
-          <div class="price-card"><div class="price-amount">$4,700 <small>/year</small></div><ul class="price-features"><li>2 weeks trial + 2 mo free</li><li>Free ebook + 1 year TraderEdge</li></ul><button class="select-plan-btn" data-name="VWAP Elite Suite (PineScript)" data-price="4700" data-script="pinescript">Select Annual</button></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- NinjaScript Block -->
-    <div class="platform-card">
-      <div class="platform-header"><div class="platform-name">NinjaTrader</div><div class="platform-badge">NinjaScript</div></div>
-      <div class="product-item">
-        <div class="product-title">NoRepainting Pivot</div>
-        <div class="pricing-row">
-          <div class="price-card"><div class="price-amount">$79 <small>/month</small></div><ul class="price-features"><li>2 weeks free trial</li><li>Free 1 month TraderEdge</li></ul><button class="select-plan-btn" data-name="NoRepainting Pivot (NinjaScript)" data-price="79" data-script="ninjascript">Select Monthly</button></div>
-          <div class="price-card"><div class="price-amount">$599 <small>/year</small></div><ul class="price-features"><li>2 weeks trial + 2 mo free</li><li>Free ebook + 3 mo TraderEdge</li></ul><button class="select-plan-btn" data-name="NoRepainting Pivot (NinjaScript)" data-price="599" data-script="ninjascript">Select Annual</button></div>
-        </div>
-      </div>
-      <div class="product-item">
-        <div class="product-title">ICT Foundation</div>
-        <div class="pricing-row">
-          <div class="price-card"><div class="price-amount">$199 <small>/month</small></div><ul class="price-features"><li>2 weeks free trial</li><li>Free 1 month TraderEdge</li></ul><button class="select-plan-btn" data-name="ICT Foundation (NinjaScript)" data-price="199" data-script="ninjascript">Select Monthly</button></div>
-          <div class="price-card"><div class="price-amount">$1,999 <small>/year</small></div><ul class="price-features"><li>2 weeks trial + 2 mo free</li><li>Free ebook + 1 year TraderEdge</li></ul><button class="select-plan-btn" data-name="ICT Foundation (NinjaScript)" data-price="1999" data-script="ninjascript">Select Annual</button></div>
-        </div>
-      </div>
-      <div class="product-item">
-        <div class="product-title">VWAP Elite Suite</div>
-        <div class="pricing-row">
-          <div class="price-card"><div class="price-amount">$479 <small>/month</small></div><ul class="price-features"><li>2 weeks free trial</li><li>Free 1 month TraderEdge</li></ul><button class="select-plan-btn" data-name="VWAP Elite Suite (NinjaScript)" data-price="479" data-script="ninjascript">Select Monthly</button></div>
-          <div class="price-card"><div class="price-amount">$4,700 <small>/year</small></div><ul class="price-features"><li>2 weeks trial + 2 mo free</li><li>Free ebook + 1 year TraderEdge</li></ul><button class="select-plan-btn" data-name="VWAP Elite Suite (NinjaScript)" data-price="4700" data-script="ninjascript">Select Annual</button></div>
-        </div>
-      </div>
+    <div class="checkout-actions">
+      <span class="cart-total" id="cartTotal">$0</span>
+      <button class="crypto-toggle" id="cryptoToggle">₿ Crypto</button>
+      <button class="btn-checkout" id="checkoutBtn">Checkout →</button>
     </div>
   </div>
 
-  <!-- Extra standalone products -->
-  <div class="div"></div>
-  <div class="g2">
-    <div class="extra-product">
-      <div class="product-title" style="font-size:20px; margin-bottom:16px;">🧠 TraderEdge Psych App</div>
-      <div class="pricing-row" style="grid-template-columns:1fr 1fr; gap:16px;">
-        <div class="price-card"><div class="price-amount">$29 <small>/month</small></div><ul class="price-features"><li>2 weeks free trial</li><li>Psych OS + Claude journal</li></ul><button class="select-plan-btn" data-standalone="psych-monthly" data-name="TraderEdge Psych App (Monthly)" data-price="29">Select Monthly</button></div>
-        <div class="price-card"><div class="price-amount">$249 <small>/year</small></div><ul class="price-features"><li>Free 1 year access</li><li>Save 28% vs monthly</li></ul><button class="select-plan-btn" data-standalone="psych-annual" data-name="TraderEdge Psych App (Annual)" data-price="249">Select Annual</button></div>
-      </div>
-    </div>
-    <div class="extra-product">
-      <div class="product-title" style="font-size:20px; margin-bottom:16px;">📘 From Broke to Funded</div>
-      <div class="pricing-row" style="grid-template-columns:1fr;">
-        <div class="price-card"><div class="price-amount">$19 <small>one-time</small></div><ul class="price-features"><li>Prop blueprint + 30-day roadmap</li><li>Immediate PDF + video</li></ul><button class="select-plan-btn" data-onetime="ebook" data-name="From Broke to Funded eBook" data-price="19">Add to Cart</button></div>
-      </div>
-    </div>
+  <!-- crypto panel (hidden by default) -->
+  <div id="cryptoPanel" style="display:none; margin-top:0.8rem; background:#f0f6fe; border-radius:60px; padding:0.5rem 1.5rem; border:1px solid #c0d6f0; align-items:center; gap:1rem; flex-wrap:wrap; justify-content:center;">
+    <span style="font-weight:500; font-size:0.85rem;">⚡ SNIPER Treasury</span>
+    <span class="crypto-addr">0x3A7F...cE9bD2F1aE <button id="copyAddrBtn">copy</button></span>
+    <button id="simulateCryptoBtn" style="background:#0b1b2b; border:none; border-radius:60px; color:white; padding:0.3rem 1.2rem; font-weight:600; cursor:pointer;">Simulate payment</button>
   </div>
 
-  <!-- Cart Summary -->
-  <div class="div"></div>
-  <div class="cart-summary" id="cartSummary">
-    <h3 style="font-family:'Orbitron';font-size:18px;color:var(--cyan);margin-bottom:16px;">🛒 Order Summary</h3>
-    <div id="cartItemsList" style="min-height:80px;"></div>
-    <div class="cart-total" id="cartTotal">$0.00</div>
-    
-    <div style="margin:20px 0 12px 0;">
-      <div style="font-family:'Space Mono';font-size:10px;letter-spacing:2px;margin-bottom:12px;">SELECT PAYMENT METHOD</div>
-      <div class="payment-methods">
-        <div class="payment-icon" data-method="card"><span>💳</span> Credit Card</div>
-        <div class="payment-icon" data-method="paypal"><span>🅿️</span> PayPal</div>
-        <div class="payment-icon" data-method="stripe"><span>⚡</span> Stripe</div>
-        <div class="payment-icon" data-method="apple"><span>🍎</span> Apple Pay</div>
-        <div class="payment-icon" data-method="crypto"><span>₿</span> Crypto</div>
-      </div>
-    </div>
-
-    <div id="cryptoPaymentPanel" style="display:none; background:rgba(0,0,0,.3); border-radius:16px; padding:16px; margin:12px 0;">
-      <div style="font-family:'Orbitron';font-size:13px;color:var(--gold);margin-bottom:8px;">⚡ CRYPTO PAYMENT</div>
-      <div class="crypto-address-area">
-        <div>📡 SNIPER Treasury:</div>
-        <code>0x3A7F...cE9bD2F1aE</code>
-        <button id="copyCryptoAddr" style="background:none; border:1px solid var(--cyan); color:var(--cyan); margin-left:10px; padding:4px 8px; border-radius:20px; font-size:10px; cursor:pointer;">Copy</button>
-        <button id="simulateCryptoPayment" style="background:var(--gold); border:none; border-radius:40px; margin-top:14px; padding:8px; width:100%; font-weight:bold; cursor:pointer;">✅ Simulate Payment</button>
-      </div>
-    </div>
-
-    <button id="checkoutBtn" class="checkout-btn">Proceed to Secure Checkout →</button>
-    <div style="font-size:9px;text-align:center;margin-top:12px;">SSL encrypted · Crypto (BTC/ETH/USDC) · Instant delivery</div>
-  </div>
+  <div class="footnote">SSL encrypted · Crypto (BTC/ETH/USDC) · Instant delivery</div>
 </div>
 
-<footer style="position:relative;margin-top:80px;padding:40px 0;border-top:1px solid var(--bc);text-align:center;">
-  <div class="footer-copy">© 2026 <span>SniperTrader.ai</span> — USME Intelligence Suite | SNIPER Treasury crypto gateway</div>
-</footer>
-
 <script>
-(function(){
-  let cart = [];
-  const cartContainer = document.getElementById('cartItemsList');
-  const totalSpan = document.getElementById('cartTotal');
-  let selectedMethod = 'card';
-  const cryptoPanel = document.getElementById('cryptoPaymentPanel');
+  (function() {
+    // ---------- DATA ----------
+    const platformMap = {
+      thinkscript: { label: 'thinkorswim', script: 'ThinkScript' },
+      pinescript:  { label: 'TradingView', script: 'PineScript' },
+      ninjascript: { label: 'NinjaTrader', script: 'NinjaScript' }
+    };
 
-  function updateCartUI() {
-    if(cart.length === 0){ cartContainer.innerHTML = '<div style="padding:12px 0;">No items selected</div>'; totalSpan.innerText = '$0.00'; return; }
-    let html = '', total = 0;
-    cart.forEach((item, idx) => { total += item.price; html += `<div class="cart-item"><span>${item.name}</span><span>$${item.price} <button style="background:none;border:none;color:var(--red);cursor:pointer;" data-remove="${idx}">✕</button></span></div>`; });
-    cartContainer.innerHTML = html; totalSpan.innerText = `$${total.toFixed(2)}`;
-    document.querySelectorAll('[data-remove]').forEach(btn => { btn.addEventListener('click', (e) => { const idx = parseInt(btn.getAttribute('data-remove')); if(!isNaN(idx)) cart.splice(idx,1); updateCartUI(); }); });
-  }
+    // product catalog: monthly & annual
+    const productCatalog = {
+      thinkscript: {
+        monthly: { name: 'NoRepainting Pivot · Monthly', price: 79, script: 'ThinkScript' },
+        annual:  { name: 'NoRepainting Pivot · Annual', price: 599, script: 'ThinkScript' }
+      },
+      pinescript: {
+        monthly: { name: 'NoRepainting Pivot · Monthly', price: 79, script: 'PineScript' },
+        annual:  { name: 'NoRepainting Pivot · Annual', price: 599, script: 'PineScript' }
+      },
+      ninjascript: {
+        monthly: { name: 'NoRepainting Pivot · Monthly', price: 79, script: 'NinjaScript' },
+        annual:  { name: 'NoRepainting Pivot · Annual', price: 599, script: 'NinjaScript' }
+      }
+    };
 
-  function addToCart(name, price, scriptType = null) {
-    let displayName = scriptType ? `[${scriptType==='thinkscript'?'ThinkScript':scriptType==='pinescript'?'PineScript':'NinjaScript'}] ${name}` : name;
-    cart.push({ name: displayName, price: parseFloat(price) });
+    // additional standalone (always shown)
+    const extras = [
+      { id: 'psych', name: 'TraderEdge Psych App', monthlyPrice: 29, annualPrice: 249 },
+      { id: 'ebook', name: 'From Broke to Funded eBook', oneTime: 19 }
+    ];
+
+    // ---------- STATE ----------
+    let currentPlatform = 'thinkscript';
+    let cart = [];
+
+    // DOM refs
+    const planGrid = document.getElementById('planGrid');
+    const cartItems = document.getElementById('cartItems');
+    const emptyCartMsg = document.getElementById('emptyCartMsg');
+    const cartTotalSpan = document.getElementById('cartTotal');
+    const cryptoPanel = document.getElementById('cryptoPanel');
+    const cryptoToggle = document.getElementById('cryptoToggle');
+    let cryptoVisible = false;
+
+    // ---------- HELPERS ----------
+    function renderPlans(platformKey) {
+      const monthly = productCatalog[platformKey].monthly;
+      const annual = productCatalog[platformKey].annual;
+      const scriptLabel = platformMap[platformKey].script;
+
+      // build two columns
+      const monthlyFeatures = [
+        '2‑Week Free Trial',
+        'USME NoRepaint Pivot',
+        'Elite/Prime/Standard Scoring',
+        'Full 6‑module course',
+        'Divergence scanner',
+        `${scriptLabel} script included`,
+        'Community + trade examples'
+      ];
+      const annualFeatures = [
+        '2‑Week Free Trial',
+        'All monthly features',
+        '2 months free vs monthly',
+        'Priority support',
+        'Lifetime course access',
+        'Annual strategy playbooks',
+        `Save 37% vs monthly`
+      ];
+
+      const html = `
+        <div class="plan-card">
+          <div class="badge">monthly</div>
+          <div class="plan-name">Full Pivot Suite</div>
+          <div class="plan-price">$${monthly.price} <small>/ month</small></div>
+          <div class="plan-desc">cancel anytime · 2‑week trial</div>
+          <ul class="feature-list">
+            ${monthlyFeatures.map(f => `<li>${f}</li>`).join('')}
+          </ul>
+          <button class="btn-primary" data-plan="monthly" data-platform="${platformKey}">Start Free Trial →</button>
+        </div>
+
+        <div class="plan-card">
+          <div class="badge gold">annual · save 37%</div>
+          <div class="plan-name">Annual Pivot Suite</div>
+          <div class="plan-price">$${annual.price} <small>/ year</small></div>
+          <div class="plan-desc">billed yearly · 2‑week trial</div>
+          <ul class="feature-list">
+            ${annualFeatures.map(f => `<li>${f}</li>`).join('')}
+          </ul>
+          <button class="btn-primary" data-plan="annual" data-platform="${platformKey}">Start Yearly Trial →</button>
+        </div>
+      `;
+      planGrid.innerHTML = html;
+
+      // attach listeners for these two plan buttons
+      document.querySelectorAll('#planGrid .btn-primary').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+          const plan = this.dataset.plan; // 'monthly' or 'annual'
+          const platform = this.dataset.platform;
+          const product = productCatalog[platform][plan];
+          if (product) {
+            addToCart(product.name, product.price);
+          } else {
+            // fallback
+            addToCart(`Pivot Suite (${platform})`, plan === 'annual' ? 599 : 79);
+          }
+        });
+      });
+    }
+
+    function addToCart(name, price) {
+      // avoid duplicates? we allow multiple
+      cart.push({ name, price: Number(price) });
+      updateCartUI();
+      showToast(`✓ ${name} added`);
+    }
+
+    function removeFromCart(index) {
+      cart.splice(index, 1);
+      updateCartUI();
+    }
+
+    function updateCartUI() {
+      const total = cart.reduce((sum, item) => sum + item.price, 0);
+      cartTotalSpan.textContent = `$${total}`;
+
+      if (cart.length === 0) {
+        emptyCartMsg.style.display = 'inline';
+        // clear items
+        const pills = cartItems.querySelectorAll('.item-pill');
+        pills.forEach(p => p.remove());
+        return;
+      }
+      emptyCartMsg.style.display = 'none';
+      // rebuild pills
+      const oldPills = cartItems.querySelectorAll('.item-pill');
+      oldPills.forEach(p => p.remove());
+
+      cart.forEach((item, idx) => {
+        const pill = document.createElement('span');
+        pill.className = 'item-pill';
+        pill.innerHTML = `${item.name} $${item.price} <button data-idx="${idx}">✕</button>`;
+        cartItems.appendChild(pill);
+      });
+
+      // attach remove events
+      cartItems.querySelectorAll('.item-pill button').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+          const idx = parseInt(this.dataset.idx);
+          if (!isNaN(idx)) removeFromCart(idx);
+        });
+      });
+    }
+
+    function showToast(msg) {
+      const old = document.querySelector('.toast');
+      if (old) old.remove();
+      const div = document.createElement('div');
+      div.className = 'toast';
+      div.textContent = msg;
+      document.body.appendChild(div);
+      setTimeout(() => div.remove(), 2000);
+    }
+
+    // ---------- PLATFORM TABS ----------
+    document.querySelectorAll('.platform-tab').forEach(tab => {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.platform-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        currentPlatform = this.dataset.platform;
+        renderPlans(currentPlatform);
+      });
+    });
+
+    // ---------- CRYPTO TOGGLE ----------
+    cryptoToggle.addEventListener('click', function() {
+      cryptoVisible = !cryptoVisible;
+      cryptoPanel.style.display = cryptoVisible ? 'flex' : 'none';
+      this.classList.toggle('active', cryptoVisible);
+    });
+
+    // copy address
+    document.getElementById('copyAddrBtn')?.addEventListener('click', function() {
+      const addr = '0x3A7F...cE9bD2F1aE';
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(addr).then(() => showToast('Address copied')).catch(() => alert(addr));
+      } else {
+        alert(addr);
+      }
+    });
+
+    // simulate crypto payment
+    document.getElementById('simulateCryptoBtn')?.addEventListener('click', function() {
+      if (cart.length === 0) { showToast('Cart empty'); return; }
+      const total = cart.reduce((s, i) => s + i.price, 0);
+      showToast(`✅ Crypto payment $${total} simulated · licenses activated`);
+      cart = [];
+      updateCartUI();
+      cryptoPanel.style.display = 'none';
+      cryptoToggle.classList.remove('active');
+      cryptoVisible = false;
+    });
+
+    // ---------- CHECKOUT ----------
+    document.getElementById('checkoutBtn')?.addEventListener('click', function() {
+      if (cart.length === 0) { showToast('Add items first'); return; }
+      const total = cart.reduce((s, i) => s + i.price, 0);
+      if (cryptoVisible) {
+        showToast(`🔐 Crypto checkout: $${total} · send to treasury address`);
+      } else {
+        showToast(`🚀 Order total $${total} · licenses delivered instantly`);
+        cart = [];
+        updateCartUI();
+      }
+    });
+
+    // ---------- INIT ----------
+    renderPlans('thinkscript');
     updateCartUI();
-    const feedback = document.createElement('div'); feedback.innerText = `✓ ${displayName} added`; feedback.style.cssText = 'position:fixed;bottom:20px;right:20px;background:var(--cyan);color:#000;padding:8px 16px;border-radius:40px;z-index:9999;'; document.body.appendChild(feedback); setTimeout(()=>feedback.remove(),1500);
-  }
 
-  document.querySelectorAll('.select-plan-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      const price = btn.getAttribute('data-price');
-      const name = btn.getAttribute('data-name');
-      const script = btn.getAttribute('data-script');
-      const standalone = btn.getAttribute('data-standalone');
-      const onetime = btn.getAttribute('data-onetime');
-      if(name && price) addToCart(name, price, script);
-      else if(standalone === 'psych-monthly') addToCart('TraderEdge Psych App (Monthly)', 29);
-      else if(standalone === 'psych-annual') addToCart('TraderEdge Psych App (Annual)', 249);
-      else if(onetime === 'ebook') addToCart('From Broke to Funded eBook', 19);
-      else { const fb = parseFloat(btn.innerText.match(/\$([0-9,]+)/)?.[1]?.replace(/,/,'') || 0); addToCart('USME Product', fb); }
-    });
-  });
-
-  // Payment selection
-  document.querySelectorAll('.payment-icon').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.payment-icon').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      selectedMethod = btn.getAttribute('data-method');
-      cryptoPanel.style.display = selectedMethod === 'crypto' ? 'block' : 'none';
-    });
-  });
-  document.querySelector('.payment-icon[data-method="card"]').classList.add('active');
-
-  document.getElementById('copyCryptoAddr')?.addEventListener('click', () => {
-    navigator.clipboard?.writeText('0x3A7F...cE9bD2F1aE').then(() => alert('Address copied')).catch(()=>alert('0x3A7F...cE9bD2F1aE'));
-  });
-  document.getElementById('simulateCryptoPayment')?.addEventListener('click', () => {
-    if(cart.length === 0){ alert('Cart empty'); return; }
-    const total = cart.reduce((s,i)=>s+i.price,0);
-    alert(`✅ Crypto payment simulated: $${total} sent to SNIPER Treasury.\nLicenses activated. Thank you!`);
-    cart = []; updateCartUI(); cryptoPanel.style.display = 'none';
-    document.querySelector('.payment-icon[data-method="card"]').click();
-  });
-  document.getElementById('checkoutBtn')?.addEventListener('click', () => {
-    if(cart.length === 0){ alert('Add items to cart'); return; }
-    const total = cart.reduce((s,i)=>s+i.price,0);
-    if(selectedMethod === 'crypto') alert(`🔐 Crypto checkout: $${total}\nSend exact crypto to SNIPER Treasury address.`);
-    else alert(`🚀 Order total $${total} via ${selectedMethod.toUpperCase()}\nLicenses delivered instantly.`);
-    if(selectedMethod !== 'crypto'){ cart = []; updateCartUI(); }
-  });
-
-  // tilt effect
-  document.querySelectorAll('.platform-card, .extra-product, .cart-summary').forEach(el => {
-    el.addEventListener('mousemove', function(e){ const r=this.getBoundingClientRect(); const x=(e.clientX-r.left)/r.width-0.5; const y=(e.clientY-r.top)/r.height-0.5; this.style.transform=`perspective(800px) rotateY(${x*4}deg) rotateX(${y*-3}deg) translateY(-2px)`; });
-    el.addEventListener('mouseleave', function(){ this.style.transform=''; });
-  });
-
-  // theme & cursor
-  const htmlEl = document.documentElement;
-  if(localStorage.getItem('st-theme') === 'light') htmlEl.classList.add('light');
-  document.getElementById('themeToggle')?.addEventListener('click',()=>{ htmlEl.classList.toggle('light'); localStorage.setItem('st-theme', htmlEl.classList.contains('light')?'light':'dark'); });
-  window.addEventListener('scroll',()=>{ document.getElementById('nav')?.classList.toggle('solid', window.scrollY>60); });
-  const dot=document.getElementById('cdot'),ring=document.getElementById('cring');
-  let mx=window.innerWidth/2,my=mx,rx=mx,ry=mx;
-  document.addEventListener('mousemove',(e)=>{ if(!htmlEl.classList.contains('light')){ mx=e.clientX; my=e.clientY; dot.style.left=mx+'px'; dot.style.top=my+'px'; } });
-  function anim(){ if(!htmlEl.classList.contains('light')){ rx+=(mx-rx)*0.12; ry+=(my-ry)*0.12; ring.style.left=rx+'px'; ring.style.top=ry+'px'; } requestAnimationFrame(anim); } anim();
-  document.querySelectorAll('.platform-card, button, .price-card').forEach(el=>{ el.addEventListener('mouseenter',()=>{ dot?.classList.add('h'); ring?.classList.add('h'); }); el.addEventListener('mouseleave',()=>{ dot?.classList.remove('h'); ring?.classList.remove('h'); }); });
-})();
+    // extra: quick add from anything (legacy) – we already have plan buttons.
+    // also handle extra standalone items? we could add but spec wants simple.
+    // add hidden extras? we keep just the two plan cards per platform.
+  })();
 </script>
+
 </body>
 </html>
