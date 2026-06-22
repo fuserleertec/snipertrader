@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SniperTrader USME ICT Foundation Masterplan – Funded Account Blueprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+:root {
+  --bg-body: #040609;
+  --bg-panel: #0c1220;
+  --bg-card: #111827;
+  --border: rgba(0,229,255,0.10);
+  --cyan: #00e5ff;
+  --cyan2: #00b8cc;
+  --gold: #f0c040;
+  --gold2: #b8882a;
+  --green: #00e5a0;
+  --red: #ff4d6a;
+  --white: #edf2fb;
+  --sub: rgba(237,242,251,0.72);
+  --muted: rgba(237,242,251,0.42);
+  --ff-disp: 'Orbitron', monospace;
+  --ff-mono: 'Space Mono', monospace;
+  --ff-body: 'Syne', sans-serif;
+}
+body {
+  background: var(--bg-body);
+  color: var(--white);
+  font-family: var(--ff-body);
+  padding: 40px 20px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.masterplan {
+  max-width: 1200px;
+  width: 100%;
+}
+
+/* Header */
+header {
+  text-align: center;
+  padding: 40px 0 30px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 40px;
+}
+header .badge-row {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+header .pill {
+  font-family: var(--ff-mono);
+  font-size: 0.5rem;
+  letter-spacing: 0.18em;
+  padding: 6px 18px;
+  border-radius: 40px;
+  background: rgba(0,229,255,0.06);
+  border: 1px solid rgba(0,229,255,0.12);
+  color: var(--cyan);
+  text-transform: uppercase;
+}
+header .pill.gold {
+  background: rgba(240,192,64,0.06);
+  border-color: rgba(240,192,64,0.15);
+  color: var(--gold);
+}
+header h1 {
+  font-family: var(--ff-disp);
+  font-size: clamp(1.8rem, 4.5vw, 3.6rem);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+}
+header h1 .cyan { color: var(--cyan); }
+header h1 .gold { color: var(--gold); }
+header .sub {
+  font-family: var(--ff-mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-top: 12px;
+  letter-spacing: 0.12em;
+}
+header .version {
+  font-family: var(--ff-mono);
+  font-size: 0.5rem;
+  color: var(--gold2);
+  margin-top: 8px;
+}
+
+/* Navigation Tabs */
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+.tab-btn {
+  font-family: var(--ff-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 12px 24px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.25s;
+  font-weight: 700;
+  flex: 1;
+  min-width: 140px;
+  text-align: center;
+}
+.tab-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+.tab-btn.active {
+  background: rgba(0,229,255,0.05);
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: 0 0 30px rgba(0,229,255,0.03);
+}
+.tab-btn .num {
+  display: inline-block;
+  background: rgba(0,229,255,0.08);
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  line-height: 22px;
+  text-align: center;
+  font-size: 0.5rem;
+  margin-right: 8px;
+  color: var(--cyan);
+}
+.tab-btn.active .num { background: var(--cyan); color: #000; }
+
+/* Panels */
+.panel {
+  display: none;
+  animation: fadeUp 0.5s ease;
+}
+.panel.active { display: block; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Cards */
+.card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px 32px;
+  margin-bottom: 20px;
+  transition: border-color 0.2s;
+}
+.card:hover { border-color: rgba(0,229,255,0.12); }
+.card-title {
+  font-family: var(--ff-disp);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--cyan);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.card-title .icon { font-size: 1.2rem; }
+.card p, .card li {
+  font-size: 0.9rem;
+  color: var(--sub);
+  line-height: 1.7;
+}
+.card ul, .card ol { padding-left: 24px; margin: 8px 0; }
+.card li { margin-bottom: 6px; }
+.card strong { color: var(--white); }
+
+.highlight-box {
+  background: rgba(0,229,255,0.04);
+  border-left: 3px solid var(--cyan);
+  padding: 14px 18px;
+  border-radius: 0 8px 8px 0;
+  margin: 12px 0;
+}
+.highlight-box.gold { border-left-color: var(--gold); background: rgba(240,192,64,0.04); }
+.highlight-box.green { border-left-color: var(--green); background: rgba(0,229,160,0.04); }
+.highlight-box.red { border-left-color: var(--red); background: rgba(255,77,106,0.04); }
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+@media (max-width: 900px) {
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  .tab-btn { min-width: 100px; padding: 10px 14px; font-size: 0.5rem; }
+  .card { padding: 20px; }
+}
+@media (max-width: 600px) {
+  .tab-btn { flex: 1 1 100%; }
+}
+
+/* Rule Badges */
+.rule-badge {
+  display: inline-block;
+  font-family: var(--ff-mono);
+  font-size: 0.42rem;
+  letter-spacing: 0.1em;
+  padding: 2px 10px;
+  border-radius: 20px;
+  margin-right: 4px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.rule-badge.gold { background: rgba(240,192,64,0.12); color: var(--gold); border: 1px solid rgba(240,192,64,0.15); }
+.rule-badge.cyan { background: rgba(0,229,255,0.08); color: var(--cyan); border: 1px solid rgba(0,229,255,0.12); }
+.rule-badge.green { background: rgba(0,229,160,0.08); color: var(--green); border: 1px solid rgba(0,229,160,0.12); }
+.rule-badge.red { background: rgba(255,77,106,0.08); color: var(--red); border: 1px solid rgba(255,77,106,0.12); }
+
+/* Checklist */
+.checklist { list-style: none; padding: 0; }
+.checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0,229,255,0.04);
+}
+.checklist li:last-child { border-bottom: none; }
+.checklist .step {
+  color: var(--cyan);
+  font-weight: 700;
+  font-family: var(--ff-mono);
+  font-size: 0.7rem;
+  flex-shrink: 0;
+  width: 28px;
+  text-align: center;
+}
+
+/* Score meter */
+.score-meter {
+  background: rgba(0,0,0,0.2);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin: 10px 0;
+}
+.score-bar {
+  height: 6px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+.score-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--cyan), var(--cyan2));
+  width: 0%;
+  transition: width 1s ease;
+}
+.score-fill.elite { background: linear-gradient(90deg, var(--gold), #d4a020); }
+.score-fill.prime { background: linear-gradient(90deg, var(--cyan), var(--cyan2)); }
+.score-fill.standard { background: linear-gradient(90deg, #6a7a8a, #8a9aaa); }
+
+/* SOTD Tier Cards */
+.tier-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin: 16px 0;
+}
+.tier-card {
+  background: rgba(0,0,0,0.2);
+  border-radius: 10px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  text-align: center;
+}
+.tier-card .tier-name {
+  font-family: var(--ff-disp);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.tier-card .tier-name.elite { color: var(--gold); }
+.tier-card .tier-name.prime { color: var(--cyan); }
+.tier-card .tier-name.standard { color: var(--sub); }
+.tier-card .tier-score { font-family: var(--ff-mono); font-size: 0.5rem; color: var(--muted); }
+.tier-card .tier-size { font-family: var(--ff-mono); font-size: 0.65rem; font-weight: 700; margin-top: 6px; }
+@media (max-width: 768px) {
+  .tier-grid { grid-template-columns: 1fr; }
+}
+
+/* Killzone table */
+.killzone-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  color: var(--sub);
+}
+.killzone-table th {
+  text-align: left;
+  padding: 10px 6px;
+  font-family: var(--ff-mono);
+  font-size: 0.55rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-bottom: 1px solid var(--border);
+}
+.killzone-table td {
+  padding: 10px 6px;
+  border-bottom: 1px solid rgba(0,229,255,0.04);
+}
+.killzone-table .time { font-family: var(--ff-mono); color: var(--white); }
+.killzone-table .action { font-weight: 700; }
+.killzone-table .action.buy { color: var(--green); }
+.killzone-table .action.sell { color: var(--red); }
+
+/* Progress bar */
+.progress-bar {
+  height: 4px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 4px;
+  margin-top: 12px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--cyan), var(--cyan2));
+  width: 0%;
+  transition: width 1s ease;
+}
+</style>
+</head>
+<body>
+<div class="masterplan">
+
+<header>
+  <div class="badge-row">
+    <span class="pill">⚡ USME v3.1</span>
+    <span class="pill gold">🏆 Funded Account Blueprint</span>
+    <span class="pill">📊 ICT Foundation</span>
+  </div>
+  <h1>SNIPER<span class="cyan">TRADER</span> <span class="gold">USME</span><br><span style="font-size:0.6em;">ICT FOUNDATION MASTERPLAN</span></h1>
+  <div class="sub">A Strict Mechanical Trading Plan for Clearing Funded Account Challenges</div>
+  <div class="version">v3.1 · SOTD Engine · Killzone Filtering · Smart Money Score™</div>
+</header>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab-btn active" data-panel="setup"><span class="num">1</span> Setup & Filters</button>
+  <button class="tab-btn" data-panel="execution"><span class="num">2</span> Execution Protocol</button>
+  <button class="tab-btn" data-panel="risk"><span class="num">3</span> Risk & Position Sizing</button>
+</div>
+
+<!-- ============================================================ -->
+<!-- PANEL 1: SETUP & FILTERS -->
+<!-- ============================================================ -->
+<div class="panel active" id="panel-setup">
+
+  <div class="card">
+    <div class="card-title"><span class="icon">🎯</span> The USME v3.1 Setup Filter — Mechanical Entry Criteria</div>
+    <p>Every trade must pass <strong>all four filters</strong> before execution. No exceptions. This is the mechanical foundation of the Masterplan.</p>
+
+    <div class="highlight-box gold">
+      <strong>Core Principle:</strong> <em>"We don't predict. We react to confirmed institutional footprint."</em>
+    </div>
+
+    <h3 style="color:var(--gold); margin-top:20px; font-family:var(--ff-mono); font-size:0.7rem; letter-spacing:0.12em;">📋 THE 4-STEP SETUP FILTER</h3>
+    <ul class="checklist">
+      <li>
+        <span class="step">❶</span>
+        <div>
+          <strong>Killzone Confirmation</strong> — <span class="rule-badge cyan">LONDON</span> 2:00–5:00 AM ET or <span class="rule-badge gold">NY</span> 8:30–11:00 AM ET.
+          <span style="display:block; font-size:0.8rem; color:var(--muted); margin-top:4px;">Only trade during these institutional sessions. Off-hours signals are filtered out.</span>
+        </div>
+      </li>
+      <li>
+        <span class="step">❷</span>
+        <div>
+          <strong>HTF Bias Alignment</strong> — Weekly and Daily must agree.
+          <span style="display:block; font-size:0.8rem; color:var(--muted); margin-top:4px;">W:BULL + D:BULL = only longs. W:BEAR + D:BEAR = only shorts. Mixed = no trade.</span>
+        </div>
+      </li>
+      <li>
+        <span class="step">❸</span>
+        <div>
+          <strong>Smart Money Score ≥ 80%</strong> — <span class="rule-badge gold">ELITE</span> (90%+) or <span class="rule-badge cyan">PRIME</span> (80–89%) required.
+          <span style="display:block; font-size:0.8rem; color:var(--muted); margin-top:4px;">The score evaluates confluence: FVG, OB, CHoCH, SMT divergence, and volume profile.</span>
+        </div>
+      </li>
+      <li>
+        <span class="step">❹</span>
+        <div>
+          <strong>Closed Candle Rule</strong> — <span style="color:var(--red);">NEVER</span> enter on a forming candle.
+          <span style="display:block; font-size:0.8rem; color:var(--muted); margin-top:4px;">Wait for the bar to close confirming the setup. Enter on the open of the next candle.</span>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="icon">🕐</span> Killzone Session Rules</div>
+      <table class="killzone-table">
+        <thead>
+          <tr><th>Session</th><th>Time (ET)</th><th>Action</th><th>Preference</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span style="color:var(--cyan);">🇬🇧 London</span></td>
+            <td class="time">2:00 – 5:00 AM</td>
+            <td class="action buy">Primary</td>
+            <td><span style="color:var(--gold);">High</span></td>
+          </tr>
+          <tr>
+            <td><span style="color:var(--gold);">🇺🇸 NY Open</span></td>
+            <td class="time">8:30 – 11:00 AM</td>
+            <td class="action buy">Primary</td>
+            <td><span style="color:var(--gold);">High</span></td>
+          </tr>
+          <tr>
+            <td><span style="color:var(--sub);">🇺🇸 NY Afternoon</span></td>
+            <td class="time">11:00 AM – 2:00 PM</td>
+            <td class="action sell">Secondary</td>
+            <td><span style="color:var(--muted);">Low</span></td>
+          </tr>
+          <tr>
+            <td><span style="color:var(--muted);">🌙 Off-Hours</span></td>
+            <td class="time">All other times</td>
+            <td class="action sell">❌ SKIP</td>
+            <td><span style="color:var(--red);">Avoid</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="highlight-box red" style="margin-top:12px;">
+        <strong>⛔ Hard Rule:</strong> No trades outside London or NY Killzones. This filters out 70% of low-probability setups.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">📊</span> Smart Money Score™ — Confluence Meter</div>
+      <div class="score-meter">
+        <div style="display:flex; justify-content:space-between; font-size:0.7rem; font-family:var(--ff-mono);">
+          <span>Confluence Score</span>
+          <span id="scoreDisplay" style="color:var(--gold);">86%</span>
+        </div>
+        <div class="score-bar"><div class="score-fill prime" id="scoreFill" style="width:86%;"></div></div>
+        <div style="display:flex; justify-content:space-between; font-size:0.5rem; color:var(--muted); margin-top:4px;">
+          <span>0%</span>
+          <span style="color:var(--gold);">ELITE 90%+</span>
+          <span style="color:var(--cyan);">PRIME 80–89%</span>
+          <span>100%</span>
+        </div>
+      </div>
+      <p style="font-size:0.82rem; color:var(--sub);">The score is derived from 5 confluence factors:</p>
+      <ul style="font-size:0.78rem; color:var(--muted); list-style:none; padding:0; margin-top:6px;">
+        <li style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid rgba(0,229,255,0.04);">
+          <span>FVG / OB Alignment</span>
+          <span style="color:var(--cyan);">✓</span>
+        </li>
+        <li style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid rgba(0,229,255,0.04);">
+          <span>CHoCH / BOS Structure</span>
+          <span style="color:var(--cyan);">✓</span>
+        </li>
+        <li style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid rgba(0,229,255,0.04);">
+          <span>SMT Divergence</span>
+          <span style="color:var(--gold);">∼</span>
+        </li>
+        <li style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid rgba(0,229,255,0.04);">
+          <span>Volume Confirmation</span>
+          <span style="color:var(--cyan);">✓</span>
+        </li>
+        <li style="display:flex; justify-content:space-between; padding:4px 0;">
+          <span>HTF Alignment</span>
+          <span style="color:var(--gold);">✓</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card" style="border-color:rgba(0,229,255,0.08);">
+    <div class="card-title" style="color:var(--gold);"><span class="icon">📋</span> Pre-Trade Checklist</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; font-size:0.82rem;">
+      <div style="background:rgba(0,0,0,0.2); border-radius:8px; padding:12px;">
+        <span style="color:var(--cyan);">❶</span> <strong>Killzone active?</strong>
+        <div style="font-size:0.7rem; color:var(--muted);">London or NY session?</div>
+      </div>
+      <div style="background:rgba(0,0,0,0.2); border-radius:8px; padding:12px;">
+        <span style="color:var(--gold);">❷</span> <strong>HTF aligned?</strong>
+        <div style="font-size:0.7rem; color:var(--muted);">W:BULL/D:BULL or W:BEAR/D:BEAR?</div>
+      </div>
+      <div style="background:rgba(0,0,0,0.2); border-radius:8px; padding:12px;">
+        <span style="color:var(--green);">❸</span> <strong>Score ≥ 80%?</strong>
+        <div style="font-size:0.7rem; color:var(--muted);">ELITE or PRIME tier?</div>
+      </div>
+    </div>
+    <div class="highlight-box green" style="margin-top:12px;">
+      <strong>✅ If all three are green:</strong> Proceed to execution protocol. If any are red — wait. Patience is the edge.
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PANEL 2: EXECUTION PROTOCOL -->
+<!-- ============================================================ -->
+<div class="panel" id="panel-execution">
+
+  <div class="card">
+    <div class="card-title"><span class="icon">⚡</span> The USME v3.1 Execution Workflow</div>
+    <p>Once a setup passes the filter, follow this <strong>mechanical execution protocol</strong> without deviation.</p>
+
+    <div class="highlight-box gold">
+      <strong>Key Insight:</strong> "We execute based on tier, not emotion. The SOTD engine tells us the probability — we follow the math."
+    </div>
+
+    <h3 style="color:var(--cyan); margin-top:20px; font-family:var(--ff-mono); font-size:0.7rem; letter-spacing:0.12em;">📋 THE 6-STEP EXECUTION PROTOCOL</h3>
+    <ul class="checklist">
+      <li>
+        <span class="step">❶</span>
+        <div>
+          <strong>Entry Trigger</strong> — Enter on the <strong>open of the next candle</strong> after the signal bar closes.
+          <span style="display:block; font-size:0.8rem; color:var(--muted); margin-top:4px;">Use a limit order at the FVG/OB level for optimal fill.</span>
+        </div>
+      </li>
+      <li>
+        <span class="step">❷</span>
+        <div>
+          <strong>Initial Stop Loss</strong> — Place <strong>1.5x ATR(14)</strong> below the entry for longs, above for shorts.
+          <span style="display:block; font-size:0.8rem; color:var(--muted); margin-top:4px;">This provides room for institutional noise while protecting capital.</span>
+        </div>
+      </li>
+      <li>
+        <span class="step">❸</span>
+        <div>
+          <strong>Position Sizing</strong> — Based on SOTD tier (see Risk Panel).
+          <span style="display:block; font-size:0.8rem; color:var(--muted); margin-top:4px;">ELITE = 0.5% risk, PRIME = 0.35%, STANDARD = 0.2%.</span>
+        </div>
+      </li>
+      <li>
+        <span class="step">❹</span>
+        <div>
+          <strong>Target 1 (T1)</strong> — <span style="color:var(--green);">1.5x risk</span>. Move stop loss to breakeven.
+          <span style="display:block; font-size:0.8rem; color:var(--muted); margin-top:4px;">Lock in protection. No trade becomes a losing trade after T1.</span>
+        </div>
+      </li>
+      <li>
+        <span class="step">❺</span>
+        <div>
+          <strong>Target 2 (T2)</strong> — <span style="color:var(--gold);">3x risk</span>. Take 50% off the table.
+          <span style="display:block; font-size:0.8rem; color:var(--muted); margin-top:4px;">Let the remainder run with a trailing stop.</span>
+        </div>
+      </li>
+      <li>
+        <span class="step">❻</span>
+        <div>
+          <strong>Target 3 (T3)</strong> — <span style="color:var(--gold);">5x risk</span>. Manage with <span class="rule-badge cyan">1.5x ATR</span> trailing stop.
+          <span style="display:block; font-size:0.8rem; color:var(--muted); margin-top:4px;">Let winners run until the trailing stop is hit.</span>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="icon">🎯</span> SOTD Tier Execution Guide</div>
+      <div class="tier-grid">
+        <div class="tier-card" style="border-color:rgba(240,192,64,0.25);">
+          <div class="tier-name elite">ELITE</div>
+          <div class="tier-score">≥ 90% · Gold Bubble</div>
+          <div class="tier-size" style="color:var(--gold);">100% Position</div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-top:6px;">Full conviction. Trail with 1.5x ATR.</div>
+        </div>
+        <div class="tier-card" style="border-color:rgba(0,229,255,0.2);">
+          <div class="tier-name prime">PRIME</div>
+          <div class="tier-score">80–89% · Cyan Bubble</div>
+          <div class="tier-size" style="color:var(--cyan);">75% Position</div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-top:6px;">High confidence. Scale in if price retests.</div>
+        </div>
+        <div class="tier-card" style="border-color:rgba(255,255,255,0.08);">
+          <div class="tier-name standard">STANDARD</div>
+          <div class="tier-score">65–79% · White Bubble</div>
+          <div class="tier-size" style="color:var(--sub);">25–50% Position</div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-top:6px;">Reduce size. Only if all other filters pass.</div>
+        </div>
+      </div>
+      <div class="highlight-box red" style="margin-top:12px;">
+        <strong>⛔ Below 65%:</strong> Automatically discarded. No trade. The SOTD engine filters out low-probability setups.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">📐</span> Trade Management Rules</div>
+      <ul style="list-style:none; padding:0; font-size:0.85rem;">
+        <li style="padding:8px 0; border-bottom:1px solid rgba(0,229,255,0.04); display:flex; gap:10px;">
+          <span style="color:var(--green);">❶</span>
+          <div><strong>Move to Breakeven</strong> — After T1 (1.5x risk), move stop to entry. Now it's a free trade.</div>
+        </li>
+        <li style="padding:8px 0; border-bottom:1px solid rgba(0,229,255,0.04); display:flex; gap:10px;">
+          <span style="color:var(--gold);">❷</span>
+          <div><strong>Partial Take Profit</strong> — At T2 (3x risk), close 50%. Let the rest run.</div>
+        </li>
+        <li style="padding:8px 0; border-bottom:1px solid rgba(0,229,255,0.04); display:flex; gap:10px;">
+          <span style="color:var(--cyan);">❸</span>
+          <div><strong>Trailing Stop</strong> — After T2, activate <span class="rule-badge cyan">1.5x ATR</span> trailing stop on the remainder.</div>
+        </li>
+        <li style="padding:8px 0; display:flex; gap:10px;">
+          <span style="color:var(--red);">❹</span>
+          <div><strong>No Adding</strong> — Never add to a losing position. Never average down. Let the trade play out.</div>
+        </li>
+      </ul>
+      <div class="highlight-box green" style="margin-top:12px;">
+        <strong>📈 The 1:3 Rule:</strong> If a trade cannot reach 1:3 risk-to-reward, it is not worth taking. Skip it.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PANEL 3: RISK & POSITION SIZING -->
+<!-- ============================================================ -->
+<div class="panel" id="panel-risk">
+
+  <div class="card">
+    <div class="card-title"><span class="icon">🛡️</span> Risk Management — Protecting Prop Firm Capital</div>
+    <p>Prop firms have strict drawdown limits. The USME Masterplan is designed to <strong>preserve capital</strong> while systematically growing the account.</p>
+
+    <div class="highlight-box gold">
+      <strong>🎯 The Goal:</strong> Reach <span style="color:var(--gold);">+10% profit</span> while keeping drawdown below <span style="color:var(--green);">8%</span> from peak equity.
+    </div>
+
+    <h3 style="color:var(--gold); margin-top:20px; font-family:var(--ff-mono); font-size:0.7rem; letter-spacing:0.12em;">📋 POSITION SIZING MATRIX (by SOTD Tier)</h3>
+    <div class="tier-grid">
+      <div class="tier-card" style="border-color:rgba(240,192,64,0.25);">
+        <div class="tier-name elite">ELITE</div>
+        <div style="font-family:var(--ff-mono); font-size:1.2rem; color:var(--gold);">0.50%</div>
+        <div style="font-size:0.65rem; color:var(--muted);">Risk per trade</div>
+        <div style="font-size:0.7rem; color:var(--sub); margin-top:4px;">$500 on $100k account</div>
+      </div>
+      <div class="tier-card" style="border-color:rgba(0,229,255,0.2);">
+        <div class="tier-name prime">PRIME</div>
+        <div style="font-family:var(--ff-mono); font-size:1.2rem; color:var(--cyan);">0.35%</div>
+        <div style="font-size:0.65rem; color:var(--muted);">Risk per trade</div>
+        <div style="font-size:0.7rem; color:var(--sub); margin-top:4px;">$350 on $100k account</div>
+      </div>
+      <div class="tier-card" style="border-color:rgba(255,255,255,0.08);">
+        <div class="tier-name standard">STANDARD</div>
+        <div style="font-family:var(--ff-mono); font-size:1.2rem; color:var(--sub);">0.20%</div>
+        <div style="font-size:0.65rem; color:var(--muted);">Risk per trade</div>
+        <div style="font-size:0.7rem; color:var(--sub); margin-top:4px;">$200 on $100k account</div>
+      </div>
+    </div>
+
+    <div style="background:rgba(0,0,0,0.2); border-radius:8px; padding:16px; margin-top:12px;">
+      <div style="display:flex; justify-content:space-between; font-size:0.75rem;">
+        <span style="color:var(--muted);">Starting Balance</span>
+        <span style="color:var(--white);">$100,000</span>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-top:4px;">
+        <span style="color:var(--muted);">Target to Pass</span>
+        <span style="color:var(--gold);">$110,000 (+10%)</span>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-top:4px;">
+        <span style="color:var(--muted);">Max Drawdown</span>
+        <span style="color:var(--red);">-$8,000 (8%)</span>
+      </div>
+      <div class="progress-bar" style="margin-top:8px;">
+        <div class="progress-fill" id="ddFillRisk" style="width:28%;"></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:0.5rem; color:var(--muted); margin-top:4px;">
+        <span>0%</span>
+        <span style="color:var(--red);">8% LIMIT</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="icon">📊</span> The 6 Risk Management Pillars</div>
+      <ul style="list-style:none; padding:0; font-size:0.85rem;">
+        <li style="padding:8px 0; border-bottom:1px solid rgba(0,229,255,0.04); display:flex; gap:10px;">
+          <span style="color:var(--gold);">❶</span>
+          <div><strong>Per-Trade Risk</strong> — Max 0.5% of account. ELITE = 0.5%, PRIME = 0.35%, STANDARD = 0.2%.</div>
+        </li>
+        <li style="padding:8px 0; border-bottom:1px solid rgba(0,229,255,0.04); display:flex; gap:10px;">
+          <span style="color:var(--red);">❷</span>
+          <div><strong>Daily Loss Limit</strong> — Stop trading if you lose <span style="color:var(--red);">1.5%</span> in a day.</div>
+        </li>
+        <li style="padding:8px 0; border-bottom:1px solid rgba(0,229,255,0.04); display:flex; gap:10px;">
+          <span style="color:var(--gold);">❸</span>
+          <div><strong>Weekly Loss Limit</strong> — Max <span style="color:var(--gold);">3%</span> loss per week. If hit, stop trading until Monday.</div>
+        </li>
+        <li style="padding:8px 0; border-bottom:1px solid rgba(0,229,255,0.04); display:flex; gap:10px;">
+          <span style="color:var(--cyan);">❹</span>
+          <div><strong>Drawdown Reset</strong> — Track drawdown from <strong>peak equity</strong>. New high = reset.</div>
+        </li>
+        <li style="padding:8px 0; border-bottom:1px solid rgba(0,229,255,0.04); display:flex; gap:10px;">
+          <span style="color:var(--green);">❺</span>
+          <div><strong>Minimum R:R</strong> — Only take trades with ≥ <span style="color:var(--green);">1:3</span> risk-to-reward.</div>
+        </li>
+        <li style="padding:8px 0; display:flex; gap:10px;">
+          <span style="color:var(--gold);">❻</span>
+          <div><strong>Pause Rule</strong> — After 3 consecutive losses, pause 30 min. Review setups.</div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="card" style="border-color:rgba(0,229,160,0.15); background:rgba(0,229,160,0.02);">
+      <div class="card-title" style="color:var(--green);"><span class="icon">🏆</span> Path to Funded</div>
+      <div style="font-size:0.9rem; color:var(--sub); line-height:1.8;">
+        <p><strong>With a 50% win rate and 1:3 RR:</strong></p>
+        <ul style="padding-left:20px; margin:8px 0;">
+          <li>ELITE signals (0.5% risk): +1.5% per win</li>
+          <li>PRIME signals (0.35% risk): +1.05% per win</li>
+          <li>STANDARD signals (0.2% risk): +0.6% per win</li>
+        </ul>
+        <div style="background:rgba(0,0,0,0.2); border-radius:6px; padding:12px; margin-top:8px;">
+          <strong style="color:var(--gold);">≈ 25–35 winning trades</strong>
+          <span style="display:block; font-size:0.75rem; color:var(--muted);">To reach +10% and pass the challenge</span>
+        </div>
+        <div style="margin-top:8px; font-size:0.75rem; color:var(--muted);">
+          * Assuming a mix of ELITE, PRIME, and STANDARD signals based on market conditions.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="border-color:rgba(240,192,64,0.15); background:rgba(240,192,64,0.02);">
+    <div class="card-title" style="color:var(--gold);"><span class="icon">🧠</span> The Funded Trader Mindset</div>
+    <p style="font-size:0.92rem; line-height:1.8;">
+      <strong style="color:var(--gold);">“The market doesn't care about your P&L. It cares about your process.”</strong>
+    </p>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
+      <span class="rule-badge gold">DISCIPLINE</span>
+      <span class="rule-badge cyan">PATIENCE</span>
+      <span class="rule-badge green">CONSISTENCY</span>
+      <span class="rule-badge red">PROTECT CAPITAL</span>
+    </div>
+    <div style="margin-top:14px; font-size:0.78rem; color:var(--sub);">
+      <strong>Daily Review Checklist:</strong>
+      <ul style="margin-top:4px;">
+        <li>✓ Did I follow the 4-step setup filter?</li>
+        <li>✓ Did I respect my position sizing by SOTD tier?</li>
+        <li>✓ Did I manage the trade according to the protocol?</li>
+        <li>✓ What can I improve tomorrow?</li>
+      </ul>
+    </div>
+    <div style="margin-top:12px; font-family:var(--ff-mono); font-size:0.55rem; color:var(--muted); text-align:center; border-top:1px solid var(--border); padding-top:12px;">
+      Consistency > Aggression. The USME Masterplan is your edge.
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div style="margin-top:48px; padding-top:24px; border-top:1px solid var(--border); text-align:center; font-family:var(--ff-mono); font-size:0.5rem; color:var(--muted); letter-spacing:0.08em;">
+  <span style="color:var(--cyan);">SNIPERTRADER</span> USME ICT FOUNDATION MASTERPLAN v3.1 · Funded Account Blueprint
+  <br>Trade responsibly. Past performance does not guarantee future results.
+</div>
+
+</div>
+
+<script>
+// Tab switching
+const tabs = document.querySelectorAll('.tab-btn');
+const panels = {
+  setup: document.getElementById('panel-setup'),
+  execution: document.getElementById('panel-execution'),
+  risk: document.getElementById('panel-risk')
+};
+
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const panelName = tab.dataset.panel;
+    Object.keys(panels).forEach(key => {
+      panels[key].classList.toggle('active', key === panelName);
+    });
+  });
+});
+
+// Simulate Score Meter (cosmetic)
+const scoreFill = document.getElementById('scoreFill');
+const scoreDisplay = document.getElementById('scoreDisplay');
+let score = 86;
+setInterval(() => {
+  score += (Math.random() - 0.48) * 6;
+  score = Math.max(55, Math.min(97, score));
+  scoreFill.style.width = score + '%';
+  scoreDisplay.textContent = Math.round(score) + '%';
+  // Update class based on score
+  scoreFill.className = 'score-fill';
+  if (score >= 90) scoreFill.classList.add('elite');
+  else if (score >= 80) scoreFill.classList.add('prime');
+  else scoreFill.classList.add('standard');
+  // Update color
+  if (score >= 90) scoreDisplay.style.color = 'var(--gold)';
+  else if (score >= 80) scoreDisplay.style.color = 'var(--cyan)';
+  else scoreDisplay.style.color = 'var(--muted)';
+}, 3500);
+
+// Simulate drawdown progress (cosmetic)
+const ddFillRisk = document.getElementById('ddFillRisk');
+let ddProgress = 28;
+setInterval(() => {
+  ddProgress += (Math.random() - 0.48) * 5;
+  ddProgress = Math.max(8, Math.min(65, ddProgress));
+  ddFillRisk.style.width = ddProgress + '%';
+}, 4000);
+</script>
+
+</body>
+</html>
