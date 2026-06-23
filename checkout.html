@@ -1,596 +1,1205 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>SniperTrader · USME Checkout</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      background: #f5f7fb;
-      font-family: 'Inter', -apple-system, system-ui, sans-serif;
-      padding: 2rem 1.5rem 4rem;
-      color: #0b1b2b;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .container {
-      max-width: 1120px;
-      width: 100%;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SniperTrader — Checkout</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    /* header / brand */
-    .brand {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2.2rem;
-      flex-wrap: wrap;
-      gap: 0.8rem 1.5rem;
-    }
-    .brand h1 {
-      font-weight: 700;
-      font-size: 1.6rem;
-      letter-spacing: -0.02em;
-      color: #0b1b2b;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .brand h1 span { color: #0066ff; }
-    .brand-tag {
-      background: #eef2f6;
-      padding: 0.4rem 1.2rem;
-      border-radius: 40px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      letter-spacing: 0.3px;
-      color: #1f3a57;
-    }
-    .platform-tabs {
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-      margin-bottom: 2.2rem;
-      border-bottom: 1px solid #dce3ec;
-      padding-bottom: 0.75rem;
-    }
-    .platform-tab {
-      background: transparent;
-      border: none;
-      padding: 0.5rem 1.2rem;
-      font-weight: 600;
-      font-size: 0.9rem;
-      border-radius: 40px;
-      color: #4a627a;
-      cursor: pointer;
-      transition: 0.2s;
-      font-family: 'Inter', sans-serif;
-    }
-    .platform-tab:hover { background: #e9eef4; color: #0b1b2b; }
-    .platform-tab.active {
-      background: #0b1b2b;
-      color: white;
-    }
+:root {
+  --bg: #09090f;
+  --surface: #10121a;
+  --surface2: #181b26;
+  --surface3: #1e2230;
+  --border: rgba(255,255,255,.06);
+  --border-hi: rgba(255,255,255,.12);
+  --text: #c8ccd8;
+  --text-hi: #eef0f6;
+  --muted: #565c72;
+  --white: #ffffff;
 
-    /* two‑card row */
-    .plan-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2rem;
-      margin: 1.8rem 0 2.5rem;
-    }
-    @media (max-width: 700px) {
-      .plan-grid { grid-template-columns: 1fr; gap: 1.5rem; }
-    }
+  /* Product accent palette */
+  --pivot-h: #00d2c8;       /* teal/cyan */
+  --pivot-dim: rgba(0,210,200,.08);
+  --pivot-glow: rgba(0,210,200,.22);
+  --pivot-border: rgba(0,210,200,.28);
 
-    .plan-card {
-      background: white;
-      border-radius: 28px;
-      padding: 2rem 1.8rem 2.2rem;
-      box-shadow: 0 8px 28px rgba(0,20,40,0.06);
-      border: 1px solid #e8edf4;
-      transition: all 0.2s;
-      display: flex;
-      flex-direction: column;
-    }
-    .plan-card:hover {
-      border-color: #b6ccff;
-      box-shadow: 0 12px 32px rgba(0,60,180,0.08);
-    }
-    .plan-card .badge {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      background: #eef4ff;
-      color: #0066ff;
-      padding: 0.2rem 1rem;
-      border-radius: 40px;
-      align-self: flex-start;
-      font-weight: 700;
-      margin-bottom: 1rem;
-    }
-    .plan-card .badge.gold {
-      background: #fef2d6;
-      color: #b2700a;
-    }
-    .plan-name {
-      font-size: 1.6rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      margin-bottom: 0.4rem;
-    }
-    .plan-price {
-      font-size: 2.3rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      color: #0b1b2b;
-      margin: 0.4rem 0 0.2rem;
-      display: flex;
-      align-items: baseline;
-      gap: 6px;
-    }
-    .plan-price small {
-      font-size: 1rem;
-      font-weight: 500;
-      color: #4f6b86;
-    }
-    .plan-desc {
-      color: #2e4a67;
-      font-size: 0.9rem;
-      margin-bottom: 0.6rem;
-    }
-    .feature-list {
-      list-style: none;
-      margin: 1rem 0 1.6rem;
-      flex: 1;
-    }
-    .feature-list li {
-      padding: 0.35rem 0;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.9rem;
-      color: #1b344d;
-    }
-    .feature-list li::before {
-      content: "✓";
-      color: #0066ff;
-      font-weight: 700;
-      font-size: 1rem;
-    }
-    .btn-primary {
-      background: #0b1b2b;
-      border: none;
-      padding: 0.9rem 1.2rem;
-      border-radius: 60px;
-      font-weight: 700;
-      font-size: 0.95rem;
-      color: white;
-      cursor: pointer;
-      transition: 0.15s;
-      font-family: 'Inter', sans-serif;
-      margin-top: 0.5rem;
-      width: 100%;
-      text-align: center;
-    }
-    .btn-primary:hover { background: #1e3450; transform: scale(1.01); }
-    .btn-primary.outline {
-      background: transparent;
-      color: #0b1b2b;
-      border: 1px solid #cbd7e6;
-    }
-    .btn-primary.outline:hover { background: #f0f4fa; border-color: #8aa3c0; }
+  --ict-h: #a78bfa;         /* violet */
+  --ict-dim: rgba(167,139,250,.08);
+  --ict-glow: rgba(167,139,250,.22);
+  --ict-border: rgba(167,139,250,.28);
 
-    .platform-label {
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      font-weight: 600;
-      color: #5b7a97;
-      margin-bottom: 0.2rem;
-    }
+  --vwap-h: #fb923c;        /* amber/orange */
+  --vwap-dim: rgba(251,146,60,.08);
+  --vwap-glow: rgba(251,146,60,.22);
+  --vwap-border: rgba(251,146,60,.28);
 
-    /* cart summary – minimal */
-    .cart-mini {
-      margin-top: 2.8rem;
-      background: white;
-      border-radius: 40px;
-      padding: 1.2rem 2rem;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      border: 1px solid #dce3ec;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-      gap: 1rem 1.5rem;
-    }
-    .cart-mini .items {
-      display: flex;
-      gap: 0.8rem;
-      flex-wrap: wrap;
-      align-items: center;
-      font-size: 0.9rem;
-    }
-    .cart-mini .items .item-pill {
-      background: #f0f4fa;
-      padding: 0.2rem 1rem 0.2rem 1.2rem;
-      border-radius: 40px;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .cart-mini .items .item-pill button {
-      background: none;
-      border: none;
-      color: #8f9fb2;
-      font-size: 1.1rem;
-      cursor: pointer;
-      line-height: 1;
-    }
-    .cart-mini .items .item-pill button:hover { color: #cc2233; }
-    .cart-total {
-      font-weight: 700;
-      font-size: 1.3rem;
-      letter-spacing: -0.01em;
-    }
-    .checkout-actions {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-    .btn-checkout {
-      background: #0066ff;
-      border: none;
-      padding: 0.6rem 1.8rem;
-      border-radius: 60px;
-      font-weight: 700;
-      color: white;
-      font-size: 0.95rem;
-      cursor: pointer;
-      transition: 0.15s;
-      font-family: 'Inter', sans-serif;
-    }
-    .btn-checkout:hover { background: #004fd1; transform: scale(1.02); }
-    .btn-checkout:disabled { opacity: 0.4; pointer-events: none; }
+  --gold: #f0b429;
+  --green: #34d399;
+  --red: #f87171;
+}
 
-    .crypto-toggle {
-      background: #f0f4fa;
-      border: 1px solid #d0dcec;
-      border-radius: 40px;
-      padding: 0.3rem 1.2rem;
-      font-size: 0.8rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: 0.1s;
-      font-family: 'Inter', sans-serif;
-      color: #1f3a57;
-    }
-    .crypto-toggle.active {
-      background: #0b1b2b;
-      border-color: #0b1b2b;
-      color: white;
-    }
-    .crypto-addr {
-      background: #f5f8fc;
-      padding: 0.3rem 0.9rem;
-      border-radius: 40px;
-      font-size: 0.75rem;
-      font-family: monospace;
-      border: 1px dashed #b0c8e0;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .crypto-addr button {
-      background: none;
-      border: none;
-      font-weight: 600;
-      color: #0066ff;
-      cursor: pointer;
-      font-size: 0.7rem;
-    }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
 
-    .toast {
-      position: fixed;
-      bottom: 2rem;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #0b1b2b;
-      color: white;
-      padding: 0.6rem 1.8rem;
-      border-radius: 60px;
-      font-weight: 500;
-      font-size: 0.9rem;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-      z-index: 999;
-      transition: opacity 0.25s;
-    }
+/* ─── Topbar ─── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
+  height: 60px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: rgba(9,9,15,.88);
+  backdrop-filter: blur(20px);
+  z-index: 200;
+}
+@media(max-width:680px){ .topbar { padding: 0 18px; } }
 
-    .footnote {
-      text-align: center;
-      margin-top: 2.5rem;
-      font-size: 0.75rem;
-      color: #6a85a0;
-      border-top: 1px solid #dce3ec;
-      padding-top: 2rem;
-    }
-  </style>
+.logo {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--white);
+}
+.logo em { color: var(--pivot-h); font-style: normal; }
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.secure-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+}
+.pulse {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 0 rgba(52,211,153,.5);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(52,211,153,.5); }
+  70%  { box-shadow: 0 0 0 6px rgba(52,211,153,0); }
+  100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); }
+}
+
+/* ─── Page grid ─── */
+.page {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  min-height: calc(100vh - 60px);
+  align-items: start;
+}
+@media(max-width:960px) {
+  .page { grid-template-columns: 1fr; }
+}
+
+/* ─── Main panel ─── */
+.main {
+  padding: 48px 44px 80px;
+  border-right: 1px solid var(--border);
+}
+@media(max-width:680px) { .main { padding: 28px 18px 60px; } }
+
+/* ─── Progress track ─── */
+.progress-track {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 52px;
+}
+.pt-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pt-num {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-hi);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  flex-shrink: 0;
+  transition: all .3s;
+}
+.pt-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: 0.2px;
+  transition: color .3s;
+  white-space: nowrap;
+}
+.pt-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+  margin: 0 14px;
+  position: relative;
+  overflow: hidden;
+}
+.pt-line::after {
+  content: '';
+  position: absolute;
+  left: -100%; top: 0; bottom: 0;
+  width: 100%;
+  background: var(--green);
+  opacity: .5;
+  transition: left .5s ease;
+}
+.pt-step.active .pt-num {
+  border-color: var(--pivot-h);
+  color: var(--pivot-h);
+  background: rgba(0,210,200,.06);
+}
+.pt-step.active .pt-label { color: var(--text-hi); }
+.pt-step.done .pt-num {
+  border-color: var(--green);
+  background: rgba(52,211,153,.08);
+  color: var(--green);
+  font-size: 12px;
+}
+.pt-step.done .pt-label { color: var(--green); }
+.pt-line.done::after { left: 0; }
+
+/* ─── Section heads ─── */
+.sec-eyebrow {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.sec-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: 4px;
+}
+.sec-sub {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 26px;
+  line-height: 1.5;
+}
+
+/* ─── Platform pills ─── */
+.platform-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 48px;
+}
+.pfm-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all .2s;
+  user-select: none;
+  position: relative;
+}
+.pfm-pill:hover { border-color: var(--border-hi); background: var(--surface2); }
+.pfm-pill.selected {
+  border-color: var(--pivot-h);
+  background: var(--pivot-dim);
+  box-shadow: 0 0 0 1px var(--pivot-h) inset, 0 0 20px rgba(0,210,200,.06);
+}
+.pfm-icon { font-size: 20px; }
+.pfm-text {}
+.pfm-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-hi);
+  line-height: 1.2;
+}
+.pfm-lang {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+.pfm-pill.selected .pfm-name { color: var(--pivot-h); }
+.pfm-pill.selected .pfm-lang { color: rgba(0,210,200,.6); }
+.pfm-tick {
+  position: absolute;
+  top: -6px; right: -6px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--pivot-h);
+  color: #000;
+  font-size: 9px;
+  font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0;
+  transform: scale(0);
+  transition: all .2s;
+}
+.pfm-pill.selected .pfm-tick { opacity: 1; transform: scale(1); }
+
+/* ─── Section break ─── */
+.sec-break {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border) 20%, var(--border) 80%, transparent);
+  margin: 40px 0;
+}
+
+/* ─── Products grid ─── */
+#productsSection {
+  opacity: .35;
+  pointer-events: none;
+  transition: opacity .35s;
+  transform: translateY(8px);
+  transition: opacity .35s, transform .35s;
+}
+#productsSection.unlocked {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateY(0);
+}
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 16px;
+}
+@media(max-width:860px) { .products-grid { grid-template-columns: 1fr; } }
+
+/* ─── Product card ─── */
+.product-card {
+  border-radius: 18px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  overflow: hidden;
+  transition: transform .2s, border-color .2s;
+  position: relative;
+}
+.product-card:hover { transform: translateY(-3px); }
+
+/* Color bar on top */
+.product-card::before {
+  content: '';
+  display: block;
+  height: 3px;
+  width: 100%;
+}
+.product-card.pivot::before { background: linear-gradient(90deg, var(--pivot-h), rgba(0,210,200,.3)); }
+.product-card.ict::before   { background: linear-gradient(90deg, var(--ict-h), rgba(167,139,250,.3)); }
+.product-card.vwap::before  { background: linear-gradient(90deg, var(--vwap-h), rgba(251,146,60,.3)); }
+
+.product-card.pivot { --acc: var(--pivot-h); --acc-dim: var(--pivot-dim); --acc-border: var(--pivot-border); --acc-glow: var(--pivot-glow); }
+.product-card.ict   { --acc: var(--ict-h);   --acc-dim: var(--ict-dim);   --acc-border: var(--ict-border);   --acc-glow: var(--ict-glow); }
+.product-card.vwap  { --acc: var(--vwap-h);  --acc-dim: var(--vwap-dim);  --acc-border: var(--vwap-border);  --acc-glow: var(--vwap-glow); }
+
+.product-badge-pop {
+  position: absolute;
+  top: 14px; right: 14px;
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 1px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: rgba(167,139,250,.1);
+  color: var(--ict-h);
+  border: 1px solid rgba(167,139,250,.3);
+}
+
+.product-header {
+  padding: 18px 18px 14px;
+}
+.product-icon-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.product-icon {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: var(--acc-dim);
+  border: 1px solid var(--acc-border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+.product-tier {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--acc);
+  opacity: .8;
+}
+.product-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--white);
+  line-height: 1.3;
+  margin-bottom: 5px;
+}
+.product-desc {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+/* Feature list */
+.feature-list {
+  padding: 0 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--text);
+}
+.feature-dot {
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--acc);
+  flex-shrink: 0;
+  opacity: .7;
+}
+
+/* Plan options */
+.plan-section {
+  padding: 12px 18px 18px;
+  border-top: 1px solid var(--border);
+}
+.plan-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.plan-opt {
+  padding: 10px 10px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--surface2);
+  cursor: pointer;
+  transition: all .18s;
+  text-align: center;
+  position: relative;
+}
+.plan-opt:hover { border-color: var(--border-hi); }
+.plan-opt.selected {
+  border-color: var(--acc);
+  background: var(--acc-dim);
+  box-shadow: inset 0 0 12px rgba(0,0,0,.15);
+}
+.plan-opt-name {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-hi);
+  margin-bottom: 3px;
+  letter-spacing: 0.2px;
+}
+.plan-opt-price {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--white);
+  line-height: 1;
+  margin-bottom: 2px;
+}
+.plan-opt-price sub {
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--muted);
+  vertical-align: baseline;
+}
+.plan-opt.selected .plan-opt-price { color: var(--acc); }
+.plan-opt-note {
+  font-size: 9px;
+  color: var(--muted);
+}
+.plan-opt.selected .plan-opt-note { color: var(--acc); opacity: .7; }
+.plan-save-chip {
+  position: absolute;
+  top: -7px; right: 6px;
+  background: var(--acc);
+  color: #000;
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: .5px;
+}
+
+.add-btn {
+  width: 100%;
+  padding: 10px;
+  border: 1.5px solid var(--acc-border);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--acc);
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  cursor: pointer;
+  transition: all .18s;
+  text-transform: uppercase;
+}
+.add-btn:hover { background: var(--acc-dim); border-color: var(--acc); }
+.add-btn.added {
+  background: rgba(52,211,153,.07);
+  border-color: rgba(52,211,153,.4);
+  color: var(--green);
+}
+.add-btn:disabled { opacity: .3; cursor: not-allowed; }
+
+/* ─── Sidebar ─── */
+.sidebar {
+  padding: 32px 28px 40px;
+  position: sticky;
+  top: 60px;
+  height: calc(100vh - 60px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+}
+@media(max-width:960px){
+  .sidebar {
+    position: static;
+    height: auto;
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+}
+
+.sidebar-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.cart-badge {
+  background: var(--pivot-h);
+  color: #000;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* cart items */
+.cart-scroll { flex: 1; min-height: 80px; }
+.cart-empty-state {
+  padding: 28px 16px;
+  text-align: center;
+  border: 1px dashed var(--border-hi);
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.cart-empty-state span { display: block; font-size: 22px; margin-bottom: 8px; }
+
+.cart-item {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: start;
+}
+.ci-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-hi);
+  line-height: 1.35;
+  margin-bottom: 2px;
+}
+.ci-meta {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: .5px;
+}
+.ci-right { text-align: right; }
+.ci-price {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--white);
+  white-space: nowrap;
+}
+.ci-remove {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  transition: color .15s;
+  padding: 0;
+  line-height: 1;
+  margin-top: 2px;
+  display: block;
+}
+.ci-remove:hover { color: var(--red); }
+
+/* Cart total */
+.cart-total-block {
+  margin: 16px 0;
+  padding: 14px 0;
+  border-top: 1px solid var(--border-hi);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ct-label { font-size: 11px; color: var(--muted); }
+.ct-amount {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--white);
+}
+
+/* Payment section */
+.pay-section-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.pay-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin-bottom: 12px;
+}
+.pay-opt {
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .18s;
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.pay-opt .pi { display: block; font-size: 17px; margin-bottom: 3px; }
+.pay-opt:hover { border-color: var(--border-hi); color: var(--text); }
+.pay-opt.active {
+  border-color: var(--pivot-h);
+  background: var(--pivot-dim);
+  color: var(--pivot-h);
+}
+
+/* Crypto detail */
+.crypto-detail {
+  background: rgba(0,0,0,.35);
+  border: 1px solid rgba(240,180,41,.18);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 14px;
+  display: none;
+}
+.crypto-detail.visible { display: block; }
+.crypto-detail-head {
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: var(--gold);
+  margin-bottom: 10px;
+  opacity: .8;
+}
+.coin-row {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.coin-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .16s;
+  background: var(--surface2);
+}
+.coin-btn:hover { border-color: rgba(240,180,41,.3); color: var(--gold); }
+.coin-btn.active {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(240,180,41,.07);
+}
+.addr-label { font-size: 10px; color: var(--muted); margin-bottom: 6px; }
+.addr-box {
+  background: rgba(0,0,0,.45);
+  border: 1px solid var(--border-hi);
+  border-radius: 8px;
+  padding: 9px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  transition: border-color .15s;
+}
+.addr-box:hover { border-color: rgba(255,255,255,.18); }
+.addr-text {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: var(--text);
+  word-break: break-all;
+  line-height: 1.5;
+}
+.addr-copy { font-size: 14px; color: var(--pivot-h); flex-shrink: 0; }
+
+/* CTA */
+.cta-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--pivot-h);
+  color: #000;
+  border: none;
+  border-radius: 11px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all .2s;
+  letter-spacing: 0.2px;
+}
+.cta-btn:hover:not(:disabled) {
+  background: #00f0e5;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 28px rgba(0,210,200,.22);
+}
+.cta-btn:disabled {
+  background: var(--surface2);
+  color: var(--muted);
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+.trust-row {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.trust-chip {
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--muted);
+  padding: 2px 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.trust-chip::before { content:'·'; opacity:.4; }
+.trust-chip:first-child::before { display:none; }
+
+/* ─── Toast ─── */
+.toast {
+  position: fixed;
+  bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(70px);
+  opacity: 0;
+  background: var(--surface3);
+  border: 1px solid var(--border-hi);
+  color: var(--white);
+  padding: 10px 20px;
+  border-radius: 40px;
+  font-size: 12px;
+  font-weight: 500;
+  z-index: 999;
+  transition: all .28s cubic-bezier(.34,1.56,.64,1);
+  pointer-events: none;
+  white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 4px; }
+</style>
 </head>
 <body>
-<div class="container" id="app">
 
-  <!-- brand -->
-  <div class="brand">
-    <h1>⚡ Sniper<span>Trader</span>.ai</h1>
-    <div class="brand-tag">USME · Pivot Suite</div>
+<!-- Topbar -->
+<header class="topbar">
+  <div class="logo">SNIPER<em>TRADER</em>.AI</div>
+  <div class="topbar-right">
+    <div class="secure-tag"><div class="pulse"></div>SSL ENCRYPTED</div>
   </div>
+</header>
 
-  <!-- platform tabs -->
-  <div class="platform-tabs" id="platformTabs">
-    <button class="platform-tab active" data-platform="thinkscript">📊 thinkorswim</button>
-    <button class="platform-tab" data-platform="pinescript">📈 TradingView</button>
-    <button class="platform-tab" data-platform="ninjascript">⚙️ NinjaTrader</button>
-  </div>
+<div class="page">
 
-  <!-- dynamic plan cards -->
-  <div class="plan-grid" id="planGrid">
-    <!-- rendered by JS -->
-  </div>
+  <!-- MAIN -->
+  <main class="main">
 
-  <!-- minimal cart -->
-  <div class="cart-mini" id="cartMini">
-    <div class="items" id="cartItems">
-      <span style="color:#4f6b86;">Cart</span>
-      <span id="emptyCartMsg" style="color:#8aa0b8;">empty</span>
+    <!-- Progress -->
+    <div class="progress-track">
+      <div class="pt-step active" id="pt1">
+        <div class="pt-num">1</div>
+        <div class="pt-label">Platform</div>
+      </div>
+      <div class="pt-line" id="pl1"></div>
+      <div class="pt-step" id="pt2">
+        <div class="pt-num">2</div>
+        <div class="pt-label">Indicators</div>
+      </div>
+      <div class="pt-line" id="pl2"></div>
+      <div class="pt-step" id="pt3">
+        <div class="pt-num">3</div>
+        <div class="pt-label">Checkout</div>
+      </div>
     </div>
-    <div class="checkout-actions">
-      <span class="cart-total" id="cartTotal">$0</span>
-      <button class="crypto-toggle" id="cryptoToggle">₿ Crypto</button>
-      <button class="btn-checkout" id="checkoutBtn">Checkout →</button>
+
+    <!-- Step 1: Platform -->
+    <div class="sec-eyebrow">Step 1 of 3</div>
+    <div class="sec-title">Choose your trading platform</div>
+    <div class="sec-sub">Indicators are platform-specific. Pick yours first.</div>
+
+    <div class="platform-row" id="platformRow">
+      <div class="pfm-pill" data-platform="ThinkorSwim">
+        <div class="pfm-tick">✓</div>
+        <div class="pfm-icon">📊</div>
+        <div class="pfm-text">
+          <div class="pfm-name">ThinkorSwim</div>
+          <div class="pfm-lang">THINKSCRIPT</div>
+        </div>
+      </div>
+      <div class="pfm-pill" data-platform="TradingView">
+        <div class="pfm-tick">✓</div>
+        <div class="pfm-icon">📈</div>
+        <div class="pfm-text">
+          <div class="pfm-name">TradingView</div>
+          <div class="pfm-lang">PINE SCRIPT</div>
+        </div>
+      </div>
+      <div class="pfm-pill" data-platform="NinjaTrader">
+        <div class="pfm-tick">✓</div>
+        <div class="pfm-icon">⚡</div>
+        <div class="pfm-text">
+          <div class="pfm-name">NinjaTrader</div>
+          <div class="pfm-lang">NINJASCRIPT</div>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <!-- crypto panel (hidden by default) -->
-  <div id="cryptoPanel" style="display:none; margin-top:0.8rem; background:#f0f6fe; border-radius:60px; padding:0.5rem 1.5rem; border:1px solid #c0d6f0; align-items:center; gap:1rem; flex-wrap:wrap; justify-content:center;">
-    <span style="font-weight:500; font-size:0.85rem;">⚡ SNIPER Treasury</span>
-    <span class="crypto-addr">0x3A7F...cE9bD2F1aE <button id="copyAddrBtn">copy</button></span>
-    <button id="simulateCryptoBtn" style="background:#0b1b2b; border:none; border-radius:60px; color:white; padding:0.3rem 1.2rem; font-weight:600; cursor:pointer;">Simulate payment</button>
-  </div>
+    <div class="sec-break"></div>
 
-  <div class="footnote">SSL encrypted · Crypto (BTC/ETH/USDC) · Instant delivery</div>
+    <!-- Step 2: Products -->
+    <div id="productsSection">
+      <div class="sec-eyebrow">Step 2 of 3</div>
+      <div class="sec-title">Select your indicators</div>
+      <div class="sec-sub" id="pfmHint">Choose a plan for each indicator you want — or just one.</div>
+
+      <div class="products-grid">
+
+        <!-- PIVOT -->
+        <div class="product-card pivot">
+          <div class="product-header">
+            <div class="product-icon-row">
+              <div class="product-icon">🎯</div>
+              <div class="product-tier">TIER 01 · PIVOT</div>
+            </div>
+            <div class="product-name">NoRepaint Pivot<br>Indicator</div>
+            <div class="product-desc">Elite pivot scoring with multi-timeframe alignment. Bars never repaint.</div>
+          </div>
+          <div class="feature-list">
+            <div class="feature-item"><div class="feature-dot"></div>USME NoRepaint Pivot Indicator</div>
+            <div class="feature-item"><div class="feature-dot"></div>Elite / Prime / Standard scoring</div>
+            <div class="feature-item"><div class="feature-dot"></div>Community + trade examples</div>
+          </div>
+          <div class="plan-section">
+            <div class="plan-toggle">
+              <div class="plan-opt" data-product="NoRepaint Pivot Indicator" data-plan="Monthly" data-price="79">
+                <div class="plan-opt-name">Monthly</div>
+                <div class="plan-opt-price">$79<sub>/mo</sub></div>
+                <div class="plan-opt-note">Cancel anytime</div>
+              </div>
+              <div class="plan-opt" data-product="NoRepaint Pivot Indicator" data-plan="Annual" data-price="599">
+                <div class="plan-save-chip">SAVE 37%</div>
+                <div class="plan-opt-name">Annual</div>
+                <div class="plan-opt-price">$599<sub>/yr</sub></div>
+                <div class="plan-opt-note">≈ $49.92/mo</div>
+              </div>
+            </div>
+            <button class="add-btn" data-card="pivot">+ ADD TO ORDER</button>
+          </div>
+        </div>
+
+        <!-- ICT -->
+        <div class="product-card ict">
+          <div class="product-badge-pop">MOST POPULAR</div>
+          <div class="product-header">
+            <div class="product-icon-row">
+              <div class="product-icon">🧠</div>
+              <div class="product-tier">TIER 02 · ICT</div>
+            </div>
+            <div class="product-name">USME ICT<br>Foundation</div>
+            <div class="product-desc">Divergence scanner + structural breaks. Full 6-module course with cheat sheets.</div>
+          </div>
+          <div class="feature-list">
+            <div class="feature-item"><div class="feature-dot"></div>Full 6-module course + cheat sheets</div>
+            <div class="feature-item"><div class="feature-dot"></div>Divergence scanner integration</div>
+            <div class="feature-item"><div class="feature-dot"></div>ToS & TradingView scripts</div>
+          </div>
+          <div class="plan-section">
+            <div class="plan-toggle">
+              <div class="plan-opt" data-product="USME ICT Foundation" data-plan="Monthly" data-price="199">
+                <div class="plan-opt-name">Monthly</div>
+                <div class="plan-opt-price">$199<sub>/mo</sub></div>
+                <div class="plan-opt-note">Cancel anytime</div>
+              </div>
+              <div class="plan-opt" data-product="USME ICT Foundation" data-plan="Annual" data-price="1999">
+                <div class="plan-save-chip">SAVE 16%</div>
+                <div class="plan-opt-name">Annual</div>
+                <div class="plan-opt-price">$1,999<sub>/yr</sub></div>
+                <div class="plan-opt-note">≈ $166.58/mo</div>
+              </div>
+            </div>
+            <button class="add-btn" data-card="ict">+ ADD TO ORDER</button>
+          </div>
+        </div>
+
+        <!-- VWAP -->
+        <div class="product-card vwap">
+          <div class="product-header">
+            <div class="product-icon-row">
+              <div class="product-icon">📡</div>
+              <div class="product-tier">TIER 03 · VWAP</div>
+            </div>
+            <div class="product-name">USME VWAP<br>Elite Suite</div>
+            <div class="product-desc">VWAP bands, session anchoring, and institutional flow detection.</div>
+          </div>
+          <div class="feature-list">
+            <div class="feature-item"><div class="feature-dot"></div>VWAP bands + session anchoring</div>
+            <div class="feature-item"><div class="feature-dot"></div>Institutional flow detection</div>
+            <div class="feature-item"><div class="feature-dot"></div>Priority support & early updates</div>
+          </div>
+          <div class="plan-section">
+            <div class="plan-toggle">
+              <div class="plan-opt" data-product="USME VWAP Elite Suite" data-plan="Monthly" data-price="479">
+                <div class="plan-opt-name">Monthly</div>
+                <div class="plan-opt-price">$479<sub>/mo</sub></div>
+                <div class="plan-opt-note">Cancel anytime</div>
+              </div>
+              <div class="plan-opt" data-product="USME VWAP Elite Suite" data-plan="Annual" data-price="4700">
+                <div class="plan-save-chip">SAVE 18%</div>
+                <div class="plan-opt-name">Annual</div>
+                <div class="plan-opt-price">$4,700<sub>/yr</sub></div>
+                <div class="plan-opt-note">≈ $391.67/mo</div>
+              </div>
+            </div>
+            <button class="add-btn" data-card="vwap">+ ADD TO ORDER</button>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /productsSection -->
+
+  </main>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+
+    <div class="sidebar-title">
+      Order Summary
+      <span class="cart-badge" id="cartBadge">0</span>
+    </div>
+
+    <div class="cart-scroll" id="cartScroll">
+      <div class="cart-empty-state" id="cartEmpty">
+        <span>🛒</span>
+        Select a platform and add<br>indicators to build your order.
+      </div>
+    </div>
+
+    <div class="cart-total-block">
+      <div class="ct-label">Total due today</div>
+      <div class="ct-amount" id="cartTotal">$0</div>
+    </div>
+
+    <!-- Payment method -->
+    <div class="pay-section-label">Payment method</div>
+    <div class="pay-grid">
+      <div class="pay-opt active" data-method="crypto">
+        <span class="pi">₿</span>Crypto
+      </div>
+      <div class="pay-opt" data-method="card">
+        <span class="pi">💳</span>Card
+      </div>
+    </div>
+
+    <!-- Crypto detail (default visible) -->
+    <div class="crypto-detail visible" id="cryptoDetail">
+      <div class="crypto-detail-head">SELECT COIN · SEND EXACT AMOUNT</div>
+      <div class="coin-row">
+        <div class="coin-btn active" data-coin="BTC">BTC</div>
+        <div class="coin-btn" data-coin="ETH">ETH</div>
+        <div class="coin-btn" data-coin="USDC">USDC</div>
+        <div class="coin-btn" data-coin="SOL">SOL</div>
+      </div>
+      <div class="addr-label" id="addrLabel">Bitcoin (BTC) Wallet Address</div>
+      <div class="addr-box" id="addrBox" title="Click to copy">
+        <div class="addr-text" id="addrText">bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh</div>
+        <div class="addr-copy">⧉</div>
+      </div>
+    </div>
+
+    <button class="cta-btn" id="ctaBtn" disabled>Add indicators to continue</button>
+    <div class="trust-row">
+      <span class="trust-chip">Instant delivery</span>
+      <span class="trust-chip">BTC · ETH · USDC · SOL</span>
+      <span class="trust-chip">Encrypted</span>
+    </div>
+
+  </aside>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
-  (function() {
-    // ---------- DATA ----------
-    const platformMap = {
-      thinkscript: { label: 'thinkorswim', script: 'ThinkScript' },
-      pinescript:  { label: 'TradingView', script: 'PineScript' },
-      ninjascript: { label: 'NinjaTrader', script: 'NinjaScript' }
-    };
+(function() {
+  // ─── State ───
+  let platform = null;
+  let cart = {}; // { pivot: {product, plan, price}, ict: ..., vwap: ... }
+  let payMethod = 'crypto';
+  let activeCoin = 'BTC';
 
-    // product catalog: monthly & annual
-    const productCatalog = {
-      thinkscript: {
-        monthly: { name: 'NoRepainting Pivot · Monthly', price: 79, script: 'ThinkScript' },
-        annual:  { name: 'NoRepainting Pivot · Annual', price: 599, script: 'ThinkScript' }
-      },
-      pinescript: {
-        monthly: { name: 'NoRepainting Pivot · Monthly', price: 79, script: 'PineScript' },
-        annual:  { name: 'NoRepainting Pivot · Annual', price: 599, script: 'PineScript' }
-      },
-      ninjascript: {
-        monthly: { name: 'NoRepainting Pivot · Monthly', price: 79, script: 'NinjaScript' },
-        annual:  { name: 'NoRepainting Pivot · Annual', price: 599, script: 'NinjaScript' }
+  const CRYPTO_ADDRS = {
+    BTC:  'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+    ETH:  '0x3A7F9b2c4D5e1F8a0B2C3D4E5F6A7B8C9D0E1F2a',
+    USDC: '0x3A7F9b2c4D5e1F8a0B2C3D4E5F6A7B8C9D0E1F2a',
+    SOL:  'DYw8jPZ5LmxJm8b7XnPKkHtnbhZfp5fXfNQUe2oY6dC'
+  };
+  const COIN_NAMES = { BTC: 'Bitcoin (BTC)', ETH: 'Ethereum (ETH)', USDC: 'USD Coin (USDC)', SOL: 'Solana (SOL)' };
+
+  // ─── Platform ───
+  document.querySelectorAll('.pfm-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('.pfm-pill').forEach(p => p.classList.remove('selected'));
+      pill.classList.add('selected');
+      platform = pill.dataset.platform;
+
+      const sec = document.getElementById('productsSection');
+      sec.classList.add('unlocked');
+      document.getElementById('pfmHint').textContent =
+        `Compatible with ${platform}. Select monthly or annual for each indicator you want.`;
+
+      stepDone('pt1', 'pl1');
+      stepActive('pt2');
+    });
+  });
+
+  // ─── Plan selection ───
+  document.querySelectorAll('.plan-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      const card = opt.closest('.product-card');
+      card.querySelectorAll('.plan-opt').forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+    });
+  });
+
+  // ─── Add to cart ───
+  document.querySelectorAll('.add-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!platform) { toast('Pick a platform first'); return; }
+      const key = btn.dataset.card;
+      const card = btn.closest('.product-card');
+      const selected = card.querySelector('.plan-opt.selected');
+      if (!selected) { toast('Choose monthly or annual first'); return; }
+
+      cart[key] = {
+        product: selected.dataset.product,
+        plan: selected.dataset.plan,
+        price: parseFloat(selected.dataset.price),
+        platform
+      };
+
+      btn.classList.add('added');
+      btn.textContent = '✓ IN ORDER';
+
+      renderCart();
+      toast(`${selected.dataset.product} added`);
+
+      if (Object.keys(cart).length > 0) {
+        stepDone('pt2', 'pl2');
+        stepActive('pt3');
       }
-    };
+    });
+  });
 
-    // additional standalone (always shown)
-    const extras = [
-      { id: 'psych', name: 'TraderEdge Psych App', monthlyPrice: 29, annualPrice: 249 },
-      { id: 'ebook', name: 'From Broke to Funded eBook', oneTime: 19 }
-    ];
+  // ─── Render cart ───
+  function renderCart() {
+    const scroll = document.getElementById('cartScroll');
+    const empty = document.getElementById('cartEmpty');
+    const items = Object.entries(cart);
+    const total = items.reduce((s, [, v]) => s + v.price, 0);
 
-    // ---------- STATE ----------
-    let currentPlatform = 'thinkscript';
-    let cart = [];
+    document.getElementById('cartTotal').textContent =
+      '$' + total.toLocaleString('en-US', { minimumFractionDigits: 0 });
+    document.getElementById('cartBadge').textContent = items.length;
 
-    // DOM refs
-    const planGrid = document.getElementById('planGrid');
-    const cartItems = document.getElementById('cartItems');
-    const emptyCartMsg = document.getElementById('emptyCartMsg');
-    const cartTotalSpan = document.getElementById('cartTotal');
-    const cryptoPanel = document.getElementById('cryptoPanel');
-    const cryptoToggle = document.getElementById('cryptoToggle');
-    let cryptoVisible = false;
-
-    // ---------- HELPERS ----------
-    function renderPlans(platformKey) {
-      const monthly = productCatalog[platformKey].monthly;
-      const annual = productCatalog[platformKey].annual;
-      const scriptLabel = platformMap[platformKey].script;
-
-      // build two columns
-      const monthlyFeatures = [
-        '2‑Week Free Trial',
-        'USME NoRepaint Pivot',
-        'Elite/Prime/Standard Scoring',
-        'Full 6‑module course',
-        'Divergence scanner',
-        `${scriptLabel} script included`,
-        'Community + trade examples'
-      ];
-      const annualFeatures = [
-        '2‑Week Free Trial',
-        'All monthly features',
-        '2 months free vs monthly',
-        'Priority support',
-        'Lifetime course access',
-        'Annual strategy playbooks',
-        `Save 37% vs monthly`
-      ];
-
-      const html = `
-        <div class="plan-card">
-          <div class="badge">monthly</div>
-          <div class="plan-name">Full Pivot Suite</div>
-          <div class="plan-price">$${monthly.price} <small>/ month</small></div>
-          <div class="plan-desc">cancel anytime · 2‑week trial</div>
-          <ul class="feature-list">
-            ${monthlyFeatures.map(f => `<li>${f}</li>`).join('')}
-          </ul>
-          <button class="btn-primary" data-plan="monthly" data-platform="${platformKey}">Start Free Trial →</button>
-        </div>
-
-        <div class="plan-card">
-          <div class="badge gold">annual · save 37%</div>
-          <div class="plan-name">Annual Pivot Suite</div>
-          <div class="plan-price">$${annual.price} <small>/ year</small></div>
-          <div class="plan-desc">billed yearly · 2‑week trial</div>
-          <ul class="feature-list">
-            ${annualFeatures.map(f => `<li>${f}</li>`).join('')}
-          </ul>
-          <button class="btn-primary" data-plan="annual" data-platform="${platformKey}">Start Yearly Trial →</button>
-        </div>
-      `;
-      planGrid.innerHTML = html;
-
-      // attach listeners for these two plan buttons
-      document.querySelectorAll('#planGrid .btn-primary').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-          const plan = this.dataset.plan; // 'monthly' or 'annual'
-          const platform = this.dataset.platform;
-          const product = productCatalog[platform][plan];
-          if (product) {
-            addToCart(product.name, product.price);
-          } else {
-            // fallback
-            addToCart(`Pivot Suite (${platform})`, plan === 'annual' ? 599 : 79);
-          }
-        });
-      });
+    if (items.length === 0) {
+      scroll.innerHTML = '';
+      scroll.appendChild(empty);
+      document.getElementById('ctaBtn').disabled = true;
+      document.getElementById('ctaBtn').textContent = 'Add indicators to continue';
+      return;
     }
 
-    function addToCart(name, price) {
-      // avoid duplicates? we allow multiple
-      cart.push({ name, price: Number(price) });
-      updateCartUI();
-      showToast(`✓ ${name} added`);
-    }
+    if (empty.parentNode) empty.parentNode.removeChild(empty);
+    scroll.innerHTML = '';
 
-    function removeFromCart(index) {
-      cart.splice(index, 1);
-      updateCartUI();
-    }
-
-    function updateCartUI() {
-      const total = cart.reduce((sum, item) => sum + item.price, 0);
-      cartTotalSpan.textContent = `$${total}`;
-
-      if (cart.length === 0) {
-        emptyCartMsg.style.display = 'inline';
-        // clear items
-        const pills = cartItems.querySelectorAll('.item-pill');
-        pills.forEach(p => p.remove());
-        return;
-      }
-      emptyCartMsg.style.display = 'none';
-      // rebuild pills
-      const oldPills = cartItems.querySelectorAll('.item-pill');
-      oldPills.forEach(p => p.remove());
-
-      cart.forEach((item, idx) => {
-        const pill = document.createElement('span');
-        pill.className = 'item-pill';
-        pill.innerHTML = `${item.name} $${item.price} <button data-idx="${idx}">✕</button>`;
-        cartItems.appendChild(pill);
-      });
-
-      // attach remove events
-      cartItems.querySelectorAll('.item-pill button').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-          const idx = parseInt(this.dataset.idx);
-          if (!isNaN(idx)) removeFromCart(idx);
-        });
-      });
-    }
-
-    function showToast(msg) {
-      const old = document.querySelector('.toast');
-      if (old) old.remove();
+    items.forEach(([key, item]) => {
+      const suffix = item.plan === 'Annual' ? '/yr' : '/mo';
       const div = document.createElement('div');
-      div.className = 'toast';
-      div.textContent = msg;
-      document.body.appendChild(div);
-      setTimeout(() => div.remove(), 2000);
-    }
+      div.className = 'cart-item';
+      div.innerHTML = `
+        <div>
+          <div class="ci-name">${item.product}</div>
+          <div class="ci-meta">${item.platform} · ${item.plan}</div>
+        </div>
+        <div class="ci-right">
+          <div class="ci-price">$${item.price.toLocaleString()}${suffix}</div>
+          <button class="ci-remove" data-key="${key}">✕</button>
+        </div>`;
+      scroll.appendChild(div);
+    });
 
-    // ---------- PLATFORM TABS ----------
-    document.querySelectorAll('.platform-tab').forEach(tab => {
-      tab.addEventListener('click', function() {
-        document.querySelectorAll('.platform-tab').forEach(t => t.classList.remove('active'));
-        this.classList.add('active');
-        currentPlatform = this.dataset.platform;
-        renderPlans(currentPlatform);
+    scroll.querySelectorAll('.ci-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const k = btn.dataset.key;
+        delete cart[k];
+        // Reset add btn
+        document.querySelector(`.add-btn[data-card="${k}"]`).classList.remove('added');
+        document.querySelector(`.add-btn[data-card="${k}"]`).textContent = '+ ADD TO ORDER';
+        renderCart();
+        toast('Item removed');
       });
     });
 
-    // ---------- CRYPTO TOGGLE ----------
-    cryptoToggle.addEventListener('click', function() {
-      cryptoVisible = !cryptoVisible;
-      cryptoPanel.style.display = cryptoVisible ? 'flex' : 'none';
-      this.classList.toggle('active', cryptoVisible);
+    document.getElementById('ctaBtn').disabled = false;
+    document.getElementById('ctaBtn').textContent =
+      `Complete Order — $${total.toLocaleString()}`;
+  }
+
+  // ─── Payment toggle ───
+  document.querySelectorAll('.pay-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      document.querySelectorAll('.pay-opt').forEach(o => o.classList.remove('active'));
+      opt.classList.add('active');
+      payMethod = opt.dataset.method;
+      const detail = document.getElementById('cryptoDetail');
+      detail.classList.toggle('visible', payMethod === 'crypto');
     });
+  });
 
-    // copy address
-    document.getElementById('copyAddrBtn')?.addEventListener('click', function() {
-      const addr = '0x3A7F...cE9bD2F1aE';
-      if (navigator.clipboard?.writeText) {
-        navigator.clipboard.writeText(addr).then(() => showToast('Address copied')).catch(() => alert(addr));
-      } else {
-        alert(addr);
-      }
+  // ─── Coin toggle ───
+  document.querySelectorAll('.coin-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.coin-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeCoin = btn.dataset.coin;
+      document.getElementById('addrLabel').textContent = COIN_NAMES[activeCoin] + ' Wallet Address';
+      document.getElementById('addrText').textContent = CRYPTO_ADDRS[activeCoin];
     });
+  });
 
-    // simulate crypto payment
-    document.getElementById('simulateCryptoBtn')?.addEventListener('click', function() {
-      if (cart.length === 0) { showToast('Cart empty'); return; }
-      const total = cart.reduce((s, i) => s + i.price, 0);
-      showToast(`✅ Crypto payment $${total} simulated · licenses activated`);
-      cart = [];
-      updateCartUI();
-      cryptoPanel.style.display = 'none';
-      cryptoToggle.classList.remove('active');
-      cryptoVisible = false;
-    });
+  // ─── Copy address ───
+  document.getElementById('addrBox').addEventListener('click', () => {
+    const addr = CRYPTO_ADDRS[activeCoin];
+    navigator.clipboard?.writeText(addr).catch(() => {});
+    toast(`${activeCoin} address copied`);
+  });
 
-    // ---------- CHECKOUT ----------
-    document.getElementById('checkoutBtn')?.addEventListener('click', function() {
-      if (cart.length === 0) { showToast('Add items first'); return; }
-      const total = cart.reduce((s, i) => s + i.price, 0);
-      if (cryptoVisible) {
-        showToast(`🔐 Crypto checkout: $${total} · send to treasury address`);
-      } else {
-        showToast(`🚀 Order total $${total} · licenses delivered instantly`);
-        cart = [];
-        updateCartUI();
-      }
-    });
+  // ─── CTA ───
+  document.getElementById('ctaBtn').addEventListener('click', () => {
+    const items = Object.values(cart);
+    if (!items.length) return;
+    const total = items.reduce((s, v) => s + v.price, 0);
+    if (payMethod === 'crypto') {
+      toast(`Send $${total.toLocaleString()} in ${activeCoin} to complete`);
+    } else {
+      toast(`Redirecting to secure card checkout…`);
+    }
+  });
 
-    // ---------- INIT ----------
-    renderPlans('thinkscript');
-    updateCartUI();
+  // ─── Progress steps ───
+  function stepDone(id, lineId) {
+    const el = document.getElementById(id);
+    el.classList.remove('active');
+    el.classList.add('done');
+    el.querySelector('.pt-num').textContent = '✓';
+    if (lineId) document.getElementById(lineId).classList.add('done');
+  }
+  function stepActive(id) {
+    const el = document.getElementById(id);
+    if (!el.classList.contains('done')) el.classList.add('active');
+  }
 
-    // extra: quick add from anything (legacy) – we already have plan buttons.
-    // also handle extra standalone items? we could add but spec wants simple.
-    // add hidden extras? we keep just the two plan cards per platform.
-  })();
+  // ─── Toast ───
+  let toastTimer;
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+  }
+
+})();
 </script>
-
 </body>
 </html>
