@@ -1,372 +1,487 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-<title>SniperTrader.ai — USME ICT Foundation + VWAP Elite | Prop Firm Master Plan</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SniperTrader – USME Prop Firm Master Plan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg-body: #040609;
+      --bg-panel: #0c1220;
+      --bg-card: #111827;
+      --border: rgba(0,229,255,0.10);
+      --cyan: #00e5ff;
+      --cyan2: #00b8cc;
+      --gold: #f0c040;
+      --gold2: #b8882a;
+      --green: #00e5a0;
+      --red: #ff4d6a;
+      --white: #edf2fb;
+      --sub: rgba(237,242,251,0.72);
+      --muted: rgba(237,242,251,0.42);
+      --ff-disp: 'Orbitron', monospace;
+      --ff-mono: 'Space Mono', monospace;
+      --ff-body: 'Syne', sans-serif;
+    }
+    body {
+      background: var(--bg-body);
+      color: var(--white);
+      font-family: var(--ff-body);
+      padding: 40px 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .playbook {
+      max-width: 1100px;
+      width: 100%;
+    }
+    header {
+      text-align: center;
+      padding: 40px 0 30px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 40px;
+    }
+    header h1 {
+      font-family: var(--ff-disp);
+      font-size: clamp(1.8rem, 4vw, 3.2rem);
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      color: var(--white);
+    }
+    header h1 span { color: var(--cyan); }
+    header .badge {
+      font-family: var(--ff-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      color: var(--gold);
+      background: rgba(240,192,64,0.08);
+      border: 1px solid rgba(240,192,64,0.2);
+      padding: 6px 18px;
+      border-radius: 40px;
+      display: inline-block;
+      margin-top: 12px;
+    }
+    header .sub {
+      font-family: var(--ff-mono);
+      font-size: 0.65rem;
+      color: var(--muted);
+      margin-top: 12px;
+      letter-spacing: 0.1em;
+    }
 
-/* ===== DARK MODE (default) ===== */
-:root {
-  --black:#020508; --deep:#050d14; --panel:#071220;
-  --glass:rgba(7,20,36,0.55);
-  --border:rgba(0,230,160,0.15); --border2:rgba(0,230,160,0.35);
-  --green:#00e6a0; --green-d:#00b87a;
-  --cyan:#00d4ff; --gold:#ffc444; --red:#ff3355; --blue:#4488ff;
-  --vwap:#bf7af0; --vwap-glow:rgba(191,122,240,0.25);
-  --text:#c8e0ec; --muted:#4a7080; --bright:#f0faff;
-  --card-bg:rgba(7,20,36,0.7); --border-light:rgba(0,230,160,0.2);
-  --bg-gradient: linear-gradient(135deg, #020508, #050d14);
-  --toggle-bg: rgba(0,230,160,0.2); --toggle-knob: #00e6a0;
-}
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      font-family: var(--ff-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 12px 28px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.25s;
+      font-weight: 700;
+      flex: 1;
+      min-width: 140px;
+      text-align: center;
+    }
+    .tab-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+    .tab-btn.active {
+      background: rgba(0,229,255,0.06);
+      border-color: var(--cyan);
+      color: var(--cyan);
+      box-shadow: 0 0 30px rgba(0,229,255,0.04);
+    }
+    .tab-btn .num {
+      display: inline-block;
+      background: rgba(0,229,255,0.12);
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      line-height: 22px;
+      text-align: center;
+      font-size: 0.55rem;
+      margin-right: 8px;
+      color: var(--cyan);
+    }
+    .tab-btn.active .num { background: var(--cyan); color: #000; }
 
-/* ===== LIGHT MODE ===== */
-html.light {
-  --black:#f8fafc; --deep:#eef2f5; --panel:#ffffff;
-  --glass:rgba(255,255,255,0.92);
-  --border:rgba(0,100,80,0.2); --border2:rgba(0,150,120,0.35);
-  --green:#007a5e; --green-d:#006046;
-  --cyan:#0088aa; --gold:#c97e00; --red:#cc1f3a; --blue:#2c5f9a;
-  --vwap:#8b5cf6; --vwap-glow:rgba(139,92,246,0.2);
-  --text:#1e2a3a; --muted:#3a5a6e; --bright:#0a1a2a;
-  --card-bg:rgba(255,255,255,0.96); --border-light:rgba(0,100,80,0.25);
-  --bg-gradient: linear-gradient(135deg, #eef2f5, #ffffff);
-  --toggle-bg: rgba(0,100,80,0.2); --toggle-knob: #007a5e;
-}
+    .panel {
+      display: none;
+      animation: fadeUp 0.5s ease;
+    }
+    .panel.active { display: block; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-html.light body {
-  background: #f0f4f8;
-}
+    /* Cards */
+    .card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px 32px;
+      margin-bottom: 20px;
+      transition: border-color 0.2s;
+    }
+    .card:hover { border-color: rgba(0,229,255,0.15); }
+    .card-title {
+      font-family: var(--ff-disp);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--cyan);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card-title .icon { font-size: 1.2rem; }
+    .card p, .card li {
+      font-size: 0.92rem;
+      color: var(--sub);
+      line-height: 1.7;
+    }
+    .card ul, .card ol {
+      padding-left: 24px;
+      margin: 8px 0;
+    }
+    .card li { margin-bottom: 6px; }
+    .card strong { color: var(--white); }
+    .highlight-box {
+      background: rgba(0,229,255,0.04);
+      border-left: 3px solid var(--cyan);
+      padding: 14px 18px;
+      border-radius: 0 8px 8px 0;
+      margin: 12px 0;
+    }
+    .highlight-box.gold { border-left-color: var(--gold); background: rgba(240,192,64,0.04); }
+    .highlight-box.green { border-left-color: var(--green); background: rgba(0,229,160,0.04); }
+    .highlight-box.red { border-left-color: var(--red); background: rgba(255,77,106,0.04); }
 
-html.light .gbg {
-  background-image: linear-gradient(rgba(0,100,80,0.05) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(0,100,80,0.05) 1px, transparent 1px);
-}
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 768px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .tab-btn { min-width: 100px; padding: 10px 16px; font-size: 0.5rem; }
+      .card { padding: 20px; }
+    }
 
-html.light .card {
-  background: var(--card-bg);
-  border-color: var(--border);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.03);
-}
-html.light .card::after {
-  background: linear-gradient(to bottom, var(--green), rgba(0,230,160,0.2));
-}
-html.light .card:hover {
-  border-color: var(--green);
-  box-shadow: 0 12px 32px rgba(0,100,80,0.1);
-}
+    .rule-badge {
+      display: inline-block;
+      font-family: var(--ff-mono);
+      font-size: 0.45rem;
+      letter-spacing: 0.1em;
+      padding: 2px 10px;
+      border-radius: 20px;
+      margin-right: 6px;
+      font-weight: 700;
+    }
+    .rule-badge.gold { background: rgba(240,192,64,0.12); color: var(--gold); border: 1px solid rgba(240,192,64,0.15); }
+    .rule-badge.cyan { background: rgba(0,229,255,0.08); color: var(--cyan); border: 1px solid rgba(0,229,255,0.12); }
+    .rule-badge.green { background: rgba(0,229,160,0.08); color: var(--green); border: 1px solid rgba(0,229,160,0.12); }
+    .rule-badge.red { background: rgba(255,77,106,0.08); color: var(--red); border: 1px solid rgba(255,77,106,0.12); }
 
-html.light .sb, html.light .ub, html.light .ic {
-  background: var(--card-bg);
-  border-color: var(--border);
-}
-html.light .st th, html.light .tt th, html.light .pt th {
-  background: rgba(0,100,80,0.05);
-  color: var(--green);
-}
-html.light .st td, html.light .tt td, html.light .pt td {
-  color: var(--muted);
-  border-color: rgba(0,100,80,0.08);
-}
-html.light .st tr.ar td, html.light .pt tr.pk2 {
-  background: rgba(0,230,160,0.05);
-}
-html.light .hero-title .ol {
-  -webkit-text-stroke-color: rgba(0,100,80,0.3);
-}
-html.light .b {
-  background: rgba(0,100,80,0.08);
-  color: var(--green);
-  border-color: rgba(0,100,80,0.2);
-}
-html.light .bg, html.light .bo, html.light .bb, html.light .br2, html.light .bm, html.light .bv {
-  background: rgba(0,100,80,0.06);
-  color: var(--green-d);
-}
-html.light .law .lnum {
-  color: rgba(0,100,80,0.2);
-}
-html.light .law:hover .lnum {
-  color: var(--red);
-}
-html.light .footer {
-  border-top-color: var(--border);
-}
-html.light .footer::before {
-  background: linear-gradient(90deg, transparent, var(--green), transparent);
-}
-html.light .div::before {
-  background: var(--black);
-  color: var(--green);
-}
-html.light .note {
-  color: var(--muted);
-}
-html.light .hero-stats .hv {
-  text-shadow: 0 0 20px rgba(0,100,80,0.2);
-}
-
-/* BASE STYLES */
-body {
-  background: var(--black);
-  color: var(--text);
-  font-family: 'Rajdhani', sans-serif;
-  font-weight: 400;
-  overflow-x: hidden;
-  cursor: none;
-  transition: background 0.25s ease, color 0.2s;
-}
-
-/* CURSOR */
-#cur{position:fixed;width:12px;height:12px;background:var(--green);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:width .2s,height .2s;mix-blend-mode:screen}
-#cur-r{position:fixed;width:36px;height:36px;border:1px solid rgba(0,230,160,0.45);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:width .2s,height .2s}
-html.light #cur, html.light #cur-r { mix-blend-mode: normal; }
-html.light #cur { background: var(--green); box-shadow: 0 0 12px rgba(0,120,90,0.4); }
-
-/* CANVAS */
-#pcanvas{position:fixed;inset:0;pointer-events:none;z-index:0}
-#mglow{position:fixed;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,var(--green-glow, rgba(0,230,160,0.055)) 0%,transparent 70%);pointer-events:none;z-index:1;transform:translate(-50%,-50%);transition:transform .55s ease}
-
-/* OVERLAYS */
-body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.015) 2px,rgba(0,0,0,0.015) 4px);pointer-events:none;z-index:2}
-.gbg{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(0,230,160,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,230,160,0.025) 1px,transparent 1px);background-size:60px 60px}
-.gbg::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 50% at 50% 0%,rgba(0,230,160,0.035),transparent 65%)}
-
-/* PAGE */
-.page{position:relative;z-index:10;max-width:1080px;margin:0 auto;padding:0 32px 120px}
-
-/* HERO */
-.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:80px 0 60px;position:relative}
-.eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:4px;color:var(--green);text-transform:uppercase;margin-bottom:24px;opacity:0;animation:fu .8s .2s forwards;display:flex;align-items:center;gap:12px}
-.eyebrow::before{content:'';width:40px;height:1px;background:var(--green);flex-shrink:0}
-.edot{display:inline-block;width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 2s infinite}
-.hero-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(72px,10vw,132px);line-height:.9;letter-spacing:2px;color:var(--bright);opacity:0;animation:fu .9s .35s forwards}
-.hero-title .ac{color:var(--green)}
-.hero-title .ol{-webkit-text-stroke:1.5px rgba(0,230,160,0.35);color:transparent}
-.hero-sub{font-size:17px;font-weight:300;color:var(--muted);line-height:1.7;max-width:580px;margin-top:28px;opacity:0;animation:fu .9s .5s forwards}
-.hero-sub strong{color:var(--text);font-weight:600}
-.hero-stats{display:flex;gap:0;margin-top:56px;opacity:0;animation:fu .9s .65s forwards;flex-wrap:wrap}
-.hst{padding:20px 44px 20px 0;border-right:1px solid var(--border);margin-right:44px}
-.hst:last-child{border-right:none;margin-right:0}
-.hv{font-family:'Bebas Neue',sans-serif;font-size:52px;line-height:1;color:var(--green);display:block;text-shadow:0 0 30px rgba(0,230,160,0.45)}
-.hv.g{color:var(--gold);text-shadow:0 0 30px rgba(255,196,68,0.35)}
-.hv.c{color:var(--cyan);text-shadow:0 0 30px rgba(0,212,255,0.35)}
-.hv.b{color:var(--blue);text-shadow:0 0 30px rgba(68,136,255,0.35)}
-.hv.v{color:var(--vwap);text-shadow:0 0 30px var(--vwap-glow)}
-.hl{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-top:4px;display:block}
-.scr{position:absolute;bottom:40px;left:0;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;display:flex;align-items:center;gap:12px;opacity:0;animation:fu .9s .9s forwards}
-.sl{width:40px;height:1px;background:var(--muted)}
-
-/* CARDS, TABLES, ETC (same structure, reuse original classes) */
-.card{background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:28px 32px;backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);position:relative;overflow:hidden;transform-style:preserve-3d;transition:transform .4s ease,box-shadow .4s,border-color .3s;will-change:transform}
-.card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,230,160,0.03) 0%,transparent 55%);pointer-events:none}
-.card::after{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:linear-gradient(to bottom,var(--green),transparent)}
-.card:hover{border-color:var(--border2);box-shadow:0 0 48px rgba(0,230,160,0.09),inset 0 0 32px rgba(0,230,160,0.02)}
-.card.gc::after{background:linear-gradient(to bottom,var(--gold),transparent)}
-.card.bc::after{background:linear-gradient(to bottom,var(--blue),transparent)}
-.card.rc::after{background:linear-gradient(to bottom,var(--red),transparent)}
-.card.vc::after{background:linear-gradient(to bottom,var(--vwap),transparent)}
-.cglow{position:absolute;top:0;right:0;width:90px;height:90px;background:radial-gradient(circle at top right,rgba(0,230,160,0.1),transparent 70%);pointer-events:none}
-.section{margin-bottom:80px;opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease}
-.section.vis{opacity:1;transform:translateY(0)}
-.slbl{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:var(--green);margin-bottom:12px;display:flex;align-items:center;gap:12px}
-.slbl::before{content:'';width:24px;height:1px;background:var(--green);display:block;flex-shrink:0}
-.slbl::after{content:'';flex:1;height:1px;background:linear-gradient(to right,var(--border),transparent);display:block}
-.stitle{font-family:'Bebas Neue',sans-serif;font-size:clamp(30px,4vw,52px);letter-spacing:1px;line-height:1;color:var(--bright);margin-bottom:24px}
-.stitle .g{color:var(--green)}
-.stitle .v{color:var(--vwap)}
-.div{height:1px;margin:60px 0;background:linear-gradient(90deg,transparent,var(--border2) 30%,var(--border2) 70%,transparent);position:relative}
-.div::before{content:'◆';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--green);font-size:8px;background:var(--black);padding:0 12px}
-.bt{font-size:16px;font-weight:300;line-height:1.8;color:var(--text);margin-bottom:20px}
-.bt strong{color:var(--green);font-weight:600}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
-@media(max-width:768px){.g2,.g3{grid-template-columns:1fr}.hero-stats{flex-wrap:wrap}.hst{width:48%}}
-.sb{background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:24px;text-align:center;backdrop-filter:blur(16px);position:relative;overflow:hidden;transition:border-color .3s,transform .3s}
-.sb:hover{border-color:var(--border2);transform:translateY(-4px)}
-.sb::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(0,230,160,0.05),transparent 65%)}
-.sv{font-family:'Bebas Neue',sans-serif;font-size:54px;line-height:1;color:var(--green);display:block;margin-bottom:6px;text-shadow:0 0 30px rgba(0,230,160,0.5)}
-.sv.g{color:var(--gold);text-shadow:0 0 30px rgba(255,196,68,0.4)}
-.sv.c{color:var(--cyan);text-shadow:0 0 30px rgba(0,212,255,0.4)}
-.sv.v{color:var(--vwap);text-shadow:0 0 30px var(--vwap-glow)}
-.slb{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
-.item{display:flex;gap:18px;align-items:flex-start;padding:20px 0;border-bottom:1px solid rgba(0,230,160,0.07)}
-.item:last-child{border-bottom:none;padding-bottom:0}
-.item:first-child{padding-top:0}
-.ico{font-size:20px;flex-shrink:0;margin-top:1px}
-.it{font-size:17px;font-weight:700;color:var(--bright);margin-bottom:6px;line-height:1.2}
-.id{font-size:13px;line-height:1.75;color:var(--muted);font-weight:300}
-.br{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.b{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:3px 10px;border-radius:2px;border:1px solid}
-.bg{background:rgba(0,230,160,0.07);color:var(--green);border-color:rgba(0,230,160,0.28)}
-.bo{background:rgba(255,196,68,0.07);color:var(--gold);border-color:rgba(255,196,68,0.28)}
-.bb{background:rgba(68,136,255,0.07);color:var(--blue);border-color:rgba(68,136,255,0.28)}
-.br2{background:rgba(255,51,85,0.07);color:var(--red);border-color:rgba(255,51,85,0.28)}
-.bm{background:rgba(74,112,128,0.12);color:var(--muted);border-color:rgba(74,112,128,0.2)}
-.bv{background:rgba(191,122,240,0.12);color:var(--vwap);border-color:rgba(191,122,240,0.3)}
-.tl{position:relative;padding-left:52px}
-.tl::before{content:'';position:absolute;left:18px;top:22px;bottom:22px;width:2px;background:linear-gradient(to bottom,var(--green),var(--gold),var(--blue),var(--red));opacity:.25}
-.phase{position:relative;margin-bottom:52px;opacity:0;transform:translateX(-20px);transition:opacity .6s ease,transform .6s ease}
-.phase.vis{opacity:1;transform:translateX(0)}
-.pdot{position:absolute;left:-52px;top:3px;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:16px;border:2px solid var(--green);background:var(--deep);color:var(--green);box-shadow:0 0 22px rgba(0,230,160,0.2)}
-.pdot.pg{border-color:var(--gold);color:var(--gold)}
-.pdot.pb{border-color:var(--blue);color:var(--blue)}
-.pdot.pr{border-color:var(--red);color:var(--red)}
-.pk{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--green);margin-bottom:6px}
-.ptit{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:1px;color:var(--bright);margin-bottom:10px}
-.pbody{font-size:14px;line-height:1.75;color:var(--muted);font-weight:300}
-.pbul{list-style:none;margin-top:12px}
-.pbul li{font-size:13px;color:var(--muted);font-weight:300;padding:3px 0 3px 18px;position:relative;line-height:1.6}
-.pbul li::before{content:'›';position:absolute;left:0;color:var(--green);font-weight:700;font-size:15px}
-.ptr{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
-.tt,.st,.pt{width:100%;border-collapse:collapse;font-size:13px}
-.tt th,.st th,.pt th{text-align:left;padding:12px 16px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;background:rgba(0,230,160,0.04);border-bottom:1px solid var(--border2)}
-.tt th{color:var(--green)} .st th{color:var(--cyan)} .pt th{color:var(--gold);text-align:center}
-.tt td,.st td,.pt td{padding:13px 16px;border-bottom:1px solid rgba(0,230,160,0.05);color:var(--muted);font-weight:300}
-.tt td:first-child,.st td:first-child,.pt td:first-child{color:var(--text);font-weight:600}
-.pt td{text-align:center}
-.pt td:first-child{text-align:left}
-.pt tr.pk2{background:rgba(0,230,160,0.035)}
-.st tr.ar td{background:rgba(0,230,160,0.035)}
-.ub{position:relative;border-radius:14px;background:var(--glass);border:1px solid var(--border2);padding:36px;backdrop-filter:blur(24px);overflow:hidden}
-.uwm{position:absolute;right:-20px;bottom:-30px;font-family:'Bebas Neue',sans-serif;font-size:140px;letter-spacing:-4px;color:rgba(0,230,160,0.025);pointer-events:none}
-.ic{background:var(--glass);border:1px solid rgba(255,196,68,0.18);border-radius:12px;padding:32px;backdrop-filter:blur(20px);position:relative}
-.ic::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
-.note{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.04)}
-.law{display:flex;gap:20px;align-items:flex-start;padding:22px 0;border-bottom:1px solid rgba(255,51,85,0.07)}
-.law:last-child{border-bottom:none;padding-bottom:0}
-.lnum{font-family:'Bebas Neue',sans-serif;font-size:34px;color:rgba(255,51,85,0.18);flex-shrink:0;width:38px}
-.ltit{font-size:16px;font-weight:700;color:var(--bright);margin-bottom:6px}
-.ldesc{font-size:13px;line-height:1.75;color:var(--muted)}
-.eico{font-size:28px;margin-bottom:12px;display:block}
-.etit{font-size:18px;font-weight:700;color:var(--bright);margin-bottom:8px}
-.edesc{font-size:13px;line-height:1.75;color:var(--muted)}
-.fn{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--bright);margin-bottom:10px}
-.footer{position:relative;margin-top:100px;padding:48px 0 40px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:20px}
-.footer::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:200px;height:1px;background:linear-gradient(90deg,transparent,var(--green),transparent)}
-.fbrand{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:2px;color:var(--bright)}
-.fbrand span{color:var(--green)}
-.ftag{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--muted);margin-top:6px}
-.fr{text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);line-height:2}
-/* toggle button */
-.theme-toggle {
-  position: fixed; top: 24px; right: 32px; z-index: 1000;
-  width: 56px; height: 28px; background: var(--toggle-bg);
-  border: 1px solid var(--border2); border-radius: 30px;
-  cursor: pointer; backdrop-filter: blur(6px);
-  transition: all 0.25s;
-  display: flex; align-items: center; padding: 0 4px;
-}
-.toggle-knob {
-  width: 22px; height: 22px; background: var(--toggle-knob);
-  border-radius: 50%; transition: transform 0.3s ease;
-  box-shadow: 0 0 6px currentColor;
-}
-html.light .toggle-knob { transform: translateX(26px); background: var(--gold); }
-@keyframes fu{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.65)}}
-</style>
+    .checklist { list-style: none; padding: 0; }
+    .checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(0,229,255,0.04);
+    }
+    .checklist li:last-child { border-bottom: none; }
+    .checklist .check {
+      color: var(--cyan);
+      font-size: 1.1rem;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+  </style>
 </head>
 <body>
+<div class="playbook">
 
-<div id="cur"></div><div id="cur-r"></div><div id="mglow"></div><canvas id="pcanvas"></canvas><div class="gbg"></div>
-<div class="theme-toggle" id="themeToggle"><div class="toggle-knob"></div></div>
+<header>
+  <h1>SNIPER<span>TRADER</span> USME <span style="color:var(--gold);">PROP FIRM</span> MASTER PLAN</h1>
+  <div class="badge">⚡ UNIFIED SMART MONEY ENGINE ⚡</div>
+  <div class="sub">A systematic, institutionally-aligned framework to deploy USME across multiple funded accounts</div>
+</header>
 
-<div class="page">
-  <div class="hero">
-    <div class="eyebrow"><span class="edot"></span>SniperTrader.ai &nbsp;·&nbsp; Intelligence Report 2026</div>
-    <h1 class="hero-title">USME ICT FOUNDATION<br><span class="ac">+ VWAP ELITE</span><br><span class="ol">PROP MASTER PLAN</span></h1>
-    <p class="hero-sub">Deploy the <strong>USME ICT Foundation</strong> (ICT/SMC structural engine) and <strong>VWAP Elite Suite</strong> across multiple funded accounts. Institutional confluence — scaled systematically.</p>
-    <div class="hero-stats">
-      <div class="hst"><span class="hv glow">80–90%</span><span class="hl">Avg Profit Split</span></div>
-      <div class="hst"><span class="hv g">$4M+</span><span class="hl">Max Capital Access</span></div>
-      <div class="hst"><span class="hv c">10</span><span class="hl">Max Accounts (Apex)</span></div>
-      <div class="hst"><span class="hv v">VWAP</span><span class="hl">Elite Confluence</span></div>
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab-btn active" data-panel="overview"><span class="num">1</span> Overview</button>
+  <button class="tab-btn" data-panel="research"><span class="num">2</span> Research</button>
+  <button class="tab-btn" data-panel="execution"><span class="num">3</span> Execution</button>
+  <button class="tab-btn" data-panel="scale"><span class="num">4</span> Scale & Income</button>
+  <button class="tab-btn" data-panel="firms"><span class="num">5</span> Firms & Laws</button>
+</div>
+
+<!-- ============================================================ -->
+<!-- PANEL 1: OVERVIEW -->
+<!-- ============================================================ -->
+<div class="panel active" id="panel-overview">
+  <div class="card">
+    <div class="card-title"><span class="icon">🎯</span> The Prop Firm Opportunity</div>
+    <p>Prop firms give skilled traders access to institutional-scale capital without risking personal funds beyond the challenge fee. The game is simple — survive the evaluation rules, get funded, extract profits, scale accounts. With the <strong>Unified Smart Money Engine (USME)</strong> as your core edge — Order Blocks, FVGs, BOS/CHoCH, multi-timeframe bias, killzones, and ATR-calibrated risk — you hold the most institutionally-aligned methodology in retail trading. This plan converts USME into a systematic income machine across multiple funded accounts.</p>
+
+    <div class="highlight-box">
+      <strong>Core Philosophy:</strong> <em>"We don't chase trades. We deploy USME signals across a portfolio of accounts, extracting asymmetric payouts from institutional order flow."</em>
     </div>
-    <div class="scr"><span class="sl"></span>Scroll to explore</div>
+
+    <div class="grid-2" style="margin-top:20px;">
+      <div class="card" style="background:rgba(0,0,0,0.2); border-color:rgba(0,229,255,0.08);">
+        <div style="font-family:var(--ff-disp); font-size:2rem; color:var(--cyan);">80–90%</div>
+        <div style="font-family:var(--ff-mono); font-size:0.5rem; letter-spacing:0.08em; color:var(--muted);">AVG PROFIT SPLIT</div>
+      </div>
+      <div class="card" style="background:rgba(0,0,0,0.2); border-color:rgba(240,192,64,0.08);">
+        <div style="font-family:var(--ff-disp); font-size:2rem; color:var(--gold);">$4M+</div>
+        <div style="font-family:var(--ff-mono); font-size:0.5rem; letter-spacing:0.08em; color:var(--muted);">MAX CAPITAL ACCESS</div>
+      </div>
+    </div>
   </div>
 
-  <!-- 01 Overview -->
-  <div class="section" id="s1"><div class="slbl">01 &nbsp; Overview</div><h2 class="stitle">The <span class="g">Prop Firm</span> Opportunity</h2><p class="bt">Prop firms provide institutional capital access. With <strong>USME ICT Foundation</strong> (Order Blocks, FVGs, CHoCH, multi‑TF bias, killzones) and <strong>VWAP Elite Suite</strong> (anchored VWAP, deviation bands, volume‑weighted support/resistance), you have a dual‑engine institutional methodology. This plan converts both into a systematic income machine across multiple funded accounts.</p><div class="g3 stg"><div class="sb"><span class="sv">80–90%</span><span class="slb">Avg Profit Split</span></div><div class="sb"><span class="sv g">$4M+</span><span class="slb">Max Scaling</span></div><div class="sb"><span class="sv v">VWAP+</span><span class="slb">Institutional Flow</span></div></div></div><div class="div"></div>
+  <div class="card">
+    <div class="card-title"><span class="icon">📈</span> USME Compliance Engine</div>
+    <p>USME isn't just an indicator — in the prop firm context it functions as a <strong>compliance engine</strong>: pre-trade checklist, entry filter, and risk calculator unified. Every module maps directly to a funded account rule.</p>
+    <table style="width:100%; border-collapse:collapse; font-size:0.82rem; color:var(--sub); margin-top:12px;">
+      <tr style="border-bottom:1px solid var(--border);">
+        <th style="text-align:left; padding:6px 0; font-family:var(--ff-mono); color:var(--white);">USME Module</th>
+        <th style="text-align:left; padding:6px 0; font-family:var(--ff-mono); color:var(--white);">Prop Rule Enforced</th>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(0,229,255,0.05);"><td style="padding:8px 0;">AI Scoring System</td><td style="padding:8px 0;">Quality filter — max 2–3 trades/day</td></tr>
+      <tr style="border-bottom:1px solid rgba(0,229,255,0.05);"><td style="padding:8px 0;">Killzone Filter</td><td style="padding:8px 0;">Session compliance + news avoidance</td></tr>
+      <tr style="border-bottom:1px solid rgba(0,229,255,0.05);"><td style="padding:8px 0;">ATR Stops & Targets</td><td style="padding:8px 0;">Minimum 1:2 RR enforcement</td></tr>
+      <tr style="border-bottom:1px solid rgba(0,229,255,0.05);"><td style="padding:8px 0;">Order Blocks + FVGs</td><td style="padding:8px 0;">Institutional-level entry precision</td></tr>
+      <tr><td style="padding:8px 0;">BOS / CHoCH Detection</td><td style="padding:8px 0;">Structural confirmation requirement</td></tr>
+    </table>
+  </div>
+</div>
 
-  <!-- 02 Winning strategies -->
-  <div class="section"><div class="slbl">02 &nbsp; Research Findings</div><h2 class="stitle">What Wins with <span class="g">USME+VWAP</span></h2><div class="card"><div class="cglow"></div>
-    <div class="item"><div class="ico">📊</div><div><div class="it">VWAP Confluence — Institutional Reference</div><div class="id">USME signals (OB, FVG, CHoCH) that align with VWAP bands show significantly higher win rates. Trade only when both engines agree.</div><div class="br"><span class="b bv">VWAP Confluence</span><span class="b bg">Score Boost</span></div></div></div>
-    <div class="item"><div class="ico">🎯</div><div><div class="it">Max 2–3 Setups Per Day</div><div class="id">Overtrading is #1 account killer. USME AI scoring + VWAP filter enforce discipline.</div><div class="br"><span class="b bm">Critical Rule</span></div></div></div>
-    <div class="item"><div class="ico">📐</div><div><div class="it">Risk 0.25–1% Per Trade, 2% Daily Stop</div><div class="id">Self‑imposed daily loss ceiling protects funded accounts.</div><div class="br"><span class="b bm">Risk Management</span></div></div></div>
-    <div class="item"><div class="ico">⏰</div><div><div class="it">Killzones + VWAP Anchors</div><div class="id">London (2‑5AM ET) & NY (7‑10AM ET) are optimal; VWAP resets at session open.</div><div class="br"><span class="b bg">USME Native</span><span class="b bv">VWAP Window</span></div></div></div>
-    <div class="item"><div class="ico">📊</div><div><div class="it">Minimum 1:2 RR</div><div class="id">USME ATR targets + VWAP mean reversion create natural asymmetric edges.</div><div class="br"><span class="b bo">Math Edge</span></div></div></div>
-    <div class="item"><div class="ico">🧠</div><div><div class="it">Consistency Rule</div><div class="id">No single day >35% of total target profits.</div><div class="br"><span class="b bm">Consistency Rule</span></div></div></div>
-  </div></div><div class="div"></div>
+<!-- ============================================================ -->
+<!-- PANEL 2: RESEARCH -->
+<!-- ============================================================ -->
+<div class="panel" id="panel-research">
+  <div class="card">
+    <div class="card-title"><span class="icon">🔬</span> What Actually Wins in Prop Firms</div>
+    <p>Elite prop traders follow a strict set of rules that maximize survival and profitability. USME is designed to enforce these rules automatically.</p>
 
-  <!-- 03 USME ICT Foundation + VWAP Integration -->
-  <div class="section"><div class="slbl">03 &nbsp; Dual‑Engine Integration</div><h2 class="stitle">How <span class="g">USME ICT Foundation + VWAP</span> Map to Prop Rules</h2><div class="ub"><div class="uwm">SNIPERTRADER</div><table class="tt"><thead><tr><th>Feature</th><th>Prop Rule Solved</th><th>Benefit</th></tr></thead><tbody>
-    <tr><td>USME AI Score + VWAP Band</td><td>Quality filter (max 2–3 trades)</td><td>Only Score ≥70 AND price at VWAP ±1σ qualify.</td></tr>
-    <tr><td>Killzone + VWAP Reset</td><td>Session compliance + news avoidance</td><td>Trade only after first 30min of killzone for anchored VWAP.</td></tr>
-    <tr><td>ATR Stop + VWAP Targets</td><td>Min 1:2 RR enforcement</td><td>Targets aligned to next VWAP deviation band.</td></tr>
-    <tr><td>HTF Bias + VWAP Slope</td><td>Trend alignment</td><td>VWAP slope confirms direction.</td></tr>
-    <tr><td>Order Blocks + VWAP Anchors</td><td>High‑probability entries</td><td>OB overlapping VWAP support/resistance = A+ setup.</td></tr>
-    <tr><td>SMT + VWAP Divergence</td><td>Correlation confirmation</td><td>Price‑VWAP divergence across pairs adds institutional intent.</td></tr>
-  </tbody></table></div></div><div class="div"></div>
+    <ul class="checklist">
+      <li><span class="check">🎯</span> <div><strong>Quality Over Quantity</strong> — Max 2–3 setups per day. Overtrading is the #1 account killer. USME's AI scoring system filters this automatically.</div></li>
+      <li><span class="check">📐</span> <div><strong>Risk 0.25–1% Per Trade</strong> — Stop at 2–3% daily loss. Scale down after two consecutive red days — reduce sizing by 50%.</div></li>
+      <li><span class="check">⏰</span> <div><strong>Trade Killzones Only</strong> — London Open (2–5 AM ET) &amp; NY Open (7–10 AM ET). USME aligns FVGs and Order Blocks with institutional flow.</div></li>
+      <li><span class="check">📊</span> <div><strong>Minimum 1:2 Risk-Reward</strong> — Never accept below 1:1.5. USME's ATR-based stops and dynamic targets are engineered for this.</div></li>
+      <li><span class="check">🧠</span> <div><strong>Never Chase the Profit Target</strong> — Distribute across days. Aim for 0.5–1% per session on evaluation accounts — surgical and repeatable.</div></li>
+      <li><span class="check">📰</span> <div><strong>Avoid News Events</strong> — Trading NFP, CPI, FOMC on prop accounts has terminated thousands of positions. Close all positions 2 minutes before any red-folder event.</div></li>
+    </ul>
 
-  <!-- 04 Timeframe Protocol -->
-  <div class="section"><div class="slbl">04 &nbsp; Execution Framework</div><h2 class="stitle">USME ICT + VWAP <span class="g">Timeframe Protocol</span></h2><div class="g2 stg"><div class="card bc"><div class="tft">🔭 HTF Bias — H4/Daily</div><div class="tfd">USME multi‑TF bias + Daily VWAP anchored from high/low. Reject trades beyond 2σ without structural break.</div><div class="br"><span class="b bb">H4 OBs</span><span class="b bv">Daily VWAP</span></div></div><div class="card vc"><div class="tft">🎯 Entry TF — 15M/5M + VWAP</div><div class="tfd">During killzone, wait for price to touch VWAP or ±1σ. Then look for USME CHoCH at OB/FVG. Enter on 5M displacement.</div><div class="br"><span class="b bv">VWAP Bounce</span><span class="b bo">CHoCH</span></div></div></div><div class="card"><div class="it" style="margin-bottom:16px;">⚡ Session Play Clock with VWAP Anchors</div><table class="st"><thead><tr><th>Time (EST)</th><th>Action</th><th>USME + VWAP Mode</th></tr></thead><tbody><tr><td>Midnight – 1:45 AM</td><td>Prep — mark OBs, FVGs, VWAP anchors</td><td>H4+Daily scan</td></tr><tr class="ar"><td>2:00 – 5:00 AM</td><td>🟢 London Killzone (Primary)</td><td>15M/5M execution, VWAP anchored to London low/high</td></tr><tr><td>5:00 – 7:00 AM</td><td>Dead zone — NO entries</td><td>Manage only</td></tr><tr class="ar"><td>7:00 – 10:00 AM</td><td>🟢 NY Killzone (Secondary)</td><td>15M/5M execution, VWAP anchored to NY open</td></tr><tr><td>10:00 AM+</td><td>Done — flat or manage</td><td>Journal VWAP touch counts</td></tr></tbody></table></div></div><div class="div"></div>
+    <div class="highlight-box gold">
+      <strong>🔑 The Sniper Mindset:</strong> "We wait for the exact moment when USME gives us a confluence score ≥ 70, HTF alignment, and a killzone window. If any condition is missing, we stand aside."
+    </div>
+  </div>
+</div>
 
-  <!-- 05 Phase Plan (Master Plan) updated -->
-  <div class="section"><div class="slbl">05 &nbsp; Master Plan</div><h2 class="stitle">Phase‑by‑Phase <span class="g">Scale Strategy</span> with VWAP Edge</h2><div class="tl"><div class="phase"><div class="pdot">1</div><div class="pk">Months 0–3 · Foundation</div><div class="ptit">Master One Account. Prove Dual‑Engine.</div><div class="pbody">Validate USME ICT Foundation + VWAP on one prop account. Record VWAP bounce rate.</div><ul class="pbul"><li>Buy one $50K–$100K evaluation (FTMO, FundedNext, Apex)</li><li>Trade when Score ≥70 AND price at VWAP ±1σ</li><li>Risk: 0.5% per trade, 2% daily stop</li><li>Goal: Pass evaluation, receive 2+ payouts, VWAP confluence >65%</li></ul><div class="ptr"><span class="b bg">1 Account</span><span class="b bv">VWAP Filter</span></div></div>
-    <div class="phase"><div class="pdot pg">2</div><div class="pk kg">Months 3–6 · Duplication</div><div class="ptit">Clone to 2–3 Accounts, Same Config</div><div class="pbody">Use payouts to fund challenge fees. Identical VWAP settings across accounts.</div><ul class="pbul"><li>Add Account #2 at same firm, Account #3 at different firm</li><li>Trade rotation: same VWAP‑triggered USME setups</li></ul><div class="ptr"><span class="b bo">3 Accounts</span><span class="b bv">Shared Alerts</span></div></div>
-    <div class="phase"><div class="pdot pb">3</div><div class="pk kb">Months 6–12 · Scale Phase</div><div class="ptit">Expand to 5–6 Accounts, VWAP Copied</div><div class="pbody">Reinvest into $100K–$200K accounts. Activate trade copier for USME+VWAP signals.</div><ul class="pbul"><li>2× $100K at Firm A, 2× at Firm B, 1× $200K at Firm C</li><li>VWAP entry trigger fires once → copied to all accounts</li></ul><div class="ptr"><span class="b bb">5–6 Accounts</span><span class="b bv">VWAP Copier</span></div></div>
-    <div class="phase"><div class="pdot pr">4</div><div class="pk kr">Month 12+ · Empire Phase</div><div class="ptit">8–10 Accounts · Institutional Income</div><div class="pbody">Peak scale: portfolio executing USME+VWAP daily. Each VWAP bounce multiplied.</div><ul class="pbul"><li>Apex: up to 10 funded accounts</li><li>FTMO: up to $2M exposure, 80–90% split</li><li>Withdraw monthly, reinvest only challenge fees</li></ul><div class="ptr"><span class="b br2">8–10 Accounts</span><span class="b bv">Full Automation</span></div></div>
-  </div></div><div class="div"></div>
+<!-- ============================================================ -->
+<!-- PANEL 3: EXECUTION -->
+<!-- ============================================================ -->
+<div class="panel" id="panel-execution">
+  <div class="card">
+    <div class="card-title"><span class="icon">⚡</span> USME Timeframe Protocol</div>
+    <p>The USME protocol defines exactly <strong>when</strong> and <strong>how</strong> to enter trades across funded accounts.</p>
 
-  <!-- 06 Income Projections -->
-  <div class="section"><div class="slbl">06 &nbsp; Income Model</div><h2 class="stitle">Monthly Payout <span class="g">Projections</span> (USME ICT+VWAP Edge)</h2><div class="ic"><table class="pt"><thead><tr><th>Phase</th><th>Accounts</th><th>Total Capital</th><th>Monthly Return</th><th>Your Payout (80%)</th></tr></thead><tbody><tr><td>Phase 1 — Foundation</td><td>1</td><td>$100K</td><td>$3,000–$5,000</td><td>$2,400–$4,000</td></tr><tr><td>Phase 2 — Duplication</td><td>3</td><td>$300K</td><td>$9,000–$15,000</td><td>$7,200–$12,000</td></tr><tr><td>Phase 3 — Scale</td><td>5–6</td><td>$600K</td><td>$18,000–$30,000</td><td>$14,400–$24,000</td></tr><tr class="pk2"><td>Phase 4 — Empire</td><td>8–10</td><td>$1M+</td><td>$30,000–$50,000</td><td>$24,000–$40,000+</td></tr></tbody></table><div class="note">⚠ Conservative 3–5% monthly return. VWAP confluence increases consistency. Past performance not indicative of future results.</div></div></div><div class="div"></div>
+    <div class="grid-2" style="margin-top:12px;">
+      <div class="card" style="background:rgba(0,0,0,0.2); border-color:rgba(68,136,255,0.15);">
+        <div style="font-family:var(--ff-disp); font-size:0.9rem; color:#4488ff;">🔭 HTF Bias — H4 / Daily</div>
+        <p style="font-size:0.82rem; margin-top:8px;">Establish directional bias using USME's multi-timeframe engine on H4 and Daily. Mark premium/discount ranges, key Order Blocks, and weekly FVGs. <strong>Never execute against confirmed H4 structure.</strong></p>
+        <div style="margin-top:8px;">
+          <span class="rule-badge cyan">H4 OBs</span>
+          <span class="rule-badge cyan">Daily BOS</span>
+        </div>
+      </div>
+      <div class="card" style="background:rgba(0,0,0,0.2); border-color:rgba(240,192,64,0.15);">
+        <div style="font-family:var(--ff-disp); font-size:0.9rem; color:var(--gold);">🎯 Entry TF — 15M / 5M</div>
+        <p style="font-size:0.82rem; margin-top:8px;">During killzone windows, drop to 15M then 5M for the precision entry trigger. Confirm CHoCH at the HTF OB/FVG level. <strong>Enter on the 5M displacement candle</strong> with ATR-calculated stop.</p>
+        <div style="margin-top:8px;">
+          <span class="rule-badge gold">15M CHoCH</span>
+          <span class="rule-badge gold">5M Trigger</span>
+        </div>
+      </div>
+    </div>
 
-  <!-- 07 Firms -->
-  <div class="section"><div class="slbl">07 &nbsp; Firm Selection</div><h2 class="stitle">Recommended Firms for <span class="g">USME+VWAP</span> Traders</h2><div class="g2 stg"><div class="card"><div class="fn">🥇 FTMO</div><div class="fd">80–90% split, $400K per trader, ICT/VWAP friendly. Reliable scaling.</div><div class="br"><span class="b bg">Forex/Indices</span></div></div><div class="card gc"><div class="fn">⚡ Apex Trader Funding</div><div class="fd">10 funded accounts, futures (/NQ, /ES). Perfect for copier + VWAP.</div><div class="br"><span class="b bo">Futures · 10 Accts</span></div></div><div class="card bc"><div class="fn">🚀 FundedNext</div><div class="fd">Scales to $4M, weekly payouts, fast capital access.</div><div class="br"><span class="b bb">$4M Scale</span></div></div><div class="card vc"><div class="fn">🏔️ The5ers</div><div class="fd">100% profit split at top tier. Ideal for VWAP statistical compounding.</div><div class="br"><span class="b bv">100% Split</span></div></div></div></div><div class="div"></div>
+    <div class="highlight-box green" style="margin-top:16px;">
+      <strong>📈 Daily Session Clock:</strong> London Killzone (2–5 AM ET) → NY Killzone (7–10 AM ET) → Dead zone (10 AM onwards, no new entries).
+    </div>
+  </div>
 
-  <!-- 08 8 Laws + VWAP -->
-  <div class="section"><div class="slbl">08 &nbsp; Non‑Negotiables</div><h2 class="stitle">The 8th Law: <span class="g">VWAP Confluence</span></h2><div class="card rc"><div class="law"><div class="lnum">01</div><div><div class="ltit">Never risk >1% per trade</div><div class="ldesc">USME ATR stops + 1% sizing = formula.</div></div></div><div class="law"><div class="lnum">02</div><div><div class="ltit">Stop after 2% daily loss</div><div class="ldesc">Two bad trades don't become three. Shut platform.</div></div></div><div class="law"><div class="lnum">03</div><div><div class="ltit">Killzones + VWAP anchored only</div><div class="ldesc">No trades outside London/NY open unless 2σ deviation with structure break.</div></div></div><div class="law"><div class="lnum">04</div><div><div class="ltit">Never scale before proving consistency</div><div class="ldesc">60+ days of VWAP confluence win rate >55% required before adding accounts.</div></div></div><div class="law"><div class="lnum">05</div><div><div class="ltit">Avoid red‑folder news</div><div class="ldesc">VWAP unreliable during spikes. Flatten 2min before.</div></div></div><div class="law"><div class="lnum">06</div><div><div class="ltit">Withdraw profits regularly</div><div class="ldesc">Reinvest only into new challenges.</div></div></div><div class="law"><div class="lnum">07</div><div><div class="ltit">Journal every trade in SniperTrader OS</div><div class="ldesc">Record USME score + VWAP deviation at entry.</div></div></div></div></div><div class="div"></div>
+  <div class="card">
+    <div class="card-title"><span class="icon">📋</span> Position Sizing & Risk Matrix</div>
+    <table style="width:100%; border-collapse:collapse; font-size:0.8rem; color:var(--sub);">
+      <tr style="border-bottom:1px solid var(--border);">
+        <th style="text-align:left; padding:6px 0; font-family:var(--ff-mono); color:var(--white);">Signal Tier</th>
+        <th style="text-align:left; padding:6px 0; font-family:var(--ff-mono); color:var(--white);">Risk %</th>
+        <th style="text-align:left; padding:6px 0; font-family:var(--ff-mono); color:var(--white);">Position Size</th>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(0,229,255,0.05);">
+        <td style="padding:8px 0; color:var(--gold);">ELITE (≥90%)</td>
+        <td style="padding:8px 0;">0.50%</td>
+        <td style="padding:8px 0; color:var(--green);">100%</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(0,229,255,0.05);">
+        <td style="padding:8px 0; color:var(--cyan);">PRIME (80–89%)</td>
+        <td style="padding:8px 0;">0.35%</td>
+        <td style="padding:8px 0; color:var(--gold);">75%</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0; color:var(--sub);">STANDARD (65–79%)</td>
+        <td style="padding:8px 0;">0.20%</td>
+        <td style="padding:8px 0; color:var(--muted);">25–50%</td>
+      </tr>
+    </table>
+    <div style="margin-top:12px; font-size:0.7rem; color:var(--muted);">* For a $100,000 account, 0.5% = $500 risk per trade. Hard daily loss limit: 2%.</div>
+  </div>
+</div>
 
-  <!-- 09 Ecosystem -->
-  <div class="section"><div class="slbl">09 &nbsp; Ecosystem</div><h2 class="stitle">SniperTrader.ai <span class="g">Stack</span> Integration</h2><div class="g2 stg"><div class="card vc"><span class="eico">📊</span><div class="etit">VWAP Elite Suite</div><div class="edesc">Multi‑anchored VWAP with deviation bands. Real‑time divergence alerts. Only signals that align with VWAP ±1σ qualify for ELITE tier.</div></div><div class="card"><span class="eico">📡</span><div class="etit">USME ICT Foundation</div><div class="edesc">ThinkScript + Pine Script. AI scoring + structural detection (OB, FVG, CHoCH). Now includes VWAP alignment factor.</div></div><div class="card bc"><span class="eico">📓</span><div class="etit">SMC Trade Journal</div><div class="edesc">Track accounts, tag USME setup + VWAP deviation band. Analytics by VWAP zone.</div></div><div class="card gc"><span class="eico">📱</span><div class="etit">TraderEdge OS</div><div class="edesc">Pre‑trade checklist, psych tracking, VWAP confidence score before each trade.</div></div></div></div>
+<!-- ============================================================ -->
+<!-- PANEL 4: SCALE & INCOME -->
+<!-- ============================================================ -->
+<div class="panel" id="panel-scale">
+  <div class="card">
+    <div class="card-title"><span class="icon">📈</span> Phase-by-Phase Scale Architecture</div>
+    <p>Multiple funded accounts deploying the same proven edge is how you compound income without compounding risk. The USME signal fires every morning — as each phase completes, you simply deploy it across more capital.</p>
 
-  <div class="footer"><div><div class="fbrand">SniperTrader<span>.ai</span></div><div class="ftag">Institutional‑Grade Intelligence</div></div><div class="fr">USME ICT Foundation + VWAP Elite<br>Prop Master Plan · 2026<br><span style="color:var(--green)">snipertrader.ai</span></div></div>
+    <div style="margin-top:16px;">
+      <div style="padding:16px; border-left: 3px solid var(--cyan); background:rgba(0,229,255,0.02); border-radius:0 8px 8px 0; margin-bottom:12px;">
+        <div style="font-family:var(--ff-disp); font-size:0.8rem; color:var(--cyan);">PHASE 1 — FOUNDATION (Months 0–3)</div>
+        <p style="font-size:0.85rem; color:var(--sub);">Master one account. Prove the system. Trade London + NY killzones exclusively with USME — maximum 2 entries per day. Risk: 0.5% per trade, 2% daily loss ceiling. Pass evaluation, receive 2+ payouts.</p>
+      </div>
+      <div style="padding:16px; border-left: 3px solid var(--gold); background:rgba(240,192,64,0.02); border-radius:0 8px 8px 0; margin-bottom:12px;">
+        <div style="font-family:var(--ff-disp); font-size:0.8rem; color:var(--gold);">PHASE 2 — DUPLICATION (Months 3–6)</div>
+        <p style="font-size:0.85rem; color:var(--sub);">Clone the system to 2–3 accounts. Use payouts from Account #1 to fund challenges. Identical USME configuration, identical risk. Rotation schedule: Account A on Mon/Wed, B on Tue/Thu, C on Fri.</p>
+      </div>
+      <div style="padding:16px; border-left: 3px solid #4488ff; background:rgba(68,136,255,0.02); border-radius:0 8px 8px 0; margin-bottom:12px;">
+        <div style="font-family:var(--ff-disp); font-size:0.8rem; color:#4488ff;">PHASE 3 — SCALE (Months 6–12)</div>
+        <p style="font-size:0.85rem; color:var(--sub);">Expand to 5–6 accounts across 3 firms. Deploy trade copier to execute USME signals simultaneously. Activate internal scaling programs — capital growth without new challenge fees.</p>
+      </div>
+      <div style="padding:16px; border-left: 3px solid var(--red); background:rgba(255,77,106,0.02); border-radius:0 8px 8px 0;">
+        <div style="font-family:var(--ff-disp); font-size:0.8rem; color:var(--red);">PHASE 4 — EMPIRE (Month 12+)</div>
+        <p style="font-size:0.85rem; color:var(--sub);">8–10 accounts · Full income architecture. USME generates the signal — the copier executes across every account simultaneously. Monthly income is a function of total capital deployed, not additional work. Establish LLC for tax optimization.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="icon">💰</span> Monthly Payout Projections</div>
+    <p style="font-size:0.85rem; color:var(--sub);">Conservative modeling at 3–5% monthly return on funded capital with 80% profit split.</p>
+    <table style="width:100%; border-collapse:collapse; font-size:0.8rem; color:var(--sub); margin-top:12px;">
+      <tr style="border-bottom:1px solid var(--border);">
+        <th style="text-align:left; padding:6px 0; font-family:var(--ff-mono); color:var(--white);">Phase</th>
+        <th style="text-align:left; padding:6px 0; font-family:var(--ff-mono); color:var(--white);">Accounts</th>
+        <th style="text-align:left; padding:6px 0; font-family:var(--ff-mono); color:var(--white);">Total Capital</th>
+        <th style="text-align:left; padding:6px 0; font-family:var(--ff-mono); color:var(--white);">Your Payout (80%)</th>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(0,229,255,0.05);"><td style="padding:8px 0;">Phase 1</td><td>1</td><td>$100,000</td><td style="color:var(--gold);">$2,400–$4,000</td></tr>
+      <tr style="border-bottom:1px solid rgba(0,229,255,0.05);"><td style="padding:8px 0;">Phase 2</td><td>3</td><td>$300,000</td><td style="color:var(--gold);">$7,200–$12,000</td></tr>
+      <tr style="border-bottom:1px solid rgba(0,229,255,0.05);"><td style="padding:8px 0;">Phase 3</td><td>5–6</td><td>$600,000</td><td style="color:var(--gold);">$14,400–$24,000</td></tr>
+      <tr><td style="padding:8px 0; color:var(--green);">Phase 4</td><td style="color:var(--green);">8–10</td><td style="color:var(--green);">$1,000,000+</td><td style="color:var(--green); font-weight:700;">$24,000–$40,000+</td></tr>
+    </table>
+    <div style="margin-top:12px; font-size:0.7rem; color:var(--muted);">* Projections model 3–5% monthly return. Conservative execution assumed. Past performance does not guarantee future results.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PANEL 5: FIRMS & LAWS -->
+<!-- ============================================================ -->
+<div class="panel" id="panel-firms">
+  <div class="card">
+    <div class="card-title"><span class="icon">🏛️</span> Recommended Firms for USME Traders</div>
+    <div class="grid-2">
+      <div class="card" style="background:rgba(0,0,0,0.2);">
+        <div style="font-family:var(--ff-disp); font-size:0.9rem; color:var(--cyan);">🥇 FTMO</div>
+        <p style="font-size:0.82rem;">Up to $400K per trader / $2M via multiple accounts. 80–90% split. Full ICT/SMC compatibility. Optimal for experienced traders prioritizing brand reliability.</p>
+        <div style="margin-top:8px;"><span class="rule-badge cyan">Forex & Indices</span> <span class="rule-badge">$400K Cap</span></div>
+      </div>
+      <div class="card" style="background:rgba(0,0,0,0.2);">
+        <div style="font-family:var(--ff-disp); font-size:0.9rem; color:var(--gold);">⚡ Apex Trader Funding</div>
+        <p style="font-size:0.82rem;">Up to 10 funded accounts simultaneously. Futures-focused (/NQ, /ES, CL). Purpose-built for trade copier deployment across a full USME portfolio.</p>
+        <div style="margin-top:8px;"><span class="rule-badge gold">Futures</span> <span class="rule-badge gold">10 Accounts</span></div>
+      </div>
+      <div class="card" style="background:rgba(0,0,0,0.2);">
+        <div style="font-family:var(--ff-disp); font-size:0.9rem; color:#4488ff;">🚀 FundedNext</div>
+        <p style="font-size:0.82rem;">Scales to $4M. Fast payouts. Weekly payout cadence. Best suited for Phase 2–3 scaling — rapid reinvestment of profits into progressively larger accounts.</p>
+        <div style="margin-top:8px;"><span class="rule-badge" style="border-color:#4488ff; color:#4488ff;">Forex + Futures</span> <span class="rule-badge">$4M Scale</span></div>
+      </div>
+      <div class="card" style="background:rgba(0,0,0,0.2);">
+        <div style="font-family:var(--ff-disp); font-size:0.9rem; color:var(--green);">🏔️ The5ers</div>
+        <p style="font-size:0.82rem;">Account doubles at every profit milestone. Scales to $4M with 100% profit split at peak tier. Optimal as the long-term compounding vehicle.</p>
+        <div style="margin-top:8px;"><span class="rule-badge green">100% Split</span> <span class="rule-badge">$4M Scale</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="border-color:rgba(255,77,106,0.2); background:rgba(255,77,106,0.02);">
+    <div class="card-title" style="color:var(--red);"><span class="icon">⚖️</span> The 7 Laws of USME Prop Trading</div>
+    <ul class="checklist">
+      <li><span class="check">01</span> <div><strong>Never risk more than 1% per trade</strong> on funded accounts. Your edge is statistical — it requires volume to manifest.</div></li>
+      <li><span class="check">02</span> <div><strong>Stop trading after 2% daily loss.</strong> Platform closed. Session over. Revenge trading inside prop firm loss-limit structures is irreversible.</div></li>
+      <li><span class="check">03</span> <div><strong>Only execute during killzone windows.</strong> USME signal quality degrades materially outside London and NY Open.</div></li>
+      <li><span class="check">04</span> <div><strong>Never scale before demonstrating consistency.</strong> Master one account, then duplicate it.</div></li>
+      <li><span class="check">05</span> <div><strong>Never hold through news events on restricted accounts.</strong> Close all positions 2 minutes ahead of any red-folder event.</div></li>
+      <li><span class="check">06</span> <div><strong>Withdraw profits on a regular, scheduled cadence.</strong> Protect what has already been earned.</div></li>
+      <li><span class="check">07</span> <div><strong>Log every trade</strong> in TraderEdge Performance OS. Pattern recognition is your second edge — and it compounds over time.</div></li>
+    </ul>
+    <div class="highlight-box red" style="margin-top:12px;">
+      <strong>⛔ Hard Rule:</strong> Never add to a losing position. No averaging down. Let the trade play out or stop out.
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div style="margin-top:48px; padding-top:24px; border-top:1px solid var(--border); text-align:center; font-family:var(--ff-mono); font-size:0.5rem; color:var(--muted); letter-spacing:0.08em;">
+  <span style="color:var(--cyan);">SNIPERTRADER</span> USME PROP FIRM MASTER PLAN v2.0 · 2026
+  <br>Trade responsibly. Past performance does not guarantee future results.
+</div>
+
 </div>
 
 <script>
-// Theme toggle
-const toggle = document.getElementById('themeToggle');
-const html = document.documentElement;
-const stored = localStorage.getItem('st-theme');
-if (stored === 'light') html.classList.add('light');
-toggle.addEventListener('click', () => {
-  html.classList.toggle('light');
-  localStorage.setItem('st-theme', html.classList.contains('light') ? 'light' : 'dark');
+// Tab switching
+const tabs = document.querySelectorAll('.tab-btn');
+const panels = {
+  overview: document.getElementById('panel-overview'),
+  research: document.getElementById('panel-research'),
+  execution: document.getElementById('panel-execution'),
+  scale: document.getElementById('panel-scale'),
+  firms: document.getElementById('panel-firms')
+};
+
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const panelName = tab.dataset.panel;
+    Object.keys(panels).forEach(key => {
+      panels[key].classList.toggle('active', key === panelName);
+    });
+  });
 });
-
-// Cursor and animations (same as before)
-const cur=document.getElementById('cur'), ring=document.getElementById('cur-r'), mg=document.getElementById('mglow');
-let mx=0,my=0,rx=0,ry=0;
-document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px';mg.style.left=mx+'px';mg.style.top=my+'px';});
-(function ar(){rx+=(mx-rx)*.1;ry+=(my-ry)*.1;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(ar)})();
-document.querySelectorAll('.card,.sb,a,button').forEach(el=>{el.addEventListener('mouseenter',()=>{cur.style.width='20px';cur.style.height='20px';ring.style.width='54px';ring.style.height='54px'});el.addEventListener('mouseleave',()=>{cur.style.width='12px';cur.style.height='12px';ring.style.width='36px';ring.style.height='36px'})});
-
-// Particles (simplified canvas)
-const canvas=document.getElementById('pcanvas'), ctx=canvas.getContext('2d');
-let W,H; function rsz(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight} rsz(); window.addEventListener('resize',rsz);
-const PAL=[[0,230,160],[0,212,255],[255,196,68],[191,122,240]];
-class P{constructor(){this.reset()} reset(){this.x=Math.random()*W;this.y=Math.random()*H;this.vx=(Math.random()-.5)*.35;this.vy=(Math.random()-.5)*.35-.08;this.r=Math.random()*1.5+.3;this.life=Math.random()*.6+.4;this.decay=Math.random()*.0025+.0008;this.col=PAL[Math.floor(Math.random()*4)];} step(){this.x+=this.vx;this.y+=this.vy;this.life-=this.decay;if(this.life<=0||this.y<-10)this.reset()} draw(){ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);ctx.fillStyle=`rgba(${this.col},${this.life*.65})`;ctx.fill()}}
-const pts=Array.from({length:200},()=>new P());
-function conn(){for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<85){const a=(1-d/85)*.11*pts[i].life*pts[j].life;ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.strokeStyle=`rgba(0,230,160,${a})`;ctx.lineWidth=.4;ctx.stroke()}}}
-function ap(){ctx.clearRect(0,0,W,H);pts.forEach(p=>{p.step();p.draw()});conn();requestAnimationFrame(ap)} ap();
-
-// 3D tilt & reveal
-document.querySelectorAll('.card').forEach(c=>{c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect();const dx=(e.clientX-r.left-r.width/2)/(r.width/2);const dy=(e.clientY-r.top-r.height/2)/(r.height/2);c.style.transform=`perspective(900px) rotateX(${dy*-6}deg) rotateY(${dx*8}deg) scale(1.015)`;});c.addEventListener('mouseleave',()=>{c.style.transform=''});});
-const io=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('vis')})},{threshold:.07});
-document.querySelectorAll('.section,.phase').forEach(el=>io.observe(el));
 </script>
+
 </body>
 </html>
