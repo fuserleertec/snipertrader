@@ -1,652 +1,500 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SniperTrader.ai — 30-Day Funded Challenge</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<style>
-/* ═══════════════════════════════════════════════════
-   RESET & TOKENS
-═══════════════════════════════════════════════════ */
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --obsidian: #03070d;
-  --deep:     #060e1a;
-  --panel:    #0a1628;
-  --glass:    rgba(8,18,36,.72);
-  --glass2:   rgba(8,18,36,.45);
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SniperTrader – 30-Day Funded Challenge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg-body: #040609;
+      --bg-panel: #0c1220;
+      --border: rgba(0,229,255,0.10);
+      --cyan: #00e5ff;
+      --gold: #f0c040;
+      --green: #00e5a0;
+      --red: #ff4d6a;
+      --purple: #9b5cff;
+      --white: #edf2fb;
+      --sub: rgba(237,242,251,0.72);
+      --muted: rgba(237,242,251,0.42);
+      --ff-disp: 'Orbitron', monospace;
+      --ff-mono: 'Space Mono', monospace;
+      --ff-body: 'Syne', sans-serif;
+    }
+    body {
+      background: var(--bg-body);
+      color: var(--white);
+      font-family: var(--ff-body);
+      padding: 40px 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .playbook {
+      max-width: 1100px;
+      width: 100%;
+    }
+    header {
+      text-align: center;
+      padding: 40px 0 30px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 40px;
+    }
+    header h1 {
+      font-family: var(--ff-disp);
+      font-size: clamp(1.8rem, 4vw, 3.2rem);
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      color: var(--white);
+    }
+    header h1 span { color: var(--cyan); }
+    header .badge {
+      font-family: var(--ff-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      color: var(--gold);
+      background: rgba(240,192,64,0.08);
+      border: 1px solid rgba(240,192,64,0.2);
+      padding: 6px 18px;
+      border-radius: 40px;
+      display: inline-block;
+      margin-top: 12px;
+    }
+    header .sub {
+      font-family: var(--ff-mono);
+      font-size: 0.65rem;
+      color: var(--muted);
+      margin-top: 12px;
+      letter-spacing: 0.1em;
+    }
 
-  --cyan:     #00e5ff;
-  --cyan-d:   rgba(0,229,255,.12);
-  --cyan-g:   rgba(0,229,255,.35);
-  --gold:     #f5c518;
-  --gold-d:   rgba(245,197,24,.12);
-  --gold-g:   rgba(245,197,24,.30);
-  --red:      #ff2d55;
-  --red-d:    rgba(255,45,85,.12);
-  --green:    #00ff9d;
-  --green-d:  rgba(0,255,157,.10);
-  --purple:   #9b5cff;
-  --purp-d:   rgba(155,92,255,.12);
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      font-family: var(--ff-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 12px 28px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.25s;
+      font-weight: 700;
+      flex: 1;
+      min-width: 140px;
+      text-align: center;
+    }
+    .tab-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+    .tab-btn.active {
+      background: rgba(0,229,255,0.06);
+      border-color: var(--cyan);
+      color: var(--cyan);
+      box-shadow: 0 0 30px rgba(0,229,255,0.04);
+    }
+    .tab-btn .num {
+      display: inline-block;
+      background: rgba(0,229,255,0.12);
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      line-height: 22px;
+      text-align: center;
+      font-size: 0.55rem;
+      margin-right: 8px;
+      color: var(--cyan);
+    }
+    .tab-btn.active .num { background: var(--cyan); color: #000; }
 
-  --bc:  rgba(0,229,255,.18);
-  --bh:  rgba(0,229,255,.44);
-  --txt: #d0e8f8;
-  --tb:  #ffffff;
-  --mut: #c0d8ee;
-  --wh:  #ffffff;
-}
+    .panel {
+      display: none;
+      animation: fadeUp 0.5s ease;
+    }
+    .panel.active { display: block; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-/* ── LIGHT MODE ───────────────────────────────── */
-html.light{
-  --obsidian: #eef3f9;
-  --deep:     #e2eaf4;
-  --panel:    #d5e1ef;
-  --glass:    rgba(255,255,255,.78);
-  --glass2:   rgba(255,255,255,.55);
+    /* Cards */
+    .card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px 32px;
+      margin-bottom: 20px;
+      transition: border-color 0.2s;
+    }
+    .card:hover { border-color: rgba(0,229,255,0.15); }
+    .card-title {
+      font-family: var(--ff-disp);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--cyan);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card-title .icon { font-size: 1.2rem; }
+    .card p, .card li {
+      font-size: 0.92rem;
+      color: var(--sub);
+      line-height: 1.7;
+    }
+    .card ul, .card ol {
+      padding-left: 24px;
+      margin: 8px 0;
+    }
+    .card li { margin-bottom: 6px; }
+    .card strong { color: var(--white); }
+    .highlight-box {
+      background: rgba(0,229,255,0.04);
+      border-left: 3px solid var(--cyan);
+      padding: 14px 18px;
+      border-radius: 0 8px 8px 0;
+      margin: 12px 0;
+    }
+    .highlight-box.gold { border-left-color: var(--gold); background: rgba(240,192,64,0.04); }
+    .highlight-box.green { border-left-color: var(--green); background: rgba(0,229,160,0.04); }
+    .highlight-box.red { border-left-color: var(--red); background: rgba(255,77,106,0.04); }
+    .highlight-box.purple { border-left-color: var(--purple); background: rgba(155,92,255,0.04); }
 
-  --cyan:     #0080a8;
-  --cyan-d:   rgba(0,128,168,.10);
-  --cyan-g:   rgba(0,128,168,.30);
-  --gold:     #b8860b;
-  --gold-d:   rgba(184,134,11,.10);
-  --gold-g:   rgba(184,134,11,.28);
-  --red:      #cc1a36;
-  --red-d:    rgba(204,26,54,.10);
-  --green:    #007a4a;
-  --green-d:  rgba(0,122,74,.08);
-  --purple:   #6a3abf;
-  --purp-d:   rgba(106,58,191,.10);
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 768px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .tab-btn { min-width: 100px; padding: 10px 16px; font-size: 0.5rem; }
+      .card { padding: 20px; }
+    }
 
-  --bc:  rgba(0,100,140,.18);
-  --bh:  rgba(0,100,140,.38);
-  --txt: #0a1e30;
-  --tb:  #020c16;
-  --mut: #1a3d5a;
-  --wh:  #020c16;
-}
-html{scroll-behavior:smooth;overflow-x:hidden}
-body{background:var(--obsidian);color:var(--txt);font-family:'Syne',sans-serif;overflow-x:hidden;cursor:none;transition:background .4s,color .4s}
-html.light body{cursor:auto}
-html.light #cdot,html.light #cring{display:none}
-html.light .sgrid{background-image:linear-gradient(rgba(0,100,140,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(0,100,140,.06) 1px,transparent 1px)}
-html.light .stop{background:radial-gradient(ellipse 80% 100% at 50% 0%,rgba(0,128,168,.06),transparent 70%)}
-html.light .svig{background:radial-gradient(ellipse 100% 100% at 50% 50%,transparent 45%,rgba(238,243,249,.6) 100%)}
-html.light .slines{display:none}
-html.light #pcanvas{opacity:.15}
+    .rule-badge {
+      display: inline-block;
+      font-family: var(--ff-mono);
+      font-size: 0.45rem;
+      letter-spacing: 0.1em;
+      padding: 2px 10px;
+      border-radius: 20px;
+      margin-right: 6px;
+      font-weight: 700;
+    }
+    .rule-badge.gold { background: rgba(240,192,64,0.12); color: var(--gold); border: 1px solid rgba(240,192,64,0.15); }
+    .rule-badge.cyan { background: rgba(0,229,255,0.08); color: var(--cyan); border: 1px solid rgba(0,229,255,0.12); }
+    .rule-badge.green { background: rgba(0,229,160,0.08); color: var(--green); border: 1px solid rgba(0,229,160,0.12); }
+    .rule-badge.red { background: rgba(255,77,106,0.08); color: var(--red); border: 1px solid rgba(255,77,106,0.12); }
+    .rule-badge.purple { background: rgba(155,92,255,0.08); color: var(--purple); border: 1px solid rgba(155,92,255,0.12); }
 
-/* ═══════════════════════════════════════════════════
-   CURSOR
-═══════════════════════════════════════════════════ */
-#cdot{position:fixed;width:8px;height:8px;background:var(--cyan);border-radius:50%;pointer-events:none;z-index:10000;transform:translate(-50%,-50%);box-shadow:0 0 12px var(--cyan),0 0 24px rgba(0,229,255,.4);transition:width .15s,height .15s,background .2s}
-#cring{position:fixed;width:40px;height:40px;border:1px solid rgba(0,229,255,.5);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:width .22s,height .22s,border-color .2s}
-#cdot.h{width:16px;height:16px;background:var(--gold)}
-#cring.h{width:58px;height:58px;border-color:rgba(245,197,24,.5)}
+    .checklist { list-style: none; padding: 0; }
+    .checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(0,229,255,0.04);
+    }
+    .checklist li:last-child { border-bottom: none; }
+    .checklist .check {
+      color: var(--cyan);
+      font-size: 1.1rem;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
 
-/* ═══════════════════════════════════════════════════
-   SCENE LAYERS
-═══════════════════════════════════════════════════ */
-#pcanvas{position:fixed;inset:0;pointer-events:none;z-index:1}
-#mglow{position:fixed;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(0,229,255,.042) 0%,transparent 65%);pointer-events:none;z-index:2;transform:translate(-50%,-50%);will-change:left,top;transition:left .7s cubic-bezier(.25,.46,.45,.94),top .7s cubic-bezier(.25,.46,.45,.94)}
-.sgrid{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(0,229,255,.026) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.026) 1px,transparent 1px);background-size:64px 64px;mask-image:radial-gradient(ellipse 90% 90% at 50% 50%,black 30%,transparent 100%)}
-.stop{position:fixed;top:0;left:0;right:0;height:55vh;background:radial-gradient(ellipse 80% 100% at 50% 0%,rgba(0,229,255,.038),transparent 70%);pointer-events:none;z-index:1}
-.slines{position:fixed;inset:0;z-index:3;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.016) 3px,rgba(0,0,0,.016) 4px)}
-.svig{position:fixed;inset:0;z-index:3;pointer-events:none;background:radial-gradient(ellipse 100% 100% at 50% 50%,transparent 45%,rgba(3,7,13,.75) 100%)}
+    /* Calendar */
+    .cal-wrap {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px;
+      backdrop-filter: blur(12px);
+    }
+    .cal-header {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .cal-day-name {
+      font-family: var(--ff-mono);
+      font-size: 0.55rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-align: center;
+      padding: 6px 0;
+    }
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+    }
+    .day {
+      background: rgba(8,18,36,0.85);
+      border: 1px solid rgba(0,229,255,0.06);
+      border-radius: 8px;
+      padding: 8px 6px 10px;
+      min-height: 80px;
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+      cursor: default;
+    }
+    .day:hover {
+      border-color: rgba(0,229,255,0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    }
+    .day .day-num {
+      font-family: var(--ff-disp);
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: rgba(0,229,255,0.6);
+      margin-bottom: 4px;
+      line-height: 1;
+    }
+    .day .day-theme {
+      font-family: var(--ff-mono);
+      font-size: 0.5rem;
+      letter-spacing: 0.04em;
+      color: var(--sub);
+      line-height: 1.3;
+      flex: 1;
+    }
+    .day .day-tag {
+      font-family: var(--ff-mono);
+      font-size: 0.4rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 1px 6px;
+      border-radius: 2px;
+      border: 1px solid rgba(0,229,255,0.15);
+      color: var(--cyan);
+      display: inline-block;
+      width: fit-content;
+      margin-top: 4px;
+      background: rgba(0,229,255,0.04);
+    }
+    .day.p1 { border-color: rgba(0,229,255,0.12); }
+    .day.p1 .day-num { color: var(--cyan); }
+    .day.p2 { border-color: rgba(240,192,64,0.1); }
+    .day.p2 .day-num { color: var(--gold); }
+    .day.p3 { border-color: rgba(155,92,255,0.1); }
+    .day.p3 .day-num { color: var(--purple); }
+    .day.p4 { border-color: rgba(0,229,160,0.08); }
+    .day.p4 .day-num { color: var(--green); }
+    .day.milestone { border-color: rgba(240,192,64,0.3); box-shadow: 0 0 16px rgba(240,192,64,0.05); }
+    .day.milestone .day-num { color: var(--gold); }
+    .day.milestone .day-tag { border-color: rgba(240,192,64,0.3); color: var(--gold); background: rgba(240,192,64,0.06); }
+    .day.final { border-color: rgba(0,229,160,0.3); box-shadow: 0 0 16px rgba(0,229,160,0.05); }
+    .day.final .day-num { color: var(--green); }
+    .day.final .day-tag { border-color: rgba(0,229,160,0.3); color: var(--green); background: rgba(0,229,160,0.06); }
 
-/* ═══════════════════════════════════════════════════
-   LAYOUT
-═══════════════════════════════════════════════════ */
-.wrap{position:relative;z-index:10;max-width:1140px;margin:0 auto;padding:0 40px 140px}
+    /* Progress bars */
+    .pbar-wrap { margin-bottom: 16px; }
+    .pbar-head {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+      align-items: center;
+    }
+    .pbar-label {
+      font-family: var(--ff-mono);
+      font-size: 0.55rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--sub);
+    }
+    .pbar-val {
+      font-family: var(--ff-disp);
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--cyan);
+    }
+    .pbar-val.gold { color: var(--gold); }
+    .pbar-val.green { color: var(--green); }
+    .pbar-val.purple { color: var(--purple); }
+    .pbar-track {
+      height: 3px;
+      background: rgba(0,229,255,0.06);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .pbar-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--cyan);
+      box-shadow: 0 0 6px rgba(0,229,255,0.3);
+      transition: width 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      width: 0%;
+    }
+    .pbar-fill.gold { background: var(--gold); box-shadow: 0 0 6px rgba(240,192,64,0.3); }
+    .pbar-fill.green { background: var(--green); box-shadow: 0 0 6px rgba(0,229,160,0.3); }
+    .pbar-fill.purple { background: var(--purple); box-shadow: 0 0 6px rgba(155,92,255,0.3); }
+    .pbar-fill.red { background: var(--red); box-shadow: 0 0 6px rgba(255,77,106,0.3); }
 
-/* ═══════════════════════════════════════════════════
-   NAV
-═══════════════════════════════════════════════════ */
-nav{position:fixed;top:0;left:0;right:0;z-index:500;padding:20px 40px;display:flex;justify-content:space-between;align-items:center;background:linear-gradient(to bottom,rgba(3,7,13,.92),transparent);backdrop-filter:blur(10px);transition:background .3s,border-bottom .3s}
-nav.solid{background:rgba(3,7,13,.96);border-bottom:1px solid rgba(0,229,255,.08)}
-.nbrand{font-family:'Orbitron',sans-serif;font-size:15px;font-weight:900;letter-spacing:3px;color:var(--wh);text-transform:uppercase}
-.nbrand span{color:var(--cyan)}
-.nlinks{display:flex;align-items:center;gap:6px}
-.nlink{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--mut);padding:7px 14px;border-radius:2px;border:1px solid transparent;cursor:pointer;transition:color .2s,border-color .2s,background .2s;white-space:nowrap}
-.nlink:hover{color:var(--cyan);border-color:rgba(0,229,255,.22);background:rgba(0,229,255,.04)}
-.npill{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;background:rgba(245,197,24,.08);border:1px solid rgba(245,197,24,.28);color:var(--gold);padding:6px 16px;border-radius:2px}
-@media(max-width:768px){.nlinks{display:none}}
+    /* Phase timeline */
+    .timeline {
+      position: relative;
+      padding-left: 56px;
+    }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 19px;
+      top: 28px;
+      bottom: 28px;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--cyan), var(--gold), var(--purple), var(--green));
+      opacity: 0.18;
+    }
+    .phase-item {
+      position: relative;
+      margin-bottom: 44px;
+      opacity: 0;
+      transform: translateX(-18px);
+      transition: opacity 0.65s ease, transform 0.65s ease;
+    }
+    .phase-item.visible { opacity: 1; transform: none; }
+    .phase-item:last-child { margin-bottom: 0; }
+    .phase-node {
+      position: absolute;
+      left: -56px;
+      top: 0;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--ff-disp);
+      font-size: 0.7rem;
+      font-weight: 800;
+      border: 2px solid var(--cyan);
+      background: var(--bg-body);
+      color: var(--cyan);
+      box-shadow: 0 0 0 4px rgba(0,229,255,0.04), 0 0 18px rgba(0,229,255,0.1);
+    }
+    .phase-node.gold { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 0 4px rgba(240,192,64,0.04), 0 0 18px rgba(240,192,64,0.1); }
+    .phase-node.purple { border-color: var(--purple); color: var(--purple); box-shadow: 0 0 0 4px rgba(155,92,255,0.04), 0 0 18px rgba(155,92,255,0.1); }
+    .phase-node.green { border-color: var(--green); color: var(--green); box-shadow: 0 0 0 4px rgba(0,229,160,0.04), 0 0 18px rgba(0,229,160,0.1); }
+    .phase-kicker {
+      font-family: var(--ff-mono);
+      font-size: 0.5rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 4px;
+    }
+    .phase-kicker.gold { color: var(--gold); }
+    .phase-kicker.purple { color: var(--purple); }
+    .phase-kicker.green { color: var(--green); }
+    .phase-title {
+      font-family: var(--ff-disp);
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--white);
+      margin-bottom: 8px;
+    }
+    .phase-body {
+      font-size: 0.82rem;
+      line-height: 1.7;
+      color: var(--sub);
+      margin-bottom: 10px;
+    }
 
-/* ── THEME TOGGLE ─────────────────────────────── */
-.theme-toggle{
-  position:relative;width:56px;height:28px;
-  background:rgba(0,229,255,.08);
-  border:1px solid rgba(0,229,255,.3);
-  border-radius:14px;cursor:pointer;
-  transition:background .35s,border-color .35s;
-  flex-shrink:0;outline:none;
-}
-.theme-toggle:hover{background:rgba(0,229,255,.14);border-color:rgba(0,229,255,.5)}
-.theme-toggle .tknob{
-  position:absolute;top:3px;left:3px;
-  width:20px;height:20px;border-radius:50%;
-  background:linear-gradient(135deg,#00e5ff,#0088aa);
-  transition:transform .35s cubic-bezier(.34,1.56,.64,1),background .35s;
-  box-shadow:0 0 10px rgba(0,229,255,.6);
-  display:flex;align-items:center;justify-content:center;
-  font-size:11px;line-height:1;
-}
-.theme-toggle .tknob::after{content:'🌙';display:block;transition:opacity .2s}
-html.light .theme-toggle{background:rgba(255,200,0,.08);border-color:rgba(255,180,0,.4)}
-html.light .theme-toggle:hover{background:rgba(255,200,0,.14);border-color:rgba(255,180,0,.6)}
-html.light .theme-toggle .tknob{transform:translateX(28px);background:linear-gradient(135deg,#ffd700,#ff9900);box-shadow:0 0 10px rgba(255,200,0,.6)}
-html.light .theme-toggle .tknob::after{content:'☀️'}
-
-/* ═══════════════════════════════════════════════════
-   SECTION SYSTEM
-═══════════════════════════════════════════════════ */
-.sec{margin-bottom:72px;opacity:0;transform:translateY(36px);transition:opacity .8s cubic-bezier(.25,.46,.45,.94),transform .8s cubic-bezier(.25,.46,.45,.94)}
-.sec.on{opacity:1;transform:none}
-.slbl{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;letter-spacing:5px;text-transform:uppercase;color:var(--cyan);margin-bottom:14px;display:flex;align-items:center;gap:14px}
-.slbl::before{content:'';width:28px;height:1px;background:var(--cyan);flex-shrink:0}
-.slbl::after{content:'';flex:1;height:1px;background:linear-gradient(to right,rgba(0,229,255,.2),transparent)}
-.snum{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:600;color:rgba(0,229,255,.65);margin-right:4px}
-.stit{font-family:'Orbitron',sans-serif;font-size:clamp(26px,3.2vw,46px);font-weight:900;letter-spacing:.5px;line-height:1.05;color:var(--wh);margin-bottom:28px}
-.stit .c{color:var(--cyan)}
-.stit .g{color:var(--gold)}
-.stit .r{color:var(--red)}
-.stit .p{color:var(--purple)}
-.body{font-family:'Syne',sans-serif;font-size:16px;font-weight:400;line-height:1.85;color:var(--txt);margin-bottom:22px}
-.body em{font-style:normal;color:var(--tb);font-weight:700}
-
-/* ═══════════════════════════════════════════════════
-   GLASS CARDS (3D tilt targets)
-═══════════════════════════════════════════════════ */
-.gc{background:var(--glass);border:1px solid var(--bc);border-radius:12px;padding:30px 34px;position:relative;overflow:hidden;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);transform-style:preserve-3d;transition:transform .35s ease,box-shadow .35s,border-color .3s;will-change:transform}
-.gc::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,229,255,.025) 0%,transparent 60%);pointer-events:none;border-radius:inherit}
-.gc::after{content:'';position:absolute;top:0;left:0;width:2px;height:100%;background:linear-gradient(to bottom,var(--cyan),rgba(0,229,255,.08))}
-.gc.gold-c::after{background:linear-gradient(to bottom,var(--gold),rgba(245,197,24,.08))}
-.gc.red-c::after{background:linear-gradient(to bottom,var(--red),rgba(255,45,85,.08))}
-.gc.grn-c::after{background:linear-gradient(to bottom,var(--green),rgba(0,255,157,.08))}
-.gc.purp-c::after{background:linear-gradient(to bottom,var(--purple),rgba(155,92,255,.08))}
-.gc:hover{border-color:var(--bh);box-shadow:0 0 0 1px rgba(0,229,255,.06),0 24px 64px rgba(0,0,0,.55),0 0 44px rgba(0,229,255,.07),inset 0 0 28px rgba(0,229,255,.02)}
-.gc.gold-c:hover{border-color:rgba(245,197,24,.35);box-shadow:0 24px 64px rgba(0,0,0,.5),0 0 40px rgba(245,197,24,.08)}
-.gc.red-c:hover{border-color:rgba(255,45,85,.35);box-shadow:0 24px 64px rgba(0,0,0,.5),0 0 40px rgba(255,45,85,.08)}
-.gc.grn-c:hover{border-color:rgba(0,255,157,.3);box-shadow:0 24px 64px rgba(0,0,0,.5),0 0 40px rgba(0,255,157,.07)}
-.gc.purp-c:hover{border-color:rgba(155,92,255,.35);box-shadow:0 24px 64px rgba(0,0,0,.5),0 0 40px rgba(155,92,255,.08)}
-.shine{position:absolute;top:0;right:0;width:100px;height:100px;background:radial-gradient(circle at top right,rgba(0,229,255,.1),transparent 70%);pointer-events:none;border-radius:0 12px 0 0}
-.gc.gold-c .shine{background:radial-gradient(circle at top right,rgba(245,197,24,.09),transparent 70%)}
-.gc.red-c .shine{background:radial-gradient(circle at top right,rgba(255,45,85,.09),transparent 70%)}
-.gc.grn-c .shine{background:radial-gradient(circle at top right,rgba(0,255,157,.08),transparent 70%)}
-.gc.purp-c .shine{background:radial-gradient(circle at top right,rgba(155,92,255,.09),transparent 70%)}
-
-/* ═══════════════════════════════════════════════════
-   GRIDS
-═══════════════════════════════════════════════════ */
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:22px}
-.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
-@media(max-width:900px){.g3{grid-template-columns:1fr 1fr}.g4{grid-template-columns:1fr 1fr}}
-@media(max-width:580px){.g2,.g3,.g4{grid-template-columns:1fr}}
-
-/* Stagger reveal */
-.sg>*{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
-.sg.on>*:nth-child(1){opacity:1;transform:none;transition-delay:.04s}
-.sg.on>*:nth-child(2){opacity:1;transform:none;transition-delay:.13s}
-.sg.on>*:nth-child(3){opacity:1;transform:none;transition-delay:.22s}
-.sg.on>*:nth-child(4){opacity:1;transform:none;transition-delay:.31s}
-.sg.on>*:nth-child(5){opacity:1;transform:none;transition-delay:.40s}
-.sg.on>*:nth-child(6){opacity:1;transform:none;transition-delay:.49s}
-.sg.on>*:nth-child(7){opacity:1;transform:none;transition-delay:.58s}
-
-/* ═══════════════════════════════════════════════════
-   DIVIDER
-═══════════════════════════════════════════════════ */
-.div{height:1px;margin:50px 0;background:linear-gradient(90deg,transparent,rgba(0,229,255,.2) 20%,rgba(0,229,255,.4) 50%,rgba(0,229,255,.2) 80%,transparent);position:relative}
-.div::after{content:'◈';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--cyan);font-size:10px;background:var(--obsidian);padding:0 16px}
-
-/* ═══════════════════════════════════════════════════
-   TAGS / BADGES
-═══════════════════════════════════════════════════ */
-.tag{display:inline-block;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;padding:3px 10px;border-radius:2px;border:1px solid}
-.tc{background:var(--cyan-d);color:var(--cyan);border-color:rgba(0,229,255,.3)}
-.tg{background:var(--gold-d);color:var(--gold);border-color:rgba(245,197,24,.3)}
-.tr{background:var(--red-d);color:var(--red);border-color:rgba(255,45,85,.3)}
-.tn{background:var(--green-d);color:var(--green);border-color:rgba(0,255,157,.3)}
-.tp{background:var(--purp-d);color:var(--purple);border-color:rgba(155,92,255,.3)}
-.tm{background:rgba(58,88,112,.15);color:var(--mut);border-color:rgba(58,88,112,.25)}
-.trow{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
-
-/* ═══════════════════════════════════════════════════
-   STAT BOXES
-═══════════════════════════════════════════════════ */
-.sbox{background:var(--glass);border:1px solid var(--bc);border-radius:10px;padding:26px 20px;text-align:center;backdrop-filter:blur(16px);position:relative;overflow:hidden;transition:transform .3s,border-color .3s,box-shadow .3s}
-.sbox::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 100% 60% at 50% 0%,rgba(0,229,255,.046),transparent 60%);pointer-events:none}
-.sbox:hover{transform:translateY(-5px);border-color:rgba(0,229,255,.3);box-shadow:0 16px 50px rgba(0,0,0,.45),0 0 28px rgba(0,229,255,.08)}
-.sval{font-family:'Orbitron',sans-serif;font-size:clamp(36px,4vw,52px);font-weight:900;line-height:1;display:block;margin-bottom:8px;color:var(--cyan);text-shadow:0 0 28px rgba(0,229,255,.5)}
-.sval.g{color:var(--gold);text-shadow:0 0 28px rgba(245,197,24,.45)}
-.sval.v{color:var(--green);text-shadow:0 0 28px rgba(0,255,157,.45)}
-.sval.r{color:var(--red);text-shadow:0 0 28px rgba(255,45,85,.4)}
-.sval.p{color:var(--purple);text-shadow:0 0 28px rgba(155,92,255,.4)}
-.slb{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--txt)}
-
-/* ═══════════════════════════════════════════════════
-   HERO
-═══════════════════════════════════════════════════ */
-.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:130px 0 90px;position:relative}
-
-/* Countdown ring */
-.hero-ring{position:absolute;right:4%;top:50%;transform:translateY(-50%);width:360px;height:360px;opacity:.065;pointer-events:none}
-.hero-ring circle{fill:none;stroke:var(--gold);transform-origin:center}
-.hr1{stroke-width:.7;stroke-dasharray:10 16;animation:spin 40s linear infinite}
-.hr2{stroke-width:.5;stroke-dasharray:3 12;animation:spin 22s linear infinite reverse}
-.hr3{stroke-width:1.2;stroke-dasharray:1 0;animation:spin 8s linear infinite}
-/* 30 label in center */
-.hero-ring text{font-family:'Orbitron',sans-serif;font-size:72px;font-weight:900;fill:rgba(245,197,24,.55);text-anchor:middle;dominant-baseline:central}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-.hero-eyebrow{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:5px;text-transform:uppercase;color:var(--cyan);margin-bottom:28px;display:flex;align-items:center;gap:14px;opacity:0;animation:ri .9s .15s forwards}
-.hero-eyebrow::before{content:'';width:48px;height:1px;background:linear-gradient(to right,transparent,var(--cyan));flex-shrink:0}
-.ldot{display:inline-flex;align-items:center;gap:6px;font-size:9px;letter-spacing:2px}
-.ldot::before{content:'';display:block;width:5px;height:5px;background:var(--gold);border-radius:50%;animation:lp 1.8s infinite;box-shadow:0 0 8px var(--gold)}
-@keyframes lp{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.25;transform:scale(.45)}}
-
-.hero-title{font-family:'Orbitron',sans-serif;font-weight:900;font-size:clamp(50px,8vw,114px);line-height:.88;letter-spacing:-1px;color:var(--wh);opacity:0;animation:ri .9s .3s forwards}
-.hero-title .cy{color:transparent;-webkit-text-stroke:2px var(--cyan);filter:drop-shadow(0 0 16px rgba(0,229,255,.5))}
-.hero-title .gl{color:var(--gold);text-shadow:0 0 40px rgba(245,197,24,.6),0 0 80px rgba(245,197,24,.25);animation:gp 4s ease-in-out infinite}
-@keyframes gp{0%,100%{text-shadow:0 0 40px rgba(245,197,24,.6),0 0 80px rgba(245,197,24,.25)}50%{text-shadow:0 0 60px rgba(245,197,24,.9),0 0 120px rgba(245,197,24,.4)}}
-
-.hero-sub{max-width:620px;margin-top:32px;font-size:17px;font-weight:400;line-height:1.75;color:var(--txt);opacity:0;animation:ri .9s .48s forwards}
-.hero-sub em{font-style:normal;color:var(--tb);font-weight:600}
-
-/* Hero countdown bar */
-.hbar{display:flex;flex-wrap:wrap;gap:0;margin-top:60px;opacity:0;animation:ri .9s .65s forwards;border-top:1px solid var(--bc);border-bottom:1px solid var(--bc)}
-.hbs{padding:22px 48px 22px 0;margin-right:48px;border-right:1px solid var(--bc)}
-.hbs:last-child{border-right:none;margin-right:0;padding-right:0}
-.hbn{font-family:'Orbitron',sans-serif;font-size:42px;font-weight:900;line-height:1;display:block;color:var(--cyan);text-shadow:0 0 22px rgba(0,229,255,.5)}
-.hbn.g{color:var(--gold);text-shadow:0 0 22px rgba(245,197,24,.4)}
-.hbn.v{color:var(--green);text-shadow:0 0 22px rgba(0,255,157,.4)}
-.hbn.r{color:var(--red);text-shadow:0 0 22px rgba(255,45,85,.4)}
-.hbl{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--txt);margin-top:5px;display:block}
-
-.hero-scr{position:absolute;bottom:40px;left:0;display:flex;align-items:center;gap:12px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--txt);opacity:0;animation:ri .9s .9s forwards}
-.strack{width:1px;height:40px;background:linear-gradient(to bottom,var(--cyan),transparent);animation:sd 2s infinite}
-@keyframes sd{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform:scaleY(1);transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
-@keyframes ri{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
-
-/* ═══════════════════════════════════════════════════
-   CHALLENGE OVERVIEW CARDS
-═══════════════════════════════════════════════════ */
-.ov-icon{font-size:32px;margin-bottom:14px;display:block}
-.ov-title{font-family:'Orbitron',sans-serif;font-size:16px;font-weight:800;color:var(--wh);margin-bottom:8px}
-.ov-desc{font-size:13px;line-height:1.8;color:var(--txt)}
-
-/* ═══════════════════════════════════════════════════
-   30-DAY CALENDAR GRID
-═══════════════════════════════════════════════════ */
-.cal-wrap{background:var(--glass);border:1px solid var(--bc);border-radius:14px;padding:36px;backdrop-filter:blur(24px);position:relative;overflow:hidden}
-.cal-wrap::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(0,229,255,.035),transparent 60%);pointer-events:none}
-.cal-header{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px}
-.cal-day-name{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--txt);text-align:center;padding:6px 0}
-.cal-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
-.day{
-  background:rgba(8,18,36,.8);
-  border:1px solid rgba(0,229,255,.08);
-  border-radius:8px;padding:10px 8px 12px;
-  min-height:88px;
-  display:flex;flex-direction:column;
-  position:relative;overflow:hidden;
-  transition:border-color .2s,box-shadow .2s,transform .2s;
-  cursor:default;
-}
-.day:hover{border-color:rgba(0,229,255,.25);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.4),0 0 16px rgba(0,229,255,.05)}
-.day.week-label{background:transparent;border:none;min-height:auto;padding:4px 0;align-items:center;justify-content:center}
-.day-num{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:rgba(0,229,255,.75);margin-bottom:5px;line-height:1}
-.day-theme{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--txt);line-height:1.4;flex:1}
-.day-tag{margin-top:6px;font-family:'Space Mono',monospace;font-size:7px;letter-spacing:1px;text-transform:uppercase;padding:2px 6px;border-radius:2px;border:1px solid;display:inline-block;width:fit-content}
-/* Day phase color states */
-.day.p1{border-color:rgba(0,229,255,.14)}
-.day.p1 .day-num{color:var(--cyan)}
-.day.p1 .day-tag{background:rgba(0,229,255,.08);color:var(--cyan);border-color:rgba(0,229,255,.28)}
-.day.p2{border-color:rgba(245,197,24,.1)}
-.day.p2 .day-num{color:var(--gold)}
-.day.p2 .day-tag{background:rgba(245,197,24,.08);color:var(--gold);border-color:rgba(245,197,24,.28)}
-.day.p3{border-color:rgba(155,92,255,.12)}
-.day.p3 .day-num{color:var(--purple)}
-.day.p3 .day-tag{background:rgba(155,92,255,.08);color:var(--purple);border-color:rgba(155,92,255,.28)}
-.day.p4{border-color:rgba(0,255,157,.1)}
-.day.p4 .day-num{color:var(--green)}
-.day.p4 .day-tag{background:rgba(0,255,157,.08);color:var(--green);border-color:rgba(0,255,157,.28)}
-.day.weekend{opacity:.35;background:rgba(4,10,20,.6)}
-.day.milestone{border-width:1px;border-color:rgba(245,197,24,.35);box-shadow:0 0 20px rgba(245,197,24,.06)}
-.day.milestone .day-num{color:var(--gold)}
-.cal-legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:20px}
-.leg-item{display:flex;align-items:center;gap:7px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--txt)}
-.leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-
-/* ═══════════════════════════════════════════════════
-   WEEKLY BREAKDOWN TABS
-═══════════════════════════════════════════════════ */
-.week-tabs{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap}
-.wtab{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:8px 18px;border-radius:3px;border:1px solid var(--bc);color:var(--mut);background:transparent;cursor:pointer;transition:all .2s}
-.wtab:hover{border-color:var(--bh);color:var(--cyan)}
-.wtab.act{background:rgba(0,229,255,.08);border-color:rgba(0,229,255,.38);color:var(--cyan);box-shadow:0 0 16px rgba(0,229,255,.06)}
-.week-panel{display:none}
-.week-panel.act{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-@media(max-width:640px){.week-panel.act{grid-template-columns:1fr}}
-
-/* Day detail card */
-.dd{background:rgba(8,18,36,.85);border:1px solid rgba(0,229,255,.09);border-radius:8px;padding:18px 20px;position:relative;overflow:hidden;transition:border-color .2s}
-.dd:hover{border-color:rgba(0,229,255,.22)}
-.dd-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
-.dd-num{font-family:'Orbitron',sans-serif;font-size:22px;font-weight:900;color:var(--cyan);line-height:1;opacity:.35}
-.dd-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--tb);margin-bottom:6px;line-height:1.2}
-.dd-body{font-size:12px;line-height:1.75;color:var(--txt)}
-.dd-tools{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
-
-/* ═══════════════════════════════════════════════════
-   TOOL INTEGRATION MATRIX
-═══════════════════════════════════════════════════ */
-.tool-card{background:var(--glass);border:1px solid var(--bc);border-radius:12px;padding:28px 30px;backdrop-filter:blur(22px);position:relative;overflow:hidden;transition:transform .35s,box-shadow .35s,border-color .3s;transform-style:preserve-3d;will-change:transform}
-.tool-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,229,255,.022) 0%,transparent 55%);pointer-events:none}
-.tool-icon{font-size:36px;display:block;margin-bottom:14px}
-.tool-name{font-family:'Orbitron',sans-serif;font-size:17px;font-weight:800;color:var(--wh);margin-bottom:6px}
-.tool-role{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--cyan);margin-bottom:12px}
-.tool-desc{font-size:13px;line-height:1.8;color:var(--txt)}
-.tool-features{list-style:none;margin-top:14px}
-.tool-features li{font-size:12px;color:var(--txt);padding:4px 0 4px 16px;position:relative;line-height:1.6;border-bottom:1px solid rgba(0,229,255,.05)}
-.tool-features li:last-child{border-bottom:none}
-.tool-features li::before{content:'›';position:absolute;left:0;color:var(--cyan);font-size:14px;font-weight:700;line-height:1.3}
-
-/* ═══════════════════════════════════════════════════
-   RULES TABLE
-═══════════════════════════════════════════════════ */
-.rtable{width:100%;border-collapse:collapse}
-.rtable th{text-align:left;padding:13px 18px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--cyan);background:rgba(0,229,255,.04);border-bottom:1px solid rgba(0,229,255,.2)}
-.rtable td{padding:14px 18px;border-bottom:1px solid rgba(0,229,255,.05);font-size:14px;color:var(--txt);line-height:1.5}
-.rtable td:first-child{color:var(--tb);font-weight:700;font-size:14px}
-.rtable tr:last-child td{border-bottom:none}
-.rtable tr{transition:background .2s}
-.rtable tr:hover td{background:rgba(0,229,255,.022)}
-.rval{font-family:'Orbitron',sans-serif;font-size:15px;font-weight:700;color:var(--cyan)}
-.rval.g{color:var(--gold)}
-.rval.r{color:var(--red)}
-.rval.v{color:var(--green)}
-
-/* ═══════════════════════════════════════════════════
-   MILESTONE TIMELINE
-═══════════════════════════════════════════════════ */
-.mline{position:relative;padding-left:56px}
-.mline::before{content:'';position:absolute;left:19px;top:24px;bottom:24px;width:2px;background:linear-gradient(to bottom,var(--cyan),var(--gold),var(--purple),var(--green));opacity:.22}
-.mitem{position:relative;margin-bottom:44px;opacity:0;transform:translateX(-22px);transition:opacity .65s ease,transform .65s ease}
-.mitem.on{opacity:1;transform:none}
-.mitem:last-child{margin-bottom:0}
-.mnode{position:absolute;left:-56px;top:2px;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:12px;font-weight:800;border:2px solid var(--cyan);background:var(--deep);color:var(--cyan);box-shadow:0 0 0 4px rgba(0,229,255,.05),0 0 18px rgba(0,229,255,.2)}
-.mnode.ng{border-color:var(--gold);color:var(--gold);box-shadow:0 0 0 4px rgba(245,197,24,.05),0 0 18px rgba(245,197,24,.2)}
-.mnode.np{border-color:var(--purple);color:var(--purple);box-shadow:0 0 0 4px rgba(155,92,255,.05),0 0 18px rgba(155,92,255,.2)}
-.mnode.nv{border-color:var(--green);color:var(--green);box-shadow:0 0 0 4px rgba(0,255,157,.05),0 0 18px rgba(0,255,157,.2)}
-.mkick{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--cyan);margin-bottom:6px}
-.mkick.kg{color:var(--gold)}.mkick.kp{color:var(--purple)}.mkick.kv{color:var(--green)}
-.mtit{font-family:'Orbitron',sans-serif;font-size:21px;font-weight:800;color:var(--wh);margin-bottom:10px}
-.mbody{font-size:14px;line-height:1.8;color:var(--txt);margin-bottom:12px}
-.mbul{list-style:none}
-.mbul li{font-size:13px;color:var(--txt);padding:3px 0 3px 16px;position:relative;line-height:1.65}
-.mbul li::before{content:'›';position:absolute;left:0;color:var(--cyan);font-size:15px;font-weight:700;line-height:1.3}
-
-/* ═══════════════════════════════════════════════════
-   SCORING / PROGRESS BARS
-═══════════════════════════════════════════════════ */
-.pbar-wrap{margin-bottom:16px}
-.pbar-head{display:flex;justify-content:space-between;margin-bottom:7px;align-items:center}
-.pbar-label{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--txt)}
-.pbar-val{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:var(--cyan)}
-.pbar-val.g{color:var(--gold)}.pbar-val.v{color:var(--green)}.pbar-val.p{color:var(--purple)}
-.pbar-track{height:4px;background:rgba(0,229,255,.08);border-radius:2px;overflow:hidden}
-.pbar-fill{height:100%;border-radius:2px;background:var(--cyan);box-shadow:0 0 8px rgba(0,229,255,.4);transition:width 1.2s cubic-bezier(.25,.46,.45,.94)}
-.pbar-fill.g{background:var(--gold);box-shadow:0 0 8px rgba(245,197,24,.4)}
-.pbar-fill.v{background:var(--green);box-shadow:0 0 8px rgba(0,255,157,.4)}
-.pbar-fill.p{background:var(--purple);box-shadow:0 0 8px rgba(155,92,255,.4)}
-
-/* ═══════════════════════════════════════════════════
-   CTA SECTION
-═══════════════════════════════════════════════════ */
-.cta-wrap{
-  background:var(--glass);
-  border:1px solid rgba(245,197,24,.22);
-  border-radius:16px;padding:56px 48px;
-  backdrop-filter:blur(28px);
-  position:relative;overflow:hidden;
-  text-align:center;
-}
-.cta-wrap::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--cyan) 30%,var(--gold) 70%,transparent)}
-.cta-wrap::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(245,197,24,.03),transparent 55%);pointer-events:none}
-.cta-title{font-family:'Orbitron',sans-serif;font-size:clamp(28px,4vw,48px);font-weight:900;color:var(--wh);margin-bottom:16px}
-.cta-title span{color:var(--gold)}
-.cta-sub{font-size:16px;color:var(--txt);line-height:1.7;max-width:560px;margin:0 auto 40px}
-.cta-btn{display:inline-flex;align-items:center;gap:10px;font-family:'Orbitron',sans-serif;font-size:13px;font-weight:800;letter-spacing:2px;text-transform:uppercase;padding:18px 44px;border-radius:4px;background:linear-gradient(135deg,var(--cyan),#0088aa);color:#000;border:none;cursor:pointer;position:relative;overflow:hidden;box-shadow:0 0 40px rgba(0,229,255,.25),0 8px 32px rgba(0,0,0,.4);transition:transform .2s,box-shadow .2s}
-.cta-btn:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 0 60px rgba(0,229,255,.45),0 12px 40px rgba(0,0,0,.5)}
-.cta-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent,rgba(255,255,255,.15),transparent);transform:translateX(-100%);transition:transform .4s ease}
-.cta-btn:hover::before{transform:translateX(100%)}
-.cta-note{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--txt);margin-top:20px}
-
-/* ═══════════════════════════════════════════════════
-   FOOTER
-═══════════════════════════════════════════════════ */
-.footer{position:relative;margin-top:120px;padding:70px 0 50px;border-top:1px solid var(--bc)}
-.footer::before{content:'';position:absolute;top:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,var(--cyan) 40%,var(--gold) 60%,transparent)}
-.footer-top{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:48px;margin-bottom:56px}
-.fbrand{font-family:'Orbitron',sans-serif;font-size:28px;font-weight:900;letter-spacing:2px;color:var(--wh)}
-.fbrand span{color:var(--cyan)}
-.ftag{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--txt);margin-top:8px}
-.footer-cols{display:grid;grid-template-columns:repeat(4,1fr);gap:40px;flex:1;min-width:0}
-.footer-col-title{font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--cyan);margin-bottom:18px;padding-bottom:10px;border-bottom:1px solid rgba(0,229,255,.12)}
-.footer-links{list-style:none;display:flex;flex-direction:column;gap:9px}
-.footer-links li a{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--txt);text-decoration:none;transition:color .2s}
-.footer-links li a:hover{color:var(--cyan)}
-.footer-bottom{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;padding-top:32px;border-top:1px solid rgba(0,229,255,.06)}
-.footer-copy{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--txt)}
-.footer-copy span{color:var(--cyan)}
-@media(max-width:900px){.footer-cols{grid-template-columns:repeat(2,1fr)}.footer-top{flex-direction:column}}
-@media(max-width:580px){.footer-cols{grid-template-columns:1fr 1fr}}
-
-/* ═══════════════════════════════════════════════════
-   LIGHT MODE COMPONENT OVERRIDES
-═══════════════════════════════════════════════════ */
-html.light body{background:var(--obsidian)}
-html.light nav{background:linear-gradient(to bottom,rgba(238,243,249,.97),transparent)}
-html.light nav.solid{background:rgba(238,243,249,.98);border-bottom:1px solid rgba(0,100,140,.15)}
-html.light .nbrand{color:var(--wh)}
-html.light .nlink{color:var(--mut)}
-html.light .nlink:hover{color:var(--cyan);background:rgba(0,128,168,.06)}
-html.light .npill{background:rgba(184,134,11,.08);border-color:rgba(184,134,11,.35);color:var(--gold)}
-html.light .gc{background:rgba(255,255,255,.9);border-color:rgba(0,100,140,.20);box-shadow:0 4px 24px rgba(0,0,0,.08)}
-html.light .gc:hover{border-color:rgba(0,128,168,.4);box-shadow:0 8px 40px rgba(0,0,0,.12),0 0 24px rgba(0,128,168,.06)}
-html.light .gc.gold-c:hover{border-color:rgba(184,134,11,.4)}
-html.light .gc::before{background:linear-gradient(135deg,rgba(0,128,168,.03) 0%,transparent 60%)}
-html.light .sbox{background:rgba(255,255,255,.85);border-color:rgba(0,100,140,.18)}
-html.light .sbox:hover{border-color:rgba(0,128,168,.3);box-shadow:0 8px 32px rgba(0,0,0,.1)}
-html.light .cal-wrap{background:rgba(255,255,255,.85);border-color:rgba(0,100,140,.18)}
-html.light .day{background:rgba(235,244,252,.95);border-color:rgba(0,100,140,.15)}
-html.light .day:hover{border-color:rgba(0,128,168,.35)}
-html.light .day.weekend{background:rgba(220,235,248,.65)}
-html.light .day.milestone{border-color:rgba(184,134,11,.45)}
-html.light .day-theme{color:#061828;font-weight:600}
-html.light .wtab{border-color:rgba(0,100,140,.22);color:var(--mut)}
-html.light .wtab.act{background:rgba(0,128,168,.1);border-color:rgba(0,128,168,.45);color:var(--cyan)}
-html.light .dd{background:rgba(240,250,255,.95);border-color:rgba(0,100,140,.16)}
-html.light .rtable th{background:rgba(0,128,168,.1);color:#020c16;border-bottom-color:rgba(0,128,168,.35)}
-html.light .rtable td{border-color:rgba(0,100,140,.12);color:#071828;font-weight:500}
-html.light .rtable td:first-child{color:#020c16;font-weight:700}
-html.light .rtable tr:hover td{background:rgba(0,128,168,.06)}
-html.light .tool-card{background:rgba(255,255,255,.88);border-color:rgba(0,100,140,.18)}
-html.light .mitem{border-color:rgba(0,100,140,.14)}
-html.light .mitem.on{background:rgba(255,255,255,.75)}
-html.light .pbar-track{background:rgba(0,100,140,.08)}
-html.light .cta-wrap{background:rgba(255,255,255,.92);border-color:rgba(184,134,11,.32)}
-html.light .footer{border-top-color:rgba(0,100,140,.15)}
-html.light .footer-bottom{border-top-color:rgba(0,100,140,.10)}
-html.light .div::after{background:var(--obsidian)}
-html.light .hero-title .cy{-webkit-text-stroke-color:var(--cyan)}
-html.light .slbl::after{background:linear-gradient(to right,rgba(0,128,168,.25),transparent)}
-/* Extra light mode text clarity overrides */
-html.light .body{color:#0a1828}
-html.light .body em{color:#020c16}
-html.light .ov-desc{color:#0a1828}
-html.light .dd-body{color:#0a1828}
-html.light .tool-desc{color:#0a1828}
-html.light .tool-features li{color:#0a1828}
-html.light .mbody{color:#0a1828}
-html.light .mbul li{color:#0a1828}
-html.light .hero-sub{color:#0a1828}
-html.light .hero-sub em{color:#020c16}
-html.light .hbl{color:#0a1828}
-html.light .slb{color:#0a1828}
-html.light .hero-scr{color:#0a1828}
-html.light .cal-day-name{color:#0a1828}
-html.light .leg-item{color:#0a1828}
-html.light .cta-sub{color:#0a1828}
-html.light .cta-note{color:#0a1828}
-html.light .ftag{color:#0a1828}
-html.light .footer-links li a{color:#0a1828}
-html.light .footer-copy{color:#0a1828}
-html.light .pbar-label{color:#0a1828}
-html.light .dd-title{color:#020c16}
-html.light .nlink{color:#1a3d5a}
-html.light .nbrand{color:#020c16}
-html.light .mtit{color:#020c16}
-html.light .stit{color:#020c16}
-html.light .ov-title{color:#020c16}
-html.light .tool-name{color:#020c16}
-html.light .fbrand{color:#020c16}
-html.light .cta-title{color:#020c16}
-</style>
+    .footer {
+      margin-top: 60px;
+      padding-top: 30px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-family: var(--ff-mono);
+      font-size: 0.5rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+    }
+    .footer span { color: var(--cyan); }
+  </style>
 </head>
 <body>
+<div class="playbook">
 
-<!-- INFRASTRUCTURE -->
-<div id="cdot"></div>
-<div id="cring"></div>
-<div id="mglow"></div>
-<canvas id="pcanvas"></canvas>
-<div class="sgrid"></div>
-<div class="stop"></div>
-<div class="slines"></div>
-<div class="svig"></div>
+<header>
+  <h1>SNIPER<span>TRADER</span> 30-DAY <span style="color:var(--gold);">FUNDED</span> CHALLENGE</h1>
+  <div class="badge">⚡ USME POWERED · TRADEREDGE OS ⚡</div>
+  <div class="sub">A precision-engineered, day-by-day blueprint to pass any prop firm evaluation</div>
+</header>
 
-<!-- NAV -->
-<nav id="nav">
-  <div class="nbrand">SNIPER<span>TRADER</span></div>
-  <div class="nlinks">
-    <a href="/usme_products.html"><span class="nlink">USME Algo</span></a>
-    <a href="/traderedge_app.html"><span class="nlink">Psych App</span></a>
-    <a href="traderedge_landing.html"><span class="nlink">Ecosystem</span></a>
-    <span class="nlink">Community</span>
-  </div>
-  <div style="display:flex;align-items:center;gap:14px">
-    <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode" aria-label="Toggle theme">
-      <span class="tknob"></span>
-    </button>
-    <div class="npill">30-Day Funded Challenge</div>
-  </div>
-</nav>
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab-btn active" data-panel="overview"><span class="num">1</span> Overview</button>
+  <button class="tab-btn" data-panel="calendar"><span class="num">2</span> Calendar</button>
+  <button class="tab-btn" data-panel="phases"><span class="num">3</span> Phases</button>
+  <button class="tab-btn" data-panel="tools"><span class="num">4</span> Tools</button>
+  <button class="tab-btn" data-panel="rules"><span class="num">5</span> Rules</button>
+</div>
 
-<div class="wrap">
-
-<!-- ════════════════════════════════════════
-     HERO
-════════════════════════════════════════ -->
-<section class="hero">
-
-  <!-- Animated ring decoration -->
-  <svg class="hero-ring" viewBox="0 0 360 360">
-    <circle class="hr1" cx="180" cy="180" r="165"/>
-    <circle class="hr2" cx="180" cy="180" r="140"/>
-    <circle class="hr3" cx="180" cy="180" r="108" stroke-dasharray="1 0" stroke-width=".4" stroke-opacity=".5"/>
-    <line x1="180" y1="12" x2="180" y2="52" stroke="rgba(245,197,24,.5)" stroke-width=".8"/>
-    <line x1="180" y1="308" x2="180" y2="348" stroke="rgba(245,197,24,.5)" stroke-width=".8"/>
-    <line x1="12" y1="180" x2="52" y2="180" stroke="rgba(245,197,24,.5)" stroke-width=".8"/>
-    <line x1="308" y1="180" x2="348" y2="180" stroke="rgba(245,197,24,.5)" stroke-width=".8"/>
-    <text x="180" y="180">30</text>
-    <text x="180" y="226" font-family="'Space Mono'" font-size="11" fill="rgba(245,197,24,.4)" text-anchor="middle" dominant-baseline="central" letter-spacing="4">DAYS</text>
-  </svg>
-
-  <div class="hero-eyebrow">
-    <span class="ldot">Challenge Active</span>
-    &nbsp;·&nbsp; SniperTrader.ai &nbsp;·&nbsp; USME Powered
+<!-- ============================================================ -->
+<!-- PANEL 1: OVERVIEW -->
+<!-- ============================================================ -->
+<div class="panel active" id="panel-overview">
+  <div class="card">
+    <div class="card-title"><span class="icon">🎯</span> The Challenge</div>
+    <p>This is not a generic trading plan. It is a <strong>30-session operational protocol</strong> built specifically around the SniperTrader.ai ecosystem — USME signal scoring, TraderEdge psychology check-ins, the Master Plan phase architecture, and strict prop firm rule compliance. Every day has a defined focus, a minimum score threshold, and a tool assignment.</p>
+    <div class="highlight-box gold">
+      <strong>Core Philosophy:</strong> <em>"We don't chase trades. We execute the protocol. The funded account is the byproduct."</em>
+    </div>
+    <div class="grid-2" style="margin-top:20px;">
+      <div class="card" style="background:rgba(0,0,0,0.2); border-color:rgba(0,229,255,0.08);">
+        <div style="font-family:var(--ff-disp); font-size:2rem; color:var(--cyan);">30</div>
+        <div style="font-family:var(--ff-mono); font-size:0.5rem; letter-spacing:0.08em; color:var(--muted);">STRUCTURED DAYS</div>
+      </div>
+      <div class="card" style="background:rgba(0,0,0,0.2); border-color:rgba(240,192,64,0.08);">
+        <div style="font-family:var(--ff-disp); font-size:2rem; color:var(--gold);">4</div>
+        <div style="font-family:var(--ff-mono); font-size:0.5rem; letter-spacing:0.08em; color:var(--muted);">WEEKLY PHASES</div>
+      </div>
+      <div class="card" style="background:rgba(0,0,0,0.2); border-color:rgba(155,92,255,0.08);">
+        <div style="font-family:var(--ff-disp); font-size:2rem; color:var(--purple);">3</div>
+        <div style="font-family:var(--ff-mono); font-size:0.5rem; letter-spacing:0.08em; color:var(--muted);">CORE TOOLS</div>
+      </div>
+      <div class="card" style="background:rgba(0,0,0,0.2); border-color:rgba(0,229,160,0.08);">
+        <div style="font-family:var(--ff-disp); font-size:2rem; color:var(--green);">0</div>
+        <div style="font-family:var(--ff-mono); font-size:0.5rem; letter-spacing:0.08em; color:var(--muted);">GUESSWORK</div>
+      </div>
+    </div>
   </div>
 
-  <h1 class="hero-title">
-    30-DAY<br>
-    <span class="cy">FUNDED</span><br>
-    <span class="gl">CHALLENGE</span>
-  </h1>
-
-  <p class="hero-sub">
-    A precision-engineered, day-by-day blueprint to pass any prop firm evaluation using the <em>Unified Smart Money Engine</em>, TraderEdge Psychology OS, and the USME Master Plan — executed in exactly 30 days.
-  </p>
-
-  <div class="hbar">
-    <div class="hbs"><span class="hbn">30</span><span class="hbl">Trading Days</span></div>
-    <div class="hbs"><span class="hbn g">2–3</span><span class="hbl">Trades Per Day Max</span></div>
-    <div class="hbs"><span class="hbn v">≥70</span><span class="hbl">USME Score Required</span></div>
-    <div class="hbs"><span class="hbn r">≤1%</span><span class="hbl">Risk Per Trade</span></div>
+  <div class="card">
+    <div class="card-title"><span class="icon">📋</span> Challenge Rules Summary</div>
+    <ul class="checklist">
+      <li><span class="check">❶</span> <div><strong>Daily Trade Limit:</strong> Max 2–3 setups — stop when limit reached. USME Score gate must show ≥70 before any entry.</div></li>
+      <li><span class="check">❷</span> <div><strong>Risk Per Trade:</strong> ≤ 1% of funded account. ATR-based stop sizing auto-calculated.</div></li>
+      <li><span class="check">❸</span> <div><strong>Daily Loss Ceiling:</strong> 2% personal stop. Close platform, zero re-entries same day.</div></li>
+      <li><span class="check">❹</span> <div><strong>Session Windows:</strong> London Open (2–5 AM EST) · NY Open (7–10 AM EST) — killzone filter active.</div></li>
+      <li><span class="check">❺</span> <div><strong>Risk-Reward Floor:</strong> Minimum 1:2 RR — reject all setups below 1:1.5. ATR target projection validates.</div></li>
+      <li><span class="check">❻</span> <div><strong>Psychology Check-In:</strong> TraderEdge OS pre-session journal every day. Sentiment score below threshold = sit out.</div></li>
+    </ul>
   </div>
+</div>
 
-  <div class="hero-scr"><span class="strack"></span>Scroll to begin</div>
-</section>
-
-
-<!-- ════════════════════════════════════════
-     01 — CHALLENGE OVERVIEW
-════════════════════════════════════════ -->
-<div class="div"></div>
-<section class="sec" id="s1">
-  <div class="slbl"><span class="snum">01</span> Challenge Overview</div>
-  <h2 class="stit">What This <span class="c">Challenge</span> Is</h2>
-  <p class="body">This is not a generic trading plan. It is a <em>30-session operational protocol</em> built specifically around the SniperTrader.ai ecosystem — USME signal scoring, TraderEdge psychology check-ins, the Master Plan phase architecture, and strict prop firm rule compliance. Every day has a defined focus, a minimum score threshold, and a tool assignment.</p>
-  <div class="g4 sg">
-    <div class="sbox"><span class="sval">30</span><span class="slb">Structured Days</span></div>
-    <div class="sbox"><span class="sval g">4</span><span class="slb">Weekly Phases</span></div>
-    <div class="sbox"><span class="sval v">3</span><span class="slb">Core Tools Used</span></div>
-    <div class="sbox"><span class="sval r">0</span><span class="slb">Guesswork</span></div>
-  </div>
-</section>
-
-
-<!-- ════════════════════════════════════════
-     02 — CHALLENGE RULES
-════════════════════════════════════════ -->
-<div class="div"></div>
-<section class="sec" id="s2">
-  <div class="slbl"><span class="snum">02</span> Challenge Rules</div>
-  <h2 class="stit">The Non-Negotiable <span class="c">Rules</span></h2>
-  <div class="gc">
-    <div class="shine"></div>
-    <table class="rtable">
-      <thead>
-        <tr><th>Rule</th><th>Requirement</th><th>USME Enforcement</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>Daily Trade Limit</td><td><span class="rval">Max 2–3 setups</span> — stop when limit reached</td><td>AI Score gate must show ≥70 before any entry</td></tr>
-        <tr><td>Risk Per Trade</td><td><span class="rval">≤ 1%</span> of funded account per position</td><td>ATR-based stop sizing auto-calculated</td></tr>
-        <tr><td>Daily Loss Ceiling</td><td><span class="rval r">≤ 2%</span> personal stop (firm may allow 5%)</td><td>Close platform, zero re-entries same day</td></tr>
-        <tr><td>Session Windows</td><td>London Open <span class="rval">2–5 AM EST</span> · NY Open <span class="rval">7–10 AM EST</span></td><td>Killzone filter active — no off-window entries</td></tr>
-        <tr><td>Risk-Reward Floor</td><td>Minimum <span class="rval v">1:2 RR</span> — reject all setups below 1:1.5</td><td>ATR target projection validates before entry</td></tr>
-        <tr><td>News Events</td><td>Flat <span class="rval">2 minutes before</span> all red-folder events</td><td>Manual check — no automation replaces this</td></tr>
-        <tr><td>Psychology Check-In</td><td>TraderEdge OS pre-session journal <span class="rval">every day</span></td><td>Sentiment score below threshold = sit out</td></tr>
-        <tr><td>Trade Journal</td><td>SMC Journal entry <span class="rval">within 1 hour</span> of session close</td><td>Tag setup type: OB / FVG / CHoCH / BOS</td></tr>
-        <tr><td>Consistency Rule</td><td>No single day exceeds <span class="rval g">35%</span> of total target profit</td><td>Spread gains evenly — no home-run days</td></tr>
-        <tr><td>Overnight Holds</td><td><span class="rval r">None</span> unless firm explicitly permits</td><td>All positions closed by 10:00 AM EST default</td></tr>
-      </tbody>
-    </table>
-  </div>
-</section>
-
-
-<!-- ════════════════════════════════════════
-     03 — 30-DAY CALENDAR
-════════════════════════════════════════ -->
-<div class="div"></div>
-<section class="sec" id="s3">
-  <div class="slbl"><span class="snum">03</span> The 30-Day Map</div>
-  <h2 class="stit">Full Challenge <span class="g">Calendar</span></h2>
-  <p class="body" style="margin-bottom:32px">Each row = one trading week. Weekends shown as resting days. Gold-bordered days are milestone checkpoints where you review performance before continuing.</p>
-
+<!-- ============================================================ -->
+<!-- PANEL 2: CALENDAR -->
+<!-- ============================================================ -->
+<div class="panel" id="panel-calendar">
   <div class="cal-wrap">
     <div class="cal-header">
       <div class="cal-day-name">Mon</div>
@@ -656,519 +504,230 @@ html.light .cta-title{color:#020c16}
       <div class="cal-day-name">Fri</div>
     </div>
     <div class="cal-grid">
-
-      <!-- WEEK 1 — Phase 1: Foundation & Calibration -->
+      <!-- Week 1 -->
       <div class="day p1"><div class="day-num">01</div><div class="day-theme">HTF Bias Setup<br>Mark OBs &amp; FVGs</div><div class="day-tag">London Only</div></div>
       <div class="day p1"><div class="day-num">02</div><div class="day-theme">London Open<br>First Live Entry</div><div class="day-tag">Score ≥70</div></div>
       <div class="day p1"><div class="day-num">03</div><div class="day-theme">NY Open Add<br>Dual Killzone</div><div class="day-tag">Max 2 Trades</div></div>
       <div class="day p1"><div class="day-num">04</div><div class="day-theme">Review &amp; Refine<br>Journal Analysis</div><div class="day-tag">TraderEdge</div></div>
       <div class="day p1 milestone"><div class="day-num">05</div><div class="day-theme">Week 1 Review<br>Milestone Check</div><div class="day-tag">★ Checkpoint</div></div>
 
-      <!-- WEEK 2 — Phase 2: Execution Consistency -->
+      <!-- Week 2 -->
       <div class="day p2"><div class="day-num">06</div><div class="day-theme">CHoCH Entries<br>Refined Execution</div><div class="day-tag">15M / 5M</div></div>
       <div class="day p2"><div class="day-num">07</div><div class="day-theme">FVG Fill Focus<br>Premium Zones</div><div class="day-tag">H4 Bias</div></div>
       <div class="day p2"><div class="day-num">08</div><div class="day-theme">SMT Divergence<br>Confluence Gate</div><div class="day-tag">SMT Active</div></div>
       <div class="day p2"><div class="day-num">09</div><div class="day-theme">BOS Confirmation<br>Structure Entries</div><div class="day-tag">BOS / CHoCH</div></div>
       <div class="day p2 milestone"><div class="day-num">10</div><div class="day-theme">Week 2 Review<br>Psych Debrief</div><div class="day-tag">★ Checkpoint</div></div>
 
-      <!-- WEEK 3 — Phase 3: Pressure & Discipline -->
+      <!-- Week 3 -->
       <div class="day p3"><div class="day-num">11</div><div class="day-theme">High-Conviction<br>ELITE Setups Only</div><div class="day-tag">Score ≥80</div></div>
       <div class="day p3"><div class="day-num">12</div><div class="day-theme">Drawdown Mgmt<br>After Loss Day</div><div class="day-tag">0.5% Risk</div></div>
       <div class="day p3"><div class="day-num">13</div><div class="day-theme">Consistency Push<br>Daily Avg Target</div><div class="day-tag">0.75% Goal</div></div>
       <div class="day p3"><div class="day-num">14</div><div class="day-theme">News Navigation<br>Pre-Event Protocol</div><div class="day-tag">NFP Ready</div></div>
       <div class="day p3 milestone"><div class="day-num">15</div><div class="day-theme">Halfway Mark<br>Full Review</div><div class="day-tag">★ Checkpoint</div></div>
 
-      <!-- WEEK 4 — Phase 4: Target Approach -->
+      <!-- Week 4 -->
       <div class="day p3"><div class="day-num">16</div><div class="day-theme">Profit Protection<br>Reduce Risk</div><div class="day-tag">0.5% Risk</div></div>
       <div class="day p3"><div class="day-num">17</div><div class="day-theme">Selective Sessions<br>Quality Filter</div><div class="day-tag">Score ≥75</div></div>
       <div class="day p3"><div class="day-num">18</div><div class="day-theme">Portfolio View<br>Multi-Pair Scan</div><div class="day-tag">Corr. Check</div></div>
       <div class="day p3"><div class="day-num">19</div><div class="day-theme">Endgame Focus<br>Preserve Gains</div><div class="day-tag">Capital Safe</div></div>
       <div class="day p3 milestone"><div class="day-num">20</div><div class="day-theme">Week 4 Review<br>Final 10 Plan</div><div class="day-tag">★ Checkpoint</div></div>
 
-      <!-- WEEK 5 — Phase 5: Funded Account Mode -->
+      <!-- Week 5 -->
       <div class="day p4"><div class="day-num">21</div><div class="day-theme">Conservative Mode<br>Protect Target</div><div class="day-tag">0.5% Max</div></div>
       <div class="day p4"><div class="day-num">22</div><div class="day-theme">SOTD Protocol<br>PRIME / ELITE</div><div class="day-tag">USME SOTD</div></div>
       <div class="day p4"><div class="day-num">23</div><div class="day-theme">Pattern Review<br>Best Setups Only</div><div class="day-tag">Journal Data</div></div>
       <div class="day p4"><div class="day-num">24</div><div class="day-theme">Sit-Out Day<br>Psych Check</div><div class="day-tag">TraderEdge</div></div>
       <div class="day p4 milestone"><div class="day-num">25</div><div class="day-theme">Week 5 Review<br>Final Push Prep</div><div class="day-tag">★ Checkpoint</div></div>
 
-      <!-- WEEK 6 — Final Days -->
+      <!-- Week 6 -->
       <div class="day p4"><div class="day-num">26</div><div class="day-theme">Final Phase Open<br>Tight Execution</div><div class="day-tag">All Systems</div></div>
       <div class="day p4"><div class="day-num">27</div><div class="day-theme">London Precision<br>One Setup Max</div><div class="day-tag">1 Trade</div></div>
       <div class="day p4"><div class="day-num">28</div><div class="day-theme">Confirm Target<br>Lock If Reached</div><div class="day-tag">Goal Check</div></div>
       <div class="day p4"><div class="day-num">29</div><div class="day-theme">Preserve Mode<br>Zero New Risk</div><div class="day-tag">Capital Lock</div></div>
-      <div class="day p4 milestone" style="border-color:rgba(0,255,157,.4);box-shadow:0 0 24px rgba(0,255,157,.08)"><div class="day-num" style="color:var(--green)">30</div><div class="day-theme" style="color:var(--tb)">Challenge<br>Complete ✓</div><div class="day-tag" style="background:rgba(0,255,157,.1);color:var(--green);border-color:rgba(0,255,157,.35)">FUNDED</div></div>
-
+      <div class="day final"><div class="day-num">30</div><div class="day-theme">Challenge<br>Complete ✓</div><div class="day-tag" style="border-color:rgba(0,229,160,0.4); color:var(--green); background:rgba(0,229,160,0.06);">FUNDED</div></div>
     </div>
-
-    <div class="cal-legend">
-      <div class="leg-item"><div class="leg-dot" style="background:var(--cyan)"></div>Week 1–2 · Foundation</div>
-      <div class="leg-item"><div class="leg-dot" style="background:var(--gold)"></div>Week 2–3 · Execution</div>
-      <div class="leg-item"><div class="leg-dot" style="background:var(--purple)"></div>Week 3–5 · Pressure</div>
-      <div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div>Week 5–6 · Funded Mode</div>
-      <div class="leg-item"><div class="leg-dot" style="background:rgba(245,197,24,.7);border:1px solid var(--gold)"></div>Milestone Checkpoint</div>
+    <div style="display:flex; flex-wrap:wrap; gap:14px; margin-top:20px;">
+      <span style="display:flex; align-items:center; gap:6px; font-family:var(--ff-mono); font-size:0.5rem; color:var(--sub);"><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--cyan);"></span> Week 1–2 · Foundation</span>
+      <span style="display:flex; align-items:center; gap:6px; font-family:var(--ff-mono); font-size:0.5rem; color:var(--sub);"><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--gold);"></span> Week 2–3 · Execution</span>
+      <span style="display:flex; align-items:center; gap:6px; font-family:var(--ff-mono); font-size:0.5rem; color:var(--sub);"><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--purple);"></span> Week 3–5 · Pressure</span>
+      <span style="display:flex; align-items:center; gap:6px; font-family:var(--ff-mono); font-size:0.5rem; color:var(--sub);"><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--green);"></span> Week 5–6 · Funded Mode</span>
+      <span style="display:flex; align-items:center; gap:6px; font-family:var(--ff-mono); font-size:0.5rem; color:var(--gold);"><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--gold); box-shadow:0 0 6px rgba(240,192,64,0.3);"></span> Milestone Checkpoint</span>
     </div>
   </div>
-</section>
+</div>
 
-
-<!-- ════════════════════════════════════════
-     04 — WEEKLY BREAKDOWN
-════════════════════════════════════════ -->
-<div class="div"></div>
-<section class="sec" id="s4">
-  <div class="slbl"><span class="snum">04</span> Weekly Breakdown</div>
-  <h2 class="stit">Phase-by-Phase <span class="c">Focus Areas</span></h2>
-
-  <div class="week-tabs" id="tabs">
-    <button class="wtab act" data-w="w1">Week 1–2</button>
-    <button class="wtab" data-w="w2">Week 3–4</button>
-    <button class="wtab" data-w="w3">Week 5–6</button>
+<!-- ============================================================ -->
+<!-- PANEL 3: PHASES -->
+<!-- ============================================================ -->
+<div class="panel" id="panel-phases">
+  <div class="timeline">
+    <!-- Phase 1 -->
+    <div class="phase-item" id="ph1">
+      <div class="phase-node">1</div>
+      <div class="phase-kicker">Days 1–5 · Foundation Phase</div>
+      <div class="phase-title">Calibrate the System</div>
+      <div class="phase-body">Every session begins by building the H4/Daily USME map. Mark all active Order Blocks, Fair Value Gaps, and the premium/discount range. No live trades until bias is locked — this is the institutional map that all LTF entries must align with. First live entries start on Day 2 with London Open only, maximum one entry per session.</div>
+      <div><span class="rule-badge cyan">USME H4 Scan</span><span class="rule-badge gold">Daily Bias</span><span class="rule-badge">Score ≥70</span></div>
+    </div>
+    <!-- Phase 2 -->
+    <div class="phase-item" id="ph2">
+      <div class="phase-node gold">2</div>
+      <div class="phase-kicker gold">Days 6–10 · Execution Phase</div>
+      <div class="phase-title">Dual Killzone &amp; CHoCH Entries</div>
+      <div class="phase-body">Expand to both London and NY Open windows. Maximum 2 trades per day total — not 2 per session. If London produces a winner, NY becomes observation-only. CHoCH + OB confluence is the minimum entry requirement. By Day 10, you should have 8–10 completed trade journal entries to identify your highest-performing setup type.</div>
+      <div><span class="rule-badge gold">Both KZs</span><span class="rule-badge cyan">CHoCH Entry</span><span class="rule-badge purple">TraderEdge Review</span></div>
+    </div>
+    <!-- Phase 3 -->
+    <div class="phase-item" id="ph3">
+      <div class="phase-node purple">3</div>
+      <div class="phase-kicker purple">Days 11–20 · Pressure Phase</div>
+      <div class="phase-title">ELITE Score &amp; Drawdown Management</div>
+      <div class="phase-body">Raise the entry bar: only setups scoring ≥80 qualify. This is the discipline pressure test. If you're ahead of target at Day 15, reduce risk to 0.5%. If you're behind, maintain 1% and let the edge play out. The data from Days 1–15 determines your final strategy for Days 16–30.</div>
+      <div><span class="rule-badge purple">USME ≥80</span><span class="rule-badge red">0.5% Risk</span><span class="rule-badge gold">Halfway Audit</span></div>
+    </div>
+    <!-- Phase 4 -->
+    <div class="phase-item" id="ph4">
+      <div class="phase-node green">4</div>
+      <div class="phase-kicker green">Days 21–30 · Funded Mode</div>
+      <div class="phase-title">Preserve, Lock, Complete</div>
+      <div class="phase-body">If you're at or above target — lock. Activate conservative mode and protect the evaluation. USME Setup of the Day (SOTD) with PRIME/ELITE only. One trade per day maximum in London Open. Day 30: Challenge complete. Submit evaluation. Begin Phase 2 of the USME Master Plan: Duplication.</div>
+      <div><span class="rule-badge green">SOTD</span><span class="rule-badge cyan">1 Trade Max</span><span class="rule-badge gold">★ Funded</span></div>
+    </div>
   </div>
+</div>
 
-  <!-- Week 1-2 -->
-  <div class="week-panel act" id="w1">
-    <div class="dd"><div class="dd-head"><div><div class="dd-title">Day 1–2: HTF Calibration</div></div><div class="dd-num">01</div></div><div class="dd-body">Open every session by building the H4/Daily USME map. Mark all active Order Blocks, Fair Value Gaps, and the premium/discount range for the week. No live trades until bias is locked — this is the institutional map that all LTF entries must align with.</div><div class="dd-tools"><span class="tag tc">USME H4 Scan</span><span class="tag tg">Daily Bias</span></div></div>
-    <div class="dd"><div class="dd-head"><div><div class="dd-title">Day 3–5: First Live Entries</div></div><div class="dd-num">03</div></div><div class="dd-body">First real executions. London Open only — maximum one entry per session. USME AI Score must clear 70 before trigger. ATR stop below structure, minimum 1:2 RR target. Log every trade in SMC Journal within 1 hour of session close.</div><div class="dd-tools"><span class="tag tc">London KZ</span><span class="tag tn">Score ≥70</span><span class="tag tm">Journal</span></div></div>
-    <div class="dd"><div class="dd-head"><div><div class="dd-title">Day 6–8: Dual Killzone Activation</div></div><div class="dd-num">06</div></div><div class="dd-body">Expand to both London and NY Open windows. Maximum 2 trades per day total — not 2 per session. If London produces a winner, NY becomes observation-only. CHoCH + OB confluence is the minimum entry requirement.</div><div class="dd-tools"><span class="tag tc">Both KZs</span><span class="tag tg">CHoCH Entry</span></div></div>
-    <div class="dd"><div class="dd-head"><div><div class="dd-title">Day 9–10: Week Review</div></div><div class="dd-num">09</div></div><div class="dd-body">Full TraderEdge Performance OS review. Pull win rate by setup type. Calculate actual vs theoretical RR on each trade. Identify the 1 setup type that performed best — that becomes your primary trigger for Week 3. Complete psych debrief module.</div><div class="dd-tools"><span class="tag tp">TraderEdge</span><span class="tag tm">SMC Journal</span></div></div>
-  </div>
-
-  <!-- Week 3-4 -->
-  <div class="week-panel" id="w2">
-    <div class="dd"><div class="dd-head"><div><div class="dd-title">Day 11–13: ELITE Score Protocol</div></div><div class="dd-num">11</div></div><div class="dd-body">Raise the entry bar: only setups scoring ≥80 on the USME AI system qualify. This is the discipline pressure test. Many valid-looking setups will be filtered out — that is the point. Quality over activity. Every session that stays flat is a neutral P&amp;L day, not a failure.</div><div class="dd-tools"><span class="tag tc">USME ≥80</span><span class="tag tn">ELITE Tier</span></div></div>
-    <div class="dd"><div class="dd-head"><div><div class="dd-title">Day 14: News Navigation Day</div></div><div class="dd-num">14</div></div><div class="dd-body">A scheduled high-impact news day. Practice the full pre-news protocol: flat 2 minutes before, wait for the initial spike and sweep to complete (typically 3–5 minutes post-release), then look for USME CHoCH confirmation on the 5M for a post-news entry if score qualifies.</div><div class="dd-tools"><span class="tag tr">News Protocol</span><span class="tag tc">Post-Event</span></div></div>
-    <div class="dd"><div class="dd-head"><div><div class="dd-title">Day 15: Halfway Milestone</div></div><div class="dd-num">15</div></div><div class="dd-body">Stop. Full system audit. Where are you vs. the profit target? Is daily consistency maintained? No single day over 35% of total gains? Pull TraderEdge sentiment trend for the 15 days. If streak shows degraded discipline, reduce risk to 0.5% for Week 4. If strong, maintain 1%.</div><div class="dd-tools"><span class="tag tp">TraderEdge</span><span class="tag tg">Milestone</span></div></div>
-    <div class="dd"><div class="dd-head"><div><div class="dd-title">Day 16–20: Protect &amp; Extend</div></div><div class="dd-num">16</div></div><div class="dd-body">If you're ahead of target, reduce risk to 0.5% for the remainder of Week 4. The goal now shifts from profit accumulation to capital preservation. Two consecutive losing days triggers an automatic sit-out on Day 3. Never attempt to make up losses — the mathematical edge will recover without forcing it.</div><div class="dd-tools"><span class="tag tr">0.5% Risk</span><span class="tag tm">Capital Safe</span></div></div>
-  </div>
-
-  <!-- Week 5-6 -->
-  <div class="week-panel" id="w3">
-    <div class="dd"><div class="dd-head"><div><div class="dd-title">Day 21–24: Conservative Funded Mode</div></div><div class="dd-num">21</div></div><div class="dd-body">You are in the final stretch. Risk drops to 0.5% absolute maximum per trade. Activate USME's Setup of the Day (SOTD) feature — only PRIME and ELITE tier signals qualify. Skipping a session entirely when no high-quality setup appears is the correct decision.</div><div class="dd-tools"><span class="tag tc">USME SOTD</span><span class="tag tn">PRIME/ELITE</span></div></div>
-    <div class="dd"><div class="dd-head"><div><div class="dd-title">Day 25: Week 5 System Review</div></div><div class="dd-num">25</div></div><div class="dd-body">TraderEdge full 25-day performance export. Confirm you have not violated the consistency rule. Calculate remaining buffer to target. If already at target — consider stopping here and entering protection mode for Days 26–29. The challenge is won when the target is locked, not when Day 30 arrives.</div><div class="dd-tools"><span class="tag tp">TraderEdge</span><span class="tag tg">★ Checkpoint</span></div></div>
-    <div class="dd"><div class="dd-head"><div><div class="dd-title">Day 26–29: Endgame Protocol</div></div><div class="dd-num">26</div></div><div class="dd-body">Maximum one trade per day. London Open only. USME ELITE score required (≥85). If target has been reached — zero new entries, hold position. The psychological pressure in these final days is the real test. TraderEdge daily check-in is mandatory before any platform is opened.</div><div class="dd-tools"><span class="tag tc">1 Trade Max</span><span class="tag tr">ELITE ≥85</span></div></div>
-    <div class="dd" style="border-color:rgba(0,255,157,.2)"><div class="dd-head"><div><div class="dd-title" style="color:var(--green)">Day 30: Challenge Complete</div></div><div class="dd-num" style="color:var(--green)">30</div></div><div class="dd-body">Target reached. Challenge evaluation submitted. If all rules were followed, the funded account is yours. Now execute Phase 1 of the USME Master Plan — and begin duplicating the system to Account #2.</div><div class="dd-tools"><span class="tag tn">Funded ✓</span><span class="tag tc">Master Plan</span></div></div>
-  </div>
-</section>
-
-
-<!-- ════════════════════════════════════════
-     05 — TOOL INTEGRATION
-════════════════════════════════════════ -->
-<div class="div"></div>
-<section class="sec" id="s5">
-  <div class="slbl"><span class="snum">05</span> Tool Integration</div>
-  <h2 class="stit">SniperTrader.ai <span class="c">Stack</span> in the Challenge</h2>
-  <p class="body" style="margin-bottom:32px">Every product in the ecosystem has a specific daily role during the 30-day challenge. These are not optional add-ons — they are the system.</p>
-  <div class="g2 sg">
-
-    <div class="tool-card gc">
-      <div class="shine"></div>
-      <span class="tool-icon">📡</span>
-      <div class="tool-name">USME — Unified Smart Money Engine</div>
-      <div class="tool-role">Primary Execution Engine · Daily Use</div>
-      <div class="tool-desc">The core signal layer. Every entry in the 30-day challenge must clear the USME AI Score threshold. ThinkScript on ThinkorSwim for futures accounts, Pine Script on TradingView for forex. The same tool, the same rules — every session.</div>
-      <ul class="tool-features">
-        <li>AI Score gating: no entry below 70 (PRIME), target ≥80 (ELITE) in final 10 days</li>
-        <li>Killzone filter: auto-restricts live entries to London + NY Open windows</li>
-        <li>ATR stop/target: calculates position size for exactly 1% risk per ATR value</li>
-        <li>Setup of the Day (SOTD): WATCH / PRIME / ELITE tier alerts — once per session gate</li>
-        <li>Multi-timeframe bias: H4/Daily flow confirmed before 15M/5M entry trigger</li>
-        <li>SMT Divergence: cross-pair confirmation active on all A+ setups</li>
+<!-- ============================================================ -->
+<!-- PANEL 4: TOOLS -->
+<!-- ============================================================ -->
+<div class="panel" id="panel-tools">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="icon">📡</span> USME — Smart Money Engine</div>
+      <p><strong>Primary Execution Engine · Daily Use</strong></p>
+      <p style="font-size:0.82rem;">The core signal layer. Every entry must clear the USME AI Score threshold. ThinkScript on ThinkorSwim for futures, Pine Script on TradingView for forex.</p>
+      <ul style="font-size:0.78rem; padding-left:20px; margin-top:8px;">
+        <li>AI Score gating: no entry below 70 (PRIME), ≥80 (ELITE) final 10 days</li>
+        <li>Killzone filter: auto-restricts live entries to London + NY Open</li>
+        <li>ATR stop/target: calculates position size for exactly 1% risk</li>
+        <li>Setup of the Day (SOTD): WATCH / PRIME / ELITE tier alerts</li>
       </ul>
-      <div class="trow"><span class="tag tc">ThinkorSwim</span><span class="tag tc">TradingView</span><span class="tag tn">ThinkScript</span><span class="tag tn">Pine Script</span></div>
+      <div style="margin-top:10px;"><span class="rule-badge cyan">ThinkorSwim</span><span class="rule-badge cyan">TradingView</span></div>
     </div>
-
-    <div class="tool-card gc gold-c">
-      <div class="shine"></div>
-      <span class="tool-icon">📱</span>
-      <div class="tool-name">TraderEdge — Performance OS</div>
-      <div class="tool-role">Daily Psychology Protocol · Pre-Session Required</div>
-      <div class="tool-desc">The mental edge system. TraderEdge is opened before the platform — every single session. The pre-trade checklist and sentiment scoring module determine whether you trade at all. A degraded score is a mandatory sit-out signal.</div>
-      <ul class="tool-features">
+    <div class="card">
+      <div class="card-title"><span class="icon">📱</span> TraderEdge — Performance OS</div>
+      <p><strong>Daily Psychology Protocol · Pre-Session Required</strong></p>
+      <p style="font-size:0.82rem;">The mental edge system. Opened before the platform — every single session. The pre-trade checklist and sentiment scoring module determine whether you trade at all.</p>
+      <ul style="font-size:0.78rem; padding-left:20px; margin-top:8px;">
         <li>Pre-session sentiment score: must clear threshold before platform opens</li>
         <li>Daily habit loop: sleep, exercise, focus — tracked across all 30 days</li>
-        <li>Claude API journal analysis: identifies emotional pattern degradation over time</li>
-        <li>Post-session debrief: emotional state logging for each trade outcome</li>
-        <li>Weekly performance review: automated TraderEdge analytics at each checkpoint</li>
-        <li>Prop firm account monitoring: balance, drawdown, daily P&amp;L across accounts</li>
+        <li>Claude API journal analysis: identifies emotional pattern degradation</li>
+        <li>Weekly performance review: automated analytics at each checkpoint</li>
       </ul>
-      <div class="trow"><span class="tag tg">Pre-Session</span><span class="tag tp">Claude API</span><span class="tag tm">Daily Required</span></div>
+      <div style="margin-top:10px;"><span class="rule-badge purple">Pre-Session</span><span class="rule-badge gold">Claude API</span></div>
     </div>
-
-    <div class="tool-card gc purp-c">
-      <div class="shine"></div>
-      <span class="tool-icon">📓</span>
-      <div class="tool-name">SMC Trade Journal App</div>
-      <div class="tool-role">Post-Session Documentation · Within 1 Hour</div>
-      <div class="tool-desc">The data layer. Every trade logged within one hour of session close. Setup type tagged (OB entry, FVG fill, CHoCH, BOS). By Day 15, the journal reveals which USME setup type produces your highest RR — that becomes your priority for the final 15 days.</div>
-      <ul class="tool-features">
-        <li>Setup tagging: Order Block / FVG Fill / CHoCH / BOS — separate performance streams</li>
+    <div class="card">
+      <div class="card-title"><span class="icon">📓</span> SMC Trade Journal</div>
+      <p><strong>Post-Session Documentation · Within 1 Hour</strong></p>
+      <p style="font-size:0.82rem;">The data layer. Every trade logged within one hour of session close. Setup type tagged — OB entry, FVG fill, CHoCH, BOS. By Day 15, the journal reveals which USME setup type produces your highest RR.</p>
+      <ul style="font-size:0.78rem; padding-left:20px; margin-top:8px;">
+        <li>Setup tagging: OB / FVG / CHoCH / BOS — separate performance streams</li>
         <li>Session classification: London vs NY Open win rate tracked independently</li>
         <li>RR actuals vs projected: measures execution quality against USME targets</li>
-        <li>Drawdown mapping: flags sessions approaching personal daily loss ceiling</li>
         <li>Milestone export: full 30-day performance report for funded account documentation</li>
       </ul>
-      <div class="trow"><span class="tag tp">Post-Session</span><span class="tag tc">Setup Tags</span><span class="tag tg">RR Tracking</span></div>
+      <div style="margin-top:10px;"><span class="rule-badge cyan">Post-Session</span><span class="rule-badge">Setup Tags</span></div>
     </div>
-
-    <div class="tool-card gc grn-c">
-      <div class="shine"></div>
-      <span class="tool-icon">📖</span>
-      <div class="tool-name">USME Master Plan</div>
-      <div class="tool-role">Strategic Framework · Reference Daily</div>
-      <div class="tool-desc">The 30-day challenge is Phase 1 of the Master Plan. Every decision — which firm, what account size, what risk protocol, when to scale — maps directly to the Master Plan architecture. Pass the challenge, receive the first payout, and Phase 2 begins.</div>
-      <ul class="tool-features">
-        <li>Firm selection guide: FTMO / Apex / FundedNext / The5ers — rules mapped per account type</li>
-        <li>Post-challenge protocol: Day 31 is Account #2 challenge fee purchase with payout proceeds</li>
-        <li>Income projection model: 1 funded account to 10 funded accounts — the full architecture</li>
-        <li>7 Laws enforcement: the Master Plan laws are the 30-day challenge rules — identical</li>
+    <div class="card">
+      <div class="card-title"><span class="icon">📖</span> USME Master Plan</div>
+      <p><strong>Strategic Framework · Reference Daily</strong></p>
+      <p style="font-size:0.82rem;">The 30-day challenge is Phase 1 of the Master Plan. Every decision — which firm, what account size, what risk protocol, when to scale — maps directly to the Master Plan architecture.</p>
+      <ul style="font-size:0.78rem; padding-left:20px; margin-top:8px;">
+        <li>Firm selection guide: FTMO / Apex / FundedNext / The5ers</li>
+        <li>Post-challenge protocol: Day 31 is Account #2 challenge fee purchase</li>
+        <li>Income projection model: 1 account to 10 accounts — the full architecture</li>
+        <li>7 Laws enforcement: the Master Plan laws are the 30-day challenge rules</li>
       </ul>
-      <div class="trow"><span class="tag tn">Phase 1</span><span class="tag tc">Master Plan</span><span class="tag tg">Scale Ready</span></div>
-    </div>
-
-  </div>
-</section>
-
-
-<!-- ════════════════════════════════════════
-     06 — MILESTONE ARCHITECTURE
-════════════════════════════════════════ -->
-<div class="div"></div>
-<section class="sec" id="s6">
-  <div class="slbl"><span class="snum">06</span> Milestone Gates</div>
-  <h2 class="stit">5 Checkpoints That <span class="g">Define</span> the Challenge</h2>
-  <p class="body" style="margin-bottom:48px">At each milestone, trading stops and a full system audit runs. The decision to continue, reduce risk, or pause is made with data — not emotion.</p>
-
-  <div class="mline">
-    <div class="mitem" id="m1">
-      <div class="mnode">5</div>
-      <div class="mkick">Day 5 · Week 1 Milestone</div>
-      <div class="mtit">Foundation Verified</div>
-      <div class="mbody">Full review of Days 1–5. Are your USME bias maps accurate? Are London Open setups aligning with H4 OBs? Is the pre-session TraderEdge score correlating with trade outcome quality? This milestone gates entry into the dual-killzone execution phase.</div>
-      <ul class="mbul">
-        <li>Pull SMC Journal: check actual RR vs projected on each trade</li>
-        <li>TraderEdge sentiment review: is discipline improving or degrading through the week?</li>
-        <li>USME calibration check: are OBs being marked at correct H4 levels?</li>
-        <li>Pass condition: positive PnL or breakeven — no rule violations in 5 days</li>
-      </ul>
-      <div class="trow" style="margin-top:14px"><span class="tag tc">Day 5</span><span class="tag tm">Foundation Gate</span></div>
-    </div>
-
-    <div class="mitem" id="m2">
-      <div class="mnode ng">10</div>
-      <div class="mkick kg">Day 10 · Week 2 Milestone</div>
-      <div class="mtit">Execution Rhythm Established</div>
-      <div class="mbody">The midpoint of Week 2. By now you should have 8–10 completed trade journal entries. The data will reveal your highest-performing setup type. That setup becomes the exclusive primary trigger for Week 3's raised score threshold.</div>
-      <ul class="mbul">
-        <li>SMC Journal: identify top-performing setup type by RR and win rate</li>
-        <li>Consistency check: no single day above 35% of total profit — verify now</li>
-        <li>TraderEdge weekly export: generate 10-day performance curve</li>
-        <li>Pass condition: at or above 40% of profit target with no rule violations</li>
-      </ul>
-      <div class="trow" style="margin-top:14px"><span class="tag tg">Day 10</span><span class="tag tc">Execution Gate</span></div>
-    </div>
-
-    <div class="mitem" id="m3">
-      <div class="mnode np">15</div>
-      <div class="mkick kp">Day 15 · Halfway Milestone</div>
-      <div class="mtit">Halfway Audit — The Critical Gate</div>
-      <div class="mbody">The most important checkpoint in the entire 30 days. This is where most challenges are won or lost psychologically. The data from Days 1–15 determines your final strategy for Days 16–30. If you're ahead of pace, protect. If you're behind, recalibrate — not force.</div>
-      <ul class="mbul">
-        <li>Full 15-day P&amp;L review — are you ahead, behind, or on pace for target?</li>
-        <li>TraderEdge 15-day sentiment analysis — is your discipline trend positive or degrading?</li>
-        <li>If ahead: reduce risk to 0.5% for Days 16–25, protect the buffer</li>
-        <li>If behind: do NOT increase risk — maintain 1% and let edge play out</li>
-        <li>Identify and eliminate any setup type that is net negative in the journal data</li>
-      </ul>
-      <div class="trow" style="margin-top:14px"><span class="tag tp">Day 15</span><span class="tag tr">Critical Gate</span></div>
-    </div>
-
-    <div class="mitem" id="m4">
-      <div class="mnode np">20</div>
-      <div class="mkick kp">Day 20 · Week 4 Milestone</div>
-      <div class="mtit">Final 10 — Lock or Extend</div>
-      <div class="mbody">The decision gate for the final phase. If you are at or above target — lock. Activate conservative mode and protect the evaluation. If you are close but not there — execute the endgame protocol with maximum selectivity. If you are materially behind — accept the outcome and begin a fresh challenge with the data gained.</div>
-      <ul class="mbul">
-        <li>Calculate exact distance to profit target</li>
-        <li>Activate USME SOTD PRIME/ELITE only — no WATCH tier entries</li>
-        <li>Risk to 0.5% absolute maximum for all remaining sessions</li>
-        <li>One trade per day maximum in London Open only</li>
-      </ul>
-      <div class="trow" style="margin-top:14px"><span class="tag tp">Day 20</span><span class="tag tg">Endgame Gate</span></div>
-    </div>
-
-    <div class="mitem" id="m5">
-      <div class="mnode nv">30</div>
-      <div class="mkick kv">Day 30 · Challenge Complete</div>
-      <div class="mtit">Funded. Phase 1 Complete. Begin Phase 2.</div>
-      <div class="mbody">The challenge ends. Submit the evaluation. The funded account is issued. Day 31 is not a rest day — it is the first day of the USME Master Plan Phase 2: Duplication. Use the first payout to fund Account #2 challenge fee. The system has been proven. Now duplicate it.</div>
-      <ul class="mbul">
-        <li>Export complete 30-day SMC Journal and TraderEdge report for personal archive</li>
-        <li>Identify your top 3 USME setup types by performance data</li>
-        <li>Purchase Account #2 challenge at same firm with same account size</li>
-        <li>Apply identical USME parameters — zero deviation from what passed Account #1</li>
-      </ul>
-      <div class="trow" style="margin-top:14px"><span class="tag tn">FUNDED ✓</span><span class="tag tc">Phase 2 Begins</span></div>
+      <div style="margin-top:10px;"><span class="rule-badge green">Phase 1</span><span class="rule-badge gold">Scale Ready</span></div>
     </div>
   </div>
-</section>
+</div>
 
-
-<!-- ════════════════════════════════════════
-     07 — DAILY PERFORMANCE TARGETS
-════════════════════════════════════════ -->
-<div class="div"></div>
-<section class="sec" id="s7">
-  <div class="slbl"><span class="snum">07</span> Performance Targets</div>
-  <h2 class="stit">Daily <span class="c">Score</span> Requirements</h2>
-  <p class="body" style="margin-bottom:32px">These metrics must be tracked in TraderEdge OS. The bars below reflect benchmark targets — your actual performance at each milestone checkpoint updates your personal baseline.</p>
-  <div class="g2 sg">
-    <div class="gc">
-      <div class="shine"></div>
-      <h3 style="font-family:'Orbitron',sans-serif;font-size:16px;font-weight:800;color:var(--wh);margin-bottom:24px">Entry Quality Benchmarks</h3>
-      <div class="pbar-wrap"><div class="pbar-head"><span class="pbar-label">USME Score Floor</span><span class="pbar-val">≥70 / 100</span></div><div class="pbar-track"><div class="pbar-fill" data-w="70" style="width:0%"></div></div></div>
-      <div class="pbar-wrap"><div class="pbar-head"><span class="pbar-label">Final 10 Days Score Floor</span><span class="pbar-val p">≥85 / 100</span></div><div class="pbar-track"><div class="pbar-fill p" data-w="85" style="width:0%"></div></div></div>
-      <div class="pbar-wrap"><div class="pbar-head"><span class="pbar-label">Min Risk-Reward Ratio</span><span class="pbar-val g">1:2 RR</span></div><div class="pbar-track"><div class="pbar-fill g" data-w="66" style="width:0%"></div></div></div>
-      <div class="pbar-wrap"><div class="pbar-head"><span class="pbar-label">London KZ Win Rate Target</span><span class="pbar-val v">≥45%</span></div><div class="pbar-track"><div class="pbar-fill v" data-w="45" style="width:0%"></div></div></div>
-    </div>
-    <div class="gc gold-c">
-      <div class="shine"></div>
-      <h3 style="font-family:'Orbitron',sans-serif;font-size:16px;font-weight:800;color:var(--wh);margin-bottom:24px">Risk Discipline Benchmarks</h3>
-      <div class="pbar-wrap"><div class="pbar-head"><span class="pbar-label">Max Risk Per Trade</span><span class="pbar-val g">1.0% Account</span></div><div class="pbar-track"><div class="pbar-fill g" data-w="20" style="width:0%"></div></div></div>
-      <div class="pbar-wrap"><div class="pbar-head"><span class="pbar-label">Personal Daily Loss Ceiling</span><span class="pbar-val r">2.0% Cutoff</span></div><div class="pbar-track"><div class="pbar-fill" data-w="40" style="width:0%"></div></div></div>
-      <div class="pbar-wrap"><div class="pbar-head"><span class="pbar-label">Consistency Rule Compliance</span><span class="pbar-val p">No Day >35%</span></div><div class="pbar-track"><div class="pbar-fill p" data-w="100" style="width:0%"></div></div></div>
-      <div class="pbar-wrap"><div class="pbar-head"><span class="pbar-label">TraderEdge Pre-Session</span><span class="pbar-val v">100% Days</span></div><div class="pbar-track"><div class="pbar-fill v" data-w="100" style="width:0%"></div></div></div>
-    </div>
+<!-- ============================================================ -->
+<!-- PANEL 5: RULES & METRICS -->
+<!-- ============================================================ -->
+<div class="panel" id="panel-rules">
+  <div class="card">
+    <div class="card-title"><span class="icon">⚖️</span> The Non-Negotiable Rules</div>
+    <table style="width:100%; border-collapse:collapse; font-size:0.78rem; color:var(--sub);">
+      <tr style="border-bottom:1px solid var(--border);">
+        <th style="text-align:left; padding:8px 0; font-family:var(--ff-mono); color:var(--white);">Rule</th>
+        <th style="text-align:left; padding:8px 0; font-family:var(--ff-mono); color:var(--white);">Requirement</th>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(0,229,255,0.04);"><td style="padding:8px 0;">Daily Trade Limit</td><td style="padding:8px 0;">Max 2–3 setups — score ≥70 before entry</td></tr>
+      <tr style="border-bottom:1px solid rgba(0,229,255,0.04);"><td style="padding:8px 0;">Risk Per Trade</td><td style="padding:8px 0;">≤ 1% of funded account</td></tr>
+      <tr style="border-bottom:1px solid rgba(0,229,255,0.04);"><td style="padding:8px 0;">Daily Loss Ceiling</td><td style="padding:8px 0;">2% personal stop — close platform</td></tr>
+      <tr style="border-bottom:1px solid rgba(0,229,255,0.04);"><td style="padding:8px 0;">Session Windows</td><td style="padding:8px 0;">London Open (2–5 AM EST) · NY Open (7–10 AM EST)</td></tr>
+      <tr style="border-bottom:1px solid rgba(0,229,255,0.04);"><td style="padding:8px 0;">Risk-Reward Floor</td><td style="padding:8px 0;">Minimum 1:2 RR — reject below 1:1.5</td></tr>
+      <tr style="border-bottom:1px solid rgba(0,229,255,0.04);"><td style="padding:8px 0;">News Events</td><td style="padding:8px 0;">Flat 2 minutes before all red-folder events</td></tr>
+      <tr style="border-bottom:1px solid rgba(0,229,255,0.04);"><td style="padding:8px 0;">Psychology Check-In</td><td style="padding:8px 0;">TraderEdge OS pre-session journal every day</td></tr>
+      <tr style="border-bottom:1px solid rgba(0,229,255,0.04);"><td style="padding:8px 0;">Trade Journal</td><td style="padding:8px 0;">SMC Journal entry within 1 hour of session close</td></tr>
+      <tr style="border-bottom:1px solid rgba(0,229,255,0.04);"><td style="padding:8px 0;">Consistency Rule</td><td style="padding:8px 0;">No single day exceeds 35% of total target profit</td></tr>
+      <tr><td style="padding:8px 0;">Overnight Holds</td><td style="padding:8px 0;">None unless firm explicitly permits</td></tr>
+    </table>
   </div>
-</section>
 
-
-<!-- ════════════════════════════════════════
-     CTA
-════════════════════════════════════════ -->
-<div class="div"></div>
-<section class="sec" id="s8">
-  <div class="cta-wrap">
-    <div style="position:relative;z-index:1">
-      <div class="slbl" style="justify-content:center;margin-bottom:20px"><span class="snum">Start</span> The Challenge</div>
-      <div class="cta-title">Ready to Get <span>Funded?</span></div>
-      <div class="cta-sub">Load USME. Open TraderEdge. Follow the 30-day protocol. The only variable is your execution discipline — everything else is already engineered for you.</div>
-      <button class="cta-btn" onclick="void(0)">
-        <span>▶</span> Begin Day 1 Protocol
-      </button>
-      <div class="cta-note">Requires: USME Indicator · TraderEdge OS · SMC Journal · Prop Firm Account</div>
-    </div>
+  <div class="card">
+    <div class="card-title"><span class="icon">📊</span> Performance Benchmarks</div>
+    <div class="pbar-wrap"><div class="pbar-head"><span class="pbar-label">USME Score Floor</span><span class="pbar-val">≥70</span></div><div class="pbar-track"><div class="pbar-fill" style="width:70%;"></div></div></div>
+    <div class="pbar-wrap"><div class="pbar-head"><span class="pbar-label">Final 10 Days Score</span><span class="pbar-val gold">≥85</span></div><div class="pbar-track"><div class="pbar-fill gold" style="width:85%;"></div></div></div>
+    <div class="pbar-wrap"><div class="pbar-head"><span class="pbar-label">Min Risk-Reward Ratio</span><span class="pbar-val gold">1:2 RR</span></div><div class="pbar-track"><div class="pbar-fill gold" style="width:66%;"></div></div></div>
+    <div class="pbar-wrap"><div class="pbar-head"><span class="pbar-label">London KZ Win Rate</span><span class="pbar-val green">≥45%</span></div><div class="pbar-track"><div class="pbar-fill green" style="width:45%;"></div></div></div>
+    <div class="pbar-wrap"><div class="pbar-head"><span class="pbar-label">Max Risk Per Trade</span><span class="pbar-val gold">1.0%</span></div><div class="pbar-track"><div class="pbar-fill gold" style="width:20%;"></div></div></div>
+    <div class="pbar-wrap"><div class="pbar-head"><span class="pbar-label">TraderEdge Pre-Session</span><span class="pbar-val green">100% Days</span></div><div class="pbar-track"><div class="pbar-fill green" style="width:100%;"></div></div></div>
   </div>
-</section>
+</div>
 
-<!-- FOOTER -->
-<footer class="footer">
-  <div class="footer-top">
-    <div>
-      <div>SNIPER<span>TRADER</span></div>
-      <div class="ftag">Intelligence Platform · USME Powered · 2026</div>
-    </div>
-    <div class="footer-cols">
-      <!-- Tools -->
-      <div>
-        <div class="footer-col-title">Tools</div>
-        <ul class="footer-links">
-          <li><a href="/usme_products.html">USME Algos</a></li>
-          <li><a href="/traderedge_baseline.html">Pre-Market Baseline</a></li>
-          <li><a href="/traderedge_guardrails.html">Habit Guardrails</a></li>
-          <li><a href="/traderedge_review_loop.html">Post-Market Review Loop</a></li>
-          <li><a href="/traderedge_ai_sentiment.html">AI Sentiment Engine</a></li>
-          <li><a href="/traderedge_chartai.html">AI Chart Analyzer</a></li>
-          <li><a href="/traderedge_prop_firms_command_center.html">Prop Firm Command Center</a></li>
-        </ul>
-      </div>
-      <!-- Ecosystem -->
-      <div>
-        <div class="footer-col-title">Ecosystem</div>
-        <ul class="footer-links">
-          <li><a href="/checkout.html">Checkout</a></li>
-          <li><a href="Ai_”vision.html”>AI Vision</a></li>
-         <li><a href="/prop_firm_masterplan.html">Prop Master Plan</a></li>
-          <li><a href="/30_days_funded_challenge.html">30-Day Funded Challenge</a></li>
-          <li><a href="/traderedge_guardrails.html">ICT Discipline Engine</a></li>
-        </ul>
-      </div>
-      <!-- Resources -->
-      <div>
-        <div class="footer-col-title">Resources</div>
-        <ul class="footer-links">
-          <li><a href="/sentinel_program.html">Affiliate Program</a></li>
-          <li><a href="/traders_couch.html">Trader's Couch</a></li>
-          <li><a href="/ebook.html">Ebook</a></li>
-          <li><a href="/prop_firm_match.html">PropFirm Match</a></li>
-          <li><a href="#">Shop</a></li>
-        </ul>
-      </div>
-      <!-- Company -->
-      <div>
-        <div class="footer-col-title">Company</div>
-        <ul class="footer-links">
-          <li><a href="/about.html">About</a></li>
-          <li><a href="/docs.html">Docs</a></li>
-          <li><a href="/terms.html">Terms</a></li>
-          <li><a href="/disclaimer.html">Disclaimer</a></li>
-          <li><a href="/privacy.html">Privacy</a></li>
-        </ul>
-      </div>
-    </div>
-  </div>
-  <div class="footer-bottom">
-    <div class="footer-copy">© 2026 <span>SniperTrader.ai</span> Intelligence Platform — All rights reserved.</div>
-  </div>
-</footer>
+<!-- Footer -->
+<div class="footer">
+  <span>SNIPERTRADER</span> 30-DAY FUNDED CHALLENGE v2.0 · 2026
+  <br>Trade responsibly. Past performance does not guarantee future results.
+</div>
 
-</div><!-- /wrap -->
+</div>
 
-<!-- ════════════════════════════════════════
-     JAVASCRIPT
-════════════════════════════════════════ -->
 <script>
-(function(){
-'use strict';
+// Tab switching
+const tabs = document.querySelectorAll('.tab-btn');
+const panels = {
+  overview: document.getElementById('panel-overview'),
+  calendar: document.getElementById('panel-calendar'),
+  phases: document.getElementById('panel-phases'),
+  tools: document.getElementById('panel-tools'),
+  rules: document.getElementById('panel-rules')
+};
 
-/* ── CURSOR ─────────────────────────── */
-const dot=document.getElementById('cdot'),ring=document.getElementById('cring'),mg=document.getElementById('mglow');
-let mx=window.innerWidth/2,my=window.innerHeight/2,rx=mx,ry=my;
-
-document.addEventListener('mousemove',e=>{
-  mx=e.clientX;my=e.clientY;
-  dot.style.left=mx+'px';dot.style.top=my+'px';
-  mg.style.left=mx+'px';mg.style.top=my+'px';
-});
-(function lr(){
-  rx+=(mx-rx)*.09;ry+=(my-ry)*.09;
-  ring.style.left=rx+'px';ring.style.top=ry+'px';
-  requestAnimationFrame(lr);
-})();
-document.querySelectorAll('.gc,.tool-card,.sbox,.cta-btn,.day,.mnode').forEach(el=>{
-  el.addEventListener('mouseenter',()=>{dot.classList.add('h');ring.classList.add('h')});
-  el.addEventListener('mouseleave',()=>{dot.classList.remove('h');ring.classList.remove('h')});
-});
-
-/* ── PARTICLES ─────────────────────── */
-const canvas=document.getElementById('pcanvas'),ctx=canvas.getContext('2d');
-let W,H;
-function rsz(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight}
-rsz();window.addEventListener('resize',rsz);
-
-const PAL=[[0,229,255],[245,197,24],[68,136,255],[0,255,157],[155,92,255]];
-class P{
-  constructor(){this.init()}
-  init(){
-    this.x=Math.random()*W;this.y=Math.random()*H;
-    this.vx=(Math.random()-.5)*.4;this.vy=(Math.random()-.5)*.4-.1;
-    this.r=Math.random()*1.7+.3;
-    this.life=Math.random()*.5+.5;
-    this.fade=Math.random()*.002+.0007;
-    this.col=PAL[Math.floor(Math.random()*PAL.length)];
-  }
-  step(){
-    this.x+=this.vx;this.y+=this.vy;this.life-=this.fade;
-    if(this.life<=0||this.y<-20||this.x<-20||this.x>W+20)this.init();
-  }
-  draw(){
-    const[r,g,b]=this.col;
-    ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
-    ctx.fillStyle=`rgba(${r},${g},${b},${this.life*.68})`;ctx.fill();
-  }
-}
-const pts=Array.from({length:240},()=>new P());
-function conn(){
-  for(let i=0;i<pts.length;i++){
-    for(let j=i+1;j<pts.length;j++){
-      const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);
-      if(d<88){
-        const a=(1-d/88)*.1*Math.min(pts[i].life,pts[j].life);
-        ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);
-        ctx.strokeStyle=`rgba(0,229,255,${a})`;ctx.lineWidth=.45;ctx.stroke();
-      }
-    }
-  }
-}
-(function ap(){ctx.clearRect(0,0,W,H);pts.forEach(p=>{p.step();p.draw()});conn();requestAnimationFrame(ap)})();
-
-/* ── 3D TILT ────────────────────────── */
-function tilt(els,rx,ry,sc){
-  els.forEach(c=>{
-    c.addEventListener('mousemove',e=>{
-      const r=c.getBoundingClientRect();
-      const dx=(e.clientX-r.left-r.width/2)/(r.width/2);
-      const dy=(e.clientY-r.top-r.height/2)/(r.height/2);
-      c.style.transform=`perspective(1000px) rotateX(${dy*-rx}deg) rotateY(${dx*ry}deg) scale(${sc})`;
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const panelName = tab.dataset.panel;
+    Object.keys(panels).forEach(key => {
+      panels[key].classList.toggle('active', key === panelName);
     });
-    c.addEventListener('mouseleave',()=>{c.style.transform='perspective(1000px) rotateX(0) rotateY(0) scale(1)'});
   });
-}
-tilt(document.querySelectorAll('.gc,.tool-card'),6,8,1.016);
-tilt(document.querySelectorAll('.sbox'),5,5,1.024);
-tilt(document.querySelectorAll('.cta-wrap'),3,3,1.005);
+});
 
-/* ── SCROLL REVEAL ──────────────────── */
-const io=new IntersectionObserver(en=>{
-  en.forEach(e=>{
-    if(e.isIntersecting){
-      e.target.classList.add('on');
-      // Animate progress bars inside
-      e.target.querySelectorAll('.pbar-fill[data-w]').forEach(bar=>{
-        setTimeout(()=>bar.style.width=bar.dataset.w+'%',300);
-      });
+// Phase item reveal on scroll
+const phaseObserver = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id;
+      const num = parseInt(id.replace('ph', ''));
+      setTimeout(() => entry.target.classList.add('visible'), (num - 1) * 120);
     }
   });
-},{threshold:.07});
-document.querySelectorAll('.sec').forEach(s=>io.observe(s));
-
-// Milestone items
-const mio=new IntersectionObserver(en=>{
-  en.forEach(e=>{
-    if(e.isIntersecting){
-      const id=e.target.id;const n=parseInt(id.replace('m',''));
-      setTimeout(()=>e.target.classList.add('on'),(n-1)*110);
-    }
-  });
-},{threshold:.1});
-document.querySelectorAll('.mitem').forEach(m=>mio.observe(m));
-
-/* ── NAV SCROLL ─────────────────────── */
-window.addEventListener('scroll',()=>{
-  document.getElementById('nav').classList.toggle('solid',window.scrollY>60);
-},{passive:true});
-
-/* ── WEEK TABS ──────────────────────── */
-document.getElementById('tabs').addEventListener('click',e=>{
-  const btn=e.target.closest('.wtab');if(!btn)return;
-  document.querySelectorAll('.wtab').forEach(t=>t.classList.remove('act'));
-  document.querySelectorAll('.week-panel').forEach(p=>p.classList.remove('act'));
-  btn.classList.add('act');
-  document.getElementById(btn.dataset.w).classList.add('act');
-});
-
-/* ── CALENDAR DAY HOVER DETAILS ────── */
-document.querySelectorAll('.day:not(.weekend)').forEach(day=>{
-  day.addEventListener('mouseenter',()=>{
-    day.style.zIndex='10';
-  });
-  day.addEventListener('mouseleave',()=>{
-    day.style.zIndex='';
-  });
-});
-
-/* ── THEME TOGGLE ───────────────────── */
-const html=document.documentElement;
-const btn=document.getElementById('themeToggle');
-const saved=localStorage.getItem('st-theme');
-if(saved==='light')html.classList.add('light');
-btn.addEventListener('click',()=>{
-  html.classList.toggle('light');
-  localStorage.setItem('st-theme',html.classList.contains('light')?'light':'dark');
-});
-
-})();
+}, { threshold: 0.1 });
+document.querySelectorAll('.phase-item').forEach(el => phaseObserver.observe(el));
 </script>
 </body>
 </html>
