@@ -20,18 +20,17 @@
   --muted: #565c72;
   --white: #ffffff;
 
-  /* Product accent palette */
-  --pivot-h: #00d2c8;       /* teal/cyan */
+  --pivot-h: #00d2c8;
   --pivot-dim: rgba(0,210,200,.08);
   --pivot-glow: rgba(0,210,200,.22);
   --pivot-border: rgba(0,210,200,.28);
 
-  --ict-h: #a78bfa;         /* violet */
+  --ict-h: #a78bfa;
   --ict-dim: rgba(167,139,250,.08);
   --ict-glow: rgba(167,139,250,.22);
   --ict-border: rgba(167,139,250,.28);
 
-  --vwap-h: #fb923c;        /* amber/orange */
+  --vwap-h: #fb923c;
   --vwap-dim: rgba(251,146,60,.08);
   --vwap-glow: rgba(251,146,60,.22);
   --vwap-border: rgba(251,146,60,.28);
@@ -39,6 +38,21 @@
   --gold: #f0b429;
   --green: #34d399;
   --red: #f87171;
+
+  --psych-h: #a78bfa;
+  --psych-dim: rgba(167,139,250,.08);
+  --psych-glow: rgba(167,139,250,.22);
+  --psych-border: rgba(167,139,250,.28);
+
+  --ebook-h: #34d399;
+  --ebook-dim: rgba(52,211,153,.08);
+  --ebook-glow: rgba(52,211,153,.22);
+  --ebook-border: rgba(52,211,153,.28);
+
+  --bundle-h: #f0b429;
+  --bundle-dim: rgba(240,180,41,.08);
+  --bundle-glow: rgba(240,180,41,.28);
+  --bundle-border: rgba(240,180,41,.30);
 }
 
 html { scroll-behavior: smooth; }
@@ -292,7 +306,8 @@ body {
   grid-template-columns: repeat(3,1fr);
   gap: 16px;
 }
-@media(max-width:860px) { .products-grid { grid-template-columns: 1fr; } }
+@media(max-width:1100px) { .products-grid { grid-template-columns: repeat(2,1fr); } }
+@media(max-width:680px)  { .products-grid { grid-template-columns: 1fr; } }
 
 /* ─── Product card ─── */
 .product-card {
@@ -305,7 +320,6 @@ body {
 }
 .product-card:hover { transform: translateY(-3px); }
 
-/* Color bar on top */
 .product-card::before {
   content: '';
   display: block;
@@ -314,11 +328,17 @@ body {
 }
 .product-card.pivot::before { background: linear-gradient(90deg, var(--pivot-h), rgba(0,210,200,.3)); }
 .product-card.ict::before   { background: linear-gradient(90deg, var(--ict-h), rgba(167,139,250,.3)); }
-.product-card.vwap::before  { background: linear-gradient(90deg, var(--vwap-h), rgba(251,146,60,.3)); }
+.product-card.vwap::before   { background: linear-gradient(90deg, var(--vwap-h),  rgba(251,146,60,.3)); }
+.product-card.psych::before  { background: linear-gradient(90deg, var(--psych-h), rgba(167,139,250,.3)); }
+.product-card.ebook::before  { background: linear-gradient(90deg, var(--ebook-h), rgba(52,211,153,.3)); }
+.product-card.bundle::before { background: linear-gradient(90deg, var(--bundle-h),rgba(240,180,41,.3)); }
 
 .product-card.pivot { --acc: var(--pivot-h); --acc-dim: var(--pivot-dim); --acc-border: var(--pivot-border); --acc-glow: var(--pivot-glow); }
 .product-card.ict   { --acc: var(--ict-h);   --acc-dim: var(--ict-dim);   --acc-border: var(--ict-border);   --acc-glow: var(--ict-glow); }
-.product-card.vwap  { --acc: var(--vwap-h);  --acc-dim: var(--vwap-dim);  --acc-border: var(--vwap-border);  --acc-glow: var(--vwap-glow); }
+.product-card.vwap   { --acc: var(--vwap-h);   --acc-dim: var(--vwap-dim);   --acc-border: var(--vwap-border);   --acc-glow: var(--vwap-glow); }
+.product-card.psych  { --acc: var(--psych-h);  --acc-dim: var(--psych-dim);  --acc-border: var(--psych-border);  --acc-glow: var(--psych-glow); }
+.product-card.ebook  { --acc: var(--ebook-h);  --acc-dim: var(--ebook-dim);  --acc-border: var(--ebook-border);  --acc-glow: var(--ebook-glow); }
+.product-card.bundle { --acc: var(--bundle-h); --acc-dim: var(--bundle-dim); --acc-border: var(--bundle-border); --acc-glow: var(--bundle-glow); }
 
 .product-badge-pop {
   position: absolute;
@@ -371,7 +391,6 @@ body {
   line-height: 1.55;
 }
 
-/* Feature list */
 .feature-list {
   padding: 0 18px 14px;
   display: flex;
@@ -393,7 +412,6 @@ body {
   opacity: .7;
 }
 
-/* Plan options */
 .plan-section {
   padding: 12px 18px 18px;
   border-top: 1px solid var(--border);
@@ -525,7 +543,6 @@ body {
   text-align: center;
 }
 
-/* cart items */
 .cart-scroll { flex: 1; min-height: 80px; }
 .cart-empty-state {
   padding: 28px 16px;
@@ -581,7 +598,6 @@ body {
 }
 .ci-remove:hover { color: var(--red); }
 
-/* Cart total */
 .cart-total-block {
   margin: 16px 0;
   padding: 14px 0;
@@ -598,7 +614,6 @@ body {
   color: var(--white);
 }
 
-/* Payment section */
 .pay-section-label {
   font-family: 'Space Mono', monospace;
   font-size: 8px;
@@ -633,7 +648,6 @@ body {
   color: var(--pivot-h);
 }
 
-/* Crypto detail */
 .crypto-detail {
   background: rgba(0,0,0,.35);
   border: 1px solid rgba(240,180,41,.18);
@@ -697,7 +711,6 @@ body {
 }
 .addr-copy { font-size: 14px; color: var(--pivot-h); flex-shrink: 0; }
 
-/* CTA */
 .cta-btn {
   width: 100%;
   padding: 14px;
@@ -744,7 +757,6 @@ body {
 .trust-chip::before { content:'·'; opacity:.4; }
 .trust-chip:first-child::before { display:none; }
 
-/* ─── Toast ─── */
 .toast {
   position: fixed;
   bottom: 24px; left: 50%;
@@ -764,7 +776,6 @@ body {
 }
 .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
-/* ─── Scrollbar ─── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 4px; }
@@ -945,85 +956,102 @@ body {
           </div>
         </div>
 
-          <!-- ── PSYCH APP GROUP HEADER ── -->
-          <div class="po-group-label" style="margin-top:6px;">▣ PSYCH APP — SMC Trade Journal</div>
- 
-          <!-- PSYCH App Monthly -->
-          <label class="product-option" onclick="selectProduct(this,29,'PSYCH App SMC Trade Journal — Monthly','per month')">
-            <input type="radio" name="product"/>
-            <div class="radio-shell"><div class="radio-pip"></div></div>
-            <div class="po-meta">
-              <div class="po-name">
-                🧠 PSYCH App Journal
-                <span class="tier-badge tb-blue">MONTHLY</span>
+        <!-- PSYCH App -->
+        <div class="product-card psych">
+          <div class="product-header">
+            <div class="product-icon-row">
+              <div class="product-icon">🧠</div>
+              <div class="product-tier">ADD-ON · PSYCH APP</div>
+            </div>
+            <div class="product-name">PSYCH App<br>SMC Trade Journal</div>
+            <div class="product-desc">AI-powered trade tracker with psychology &amp; discipline tools. 7-day free trial included.</div>
+          </div>
+          <div class="feature-list">
+            <div class="feature-item"><div class="feature-dot"></div>SMC-based trade logging</div>
+            <div class="feature-item"><div class="feature-dot"></div>Psychology &amp; discipline scoring</div>
+            <div class="feature-item"><div class="feature-dot"></div>7-day free trial on monthly</div>
+          </div>
+          <div class="plan-section">
+            <div class="plan-toggle">
+              <div class="plan-opt" data-product="PSYCH App SMC Journal" data-plan="Monthly" data-price="29">
+                <div class="plan-opt-name">Monthly</div>
+                <div class="plan-opt-price">$29<sub>/mo</sub></div>
+                <div class="plan-opt-note">7-day free trial</div>
               </div>
-              <div class="po-desc">SMC Trade Journal · AI-powered trade tracker · Psychology &amp; discipline tools · 7-day free trial</div>
-            </div>
-            <div class="po-price-col">
-              <div class="po-price">$29</div>
-              <div class="po-price-sub">PER MONTH</div>
-            </div>
-          </label>
- 
-          <!-- PSYCH App Forever -->
-          <label class="product-option" onclick="selectProduct(this,199,'PSYCH App SMC Trade Journal — Full Access','one-time')">
-            <input type="radio" name="product"/>
-            <div class="radio-shell"><div class="radio-pip"></div></div>
-            <div class="po-meta">
-              <div class="po-name">
-                🧠 PSYCH App Journal
-                <span class="tier-badge tb-life">FULL ACCESS</span>
+              <div class="plan-opt" data-product="PSYCH App SMC Journal" data-plan="Lifetime" data-price="199">
+                <div class="plan-save-chip">BEST VALUE</div>
+                <div class="plan-opt-name">Lifetime</div>
+                <div class="plan-opt-price">$199</div>
+                <div class="plan-opt-note">Forever access</div>
               </div>
-              <div class="po-desc">SMC Trade Journal · AI-powered trade tracker · Psychology &amp; discipline tools · Lifetime access</div>
             </div>
-            <div class="po-price-col">
-              <div class="po-price">$199</div>
-              <div class="po-price-sub">FOREVER ACCESS</div>
+            <button class="add-btn" data-card="psych">+ ADD TO ORDER</button>
+          </div>
+        </div>
+
+        <!-- eBook -->
+        <div class="product-card ebook">
+          <div class="product-header">
+            <div class="product-icon-row">
+              <div class="product-icon">📖</div>
+              <div class="product-tier">ADD-ON · EBOOK</div>
             </div>
-          </label>
- 
-          <!-- ── EBOOK ── -->
-          <div class="po-group-label" style="margin-top:6px;">📖 EBOOK</div>
- 
-          <!-- eBook -->
-          <label class="product-option" onclick="selectProduct(this,19,'eBook: From Broke to Funded','one-time')">
-            <input type="radio" name="product"/>
-            <div class="radio-shell"><div class="radio-pip"></div></div>
-            <div class="po-meta">
-              <div class="po-name">
-                📖 From Broke to Funded
-                <span class="tier-badge tb-pdf">PDF</span>
+            <div class="product-name">From Broke<br>to Funded</div>
+            <div class="product-desc">200+ page ICT/SMC playbook. Instant PDF download — no platform required.</div>
+          </div>
+          <div class="feature-list">
+            <div class="feature-item"><div class="feature-dot"></div>200+ pages of ICT/SMC content</div>
+            <div class="feature-item"><div class="feature-dot"></div>Full trade playbook &amp; setups</div>
+            <div class="feature-item"><div class="feature-dot"></div>Instant PDF download</div>
+          </div>
+          <div class="plan-section">
+            <div class="plan-toggle" style="grid-template-columns:1fr;">
+              <div class="plan-opt selected" data-product="From Broke to Funded eBook" data-plan="One-Time" data-price="19">
+                <div class="plan-opt-name">One-Time Purchase</div>
+                <div class="plan-opt-price">$19</div>
+                <div class="plan-opt-note">Instant download</div>
               </div>
-              <div class="po-desc">200+ pages · ICT/SMC Playbook · Instant download</div>
             </div>
-            <div class="po-price-col">
-              <div class="po-price">$19</div>
-              <div class="po-price-sub">ONE-TIME</div>
+            <button class="add-btn" data-card="ebook">+ ADD TO ORDER</button>
+          </div>
+        </div>
+
+        <!-- Full Suite Bundle (UPDATED with Monthly $600 & Annual $6000) -->
+        <div class="product-card bundle">
+          <div class="product-badge-pop" style="background:rgba(240,180,41,.12);color:var(--bundle-h);border-color:rgba(240,180,41,.3);">BEST VALUE</div>
+          <div class="product-header">
+            <div class="product-icon-row">
+              <div class="product-icon">🚀</div>
+              <div class="product-tier">FULL SUITE · BUNDLE</div>
             </div>
-          </label>
- 
-          <!-- ── FULL SUITE BUNDLE ── -->
-          <div class="po-group-label" style="margin-top:6px;">🚀 FULL SUITE BUNDLE</div>
- 
-          <!-- Full Suite Bundle -->
-          <label class="product-option" onclick="selectProduct(this,1997,'Full Suite Bundle — Forever Access','one-time')">
-            <input type="radio" name="product"/>
-            <div class="radio-shell"><div class="radio-pip"></div></div>
-            <div class="po-meta">
-              <div class="po-name">
-                🚀 Full Suite Bundle
-                <span class="tier-badge tb-best">BEST VALUE</span>
-                <span class="tier-badge" style="background:rgba(255,193,7,0.12);color:var(--gold);border:1px solid rgba(255,193,7,0.3);">FOREVER</span>
+            <div class="product-name">Full Suite<br>Bundle</div>
+            <div class="product-desc">Every tool, forever. ThinkScript v3.1 + PineScript v3.1 + PSYCH App + eBook. Saves $1,994+.</div>
+          </div>
+          <div class="feature-list">
+            <div class="feature-item"><div class="feature-dot"></div>USME ThinkScript v3.1 — forever</div>
+            <div class="feature-item"><div class="feature-dot"></div>USME PineScript v3.1 — forever</div>
+            <div class="feature-item"><div class="feature-dot"></div>PSYCH App full lifetime access</div>
+            <div class="feature-item"><div class="feature-dot"></div>From Broke to Funded eBook</div>
+          </div>
+          <div class="plan-section">
+            <div class="plan-toggle">
+              <div class="plan-opt" data-product="Full Suite Bundle" data-plan="Monthly" data-price="600">
+                <div class="plan-opt-name">Monthly</div>
+                <div class="plan-opt-price">$600<sub>/mo</sub></div>
+                <div class="plan-opt-note">Cancel anytime</div>
               </div>
-              <div class="po-desc">ThinkScript v3.1 + PineScript v3.1 + PSYCH App + eBook · Both scripts forever · saves $1,994+</div>
-              <div style="margin-top:6px;font-family:'Space Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.04em;">✦ ThinkScript v3.1 &nbsp;✦ PineScript v3.1 &nbsp;✦ PSYCH App &nbsp;✦ eBook</div>
+              <div class="plan-opt" data-product="Full Suite Bundle" data-plan="Annual" data-price="6000">
+                <div class="plan-save-chip">SAVE 17%</div>
+                <div class="plan-opt-name">Annual</div>
+                <div class="plan-opt-price">$6,000<sub>/yr</sub></div>
+                <div class="plan-opt-note">≈ $500/mo</div>
+              </div>
             </div>
-            <div class="po-price-col">
-              <div class="po-price" style="color:var(--gold);">$1,997</div>
-              <div class="po-price-sub">FOREVER ACCESS</div>
-            </div>
-          </label>
-      </div>
+            <button class="add-btn" data-card="bundle">+ ADD TO ORDER</button>
+          </div>
+        </div>
+
+      </div><!-- /products-grid -->
     </div><!-- /productsSection -->
 
   </main>
@@ -1091,7 +1119,7 @@ body {
 (function() {
   // ─── State ───
   let platform = null;
-  let cart = {}; // { pivot: {product, plan, price}, ict: ..., vwap: ... }
+  let cart = {};
   let payMethod = 'crypto';
   let activeCoin = 'BTC';
 
@@ -1105,10 +1133,10 @@ body {
 
   // ─── Platform ───
   document.querySelectorAll('.pfm-pill').forEach(pill => {
-    pill.addEventListener('click', () => {
+    pill.addEventListener('click', function() {
       document.querySelectorAll('.pfm-pill').forEach(p => p.classList.remove('selected'));
-      pill.classList.add('selected');
-      platform = pill.dataset.platform;
+      this.classList.add('selected');
+      platform = this.dataset.platform;
 
       const sec = document.getElementById('productsSection');
       sec.classList.add('unlocked');
@@ -1122,31 +1150,38 @@ body {
 
   // ─── Plan selection ───
   document.querySelectorAll('.plan-opt').forEach(opt => {
-    opt.addEventListener('click', () => {
-      const card = opt.closest('.product-card');
+    opt.addEventListener('click', function() {
+      const card = this.closest('.product-card');
       card.querySelectorAll('.plan-opt').forEach(o => o.classList.remove('selected'));
-      opt.classList.add('selected');
+      this.classList.add('selected');
     });
   });
 
   // ─── Add to cart ───
   document.querySelectorAll('.add-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (!platform) { toast('Pick a platform first'); return; }
-      const key = btn.dataset.card;
-      const card = btn.closest('.product-card');
+    btn.addEventListener('click', function() {
+      const key = this.dataset.card;
+      const card = this.closest('.product-card');
+      
+      // Check if bundle or standalone products that don't need platform
+      const noPlatformCards = ['psych', 'ebook', 'bundle'];
+      if (!platform && !noPlatformCards.includes(key)) { 
+        toast('Pick a platform first'); 
+        return; 
+      }
+      
       const selected = card.querySelector('.plan-opt.selected');
-      if (!selected) { toast('Choose monthly or annual first'); return; }
+      if (!selected) { toast('Choose a plan first'); return; }
 
       cart[key] = {
         product: selected.dataset.product,
         plan: selected.dataset.plan,
         price: parseFloat(selected.dataset.price),
-        platform
+        platform: noPlatformCards.includes(key) ? null : platform
       };
 
-      btn.classList.add('added');
-      btn.textContent = '✓ IN ORDER';
+      this.classList.add('added');
+      this.textContent = '✓ IN ORDER';
 
       renderCart();
       toast(`${selected.dataset.product} added`);
@@ -1181,13 +1216,15 @@ body {
     scroll.innerHTML = '';
 
     items.forEach(([key, item]) => {
-      const suffix = item.plan === 'Annual' ? '/yr' : '/mo';
+      const suffix = item.plan === 'Annual' ? '/yr'
+        : item.plan === 'Monthly' ? '/mo'
+        : '';
       const div = document.createElement('div');
       div.className = 'cart-item';
       div.innerHTML = `
         <div>
           <div class="ci-name">${item.product}</div>
-          <div class="ci-meta">${item.platform} · ${item.plan}</div>
+          <div class="ci-meta">${item.platform ? item.platform + ' · ' : ''}${item.plan}</div>
         </div>
         <div class="ci-right">
           <div class="ci-price">$${item.price.toLocaleString()}${suffix}</div>
@@ -1197,28 +1234,31 @@ body {
     });
 
     scroll.querySelectorAll('.ci-remove').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const k = btn.dataset.key;
+      btn.addEventListener('click', function() {
+        const k = this.dataset.key;
         delete cart[k];
-        // Reset add btn
-        document.querySelector(`.add-btn[data-card="${k}"]`).classList.remove('added');
-        document.querySelector(`.add-btn[data-card="${k}"]`).textContent = '+ ADD TO ORDER';
+        const addBtn = document.querySelector(`.add-btn[data-card="${k}"]`);
+        if (addBtn) {
+          addBtn.classList.remove('added');
+          addBtn.textContent = '+ ADD TO ORDER';
+        }
         renderCart();
         toast('Item removed');
       });
     });
 
+    const totalVal = items.reduce((s, [, v]) => s + v.price, 0);
     document.getElementById('ctaBtn').disabled = false;
     document.getElementById('ctaBtn').textContent =
-      `Complete Order — $${total.toLocaleString()}`;
+      `Complete Order — $${totalVal.toLocaleString()}`;
   }
 
   // ─── Payment toggle ───
   document.querySelectorAll('.pay-opt').forEach(opt => {
-    opt.addEventListener('click', () => {
+    opt.addEventListener('click', function() {
       document.querySelectorAll('.pay-opt').forEach(o => o.classList.remove('active'));
-      opt.classList.add('active');
-      payMethod = opt.dataset.method;
+      this.classList.add('active');
+      payMethod = this.dataset.method;
       const detail = document.getElementById('cryptoDetail');
       detail.classList.toggle('visible', payMethod === 'crypto');
     });
@@ -1226,51 +1266,56 @@ body {
 
   // ─── Coin toggle ───
   document.querySelectorAll('.coin-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', function() {
       document.querySelectorAll('.coin-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      activeCoin = btn.dataset.coin;
+      this.classList.add('active');
+      activeCoin = this.dataset.coin;
       document.getElementById('addrLabel').textContent = COIN_NAMES[activeCoin] + ' Wallet Address';
       document.getElementById('addrText').textContent = CRYPTO_ADDRS[activeCoin];
     });
   });
 
   // ─── Copy address ───
-  document.getElementById('addrBox').addEventListener('click', () => {
+  document.getElementById('addrBox').addEventListener('click', function() {
     const addr = CRYPTO_ADDRS[activeCoin];
-    navigator.clipboard?.writeText(addr).catch(() => {});
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(addr).catch(() => {});
+    }
     toast(`${activeCoin} address copied`);
   });
 
   // ─── CTA ───
-  document.getElementById('ctaBtn').addEventListener('click', () => {
+  document.getElementById('ctaBtn').addEventListener('click', function() {
     const items = Object.values(cart);
     if (!items.length) return;
     const total = items.reduce((s, v) => s + v.price, 0);
     if (payMethod === 'crypto') {
       toast(`Send $${total.toLocaleString()} in ${activeCoin} to complete`);
     } else {
-      toast(`Redirecting to secure card checkout…`);
+      toast('Redirecting to secure card checkout…');
     }
   });
 
   // ─── Progress steps ───
   function stepDone(id, lineId) {
     const el = document.getElementById(id);
+    if (!el) return;
     el.classList.remove('active');
     el.classList.add('done');
-    el.querySelector('.pt-num').textContent = '✓';
-    if (lineId) document.getElementById(lineId).classList.add('done');
+    const num = el.querySelector('.pt-num');
+    if (num) num.textContent = '✓';
+    if (lineId) document.getElementById(lineId)?.classList.add('done');
   }
   function stepActive(id) {
     const el = document.getElementById(id);
-    if (!el.classList.contains('done')) el.classList.add('active');
+    if (el && !el.classList.contains('done')) el.classList.add('active');
   }
 
   // ─── Toast ───
   let toastTimer;
   function toast(msg) {
     const el = document.getElementById('toast');
+    if (!el) return;
     el.textContent = msg;
     el.classList.add('show');
     clearTimeout(toastTimer);
