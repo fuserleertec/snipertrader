@@ -1,0 +1,1933 @@
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { 
+  BookOpen, 
+  Calculator, 
+  TrendingUp, 
+  Activity, 
+  Award, 
+  CheckCircle2, 
+  XCircle, 
+  AlertTriangle, 
+  ChevronRight, 
+  RotateCcw, 
+  Sparkles, 
+  DollarSign, 
+  Clock, 
+  ShieldCheck, 
+  HelpCircle,
+  Play,
+  Briefcase,
+  LineChart,
+  Target,
+  ArrowRight,
+  Flame,
+  Volume2
+} from "lucide-react";
+import { ConfluenceInputs, GeminiAnalysisResponse, TradeSimulation, SimulatorState } from "./types";
+import { tutorialScript, ScriptSection } from "./data/tutorialScript";
+import { calculatePositionSize, generateRandomSetup, simulateTradeOutcome } from "./utils/tradingUtils";
+
+export default function App() {
+  // Tabs State
+  const [activeTab, setActiveTab] = useState<"lessons" | "analyzer" | "sizer" | "simulator">("lessons");
+
+  // --- TAB 1: LESSONS STATE ---
+  const [activeLessonIdx, setActiveLessonIdx] = useState(0);
+  const currentLesson = tutorialScript[activeLessonIdx];
+
+  // --- TAB 2: ANALYZER STATE ---
+  const [analyzerInputs, setAnalyzerInputs] = useState<ConfluenceInputs>({
+    sessionTime: "ny_open",
+    weeklyBias: "bullish",
+    dailyBias: "bullish",
+    fvgObDetails: "Clear 15m Fair Value Gap aligning with the 1H bullish Order Block.",
+    chochBosDetails: "5m Break of Structure confirmed with a displacement candle.",
+    smtDetails: "SMT Divergence with correlated asset at previous day's low.",
+    volumeDetails: "High-volume breakout, 1.5x average on closed signal candle.",
+    closedCandle: true,
+    userNotes: "Looking to buy the FVG retest on EURUSD. Market swept London session lows before displacement."
+  });
+
+  // Calculate live local score before calling AI
+  const getLiveScore = () => {
+    let score = 0;
+    // FVG Alignment
+    if (analyzerInputs.fvgObDetails.trim().length > 10) score += 20;
+    else if (analyzerInputs.fvgObDetails.trim().length > 0) score += 10;
+
+    // CHoCH Alignment
+    if (analyzerInputs.chochBosDetails.trim().length > 10) score += 20;
+    else if (analyzerInputs.chochBosDetails.trim().length > 0) score += 10;
+
+    // SMT Details
+    if (analyzerInputs.smtDetails.trim().length > 10) score += 20;
+    else if (analyzerInputs.smtDetails.trim().length > 0) score += 10;
+
+    // Volume details
+    if (analyzerInputs.volumeDetails.trim().length > 10) score += 20;
+    else if (analyzerInputs.volumeDetails.trim().length > 0) score += 10;
+
+    // HTF Bias alignment
+    if (analyzerInputs.weeklyBias === analyzerInputs.dailyBias && analyzerInputs.weeklyBias !== "mixed") {
+      score += 20;
+    } else if (analyzerInputs.weeklyBias !== "mixed" && analyzerInputs.dailyBias !== "mixed") {
+      score += 10;
+    }
+
+    return score;
+  };
+
+  const localScore = getLiveScore();
+  const localTier = localScore >= 90 ? "ELITE" : localScore >= 80 ? "PRIME" : "STANDARD";
+  
+  const isKillzoneActive = analyzerInputs.sessionTime !== "off_hours";
+  const isBiasAligned = analyzerInputs.weeklyBias === analyzerInputs.dailyBias && analyzerInputs.weeklyBias !== "mixed";
+  const isScoreAcceptable = localScore >= 80;
+  const isCandleClosed = analyzerInputs.closedCandle;
+  const canLocalTrade = isKillzoneActive && isBiasAligned && isScoreAcceptable && isCandleClosed;
+
+  // AI analysis state
+  const [aiResponse, setAiResponse] = useState<GeminiAnalysisResponse | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [loadingStep, setLoadingStep] = useState(0);
+
+  const loadingPhrases = [
+    "Opening connection with institutional server...",
+    "Scanning market footprints for liquidity pools...",
+    "Calculating Fair Value Gap & Order Block alignment...",
+    "Auditing SMT Divergence across correlated pairs...",
+    "Enforcing Daily & Weekly prop firm risk metrics...",
+    "Compiling final mechanical USME score card..."
+  ];
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isAiLoading) {
+      interval = setInterval(() => {
+        setLoadingStep((prev) => (prev + 1) % loadingPhrases.length);
+      }, 2200);
+    }
+    return () => clearInterval(interval);
+  }, [isAiLoading]);
+
+  const handleAiAnalysis = async () => {
+    setIsAiLoading(true);
+    setAiError(null);
+    setAiResponse(null);
+    setLoadingStep(0);
+
+    try {
+      const response = await fetch("/api/gemini/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(analyzerInputs)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to analyze setup. Please try again.");
+      }
+
+      const data = await response.json();
+      setAiResponse(data);
+    } catch (err: any) {
+      console.error(err);
+      setAiError(err.message || "An unexpected network error occurred.");
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+
+  // --- TAB 3: POSITION SIZER STATE ---
+  const [sizerAccountBalance, setSizerAccountBalance] = useState<number>(100000);
+  const [sizerTier, setSizerTier] = useState<"ELITE" | "PRIME" | "STANDARD">("ELITE");
+  const [sizerAssetType, setSizerAssetType] = useState<"forex" | "crypto_stock_indices">("forex");
+  const [sizerEntryPrice, setSizerEntryPrice] = useState<number>(1.0850);
+  const [sizerStopLossDist, setSizerStopLossDist] = useState<number>(15); // pips or points
+  const [sizerPipVal, setSizerPipVal] = useState<number>(10); // forex only, standard lot pip value
+
+  const getSizerRiskPercent = () => {
+    if (sizerTier === "ELITE") return 0.5;
+    if (sizerTier === "PRIME") return 0.35;
+    return 0.2;
+  };
+
+  const sizerRiskPercent = getSizerRiskPercent();
+  const sizerResult = calculatePositionSize(
+    sizerAccountBalance,
+    sizerRiskPercent,
+    sizerStopLossDist,
+    sizerAssetType,
+    sizerPipVal
+  );
+
+  // Profit target calculations
+  const stopPrice = sizerAssetType === "crypto_stock_indices"
+    ? sizerEntryPrice - sizerStopLossDist // assuming long for sizer visual
+    : sizerEntryPrice - (sizerStopLossDist * 0.0001); // forex pip distance
+
+  const target1Price = sizerAssetType === "crypto_stock_indices"
+    ? sizerEntryPrice + (sizerStopLossDist * 1.5)
+    : sizerEntryPrice + (sizerStopLossDist * 1.5 * 0.0001);
+
+  const target2Price = sizerAssetType === "crypto_stock_indices"
+    ? sizerEntryPrice + (sizerStopLossDist * 3.0)
+    : sizerEntryPrice + (sizerStopLossDist * 3.0 * 0.0001);
+
+  const target3Price = sizerAssetType === "crypto_stock_indices"
+    ? sizerEntryPrice + (sizerStopLossDist * 5.0)
+    : sizerEntryPrice + (sizerStopLossDist * 5.0 * 0.0001);
+
+
+  // --- TAB 4: SIMULATOR STATE ---
+  const initialBalance = 100000;
+  const [simState, setSimState] = useState<SimulatorState>({
+    accountSize: initialBalance,
+    balance: initialBalance,
+    peakEquity: initialBalance,
+    maxTrailingDrawdown: 0,
+    consecutiveLosses: 0,
+    dailyLossTotal: 0,
+    weeklyLossTotal: 0,
+    tradeHistory: [],
+    isPassed: false,
+    isFailed: false,
+    failureReason: "",
+    isPausedFor30m: false
+  });
+
+  const [simWinRate, setSimWinRate] = useState<number>(55);
+  const [currentSetup, setCurrentSetup] = useState<ReturnType<typeof generateRandomSetup> | null>(null);
+  const [showCertificate, setShowCertificate] = useState(false);
+
+  // Initialize first setup on simulator enter
+  useEffect(() => {
+    if (!currentSetup) {
+      setCurrentSetup(generateRandomSetup(1));
+    }
+  }, []);
+
+  const handleNextSetup = () => {
+    const nextId = simState.tradeHistory.length + 1;
+    setCurrentSetup(generateRandomSetup(nextId));
+  };
+
+  const handleExecuteTrade = () => {
+    if (!currentSetup) return;
+    if (simState.isPassed || simState.isFailed) return;
+
+    // Check pause rule (3 consecutive losses pause)
+    if (simState.isPausedFor30m) {
+      alert("⚠️ RESET RULE ACTIVE: You have suffered 3 consecutive losses. Pause for 30 minutes (Reset consecutive losses to proceed).");
+      return;
+    }
+
+    // Determine position risk tier
+    let riskPct = 0.2;
+    if (currentSetup.tier === "ELITE") riskPct = 0.5;
+    else if (currentSetup.tier === "PRIME") riskPct = 0.35;
+
+    // Simulate outcome
+    const outcomeResult = simulateTradeOutcome(currentSetup, simState.balance, simWinRate);
+
+    const newBalance = simState.balance + outcomeResult.pnlAmount;
+    const newPeak = Math.max(simState.peakEquity, newBalance);
+    
+    // Check Trailing drawdown (Limit is 8% of Peak Equity)
+    // The peak drawdown limit is PeakEquity * 0.92 (meaning if we fall below 92% of the peak, we fail)
+    const currentDrawdownAmountFromPeak = newPeak - newBalance;
+    const currentDrawdownPct = (currentDrawdownAmountFromPeak / newPeak) * 100;
+    const maxDrawdownReached = Math.max(simState.maxTrailingDrawdown, currentDrawdownPct);
+
+    // Track consecutive losses
+    const isLoss = outcomeResult.outcome === "LOSS";
+    const consecutive = isLoss ? simState.consecutiveLosses + 1 : 0;
+
+    // Daily & Weekly accumulations (for simplicity, we assume each trade represents a chunk of the day/week)
+    // If a loss, let's add it. If a win, we adjust.
+    const tradeDailyLoss = isLoss ? Math.abs(outcomeResult.pnlAmount) : 0;
+    const newDailyLossTotal = isLoss ? simState.dailyLossTotal + tradeDailyLoss : Math.max(0, simState.dailyLossTotal - outcomeResult.pnlAmount);
+    const newWeeklyLossTotal = isLoss ? simState.weeklyLossTotal + tradeDailyLoss : Math.max(0, simState.weeklyLossTotal - outcomeResult.pnlAmount);
+
+    // Build history item
+    const newTrade: TradeSimulation = {
+      id: currentSetup.id,
+      tradeNumber: simState.tradeHistory.length + 1,
+      setupName: `${currentSetup.asset} (${currentSetup.tier})`,
+      tier: currentSetup.tier,
+      riskPercentage: riskPct,
+      direction: Math.random() > 0.5 ? "LONG" : "SHORT", // mock direction for ledger
+      outcome: outcomeResult.outcome,
+      pnlAmount: outcomeResult.pnlAmount,
+      pnlPercentage: outcomeResult.pnlPercentage,
+      endingBalance: newBalance,
+      peakEquity: newPeak,
+      trailingDrawdown: currentDrawdownPct,
+      notes: outcomeResult.notes
+    };
+
+    // Evaluate strict rule failures
+    let isFailed = false;
+    let failureReason = "";
+
+    // Rule 1: Trailing drawdown > 8%
+    if (currentDrawdownPct >= 8.0) {
+      isFailed = true;
+      failureReason = `💥 PEAK TRAILING DRAWDOWN BREACHED: Your balance dropped to $${newBalance.toLocaleString()} which is ${(currentDrawdownPct).toFixed(2)}% below your peak equity of $${newPeak.toLocaleString()}. Prop firms enforce a strict 8% maximum trailing drawdown from your peak equity.`;
+    }
+    // Rule 2: Daily drawdown > 1.5%
+    else if (newDailyLossTotal >= (simState.accountSize * 0.015)) {
+      isFailed = true;
+      failureReason = `💥 DAILY DRAWDOWN LIMIT BREACHED: You accumulated $${newDailyLossTotal.toLocaleString()} of losses today. USME Risk Pillar 2 limits daily losses to a strict 1.5% max ($${(simState.accountSize * 0.015).toLocaleString()}).`;
+    }
+    // Rule 3: Weekly drawdown > 3.0%
+    else if (newWeeklyLossTotal >= (simState.accountSize * 0.03)) {
+      isFailed = true;
+      failureReason = `💥 WEEKLY DRAWDOWN LIMIT BREACHED: You accumulated $${newWeeklyLossTotal.toLocaleString()} of losses this week. USME Risk Pillar 3 limits weekly losses to a strict 3.0% max ($${(simState.accountSize * 0.03).toLocaleString()}).`;
+    }
+
+    // Evaluate Pass conditions
+    // Goal is 10% profit -> standard prop target
+    const profitPct = ((newBalance - simState.accountSize) / simState.accountSize) * 100;
+    const isPassed = !isFailed && profitPct >= 10.0;
+
+    // Check reset rule (consecutive losses == 3)
+    const mustPause = consecutive >= 3;
+
+    // Set updated state
+    setSimState((prev) => ({
+      ...prev,
+      balance: newBalance,
+      peakEquity: newPeak,
+      maxTrailingDrawdown: maxDrawdownReached,
+      consecutiveLosses: consecutive,
+      dailyLossTotal: newDailyLossTotal,
+      weeklyLossTotal: newWeeklyLossTotal,
+      tradeHistory: [...prev.tradeHistory, newTrade],
+      isPassed,
+      isFailed,
+      failureReason,
+      isPausedFor30m: mustPause
+    }));
+
+    if (isPassed) {
+      setShowCertificate(true);
+    }
+
+    // Advance to next setup
+    const nextId = simState.tradeHistory.length + 2;
+    setCurrentSetup(generateRandomSetup(nextId));
+  };
+
+  const handleSkipSetup = () => {
+    handleNextSetup();
+  };
+
+  const resetSimulator = () => {
+    setSimState({
+      accountSize: initialBalance,
+      balance: initialBalance,
+      peakEquity: initialBalance,
+      maxTrailingDrawdown: 0,
+      consecutiveLosses: 0,
+      dailyLossTotal: 0,
+      weeklyLossTotal: 0,
+      tradeHistory: [],
+      isPassed: false,
+      isFailed: false,
+      failureReason: "",
+      isPausedFor30m: false
+    });
+    setShowCertificate(false);
+    setCurrentSetup(generateRandomSetup(1));
+  };
+
+  const resetConsecutiveLosses = () => {
+    setSimState((prev) => ({
+      ...prev,
+      consecutiveLosses: 0,
+      isPausedFor30m: false
+    }));
+  };
+
+
+  return (
+    <div id="usme-root" className="min-h-screen bg-[#f0f2f5] text-[#0f172a] font-sans antialiased selection:bg-blue-600/10 selection:text-blue-900">
+      
+      {/* HEADER SECTION */}
+      <header id="usme-header" className="border-b border-slate-200 bg-white/90 backdrop-blur-md sticky top-0 z-40 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="bg-slate-900 text-white px-3 py-1 rounded-lg font-bold text-lg tracking-tighter font-mono">USME</div>
+            <div>
+              <h1 className="text-sm font-semibold text-slate-500 uppercase tracking-widest leading-none">Foundation Workspace</h1>
+              <p className="text-[10px] text-slate-400 font-mono">SNIPERTRADER v4.1 // INSTITUTIONAL FOOTPRINT</p>
+            </div>
+          </div>
+          
+          {/* Main Navigation Tabs */}
+          <nav id="usme-nav" className="flex bg-slate-100 p-1 border border-slate-200/80 rounded-lg self-start md:self-auto overflow-x-auto max-w-full">
+            <button
+              id="tab-lessons"
+              onClick={() => setActiveTab("lessons")}
+              className={`flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 whitespace-nowrap ${
+                activeTab === "lessons" 
+                  ? "bg-slate-900 text-white shadow-sm" 
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <BookOpen className="h-3.5 w-3.5" />
+              1. Tutorial Lessons
+            </button>
+            <button
+              id="tab-analyzer"
+              onClick={() => setActiveTab("analyzer")}
+              className={`flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 whitespace-nowrap ${
+                activeTab === "analyzer" 
+                  ? "bg-slate-900 text-white shadow-sm" 
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              2. Confluence Analyzer
+            </button>
+            <button
+              id="tab-sizer"
+              onClick={() => setActiveTab("sizer")}
+              className={`flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 whitespace-nowrap ${
+                activeTab === "sizer" 
+                  ? "bg-slate-900 text-white shadow-sm" 
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <Calculator className="h-3.5 w-3.5" />
+              3. Position Sizer
+            </button>
+            <button
+              id="tab-simulator"
+              onClick={() => setActiveTab("simulator")}
+              className={`flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 whitespace-nowrap ${
+                activeTab === "simulator" 
+                  ? "bg-slate-900 text-white shadow-sm" 
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <Award className="h-3.5 w-3.5" />
+              4. Challenge Simulator
+            </button>
+          </nav>
+        </div>
+      </header>
+
+      {/* CORE CONTAINER */}
+      <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        
+        <AnimatePresence mode="wait">
+          
+          {/* TAB 1: LESSONS / SCRIPT GUIDE */}
+          {activeTab === "lessons" && (
+            <motion.div
+              key="lessons-tab"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.25 }}
+              className="grid grid-cols-1 lg:grid-cols-12 gap-8"
+            >
+              {/* Slide Navigation Rail */}
+              <div className="lg:col-span-4 space-y-2.5">
+                <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+                  <h3 className="font-semibold text-sm text-slate-800 font-display flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-slate-700" />
+                    USME Training Syllabus
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">Click any chapter to jump directly to that mechanical core concept.</p>
+                </div>
+                
+                <div className="space-y-1.5">
+                  {tutorialScript.map((section, idx) => (
+                    <button
+                      key={section.id}
+                      onClick={() => setActiveLessonIdx(idx)}
+                      className={`w-full text-left p-3.5 rounded-lg border transition-all duration-200 flex items-center justify-between group ${
+                        activeLessonIdx === idx 
+                          ? "bg-blue-50/50 border-blue-200 text-blue-700 shadow-sm" 
+                          : "bg-white border-slate-200 hover:bg-slate-50 text-slate-600"
+                      }`}
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded transition-colors ${
+                            activeLessonIdx === idx 
+                              ? "bg-blue-100 text-blue-700" 
+                              : "bg-slate-100 text-slate-500 group-hover:bg-slate-200"
+                          }`}>
+                            {section.timeRange}
+                          </span>
+                          <span className={`text-xs font-semibold ${activeLessonIdx === idx ? "text-blue-700" : "text-slate-500"}`}>
+                            {section.title.split(":")[0]}
+                          </span>
+                        </div>
+                        <p className="text-xs font-display font-medium line-clamp-1 text-slate-800">
+                          {section.title.split(":").slice(1).join(":") || section.title}
+                        </p>
+                      </div>
+                      <ChevronRight className={`h-4 w-4 transition-transform duration-200 ${activeLessonIdx === idx ? "translate-x-1 text-blue-600" : "text-slate-400 group-hover:text-slate-600"}`} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Slide Display Viewer */}
+              <div className="lg:col-span-8 space-y-6">
+                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                  {/* Slide header */}
+                  <div className="bg-slate-50 border-b border-slate-200 p-5 flex items-center justify-between">
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-blue-600 font-mono tracking-widest uppercase font-bold">
+                        CHAPTER {activeLessonIdx + 1} OF {tutorialScript.length} • {currentLesson.timeRange}
+                      </span>
+                      <h2 className="text-lg font-bold text-slate-900 font-display">
+                        {currentLesson.title}
+                      </h2>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        disabled={activeLessonIdx === 0}
+                        onClick={() => setActiveLessonIdx(p => Math.max(0, p - 1))}
+                        className="p-1.5 rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 text-xs transition-colors"
+                      >
+                        Prev
+                      </button>
+                      <button
+                        disabled={activeLessonIdx === tutorialScript.length - 1}
+                        onClick={() => setActiveLessonIdx(p => Math.min(tutorialScript.length - 1, p + 1))}
+                        className="p-1.5 rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 text-xs transition-colors"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Interactive Visual/Diagram Stage */}
+                  <div className="bg-slate-50 p-6 border-b border-slate-200/80 flex flex-col items-center justify-center min-h-[220px]">
+                    {currentLesson.id === "intro" && (
+                      <div className="text-center space-y-3">
+                        <div className="inline-flex p-3 bg-blue-50 border border-blue-100 text-blue-600 rounded-full animate-bounce">
+                          <ShieldCheck className="h-10 w-10" />
+                        </div>
+                        <h4 className="text-sm font-semibold text-slate-800 font-display">SniperTrader mechanical blueprint is armed.</h4>
+                        <p className="text-xs text-slate-500 max-w-md mx-auto">Click through the syllabus tabs on the left to review the 4 filters, 6 execution protocols, and strict prop firm challenge risk models.</p>
+                      </div>
+                    )}
+
+                    {currentLesson.id === "section1" && (
+                      <div className="w-full max-w-lg space-y-4">
+                        <div className="flex items-center justify-between text-xs font-mono text-slate-400">
+                          <span>UNCONFIRMED SIGNAL (NO TRACE)</span>
+                          <span>CONFIRMED FOOTPRINT (REACT)</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="border border-red-100 bg-red-50/50 p-3.5 rounded-lg flex flex-col justify-between h-28">
+                            <div className="text-[10px] text-red-600 font-mono">❌ SPECULATION</div>
+                            <p className="text-xs text-slate-700 font-medium">Predicting exact cycle bottoms based on indicators or gut feelings.</p>
+                            <span className="text-[10px] text-red-500/70">Sub-50% probability, capital at risk.</span>
+                          </div>
+                          <div className="border border-blue-100 bg-blue-50/50 p-3.5 rounded-lg flex flex-col justify-between h-28">
+                            <div className="text-[10px] text-blue-600 font-mono">✅ USME PROTOCOL</div>
+                            <p className="text-xs text-slate-700 font-medium">Waiting for institutional displacement (FVG or SMT) before reacting.</p>
+                            <span className="text-[10px] text-blue-500/70">Mechanical edge confirmed by footprint.</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {currentLesson.id === "section2" && (
+                      <div className="w-full max-w-xl space-y-4">
+                        <h4 className="text-xs font-semibold text-slate-500 font-mono uppercase tracking-wider text-center">The 4-Step Entry Gateway</h4>
+                        <div className="grid grid-cols-4 gap-2.5">
+                          <div className="bg-white border border-slate-200 p-2.5 rounded text-center">
+                            <div className="text-[10px] text-blue-600 font-mono font-bold">FILTER 1</div>
+                            <div className="text-xs font-semibold text-slate-900 mt-1">Killzone</div>
+                            <p className="text-[10px] text-slate-500 mt-0.5">London / NY Open only</p>
+                          </div>
+                          <div className="bg-white border border-slate-200 p-2.5 rounded text-center">
+                            <div className="text-[10px] text-blue-600 font-mono font-bold">FILTER 2</div>
+                            <div className="text-xs font-semibold text-slate-900 mt-1">HTF Bias</div>
+                            <p className="text-[10px] text-slate-500 mt-0.5">W1 & D1 Must Align</p>
+                          </div>
+                          <div className="bg-white border border-slate-200 p-2.5 rounded text-center">
+                            <div className="text-[10px] text-blue-600 font-mono font-bold">FILTER 3</div>
+                            <div className="text-xs font-semibold text-slate-900 mt-1">SMS Score</div>
+                            <p className="text-[10px] text-slate-500 mt-0.5">&gt;= 80% Confluence</p>
+                          </div>
+                          <div className="bg-white border border-slate-200 p-2.5 rounded text-center">
+                            <div className="text-[10px] text-blue-600 font-mono font-bold">FILTER 4</div>
+                            <div className="text-xs font-semibold text-slate-900 mt-1">Closed Bar</div>
+                            <p className="text-[10px] text-slate-500 mt-0.5">Never enter forming bar</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {currentLesson.id === "section3" && (
+                      <div className="w-full max-w-md bg-white border border-slate-200 p-4 rounded-xl space-y-3 shadow-sm">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                          <span className="text-xs font-bold text-slate-800 font-display">6-Step Execution Timeline</span>
+                          <span className="text-[10px] text-emerald-600 font-mono font-bold">Positive RR Matrix</span>
+                        </div>
+                        <div className="relative pl-6 space-y-2 text-xs font-mono">
+                          <div className="absolute left-1.5 top-1 bottom-1 w-0.5 bg-slate-100"></div>
+                          
+                          <div className="relative">
+                            <span className="absolute -left-[22px] top-0.5 h-3 w-3 rounded-full bg-blue-600 border-2 border-white"></span>
+                            <span className="text-blue-600 font-bold">Step 1-2</span>: Limit Entry inside FVG. Stop Loss at 1.5x ATR.
+                          </div>
+                          <div className="relative">
+                            <span className="absolute -left-[22px] top-0.5 h-3 w-3 rounded-full bg-slate-400 border-2 border-white"></span>
+                            <span className="text-slate-700 font-bold">Step 3</span>: Position sized exactly to SOTD Tier (0.5% max risk).
+                          </div>
+                          <div className="relative">
+                            <span className="absolute -left-[22px] top-0.5 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white"></span>
+                            <span className="text-emerald-600 font-bold">Step 4 (1.5R)</span>: Protected Target. Move Stop Loss to Breakeven.
+                          </div>
+                          <div className="relative">
+                            <span className="absolute -left-[22px] top-0.5 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white animate-pulse"></span>
+                            <span className="text-emerald-600 font-bold">Step 5 (3.0R)</span>: Take Partial. Bank 50% profits, start trailing stop.
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {currentLesson.id === "section4" && (
+                      <div className="w-full max-w-lg space-y-3">
+                        <div className="flex items-center justify-between text-xs text-slate-400 border-b border-slate-200 pb-1.5">
+                          <span>PROP EVALUATION CEILINGS</span>
+                          <span className="text-red-500 font-semibold font-mono">CRITICAL SAFETY ENVELOPE</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="bg-white p-3 border border-slate-200 rounded text-center shadow-sm">
+                            <div className="text-[10px] text-slate-400">1.5% DAILY LIMIT</div>
+                            <div className="text-sm font-bold text-red-600 font-mono mt-1">$1,500 Max Loss</div>
+                            <p className="text-[9px] text-slate-400 mt-0.5">Based on $100k Account</p>
+                          </div>
+                          <div className="bg-white p-3 border border-slate-200 rounded text-center shadow-sm">
+                            <div className="text-[10px] text-slate-400">3% WEEKLY ALLOCATION</div>
+                            <div className="text-sm font-bold text-red-600 font-mono mt-1">$3,000 Max Loss</div>
+                            <p className="text-[9px] text-slate-400 mt-0.5">Step back until Monday</p>
+                          </div>
+                          <div className="bg-white p-3 border border-slate-200 rounded text-center shadow-sm">
+                            <div className="text-[10px] text-slate-400">8% TRAILING LIMIT</div>
+                            <div className="text-sm font-bold text-red-600 font-mono mt-1">$8,000 Max DD</div>
+                            <p className="text-[9px] text-slate-400 mt-0.5">Measured from peak equity</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {currentLesson.id === "section5" && (
+                      <div className="w-full max-w-lg bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
+                        <h5 className="text-xs font-mono font-bold text-blue-600 uppercase tracking-wide border-b border-slate-100 pb-2 flex items-center justify-between">
+                          <span>Mathematical Edge Projection</span>
+                          <span>Expected Wins to Pass</span>
+                        </h5>
+                        <div className="grid grid-cols-3 gap-4 mt-3 text-center">
+                          <div className="p-2 border border-slate-100 bg-slate-50/50 rounded">
+                            <span className="text-[10px] text-slate-400 font-mono">ELITE SIGNALS</span>
+                            <div className="text-xs font-bold text-emerald-600 mt-1">+1.5% Per Win</div>
+                            <span className="text-[9px] text-slate-500 font-mono">Avg 3R with 0.5% risk</span>
+                          </div>
+                          <div className="p-2 border border-slate-100 bg-slate-50/50 rounded">
+                            <span className="text-[10px] text-slate-400 font-mono">PRIME SIGNALS</span>
+                            <div className="text-xs font-bold text-emerald-600 mt-1">+1.05% Per Win</div>
+                            <span className="text-[9px] text-slate-500 font-mono">Avg 3R with 0.35% risk</span>
+                          </div>
+                          <div className="p-2 border border-slate-100 bg-slate-50/50 rounded">
+                            <span className="text-[10px] text-slate-400 font-mono">TOTAL COMPLIANCE</span>
+                            <div className="text-xs font-bold text-slate-800 mt-1">25 - 35 wins</div>
+                            <span className="text-[9px] text-slate-500 font-mono">To secure 10% funding</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {currentLesson.id === "section6" && (
+                      <div className="w-full max-w-md bg-white p-4 border border-slate-200 rounded-xl space-y-2 shadow-sm">
+                        <h5 className="text-xs font-bold font-display text-slate-800 border-b border-slate-100 pb-1.5 flex items-center gap-1.5">
+                          <Flame className="h-3.5 w-3.5 text-blue-600" />
+                          Four Daily Mindset Anchors
+                        </h5>
+                        <ul className="text-xs space-y-2 text-slate-600">
+                          <li className="flex items-start gap-2">
+                            <span className="h-1.5 w-1.5 rounded-full bg-blue-600 mt-1.5"></span>
+                            <span>Did I strictly follow the 4-step setup filter?</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="h-1.5 w-1.5 rounded-full bg-blue-600 mt-1.5"></span>
+                            <span>Did I respect my position sizing by SOTD tier?</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="h-1.5 w-1.5 rounded-full bg-blue-600 mt-1.5"></span>
+                            <span>Did I manage the trade mechanically from entry to stop trailing?</span>
+                          </li>
+                        </ul>
+                      </div>
+                    )}
+
+                    {currentLesson.id === "outro" && (
+                      <div className="text-center space-y-3">
+                        <div className="inline-flex p-3 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-full animate-pulse">
+                          <Award className="h-10 w-10 text-emerald-600" />
+                        </div>
+                        <h4 className="text-sm font-semibold text-slate-800 font-display">Funded Account Certification ready for challenge.</h4>
+                        <p className="text-xs text-slate-500 max-w-sm mx-auto">Use the Confluence Analyzer and Position Sizer tabs next to begin applying USME rules to real market setups.</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Audio Script Transcript Block */}
+                  <div className="p-6 space-y-5 bg-slate-50/30">
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                        <Volume2 className="h-3.5 w-3.5 text-slate-700" />
+                        Tutorial Voiceover Script (Synchronized)
+                      </h4>
+                      <p className="text-sm text-slate-700 leading-relaxed font-sans bg-white p-4 border border-slate-200 rounded-xl select-all">
+                        "{currentLesson.voiceover}"
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-3">
+                      <div className="bg-white p-4 border border-slate-200 rounded-xl space-y-2 shadow-sm">
+                        <h5 className="text-xs font-bold text-slate-800 font-display">Lesson Takeaways</h5>
+                        <ul className="text-xs space-y-1.5 text-slate-500 list-disc list-inside">
+                          {currentLesson.keyTakeaways.map((takeaway, i) => (
+                            <li key={i} className="leading-relaxed">{takeaway}</li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div className="bg-white p-4 border border-slate-200 rounded-xl space-y-2 flex flex-col justify-between shadow-sm">
+                        <div>
+                          <h5 className="text-xs font-bold text-blue-600 font-display flex items-center gap-1">
+                            <ShieldCheck className="h-3.5 w-3.5 text-blue-600" />
+                            Pro Strategy Tip
+                          </h5>
+                          <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                            {currentLesson.tips}
+                          </p>
+                        </div>
+                        <div className="bg-slate-50 border border-slate-100 p-2.5 rounded-lg mt-3">
+                          <span className="text-[9px] text-slate-400 font-mono uppercase tracking-widest block font-bold">FOOTPRINT SCIENCE</span>
+                          <span className="text-[11px] text-slate-600 font-mono mt-0.5 block leading-tight">{currentLesson.technicalConcept}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-xl flex items-center justify-between shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <Sparkles className="h-5 w-5 text-blue-500 animate-pulse" />
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 font-display">Ready to analyze a live market setup?</h4>
+                      <p className="text-[11px] text-slate-500 mt-0.5">Input parameters, calculate your confluence Smart Money Score, and get AI insights.</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab("analyzer")}
+                    className="flex items-center gap-1 text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 rounded-lg shadow-sm transition-colors whitespace-nowrap"
+                  >
+                    Go to Analyzer
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* TAB 2: CONFLUENCE ANALYZER */}
+          {activeTab === "analyzer" && (
+            <motion.div
+              key="analyzer-tab"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.25 }}
+              className="space-y-8"
+            >
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                {/* Left Side: Setup Inputs form */}
+                <div className="lg:col-span-7 space-y-6">
+                  <div className="bg-white border border-slate-200 p-6 rounded-xl space-y-6 shadow-sm">
+                    <div>
+                      <h2 className="text-base font-bold text-slate-800 font-display flex items-center gap-2">
+                        <Calculator className="h-4 w-4 text-slate-700" />
+                        Smart Money Score Confluence Workbook
+                      </h2>
+                      <p className="text-xs text-slate-500 mt-1">Check every parameter based on active charts to verify compliance with USME mechanical filters.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Session Killzone */}
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-mono font-bold text-slate-500 uppercase tracking-wider block">1. Killzone Session</label>
+                        <select
+                          value={analyzerInputs.sessionTime}
+                          onChange={(e) => setAnalyzerInputs(p => ({ ...p, sessionTime: e.target.value as any }))}
+                          className="w-full bg-slate-50 text-xs border border-slate-200 rounded-lg p-2.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:border-slate-900 focus:bg-white transition-colors"
+                        >
+                          <option value="london">London (2:00 - 5:00 AM EST)</option>
+                          <option value="ny_open">NY Open (8:30 - 11:00 AM EST)</option>
+                          <option value="off_hours">Off-hours (Signals Discarded)</option>
+                        </select>
+                      </div>
+
+                      {/* Weekly Bias */}
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-mono font-bold text-slate-500 uppercase tracking-wider block">2. Weekly Bias</label>
+                        <select
+                          value={analyzerInputs.weeklyBias}
+                          onChange={(e) => setAnalyzerInputs(p => ({ ...p, weeklyBias: e.target.value as any }))}
+                          className="w-full bg-slate-50 text-xs border border-slate-200 rounded-lg p-2.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:border-slate-900 focus:bg-white transition-colors"
+                        >
+                          <option value="bullish">Bullish (Weekly Chart)</option>
+                          <option value="bearish">Bearish (Weekly Chart)</option>
+                          <option value="mixed">Mixed / Conflict</option>
+                        </select>
+                      </div>
+
+                      {/* Daily Bias */}
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-mono font-bold text-slate-500 uppercase tracking-wider block">3. Daily Bias</label>
+                        <select
+                          value={analyzerInputs.dailyBias}
+                          onChange={(e) => setAnalyzerInputs(p => ({ ...p, dailyBias: e.target.value as any }))}
+                          className="w-full bg-slate-50 text-xs border border-slate-200 rounded-lg p-2.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:border-slate-900 focus:bg-white transition-colors"
+                        >
+                          <option value="bullish">Bullish (Daily Chart)</option>
+                          <option value="bearish">Bearish (Daily Chart)</option>
+                          <option value="mixed">Mixed / Conflict</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <hr className="border-slate-100" />
+
+                    <div className="space-y-4">
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono">Confluence Scoring Factors (20 points each)</h4>
+                      
+                      {/* Factor A: FVG */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-600 flex items-center justify-between">
+                          <span>Fair Value Gap & Order Block Alignment (max 20)</span>
+                          <span className="text-[10px] text-slate-400 font-mono">Input description to score</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={analyzerInputs.fvgObDetails}
+                          onChange={(e) => setAnalyzerInputs(p => ({ ...p, fvgObDetails: e.target.value }))}
+                          placeholder="e.g. FVG aligned with 15m order block"
+                          className="w-full bg-slate-50 text-xs border border-slate-200 rounded-lg p-2.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:bg-white transition-colors"
+                        />
+                      </div>
+
+                      {/* Factor B: CHoCH */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-600 flex items-center justify-between">
+                          <span>Change of Character & Break of Structure (max 20)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={analyzerInputs.chochBosDetails}
+                          onChange={(e) => setAnalyzerInputs(p => ({ ...p, chochBosDetails: e.target.value }))}
+                          placeholder="e.g. 5m Displacement broke structure high"
+                          className="w-full bg-slate-50 text-xs border border-slate-200 rounded-lg p-2.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:bg-white transition-colors"
+                        />
+                      </div>
+
+                      {/* Factor C: SMT Divergence */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-600 flex items-center justify-between">
+                          <span>SMT Divergence Alignment (max 20)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={analyzerInputs.smtDetails}
+                          onChange={(e) => setAnalyzerInputs(p => ({ ...p, smtDetails: e.target.value }))}
+                          placeholder="e.g. EURUSD swept low while GBPUSD held high"
+                          className="w-full bg-slate-50 text-xs border border-slate-200 rounded-lg p-2.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:bg-white transition-colors"
+                        />
+                      </div>
+
+                      {/* Factor D: Volume */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-600 flex items-center justify-between">
+                          <span>Volume Confirmation (max 20)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={analyzerInputs.volumeDetails}
+                          onChange={(e) => setAnalyzerInputs(p => ({ ...p, volumeDetails: e.target.value }))}
+                          placeholder="e.g. Volume spike on breakout"
+                          className="w-full bg-slate-50 text-xs border border-slate-200 rounded-lg p-2.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:bg-white transition-colors"
+                        />
+                      </div>
+                    </div>
+
+                    <hr className="border-slate-100" />
+
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-slate-50 p-4 border border-slate-200 rounded-xl">
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          id="closed-candle-rule-check"
+                          checked={analyzerInputs.closedCandle}
+                          onChange={(e) => setAnalyzerInputs(p => ({ ...p, closedCandle: e.target.checked }))}
+                          className="mt-1 h-4 w-4 bg-white border-slate-300 text-slate-900 focus:ring-slate-900/20 rounded cursor-pointer"
+                        />
+                        <label htmlFor="closed-candle-rule-check" className="text-xs text-slate-600 cursor-pointer">
+                          <span className="font-bold text-slate-800 block">Filter 4 — The Closed Candle Rule</span>
+                          I will only enter after the signal candle is fully CLOSED. I will not trade forming candles.
+                        </label>
+                      </div>
+                      <div className={`text-xs font-mono font-bold px-2 py-1 rounded text-center shrink-0 ${analyzerInputs.closedCandle ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-red-50 text-red-600 border border-red-100 animate-pulse"}`}>
+                        {analyzerInputs.closedCandle ? "PASSED RULE" : "CLOSED MANDATORY"}
+                      </div>
+                    </div>
+
+                    {/* Raw Text Notes Context */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-600 block">Setup Raw Notes & Chart Context (Pasted details for AI Analysis)</label>
+                      <textarea
+                        value={analyzerInputs.userNotes}
+                        onChange={(e) => setAnalyzerInputs(p => ({ ...p, userNotes: e.target.value }))}
+                        rows={3}
+                        className="w-full bg-slate-50 text-xs border border-slate-200 rounded-lg p-2.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:bg-white transition-colors"
+                        placeholder="Add key observations, currency asset, or raw market details. Our AI Assistant parses this context to confirm mechanical score alignment..."
+                      />
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                      <button
+                        onClick={handleAiAnalysis}
+                        disabled={isAiLoading}
+                        className="flex-1 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 text-white disabled:text-slate-400 font-semibold text-xs py-3 px-4 rounded-lg flex items-center justify-center gap-2 shadow-sm transition-all"
+                      >
+                        {isAiLoading ? (
+                          <>
+                            <div className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            <span>Analyzing Setup with USME AI Copilot...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-4 w-4 text-white" />
+                            <span>Run AI Institutional Audit (Gemini)</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {aiError && (
+                      <div className="bg-red-50 border border-red-100 p-4 rounded-lg text-xs text-red-600 flex items-start gap-3">
+                        <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-red-500" />
+                        <div className="space-y-1">
+                          <p className="font-bold">Institutional Server Offline</p>
+                          <p>{aiError}</p>
+                          <p className="text-slate-500 mt-1">Please ensure your Gemini API Key is entered in the Secrets panel in the Settings menu.</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right Side: Score Card / Live mechanical check */}
+                <div className="lg:col-span-5 space-y-6">
+                  
+                  {/* Live mechanical score card */}
+                  <div className="bg-white border border-slate-200 p-6 rounded-xl space-y-6 shadow-sm">
+                    <div>
+                      <span className="text-[9px] text-slate-400 font-mono tracking-wider uppercase font-bold">REAL-TIME CONFLUENCE TELEMETRY</span>
+                      <h3 className="text-sm font-bold text-slate-800 font-display mt-0.5">Live Local USME Scorecard</h3>
+                    </div>
+
+                    {/* Circular Indicator */}
+                    <div className="flex flex-col items-center justify-center py-4 bg-slate-50 border border-slate-200 rounded-xl relative overflow-hidden">
+                      <div className="absolute inset-0 bg-radial-gradient from-blue-500/5 to-transparent pointer-events-none"></div>
+                      
+                      <div className="relative flex items-center justify-center">
+                        {/* Radial Circle representation */}
+                        <div className="h-28 w-28 rounded-full border-4 border-slate-200 bg-white flex flex-col items-center justify-center relative">
+                          <span className="text-3xl font-mono font-bold text-slate-850">{localScore}%</span>
+                          <span className="text-[9px] text-slate-400 font-mono uppercase tracking-widest mt-0.5">SCORE</span>
+                        </div>
+                      </div>
+
+                      <div className="text-center mt-4 space-y-1">
+                        <span className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded-full ${
+                          localTier === "ELITE" 
+                            ? "bg-slate-900 text-white border border-slate-900" 
+                            : localTier === "PRIME" 
+                              ? "bg-blue-50 text-blue-600 border border-blue-200" 
+                              : "bg-slate-100 text-slate-500 border border-slate-200"
+                        }`}>
+                          {localTier} TIER SIGNAL
+                        </span>
+                        <p className="text-[10px] text-slate-500 max-w-xs px-4">
+                          {localScore >= 80 
+                            ? "Passes USME Prime baseline threshold. Proceed to Position Sizer." 
+                            : "⚠️ REJECTED: Under USME rules, any signal score below 80% is classified as standardized and MUST be skipped."
+                          }
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* 4 Filters checklist */}
+                    <div className="space-y-3.5">
+                      <h4 className="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-widest">GATEWAY FILTERS CHECKLIST</h4>
+                      
+                      {/* Filter 1: Killzone */}
+                      <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200/60 rounded-lg">
+                        <div className="flex items-center gap-2.5">
+                          <div className={`p-1.5 rounded-md ${isKillzoneActive ? "bg-emerald-50" : "bg-red-50"}`}>
+                            <Clock className={`h-4 w-4 ${isKillzoneActive ? "text-emerald-600" : "text-red-500 animate-pulse"}`} />
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold text-slate-700 block">Killzone Confirmation</span>
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              {analyzerInputs.sessionTime === "london" ? "London Session (2:00-5:00 AM EST)" : analyzerInputs.sessionTime === "ny_open" ? "NY Open Session (8:30-11:00 AM EST)" : "Off-hours / Outside Volume Window"}
+                            </span>
+                          </div>
+                        </div>
+                        <div>
+                          {isKillzoneActive ? (
+                            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                          ) : (
+                            <XCircle className="h-5 w-5 text-red-500" />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Filter 2: HTF Bias */}
+                      <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200/60 rounded-lg">
+                        <div className="flex items-center gap-2.5">
+                          <div className={`p-1.5 rounded-md ${isBiasAligned ? "bg-emerald-50" : "bg-red-50"}`}>
+                            <TrendingUp className={`h-4 w-4 ${isBiasAligned ? "text-emerald-600" : "text-red-500 animate-pulse"}`} />
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold text-slate-700 block">HTF Bias Agreement</span>
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              Weekly: {analyzerInputs.weeklyBias.toUpperCase()} • Daily: {analyzerInputs.dailyBias.toUpperCase()}
+                            </span>
+                          </div>
+                        </div>
+                        <div>
+                          {isBiasAligned ? (
+                            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                          ) : (
+                            <XCircle className="h-5 w-5 text-red-500" />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Filter 3: Smart Money Score */}
+                      <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200/60 rounded-lg">
+                        <div className="flex items-center gap-2.5">
+                          <div className={`p-1.5 rounded-md ${isScoreAcceptable ? "bg-emerald-50" : "bg-red-50"}`}>
+                            <Activity className={`h-4 w-4 ${isScoreAcceptable ? "text-emerald-600" : "text-red-500 animate-pulse"}`} />
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold text-slate-700 block">Institutional Score ({localScore}%)</span>
+                            <span className="text-[10px] text-slate-400 font-mono">Requires minimum 80% to qualify</span>
+                          </div>
+                        </div>
+                        <div>
+                          {isScoreAcceptable ? (
+                            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                          ) : (
+                            <XCircle className="h-5 w-5 text-red-500" />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Filter 4: Closed Candle */}
+                      <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200/60 rounded-lg">
+                        <div className="flex items-center gap-2.5">
+                          <div className={`p-1.5 rounded-md ${isCandleClosed ? "bg-emerald-50" : "bg-red-50"}`}>
+                            <ShieldCheck className={`h-4 w-4 ${isCandleClosed ? "text-emerald-600" : "text-red-500 animate-pulse"}`} />
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold text-slate-700 block">Closed Candle Rule</span>
+                            <span className="text-[10px] text-slate-400 font-mono">Signals on unclosed candles are discarded</span>
+                          </div>
+                        </div>
+                        <div>
+                          {isCandleClosed ? (
+                            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                          ) : (
+                            <XCircle className="h-5 w-5 text-red-500" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className={`p-4 border rounded-xl text-xs flex flex-col justify-between gap-3 ${canLocalTrade ? "bg-emerald-50 border-emerald-200 text-emerald-800" : "bg-red-50 border-red-100 text-red-800"}`}>
+                      <div className="flex items-start gap-2.5">
+                        <AlertTriangle className={`h-4 w-4 shrink-0 mt-0.5 ${canLocalTrade ? "text-emerald-600" : "text-red-500 animate-pulse"}`} />
+                        <div>
+                          <p className="font-bold">{canLocalTrade ? "MECHANICAL EDGE COGNITION: APPROVED" : "TRADE SETUP REJECTED"}</p>
+                          <p className="text-[11px] text-slate-500 mt-1">
+                            {canLocalTrade 
+                              ? "Every entry gateway has approved compliance. You can advance to the Position Sizer to compute exact lot allocation." 
+                              : "This trade setup cannot be executed. You must wait for active sessions, higher timeframe bias alignment, closed signal candles, and confluences totaling 80%+."
+                            }
+                          </p>
+                        </div>
+                      </div>
+                      {canLocalTrade && (
+                        <button
+                          onClick={() => {
+                            setSizerTier(localTier);
+                            setActiveTab("sizer");
+                          }}
+                          className="w-full bg-slate-900 text-white font-semibold py-1.5 rounded-lg text-center text-xs hover:bg-slate-800 transition-all shadow-sm"
+                        >
+                          Import SOTD ({localTier}) into Position Sizer
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* AI Gemini Analysis Response Display Area */}
+              <AnimatePresence>
+                {isAiLoading && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="bg-white border border-slate-200 p-8 rounded-xl flex flex-col items-center justify-center text-center space-y-4 shadow-sm"
+                  >
+                    <div className="h-10 w-10 border-4 border-slate-900 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-bold text-slate-800 font-display">Executing Smart Money Core Analyzer...</h4>
+                      <p className="text-xs text-blue-600 font-mono tracking-widest">{loadingPhrases[loadingStep]}</p>
+                    </div>
+                    <p className="text-xs text-slate-500 max-w-md">Gemini is compiling SMT divergence indicators, Fair Value displacement parameters, and checking prop firm challenge metrics to output a structured mechanical execution sheet.</p>
+                  </motion.div>
+                )}
+
+                {aiResponse && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm"
+                  >
+                    <div className="bg-slate-50 border-b border-slate-100 p-5 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-slate-700" />
+                        <div>
+                          <h3 className="font-bold text-sm text-slate-800 font-display">USME AI Institutional Audit Report</h3>
+                          <p className="text-[10px] text-slate-500">Formulated under the SniperTrader ICT mechanical trading handbook</p>
+                        </div>
+                      </div>
+                      <span className={`text-xs font-mono font-bold px-3 py-1 rounded-full ${aiResponse.overallPass ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-red-50 text-red-600 border border-red-100"}`}>
+                        {aiResponse.overallPass ? "PASSED USME gateway" : "REJECTED BY RULES"}
+                      </span>
+                    </div>
+
+                    <div className="p-6 space-y-6">
+                      
+                      {/* Analysis Block */}
+                      <div className="bg-slate-50 p-4 border border-slate-100 rounded-xl space-y-2">
+                        <span className="text-[9px] text-slate-400 font-mono uppercase tracking-widest font-bold">EXECUTIVE ASSESSMENTS</span>
+                        <p className="text-xs text-slate-600 leading-relaxed">
+                          {aiResponse.analysis}
+                        </p>
+                      </div>
+
+                      {/* Score breakups */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        
+                        {/* Confluence scores */}
+                        <div className="md:col-span-2 space-y-3.5">
+                          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">CONFLUENCE INDEX CONSTITUENTS</h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {aiResponse.filterSmartMoneyScore.factors.map((factor, i) => (
+                              <div key={i} className="p-3 bg-slate-50 border border-slate-100 rounded-lg flex flex-col justify-between h-24 shadow-sm">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-bold text-slate-700 line-clamp-1">{factor.name}</span>
+                                  <span className="text-xs font-mono font-bold text-slate-900">{factor.score}/20</span>
+                                </div>
+                                <p className="text-[10px] text-slate-500 line-clamp-2 mt-1 leading-normal">{factor.details}</p>
+                                <div className="w-full bg-slate-200 h-1 rounded-full overflow-hidden mt-1.5">
+                                  <div className="bg-slate-800 h-1" style={{ width: `${(factor.score / 20) * 100}%` }}></div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Gateway filters */}
+                        <div className="space-y-3.5">
+                          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">GATE AUDIT DETAILS</h4>
+                          <div className="space-y-2 text-xs">
+                            <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-lg space-y-1">
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-slate-700">Killzone</span>
+                                <span className={aiResponse.filterKillzone.pass ? "text-emerald-600 font-bold" : "text-red-500 font-bold"}>
+                                  {aiResponse.filterKillzone.pass ? "PASS" : "FAIL"}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-slate-500 leading-normal">{aiResponse.filterKillzone.details}</p>
+                            </div>
+                            <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-lg space-y-1">
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-slate-700">Bias alignment</span>
+                                <span className={aiResponse.filterHTFBias.pass ? "text-emerald-600 font-bold" : "text-red-500 font-bold"}>
+                                  {aiResponse.filterHTFBias.pass ? "PASS" : "FAIL"}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-slate-500 leading-normal">{aiResponse.filterHTFBias.details}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Execution Blueprint Block */}
+                      <div className="bg-slate-50 p-5 border border-slate-100 rounded-xl space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-200/65 pb-2.5">
+                          <h4 className="text-xs font-mono font-bold text-slate-800 uppercase tracking-widest">USME EXECUTION PROTOCOLS</h4>
+                          <span className="text-[10px] text-slate-500 font-mono">Suggested Risk: {aiResponse.executionPlan.riskPercentage}%</span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-xs">
+                          <div className="space-y-1">
+                            <span className="text-slate-800 font-bold">1. Entry Location</span>
+                            <p className="text-slate-500 leading-relaxed text-[11px]">{aiResponse.executionPlan.entryAdvice}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-slate-700 font-bold">2. Protection (SL)</span>
+                            <p className="text-slate-500 leading-relaxed text-[11px]">{aiResponse.executionPlan.stopLossAdvice}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-slate-800 font-bold">3. Targets Plan</span>
+                            <p className="text-slate-500 leading-relaxed text-[11px]">{aiResponse.executionPlan.targetsAdvice}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Prop Context Advice */}
+                      <div className="bg-blue-50/50 p-4 border border-blue-100 rounded-xl text-xs space-y-1.5">
+                        <h4 className="font-bold text-slate-850 font-display flex items-center gap-1.5">
+                          <Briefcase className="h-4 w-4 text-slate-700" />
+                          Prop Challenge Risk Calibration
+                        </h4>
+                        <p className="text-slate-600 leading-relaxed text-[11px]">
+                          {aiResponse.propChallengeContext}
+                        </p>
+                      </div>
+
+                      <div className="flex justify-end pt-2">
+                        <button
+                          onClick={() => {
+                            setSizerTier(aiResponse.filterSmartMoneyScore.tier);
+                            setActiveTab("sizer");
+                          }}
+                          className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-4 py-2 rounded-lg shadow-sm transition-all"
+                        >
+                          Send Parameters to Position Sizer
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
+
+          {/* TAB 3: POSITION SIZER */}
+          {activeTab === "sizer" && (
+            <motion.div
+              key="sizer-tab"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.25 }}
+              className="grid grid-cols-1 lg:grid-cols-12 gap-8"
+            >
+              
+              {/* Left Column: Sizer Inputs */}
+              <div className="lg:col-span-5 space-y-6">
+                <div className="bg-white border border-slate-200 p-6 rounded-xl space-y-6 shadow-sm">
+                  <div>
+                    <h2 className="text-base font-bold text-slate-800 font-display flex items-center gap-2">
+                      <Calculator className="h-4 w-4 text-slate-750" />
+                      Mechanical Lot size Calculator
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-1">SOTD (Signal of the Day) sizing adjusts risk by confluence tier automatically.</p>
+                  </div>
+
+                  {/* Sizer parameters */}
+                  <div className="space-y-4">
+                    {/* Account Balance preset and input */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-slate-600 block">Account Size ($)</label>
+                      <input
+                        type="number"
+                        value={sizerAccountBalance}
+                        onChange={(e) => setSizerAccountBalance(Number(e.target.value))}
+                        className="w-full bg-slate-50 text-xs border border-slate-200 rounded-lg p-2.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:bg-white transition-colors"
+                      />
+                      <div className="flex gap-1.5 flex-wrap">
+                        {[10000, 25000, 50000, 100000, 200000].map((preset) => (
+                          <button
+                            key={preset}
+                            onClick={() => setSizerAccountBalance(preset)}
+                            className={`text-[10px] font-mono px-2 py-1 rounded transition-colors ${
+                              sizerAccountBalance === preset 
+                                ? "bg-slate-900 border border-slate-900 text-white" 
+                                : "bg-slate-50 hover:bg-slate-100 text-slate-500 border border-slate-200"
+                            }`}
+                          >
+                            ${preset.toLocaleString()}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* SOTD Tier */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-600 block">SOTD Signal Tier</label>
+                      <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                        {(["ELITE", "PRIME", "STANDARD"] as const).map((tier) => (
+                          <button
+                            key={tier}
+                            onClick={() => setSizerTier(tier)}
+                            className={`p-2.5 rounded-lg border font-bold transition-all ${
+                              sizerTier === tier 
+                                ? "bg-slate-900 border border-slate-900 text-white" 
+                                : "bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-500"
+                            }`}
+                          >
+                            {tier}
+                            <span className={`block text-[9px] font-mono font-normal mt-0.5 ${sizerTier === tier ? "text-slate-300" : "text-slate-400"}`}>
+                              {tier === "ELITE" ? "0.5% risk" : tier === "PRIME" ? "0.35% risk" : "0.2% risk"}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <hr className="border-slate-100" />
+
+                    {/* Asset Mode */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-600 block">Asset Calculation Method</label>
+                      <div className="grid grid-cols-2 gap-2 text-center text-xs">
+                        <button
+                          onClick={() => setSizerAssetType("forex")}
+                          className={`p-2.5 rounded-lg border font-bold transition-all ${
+                            sizerAssetType === "forex" 
+                              ? "bg-slate-900 border border-slate-900 text-white" 
+                              : "bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-500"
+                          }`}
+                        >
+                          Forex (Pips)
+                          <span className={`block text-[9px] font-mono font-normal mt-0.5 ${sizerAssetType === "forex" ? "text-slate-300" : "text-slate-400"}`}>Lot size formula</span>
+                        </button>
+                        <button
+                          onClick={() => setSizerAssetType("crypto_stock_indices")}
+                          className={`p-2.5 rounded-lg border font-bold transition-all ${
+                            sizerAssetType === "crypto_stock_indices" 
+                              ? "bg-slate-900 border border-slate-900 text-white" 
+                              : "bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-500"
+                          }`}
+                        >
+                          Crypto / Stocks / Index
+                          <span className={`block text-[9px] font-mono font-normal mt-0.5 ${sizerAssetType === "crypto_stock_indices" ? "text-slate-300" : "text-slate-400"}`}>Direct price difference</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Stop Distance and Prices */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-600 block">Entry Price</label>
+                        <input
+                          type="number"
+                          step="any"
+                          value={sizerEntryPrice}
+                          onChange={(e) => setSizerEntryPrice(Number(e.target.value))}
+                          className="w-full bg-slate-50 text-xs border border-slate-200 rounded-lg p-2.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:bg-white transition-colors"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-600 block">
+                          {sizerAssetType === "forex" ? "Stop Loss (Pips)" : "Stop Loss (Price Pt)"}
+                        </label>
+                        <input
+                          type="number"
+                          value={sizerStopLossDist}
+                          onChange={(e) => setSizerStopLossDist(Number(e.target.value))}
+                          className="w-full bg-slate-50 text-xs border border-slate-200 rounded-lg p-2.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:bg-white transition-colors"
+                        />
+                      </div>
+                    </div>
+
+                    {sizerAssetType === "forex" && (
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-600 block">Pip Value ($ per Lot)</label>
+                        <select
+                          value={sizerPipVal}
+                          onChange={(e) => setSizerPipVal(Number(e.target.value))}
+                          className="w-full bg-slate-50 text-xs border border-slate-200 rounded-lg p-2.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:bg-white transition-colors"
+                        >
+                          <option value={10}>$10.00 (Standard Lot for EURUSD, GBPUSD)</option>
+                          <option value={1}>$1.00 (Micro Pip Value)</option>
+                          <option value={5}>$5.00 (Crosses / Custom)</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Execution Output Details */}
+              <div className="lg:col-span-7 space-y-6">
+                
+                {/* Result Sizer Block */}
+                <div className="bg-white border border-slate-200 p-6 rounded-xl space-y-6 shadow-sm">
+                  <div>
+                    <span className="text-[9px] text-slate-400 font-mono tracking-wider uppercase font-bold">CALCULATED ALLOCATION BLUEPRINT</span>
+                    <h3 className="text-sm font-bold text-slate-800 font-display mt-0.5">Sizing & Target Levels</h3>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="bg-slate-50 p-3.5 border border-slate-100 rounded-xl">
+                      <span className="text-[10px] text-slate-400 font-mono">RISK (%)</span>
+                      <div className="text-lg font-mono font-bold text-slate-900 mt-1">{sizerRiskPercent}%</div>
+                      <span className="text-[9px] text-slate-400 font-mono">Based on Tier</span>
+                    </div>
+                    <div className="bg-slate-50 p-3.5 border border-slate-100 rounded-xl">
+                      <span className="text-[10px] text-slate-400 font-mono">RISK VALUE ($)</span>
+                      <div className="text-lg font-mono font-bold text-slate-800 mt-1">${sizerResult.riskAmount.toLocaleString()}</div>
+                      <span className="text-[9px] text-slate-400 font-mono">Absolute exposure</span>
+                    </div>
+                    <div className="bg-slate-50 p-3.5 border border-slate-100 rounded-xl">
+                      <span className="text-[10px] text-slate-400 font-mono">LOT ALLOCATION</span>
+                      <div className="text-lg font-mono font-bold text-slate-900 mt-1">
+                        {sizerResult.positionSize}
+                        <span className="text-xs text-slate-500 font-normal ml-1">
+                          {sizerAssetType === "forex" ? "Lots" : "Units"}
+                        </span>
+                      </div>
+                      <span className="text-[9px] text-slate-400 font-mono">Mechanical trade size</span>
+                    </div>
+                    <div className="bg-slate-50 p-3.5 border border-slate-100 rounded-xl">
+                      <span className="text-[10px] text-slate-400 font-mono">STOP SPAN</span>
+                      <div className="text-lg font-mono font-bold text-red-600 mt-1">
+                        {sizerStopLossDist}
+                        <span className="text-xs text-slate-500 font-normal ml-1">
+                          {sizerAssetType === "forex" ? "Pips" : "Pts"}
+                        </span>
+                      </div>
+                      <span className="text-[9px] text-slate-400 font-mono">1.5x ATR Volatility</span>
+                    </div>
+                  </div>
+
+                  <hr className="border-slate-100" />
+
+                  {/* Profit Target Roadmaps */}
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-bold text-slate-800 font-display">6-Step Execution Protocol Milestones</h4>
+                    
+                    <div className="space-y-3">
+                      {/* Entry & SL */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-3 bg-slate-50 border border-slate-100 rounded-lg">
+                          <div className="text-[10px] text-slate-400 font-mono">ENTRY BUY LIMIT</div>
+                          <div className="text-sm font-mono font-bold text-slate-850 mt-0.5">{sizerEntryPrice.toFixed(sizerAssetType === "forex" ? 5 : 2)}</div>
+                          <span className="text-[9px] text-slate-400 leading-normal block mt-1">Enter Limit Order immediately on Closed Signal Candle open.</span>
+                        </div>
+                        <div className="p-3 bg-red-50 border border-red-100 rounded-lg">
+                          <div className="text-[10px] text-red-600 font-mono">PROTECTION STOP LOSS</div>
+                          <div className="text-sm font-mono font-bold text-red-600 mt-0.5">{stopPrice.toFixed(sizerAssetType === "forex" ? 5 : 2)}</div>
+                          <span className="text-[9px] text-red-500/75 leading-normal block mt-1">Placed precisely at 1.5x of the 14-period ATR.</span>
+                        </div>
+                      </div>
+
+                      {/* Milestones timeline visual */}
+                      <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl space-y-4">
+                        <span className="text-[9px] text-slate-400 font-mono uppercase tracking-widest font-bold">EXECUTION ROADMAP</span>
+                        
+                        <div className="space-y-3.5 text-xs">
+                          {/* Target 1 */}
+                          <div className="flex items-start justify-between border-b border-slate-150 pb-2.5">
+                            <div className="space-y-0.5">
+                              <span className="font-bold text-emerald-600 flex items-center gap-1">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                Target 1 (1.5x Risk) • Protected
+                              </span>
+                              <p className="text-[10px] text-slate-500 leading-normal">
+                                Rule: Move initial Stop Loss to Breakeven instantly. Trade is now secured at $0 loss potential.
+                              </p>
+                            </div>
+                            <span className="font-mono font-bold text-slate-800 text-right shrink-0 ml-4">
+                              {target1Price.toFixed(sizerAssetType === "forex" ? 5 : 2)}
+                              <span className="block text-[9px] font-normal text-slate-400 mt-0.5">
+                                +${(sizerResult.riskAmount * 1.5).toLocaleString()}
+                              </span>
+                            </span>
+                          </div>
+
+                          {/* Target 2 */}
+                          <div className="flex items-start justify-between border-b border-slate-150 pb-2.5">
+                            <div className="space-y-0.5">
+                              <span className="font-bold text-emerald-600 flex items-center gap-1">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                Target 2 (3.0x Risk) • Close 50% Partials
+                              </span>
+                              <p className="text-[10px] text-slate-500 leading-normal">
+                                Rule: Close half of your position. Lock in profit. Trailing stop is activated on remainder.
+                              </p>
+                            </div>
+                            <span className="font-mono font-bold text-slate-800 text-right shrink-0 ml-4">
+                              {target2Price.toFixed(sizerAssetType === "forex" ? 5 : 2)}
+                              <span className="block text-[9px] font-normal text-slate-400 mt-0.5">
+                                +${(sizerResult.riskAmount * 3.0).toLocaleString()}
+                              </span>
+                            </span>
+                          </div>
+
+                          {/* Target 3 */}
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-0.5">
+                              <span className="font-bold text-emerald-700 flex items-center gap-1">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                                Target 3 (5.0x Risk) • Trailing Limit
+                              </span>
+                              <p className="text-[10px] text-slate-500 leading-normal">
+                                Rule: Final expected milestone. Manage the remaining 50% with an ATR trailing stop.
+                              </p>
+                            </div>
+                            <span className="font-mono font-bold text-slate-800 text-right shrink-0 ml-4">
+                              {target3Price.toFixed(sizerAssetType === "forex" ? 5 : 2)}
+                              <span className="block text-[9px] font-normal text-slate-400 mt-0.5">
+                                +${(sizerResult.riskAmount * 5.0).toLocaleString()}
+                              </span>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50/50 border border-blue-100 p-5 rounded-xl flex items-center justify-between shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <Award className="h-5 w-5 text-blue-500 animate-pulse" />
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 font-display">Test your discipline in the funded simulator</h4>
+                      <p className="text-[10px] text-slate-500 mt-0.5">Simulate prop challenges, manage daily drawdown limits, and pass the evaluation.</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab("simulator")}
+                    className="flex items-center gap-1 text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 rounded-lg shadow-sm transition-colors whitespace-nowrap"
+                  >
+                    Go to Simulator
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* TAB 4: CHALLENGE SIMULATOR */}
+          {activeTab === "simulator" && (
+            <motion.div
+              key="simulator-tab"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.25 }}
+              className="space-y-6"
+            >
+              
+              {/* Header Status Bar */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                
+                {/* Account balance */}
+                <div className="bg-white border border-slate-200 p-4 rounded-xl flex items-center justify-between shadow-sm">
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] text-slate-400 font-mono">ACCOUNT EQUITY</span>
+                    <div className="text-lg font-mono font-bold text-slate-900">${simState.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    <span className="text-[9px] text-slate-400 font-mono">Goal: $110,000 (+10%)</span>
+                  </div>
+                  <div className="p-2 bg-slate-50 border border-slate-200/60 rounded-lg">
+                    <DollarSign className="h-5 w-5 text-slate-700" />
+                  </div>
+                </div>
+
+                {/* Trailing Drawdown Limit Floor */}
+                <div className="bg-white border border-slate-200 p-4 rounded-xl flex items-center justify-between shadow-sm">
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] text-slate-400 font-mono">PEAK TRAILING DD</span>
+                    <div className="text-lg font-mono font-bold text-red-600">
+                      {simState.maxTrailingDrawdown.toFixed(2)}%
+                    </div>
+                    <span className="text-[9px] text-slate-400 font-mono">Limit: 8.00% Max</span>
+                  </div>
+                  <div className="p-2 bg-slate-50 border border-slate-200/60 rounded-lg">
+                    <ShieldCheck className="h-5 w-5 text-red-500" />
+                  </div>
+                </div>
+
+                {/* Daily Loss Tracker */}
+                <div className="bg-white border border-slate-200 p-4 rounded-xl flex items-center justify-between shadow-sm">
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] text-slate-400 font-mono">DAILY LOSS</span>
+                    <div className="text-lg font-mono font-bold text-slate-700">
+                      ${simState.dailyLossTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    </div>
+                    <span className="text-[9px] text-slate-400 font-mono">Limit: $1,500 (1.5%)</span>
+                  </div>
+                  <div className="p-2 bg-slate-50 border border-slate-200/60 rounded-lg">
+                    <Clock className="h-5 w-5 text-slate-500" />
+                  </div>
+                </div>
+
+                {/* Challenge Status */}
+                <div className="bg-white border border-slate-200 p-4 rounded-xl flex items-center justify-between shadow-sm">
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] text-slate-400 font-mono">STATUS STATE</span>
+                    <div className="text-sm font-bold font-display mt-0.5">
+                      {simState.isPassed && <span className="text-emerald-600">PASSED • FUNDED</span>}
+                      {simState.isFailed && <span className="text-red-500">FAILED • RESET</span>}
+                      {!simState.isPassed && !simState.isFailed && <span className="text-slate-800">ACTIVE CHALLENGE</span>}
+                    </div>
+                    <span className="text-[9px] text-slate-400 font-mono">Trades taken: {simState.tradeHistory.length}</span>
+                  </div>
+                  <div className="p-2 bg-slate-50 border border-slate-200/60 rounded-lg">
+                    {simState.isPassed ? (
+                      <Award className="h-5 w-5 text-emerald-600 animate-bounce" />
+                    ) : simState.isFailed ? (
+                      <XCircle className="h-5 w-5 text-red-500" />
+                    ) : (
+                      <Activity className="h-5 w-5 text-slate-700 animate-pulse" />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Simulation Game Panel */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                {/* Left: Setup generator */}
+                <div className="lg:col-span-7 space-y-6">
+                  
+                  {simState.isPausedFor30m && (
+                    <div className="bg-amber-50 border border-amber-200 p-5 rounded-xl space-y-3">
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                          <h4 className="text-sm font-bold text-slate-850 font-display">Reset Rule Active (3 Consecutive Losses)</h4>
+                          <p className="text-xs text-slate-600 leading-relaxed">
+                            USME Risk Pillar Six: "After three consecutive losses, pause for 30 minutes. Step back, review your setups, and reset mentally before continuing."
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={resetConsecutiveLosses}
+                        className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1 transition-all shadow-sm"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        Complete mental reset (Unlock)
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Generated Trade setup card */}
+                  <div className="bg-white border border-slate-200 p-6 rounded-xl space-y-5 relative shadow-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div>
+                        <span className="text-[9px] text-slate-400 font-mono tracking-widest uppercase font-bold">PROP MARKET FEED GENERATOR</span>
+                        <h3 className="text-sm font-bold text-slate-850 font-display mt-0.5">Active Setup Offer</h3>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <label className="text-[10px] text-slate-400 font-mono uppercase whitespace-nowrap">Win Rate (%)</label>
+                        <input
+                          type="number"
+                          value={simWinRate}
+                          onChange={(e) => setSimWinRate(Math.min(100, Math.max(0, Number(e.target.value))))}
+                          className="w-14 bg-slate-50 text-xs border border-slate-200 rounded p-1 text-center text-slate-700 font-mono focus:outline-none focus:ring-1 focus:ring-slate-900 focus:bg-white"
+                          title="Tweak to simulate different execution skill levels"
+                        />
+                      </div>
+                    </div>
+
+                    {currentSetup ? (
+                      <div className="space-y-4">
+                        {/* Setup details */}
+                        <div className="bg-slate-50 p-4 border border-slate-100 rounded-xl space-y-3">
+                          <div className="flex items-center justify-between border-b border-slate-150 pb-2">
+                            <span className="text-xs font-bold text-slate-800 font-mono">{currentSetup.asset}</span>
+                            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
+                              currentSetup.tier === "ELITE" 
+                                ? "bg-slate-900 text-white" 
+                                : currentSetup.tier === "PRIME" 
+                                  ? "bg-slate-800 text-slate-100" 
+                                  : "bg-slate-100 text-slate-600 border border-slate-200"
+                            }`}>
+                              {currentSetup.tier} SIGNAL ({currentSetup.calculatedScore}%)
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs leading-normal">
+                            <div>
+                              <span className="text-slate-400 block text-[9px] font-mono uppercase">Session Time</span>
+                              <span className={`font-semibold ${currentSetup.sessionTime === "off_hours" ? "text-red-600" : "text-slate-800"}`}>
+                                {currentSetup.sessionTime === "london" ? "London" : currentSetup.sessionTime === "ny_open" ? "NY Open" : "Off-Hours"}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-slate-400 block text-[9px] font-mono uppercase">Biases alignment</span>
+                              <span className={`font-semibold ${currentSetup.weeklyBias === currentSetup.dailyBias && currentSetup.weeklyBias !== "mixed" ? "text-emerald-600" : "text-red-600"}`}>
+                                {currentSetup.weeklyBias.toUpperCase()} / {currentSetup.dailyBias.toUpperCase()}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-slate-400 block text-[9px] font-mono uppercase">Signal candle closed?</span>
+                              <span className={`font-semibold ${currentSetup.closedCandle ? "text-emerald-600" : "text-red-600"}`}>
+                                {currentSetup.closedCandle ? "Yes" : "No (Forms)"}
+                              </span>
+                            </div>
+                          </div>
+
+                          <p className="text-xs text-slate-600 italic pt-2 border-t border-slate-150/80">
+                            "{currentSetup.description}"
+                          </p>
+                        </div>
+
+                        {/* Gate checks summary */}
+                        <div className="grid grid-cols-2 gap-2 text-center text-[11px] font-mono">
+                          <div className={`p-1.5 border rounded-lg ${currentSetup.calculatedScore >= 80 ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-red-50 border-red-150/80 text-red-600"}`}>
+                            SMS score {currentSetup.calculatedScore}% {currentSetup.calculatedScore >= 80 ? "(PASS)" : "(FAIL)"}
+                          </div>
+                          <div className={`p-1.5 border rounded-lg ${currentSetup.sessionTime !== "off_hours" ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-red-50 border-red-150/80 text-red-600"}`}>
+                            Session: {currentSetup.sessionTime !== "off_hours" ? "Killzone PASS" : "Off-Hours REJECT"}
+                          </div>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex gap-3 pt-2">
+                          <button
+                            onClick={handleSkipSetup}
+                            className="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-800 border border-slate-200 py-3 rounded-lg text-xs font-semibold transition-all"
+                          >
+                            Skip Setup (Saves Drawdown)
+                          </button>
+                          
+                          <button
+                            onClick={handleExecuteTrade}
+                            disabled={simState.isPassed || simState.isFailed || simState.isPausedFor30m}
+                            className="flex-1 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-100 disabled:text-slate-400 text-white font-semibold py-3 rounded-lg text-xs shadow-sm transition-all"
+                          >
+                            Execute Trade (USME Protocol)
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="py-12 text-center text-xs text-slate-400">
+                        Generating active market feed...
+                      </div>
+                    )}
+
+                    {/* Simulation complete state */}
+                    {(simState.isPassed || simState.isFailed) && (
+                      <div className="absolute inset-0 bg-white/95 rounded-xl flex flex-col items-center justify-center p-6 text-center space-y-4 border border-slate-200 z-10">
+                        {simState.isPassed ? (
+                          <>
+                            <div className="inline-flex p-3 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full animate-pulse">
+                              <Award className="h-10 w-10" />
+                            </div>
+                            <div className="space-y-1">
+                              <h4 className="text-base font-bold text-slate-900 font-display">🏆 Prop Evaluation Succeeded!</h4>
+                              <p className="text-xs text-slate-500">You reached the 10% target while staying fully compliant with all risk models.</p>
+                            </div>
+                            <div className="flex gap-3">
+                              <button
+                                onClick={() => setShowCertificate(true)}
+                                className="bg-emerald-600 text-white font-semibold text-xs px-4 py-2 rounded-lg hover:bg-emerald-700 transition shadow-sm"
+                              >
+                                View Certificate
+                              </button>
+                              <button
+                                onClick={resetSimulator}
+                                className="bg-slate-100 text-slate-700 border border-slate-200 font-semibold text-xs px-4 py-2 rounded-lg hover:bg-slate-250 transition"
+                              >
+                                Try Challenge Again
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="inline-flex p-3 bg-red-50 text-red-600 border border-red-200 rounded-full">
+                              <XCircle className="h-10 w-10" />
+                            </div>
+                            <div className="space-y-2 max-w-md">
+                              <h4 className="text-sm font-bold text-slate-900 font-display">💥 Evaluation Failed</h4>
+                              <p className="text-xs text-slate-600 leading-relaxed text-left bg-slate-50 p-3.5 border border-slate-200 rounded-lg">
+                                {simState.failureReason}
+                              </p>
+                            </div>
+                            <button
+                              onClick={resetSimulator}
+                              className="bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs px-4 py-2 rounded-lg shadow-sm transition"
+                            >
+                              Reset Challenge & Retry
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right: Simulation trade ledger */}
+                <div className="lg:col-span-5 space-y-6">
+                  <div className="bg-white border border-slate-200 p-6 rounded-xl space-y-4 flex flex-col h-[400px] shadow-sm">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                      <div>
+                        <span className="text-[9px] text-slate-400 font-mono tracking-wider uppercase font-bold">LEDGER</span>
+                        <h3 className="text-sm font-bold text-slate-800 font-display mt-0.5">Prop Account Statement</h3>
+                      </div>
+                      <button
+                        onClick={resetSimulator}
+                        className="text-[10px] font-mono text-slate-500 hover:text-slate-800 border border-slate-200 hover:bg-slate-50 px-2.5 py-1 rounded transition-colors"
+                      >
+                        Reset Ledger
+                      </button>
+                    </div>
+
+                    {/* Trade history stack */}
+                    <div className="flex-1 overflow-y-auto space-y-2">
+                      {simState.tradeHistory.length === 0 ? (
+                        <div className="h-full flex flex-col items-center justify-center text-center p-4">
+                          <Activity className="h-8 w-8 text-slate-300 animate-pulse" />
+                          <p className="text-xs text-slate-400 mt-2 font-display">Ledger is empty. Execute setups to populate trade statements.</p>
+                        </div>
+                      ) : (
+                        simState.tradeHistory.map((trade) => (
+                          <div key={trade.id} className="p-3 bg-slate-50 border border-slate-100/70 rounded-lg flex items-center justify-between gap-3 text-xs leading-normal shadow-sm">
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono text-[10px] text-slate-400">#{trade.tradeNumber}</span>
+                                <span className="font-semibold text-slate-700">{trade.setupName}</span>
+                              </div>
+                              <p className="text-[10px] text-slate-400 line-clamp-1">{trade.notes}</p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className={`font-mono font-bold ${trade.pnlAmount >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                                {trade.pnlAmount >= 0 ? "+" : ""}${trade.pnlAmount.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                              </span>
+                              <span className={`block text-[9px] font-mono ${trade.pnlPercentage >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                                {trade.pnlPercentage >= 0 ? "+" : ""}{trade.pnlPercentage.toFixed(3)}%
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="border-t border-slate-100 pt-3 text-xs flex justify-between font-mono text-slate-500">
+                      <span>Total statement balance:</span>
+                      <span className="font-bold text-slate-800">${simState.balance.toLocaleString(undefined, { maximumFractionDigits: 1 })}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
+
+      {/* FOOTER */}
+      <footer className="border-t border-slate-200 bg-slate-50 mt-16 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-2">
+          <p className="text-xs text-slate-400 font-display">SniperTrader USME ICT Foundation Masterplan Workspace • Mechanical funded account strategy</p>
+          <p className="text-[10px] text-slate-500 max-w-xl mx-auto font-sans leading-normal">
+            Disclaimer: Trading financial instruments involves significant risk of loss. This workspace is strictly for educational simulation and prop calibration purposes. Past mechanical performance does not guarantee future live evaluation success.
+          </p>
+        </div>
+      </footer>
+
+      {/* CERTIFICATE MODAL */}
+      <AnimatePresence>
+        {showCertificate && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white border border-slate-200 max-w-2xl w-full p-8 rounded-2xl shadow-xl relative overflow-hidden text-center space-y-6"
+            >
+              {/* Background watermark decorations */}
+              <div className="absolute inset-0 bg-gradient-to-b from-slate-50 to-transparent opacity-50 pointer-events-none"></div>
+              
+              <div className="inline-flex p-3.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full animate-pulse">
+                <Award className="h-12 w-12" />
+              </div>
+
+              <div className="space-y-2">
+                <span className="text-[10px] font-mono text-emerald-600 uppercase tracking-widest block font-bold">SNIPERTRADER ACADEMY CERTIFIED</span>
+                <h2 className="text-2xl font-bold font-display text-slate-900">USME MASTERPLAN EVALUATION SUCCESS</h2>
+                <div className="h-0.5 w-16 bg-slate-200 mx-auto my-3"></div>
+              </div>
+
+              <p className="text-sm text-slate-600 leading-relaxed max-w-lg mx-auto">
+                This certifies that the candidate has successfully completed the simulated <strong>United Smart Money Engine</strong> prop firm funded challenge, executing trade confluences strictly above 80% with ATR volatility buffers, while demonstrating immaculate adherence to the 1.5% daily, 3% weekly, and 8% peak trailing drawdown caps.
+              </p>
+
+              <div className="grid grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200/60 max-w-md mx-auto text-center font-mono">
+                <div>
+                  <span className="text-[9px] text-slate-400">FINAL EQUITY</span>
+                  <div className="text-xs font-bold text-slate-800 mt-1">${simState.balance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                </div>
+                <div>
+                  <span className="text-[9px] text-slate-400">COMPLIANCE</span>
+                  <div className="text-xs font-bold text-emerald-600 mt-1">100%</div>
+                </div>
+                <div>
+                  <span className="text-[9px] text-slate-400">TRADES TAKEN</span>
+                  <div className="text-xs font-bold text-slate-800 mt-1">{simState.tradeHistory.length}</div>
+                </div>
+              </div>
+
+              <div className="pt-4 flex justify-center gap-3">
+                <button
+                  onClick={() => setShowCertificate(false)}
+                  className="bg-slate-100 text-slate-700 border border-slate-200 px-5 py-2.5 rounded-lg text-xs font-bold hover:bg-slate-200 transition"
+                >
+                  Close Document
+                </button>
+                <button
+                  onClick={resetSimulator}
+                  className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-lg text-xs font-bold shadow-md transition"
+                >
+                  Reset Challenge
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+    </div>
+  );
+}
