@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SniperTrader.ai · Operator's Workbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: #0b0f1a;
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    color: #e8edf5;
+    padding: 2rem 1.5rem;
+    display: flex;
+    justify-content: center;
+  }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .sniper-container {
+    max-width: 1100px;
+    width: 100%;
+    background: #111827;
+    border-radius: 2.5rem;
+    padding: 2.5rem 2rem;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8);
+    border: 1px solid #2a3346;
+  }
+  .brand-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #2a3346;
+    padding-bottom: 1.25rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .brand-left { display: flex; align-items: center; gap: 0.75rem; }
+  .brand-icon {
+    background: #1e3a5f; width: 44px; height: 44px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    color: #6aafff; font-size: 1.6rem; border: 1px solid #2e4b73;
+  }
+  .brand-text {
+    font-weight: 700; font-size: 1.5rem; letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #b6d6ff, #6aafff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .brand-tag {
+    background: #1e2a3a; padding: 0.3rem 1rem; border-radius: 40px;
+    font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+    color: #94a9c9; border: 1px solid #2f3d54;
+  }
+  .save-indicator {
+    font-size: 0.68rem; color: #5f7397; display: flex; align-items: center; gap: 0.4rem;
+  }
+  .save-dot { width: 7px; height: 7px; border-radius: 50%; background: #3fae6a; box-shadow: 0 0 6px #3fae6a; transition: 0.2s; }
+  .save-dot.saving { background: #e0a83f; box-shadow: 0 0 6px #e0a83f; }
+
+  /* progress bar */
+  .progress-wrap { margin-bottom: 1.8rem; }
+  .progress-label {
+    display:flex; justify-content:space-between; font-size:0.75rem; color:#9bb1d0; margin-bottom:0.4rem;
+  }
+  .progress-track { background:#0b111e; border:1px solid #1f2a3c; border-radius:20px; height:10px; overflow:hidden; }
+  .progress-fill { height:100%; background: linear-gradient(90deg,#1e3a5f,#6aafff); width:0%; transition: width 0.4s ease; }
+
+  .workbook-title { font-size: 1.9rem; font-weight: 700; line-height: 1.2; margin-bottom: 1.5rem; letter-spacing: -0.02em; }
+  .workbook-title span { color: #6aafff; }
+  .subhead {
+    color: #9bb1d0; font-size: 0.95rem; border-left: 3px solid #1e3a5f;
+    padding-left: 1rem; margin-bottom: 2rem;
+  }
+  .grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.8rem; margin: 2rem 0 2.5rem 0; }
+  @media (max-width: 700px) { .grid-2col { grid-template-columns: 1fr; gap: 1.5rem; } .sniper-container { padding: 1.75rem 1rem; } }
+  .card {
+    background: #0f1625; border-radius: 1.5rem; padding: 1.5rem 1.4rem;
+    border: 1px solid #26303f; box-shadow: 0 6px 12px -8px rgba(0,0,0,0.6);
+  }
+  .card h3 {
+    display: flex; align-items: center; gap: 0.6rem; font-weight: 600; font-size: 1.1rem;
+    color: #d6e2f5; margin-bottom: 1.25rem; letter-spacing: -0.01em;
+    border-bottom: 1px dashed #26303f; padding-bottom: 0.7rem;
+  }
+  .card h3 i { color: #6aafff; width: 1.6rem; }
+  .input-line {
+    background: #0b111e; border-radius: 10px; padding: 0.6rem 1rem; display: flex;
+    align-items: center; gap: 0.6rem; border: 1px solid #1f2a3c; margin-bottom: 0.8rem;
+  }
+  .input-line label { font-size: 0.85rem; font-weight: 500; color: #b0c6e5; min-width: 120px; }
+  .input-line input {
+    background: transparent; border: none; color: #e8edf5; font-weight: 500; width: 100%;
+    padding: 0.25rem 0; font-size: 0.9rem; outline: none; border-bottom: 1px solid #2a3a52;
+  }
+  .input-line input:focus { border-bottom-color: #6aafff; }
+  .input-line input:read-only { color: #6aafff; font-weight: 600; }
+  .free-input {
+    background:#0b111e; border:1px solid #1f2a3c; border-radius:8px; padding:0.5rem 1rem;
+    width:100%; color:#e8edf5; font-size:0.85rem;
+  }
+  .free-input:focus { outline:none; border-color:#6aafff; }
+  .leak-textarea {
+    width: 100%; background: #0b111e; border: 1px solid #1f2a3c; border-radius: 10px;
+    padding: 0.7rem 1rem; color: #e8edf5; font-family: 'Inter', sans-serif; font-size: 0.85rem;
+    resize: vertical; margin: 0.5rem 0;
+  }
+  .leak-textarea:focus { border-color: #6aafff; outline: none; }
+  .table-wrap { overflow-x: auto; margin: 0.75rem 0 0.25rem; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.8rem; color: #cbd5e6; }
+  th { background: #1a2335; padding: 0.6rem 0.3rem; font-weight: 600; text-align: center; border: 1px solid #2a3346; }
+  td { padding: 0.3rem 0.2rem; text-align: center; border: 1px solid #202b3d; }
+  td input {
+    width: 70px; background: transparent; border: none; color: #e8edf5; text-align: center;
+    font-weight: 500; border-bottom: 1px solid #2a3a52; padding: 0.2rem 0;
+  }
+  td input:focus { border-bottom-color: #6aafff; outline: none; }
+  .checklist-item {
+    display: flex; align-items: flex-start; gap: 0.75rem; background: #0b111e;
+    padding: 0.5rem 0.9rem; border-radius: 10px; margin-bottom: 0.5rem;
+    border-left: 3px solid transparent; transition: 0.15s;
+  }
+  .checklist-item:hover { border-left-color: #2e4b73; }
+  .checklist-item.checked { border-left-color: #3fae6a; }
+  .checklist-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: #6aafff; margin-top: 2px; flex-shrink: 0; cursor: pointer; }
+  .checklist-item label { font-size: 0.88rem; color: #d3def5; line-height: 1.4; }
+  .chip-group { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.5rem 0 0.3rem; }
+  .chip {
+    background: #1a2335; padding: 0.2rem 1rem; border-radius: 30px; font-size: 0.7rem;
+    font-weight: 500; color: #b0c6e5; border: 1px solid #2a3a52; display: inline-flex;
+    align-items: center; gap: 0.4rem; font-family: inherit;
+  }
+  .chip i { color: #6aafff; font-size: 0.6rem; }
+  .chip.toggle { cursor: pointer; user-select: none; transition: 0.15s; }
+  .chip.toggle:hover { border-color: #3f5578; }
+  .chip.toggle.active { background: #1e3a5f; border-color: #6aafff; color: #eaf3ff; }
+  .chip.toggle.active i { color: #eaf3ff; }
+  .phase-badge {
+    background: #1e3a5f; color: #b6d6ff; padding: 0.2rem 0.9rem; border-radius: 30px;
+    font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .score-row {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.8rem; background: #0b111e;
+    padding: 0.5rem 1rem; border-radius: 40px; margin-bottom: 0.6rem; border: 1px solid #1f2a3c;
+  }
+  .score-row .day-label { font-weight: 600; font-size: 0.8rem; min-width: 50px; color: #9bb1d0; }
+  .score-row .score-elem { display: flex; align-items: center; gap: 0.2rem; font-size: 0.75rem; color: #b8cef0; }
+  .score-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: #6aafff; cursor: pointer; }
+  .score-tally {
+    font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.6rem; border-radius: 20px;
+    background: #0f2137; color: #6aafff; margin-left: auto; min-width: 34px; text-align: center;
+  }
+  .score-tally.full { background: #143d24; color: #4bcf82; }
+  .metric-box { background: #0b111e; border-radius: 16px; padding: 1.2rem 1.5rem; border: 1px solid #1f2a3c; margin-top: 1.5rem; }
+  .btn-outline {
+    background: transparent; color: #9bb1d0; font-weight: 600; padding: 0.5rem 1.4rem;
+    border-radius: 40px; border: 1px solid #2f3d54; font-size: 0.75rem; cursor: pointer; transition: 0.15s;
+  }
+  .btn-outline:hover { border-color: #6aafff; color: #6aafff; }
+  .footer-note {
+    text-align: center; margin-top: 2.2rem; font-size: 0.75rem; color: #5f7397;
+    border-top: 1px solid #1f2a3c; padding-top: 1.5rem; letter-spacing: 0.02em;
+  }
+  .graduated-badge { background: #143d24 !important; color: #4bcf82 !important; border-color: #1f5c37 !important; }
+</style>
+</head>
+<body>
+<div class="sniper-container">
+
+  <div class="brand-header">
+    <div class="brand-left">
+      <div class="brand-icon"><i class="fas fa-crosshairs"></i></div>
+      <span class="brand-text">SniperTrader.ai</span>
+      <span class="brand-tag"><i class="fas fa-shield-alt" style="margin-right:4px;"></i> operator</span>
+    </div>
+    <div style="display:flex; gap:0.9rem; align-items:center;">
+      <div class="save-indicator"><span class="save-dot" id="saveDot"></span><span id="saveText">saved</span></div>
+      <button class="btn-outline" id="resetBtn" type="button"><i class="fas fa-rotate-left" style="margin-right:0.4rem;"></i>Reset workbook</button>
+    </div>
+  </div>
+
+  <div class="workbook-title">FROM ZERO TO EDGE: <span>THE OPERATOR'S WORKBOOK</span></div>
+  <div class="subhead"><i class="fas fa-calendar-alt" style="margin-right:10px; color:#6aafff;"></i> 30-Day Practical Field Manual for Futures Trading</div>
+
+  <div class="progress-wrap">
+    <div class="progress-label"><span>Workbook progress</span><span id="progressPercent" class="mono">0%</span></div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+
+  <div class="grid-2col" style="margin-top:0;">
+    <div class="input-line"><label><i class="fas fa-user"></i> Name</label><input type="text" data-key="profile.name" placeholder="Your name"></div>
+    <div class="input-line"><label><i class="fas fa-calendar-day"></i> Start Date</label><input type="text" data-key="profile.startDate" placeholder="__ / __ / 2026"></div>
+    <div class="input-line"><label><i class="fas fa-flag-checkered"></i> Grad Date</label><input type="text" data-key="profile.gradDate" placeholder="__ / __ / 2026"></div>
+    <div class="input-line"><label><i class="fas fa-coins"></i> Equity ($)</label><input type="text" data-key="profile.equity" placeholder="Account size"></div>
+  </div>
+
+  <div style="margin: 2.2rem 0 1.8rem;">
+    <h2 style="font-size:1.2rem; font-weight:600; display:flex; gap:0.6rem; align-items:center;"><i class="fas fa-mountain" style="color:#6aafff;"></i> INTRODUCTORY WORK: DEPLOYING THE CORES</h2>
+    <p style="color:#9bb1d0; font-size:0.9rem; margin-bottom:1.2rem;">Before you click a single button — establish technical base camps &amp; identify performance leaks.</p>
+  </div>
+
+  <div class="card">
+    <h3><i class="fas fa-drafting-compass"></i> 1. Structural Baseline Parameters</h3>
+    <div class="input-line"><label>Max Risk 1% of Equity</label><input type="text" data-key="baseline.maxRisk" placeholder="$_____"></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Instrument</th><th>Micro Code</th><th>$ / Point</th><th>Mini Code</th><th>$ / Point</th></tr></thead>
+        <tbody>
+          <tr><td>S&amp;P 500</td><td>MES</td><td><input type="text" data-key="baseline.mes" placeholder="5.00"></td><td>ES</td><td><input type="text" data-key="baseline.es" placeholder="50.00"></td></tr>
+          <tr><td>Nasdaq 100</td><td>MNQ</td><td><input type="text" data-key="baseline.mnq" placeholder="2.00"></td><td>NQ</td><td><input type="text" data-key="baseline.nq" placeholder="20.00"></td></tr>
+          <tr><td>Crude Oil</td><td>MCL</td><td><input type="text" data-key="baseline.mcl" placeholder="1.00"></td><td>CL</td><td><input type="text" data-key="baseline.cl" placeholder="10.00"></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:1.5rem;">
+    <h3><i class="fas fa-bug"></i> 2. Behavioral Leak Audit</h3>
+    <div style="margin-bottom:0.8rem;"><span style="color:#b0c6e5;">Primary leak:</span> <input type="text" class="free-input" style="margin-top:0.3rem;" data-key="leak.primary" placeholder="e.g. revenge trading after loss"></div>
+    <div><span style="color:#b0c6e5;">Trigger:</span> <input type="text" class="free-input" style="margin-top:0.3rem;" data-key="leak.trigger" placeholder="e.g. rapid green bars"></div>
+    <div class="input-line" style="margin-top:0.8rem;"><label>Cost last 30d ($)</label><input type="text" data-key="leak.cost" placeholder="$_____"></div>
+  </div>
+
+  <!-- PHASE 1 -->
+  <div style="margin: 2.5rem 0 1.2rem;">
+    <span class="phase-badge"><i class="fas fa-flag"></i> Phase 1</span>
+    <h2 style="display:inline-block; margin-left:0.8rem; font-size:1.4rem;">Operational Drills (Days 1–10)</h2>
+    <p style="color:#9bb1d0; font-size:0.85rem; margin-top:0.2rem;"><i class="fas fa-hand"></i> Zero size · mapping footprints · no live execution</p>
+  </div>
+
+  <div class="card">
+    <h3><i class="far fa-calendar-check"></i> Daily Session Log · Phase 1</h3>
+    <div style="display:flex; flex-wrap:wrap; gap:1rem; margin-bottom:1rem;">
+      <div class="input-line" style="flex:1;"><label>Date</label><input type="text" data-key="phase1.date" placeholder="__ / __ / 2026"></div>
+      <div style="display:flex; gap:0.6rem; align-items:center;">
+        <button type="button" class="chip toggle" data-key="phase1.session.morning"><i class="far fa-circle"></i> Morning</button>
+        <button type="button" class="chip toggle" data-key="phase1.session.afternoon"><i class="far fa-circle"></i> Afternoon</button>
+      </div>
+    </div>
+    <div><strong style="color:#b6d6ff;">1. Pre-Snap Alignment</strong></div>
+    <div class="checklist-item"><input type="checkbox" data-key="phase1.check.vwap"><label>Anchored VWAP on 9:30 AM EST opening candle</label></div>
+    <div class="checklist-item"><input type="checkbox" data-key="phase1.check.bands"><label>Plot +/- 1 Standard Deviation Bands</label></div>
+    <div class="checklist-item"><input type="checkbox" data-key="phase1.check.liquidity"><label>Locate Higher‑TF Liquidity Pools (1H/4H)</label></div>
+    <div style="display:flex; gap:1rem; margin:0.5rem 0 0.8rem;">
+      <input type="text" class="free-input" data-key="phase1.buySide" placeholder="Buy‑Side Liquidity (Equal Highs)">
+      <input type="text" class="free-input" data-key="phase1.sellSide" placeholder="Sell‑Side Liquidity (Equal Lows)">
+    </div>
+    <div style="margin-top:0.8rem;"><strong style="color:#b6d6ff;">2. Intraday Footprint Tracking</strong></div>
+    <div class="checklist-item"><input type="checkbox" data-key="phase1.check.fvg"><label>Identify cleanest 5‑min FVG (morning displacement)</label></div>
+    <div style="display:flex; gap:0.8rem; flex-wrap:wrap;">
+      <input type="text" class="free-input" style="width:120px;" data-key="phase1.candle1" placeholder="Candle 1 High/Low">
+      <input type="text" class="free-input" style="width:120px;" data-key="phase1.candle3" placeholder="Candle 3 High/Low">
+      <input type="text" class="free-input" style="width:180px;" data-key="phase1.gapZone" placeholder="Open Gap Imbalance Zone">
+    </div>
+    <div class="checklist-item"><input type="checkbox" data-key="phase1.check.retrace"><label>Price retraced to mitigate gap / VWAP?</label></div>
+    <div><textarea class="leak-textarea" rows="1" data-key="phase1.orderflow" placeholder="Order flow reaction at level…"></textarea></div>
+    <div style="margin-top:0.8rem;"><strong style="color:#b6d6ff;">3. Post‑Game Zone Labeling</strong></div>
+    <div class="chip-group">
+      <button type="button" class="chip toggle" data-group="phase1.zone" data-key="phase1.zone.ranging"><i class="fas fa-arrows-alt-h"></i> ZONE 1 (Ranging)</button>
+      <button type="button" class="chip toggle" data-group="phase1.zone" data-key="phase1.zone.trending"><i class="fas fa-arrow-up"></i> ZONE 2 (Trending)</button>
+      <button type="button" class="chip toggle" data-group="phase1.zone" data-key="phase1.zone.volatile"><i class="fas fa-bolt"></i> ZONE 3 (Volatile)</button>
+    </div>
+  </div>
+
+  <!-- PHASE 2 -->
+  <div style="margin: 2.5rem 0 1.2rem;">
+    <span class="phase-badge"><i class="fas fa-flag"></i> Phase 2</span>
+    <h2 style="display:inline-block; margin-left:0.8rem; font-size:1.4rem;">Simulated Scrimmage (Days 11–20)</h2>
+    <p style="color:#9bb1d0; font-size:0.85rem; margin-top:0.2rem;"><i class="fas fa-desktop"></i> SIM only · OCO brackets · max 2 executions/day</p>
+  </div>
+
+  <div class="card">
+    <h3><i class="fas fa-clipboard-list"></i> Trade Setup Blueprint Checklist</h3>
+    <div class="checklist-item"><input type="checkbox" data-key="phase2.check.circuitBreaker"><label>5‑min circuit breaker: displacement candle fully closed? <span style="color:#6aafff;">Countdown: <input type="text" class="mono" style="width:40px; background:transparent; border:none; border-bottom:1px solid #2a3a52; color:#e8edf5;" data-key="phase2.countdown" placeholder="__"> min</span></label></div>
+    <div class="checklist-item"><input type="checkbox" data-key="phase2.check.fvgAlign"><label>Core alignment: 5‑min FVG</label></div>
+    <div class="checklist-item"><input type="checkbox" data-key="phase2.check.vwapAlign"><label>Core alignment: VWAP pullback</label></div>
+    <div style="display:flex; flex-wrap:wrap; gap:0.6rem; margin:0.4rem 0;">
+      <input type="text" class="free-input" style="width:120px;" data-key="phase2.entry" placeholder="Entry price">
+      <input type="text" class="free-input" style="width:120px;" data-key="phase2.stop" placeholder="Stop Level">
+      <input type="text" class="free-input" style="width:120px;" data-key="phase2.riskDistance" placeholder="Risk distance (pts)">
+      <input type="text" class="free-input" style="width:100px;" data-key="phase2.contracts" placeholder="Contracts">
+    </div>
+    <div class="checklist-item"><input type="checkbox" data-key="phase2.check.oco"><label>Two‑exit automation: OCO bracket pre‑loaded</label></div>
+    <div style="margin-top:1rem;"><strong style="color:#b6d6ff;">Daily Phase 2 Review</strong></div>
+    <div class="score-row">
+      <span class="day-label">Trade 1</span>
+      <span class="score-elem"><input type="checkbox" data-key="phase2.trade1.target"> Target hit</span>
+      <span class="score-elem"><input type="checkbox" data-key="phase2.trade1.stop"> Stop out</span>
+      <span style="color:#7c93b5;">P&amp;L: $<input type="text" class="mono" style="width:60px; background:transparent; border-bottom:1px solid #2a3a52; color:#e8edf5;" data-key="phase2.trade1.pnl"></span>
+    </div>
+    <div class="score-row">
+      <span class="day-label">Trade 2</span>
+      <span class="score-elem"><input type="checkbox" data-key="phase2.trade2.target"> Target hit</span>
+      <span class="score-elem"><input type="checkbox" data-key="phase2.trade2.stop"> Stop out</span>
+      <span style="color:#7c93b5;">P&amp;L: $<input type="text" class="mono" style="width:60px; background:transparent; border-bottom:1px solid #2a3a52; color:#e8edf5;" data-key="phase2.trade2.pnl"></span>
+    </div>
+    <div class="checklist-item"><input type="checkbox" data-key="phase2.check.ruleCompliance"><label>Rule compliance: Did NOT alter stop/target while live</label></div>
+  </div>
+
+  <!-- PHASE 3 -->
+  <div style="margin: 2.5rem 0 1.2rem;">
+    <span class="phase-badge"><i class="fas fa-flag"></i> Phase 3</span>
+    <h2 style="display:inline-block; margin-left:0.8rem; font-size:1.4rem;">Live Fire Game Action (Days 21–30)</h2>
+    <p style="color:#9bb1d0; font-size:0.85rem; margin-top:0.2rem;"><i class="fas fa-bullseye"></i> Micro contracts · max 1% risk · 5‑Point Scorecard (scores tally automatically)</p>
+  </div>
+
+  <div class="card">
+    <h3><i class="fas fa-clipboard-check"></i> 5‑Point Daily Scorecard Ledger</h3>
+    <div style="max-height:500px; overflow-y:auto; padding-right:5px;">
+      <div id="scorecardContainer"></div>
+    </div>
+  </div>
+
+  <div class="metric-box">
+    <h3 style="display:flex; gap:0.6rem; align-items:center; margin-bottom:1rem;"><i class="fas fa-film" style="color:#6aafff;"></i> Master Film Room Log (Reduce the Leaks)</h3>
+    <div><input type="text" class="free-input" style="margin-bottom:0.6rem;" data-key="film.date" placeholder="Date of red session: __ / __ / 2026"></div>
+    <div><textarea class="leak-textarea" rows="2" data-key="film.notes" placeholder="What did the chart actually do after stop out?"></textarea></div>
+    <div style="display:flex; gap:1rem; margin:0.6rem 0;">
+      <button type="button" class="chip toggle" data-key="film.tag.systemCost"><i class="fas fa-cogs"></i> System Cost</button>
+      <button type="button" class="chip toggle" data-key="film.tag.executionLeak"><i class="fas fa-exclamation-triangle"></i> Execution Leak</button>
+    </div>
+    <div><input type="text" class="free-input" data-key="film.countermeasure" placeholder="Counter‑measure for tomorrow"></div>
+  </div>
+
+  <div class="metric-box" style="margin-top:1.5rem;">
+    <h3 style="display:flex; gap:0.6rem; align-items:center;"><i class="fas fa-graduation-cap" style="color:#6aafff;"></i> Camp Graduation Metric</h3>
+    <div style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:center;">
+      <div><span style="color:#b0c6e5;">Phase 3 Score Total:</span> <input type="text" class="mono" id="phase3Total" readonly style="background:#0b111e; border:1px solid #1f2a3c; border-radius:8px; padding:0.3rem 0.8rem; width:80px; color:#6aafff; font-weight:700;" value="0 / 50"></div>
+      <div><span style="color:#b0c6e5;">Process Adherence %:</span> <input type="text" class="mono" id="adherencePercent" readonly style="background:#0b111e; border:1px solid #1f2a3c; border-radius:8px; padding:0.3rem 0.8rem; width:80px; color:#6aafff; font-weight:700;" value="0%"></div>
+      <div><span class="chip" id="graduationBadge"><i class="fas fa-check-circle"></i> 90%+ = Graduated</span></div>
+    </div>
+  </div>
+
+  <div class="footer-note"><i class="fas fa-database" style="margin-right:6px;"></i> SniperTrader.ai · Operator Workbook v2 · autosaves as you type</div>
+</div>
+
+<script>
+(function () {
+  const STORAGE_KEY = 'workbook-state-v1';
+  let state = {};
+  let saveTimer = null;
+  const hasStorage = typeof window.storage !== 'undefined';
+
+  // ---- build phase 3 scorecard rows ----
+  const container = document.getElementById('scorecardContainer');
+  const days = Array.from({ length: 10 }, (_, i) => i + 21);
+  let html = '';
+  days.forEach(day => {
+    html += `
+      <div class="score-row" data-day-row="${day}">
+        <span class="day-label">DAY ${day}</span>
+        <span style="color:#7c93b5; font-size:0.75rem;">Date: <input type="text" class="mono" style="width:70px; background:transparent; border-bottom:1px solid #2a3a52; color:#e8edf5;" data-key="phase3.day${day}.date"></span>
+        <span style="color:#7c93b5; font-size:0.75rem;">P&amp;L: $<input type="text" class="mono" style="width:60px; background:transparent; border-bottom:1px solid #2a3a52; color:#e8edf5;" data-key="phase3.day${day}.pnl"></span>
+        <span class="score-elem"><input type="checkbox" data-key="phase3.day${day}.zone" data-phase3="${day}"> Zone</span>
+        <span class="score-elem"><input type="checkbox" data-key="phase3.day${day}.fivemin" data-phase3="${day}"> 5-min</span>
+        <span class="score-elem"><input type="checkbox" data-key="phase3.day${day}.risk" data-phase3="${day}"> &lt;1%</span>
+        <span class="score-elem"><input type="checkbox" data-key="phase3.day${day}.bracket" data-phase3="${day}"> Bracket</span>
+        <span class="score-elem"><input type="checkbox" data-key="phase3.day${day}.close" data-phase3="${day}"> Close</span>
+        <span class="score-tally" id="tally-${day}">0/5</span>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+
+  // ---- gather all persistable elements ----
+  function allFieldEls() { return Array.from(document.querySelectorAll('[data-key]')); }
+
+  function getEl(key) { return document.querySelector(`[data-key="${key}"]`); }
+
+  function applyValueToEl(el, value) {
+    if (el.tagName === 'INPUT' && el.type === 'checkbox') {
+      el.checked = !!value;
+      el.closest('.checklist-item, .score-elem')?.classList?.toggle('checked', !!value);
+    } else if (el.classList.contains('toggle')) {
+      el.classList.toggle('active', !!value);
+    } else {
+      el.value = value || '';
+    }
+  }
+
+  function readValueFromEl(el) {
+    if (el.tagName === 'INPUT' && el.type === 'checkbox') return el.checked;
+    if (el.classList.contains('toggle')) return el.classList.contains('active');
+    return el.value;
+  }
+
+  function setSaveStatus(saving) {
+    const dot = document.getElementById('saveDot');
+    const text = document.getElementById('saveText');
+    if (saving) { dot.classList.add('saving'); text.textContent = 'saving…'; }
+    else { dot.classList.remove('saving'); text.textContent = 'saved'; }
+  }
+
+  function scheduleSave() {
+    setSaveStatus(true);
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+      if (hasStorage) {
+        try { await window.storage.set(STORAGE_KEY, JSON.stringify(state), false); }
+        catch (e) { console.error('Storage save failed', e); }
+      }
+      setSaveStatus(false);
+    }, 400);
+  }
+
+  function updateProgress() {
+    const boxes = allFieldEls().filter(el =>
+      (el.tagName === 'INPUT' && el.type === 'checkbox') || el.classList.contains('toggle')
+    );
+    if (!boxes.length) return;
+    const checked = boxes.filter(el => readValueFromEl(el)).length;
+    const pct = Math.round((checked / boxes.length) * 100);
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressPercent').textContent = pct + '%';
+  }
+
+  function updatePhase3() {
+    let total = 0;
+    days.forEach(day => {
+      const boxes = document.querySelectorAll(`[data-phase3="${day}"]`);
+      const checked = Array.from(boxes).filter(b => b.checked).length;
+      total += checked;
+      const tally = document.getElementById(`tally-${day}`);
+      tally.textContent = `${checked}/5`;
+      tally.classList.toggle('full', checked === 5);
+    });
+    document.getElementById('phase3Total').value = `${total} / 50`;
+    const pct = Math.round((total / 50) * 100);
+    document.getElementById('adherencePercent').value = `${pct}%`;
+    const badge = document.getElementById('graduationBadge');
+    if (pct >= 90) {
+      badge.classList.add('graduated-badge');
+      badge.innerHTML = '<i class="fas fa-check-circle"></i> Graduated';
+    } else {
+      badge.classList.remove('graduated-badge');
+      badge.innerHTML = '<i class="fas fa-check-circle"></i> 90%+ = Graduated';
+    }
+  }
+
+  function handleFieldChange(el) {
+    const key = el.getAttribute('data-key');
+    const value = readValueFromEl(el);
+    state[key] = value;
+
+    // exclusive toggle groups (e.g. phase1 zone)
+    const group = el.getAttribute('data-group');
+    if (group && value) {
+      document.querySelectorAll(`[data-group="${group}"]`).forEach(other => {
+        if (other !== el) {
+          other.classList.remove('active');
+          state[other.getAttribute('data-key')] = false;
+        }
+      });
+    }
+
+    if (el.type === 'checkbox') {
+      el.closest('.checklist-item, .score-elem')?.classList?.toggle('checked', value);
+    }
+
+    if (el.hasAttribute('data-phase3')) updatePhase3();
+    updateProgress();
+    scheduleSave();
+  }
+
+  function wireUpEvents() {
+    allFieldEls().forEach(el => {
+      if (el.classList.contains('toggle')) {
+        el.addEventListener('click', () => {
+          const key = el.getAttribute('data-key');
+          const next = !el.classList.contains('active');
+          el.classList.toggle('active', next);
+          handleFieldChange(el);
+        });
+      } else if (el.tagName === 'INPUT' && el.type === 'checkbox') {
+        el.addEventListener('change', () => handleFieldChange(el));
+      } else {
+        el.addEventListener('input', () => handleFieldChange(el));
+      }
+    });
+  }
+
+  async function loadState() {
+    if (hasStorage) {
+      try {
+        const result = await window.storage.get(STORAGE_KEY, false);
+        if (result && result.value) state = JSON.parse(result.value);
+      } catch (e) {
+        // no saved state yet — fine, continue with defaults
+      }
+    }
+    allFieldEls().forEach(el => {
+      const key = el.getAttribute('data-key');
+      if (key in state) applyValueToEl(el, state[key]);
+    });
+    updatePhase3();
+    updateProgress();
+    setSaveStatus(false);
+  }
+
+  document.getElementById('resetBtn').addEventListener('click', async () => {
+    if (!confirm('Clear all entries in this workbook? This cannot be undone.')) return;
+    state = {};
+    allFieldEls().forEach(el => applyValueToEl(el, el.type === 'checkbox' ? false : (el.classList.contains('toggle') ? false : '')));
+    updatePhase3();
+    updateProgress();
+    if (hasStorage) {
+      try { await window.storage.delete(STORAGE_KEY, false); } catch (e) { /* ignore */ }
+    }
+    setSaveStatus(false);
+  });
+
+  wireUpEvents();
+  loadState();
+})();
+</script>
+
+</body>
+</html>
