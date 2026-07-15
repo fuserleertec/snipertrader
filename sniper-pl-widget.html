@@ -1,0 +1,1609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SniperTrader · P&L Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+  :root {
+    --bg-0: #080B0F;
+    --bg-1: #0D1117;
+    --bg-2: #131920;
+    --bg-3: #1A2230;
+    --border: #1E2D3D;
+    --border-hi: #243447;
+    --text-0: #E8F0FA;
+    --text-1: #7D95B0;
+    --text-2: #4A5F75;
+    --green: #00D68F;
+    --green-dim: rgba(0,214,143,0.12);
+    --green-glow: rgba(0,214,143,0.25);
+    --red: #FF4D6A;
+    --red-dim: rgba(255,77,106,0.12);
+    --amber: #F5A623;
+    --amber-dim: rgba(245,166,35,0.12);
+    --cyan: #00B4D8;
+    --sniper-blue: #1A7FD4;
+    --sniper-blue-dim: rgba(26,127,212,0.15);
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Space Grotesk', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg-0);
+    color: var(--text-0);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 24px;
+    line-height: 1.5;
+  }
+
+  /* ── WIDGET SHELL ── */
+  .widget {
+    max-width: 960px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  /* ── HEADER ── */
+  .widget-header {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .logo-mark {
+    width: 34px; height: 34px;
+    background: linear-gradient(135deg, #1A7FD4 0%, #00D68F 100%);
+    border-radius: 7px;
+    display: grid; place-items: center;
+    font-family: var(--mono);
+    font-size: 13px; font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .widget-title { font-size: 14px; font-weight: 600; color: var(--text-0); letter-spacing: 0.02em; }
+  .widget-sub { font-size: 11px; color: var(--text-2); margin-top: 1px; font-family: var(--mono); }
+  .header-right { display: flex; align-items: center; gap: 8px; }
+  .session-badge {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .session-badge.london { background: var(--sniper-blue-dim); color: var(--sniper-blue); border: 1px solid rgba(26,127,212,0.3); }
+  .session-badge.ny { background: rgba(0,180,216,0.1); color: var(--cyan); border: 1px solid rgba(0,180,216,0.3); }
+  .session-badge.off { background: var(--bg-2); color: var(--text-2); border: 1px solid var(--border); }
+  .clock {
+    font-family: var(--mono);
+    font-size: 13px; font-weight: 500;
+    color: var(--text-1);
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 4px 10px;
+  }
+
+  /* ── RULE RAIL ── */
+  .rule-rail {
+    background: var(--bg-1);
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border-hi);
+    padding: 10px 20px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 2px;
+  }
+  .rule-pill {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10px; font-family: var(--mono);
+    color: var(--text-2);
+  }
+  .rule-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .rule-dot.ok { background: var(--green); box-shadow: 0 0 6px var(--green-glow); }
+  .rule-dot.warn { background: var(--amber); }
+  .rule-dot.stop { background: var(--red); }
+  .rule-dot.off { background: var(--text-2); }
+  .rule-pill span { color: var(--text-1); }
+
+  /* ── MAIN GRID ── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 2px;
+  }
+
+  /* ── LEFT COLUMN ── */
+  .left-col {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  /* ── P&L BIG NUMBER ── */
+  .pl-card {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .pl-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--green), transparent);
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  .pl-card.positive::before { opacity: 1; }
+  .pl-card.negative::before { background: linear-gradient(90deg, var(--red), transparent); opacity: 1; }
+  .pl-label { font-size: 10px; font-family: var(--mono); color: var(--text-2); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+  .pl-value {
+    font-family: var(--mono);
+    font-size: 38px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    transition: color 0.3s;
+  }
+  .pl-value.positive { color: var(--green); }
+  .pl-value.negative { color: var(--red); }
+  .pl-value.zero { color: var(--text-1); }
+  .pl-meta {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+  }
+  .pl-meta-item { }
+  .pl-meta-label { font-size: 9px; font-family: var(--mono); color: var(--text-2); text-transform: uppercase; letter-spacing: 0.08em; }
+  .pl-meta-val { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--text-1); margin-top: 2px; }
+
+  /* ── RISK GAUGES ── */
+  .gauges-card {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    padding: 16px 20px;
+  }
+  .gauges-title { font-size: 10px; font-family: var(--mono); color: var(--text-2); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; }
+  .gauge-row { margin-bottom: 10px; }
+  .gauge-row:last-child { margin-bottom: 0; }
+  .gauge-labels { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+  .gauge-name { font-size: 11px; color: var(--text-1); }
+  .gauge-val { font-family: var(--mono); font-size: 11px; font-weight: 600; }
+  .gauge-track {
+    height: 4px;
+    background: var(--bg-3);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .gauge-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .gauge-fill.green { background: var(--green); box-shadow: 0 0 8px var(--green-glow); }
+  .gauge-fill.amber { background: var(--amber); }
+  .gauge-fill.red { background: var(--red); }
+
+  /* ── TRADE COUNTER ── */
+  .counter-card {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    padding: 16px 20px;
+  }
+  .counter-title { font-size: 10px; font-family: var(--mono); color: var(--text-2); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; }
+  .trade-slots { display: flex; gap: 8px; }
+  .trade-slot {
+    flex: 1;
+    height: 36px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    display: grid; place-items: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    transition: all 0.3s;
+  }
+  .trade-slot.used { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+  .trade-slot.active { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); animation: pulse-amber 1.5s infinite; }
+  .trade-slot.locked { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+  .trade-slot.open { background: var(--bg-2); color: var(--text-2); }
+  @keyframes pulse-amber { 0%,100%{opacity:1} 50%{opacity:0.6} }
+  .counter-note { font-size: 10px; color: var(--text-2); font-family: var(--mono); margin-top: 8px; }
+
+  /* ── RIGHT COLUMN ── */
+  .right-col {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  /* ── SCORE GATE ── */
+  .score-gate {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    padding: 16px 20px;
+  }
+  .score-gate-inner { display: flex; gap: 16px; align-items: flex-start; }
+  .score-main { flex-shrink: 0; }
+  .score-label { font-size: 10px; font-family: var(--mono); color: var(--text-2); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+  .score-num {
+    font-family: var(--mono);
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+  .score-num.pass { color: var(--green); }
+  .score-num.fail { color: var(--red); }
+  .score-num.warn { color: var(--amber); }
+  .score-threshold { font-size: 10px; font-family: var(--mono); color: var(--text-2); margin-top: 2px; }
+  .score-checks { flex: 1; display: flex; flex-direction: column; gap: 5px; padding-top: 2px; }
+  .check-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-1); }
+  .check-icon { font-size: 11px; width: 14px; text-align: center; flex-shrink: 0; }
+  .gate-status {
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  .gate-status.open-gate { background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,214,143,0.3); }
+  .gate-status.closed-gate { background: var(--red-dim); color: var(--red); border: 1px solid rgba(255,77,106,0.3); }
+  .gate-status.warn-gate { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(245,166,35,0.3); }
+
+  /* ── TRADE LOG ── */
+  .log-card {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    padding: 16px 20px;
+    flex: 1;
+  }
+  .log-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .log-title { font-size: 10px; font-family: var(--mono); color: var(--text-2); text-transform: uppercase; letter-spacing: 0.1em; }
+  .log-add-btn {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--sniper-blue);
+    background: var(--sniper-blue-dim);
+    border: 1px solid rgba(26,127,212,0.35);
+    border-radius: 4px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.04em;
+  }
+  .log-add-btn:hover { background: rgba(26,127,212,0.25); }
+  .log-table { width: 100%; border-collapse: collapse; }
+  .log-table th {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 500;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    text-align: left;
+    padding: 0 8px 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .log-table td {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-1);
+    padding: 7px 8px 7px 0;
+    border-bottom: 1px solid rgba(30,45,61,0.5);
+    vertical-align: middle;
+  }
+  .log-table tr:last-child td { border-bottom: none; }
+  .log-table tr:hover td { background: rgba(255,255,255,0.015); }
+  .tag {
+    display: inline-block;
+    font-size: 9px;
+    padding: 2px 5px;
+    border-radius: 3px;
+    background: var(--sniper-blue-dim);
+    color: var(--sniper-blue);
+    border: 1px solid rgba(26,127,212,0.25);
+    letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+  .pnl-cell { font-weight: 700; }
+  .pnl-cell.pos { color: var(--green); }
+  .pnl-cell.neg { color: var(--red); }
+  .rr-cell { color: var(--text-1); }
+  .rr-cell.good { color: var(--green); }
+  .rr-cell.bad { color: var(--red); }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: middle; }
+  .sd-win { background: var(--green); box-shadow: 0 0 5px var(--green-glow); }
+  .sd-loss { background: var(--red); }
+  .sd-open { background: var(--amber); animation: pulse-amber 1.5s infinite; }
+  .empty-log { text-align: center; padding: 20px; font-size: 11px; font-family: var(--mono); color: var(--text-2); }
+
+  /* ── RULES PANEL ── */
+  .rules-panel {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    padding: 16px 20px;
+  }
+  .rules-title { font-size: 10px; font-family: var(--mono); color: var(--text-2); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; }
+  .rules-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  .rule-item {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 8px 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .rule-item.violated { border-color: rgba(255,77,106,0.4); background: var(--red-dim); }
+  .rule-item.satisfied { border-color: rgba(0,214,143,0.25); }
+  .rule-icon { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+  .rule-text { }
+  .rule-name { font-size: 10px; font-weight: 600; color: var(--text-0); }
+  .rule-desc { font-size: 9px; font-family: var(--mono); color: var(--text-2); margin-top: 1px; line-height: 1.4; }
+
+  /* ── EDITABLE META FIELDS ── */
+  .pl-meta-editable {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .pl-meta-edit-label {
+    font-size: 9px; font-family: var(--mono);
+    color: var(--text-2); text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .pl-meta-edit-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed var(--border-hi);
+    color: var(--text-1);
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    width: 90px;
+    padding: 1px 2px;
+    outline: none;
+    transition: border-color 0.2s, color 0.2s;
+    -moz-appearance: textfield;
+  }
+  .pl-meta-edit-input::-webkit-outer-spin-button,
+  .pl-meta-edit-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .pl-meta-edit-input:focus {
+    border-bottom-color: var(--sniper-blue);
+    color: var(--text-0);
+  }
+  .pl-meta-edit-input::placeholder { color: var(--text-2); }
+  .edit-hint {
+    font-size: 8px; font-family: var(--mono); color: var(--text-2);
+    margin-top: 1px; letter-spacing: 0.04em;
+  }
+
+  /* ── ACCOUNT SETTINGS CARD ── */
+  .acct-card {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    padding: 14px 20px;
+  }
+  .acct-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .acct-title { font-size: 10px; font-family: var(--mono); color: var(--text-2); text-transform: uppercase; letter-spacing: 0.1em; }
+  .acct-save-btn {
+    font-family: var(--mono); font-size: 9px; font-weight: 700;
+    color: var(--green); background: var(--green-dim);
+    border: 1px solid rgba(0,214,143,0.3); border-radius: 4px;
+    padding: 3px 8px; cursor: pointer; letter-spacing: 0.06em;
+    text-transform: uppercase; transition: all 0.2s; display: none;
+  }
+  .acct-save-btn:hover { background: rgba(0,214,143,0.2); }
+  .acct-save-btn.visible { display: inline-block; }
+  .acct-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .acct-field { }
+  .acct-field label {
+    display: block; font-size: 9px; font-family: var(--mono);
+    color: var(--text-2); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px;
+  }
+  .acct-field-wrap {
+    position: relative; display: flex; align-items: center;
+    background: var(--bg-2); border: 1px solid var(--border);
+    border-radius: 5px; transition: border-color 0.2s;
+  }
+  .acct-field-wrap:focus-within { border-color: var(--sniper-blue); }
+  .acct-field-prefix {
+    font-family: var(--mono); font-size: 12px; font-weight: 600;
+    color: var(--text-2); padding: 0 0 0 10px; pointer-events: none; flex-shrink: 0;
+  }
+  .acct-field-suffix {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--text-2); padding: 0 8px 0 2px; pointer-events: none; flex-shrink: 0;
+  }
+  .acct-input {
+    flex: 1; background: transparent; border: none;
+    color: var(--text-0); font-family: var(--mono); font-size: 12px; font-weight: 600;
+    padding: 8px 4px 8px 6px; outline: none; min-width: 0;
+    -moz-appearance: textfield;
+  }
+  .acct-input::-webkit-outer-spin-button,
+  .acct-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .acct-derived {
+    display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;
+  }
+  .acct-derived-item {
+    flex: 1; min-width: 80px;
+    background: var(--bg-3); border: 1px solid var(--border);
+    border-radius: 4px; padding: 6px 8px;
+  }
+  .acct-derived-label { font-size: 8px; font-family: var(--mono); color: var(--text-2); text-transform: uppercase; letter-spacing: 0.08em; }
+  .acct-derived-val { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--text-1); margin-top: 2px; }
+  .acct-derived-val.green { color: var(--green); }
+  .acct-derived-val.red { color: var(--red); }
+  .acct-derived-val.amber { color: var(--amber); }
+  .saved-flash {
+    font-family: var(--mono); font-size: 9px; color: var(--green);
+    opacity: 0; transition: opacity 0.3s; letter-spacing: 0.06em;
+  }
+  .saved-flash.show { opacity: 1; }
+
+  /* ── ATR CALCULATOR ── */
+  .atr-card {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    padding: 16px 20px;
+  }
+  .atr-title { font-size: 10px; font-family: var(--mono); color: var(--text-2); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; }
+  .atr-inputs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .atr-field { }
+  .atr-field label { display: block; font-size: 9px; font-family: var(--mono); color: var(--text-2); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .atr-field input, .atr-field select {
+    width: 100%;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-0);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 7px 10px;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+  .atr-field input:focus, .atr-field select:focus { border-color: var(--sniper-blue); }
+  .atr-output {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .atr-out-item {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 10px;
+    text-align: center;
+  }
+  .atr-out-label { font-size: 8px; font-family: var(--mono); color: var(--text-2); text-transform: uppercase; letter-spacing: 0.08em; }
+  .atr-out-val { font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--text-0); margin-top: 3px; }
+  .atr-out-val.green { color: var(--green); }
+  .atr-out-val.red { color: var(--red); }
+  .atr-out-val.amber { color: var(--amber); }
+
+  /* ── ADD TRADE MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(8,11,15,0.85);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--bg-1);
+    border: 1px solid var(--border-hi);
+    border-radius: 10px;
+    width: 420px;
+    max-width: 95vw;
+    padding: 24px;
+    transform: translateY(12px);
+    transition: transform 0.25s;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-title { font-size: 14px; font-weight: 600; color: var(--text-0); margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+  .modal-close { font-size: 18px; color: var(--text-2); cursor: pointer; background: none; border: none; line-height: 1; padding: 0; }
+  .modal-close:hover { color: var(--text-1); }
+  .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .modal-field { }
+  .modal-field.full { grid-column: 1 / -1; }
+  .modal-field label { display: block; font-size: 9px; font-family: var(--mono); color: var(--text-2); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .modal-field input, .modal-field select {
+    width: 100%;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text-0);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px 10px;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+  .modal-field input:focus, .modal-field select:focus { border-color: var(--sniper-blue); }
+  .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
+  .btn-primary {
+    flex: 1; padding: 10px;
+    background: var(--sniper-blue);
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: background 0.2s;
+  }
+  .btn-primary:hover { background: #2190E8; }
+  .btn-secondary {
+    padding: 10px 16px;
+    background: var(--bg-2);
+    color: var(--text-1);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-secondary:hover { background: var(--bg-3); }
+
+  /* ── WARNING BANNER ── */
+  .warning-banner {
+    background: var(--red-dim);
+    border: 1px solid rgba(255,77,106,0.3);
+    border-radius: 5px;
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--red);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+  }
+  .warning-banner.hidden { display: none; }
+  .warning-banner.amber { background: var(--amber-dim); border-color: rgba(245,166,35,0.3); color: var(--amber); }
+
+  /* ── FOOTER ── */
+  .widget-footer {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .footer-brand { font-size: 10px; font-family: var(--mono); color: var(--text-2); }
+  .footer-brand span { color: var(--sniper-blue); }
+  .footer-rule { font-size: 9px; font-family: var(--mono); color: var(--text-2); }
+
+  /* Psychology score strip */
+  .psych-strip {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .psych-label { font-size: 10px; font-family: var(--mono); color: var(--text-2); text-transform: uppercase; letter-spacing: 0.08em; flex-shrink: 0; }
+  .psych-items { display: flex; gap: 10px; align-items: center; flex: 1; }
+  .psych-item { display: flex; align-items: center; gap: 6px; }
+  .psych-name { font-size: 10px; color: var(--text-1); font-family: var(--mono); }
+  .psych-bar-wrap { width: 80px; height: 3px; background: var(--bg-3); border-radius: 2px; overflow: hidden; }
+  .psych-bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+  .psych-score-val { font-size: 10px; font-family: var(--mono); font-weight: 600; min-width: 24px; }
+  .psych-divider { width: 1px; height: 20px; background: var(--border); }
+  .psych-verdict {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 8px;
+    border-radius: 3px;
+  }
+  .psych-verdict.trade { background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,214,143,0.3); }
+  .psych-verdict.sit-out { background: var(--red-dim); color: var(--red); border: 1px solid rgba(255,77,106,0.3); }
+
+  /* Responsive */
+  @media (max-width: 720px) {
+    body { padding: 12px; }
+    .main-grid { grid-template-columns: 1fr; }
+    .rule-rail { grid-template-columns: repeat(3, 1fr); }
+    .atr-inputs { grid-template-columns: 1fr 1fr; }
+    .atr-output { grid-template-columns: repeat(2, 1fr); }
+    .rules-grid { grid-template-columns: 1fr; }
+    .psych-items { flex-wrap: wrap; gap: 6px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── WIDGET ── -->
+<div class="widget" id="widget">
+
+  <!-- Header -->
+  <div class="widget-header">
+    <div class="header-left">
+      <div class="logo-mark">ST</div>
+      <div>
+        <div class="widget-title">SniperTrader · P&L Dashboard</div>
+        <div class="widget-sub">USME Enforcement Engine v2.4</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="session-badge off" id="session-badge">OUT-OF-SESSION</div>
+      <div class="clock" id="clock-display">--:-- EST</div>
+    </div>
+  </div>
+
+  <!-- Rule Status Rail -->
+  <div class="rule-rail">
+    <div class="rule-pill"><div class="rule-dot ok" id="dot-trade-limit"></div><span id="text-trade-limit">Trades 0/3</span></div>
+    <div class="rule-pill"><div class="rule-dot ok" id="dot-daily-loss"></div><span id="text-daily-loss">Loss 0.0%</span></div>
+    <div class="rule-pill"><div class="rule-dot ok" id="dot-session"></div><span id="text-session">Session OK</span></div>
+    <div class="rule-pill"><div class="rule-dot ok" id="dot-consistency"></div><span id="text-consistency">Daily PnL 0%</span></div>
+    <div class="rule-pill"><div class="rule-dot off" id="dot-overnight"></div><span id="text-overnight">No Overnight</span></div>
+  </div>
+
+  <!-- Psychology strip -->
+  <div class="psych-strip">
+    <div class="psych-label">TraderEdge OS</div>
+    <div class="psych-items">
+      <div class="psych-item">
+        <div class="psych-name">Focus</div>
+        <div class="psych-bar-wrap"><div class="psych-bar-fill" id="psych-focus-bar" style="width:80%;background:var(--green)"></div></div>
+        <div class="psych-score-val" id="psych-focus-val" style="color:var(--green)">80</div>
+      </div>
+      <div class="psych-divider"></div>
+      <div class="psych-item">
+        <div class="psych-name">Discipline</div>
+        <div class="psych-bar-wrap"><div class="psych-bar-fill" id="psych-discipline-bar" style="width:75%;background:var(--green)"></div></div>
+        <div class="psych-score-val" id="psych-discipline-val" style="color:var(--green)">75</div>
+      </div>
+      <div class="psych-divider"></div>
+      <div class="psych-item">
+        <div class="psych-name">Sentiment</div>
+        <div class="psych-bar-wrap"><div class="psych-bar-fill" id="psych-sentiment-bar" style="width:70%;background:var(--green)"></div></div>
+        <div class="psych-score-val" id="psych-sentiment-val" style="color:var(--green)">70</div>
+      </div>
+    </div>
+    <div class="psych-divider"></div>
+    <div class="psych-verdict trade" id="psych-verdict">CLEARED TO TRADE</div>
+    <button class="btn-secondary" style="font-size:9px;padding:4px 8px;margin-left:8px;" onclick="openPsychModal()">Check In</button>
+  </div>
+
+  <!-- Warning Banner -->
+  <div class="warning-banner hidden" id="warning-banner">
+    <span>⚠</span><span id="warning-text">Daily loss ceiling reached. Close platform. No re-entries today.</span>
+  </div>
+
+  <!-- Main Grid -->
+  <div class="main-grid">
+
+    <!-- LEFT -->
+    <div class="left-col">
+
+      <!-- P&L Big Number -->
+      <div class="pl-card zero" id="pl-card">
+        <div class="pl-label">Today's Realized P&L</div>
+        <div class="pl-value zero" id="pl-value">$0.00</div>
+        <div class="pl-meta" style="align-items:flex-end;">
+          <div class="pl-meta-editable">
+            <div class="pl-meta-edit-label">Account Size</div>
+            <input class="pl-meta-edit-input" type="number" id="account-size-display" value="50000" placeholder="50000" oninput="onAccountSettingChange()">
+            <div class="edit-hint">click to edit</div>
+          </div>
+          <div class="pl-meta-editable">
+            <div class="pl-meta-edit-label">Daily Target $</div>
+            <input class="pl-meta-edit-input" type="number" id="daily-target-display" value="500" placeholder="500" oninput="onAccountSettingChange()">
+            <div class="edit-hint">click to edit</div>
+          </div>
+          <div class="pl-meta-editable">
+            <div class="pl-meta-edit-label">Max Daily Risk $</div>
+            <input class="pl-meta-edit-input" type="number" id="max-risk-display" value="1000" placeholder="1000" oninput="onAccountSettingChange()">
+            <div class="edit-hint">click to edit</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Risk Gauges -->
+      <div class="gauges-card">
+        <div class="gauges-title">Risk Consumption</div>
+        <div class="gauge-row">
+          <div class="gauge-labels">
+            <div class="gauge-name" id="gauge-loss-name">Daily Loss vs Ceiling (2%)</div>
+            <div class="gauge-val" id="gauge-loss-val" style="color:var(--green)">0.0%</div>
+          </div>
+          <div class="gauge-track"><div class="gauge-fill green" id="gauge-loss-fill" style="width:0%"></div></div>
+        </div>
+        <div class="gauge-row">
+          <div class="gauge-labels">
+            <div class="gauge-name">Consistency vs 35% Cap</div>
+            <div class="gauge-val" id="gauge-consist-val" style="color:var(--green)">0.0%</div>
+          </div>
+          <div class="gauge-track"><div class="gauge-fill green" id="gauge-consist-fill" style="width:0%"></div></div>
+        </div>
+        <div class="gauge-row">
+          <div class="gauge-labels">
+            <div class="gauge-name">Trades Used (max 3)</div>
+            <div class="gauge-val" id="gauge-trades-val" style="color:var(--green)">0 / 3</div>
+          </div>
+          <div class="gauge-track"><div class="gauge-fill green" id="gauge-trades-fill" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <!-- Trade Counter -->
+      <div class="counter-card">
+        <div class="counter-title">Daily Setup Limit · Max 3</div>
+        <div class="trade-slots">
+          <div class="trade-slot open" id="slot-1">T1</div>
+          <div class="trade-slot open" id="slot-2">T2</div>
+          <div class="trade-slot open" id="slot-3">T3</div>
+        </div>
+        <div class="counter-note" id="counter-note">0 setups taken · 3 remaining today</div>
+      </div>
+
+      <!-- Account Settings -->
+      <div class="acct-card">
+        <div class="acct-header">
+          <div class="acct-title">Account Settings</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="saved-flash" id="saved-flash">✓ SAVED</span>
+            <button class="acct-save-btn" id="acct-save-btn" onclick="saveAccountSettings()">APPLY</button>
+          </div>
+        </div>
+        <div class="acct-grid">
+          <div class="acct-field">
+            <label>Funded Account Size</label>
+            <div class="acct-field-wrap">
+              <span class="acct-field-prefix">$</span>
+              <input class="acct-input" type="number" id="acct-size-input" value="50000" min="1000" step="1000" oninput="onAcctInputChange()">
+            </div>
+          </div>
+          <div class="acct-field">
+            <label>Daily Profit Target</label>
+            <div class="acct-field-wrap">
+              <span class="acct-field-prefix">$</span>
+              <input class="acct-input" type="number" id="acct-target-input" value="500" min="0" step="50" oninput="onAcctInputChange()">
+            </div>
+          </div>
+          <div class="acct-field">
+            <label>Max Daily Risk (loss ceiling)</label>
+            <div class="acct-field-wrap">
+              <span class="acct-field-prefix">$</span>
+              <input class="acct-input" type="number" id="acct-risk-input" value="1000" min="0" step="100" oninput="onAcctInputChange()">
+            </div>
+          </div>
+        </div>
+        <div class="acct-derived">
+          <div class="acct-derived-item">
+            <div class="acct-derived-label">Risk Per Trade (1%)</div>
+            <div class="acct-derived-val green" id="derived-risk-per-trade">$500</div>
+          </div>
+          <div class="acct-derived-item">
+            <div class="acct-derived-label">Loss Ceiling %</div>
+            <div class="acct-derived-val amber" id="derived-loss-pct">2.00%</div>
+          </div>
+          <div class="acct-derived-item">
+            <div class="acct-derived-label">Target % of Acct</div>
+            <div class="acct-derived-val green" id="derived-target-pct">1.00%</div>
+          </div>
+          <div class="acct-derived-item">
+            <div class="acct-derived-label">35% Consistency Cap</div>
+            <div class="acct-derived-val" id="derived-consist-cap">$175</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ATR Position Sizer -->
+      <div class="atr-card">
+        <div class="atr-title">ATR Position Sizer · 1% Risk Rule</div>
+        <div class="atr-inputs">
+          <div class="atr-field">
+            <label>Account Size ($) <span style="color:var(--sniper-blue);font-size:8px;">↑ from settings</span></label>
+            <input type="number" id="atr-account" value="50000" readonly style="opacity:0.6;cursor:default;">
+          </div>
+          <div class="atr-field">
+            <label>ATR Value ($)</label>
+            <input type="number" id="atr-value" value="12.50" step="0.01" oninput="calcATR()">
+          </div>
+          <div class="atr-field">
+            <label>ATR Multiplier</label>
+            <select id="atr-multi" onchange="calcATR()">
+              <option value="1">1.0×</option>
+              <option value="1.5" selected>1.5×</option>
+              <option value="2">2.0×</option>
+              <option value="2.5">2.5×</option>
+            </select>
+          </div>
+        </div>
+        <div class="atr-output">
+          <div class="atr-out-item">
+            <div class="atr-out-label">Max Risk $</div>
+            <div class="atr-out-val amber" id="atr-max-risk">$500</div>
+          </div>
+          <div class="atr-out-item">
+            <div class="atr-out-label">Stop Size</div>
+            <div class="atr-out-val" id="atr-stop">$18.75</div>
+          </div>
+          <div class="atr-out-item">
+            <div class="atr-out-label">Contracts</div>
+            <div class="atr-out-val green" id="atr-contracts">26</div>
+          </div>
+          <div class="atr-out-item">
+            <div class="atr-out-label">1:2 Target $</div>
+            <div class="atr-out-val green" id="atr-target">$1,000</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT -->
+    <div class="right-col">
+
+      <!-- AI Score Gate -->
+      <div class="score-gate">
+        <div class="score-gate-inner">
+          <div class="score-main">
+            <div class="score-label">AI Setup Score</div>
+            <div class="score-num pass" id="ai-score-num">--</div>
+            <div class="score-threshold">Min threshold: 70</div>
+          </div>
+          <div class="score-checks">
+            <div class="check-row"><span class="check-icon" id="chk-killzone">⬜</span>Killzone active window</div>
+            <div class="check-row"><span class="check-icon" id="chk-structure">⬜</span>Market structure confirmed</div>
+            <div class="check-row"><span class="check-icon" id="chk-ob">⬜</span>OB / FVG / CHoCH / BOS</div>
+            <div class="check-row"><span class="check-icon" id="chk-rr">⬜</span>Min 1:2 R:R validated</div>
+            <div class="check-row"><span class="check-icon" id="chk-news">⬜</span>No news in 2-min window</div>
+            <div class="check-row"><span class="check-icon" id="chk-trades">⬜</span>Daily trade limit available</div>
+          </div>
+        </div>
+        <div class="gate-status warn-gate" id="gate-status-bar">SCORE REQUIRED BEFORE ENTRY</div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <input type="number" id="score-input" placeholder="Enter AI score (0–100)" min="0" max="100"
+            style="flex:1;background:var(--bg-2);border:1px solid var(--border);border-radius:5px;color:var(--text-0);font-family:var(--mono);font-size:12px;padding:8px 10px;outline:none;"
+            oninput="evalScore(this.value)">
+          <button class="btn-secondary" onclick="runChecklist()">Run Checks</button>
+        </div>
+      </div>
+
+      <!-- Trade Log -->
+      <div class="log-card">
+        <div class="log-header">
+          <div class="log-title">Trade Journal · SMC Log</div>
+          <button class="log-add-btn" onclick="openAddTrade()">+ LOG TRADE</button>
+        </div>
+        <table class="log-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Pair</th>
+              <th>Setup</th>
+              <th>R:R</th>
+              <th>P&L</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="trade-log-body">
+            <tr><td colspan="6"><div class="empty-log">No trades logged today. Stay patient — wait for the A+ setup.</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Non-Negotiable Rules -->
+      <div class="rules-panel">
+        <div class="rules-title">USME Non-Negotiable Rules</div>
+        <div class="rules-grid">
+          <div class="rule-item satisfied" id="rule-trade-limit">
+            <div class="rule-icon">📊</div>
+            <div class="rule-text">
+              <div class="rule-name">Daily Trade Limit</div>
+              <div class="rule-desc">Max 3 setups · AI ≥70 gate enforced</div>
+            </div>
+          </div>
+          <div class="rule-item satisfied" id="rule-risk-per-trade">
+            <div class="rule-icon">🎯</div>
+            <div class="rule-text">
+              <div class="rule-name">Risk Per Trade ≤1%</div>
+              <div class="rule-desc">ATR-based stop auto-calculated</div>
+            </div>
+          </div>
+          <div class="rule-item satisfied" id="rule-daily-loss">
+            <div class="rule-icon">🛡️</div>
+            <div class="rule-text">
+              <div class="rule-name">Daily Loss Ceiling ≤2%</div>
+              <div class="rule-desc">Auto-lock at ceiling · no re-entries</div>
+            </div>
+          </div>
+          <div class="rule-item" id="rule-session">
+            <div class="rule-icon">🕐</div>
+            <div class="rule-text">
+              <div class="rule-name">Session Windows</div>
+              <div class="rule-desc">London 2–5 AM · NY 7–10 AM EST</div>
+            </div>
+          </div>
+          <div class="rule-item satisfied" id="rule-rr">
+            <div class="rule-icon">📐</div>
+            <div class="rule-text">
+              <div class="rule-name">Min 1:2 R:R Floor</div>
+              <div class="rule-desc">ATR target projection validates entry</div>
+            </div>
+          </div>
+          <div class="rule-item" id="rule-news">
+            <div class="rule-icon">📰</div>
+            <div class="rule-text">
+              <div class="rule-name">News Blackout</div>
+              <div class="rule-desc">Flat 2 min before red-folder events</div>
+            </div>
+          </div>
+          <div class="rule-item satisfied" id="rule-psych">
+            <div class="rule-icon">🧠</div>
+            <div class="rule-text">
+              <div class="rule-name">Psychology Check-In</div>
+              <div class="rule-desc">TraderEdge OS · below threshold = sit out</div>
+            </div>
+          </div>
+          <div class="rule-item satisfied" id="rule-consistency">
+            <div class="rule-icon">⚖️</div>
+            <div class="rule-text">
+              <div class="rule-name">Consistency Rule ≤35%</div>
+              <div class="rule-desc">No single day exceeds 35% of target</div>
+            </div>
+          </div>
+          <div class="rule-item satisfied" id="rule-overnight">
+            <div class="rule-icon">🌙</div>
+            <div class="rule-text">
+              <div class="rule-name">No Overnight Holds</div>
+              <div class="rule-desc">Close all positions before session end</div>
+            </div>
+          </div>
+          <div class="rule-item" id="rule-journal">
+            <div class="rule-icon">📝</div>
+            <div class="rule-text">
+              <div class="rule-name">Trade Journal</div>
+              <div class="rule-desc">SMC entry within 1 hr of session close</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="widget-footer">
+    <div class="footer-brand"><span>SniperTrader.ai</span> · USME Enforcement Engine</div>
+    <div class="footer-rule">Rules are non-negotiable. The edge is in the process.</div>
+  </div>
+
+</div>
+
+<!-- ── ADD TRADE MODAL ── -->
+<div class="modal-overlay" id="trade-modal">
+  <div class="modal">
+    <div class="modal-title">
+      Log Trade · SMC Journal
+      <button class="modal-close" onclick="closeModal('trade-modal')">✕</button>
+    </div>
+    <div class="modal-grid">
+      <div class="modal-field">
+        <label>Instrument</label>
+        <input type="text" id="m-pair" placeholder="e.g. NQ / ES / EUR/USD">
+      </div>
+      <div class="modal-field">
+        <label>Setup Type</label>
+        <select id="m-setup">
+          <option value="OB">OB – Order Block</option>
+          <option value="FVG">FVG – Fair Value Gap</option>
+          <option value="CHoCH">CHoCH – Change of Character</option>
+          <option value="BOS">BOS – Break of Structure</option>
+          <option value="OB+FVG">OB + FVG Confluence</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label>Entry Price</label>
+        <input type="number" id="m-entry" placeholder="0.00" step="0.01">
+      </div>
+      <div class="modal-field">
+        <label>Stop Loss</label>
+        <input type="number" id="m-stop" placeholder="0.00" step="0.01">
+      </div>
+      <div class="modal-field">
+        <label>Target Price</label>
+        <input type="number" id="m-target" placeholder="0.00" step="0.01">
+      </div>
+      <div class="modal-field">
+        <label>P&L ($)</label>
+        <input type="number" id="m-pnl" placeholder="+/- amount" step="0.01">
+      </div>
+      <div class="modal-field">
+        <label>Status</label>
+        <select id="m-status">
+          <option value="open">Open</option>
+          <option value="win">Win ✓</option>
+          <option value="loss">Loss ✗</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label>Session</label>
+        <select id="m-session">
+          <option value="London">London (2–5 AM)</option>
+          <option value="NY">NY Open (7–10 AM)</option>
+        </select>
+      </div>
+      <div class="modal-field full">
+        <label>Notes</label>
+        <input type="text" id="m-notes" placeholder="SMC context, confluence, lesson...">
+      </div>
+    </div>
+    <div style="margin-top:8px;padding:8px 10px;background:var(--bg-2);border:1px solid var(--border);border-radius:4px;font-family:var(--mono);font-size:10px;color:var(--text-2);" id="modal-rr-display">
+      R:R — enter prices above to calculate
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="logTrade()">LOG TRADE</button>
+      <button class="btn-secondary" onclick="closeModal('trade-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── PSYCH CHECK-IN MODAL ── -->
+<div class="modal-overlay" id="psych-modal">
+  <div class="modal">
+    <div class="modal-title">
+      TraderEdge OS · Pre-Session Check-In
+      <button class="modal-close" onclick="closeModal('psych-modal')">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div>
+        <label style="display:block;font-size:9px;font-family:var(--mono);color:var(--text-2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Focus Level (0–100)</label>
+        <input type="range" id="psych-focus-input" min="0" max="100" value="80" style="width:100%;accent-color:var(--sniper-blue);" oninput="updatePsychPreview()">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text-1);margin-top:3px;">Score: <span id="psych-focus-preview">80</span></div>
+      </div>
+      <div>
+        <label style="display:block;font-size:9px;font-family:var(--mono);color:var(--text-2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Discipline / Patience (0–100)</label>
+        <input type="range" id="psych-disc-input" min="0" max="100" value="75" style="width:100%;accent-color:var(--sniper-blue);" oninput="updatePsychPreview()">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text-1);margin-top:3px;">Score: <span id="psych-disc-preview">75</span></div>
+      </div>
+      <div>
+        <label style="display:block;font-size:9px;font-family:var(--mono);color:var(--text-2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Emotional Sentiment (0–100)</label>
+        <input type="range" id="psych-sent-input" min="0" max="100" value="70" style="width:100%;accent-color:var(--sniper-blue);" oninput="updatePsychPreview()">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text-1);margin-top:3px;">Score: <span id="psych-sent-preview">70</span></div>
+      </div>
+      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:5px;padding:10px 12px;font-family:var(--mono);font-size:11px;color:var(--text-1);">
+        Composite: <strong id="psych-composite" style="color:var(--green)">75</strong> / 100 — <span id="psych-verdict-preview" style="color:var(--green)">Cleared to trade</span>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="savePsych()">SAVE CHECK-IN</button>
+      <button class="btn-secondary" onclick="closeModal('psych-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+const state = {
+  accountSize: 50000,
+  dailyTarget: 500,
+  maxDailyRisk: 1000,
+  trades: [],
+  psychScores: { focus: 80, discipline: 75, sentiment: 70 },
+  aiScore: null,
+  checks: { killzone: false, structure: false, ob: false, rr: false, news: false, trades: true },
+};
+
+// ── ACCOUNT SETTINGS ──
+function onAcctInputChange() {
+  document.getElementById('acct-save-btn').classList.add('visible');
+  updateDerivedFields();
+}
+
+function updateDerivedFields() {
+  const acct = parseFloat(document.getElementById('acct-size-input').value) || 0;
+  const target = parseFloat(document.getElementById('acct-target-input').value) || 0;
+  const risk = parseFloat(document.getElementById('acct-risk-input').value) || 0;
+
+  document.getElementById('derived-risk-per-trade').textContent = '$' + (acct * 0.01).toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0});
+  const lossPct = acct > 0 ? ((risk / acct) * 100).toFixed(2) : '0.00';
+  document.getElementById('derived-loss-pct').textContent = lossPct + '%';
+  const targetPct = acct > 0 ? ((target / acct) * 100).toFixed(2) : '0.00';
+  document.getElementById('derived-target-pct').textContent = targetPct + '%';
+  document.getElementById('derived-consist-cap').textContent = '$' + (target * 0.35).toFixed(0);
+}
+
+function saveAccountSettings() {
+  const acct = parseFloat(document.getElementById('acct-size-input').value) || 50000;
+  const target = parseFloat(document.getElementById('acct-target-input').value) || 500;
+  const risk = parseFloat(document.getElementById('acct-risk-input').value) || 1000;
+
+  state.accountSize = acct;
+  state.dailyTarget = target;
+  state.maxDailyRisk = risk;
+
+  // Sync inline P&L meta
+  document.getElementById('account-size-display').value = acct;
+  document.getElementById('daily-target-display').value = target;
+  document.getElementById('max-risk-display').value = risk;
+
+  // Sync ATR sizer
+  document.getElementById('atr-account').value = acct;
+
+  // Hide save button, flash confirmation
+  document.getElementById('acct-save-btn').classList.remove('visible');
+  const flash = document.getElementById('saved-flash');
+  flash.classList.add('show');
+  setTimeout(() => flash.classList.remove('show'), 2000);
+
+  calcATR();
+  updateDashboard();
+}
+
+function onAccountSettingChange() {
+  // Sync from inline P&L meta inputs back to settings panel
+  const acct = parseFloat(document.getElementById('account-size-display').value) || 50000;
+  const target = parseFloat(document.getElementById('daily-target-display').value) || 500;
+  const risk = parseFloat(document.getElementById('max-risk-display').value) || 1000;
+
+  document.getElementById('acct-size-input').value = acct;
+  document.getElementById('acct-target-input').value = target;
+  document.getElementById('acct-risk-input').value = risk;
+
+  state.accountSize = acct;
+  state.dailyTarget = target;
+  state.maxDailyRisk = risk;
+
+  document.getElementById('acct-save-btn').classList.add('visible');
+  document.getElementById('atr-account').value = acct;
+  updateDerivedFields();
+  calcATR();
+  updateDashboard();
+}
+
+// Init derived fields on load
+updateDerivedFields();
+
+// ── CLOCK & SESSION ──
+function updateClock() {
+  const now = new Date();
+  const est = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const h = est.getHours(), m = est.getMinutes(), s = est.getSeconds();
+  const pad = n => String(n).padStart(2, '0');
+  document.getElementById('clock-display').textContent = `${pad(h)}:${pad(m)}:${pad(s)} EST`;
+
+  // Session detection
+  const totalMins = h * 60 + m;
+  const londonStart = 2 * 60, londonEnd = 5 * 60;
+  const nyStart = 7 * 60, nyEnd = 10 * 60;
+  const badge = document.getElementById('session-badge');
+  const dotSession = document.getElementById('dot-session');
+  const textSession = document.getElementById('text-session');
+
+  if (totalMins >= londonStart && totalMins < londonEnd) {
+    badge.textContent = 'LONDON OPEN';
+    badge.className = 'session-badge london';
+    dotSession.className = 'rule-dot ok';
+    textSession.textContent = 'London Active';
+    document.getElementById('rule-session').className = 'rule-item satisfied';
+  } else if (totalMins >= nyStart && totalMins < nyEnd) {
+    badge.textContent = 'NY OPEN';
+    badge.className = 'session-badge ny';
+    dotSession.className = 'rule-dot ok';
+    textSession.textContent = 'NY Active';
+    document.getElementById('rule-session').className = 'rule-item satisfied';
+  } else {
+    badge.textContent = 'OUT-OF-SESSION';
+    badge.className = 'session-badge off';
+    dotSession.className = 'rule-dot warn';
+    textSession.textContent = 'Off-Window';
+    document.getElementById('rule-session').className = 'rule-item';
+  }
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── ATR SIZER ──
+function calcATR() {
+  const acct = state.accountSize;
+  const atr = parseFloat(document.getElementById('atr-value').value) || 12.5;
+  const multi = parseFloat(document.getElementById('atr-multi').value) || 1.5;
+
+  const maxRisk = acct * 0.01;
+  const stopSize = atr * multi;
+  const contracts = Math.floor(maxRisk / stopSize);
+  const target2 = maxRisk * 2;
+
+  document.getElementById('atr-account').value = acct;
+  document.getElementById('atr-max-risk').textContent = '$' + maxRisk.toFixed(0);
+  document.getElementById('atr-stop').textContent = '$' + stopSize.toFixed(2);
+  document.getElementById('atr-contracts').textContent = contracts || '0';
+  document.getElementById('atr-target').textContent = '$' + target2.toFixed(0);
+
+  updateDashboard();
+}
+calcATR();
+
+// ── AI SCORE GATE ──
+function evalScore(val) {
+  const score = parseInt(val);
+  if (isNaN(score)) { resetScoreUI(); return; }
+  state.aiScore = score;
+  const el = document.getElementById('ai-score-num');
+  el.textContent = score;
+  if (score >= 70) {
+    el.className = 'score-num pass';
+  } else if (score >= 50) {
+    el.className = 'score-num warn';
+  } else {
+    el.className = 'score-num fail';
+  }
+  evalGate();
+}
+
+function resetScoreUI() {
+  document.getElementById('ai-score-num').textContent = '--';
+  document.getElementById('ai-score-num').className = 'score-num warn';
+  state.aiScore = null;
+  evalGate();
+}
+
+function runChecklist() {
+  // Simulate running checks based on current session
+  const now = new Date();
+  const est = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const h = est.getHours(), m = est.getMinutes();
+  const totalMins = h * 60 + m;
+  const inSession = (totalMins >= 120 && totalMins < 300) || (totalMins >= 420 && totalMins < 600);
+
+  state.checks.killzone = inSession;
+  state.checks.structure = Math.random() > 0.3;
+  state.checks.ob = Math.random() > 0.4;
+  state.checks.rr = Math.random() > 0.2;
+  state.checks.news = Math.random() > 0.15;
+  state.checks.trades = state.trades.filter(t => t.status !== 'open').length < 3;
+
+  updateCheckIcons();
+  evalGate();
+}
+
+function updateCheckIcons() {
+  const map = {
+    'chk-killzone': state.checks.killzone,
+    'chk-structure': state.checks.structure,
+    'chk-ob': state.checks.ob,
+    'chk-rr': state.checks.rr,
+    'chk-news': state.checks.news,
+    'chk-trades': state.checks.trades,
+  };
+  for (const [id, pass] of Object.entries(map)) {
+    document.getElementById(id).textContent = pass ? '✅' : '❌';
+  }
+}
+
+function evalGate() {
+  const score = state.aiScore;
+  const allChecks = Object.values(state.checks).every(Boolean);
+  const gate = document.getElementById('gate-status-bar');
+  const tradeCount = state.trades.length;
+
+  if (tradeCount >= 3) {
+    gate.textContent = '🚫 DAILY LIMIT REACHED — NO MORE ENTRIES';
+    gate.className = 'gate-status closed-gate';
+  } else if (score !== null && score >= 70 && allChecks) {
+    gate.textContent = '✅ GATE OPEN — SETUP VALID — ENTRY PERMITTED';
+    gate.className = 'gate-status open-gate';
+  } else if (score !== null && score >= 70 && !allChecks) {
+    gate.textContent = '⚠ SCORE PASSES — COMPLETE ALL CHECKS FIRST';
+    gate.className = 'gate-status warn-gate';
+  } else if (score !== null && score < 70) {
+    gate.textContent = `❌ SCORE ${score} BELOW 70 — SETUP REJECTED`;
+    gate.className = 'gate-status closed-gate';
+  } else {
+    gate.textContent = 'SCORE REQUIRED BEFORE ENTRY';
+    gate.className = 'gate-status warn-gate';
+  }
+}
+
+// ── TRADE LOGGING ──
+function openAddTrade() {
+  if (state.trades.length >= 3) {
+    showWarning('Daily trade limit of 3 reached. No further entries permitted today.', false);
+    return;
+  }
+  document.getElementById('trade-modal').classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+['m-entry','m-stop','m-target'].forEach(id => {
+  document.getElementById(id).addEventListener('input', calcModalRR);
+});
+
+function calcModalRR() {
+  const entry = parseFloat(document.getElementById('m-entry').value);
+  const stop = parseFloat(document.getElementById('m-stop').value);
+  const target = parseFloat(document.getElementById('m-target').value);
+  const disp = document.getElementById('modal-rr-display');
+  if (!isNaN(entry) && !isNaN(stop) && !isNaN(target)) {
+    const risk = Math.abs(entry - stop);
+    const reward = Math.abs(target - entry);
+    if (risk > 0) {
+      const rr = (reward / risk).toFixed(2);
+      const color = parseFloat(rr) >= 2 ? 'var(--green)' : parseFloat(rr) >= 1.5 ? 'var(--amber)' : 'var(--red)';
+      disp.innerHTML = `R:R = <strong style="color:${color}">1:${rr}</strong> ${parseFloat(rr) >= 2 ? '✅ Passes floor' : parseFloat(rr) >= 1.5 ? '⚠ Marginal' : '❌ Below 1:1.5 minimum — reject setup'}`;
+    }
+  } else {
+    disp.textContent = 'R:R — enter prices above to calculate';
+  }
+}
+
+function logTrade() {
+  const pair = document.getElementById('m-pair').value || 'N/A';
+  const setup = document.getElementById('m-setup').value;
+  const entry = parseFloat(document.getElementById('m-entry').value);
+  const stop = parseFloat(document.getElementById('m-stop').value);
+  const target = parseFloat(document.getElementById('m-target').value);
+  const pnl = parseFloat(document.getElementById('m-pnl').value) || 0;
+  const status = document.getElementById('m-status').value;
+  const session = document.getElementById('m-session').value;
+  const notes = document.getElementById('m-notes').value;
+
+  let rr = '--';
+  if (!isNaN(entry) && !isNaN(stop) && !isNaN(target) && Math.abs(entry - stop) > 0) {
+    rr = (Math.abs(target - entry) / Math.abs(entry - stop)).toFixed(2);
+  }
+
+  const now = new Date();
+  const est = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const timeStr = est.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+  state.trades.push({ pair, setup, rr, pnl, status, session, notes, time: timeStr });
+
+  ['m-pair','m-entry','m-stop','m-target','m-pnl','m-notes'].forEach(id => document.getElementById(id).value = '');
+  closeModal('trade-modal');
+  renderTradeLog();
+  updateDashboard();
+}
+
+function renderTradeLog() {
+  const tbody = document.getElementById('trade-log-body');
+  if (state.trades.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-log">No trades logged today. Stay patient — wait for the A+ setup.</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = state.trades.map((t, i) => {
+    const pnlClass = t.pnl > 0 ? 'pos' : t.pnl < 0 ? 'neg' : '';
+    const pnlStr = t.pnl > 0 ? `+$${t.pnl.toFixed(2)}` : t.pnl < 0 ? `-$${Math.abs(t.pnl).toFixed(2)}` : '$0';
+    const rrNum = parseFloat(t.rr);
+    const rrClass = !isNaN(rrNum) ? (rrNum >= 2 ? 'good' : rrNum < 1.5 ? 'bad' : '') : '';
+    const dotClass = t.status === 'win' ? 'sd-win' : t.status === 'loss' ? 'sd-loss' : 'sd-open';
+    const statusLabel = t.status === 'win' ? 'WIN' : t.status === 'loss' ? 'LOSS' : 'OPEN';
+    return `<tr>
+      <td style="color:var(--text-2)">${t.time}</td>
+      <td style="font-weight:600">${t.pair}</td>
+      <td><span class="tag">${t.setup}</span></td>
+      <td class="rr-cell ${rrClass}">${isNaN(rrNum) ? '--' : '1:' + t.rr}</td>
+      <td class="pnl-cell ${pnlClass}">${pnlStr}</td>
+      <td><span class="status-dot ${dotClass}"></span>${statusLabel}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── DASHBOARD UPDATE ──
+function updateDashboard() {
+  const trades = state.trades;
+  const closedTrades = trades.filter(t => t.status !== 'open');
+  const totalPnL = trades.reduce((s, t) => s + (t.pnl || 0), 0);
+  const losses = trades.filter(t => t.pnl < 0).reduce((s, t) => s + Math.abs(t.pnl), 0);
+  const acct = state.accountSize;
+
+  // P&L Card
+  const plEl = document.getElementById('pl-value');
+  const plCard = document.getElementById('pl-card');
+  plEl.textContent = (totalPnL >= 0 ? '+' : '') + '$' + totalPnL.toFixed(2);
+  if (totalPnL > 0) { plEl.className = 'pl-value positive'; plCard.className = 'pl-card positive'; }
+  else if (totalPnL < 0) { plEl.className = 'pl-value negative'; plCard.className = 'pl-card negative'; }
+  else { plEl.className = 'pl-value zero'; plCard.className = 'pl-card zero'; }
+
+  // Loss gauge
+  const maxRisk = state.maxDailyRisk > 0 ? state.maxDailyRisk : acct * 0.02;
+  const lossPct = (losses / acct) * 100;
+  const lossCeilingPct = (maxRisk / acct) * 100;
+  const lossFill = Math.min((losses / maxRisk) * 100, 100);
+  document.getElementById('gauge-loss-name').textContent = `Daily Loss vs Ceiling ($${maxRisk.toLocaleString()})`;
+  document.getElementById('gauge-loss-val').textContent = lossPct.toFixed(2) + '%';
+  document.getElementById('gauge-loss-fill').style.width = lossFill + '%';
+  const lossColor = losses >= maxRisk ? 'red' : losses >= maxRisk * 0.5 ? 'amber' : 'green';
+  document.getElementById('gauge-loss-fill').className = `gauge-fill ${lossColor}`;
+  document.getElementById('gauge-loss-val').style.color = lossColor === 'green' ? 'var(--green)' : lossColor === 'amber' ? 'var(--amber)' : 'var(--red)';
+
+  // Consistency gauge
+  const targetGain = state.dailyTarget;
+  const consistPct = targetGain > 0 ? Math.min((totalPnL / targetGain) * 100, 100) : 0;
+  const consistFill = Math.min((consistPct / 35) * 100, 100) * (totalPnL > 0 ? 1 : 0);
+  document.getElementById('gauge-consist-val').textContent = consistPct.toFixed(1) + '%';
+  document.getElementById('gauge-consist-fill').style.width = consistFill + '%';
+  const consistColor = consistPct > 35 ? 'amber' : 'green';
+  document.getElementById('gauge-consist-fill').className = `gauge-fill ${consistColor}`;
+  document.getElementById('gauge-consist-val').style.color = consistColor === 'green' ? 'var(--green)' : 'var(--amber)';
+
+  // Trades gauge
+  const tradeCount = closedTrades.length;
+  const tradesFill = (tradeCount / 3) * 100;
+  document.getElementById('gauge-trades-val').textContent = `${tradeCount} / 3`;
+  document.getElementById('gauge-trades-fill').style.width = tradesFill + '%';
+  const tradesColor = tradeCount >= 3 ? 'red' : tradeCount >= 2 ? 'amber' : 'green';
+  document.getElementById('gauge-trades-fill').className = `gauge-fill ${tradesColor}`;
+  document.getElementById('gauge-trades-val').style.color = tradesColor === 'green' ? 'var(--green)' : tradesColor === 'amber' ? 'var(--amber)' : 'var(--red)';
+
+  // Rail
+  document.getElementById('text-trade-limit').textContent = `Trades ${tradeCount}/3`;
+  document.getElementById('dot-trade-limit').className = `rule-dot ${tradesColor === 'red' ? 'stop' : tradesColor === 'amber' ? 'warn' : 'ok'}`;
+
+  document.getElementById('text-daily-loss').textContent = `Loss ${lossPct.toFixed(1)}%`;
+  document.getElementById('dot-daily-loss').className = `rule-dot ${losses >= maxRisk ? 'stop' : losses >= maxRisk * 0.5 ? 'warn' : 'ok'}`;
+
+  const consistOk = consistPct <= 35 || totalPnL <= 0;
+  document.getElementById('text-consistency').textContent = `Daily PnL ${consistPct.toFixed(0)}%`;
+  document.getElementById('dot-consistency').className = `rule-dot ${consistOk ? 'ok' : 'warn'}`;
+  document.getElementById('rule-consistency').className = `rule-item ${consistOk ? 'satisfied' : ''}`;
+
+  // Trade slots
+  for (let i = 1; i <= 3; i++) {
+    const slot = document.getElementById(`slot-${i}`);
+    if (i <= tradeCount) {
+      const trade = closedTrades[i - 1];
+      slot.className = 'trade-slot ' + (trade && trade.status === 'win' ? 'used' : 'locked');
+      slot.textContent = trade ? (trade.status === 'win' ? '✓' : '✗') : `T${i}`;
+    } else if (trades.some(t => t.status === 'open') && i === tradeCount + 1) {
+      slot.className = 'trade-slot active';
+      slot.textContent = 'LIVE';
+    } else {
+      slot.className = 'trade-slot open';
+      slot.textContent = `T${i}`;
+    }
+  }
+  const remaining = Math.max(0, 3 - tradeCount);
+  document.getElementById('counter-note').textContent = `${tradeCount} setup${tradeCount !== 1 ? 's' : ''} taken · ${remaining} remaining today`;
+
+  // Warning
+  if (losses >= maxRisk) {
+    showWarning(`Daily loss ceiling of $${maxRisk.toLocaleString()} reached. Close the platform. Zero re-entries for today.`, false);
+    document.getElementById('rule-daily-loss').className = 'rule-item violated';
+  } else if (tradeCount >= 3) {
+    showWarning('Daily trade limit of 3 reached. No further entries permitted today.', true);
+    document.getElementById('rule-trade-limit').className = 'rule-item violated';
+  } else {
+    document.getElementById('warning-banner').classList.add('hidden');
+    document.getElementById('rule-daily-loss').className = 'rule-item satisfied';
+    document.getElementById('rule-trade-limit').className = 'rule-item satisfied';
+  }
+
+  // Checks
+  state.checks.trades = tradeCount < 3;
+  evalGate();
+}
+
+function showWarning(text, isAmber) {
+  const el = document.getElementById('warning-banner');
+  el.classList.remove('hidden', 'amber');
+  if (isAmber) el.classList.add('amber');
+  document.getElementById('warning-text').textContent = text;
+}
+
+// ── PSYCHOLOGY ──
+function openPsychModal() {
+  document.getElementById('psych-focus-input').value = state.psychScores.focus;
+  document.getElementById('psych-disc-input').value = state.psychScores.discipline;
+  document.getElementById('psych-sent-input').value = state.psychScores.sentiment;
+  updatePsychPreview();
+  document.getElementById('psych-modal').classList.add('open');
+}
+
+function updatePsychPreview() {
+  const f = parseInt(document.getElementById('psych-focus-input').value);
+  const d = parseInt(document.getElementById('psych-disc-input').value);
+  const s = parseInt(document.getElementById('psych-sent-input').value);
+  document.getElementById('psych-focus-preview').textContent = f;
+  document.getElementById('psych-disc-preview').textContent = d;
+  document.getElementById('psych-sent-preview').textContent = s;
+  const composite = Math.round((f + d + s) / 3);
+  const compEl = document.getElementById('psych-composite');
+  compEl.textContent = composite;
+  const verdEl = document.getElementById('psych-verdict-preview');
+  if (composite >= 60) {
+    compEl.style.color = 'var(--green)';
+    verdEl.textContent = 'Cleared to trade';
+    verdEl.style.color = 'var(--green)';
+  } else {
+    compEl.style.color = 'var(--red)';
+    verdEl.textContent = 'Sit out today — threshold not met';
+    verdEl.style.color = 'var(--red)';
+  }
+}
+
+function savePsych() {
+  state.psychScores.focus = parseInt(document.getElementById('psych-focus-input').value);
+  state.psychScores.discipline = parseInt(document.getElementById('psych-disc-input').value);
+  state.psychScores.sentiment = parseInt(document.getElementById('psych-sent-input').value);
+  renderPsychStrip();
+  closeModal('psych-modal');
+}
+
+function renderPsychStrip() {
+  const { focus, discipline, sentiment } = state.psychScores;
+  const composite = Math.round((focus + discipline + sentiment) / 3);
+  const setBar = (id, val) => {
+    const color = val >= 60 ? 'var(--green)' : val >= 40 ? 'var(--amber)' : 'var(--red)';
+    document.getElementById(`psych-${id}-bar`).style.width = val + '%';
+    document.getElementById(`psych-${id}-bar`).style.background = color;
+    document.getElementById(`psych-${id}-val`).textContent = val;
+    document.getElementById(`psych-${id}-val`).style.color = color;
+  };
+  setBar('focus', focus);
+  setBar('discipline', discipline);
+  setBar('sentiment', sentiment);
+  const verdict = document.getElementById('psych-verdict');
+  if (composite >= 60) {
+    verdict.textContent = 'CLEARED TO TRADE';
+    verdict.className = 'psych-verdict trade';
+    document.getElementById('rule-psych').className = 'rule-item satisfied';
+  } else {
+    verdict.textContent = 'SIT OUT TODAY';
+    verdict.className = 'psych-verdict sit-out';
+    document.getElementById('rule-psych').className = 'rule-item violated';
+  }
+}
+renderPsychStrip();
+</script>
+</body>
+</html>
