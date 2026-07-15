@@ -608,10 +608,33 @@ footer {
     <script src="https://elevenlabs.io/player/audioNativeHelper.js" type="text/javascript"></script>
   </div>
   <div class="btn-group">
-    <a href="/snipertrader_workshop.html"><button><b>SNIPERTRADER'S 30 DAYS WORKSHOP</b></button></a>
-    <a href="/sniper_pl_widget.html"><button><b>SNIPERTRADER'S PROFIT & LOSS WIDGET</b></button></a>
+    <button onclick="openPopup('/snipertrader_workshop.html', 'Workshop', 1024, 800)"><b>SNIPERTRADER'S 30 DAYS WORKSHOP</b></button>
+    <button onclick="openPopup('/sniper_pl_widget.html', 'P&L Widget', 900, 700)"><b>SNIPERTRADER'S PROFIT & LOSS WIDGET</b></button>
   </div>
 </div>
+
+<script>
+// ── POPUP WINDOW FUNCTION ──────────────────────────────────────
+function openPopup(url, title, width, height) {
+  // Calculate center position
+  const left = (screen.width - width) / 2;
+  const top = (screen.height - height) / 2;
+  
+  // Open popup window with specified dimensions
+  const popup = window.open(
+    url,
+    title,
+    `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes,toolbar=no,menubar=no,status=no,location=no`
+  );
+  
+  // Focus the popup if it was already open
+  if (popup) {
+    popup.focus();
+  } else {
+    alert('Please allow popups for this site to open the window.');
+  }
+}
+</script>
 
 <!-- ── TABS ── -->
 <div class="tabs" id="main-tabs">
