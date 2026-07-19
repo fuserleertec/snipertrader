@@ -1,0 +1,1019 @@
+Here is a redesigned version of the trading journal. I focused on improving the visual hierarchy, refining the color palette, and making the user experience more intuitive and polished.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>SniperTrader · Journal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --bg: #0b0b0f;
+      --surface: #13131a;
+      --surface2: #1b1b26;
+      --border: #2a2a38;
+      --border-light: #3a3a4a;
+      --muted: #4e4e62;
+      --sub: #7a7a92;
+      --text: #f0f0f5;
+      --lime: #b5f13a;
+      --lime-dim: rgba(181, 241, 58, 0.08);
+      --lime-glow: rgba(181, 241, 58, 0.2);
+      --red: #ff4d6d;
+      --red-dim: rgba(255, 77, 109, 0.08);
+      --red-glow: rgba(255, 77, 109, 0.25);
+      --amber: #f7b731;
+      --amber-dim: rgba(247, 183, 49, 0.08);
+      --mono: 'DM Mono', monospace;
+      --sans: 'Inter', sans-serif;
+    }
+
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      line-height: 1.4;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 420px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 0 0 140px 0;
+      position: relative;
+    }
+
+    /* ── TOP BAR ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 20px 14px;
+    }
+    .topbar-brand {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--sub);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .topbar-brand span { color: var(--lime); font-weight: 600; }
+    .topbar-date {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--sub);
+      background: var(--surface);
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+    .topbar-reset {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .topbar-reset:hover { color: var(--red); border-color: var(--red); background: var(--red-dim); }
+
+    /* ── SCORE RING ── */
+    .score-zone {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 20px 20px;
+    }
+    .ring-wrap {
+      position: relative;
+      width: 160px;
+      height: 160px;
+    }
+    .ring-svg {
+      width: 160px;
+      height: 160px;
+      transform: rotate(-90deg);
+    }
+    .ring-track {
+      fill: none;
+      stroke: var(--surface2);
+      stroke-width: 8;
+    }
+    .ring-fill {
+      fill: none;
+      stroke: var(--lime);
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-dasharray: 440;
+      stroke-dashoffset: 440;
+      transition: stroke-dashoffset 0.8s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.4s;
+      filter: drop-shadow(0 0 10px var(--lime-glow));
+    }
+    .ring-fill.negative {
+      stroke: var(--red);
+      filter: drop-shadow(0 0 10px var(--red-glow));
+    }
+    .ring-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+    }
+    .ring-score {
+      font-family: var(--mono);
+      font-size: 40px;
+      font-weight: 600;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      color: var(--lime);
+      transition: color 0.4s;
+    }
+    .ring-score.negative { color: var(--red); }
+    .ring-score.neutral { color: var(--muted); }
+    .ring-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--sub);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    /* ── STAT ROW ── */
+    .stat-row {
+      display: flex;
+      width: 100%;
+      gap: 6px;
+      margin-top: 14px;
+      padding: 0 20px;
+    }
+    .stat-pill {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 4px;
+      text-align: center;
+      backdrop-filter: blur(4px);
+    }
+    .stat-pill-val {
+      font-family: var(--mono);
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+      line-height: 1.2;
+    }
+    .stat-pill-val.green { color: var(--lime); }
+    .stat-pill-val.red   { color: var(--red); }
+    .stat-pill-val.amber { color: var(--amber); }
+    .stat-pill-label {
+      font-size: 9px;
+      color: var(--sub);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-top: 3px;
+    }
+
+    /* ── LIMIT BARS ── */
+    .limits-block {
+      margin: 14px 20px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .limit-bar-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: border-color 0.3s, background 0.2s;
+    }
+    .limit-bar-wrap.locked {
+      border-color: var(--red);
+      background: var(--red-dim);
+    }
+    .limit-bar-label {
+      font-size: 10px;
+      color: var(--sub);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      font-family: var(--mono);
+      min-width: 48px;
+    }
+    .limit-track {
+      flex: 1;
+      height: 4px;
+      background: var(--surface2);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .limit-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: var(--lime);
+      transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s;
+    }
+    .limit-fill.amber { background: var(--amber); }
+    .limit-fill.red   { background: var(--red); }
+    .limit-count {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--sub);
+      white-space: nowrap;
+    }
+    .limit-count span { color: var(--text); }
+    .limit-cap-wrap {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .limit-cap-prefix {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--sub);
+    }
+    .limit-cap-input {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 3px 6px;
+      width: 50px;
+      outline: none;
+      text-align: center;
+      -moz-appearance: textfield;
+      transition: border-color 0.2s;
+    }
+    .limit-cap-input::-webkit-outer-spin-button,
+    .limit-cap-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .limit-cap-input:focus { border-color: var(--lime); }
+
+    /* ── LOCK BANNER ── */
+    .lock-banner {
+      margin: 10px 20px 0;
+      background: var(--red-dim);
+      border: 1px solid rgba(255, 77, 109, 0.4);
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: none;
+      align-items: center;
+      gap: 12px;
+      animation: slide-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .lock-banner.show { display: flex; }
+    .lock-icon { font-size: 18px; flex-shrink: 0; }
+    .lock-text { flex: 1; }
+    .lock-title {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--red);
+      letter-spacing: 0.04em;
+    }
+    .lock-sub {
+      font-size: 10px;
+      color: rgba(255, 77, 109, 0.6);
+      margin-top: 2px;
+      font-family: var(--mono);
+    }
+    .lock-dismiss {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--red);
+      background: none;
+      border: 1px solid rgba(255, 77, 109, 0.3);
+      border-radius: 20px;
+      padding: 4px 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .lock-dismiss:hover { background: rgba(255, 77, 109, 0.15); }
+
+    /* ── SECTION DIVIDER ── */
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 22px 20px 12px;
+    }
+    .section-title {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--sub);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .section-clear {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 12px;
+      transition: all 0.2s;
+    }
+    .section-clear:hover { color: var(--red); background: var(--red-dim); }
+
+    /* ── TRADE LIST ── */
+    .trade-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 0 20px;
+    }
+    .trade-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: slide-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: border-color 0.2s;
+    }
+    .trade-item.win  { border-left: 3px solid var(--lime); }
+    .trade-item.loss { border-left: 3px solid var(--red); }
+    .trade-item.be   { border-left: 3px solid var(--muted); }
+    .trade-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .trade-dot.win  { background: var(--lime); box-shadow: 0 0 8px var(--lime-glow); }
+    .trade-dot.loss { background: var(--red); box-shadow: 0 0 8px var(--red-glow); }
+    .trade-dot.be   { background: var(--muted); }
+    .trade-main { flex: 1; min-width: 0; }
+    .trade-pair {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      line-height: 1.2;
+    }
+    .trade-meta {
+      font-size: 10px;
+      color: var(--sub);
+      margin-top: 2px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .trade-tag {
+      background: var(--surface2);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--sub);
+      letter-spacing: 0.04em;
+      border: 1px solid var(--border);
+    }
+    .trade-right { text-align: right; flex-shrink: 0; }
+    .trade-pnl {
+      font-family: var(--mono);
+      font-size: 15px;
+      font-weight: 500;
+      line-height: 1;
+    }
+    .trade-pnl.win  { color: var(--lime); }
+    .trade-pnl.loss { color: var(--red); }
+    .trade-pnl.be   { color: var(--muted); }
+    .trade-delete {
+      background: none;
+      border: none;
+      color: var(--border);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px 4px 4px 8px;
+      line-height: 1;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      border-radius: 6px;
+    }
+    .trade-delete:hover { color: var(--red); background: var(--red-dim); }
+
+    .empty-state {
+      text-align: center;
+      padding: 36px 20px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+    .empty-state span { display: block; font-size: 32px; margin-bottom: 8px; }
+
+    /* ── BOTTOM SHEET ── */
+    .add-sheet {
+      position: fixed;
+      bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 420px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-radius: 24px 24px 0 0;
+      padding: 12px 20px 28px;
+      z-index: 50;
+      box-shadow: 0 -20px 60px rgba(0,0,0,0.8);
+      backdrop-filter: blur(8px);
+    }
+    .sheet-handle {
+      width: 40px; height: 4px;
+      background: var(--border);
+      border-radius: 4px;
+      margin: 0 auto 16px;
+    }
+
+    /* ── QUICK INPUT ROW ── */
+    .quick-row {
+      display: flex;
+      gap: 8px;
+      align-items: stretch;
+    }
+    .quick-pair {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      min-width: 0;
+    }
+    .quick-pair::placeholder { color: var(--sub); }
+    .quick-pair:focus { border-color: var(--lime); box-shadow: 0 0 0 3px var(--lime-dim); }
+
+    .outcome-btns {
+      display: flex;
+      gap: 5px;
+    }
+    .outcome-btn {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 0 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--sub);
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .outcome-btn:hover { border-color: var(--border-light); color: var(--text); }
+    .outcome-btn.selected-win  { background: var(--lime-dim); border-color: var(--lime); color: var(--lime); }
+    .outcome-btn.selected-loss { background: var(--red-dim);  border-color: var(--red);  color: var(--red); }
+    .outcome-btn.selected-be   { background: var(--surface2); border-color: var(--muted); color: var(--text); }
+
+    /* ── NUMPAD ── */
+    .numpad-display {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin: 10px 0 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .numpad-display-val {
+      font-family: var(--mono);
+      font-size: 24px;
+      font-weight: 500;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+    .numpad-display-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--sub);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .numpad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .numpad-key {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 20px;
+      font-weight: 500;
+      height: 52px;
+      cursor: pointer;
+      transition: all 0.08s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .numpad-key:active { background: var(--border); transform: scale(0.94); }
+    .numpad-key.key-action { background: var(--lime-dim); border-color: rgba(181, 241, 58, 0.3); color: var(--lime); }
+    .numpad-key.key-action:active { background: rgba(181, 241, 58, 0.2); }
+    .numpad-key.key-del { font-size: 16px; color: var(--sub); }
+    .numpad-key.key-zero { grid-column: span 1; }
+
+    /* ── EXTRAS ROW ── */
+    .extras-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .extra-chip {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--sub);
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 7px 4px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.04em;
+    }
+    .extra-chip:hover { border-color: var(--border-light); color: var(--text); }
+    .extra-chip.selected { background: var(--surface2); border-color: var(--lime); color: var(--lime); }
+
+    /* ── LOG BUTTON ── */
+    .log-btn {
+      width: 100%;
+      background: var(--lime);
+      color: #0b0b0f;
+      border: none;
+      border-radius: 12px;
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .log-btn:hover:not(:disabled) { opacity: 0.85; transform: scale(0.98); }
+    .log-btn:active:not(:disabled) { transform: scale(0.96); }
+    .log-btn:disabled {
+      opacity: 0.2;
+      cursor: not-allowed;
+      background: var(--muted);
+      color: var(--text);
+    }
+
+    .scroll-area { overflow-y: auto; padding-bottom: 4px; }
+    .scroll-area::-webkit-scrollbar { display: none; }
+
+    @keyframes slide-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="topbar-brand"><span>ST</span> · Journal</div>
+    <div class="topbar-date" id="top-date"></div>
+    <button class="topbar-reset" onclick="confirmReset()">↻ Reset</button>
+  </div>
+
+  <!-- Score Ring -->
+  <div class="score-zone">
+    <div class="ring-wrap">
+      <svg class="ring-svg" viewBox="0 0 160 160">
+        <circle class="ring-track" cx="80" cy="80" r="66"/>
+        <circle class="ring-fill" id="ring-fill" cx="80" cy="80" r="66"/>
+      </svg>
+      <div class="ring-center">
+        <div class="ring-score neutral" id="ring-score">—</div>
+        <div class="ring-label" id="ring-label">Day Score</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stat Pills -->
+  <div class="stat-row">
+    <div class="stat-pill">
+      <div class="stat-pill-val" id="stat-pnl">$0</div>
+      <div class="stat-pill-label">Net P&L</div>
+    </div>
+    <div class="stat-pill">
+      <div class="stat-pill-val" id="stat-wr">—</div>
+      <div class="stat-pill-label">Win Rate</div>
+    </div>
+    <div class="stat-pill">
+      <div class="stat-pill-val" id="stat-rr">—</div>
+      <div class="stat-pill-label">Avg R:R</div>
+    </div>
+    <div class="stat-pill">
+      <div class="stat-pill-val" id="stat-grade">—</div>
+      <div class="stat-pill-label">Grade</div>
+    </div>
+  </div>
+
+  <!-- Limit Bars -->
+  <div class="limits-block">
+    <div class="limit-bar-wrap" id="setup-bar-wrap">
+      <div class="limit-bar-label">Setups</div>
+      <div class="limit-track">
+        <div class="limit-fill" id="limit-fill" style="width:0%"></div>
+      </div>
+      <div class="limit-count" id="limit-count"><span>0</span> / <span id="cap-display">3</span></div>
+      <div class="limit-cap-wrap">
+        <input class="limit-cap-input" type="number" id="setup-cap" value="3" min="1" max="10" oninput="onCapChange()" title="Daily setup limit">
+      </div>
+    </div>
+    <div class="limit-bar-wrap" id="loss-bar-wrap">
+      <div class="limit-bar-label">Loss</div>
+      <div class="limit-track">
+        <div class="limit-fill" id="loss-fill" style="width:0%"></div>
+      </div>
+      <div class="limit-count" id="loss-count">$<span id="loss-used">0</span> / $<span id="loss-cap-display">500</span></div>
+      <div class="limit-cap-wrap">
+        <span class="limit-cap-prefix">$</span>
+        <input class="limit-cap-input" type="number" id="loss-cap" value="500" min="1" step="50" oninput="onCapChange()" title="Daily loss limit">
+      </div>
+    </div>
+  </div>
+
+  <!-- Lock Banner -->
+  <div class="lock-banner" id="lock-banner">
+    <div class="lock-icon">🔒</div>
+    <div class="lock-text">
+      <div class="lock-title" id="lock-title">DAILY LIMIT REACHED</div>
+      <div class="lock-sub" id="lock-sub">Close the platform. No re-entries today.</div>
+    </div>
+    <button class="lock-dismiss" onclick="dismissLock()">Override</button>
+  </div>
+
+  <!-- Trade Log -->
+  <div class="section-head">
+    <div class="section-title">Today's Trades</div>
+    <button class="section-clear" id="clear-btn" onclick="clearTrades()" style="display:none">✕ Clear all</button>
+  </div>
+
+  <div class="scroll-area">
+    <div class="trade-list" id="trade-list">
+      <div class="empty-state">
+        <span>📈</span>
+        No trades logged yet.<br>Enter your first setup below.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── BOTTOM SHEET ── -->
+<div class="add-sheet">
+  <div class="sheet-handle"></div>
+
+  <div class="quick-row">
+    <input class="quick-pair" type="text" id="inp-pair" placeholder="NQ · ES · EUR/USD" maxlength="14" autocomplete="off" autocorrect="off" spellcheck="false">
+    <div class="outcome-btns">
+      <button class="outcome-btn" id="btn-win"  onclick="selectOutcome('win')">W</button>
+      <button class="outcome-btn" id="btn-loss" onclick="selectOutcome('loss')">L</button>
+      <button class="outcome-btn" id="btn-be"   onclick="selectOutcome('be')">BE</button>
+    </div>
+  </div>
+
+  <div class="numpad-display">
+    <div class="numpad-display-val" id="numpad-val">$0</div>
+    <div class="numpad-display-label">P&L</div>
+  </div>
+
+  <div class="numpad">
+    <button class="numpad-key" onclick="numKey('1')">1</button>
+    <button class="numpad-key" onclick="numKey('2')">2</button>
+    <button class="numpad-key" onclick="numKey('3')">3</button>
+    <button class="numpad-key" onclick="numKey('4')">4</button>
+    <button class="numpad-key" onclick="numKey('5')">5</button>
+    <button class="numpad-key" onclick="numKey('6')">6</button>
+    <button class="numpad-key" onclick="numKey('7')">7</button>
+    <button class="numpad-key" onclick="numKey('8')">8</button>
+    <button class="numpad-key" onclick="numKey('9')">9</button>
+    <button class="numpad-key" onclick="numKey('.')">.</button>
+    <button class="numpad-key key-zero" onclick="numKey('0')">0</button>
+    <button class="numpad-key key-del"  onclick="numDel()">⌫</button>
+  </div>
+
+  <div class="extras-row">
+    <div class="extra-chip" onclick="selectSetup(this,'OB')">OB</div>
+    <div class="extra-chip" onclick="selectSetup(this,'FVG')">FVG</div>
+    <div class="extra-chip" onclick="selectSetup(this,'CHoCH')">CHoCH</div>
+    <div class="extra-chip" onclick="selectSetup(this,'BOS')">BOS</div>
+    <div class="extra-chip" onclick="selectSetup(this,'—')">—</div>
+  </div>
+
+  <button class="log-btn" id="log-btn" onclick="logTrade()" disabled>Log Trade</button>
+</div>
+
+<script>
+// ── STATE ──
+const S = {
+  trades: [],
+  outcome: null,
+  setup: '—',
+  numStr: '',
+  setupCap: 3,
+  lossCap: 500,
+  locked: false,
+  lockReason: null,
+};
+
+function onCapChange() {
+  S.setupCap = Math.max(1, parseInt(document.getElementById('setup-cap').value) || 3);
+  S.lossCap  = Math.max(1, parseFloat(document.getElementById('loss-cap').value) || 500);
+  render();
+}
+
+function dismissLock() {
+  S.locked = false;
+  S.lockReason = null;
+  document.getElementById('lock-banner').classList.remove('show');
+  checkLogReady();
+}
+
+function init() {
+  const now = new Date();
+  document.getElementById('top-date').textContent =
+    now.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+  render();
+}
+
+// ── NUMPAD ──
+function numKey(k) {
+  if (k === '.' && S.numStr.includes('.')) return;
+  if (S.numStr === '0' && k !== '.') S.numStr = k;
+  else S.numStr += k;
+  if (S.numStr.length > 8) S.numStr = S.numStr.slice(0, 8);
+  updateNumDisplay();
+  checkLogReady();
+}
+function numDel() {
+  S.numStr = S.numStr.slice(0, -1);
+  updateNumDisplay();
+  checkLogReady();
+}
+function updateNumDisplay() {
+  const raw = parseFloat(S.numStr) || 0;
+  const sign = S.outcome === 'loss' ? '-' : '';
+  document.getElementById('numpad-val').textContent =
+    S.numStr ? sign + '$' + S.numStr : '$0';
+}
+
+function selectOutcome(o) {
+  S.outcome = o;
+  ['win','loss','be'].forEach(x => {
+    document.getElementById('btn-' + x).className = 'outcome-btn' +
+      (x === o ? ' selected-' + x : '');
+  });
+  updateNumDisplay();
+  checkLogReady();
+}
+
+function selectSetup(el, tag) {
+  document.querySelectorAll('.extra-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  S.setup = tag;
+}
+
+function checkLogReady() {
+  const ready = !S.locked && S.outcome && S.numStr.length > 0;
+  document.getElementById('log-btn').disabled = !ready;
+}
+
+function logTrade() {
+  if (S.locked || S.trades.length >= S.setupCap) return;
+  const amt = parseFloat(S.numStr) || 0;
+  const sign = S.outcome === 'loss' ? -1 : S.outcome === 'be' ? 0 : 1;
+  const pnl = amt * sign;
+  const pair = document.getElementById('inp-pair').value.trim().toUpperCase() || 'SETUP';
+  const now = new Date();
+  const time = now.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', hour12:false });
+
+  S.trades.push({ pair, pnl, outcome: S.outcome, setup: S.setup, time, id: Date.now() });
+
+  S.numStr = '';
+  S.outcome = null;
+  S.setup = '—';
+  document.getElementById('inp-pair').value = '';
+  document.getElementById('numpad-val').textContent = '$0';
+  ['win','loss','be'].forEach(x => document.getElementById('btn-'+x).className = 'outcome-btn');
+  document.querySelectorAll('.extra-chip').forEach(c => c.classList.remove('selected'));
+  document.getElementById('log-btn').disabled = true;
+
+  render();
+}
+
+function deleteTrade(id) {
+  S.trades = S.trades.filter(t => t.id !== id);
+  render();
+}
+
+function clearTrades() {
+  if (S.trades.length === 0) return;
+  if (confirm('Clear all trades for today?')) {
+    S.trades = []; S.locked = false; S.lockReason = null;
+    document.getElementById('lock-banner').classList.remove('show');
+    render();
+  }
+}
+
+function confirmReset() {
+  if (confirm('Reset the entire day?')) {
+    S.trades = []; S.locked = false; S.lockReason = null;
+    document.getElementById('lock-banner').classList.remove('show');
+    render();
+  }
+}
+
+// ── SCORE ──
+function calcScore() {
+  const trades = S.trades;
+  if (!trades.length) return { score: null, grade: null, winRate: null, avgRR: null, netPnL: 0 };
+
+  const wins   = trades.filter(t => t.outcome === 'win').length;
+  const losses = trades.filter(t => t.outcome === 'loss').length;
+  const bes    = trades.filter(t => t.outcome === 'be').length;
+  const total  = trades.length;
+  const netPnL = trades.reduce((s, t) => s + t.pnl, 0);
+
+  const winRate = total > 0 ? ((wins + bes * 0.5) / total) * 100 : 0;
+  let score = Math.round(winRate);
+  if (netPnL > 0) score = Math.min(100, score + 10);
+  if (netPnL < 0 && losses === total) score = Math.max(0, score - 15);
+  if (wins === total && total >= 2) score = Math.min(100, score + 5);
+
+  const grade = score >= 90 ? 'S' : score >= 75 ? 'A' : score >= 60 ? 'B' : score >= 40 ? 'C' : 'F';
+  const totalWin  = trades.filter(t=>t.pnl>0).reduce((s,t)=>s+t.pnl,0);
+  const totalLoss = trades.filter(t=>t.pnl<0).reduce((s,t)=>s+Math.abs(t.pnl),0);
+  const avgRR = totalLoss > 0 ? (totalWin / totalLoss).toFixed(1) : wins > 0 ? '∞' : null;
+
+  return { score, grade, winRate: Math.round(winRate), avgRR, netPnL };
+}
+
+function render() {
+  const { score, grade, winRate, avgRR, netPnL } = calcScore();
+  const trades = S.trades;
+  const count  = trades.length;
+  const CIRC   = 415;
+
+  const ring   = document.getElementById('ring-fill');
+  const ringN  = document.getElementById('ring-score');
+  const ringL  = document.getElementById('ring-label');
+
+  if (score === null) {
+    ring.style.strokeDashoffset = CIRC;
+    ring.className = 'ring-fill';
+    ringN.textContent = '—';
+    ringN.className = 'ring-score neutral';
+    ringL.textContent = 'Day Score';
+  } else {
+    const offset = CIRC - (CIRC * score / 100);
+    ring.style.strokeDashoffset = offset;
+    ring.className = 'ring-fill' + (netPnL < 0 ? ' negative' : '');
+    ringN.textContent = score;
+    ringN.className = 'ring-score' + (netPnL < 0 ? ' negative' : '');
+    ringL.textContent = grade ? 'Grade ' + grade : 'Day Score';
+  }
+
+  const pnlEl = document.getElementById('stat-pnl');
+  const pnlStr = netPnL === 0 ? '$0' : (netPnL > 0 ? '+$' : '-$') + Math.abs(netPnL).toFixed(0);
+  pnlEl.textContent = pnlStr;
+  pnlEl.className = 'stat-pill-val' + (netPnL > 0 ? ' green' : netPnL < 0 ? ' red' : '');
+
+  document.getElementById('stat-wr').textContent = winRate !== null ? winRate + '%' : '—';
+  document.getElementById('stat-rr').textContent = avgRR || '—';
+
+  const gradeEl = document.getElementById('stat-grade');
+  if (grade) {
+    gradeEl.innerHTML = `<span class="grade-badge grade-${grade}" style="font-family:var(--mono);font-size:13px;font-weight:600;background:var(--surface2);padding:2px 10px;border-radius:20px;border:1px solid var(--border);color:var(--text);">${grade}</span>`;
+  } else {
+    gradeEl.textContent = '—';
+    gradeEl.className = 'stat-pill-val';
+  }
+
+  // Setups bar
+  const cap = S.setupCap;
+  const setupPct = Math.min((count / cap) * 100, 100);
+  const limitFill = document.getElementById('limit-fill');
+  limitFill.style.width = setupPct + '%';
+  limitFill.className = 'limit-fill' + (count >= cap ? ' red' : count >= cap - 1 ? ' amber' : '');
+  document.getElementById('limit-count').innerHTML = `<span>${count}</span> / <span id="cap-display">${cap}</span>`;
+  document.getElementById('setup-bar-wrap').classList.toggle('locked', count >= cap);
+
+  // Loss bar
+  const totalLoss = trades.reduce((s,t) => s + (t.pnl < 0 ? Math.abs(t.pnl) : 0), 0);
+  const lossCap = S.lossCap;
+  const lossPct = Math.min((totalLoss / lossCap) * 100, 100);
+  const lossFill = document.getElementById('loss-fill');
+  lossFill.style.width = lossPct + '%';
+  lossFill.className = 'limit-fill' + (totalLoss >= lossCap ? ' red' : totalLoss >= lossCap * 0.6 ? ' amber' : '');
+  document.getElementById('loss-used').textContent = totalLoss.toFixed(0);
+  document.getElementById('loss-cap-display').textContent = lossCap.toFixed(0);
+  document.getElementById('loss-bar-wrap').classList.toggle('locked', totalLoss >= lossCap);
+
+  // Lock
+  const tradeLocked = count >= cap;
+  const lossLocked  = totalLoss >= lossCap;
+  const banner = document.getElementById('lock-banner');
+
+  if (lossLocked && !tradeLocked) {
+    S.locked = true; S.lockReason = 'loss';
+    document.getElementById('lock-title').textContent = 'DAILY LOSS LIMIT HIT';
+    document.getElementById('lock-sub').textContent = `$${totalLoss.toFixed(0)} lost — platform locked. Close your positions.`;
+    banner.classList.add('show');
+  } else if (tradeLocked) {
+    S.locked = true; S.lockReason = 'trades';
+    document.getElementById('lock-title').textContent = 'SETUP LIMIT REACHED';
+    document.getElementById('lock-sub').textContent = `${cap} trade${cap !== 1 ? 's' : ''} logged. Done for the day.`;
+    banner.classList.add('show');
+  } else if (!S.locked) {
+    banner.classList.remove('show');
+  }
+
+  const logBtn = document.getElementById('log-btn');
+  if (S.locked) {
+    logBtn.disabled = true;
+    logBtn.textContent = lossLocked ? '🔒 Loss Limit Locked' : '🔒 Setup Limit Reached';
+  } else {
+    logBtn.textContent = 'Log Trade';
+    checkLogReady();
+  }
+
+  document.getElementById('clear-btn').style.display = count > 0 ? '' : 'none';
+
+  const list = document.getElementById('trade-list');
+  if (!trades.length) {
+    list.innerHTML = `<div class="empty-state"><span>📈</span>No trades logged yet.<br>Enter your first setup below.</div>`;
+    return;
+  }
+  list.innerHTML = trades.map(t => {
+    const pStr = t.pnl === 0 ? 'BE' : (t.pnl > 0 ? '+$' : '-$') + Math.abs(t.pnl).toFixed(2);
+    return `
+    <div class="trade-item ${t.outcome}">
+      <div class="trade-dot ${t.outcome}"></div>
+      <div class="trade-main">
+        <div class="trade-pair">${t.pair}</div>
+        <div class="trade-meta">
+          <span>${t.time}</span>
+          <span class="trade-tag">${t.setup}</span>
+        </div>
+      </div>
+      <div class="trade-right">
+        <div class="trade-pnl ${t.outcome}">${pStr}</div>
+      </div>
+      <button class="trade-delete" onclick="deleteTrade(${t.id})">×</button>
+    </div>`;
+  }).join('');
+}
+
+init();
+</script>
+</body>
+</html>
+```
