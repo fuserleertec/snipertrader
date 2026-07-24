@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kronos Foundation Model — OHLCV K-Line Forecasting | SniperTrader.ai</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Space+Mono:wght@400;700&family=Syne:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --obs:#020408;--obs2:#06090F;--obs3:#0A1018;--obs4:#111820;--obs5:#1A2230;
+  --cyan:#00D4FF;--cyan2:#00A8CC;--cyan-dim:rgba(0,212,255,0.10);
+  --gold:#F0C040;--gold2:#C9A84C;--gold-dim:rgba(240,192,64,0.10);
+  --red:#FF4455;--red-dim:rgba(255,68,85,0.10);
+  --green:#00FF88;--green-dim:rgba(0,255,136,0.08);
+  --emerald:#00E5A0;--emerald-dim:rgba(0,229,160,0.09);
+  --text:#FFFFFF;--text2:#DCE8F2;--text3:#9BB5C8;--text4:#5A7888;
+  --border:rgba(0,229,160,0.13);--border2:rgba(0,229,160,0.26);
+  --border-cyan:rgba(0,212,255,0.14);
+  --gold-border:rgba(240,192,64,0.18);
+  --nav-bg:rgba(2,4,8,0.94);
+}
+body.light-mode{
+  --obs:#F0F4F8;--obs2:#E4EBF2;--obs3:#D8E2EC;--obs4:#C8D4DF;--obs5:#B8C8D6;
+  --text:#070E18;--text2:#12243A;--text3:#2A4460;--text4:#4A6278;
+  --border:rgba(0,150,110,0.18);--border2:rgba(0,150,110,0.35);
+  --border-cyan:rgba(0,150,200,0.18);
+  --nav-bg:rgba(240,244,248,0.96);
+  --emerald:#008F6A;--cyan:#0080AA;--gold:#9A6E00;--red:#C02030;--green:#007A44;
+  --emerald-dim:rgba(0,180,130,0.12);
+  --cyan-dim:rgba(0,160,200,0.12);
+  --gold-dim:rgba(160,120,0,0.10);
+  --red-dim:rgba(200,50,60,0.08);
+  --green-dim:rgba(0,160,80,0.10);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--obs);color:var(--text);font-family:'Syne',sans-serif;overflow-x:hidden;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.4;}
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;padding:16px 48px;display:flex;align-items:center;justify-content:space-between;background:var(--nav-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+.nav-logo{font-family:'Orbitron',sans-serif;font-weight:900;font-size:15px;letter-spacing:3px;color:var(--text);text-decoration:none;}
+.nav-logo span{color:var(--emerald);}
+.nav-links{display:flex;gap:22px;align-items:center;}
+.nav-links a{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--text3);text-decoration:none;text-transform:uppercase;transition:color .2s;}
+.nav-links a:hover{color:var(--text);}
+.nav-links a.nav-pill{color:var(--emerald);border:1px solid var(--border2);padding:6px 12px;border-radius:20px;}
+.theme-toggle{background:var(--obs3);border:1px solid var(--border2);border-radius:20px;padding:6px 14px;font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:7px;letter-spacing:1px;}
+.theme-toggle:hover{border-color:var(--emerald);color:var(--emerald);}
+/* LAYOUT */
+.wrap{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:110px 28px 60px;}
+.hero-h1{font-family:'Orbitron',sans-serif;font-weight:900;font-size:40px;letter-spacing:2px;line-height:1.05;margin-bottom:10px;}
+.hero-h1 span{background:linear-gradient(90deg,var(--emerald),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-sub{color:var(--text3);font-size:14px;max-width:760px;line-height:1.6;margin-bottom:6px;}
+.tag{display:inline-block;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--emerald);border:1px solid var(--border2);padding:4px 10px;border-radius:20px;margin-bottom:18px;text-transform:uppercase;}
+.grid{display:grid;grid-template-columns:340px 1fr;gap:24px;margin-top:26px;align-items:start;}
+@media(max-width:980px){.grid{grid-template-columns:1fr;}}
+.panel{background:linear-gradient(145deg,var(--obs3),var(--obs2));border:1px solid var(--border);border-radius:16px;padding:20px;}
+.panel h3{font-family:'Orbitron',sans-serif;font-size:12px;letter-spacing:2px;color:var(--text2);text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.panel h3::before{content:'';width:8px;height:8px;border-radius:2px;background:var(--emerald);box-shadow:0 0 10px var(--emerald);}
+/* CONTEXT MONITOR */
+.ctx-bar-track{height:14px;border-radius:8px;background:var(--obs4);overflow:hidden;border:1px solid var(--border);position:relative;}
+.ctx-bar-fill{height:100%;width:0%;border-radius:8px;transition:width .25s ease,background .25s ease;background:var(--emerald);box-shadow:0 0 14px rgba(0,229,160,.5);}
+.ctx-stats{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:11px;margin-top:10px;color:var(--text3);}
+.ctx-stats b{color:var(--text);}
+.ctx-status{margin-top:12px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;padding:6px 10px;border-radius:8px;text-align:center;text-transform:uppercase;}
+.st-ok{background:var(--emerald-dim);color:var(--emerald);border:1px solid var(--border2);}
+.st-warn{background:var(--gold-dim);color:var(--gold);border:1px solid rgba(240,192,64,.3);}
+.st-crit{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,68,85,.4);}
+.ctx-note{font-size:11px;color:var(--text4);margin-top:10px;line-height:1.5;}
+/* CONTROLS */
+.ctrl{margin-bottom:18px;}
+.ctrl label{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--text3);text-transform:uppercase;margin-bottom:7px;}
+.ctrl label b{color:var(--emerald);}
+input[type=range]{-webkit-appearance:none;width:100%;height:4px;border-radius:4px;background:var(--obs4);outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--emerald);cursor:pointer;box-shadow:0 0 10px rgba(0,229,160,.6);border:2px solid var(--obs);}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--emerald);cursor:pointer;border:2px solid var(--obs);}
+.run-btn{width:100%;margin-top:6px;padding:13px;border-radius:12px;border:1px solid var(--emerald);background:linear-gradient(90deg,var(--emerald-dim),var(--cyan-dim));color:var(--text);font-family:'Orbitron',sans-serif;font-weight:700;font-size:12px;letter-spacing:2px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+.run-btn:hover{box-shadow:0 0 24px rgba(0,229,160,.35);transform:translateY(-1px);}
+.run-btn:active{transform:translateY(0);}
+/* CHART */
+.chart-shell{position:relative;height:440px;width:100%;}
+.chart-panel{display:flex;flex-direction:column;}
+.readout{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px;}
+@media(max-width:680px){.readout{grid-template-columns:repeat(2,1fr);}}
+.stat{background:var(--obs3);border:1px solid var(--border);border-radius:12px;padding:12px 14px;}
+.stat .k{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--text4);text-transform:uppercase;}
+.stat .v{font-family:'Orbitron',sans-serif;font-size:18px;margin-top:6px;}
+.v.pos{color:var(--emerald);} .v.neg{color:var(--red);} .v.neu{color:var(--gold);}
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle;}
+.hover-readout{font-family:'Space Mono',monospace;font-size:11px;color:var(--text3);margin-top:14px;min-height:18px;line-height:1.6;}
+.hover-readout b{color:var(--text);}
+.foot{margin-top:40px;text-align:center;font-family:'Space Mono',monospace;font-size:10px;color:var(--text4);letter-spacing:1px;}
+.foot a{color:var(--text3);text-decoration:none;}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/index.html" class="nav-logo">SNIPER<span>TRADER</span></a>
+  <div class="nav-links">
+    <a href="/traderedge_baseline.html">Baseline</a>
+    <a href="/traderedge_guardrails.html">Guardrails</a>
+    <a href="/traderedge_review_loop.html">Review Loop</a>
+    <a href="/traderedge_ai_sentiment.html">Ai Sentiment</a>
+    <a href="/traderedge_chartai.html">Ai Chart</a>
+    <a href="/kronos_foundation.html" class="nav-pill">⬡ Kronos KFM</a>
+    <a href="/traderedge_prop_firms_command_center.html">Prop Firm Center</a>
+    <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle"><span class="tt-icon">🌙</span><span id="themeLabel">DARK</span></button>
+  </div>
+</nav>
+
+<div class="wrap">
+  <span class="tag">⬡ Kronos Foundation Model · v0.1 (reference sampler)</span>
+  <h1 class="hero-h1">OHLCV <span>K-Line Forecasting</span></h1>
+  <p class="hero-sub">Interactive probabilistic inference surface for the Kronos Foundation Model. Feed a historical OHLCV context window, then sample multiple forward price paths and inspect the median forecast with percentile confidence bands. Context length is monitored live against the <b>512-token</b> <code>max_context</code> ceiling.</p>
+
+  <div class="grid">
+    <!-- LEFT: context + controls -->
+    <div>
+      <div class="panel" style="margin-bottom:20px;">
+        <h3>Context Window Monitor</h3>
+        <div class="ctx-bar-track"><div class="ctx-bar-fill" id="ctxFill"></div></div>
+        <div class="ctx-stats">
+          <span>USED <b id="ctxUsed">0</b> tok</span>
+          <span>MAX <b>512</b> tok</span>
+          <span>FREE <b id="ctxFree">512</b> tok</span>
+        </div>
+        <div class="ctx-status st-ok" id="ctxStatus">● CONTEXT NOMINAL</div>
+        <div class="ctx-note">Estimated tokens = bars × 3.0 (OHLCV quantized). Exceeding 512 truncates the oldest bars before inference.</div>
+      </div>
+
+      <div class="panel">
+        <h3>Sampling Controls</h3>
+        <div class="ctrl">
+          <label>Context Bars <b id="vBars">80</b></label>
+          <input type="range" id="sBars" min="8" max="200" step="1" value="80">
+        </div>
+        <div class="ctrl">
+          <label>Forecast Horizon <b id="vHorizon">24</b></label>
+          <input type="range" id="sHorizon" min="4" max="60" step="1" value="24">
+        </div>
+        <div class="ctrl">
+          <label>Sampled Paths <b id="vPaths">16</b></label>
+          <input type="range" id="sPaths" min="1" max="64" step="1" value="16">
+        </div>
+        <div class="ctrl">
+          <label>Temperature <b id="vTemp">1.00</b></label>
+          <input type="range" id="sTemp" min="0.1" max="2.5" step="0.05" value="1.0">
+        </div>
+        <div class="ctrl">
+          <label>Volatility σ <b id="vVol">1.8%</b></label>
+          <input type="range" id="sVol" min="0.3" max="6" step="0.1" value="1.8">
+        </div>
+        <div class="ctrl">
+          <label>Drift Bias <b id="vDrift">+0.02%</b></label>
+          <input type="range" id="sDrift" min="-0.4" max="0.4" step="0.02" value="0.02">
+        </div>
+        <button class="run-btn" id="runBtn">⚡ Run Forecast</button>
+      </div>
+    </div>
+
+    <!-- RIGHT: chart + stats -->
+    <div class="panel chart-panel">
+      <h3>Price Trajectory · History + Sampled Forecast</h3>
+      <div class="chart-shell"><canvas id="kchart"></canvas></div>
+      <div class="legend">
+        <span><i style="background:var(--emerald)"></i>Historical OHLC (K-line)</span>
+        <span><i style="background:var(--gold)"></i>Median forecast</span>
+        <span><i style="background:rgba(240,192,64,.5)"></i>P25–P75 band</span>
+        <span><i style="background:rgba(0,212,255,.4)"></i>P5–P95 band</span>
+      </div>
+      <div class="readout">
+        <div class="stat"><div class="k">Exp. Return (median)</div><div class="v neu" id="stReturn">—</div></div>
+        <div class="stat"><div class="k">P(up) over horizon</div><div class="v pos" id="stUp">—</div></div>
+        <div class="stat"><div class="k">VaR₅ (worst 5%)</div><div class="v neg" id="stVar">—</div></div>
+        <div class="stat"><div class="k">Path Entropy</div><div class="v neu" id="stEnt">—</div></div>
+      </div>
+      <div class="hover-readout" id="hoverReadout">Hover the chart to inspect a bar or forecast step.</div>
+      <div class="hover-readout" id="srcTag" style="margin-top:6px;color:var(--emerald);font-size:10px;letter-spacing:1px;">◌ LOCAL SIMULATION</div>
+    </div>
+  </div>
+
+  <div class="foot">
+    SniperTrader.ai · Kronos Foundation Model reference interface ·
+    <a href="/traderedge_chartai.html">AI Chart Analyzer</a> ·
+    <a href="/index.html">Home</a>
+  </div>
+</div>
+
+<script>
+/* ───────────────────────── utilities ───────────────────────── */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function gauss(rng){let u=0,v=0;while(u===0)u=rng();while(v===0)v=rng();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function cssVar(n){return getComputedStyle(document.body).getPropertyValue(n).trim();}
+const MAX_CTX=512, TOK_PER_BAR=3.0;
+
+/* ───────────────────────── state ───────────────────────── */
+const S={bars:80,horizon:24,paths:16,temp:1.0,vol:0.018,drift:0.0002,seed:0x9E3779B1};
+/* Backend hook: point this at your hosted Kronos inference service.
+   GitHub Pages is static and cannot run it locally. When unreachable,
+   the page falls back to deterministic in-browser simulation. */
+const API_BASE = (location.hostname==='localhost'||location.hostname==='127.0.0.1')
+  ? 'http://localhost:8787' : '';   // '' => same-origin prod endpoint
+const USE_BACKEND = true;
+
+/* ───────────────────────── data generation ───────────────────────── */
+function genHistory(n,rng){
+  let price=100+rng()*50, bars=[];
+  const vbase=1200+rng()*5000;
+  for(let i=0;i<n;i++){
+    const o=price;
+    const step=(rng()-0.5)*0.012 + 0.0004;
+    const c=o*(1+step+gauss(rng)*0.011);
+    const h=Math.max(o,c)*(1+Math.abs(gauss(rng))*0.009);
+    const l=Math.min(o,c)*(1-Math.abs(gauss(rng))*0.009);
+    const v=Math.round(vbase*(0.7+0.6*rng()));
+    bars.push({o,h,l,c,v}); price=c;
+  }
+  return bars;
+}
+function genPaths(lastClose,rng,st){
+  const P=st.paths, paths=[];
+  for(let p=0;p<P;p++){
+    let price=lastClose; const path=[price];
+    for(let t=0;t<st.horizon;t++){
+      const step=st.drift + gauss(rng)*st.vol*st.temp;
+      price=price*(1+step); path.push(price);
+    }
+    paths.push(path);
+  }
+  return paths;
+}
+function quantile(sorted,q){const idx=Math.min(sorted.length-1,Math.max(0,Math.floor(q*sorted.length)));return sorted[idx];}
+function computeBands(paths){
+  const H=paths[0].length-1, out={p5:[],p25:[],p50:[],p75:[],p95:[],spread:[]};
+  for(let t=1;t<=H;t++){
+    const col=paths.map(p=>p[t]).sort((a,b)=>a-b);
+    out.p5.push(quantile(col,0.05)); out.p25.push(quantile(col,0.25));
+    out.p50.push(quantile(col,0.5)); out.p75.push(quantile(col,0.75));
+    out.p95.push(quantile(col,0.95));
+    out.spread.push((col[col.length-1]-col[0])/col[0]);
+  }
+  return out;
+}
+
+/* ───────────────────────── context monitor (real-time) ───────────────────────── */
+function updateContextMonitor(){
+  const used=Math.round(S.bars*TOK_PER_BAR);
+  const free=MAX_CTX-used;
+  const pct=Math.max(0,Math.min(1,used/MAX_CTX));
+  const fill=document.getElementById('ctxFill');
+  fill.style.width=(pct*100).toFixed(1)+'%';
+  document.getElementById('ctxUsed').textContent=used;
+  document.getElementById('ctxFree').textContent=free;
+  const st=document.getElementById('ctxStatus');
+  if(used<=MAX_CTX*0.7){fill.style.background=cssVar('--emerald');st.className='ctx-status st-ok';st.textContent='● CONTEXT NOMINAL';}
+  else if(used<=MAX_CTX*0.9){fill.style.background=cssVar('--gold');st.className='ctx-status st-warn';st.textContent='▲ CONTEXT ELEVATED';}
+  else if(used<=MAX_CTX){fill.style.background=cssVar('--gold');st.className='ctx-status st-warn';st.textContent='⚠ NEAR CEILING ('+used+'/512)';}
+  else{fill.style.background=cssVar('--red');st.className='ctx-status st-crit';st.textContent='✖ EXCEEDS 512 — OLDEST BARS TRUNCATED';}
+}
+
+/* ───────────────────────── chart ───────────────────────── */
+const kronosPlugin={
+  id:'kronos',
+  afterDatasetsDraw(chart){
+    const meta=chart.$k; if(!meta) return;
+    const {ctx,scales:{x,y}}=chart;
+    const eme=cssVar('--emerald'), red=cssVar('--red'), gold=cssVar('--gold'), cyan=cssVar('--cyan');
+    const H=meta.bars.length, F=meta.bands.p50.length;
+    const bw=Math.max(2,(x.getPixelForValue(1)-x.getPixelForValue(0))*0.62);
+    // history candlesticks
+    for(let i=0;i<H;i++){
+      const b=meta.bars[i], cx=x.getPixelForValue(i);
+      const yo=y.getPixelForValue(b.o), yc=y.getPixelForValue(b.c), yh=y.getPixelForValue(b.h), yl=y.getPixelForValue(b.l);
+      const up=b.c>=b.o; const col=up?eme:red;
+      ctx.strokeStyle=col; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(cx,yh); ctx.lineTo(cx,yl); ctx.stroke();
+      ctx.fillStyle=col; const top=Math.min(yo,yc), hgt=Math.max(1,Math.abs(yc-yo));
+      ctx.fillRect(cx-bw/2,top,bw,hgt);
+    }
+    // forecast boundary
+    const bx=x.getPixelForValue(H-0.5);
+    ctx.save(); ctx.strokeStyle=cyan; ctx.setLineDash([4,4]); ctx.globalAlpha=0.5;
+    ctx.beginPath(); ctx.moveTo(bx,y.top); ctx.lineTo(bx,y.bottom); ctx.stroke(); ctx.restore();
+    // bands + median
+    let prevX=null,prevY=null;
+    for(let j=0;j<F;j++){
+      const cx=x.getPixelForValue(H+j);
+      const y95=y.getPixelForValue(meta.bands.p95[j]), y5=y.getPixelForValue(meta.bands.p5[j]);
+      const y75=y.getPixelForValue(meta.bands.p75[j]), y25=y.getPixelForValue(meta.bands.p25[j]);
+      const y50=y.getPixelForValue(meta.bands.p50[j]);
+      ctx.fillStyle='rgba(0,212,255,0.10)'; ctx.fillRect(cx-bw/2,y95,bw,Math.max(0,y5-y95));
+      ctx.fillStyle='rgba(240,192,64,0.18)'; ctx.fillRect(cx-bw/2,y75,bw,Math.max(0,y25-y75));
+      // median polyline
+      ctx.strokeStyle=gold; ctx.lineWidth=1.6;
+      if(prevX!==null){ctx.beginPath();ctx.moveTo(prevX,prevY);ctx.lineTo(cx,y50);ctx.stroke();}
+      prevX=cx; prevY=y50;
+    }
+    // a few sample paths (faint)
+    ctx.strokeStyle='rgba(255,255,255,0.10)'; ctx.lineWidth=1;
+    const sampleN=Math.min(6,meta.paths.length);
+    for(let p=0;p<sampleN;p++){
+      const path=meta.paths[p]; ctx.beginPath();
+      for(let j=0;j<F;j++){const cx=x.getPixelForValue(H+j),cy=y.getPixelForValue(path[j+1]);j===0?ctx.moveTo(cx,cy):ctx.lineTo(cx,cy);}
+      ctx.stroke();
+    }
+  }
+};
+let chart;
+function buildChart(){
+  const ctx=document.getElementById('kchart').getContext('2d');
+  chart=new Chart(ctx,{
+    type:'line',
+    data:{labels:[],datasets:[{data:[],showLine:false,pointRadius:0}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,animation:false,
+      interaction:{mode:'index',intersect:false},
+      scales:{
+        x:{grid:{color:cssVar('--border')},ticks:{color:cssVar('--text4'),maxTicksLimit:14,font:{family:'Space Mono',size:9}},border:{color:cssVar('--border')}},
+        y:{grid:{color:cssVar('--border')},ticks:{color:cssVar('--text4'),font:{family:'Space Mono',size:9}},border:{color:cssVar('--border')}}
+      },
+      plugins:{legend:{display:false},tooltip:{enabled:false}},
+      onHover(evt){
+        if(!chart||!chart.$k) return;
+        const idx=Math.round(chart.scales.x.getValueForPixel(evt.x));
+        showReadout(idx);
+      }
+    },
+    plugins:[kronosPlugin]
+  });
+}
+function showReadout(idx){
+  const meta=chart.$k; if(!meta) return;
+  const H=meta.bars.length, F=meta.bands.p50.length, el=document.getElementById('hoverReadout');
+  if(idx<0||idx>=H+F) return;
+  if(idx<H){const b=meta.bars[idx];
+    el.innerHTML=`BAR <b>#${idx+1}</b> · O <b>${b.o.toFixed(2)}</b> H <b>${b.h.toFixed(2)}</b> L <b>${b.l.toFixed(2)}</b> C <b>${b.c.toFixed(2)}</b> · Vol <b>${b.v.toLocaleString()}</b>`;
+  } else {const j=idx-H;
+    el.innerHTML=`STEP <b>+${j+1}</b> · P50 <b>${meta.bands.p50[j].toFixed(2)}</b> · P25–P75 <b>${meta.bands.p25[j].toFixed(2)}–${meta.bands.p75[j].toFixed(2)}</b> · P5–P95 <b>${meta.bands.p5[j].toFixed(2)}–${meta.bands.p95[j].toFixed(2)}</b>`;
+  }
+}
+
+function localSim(){
+  const rng=mulberry32(S.seed);
+  const bars=genHistory(S.bars,rng);
+  const lastClose=bars[bars.length-1].c;
+  const paths=genPaths(lastClose,rng,S);
+  const bands=computeBands(paths);
+  return {bars,paths,bands,lastClose,backend:'local-sim'};
+}
+function paint(r){
+  const bars=r.bars, paths=r.paths, bands=r.bands, lastClose=r.lastClose;
+  const H=bars.length, F=paths[0].length-1;
+  const labels=[]; for(let i=0;i<H;i++)labels.push('h'+(i+1)); for(let j=0;j<F;j++)labels.push('+'+ (j+1));
+  const closes=bars.map(b=>b.c).concat(bands.p50);
+  let lo=Infinity,hi=-Infinity;
+  bars.forEach(b=>{lo=Math.min(lo,b.l);hi=Math.max(hi,b.h);});
+  bands.p5.forEach(v=>lo=Math.min(lo,v)); bands.p95.forEach(v=>hi=Math.max(hi,v));
+  const pad=(hi-lo)*0.06; lo-=pad; hi+=pad;
+  chart.data.labels=labels;
+  chart.data.datasets[0].data=closes;
+  chart.options.scales.y.min=lo; chart.options.scales.y.max=hi;
+  chart.$k={bars,paths,bands};
+  chart.update('none');
+  updateStats(lastClose,paths,bands);
+  updateContextMonitor();
+  const src=document.getElementById('srcTag');
+  if(src) src.textContent = (r.backend==='backend'?'⬢ LIVE INFERENCE':'◌ LOCAL SIMULATION') +
+    (r.truncated?' · context truncated @512tok':'');
+}
+async function runForecast(){
+  const btn=document.getElementById('runBtn');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Computing…';}
+  let result=null;
+  if(USE_BACKEND && API_BASE){
+    try{
+      const resp=await fetch(API_BASE+'/api/kronos/forecast',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({config:{bars:S.bars,horizon:S.horizon,paths:S.paths,temp:S.temp,vol:S.vol,drift:S.drift,seed:S.seed>>>0}})
+      });
+      if(!resp.ok) throw new Error('HTTP '+resp.status);
+      const j=await resp.json();
+      result={bars:j.history,paths:j.paths,bands:j.bands,lastClose:j.history[j.history.length-1].c,backend:'backend',truncated:j.meta&&j.meta.truncated};
+    }catch(e){ result=null; /* fall through to local sim */ }
+  }
+  if(!result) result=localSim();
+  paint(result);
+  if(btn){btn.disabled=false;btn.textContent='⚡ Run Forecast';}
+}
+function render(){ runForecast(); }
+function updateStats(lastClose,paths,bands){
+  const end=bands.p50.length-1;
+  const ret=(bands.p50[end]/lastClose-1)*100;
+  const up=paths.filter(p=>p[p.length-1]>lastClose).length/paths.length*100;
+  const var5=(bands.p5[end]/lastClose-1)*100;
+  const meanSpread=bands.spread.reduce((a,b)=>a+b,0)/bands.spread.length;
+  const ent=Math.log(1+meanSpread*100*paths.length)/Math.log(1+100); // normalized 0..~1
+  const set=(id,val,cls)=>{const e=document.getElementById(id);e.textContent=val;e.className='v '+cls;};
+  set('stReturn',(ret>=0?'+':'')+ret.toFixed(2)+'%',ret>=0?'pos':'neg');
+  set('stUp',up.toFixed(0)+'%',up>=50?'pos':'neg');
+  set('stVar',var5.toFixed(2)+'%','neg');
+  set('stEnt',ent.toFixed(3),'neu');
+}
+
+/* ───────────────────────── wiring ───────────────────────── */
+function bindSlider(id,key,fmt,transform){
+  const el=document.getElementById(id), out=document.getElementById('v'+id.slice(1));
+  el.addEventListener('input',()=>{
+    const raw=parseFloat(el.value);
+    S[key]=transform?transform(raw):raw;
+    out.textContent=fmt(raw);
+    if(key==='bars') updateContextMonitor(); // real-time context tracking
+  });
+}
+function toggleTheme(){
+  document.body.classList.toggle('light-mode');
+  const dark=!document.body.classList.contains('light-mode');
+  document.getElementById('themeLabel').textContent=dark?'DARK':'LIGHT';
+  document.getElementById('themeToggle').querySelector('.tt-icon').textContent=dark?'🌙':'☀';
+  if(chart){ // refresh axis colors + redraw
+    chart.options.scales.x.grid.color=cssVar('--border');
+    chart.options.scales.x.ticks.color=cssVar('--text4');
+    chart.options.scales.x.border.color=cssVar('--border');
+    chart.options.scales.y.grid.color=cssVar('--border');
+    chart.options.scales.y.ticks.color=cssVar('--text4');
+    chart.options.scales.y.border.color=cssVar('--border');
+    chart.update('none');
+  }
+}
+window.addEventListener('DOMContentLoaded',()=>{
+  buildChart();
+  bindSlider('sBars','bars',v=>v,null);
+  bindSlider('sHorizon','horizon',v=>v,null);
+  bindSlider('sPaths','paths',v=>v,null);
+  bindSlider('sTemp','temp',v=>v.toFixed(2),null);
+  bindSlider('sVol','vol',v=>v.toFixed(1)+'%',v=>v/100);
+  bindSlider('sDrift','drift',v=>(v>=0?'+':'')+v.toFixed(2)+'%',v=>v/100);
+  document.getElementById('runBtn').addEventListener('click',render);
+  render();
+});
+</script>
+</body>
+</html>
