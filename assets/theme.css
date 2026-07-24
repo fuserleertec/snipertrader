@@ -1,0 +1,57 @@
+/* ============================================================
+   snipertrader.ai — UNIFIED CANONICAL THEME
+   ------------------------------------------------------------
+   Single source of truth for brand tokens, fonts, light/dark
+   mode, and the shared nav. Migrate pages to this file
+   incrementally (see AGENTS.md → "Known architecture issues").
+
+   Adopted convention: dark = traderedge green-cyan family
+   (the AI-product look). Light mode preserves both.
+   ============================================================ */
+:root{
+  --obs:#020408;--obs2:#06090F;--obs3:#0A1018;--obs4:#111820;--obs5:#1A2230;
+  --cyan:#00D4FF;--cyan2:#00A8CC;--cyan-dim:rgba(0,212,255,0.10);
+  --gold:#F0C040;--gold2:#C9A84C;--gold-dim:rgba(240,192,64,0.10);
+  --red:#FF4455;--red-dim:rgba(255,68,85,0.10);
+  --green:#00FF88;--green-dim:rgba(0,255,136,0.08);
+  --emerald:#00E5A0;--emerald-dim:rgba(0,229,160,0.09);
+  --text:#FFFFFF;--text2:#DCE8F2;--text3:#9BB5C8;--text4:#5A7888;
+  --border:rgba(0,229,160,0.13);--border2:rgba(0,229,160,0.26);
+  --border-cyan:rgba(0,212,255,0.14);
+  --gold-border:rgba(240,192,64,0.18);
+  --nav-bg:rgba(2,4,8,0.94);
+}
+body.light-mode{
+  --obs:#F0F4F8;--obs2:#E4EBF2;--obs3:#D8E2EC;--obs4:#C8D4DF;--obs5:#B8C8D6;
+  --text:#070E18;--text2:#12243A;--text3:#2A4460;--text4:#4A6278;
+  --border:rgba(0,150,110,0.18);--border2:rgba(0,150,110,0.35);
+  --border-cyan:rgba(0,150,200,0.18);
+  --nav-bg:rgba(240,244,248,0.96);
+  --emerald:#008F6A;--cyan:#0080AA;--gold:#9A6E00;--red:#C02030;--green:#007A44;
+  --emerald-dim:rgba(0,180,130,0.12);
+  --cyan-dim:rgba(0,160,200,0.12);
+  --gold-dim:rgba(160,120,0,0.10);
+  --red-dim:rgba(200,50,60,0.08);
+  --green-dim:rgba(0,160,80,0.10);
+}
+:root{
+  --font-display:'Orbitron',sans-serif;
+  --font-mono:'Space Mono',monospace;
+  --font-body:'Syne',sans-serif;
+}
+
+/* ── Shared nav (drop-in; override per page palette as needed) ── */
+.kf-nav{position:fixed;top:0;left:0;right:0;z-index:200;padding:16px 48px;display:flex;align-items:center;justify-content:space-between;background:var(--nav-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+.kf-nav .nav-logo{font-family:var(--font-display);font-weight:900;font-size:15px;letter-spacing:3px;color:var(--text);text-decoration:none;}
+.kf-nav .nav-logo span{color:var(--emerald);}
+.kf-nav .nav-links{display:flex;gap:22px;align-items:center;}
+.kf-nav .nav-links a{font-family:var(--font-mono);font-size:9px;letter-spacing:2px;color:var(--text3);text-decoration:none;text-transform:uppercase;transition:color .2s;}
+.kf-nav .nav-links a:hover{color:var(--text);}
+.kf-nav .nav-links a.nav-pill{color:var(--emerald);border:1px solid var(--border2);padding:6px 12px;border-radius:20px;}
+.kf-theme-toggle{background:var(--obs3);border:1px solid var(--border2);border-radius:20px;padding:6px 14px;font-family:var(--font-mono);font-size:9px;color:var(--text3);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:7px;letter-spacing:1px;}
+.kf-theme-toggle:hover{border-color:var(--emerald);color:var(--emerald);}
+
+/* ── Shared panel primitive ── */
+.kf-panel{background:linear-gradient(145deg,var(--obs3),var(--obs2));border:1px solid var(--border);border-radius:16px;padding:20px;}
+.kf-panel h3{font-family:var(--font-display);font-size:12px;letter-spacing:2px;color:var(--text2);text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.kf-panel h3::before{content:'';width:8px;height:8px;border-radius:2px;background:var(--emerald);box-shadow:0 0 10px var(--emerald);}

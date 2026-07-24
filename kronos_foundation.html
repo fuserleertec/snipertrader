@@ -6,33 +6,9 @@
 <title>Kronos Foundation Model — OHLCV K-Line Forecasting | SniperTrader.ai</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Space+Mono:wght@400;700&family=Syne:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="/assets/theme.css">
 <style>
-:root{
-  --obs:#020408;--obs2:#06090F;--obs3:#0A1018;--obs4:#111820;--obs5:#1A2230;
-  --cyan:#00D4FF;--cyan2:#00A8CC;--cyan-dim:rgba(0,212,255,0.10);
-  --gold:#F0C040;--gold2:#C9A84C;--gold-dim:rgba(240,192,64,0.10);
-  --red:#FF4455;--red-dim:rgba(255,68,85,0.10);
-  --green:#00FF88;--green-dim:rgba(0,255,136,0.08);
-  --emerald:#00E5A0;--emerald-dim:rgba(0,229,160,0.09);
-  --text:#FFFFFF;--text2:#DCE8F2;--text3:#9BB5C8;--text4:#5A7888;
-  --border:rgba(0,229,160,0.13);--border2:rgba(0,229,160,0.26);
-  --border-cyan:rgba(0,212,255,0.14);
-  --gold-border:rgba(240,192,64,0.18);
-  --nav-bg:rgba(2,4,8,0.94);
-}
-body.light-mode{
-  --obs:#F0F4F8;--obs2:#E4EBF2;--obs3:#D8E2EC;--obs4:#C8D4DF;--obs5:#B8C8D6;
-  --text:#070E18;--text2:#12243A;--text3:#2A4460;--text4:#4A6278;
-  --border:rgba(0,150,110,0.18);--border2:rgba(0,150,110,0.35);
-  --border-cyan:rgba(0,150,200,0.18);
-  --nav-bg:rgba(240,244,248,0.96);
-  --emerald:#008F6A;--cyan:#0080AA;--gold:#9A6E00;--red:#C02030;--green:#007A44;
-  --emerald-dim:rgba(0,180,130,0.12);
-  --cyan-dim:rgba(0,160,200,0.12);
-  --gold-dim:rgba(160,120,0,0.10);
-  --red-dim:rgba(200,50,60,0.08);
-  --green-dim:rgba(0,160,80,0.10);
-}
+/* Brand tokens + light/dark now live in /assets/theme.css (unified canonical theme). */
 *{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 body{background:var(--obs);color:var(--text);font-family:'Syne',sans-serif;overflow-x:hidden;min-height:100vh;}
@@ -130,6 +106,35 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
         <div class="ctx-note">Estimated tokens = bars × 3.0 (OHLCV quantized). Exceeding 512 truncates the oldest bars before inference.</div>
       </div>
 
+      <div class="panel" style="margin-bottom:20px;">
+        <h3>Data Source · Real OHLCV</h3>
+        <div class="ctrl">
+          <label>Source</label>
+          <select id="sSource" style="width:100%;background:var(--obs4);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;font-family:'Space Mono',monospace;font-size:11px;">
+            <option value="sim">⬡ Simulator (deterministic)</option>
+            <option value="binance">⚡ Binance live (klines)</option>
+            <option value="coingecko">◈ CoinGecko (close)</option>
+            <option value="csv">⬆ CSV upload</option>
+          </select>
+        </div>
+        <div class="ctrl" id="liveRow">
+          <label>Symbol / Coin <b id="vSym">BTCUSDT</b></label>
+          <input type="text" id="sSym" value="BTCUSDT" style="width:100%;background:var(--obs4);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;font-family:'Space Mono',monospace;font-size:11px;">
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <select id="sInterval" style="flex:1;background:var(--obs4);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px;font-family:'Space Mono',monospace;font-size:10px;">
+              <option value="15m">15m</option><option value="1h" selected>1h</option><option value="4h">4h</option><option value="1d">1d</option>
+            </select>
+            <input type="number" id="sLimit" value="80" min="8" max="1000" style="width:90px;background:var(--obs4);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px;font-family:'Space Mono',monospace;font-size:10px;">
+          </div>
+        </div>
+        <div class="ctrl" id="csvRow" style="display:none;">
+          <label>CSV (columns: time,open,high,low,close,volume)</label>
+          <input type="file" id="sCsv" accept=".csv,text/csv" style="font-size:10px;color:var(--text3);">
+        </div>
+        <button class="run-btn" id="loadBtn" style="margin-top:4px;">⬇ Load Real Data</button>
+        <div class="ctx-note" id="dataNote">Simulator active. Switch source and Load to pull live market OHLCV.</div>
+      </div>
+
       <div class="panel">
         <h3>Sampling Controls</h3>
         <div class="ctrl">
@@ -196,13 +201,74 @@ function cssVar(n){return getComputedStyle(document.body).getPropertyValue(n).tr
 const MAX_CTX=512, TOK_PER_BAR=3.0;
 
 /* ───────────────────────── state ───────────────────────── */
-const S={bars:80,horizon:24,paths:16,temp:1.0,vol:0.018,drift:0.0002,seed:0x9E3779B1};
+const S={source:'sim',symbol:'BTCUSDT',interval:'1h',limit:80,bars:80,horizon:24,paths:16,temp:1.0,vol:0.018,drift:0.0002,seed:0x9E3779B1};
+S.history=null; // real OHLCV [{o,h,l,c,v}] when source != 'sim'
 /* Backend hook: point this at your hosted Kronos inference service.
    GitHub Pages is static and cannot run it locally. When unreachable,
    the page falls back to deterministic in-browser simulation. */
 const API_BASE = (location.hostname==='localhost'||location.hostname==='127.0.0.1')
   ? 'http://localhost:8787' : '';   // '' => same-origin prod endpoint
 const USE_BACKEND = true;
+
+/* ───────────────────────── real OHLCV sources ───────────────────────── */
+async function fetchBinance(symbol,interval,limit){
+  const url=`https://data-api.binance.vision/api/v3/klines?symbol=${encodeURIComponent(symbol.toUpperCase())}&interval=${interval}&limit=${limit}`;
+  const r=await fetch(url); if(!r.ok) throw new Error('Binance HTTP '+r.status);
+  const d=await r.json();
+  return d.map(k=>({o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]}));
+}
+async function fetchCoinGecko(coin,days){
+  const map={BTC:'bitcoin',ETH:'ethereum',SOL:'solana',BNB:'binancecoin'};
+  const id=map[coin.toUpperCase().replace('USDT','')]||'bitcoin';
+  const url=`https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=${Math.max(1,Math.ceil(days/24))}&interval=hourly`;
+  const r=await fetch(url); if(!r.ok) throw new Error('CoinGecko HTTP '+r.status);
+  const j=await r.json(); const pts=j.prices||[];
+  const per=j.prices.length; const out=[];
+  for(let i=0;i<pts.length;i++){
+    const c=pts[i][1]; const prev=i>0?pts[i-1][1]:c*0.999;
+    const o=prev, h=Math.max(o,c)*(1+0.002), l=Math.min(o,c)*(1-0.002);
+    out.push({o,h,l,c,v:1});
+  }
+  return out.slice(-Math.max(8,limit));
+}
+function parseCSV(text){
+  const lines=text.trim().split(/\r?\n/).filter(Boolean);
+  const out=[];
+  for(const ln of lines){
+    const c=ln.split(/[,;\t]/).map(s=>s.trim().replace(/^"|"$/g,''));
+    // skip header if first cell isn't numeric-ish
+    if(isNaN(+c[1]) && /time|open|date/i.test(c[0])) continue;
+    const o=+c[1],h=+c[2],l=+c[3],cl=+c[4],v=+c[5]||1;
+    if([o,h,l,cl].some(x=>isNaN(x))) continue;
+    out.push({o,h,l,c:cl,v});
+  }
+  return out;
+}
+async function loadRealData(){
+  const note=document.getElementById('dataNote');
+  const src=document.getElementById('sSource').value;
+  S.source=src;
+  try{
+    let bars=null;
+    if(src==='binance'){ S.symbol=document.getElementById('sSym').value; S.interval=document.getElementById('sInterval').value; S.limit=+document.getElementById('sLimit').value||80;
+      bars=await fetchBinance(S.symbol,S.interval,S.limit); }
+    else if(src==='coingecko'){ S.symbol=document.getElementById('sSym').value; S.limit=+document.getElementById('sLimit').value||80;
+      bars=await fetchCoinGecko(S.symbol,S.limit); }
+    else if(src==='csv'){ const f=document.getElementById('sCsv').files[0]; if(!f) throw new Error('no file'); bars=parseCSV(await f.text()); }
+    if(!bars||!bars.length) throw new Error('empty data');
+    S.history=bars; S.bars=bars.length;
+    document.getElementById('sBars').value=Math.min(200,bars.length);
+    document.getElementById('vBars').textContent=bars.length;
+    note.textContent=`✓ Loaded ${bars.length} real bars · ${S.source.toUpperCase()}`;
+    note.style.color='var(--emerald)';
+    updateContextMonitor();
+    render();
+  }catch(e){
+    S.history=null; S.source='sim';
+    note.textContent='✖ '+e.message+' — reverted to simulator';
+    note.style.color='var(--red)';
+  }
+}
 
 /* ───────────────────────── data generation ───────────────────────── */
 function genHistory(n,rng){
@@ -342,11 +408,12 @@ function showReadout(idx){
 
 function localSim(){
   const rng=mulberry32(S.seed);
-  const bars=genHistory(S.bars,rng);
+  let bars=S.history; // real OHLCV if loaded, else synthesize
+  if(!bars||!bars.length) bars=genHistory(S.bars,rng);
   const lastClose=bars[bars.length-1].c;
   const paths=genPaths(lastClose,rng,S);
   const bands=computeBands(paths);
-  return {bars,paths,bands,lastClose,backend:'local-sim'};
+  return {bars,paths,bands,lastClose,backend:S.history?'real-local':'local-sim'};
 }
 function paint(r){
   const bars=r.bars, paths=r.paths, bands=r.bands, lastClose=r.lastClose;
@@ -365,8 +432,12 @@ function paint(r){
   updateStats(lastClose,paths,bands);
   updateContextMonitor();
   const src=document.getElementById('srcTag');
-  if(src) src.textContent = (r.backend==='backend'?'⬢ LIVE INFERENCE':'◌ LOCAL SIMULATION') +
-    (r.truncated?' · context truncated @512tok':'');
+  if(src){
+    let label='◌ LOCAL SIMULATION';
+    if(r.backend==='backend') label = r.real ? '⬢ LIVE INFERENCE · REAL DATA' : '⬢ LIVE INFERENCE';
+    else if(r.backend==='real-local') label='◌ LOCAL SIM ON REAL DATA';
+    src.textContent = label + (r.truncated?' · context truncated @512tok':'');
+  }
 }
 async function runForecast(){
   const btn=document.getElementById('runBtn');
@@ -374,14 +445,16 @@ async function runForecast(){
   let result=null;
   if(USE_BACKEND && API_BASE){
     try{
+      const payload={config:{bars:S.bars,horizon:S.horizon,paths:S.paths,temp:S.temp,vol:S.vol,drift:S.drift,seed:S.seed>>>0}};
+      if(S.history&&S.history.length) payload.history=S.history; // real OHLCV to model
       const resp=await fetch(API_BASE+'/api/kronos/forecast',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({config:{bars:S.bars,horizon:S.horizon,paths:S.paths,temp:S.temp,vol:S.vol,drift:S.drift,seed:S.seed>>>0}})
+        body:JSON.stringify(payload)
       });
       if(!resp.ok) throw new Error('HTTP '+resp.status);
       const j=await resp.json();
-      result={bars:j.history,paths:j.paths,bands:j.bands,lastClose:j.history[j.history.length-1].c,backend:'backend',truncated:j.meta&&j.meta.truncated};
+      result={bars:j.history,paths:j.paths,bands:j.bands,lastClose:j.history[j.history.length-1].c,backend:'backend',truncated:j.meta&&j.meta.truncated,real:!!(S.history&&S.history.length)};
     }catch(e){ result=null; /* fall through to local sim */ }
   }
   if(!result) result=localSim();
@@ -437,6 +510,16 @@ window.addEventListener('DOMContentLoaded',()=>{
   bindSlider('sVol','vol',v=>v.toFixed(1)+'%',v=>v/100);
   bindSlider('sDrift','drift',v=>(v>=0?'+':'')+v.toFixed(2)+'%',v=>v/100);
   document.getElementById('runBtn').addEventListener('click',render);
+  // real-data source wiring
+  const srcSel=document.getElementById('sSource');
+  const liveRow=document.getElementById('liveRow'), csvRow=document.getElementById('csvRow');
+  srcSel.addEventListener('change',()=>{
+    const v=srcSel.value;
+    liveRow.style.display = (v==='binance'||v==='coingecko') ? '' : 'none';
+    csvRow.style.display = (v==='csv') ? '' : 'none';
+    if(v==='sim'){ S.history=null; S.source='sim'; document.getElementById('dataNote').textContent='Simulator active. Switch source and Load to pull live market OHLCV.'; document.getElementById('dataNote').style.color='var(--text4)'; }
+  });
+  document.getElementById('loadBtn').addEventListener('click',loadRealData);
   render();
 });
 </script>

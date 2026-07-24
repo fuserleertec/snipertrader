@@ -9,7 +9,11 @@ trading-education and tools business. This repository **is** the live website.
 - Live domain: `snipertrader.ai` (see `CNAME`). Every push to `main` deploys to
   production automatically — there is no separate "staging" deploy step.
 - ~52 HTML pages. Each page is **self-contained**: inline `<style>` and inline
-  `<script>`. There is **no shared CSS, JS, or template system** yet.
+  `<script>`. There is **no shared CSS, JS, or template system** yet — EXCEPT the
+  new canonical theme at `assets/theme.css` (see "Theme unification" below).
+- **Kronos dashboard:** `kronos_foundation.html` + inference backend `api/server.js`
+  (`POST /api/kronos/forecast`). Real OHLCV via Binance/CoinGecko/CSV. See the
+  `kronos-foundation` skill.
 
 ## Critical operating rules
 - 🚫 **NEVER push to `main` without explicit user confirmation.** A push = a
@@ -35,15 +39,30 @@ trading-education and tools business. This repository **is** the live website.
 - **Extras:** a packaged `USME_ICT_Calculator.app` and course audio `.mp3`.
 
 ## Known architecture issues (fix opportunistically, propose before doing)
-1. **Two divergent design systems.** Index/USME pages use one token set
-   (`--bg`, `--cyan`, `--gold`, Inter). The `traderedge_*` pages use a different
-   set (`--obs`, `--cyan`, `--orange`, Syne). Consider unifying under one token
-   system for brand consistency.
+1. **Three divergent design systems (in progress).** Index/USME pages use one
+   token set (`--bg`, `--cyan`, `--gold`, Inter). The `traderedge_*` pages use a
+   green-cyan set (`--obs`, `--emerald`, Syne). The P&L widget uses a third
+   (green-blue, Space Grotesk). **Unification started:** a canonical
+   `assets/theme.css` now defines the unified dark (green-cyan) + light palette,
+   fonts, and a shared `.kf-nav` / `.kf-panel` primitive. `kronos_foundation.html`
+   is migrated to it. **Migrate other pages incrementally** — do NOT blast-convert
+   50 files in one unreviewed pass; one page per reviewed change.
 2. **Nav duplication.** The same nav/footer is hand-copied into every file
    (~50 references to `/traderedge_guardrails.html`, etc.). A shared partial or
-   a tiny build/include step would remove the maintenance drag.
+   a tiny build/include step would remove the maintenance drag. `assets/theme.css`
+   ships a `.kf-nav` primitive to adopt as pages are migrated.
 3. **No DRY.** Repeating a brand color or adding a page means editing many files
    by hand. Suggest templating before large site-wide changes.
+
+## Theme unification (canonical = `assets/theme.css`)
+- Dark mode = traderedge green-cyan family (the AI-product look). Light mode
+  preserves both palettes' light variants.
+- To migrate a page: (a) add `<link rel="stylesheet" href="/assets/theme.css">`
+  in `<head>`; (b) delete its inline `:root`/`body.light-mode` token blocks;
+  (c) optionally swap its nav markup for `.kf-nav`. Verify visually before pushing.
+- Keep brand-critical tokens (`--emerald`, `--cyan`, `--gold`, `--red`, `--obs*`)
+  defined ONLY in `assets/theme.css` going forward. Page-specific overrides are OK
+  but should be minimal.
 
 ## How to help (the "engine" role)
 - **Content ops:** add/edit product & course pages; keep nav/footer consistent.
