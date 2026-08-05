@@ -20,6 +20,25 @@
  */
 'use strict';
 const http = require('http');
+const https = require('https');
+const fs = require('fs');
+const path = require('path');
+
+// Zero-dependency .env loader (does not overwrite existing process env vars)
+(function loadEnv(){
+  try{
+    const p = path.join(__dirname, '.env');
+    if(!fs.existsSync(p)) return;
+    fs.readFileSync(p,'utf8').split(/\r?\n/).forEach(line=>{
+      const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/);
+      if(!m) return;
+      const k = m[1], v = m[2].replace(/^["']|["']$/g,'');
+      if(process.env[k]===undefined) process.env[k] = v;
+    });
+  }catch(_){}
+})();
+
+const { aiChat, isConfigured, PROVIDERS } = require('./ai_providers');
 
 const PORT = process.env.KRONOS_PORT || 8787;
 const MAX_CTX = 512;
@@ -93,6 +112,49 @@ function computeStats(lastClose, paths, bands) {
 }
 
 /* ───────────────────────────────────────────────────────────
+ *  ALPACA STOCK K-LINES
+ *  GET /api/stocks/klines?symbol=AAPL&timeframe=1h&limit=512
+ *  Fetches equity OHLCV from Alpaca's Data API (server-side only —
+ *  the secret key never reaches the browser). Returns the canonical
+ *  [{timestamp,open,high,low,close,volume}] shape the Kronos UI expects.
+ * ─────────────────────────────────────────────────────────── */
+const ALPACA_TF = { '1m':'1Min', '5m':'5Min', '15m':'15Min', '1h':'1Hour', '1d':'1Day', '4h':'4Hour' };
+function alpacaBars({ symbol, timeframe, limit }){
+  return new Promise((resolve, reject) => {
+    const key = process.env.ALPACA_API_KEY, sec = process.env.ALPACA_SECRET_KEY;
+    if(!key || !sec) return reject(new Error('Alpaca credentials not configured — set ALPACA_API_KEY and ALPACA_SECRET_KEY'));
+    const tf = ALPACA_TF[timeframe] || '1Hour';
+    const sym = String(symbol || '').toUpperCase();
+    const lim = Math.max(1, Math.min(512, parseInt(limit, 10) || 512)); // 512 = Kronos max_context ceiling
+    const q = `symbols=${encodeURIComponent(sym)}&timeframe=${tf}&limit=${lim}&format=rfc3339&adjustment=split&feed=sip`;
+    const req = https.request({
+      hostname: 'data.alpaca.markets',
+      path: `/v2/stocks/bars?${q}`,
+      method: 'GET',
+      headers: { 'Apca-Api-Key-Id': key, 'Apca-Api-Secret-Key': sec, 'Accept': 'application/json' }
+    }, res => {
+      let body = '';
+      res.on('data', c => body += c);
+      res.on('end', () => {
+        if(res.statusCode >= 400){ let m = 'Alpaca HTTP ' + res.statusCode; try{ const e = JSON.parse(body); if(e && (e.message || e.error)) m = e.message || e.error; }catch(_){} return reject(new Error(m)); }
+        try{
+          const j = JSON.parse(body);
+          const arr = (j.bars && j.bars[sym]) || [];
+          const out = arr.map(b => ({
+            timestamp: b.timestamp || new Date((b.t || 0) * 1000).toISOString(),
+            open: +b.o, high: +b.h, low: +b.l, close: +b.c, volume: +b.v
+          }));
+          resolve(out);
+        }catch(e){ reject(new Error('Alpaca response parse error: ' + e.message)); }
+      });
+    });
+    req.on('error', e => reject(new Error('Alpaca request failed: ' + e.message)));
+    req.setTimeout(15000, () => req.destroy(new Error('Alpaca timeout')));
+    req.end();
+  });
+}
+
+/* ───────────────────────────────────────────────────────────
  *  REAL MODEL HOOK
  *  This is the seam where actual model inference plugs in.
  *  Input  : history (array of OHLCV) + config (sampling params)
@@ -127,6 +189,47 @@ const server = http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
+  if (req.url.startsWith('/api/stocks/klines') && req.method === 'GET') {
+    const q = new URL(req.url, 'http://localhost').searchParams;
+    const symbol = (q.get('symbol') || 'AAPL').trim();
+    const timeframe = q.get('timeframe') || q.get('interval') || '1h';
+    const limit = Math.max(1, Math.min(512, parseInt(q.get('limit') || '512', 10) || 512));
+    alpacaBars({ symbol, timeframe, limit })
+      .then(out => { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(out)); })
+      .catch(e => { res.writeHead(502, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: String(e && e.message || e) })); });
+    return;
+  }
+  if (req.url === '/api/ai/chat' && req.method === 'POST') {
+    let body = '';
+    req.on('data', c => { body += c; if (body.length > 1e5) req.destroy(); });
+    req.on('end', async () => {
+      let payload;
+      try { payload = JSON.parse(body || '{}'); }
+      catch (e) { res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'invalid JSON' })); }
+      const provider = String(payload.provider || 'deepseek').toLowerCase();
+      if (!PROVIDERS[provider]) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: 'unknown provider — use deepseek or kimi' }));
+      }
+      if (!isConfigured(provider)) {
+        res.writeHead(503, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: PROVIDERS[provider].label + ' API key not configured on the server' }));
+      }
+      try {
+        const r = await aiChat({
+          provider,
+          messages: Array.isArray(payload.messages) ? payload.messages : [{ role: 'user', content: String(payload.prompt || '') }],
+          options: { model: payload.model, maxTokens: payload.maxTokens, temperature: payload.temperature }
+        });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ provider: PROVIDERS[provider].label, model: r.provider, content: r.content }));
+      } catch (e) {
+        res.writeHead(502, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: String(e && e.message || e) }));
+      }
+    });
+    return;
+  }
   if (req.url !== '/api/kronos/forecast' || req.method !== 'POST') {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({ error: 'not found — POST /api/kronos/forecast' }));

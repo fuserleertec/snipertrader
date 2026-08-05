@@ -113,6 +113,7 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
           <select id="sSource" style="width:100%;background:var(--obs4);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;font-family:'Space Mono',monospace;font-size:11px;">
             <option value="sim">⬡ Simulator (deterministic)</option>
             <option value="binance">⚡ Binance live (klines)</option>
+            <option value="alpaca">📈 Alpaca stocks (AAPL, TSLA, SPY)</option>
             <option value="coingecko">◈ CoinGecko (close)</option>
             <option value="csv">⬆ CSV upload</option>
           </select>
@@ -211,25 +212,46 @@ const API_BASE = (location.hostname==='localhost'||location.hostname==='127.0.0.
 const USE_BACKEND = true;
 
 /* ───────────────────────── real OHLCV sources ───────────────────────── */
+/* Binance is crypto-only. Accept base tickers (btc, eth/usdt, btc/usd)
+   and resolve to a valid Binance pair (default quote = USDT). */
+function resolveBinanceSymbol(raw){
+  let s=(raw||'').trim().toUpperCase().replace(/\s+/g,'').replace(/\//g,'');
+  if(!s) return 'BTCUSDT';
+  const quotes=['USDT','USDC','BUSD','TUSD','FDUSD','BTC','ETH','BNB','USD','EUR','TRY','PAX'];
+  const hasQuote=quotes.some(q=>s.endsWith(q)&&s.length>q.length);
+  return hasQuote ? s : s+'USDT';
+}
 async function fetchBinance(symbol,interval,limit){
-  const url=`https://data-api.binance.vision/api/v3/klines?symbol=${encodeURIComponent(symbol.toUpperCase())}&interval=${interval}&limit=${limit}`;
-  const r=await fetch(url); if(!r.ok) throw new Error('Binance HTTP '+r.status);
+  const sym=resolveBinanceSymbol(symbol);
+  const url=`https://data-api.binance.vision/api/v3/klines?symbol=${sym}&interval=${interval}&limit=${limit}`;
+  const r=await fetch(url);
+  if(!r.ok){ let msg='Binance HTTP '+r.status; try{const e=await r.json(); if(e&&e.msg) msg='Binance: '+e.msg+' (pair '+sym+')';}catch(_){} throw new Error(msg); }
   const d=await r.json();
   return d.map(k=>({o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]}));
 }
+const CG_MAP={BTC:'bitcoin',ETH:'ethereum',SOL:'solana',BNB:'binancecoin',ADA:'cardano',XRP:'ripple',DOGE:'dogecoin',DOT:'polkadot',AVAX:'avalanche-2',MATIC:'matic-network',LINK:'chainlink',LTC:'litecoin',TRX:'tron',ATOM:'cosmos',UNI:'uniswap',XLM:'stellar',NEAR:'near',APT:'aptos',ARB:'arbitrum',OP:'optimism'};
 async function fetchCoinGecko(coin,days){
-  const map={BTC:'bitcoin',ETH:'ethereum',SOL:'solana',BNB:'binancecoin'};
-  const id=map[coin.toUpperCase().replace('USDT','')]||'bitcoin';
+  const base=(coin||'btc').toUpperCase().replace(/USDT|USDC|BUSD|USD$/,'');
+  const id=CG_MAP[base]||base.toLowerCase();   // unknown -> try lowercase base as id (will 404 clearly if invalid)
   const url=`https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=${Math.max(1,Math.ceil(days/24))}&interval=hourly`;
-  const r=await fetch(url); if(!r.ok) throw new Error('CoinGecko HTTP '+r.status);
+  const r=await fetch(url); if(!r.ok){ let m='CoinGecko HTTP '+r.status; try{const e=await r.json(); if(e&&e.error) m='CoinGecko: '+e.error;}catch(_){} throw new Error(m); }
   const j=await r.json(); const pts=j.prices||[];
-  const per=j.prices.length; const out=[];
+  const out=[];
   for(let i=0;i<pts.length;i++){
     const c=pts[i][1]; const prev=i>0?pts[i-1][1]:c*0.999;
     const o=prev, h=Math.max(o,c)*(1+0.002), l=Math.min(o,c)*(1-0.002);
     out.push({o,h,l,c,v:1});
   }
   return out.slice(-Math.max(8,limit));
+}
+async function fetchAlpaca(symbol,timeframe,limit){
+  const base = API_BASE || '';   // '' => same-origin prod endpoint; localhost => :8787
+  const url = `${base}/api/stocks/klines?symbol=${encodeURIComponent(symbol.toUpperCase())}&timeframe=${encodeURIComponent(timeframe)}&limit=${limit}`;
+  const r=await fetch(url);
+  if(!r.ok){ let m='Stocks API HTTP '+r.status; try{const e=await r.json(); if(e&&e.error) m=e.error;}catch(_){} throw new Error(m); }
+  const d=await r.json();
+  const arr=Array.isArray(d)?d:(d&&d.bars)||[];
+  return arr.map(b=>({o:+b.open,h:+b.high,l:+b.low,c:+b.close,v:+b.volume}));
 }
 function parseCSV(text){
   const lines=text.trim().split(/\r?\n/).filter(Boolean);
@@ -250,16 +272,53 @@ async function loadRealData(){
   S.source=src;
   try{
     let bars=null;
-    if(src==='binance'){ S.symbol=document.getElementById('sSym').value; S.interval=document.getElementById('sInterval').value; S.limit=+document.getElementById('sLimit').value||80;
-      bars=await fetchBinance(S.symbol,S.interval,S.limit); }
-    else if(src==='coingecko'){ S.symbol=document.getElementById('sSym').value; S.limit=+document.getElementById('sLimit').value||80;
-      bars=await fetchCoinGecko(S.symbol,S.limit); }
+    if(src==='binance'){
+      S.symbol=document.getElementById('sSym').value.trim();
+      S.interval=document.getElementById('sInterval').value;
+      S.limit=+document.getElementById('sLimit').value||80;
+      const resolved=resolveBinanceSymbol(S.symbol);
+      try{ bars=await fetchBinance(S.symbol,S.interval,S.limit); }
+      catch(e){
+        const invalid=/Invalid symbol|unknown symbol|pair/i.test(e.message);
+        const hint = invalid
+          ? `Binance is crypto-only — "${S.symbol}" isn't a tradable pair. Try BTC, ETH, SOL, or "BTC/USDT". For equities (TSLA, AAPL) use the CSV upload.`
+          : e.message;
+        S.history=null; S.source='sim';
+        note.textContent='✖ '+hint+' — reverted to simulator'; note.style.color='var(--red)';
+        return;
+      }
+      S.symbol=resolved;
+    }
+    else if(src==='alpaca'){
+      S.symbol=document.getElementById('sSym').value.trim().toUpperCase();
+      S.interval=document.getElementById('sInterval').value;
+      S.limit=Math.min(512, +document.getElementById('sLimit').value||80);
+      try{ bars=await fetchAlpaca(S.symbol,S.interval,S.limit); }
+      catch(e){
+        const hint=/credentials not configured|not found|502|HTTP 4|HTTP 5/i.test(e.message)
+          ? `Alpaca stocks need the Kronos backend hosted with ALPACA_API_KEY set. ${e.message} — using simulator.`
+          : e.message;
+        S.history=null; S.source='sim';
+        note.textContent='✖ '+hint+' — reverted to simulator'; note.style.color='var(--red)';
+        return;
+      }
+    }
+    else if(src==='coingecko'){ S.symbol=document.getElementById('sSym').value.trim(); S.limit=+document.getElementById('sLimit').value||80;
+      try{ bars=await fetchCoinGecko(S.symbol,S.limit); }
+      catch(e){
+        const hint=/Could not find coin|not found/i.test(e.message)
+          ? `CoinGecko is crypto-only — "${S.symbol}" not found. For equities (TSLA, AAPL) use the CSV upload.`
+          : e.message;
+        S.history=null; S.source='sim';
+        note.textContent='✖ '+hint+' — reverted to simulator'; note.style.color='var(--red)';
+        return;
+      } }
     else if(src==='csv'){ const f=document.getElementById('sCsv').files[0]; if(!f) throw new Error('no file'); bars=parseCSV(await f.text()); }
     if(!bars||!bars.length) throw new Error('empty data');
     S.history=bars; S.bars=bars.length;
     document.getElementById('sBars').value=Math.min(200,bars.length);
     document.getElementById('vBars').textContent=bars.length;
-    note.textContent=`✓ Loaded ${bars.length} real bars · ${S.source.toUpperCase()}`;
+    note.textContent=`✓ Loaded ${bars.length} real bars · ${S.source.toUpperCase()}${S.source==='binance'?' ('+S.symbol+')':''}`;
     note.style.color='var(--emerald)';
     updateContextMonitor();
     render();
@@ -514,10 +573,14 @@ window.addEventListener('DOMContentLoaded',()=>{
   const srcSel=document.getElementById('sSource');
   const liveRow=document.getElementById('liveRow'), csvRow=document.getElementById('csvRow');
   srcSel.addEventListener('change',()=>{
-    const v=srcSel.value;
-    liveRow.style.display = (v==='binance'||v==='coingecko') ? '' : 'none';
+    const v=srcSel.value; const dn=document.getElementById('dataNote');
+    liveRow.style.display = (v==='binance'||v==='coingecko'||v==='alpaca') ? '' : 'none';
     csvRow.style.display = (v==='csv') ? '' : 'none';
-    if(v==='sim'){ S.history=null; S.source='sim'; document.getElementById('dataNote').textContent='Simulator active. Switch source and Load to pull live market OHLCV.'; document.getElementById('dataNote').style.color='var(--text4)'; }
+    if(v==='sim'){ S.history=null; S.source='sim'; dn.textContent='Simulator active. Switch source and Load to pull live market OHLCV.'; dn.style.color='var(--text4)'; }
+    else if(v==='binance'){ dn.textContent='Binance = crypto pairs (BTC, ETH, SOL, BTC/USDT…). Equities like TSLA → Alpaca or CSV.'; dn.style.color='var(--text3)'; }
+    else if(v==='alpaca'){ dn.textContent='Alpaca stocks (AAPL, TSLA, SPY…). Needs the Kronos backend hosted with ALPACA_API_KEY set; otherwise falls back to simulator.'; dn.style.color='var(--text3)'; }
+    else if(v==='coingecko'){ dn.textContent='CoinGecko = crypto (BTC, ETH, SOL…). Equities like TSLA → Alpaca or CSV.'; dn.style.color='var(--text3)'; }
+    else if(v==='csv'){ dn.textContent='Upload OHLCV CSV: time,open,high,low,close,volume (equities OK).'; dn.style.color='var(--text3)'; }
   });
   document.getElementById('loadBtn').addEventListener('click',loadRealData);
   render();
