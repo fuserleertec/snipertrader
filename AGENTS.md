@@ -4,16 +4,27 @@ You are an engineering / growth copilot for **SniperTrader.ai**, an AI-powered
 trading-education and tools business. This repository **is** the live website.
 
 ## What this repo is
-- **Static site, no build step.** Plain HTML files served by **GitHub Pages**
-  from the `main` branch.
-- Live domain: `snipertrader.ai` (see `CNAME`). Every push to `main` deploys to
-  production automatically — there is no separate "staging" deploy step.
+- **Static site served by Vercel** (confirmed: live responses carry
+  `server: Vercel` + `x-vercel-id`). The custom domain is `snipertrader.ai`
+  (`CNAME` present). Every push to `main` deploys to production automatically —
+  there is no separate "staging" deploy step. (The `CNAME` file is harmless on
+  Vercel; it does not make this GitHub Pages.)
 - ~52 HTML pages. Each page is **self-contained**: inline `<style>` and inline
   `<script>`. There is **no shared CSS, JS, or template system** yet — EXCEPT the
   new canonical theme at `assets/theme.css` (see "Theme unification" below).
-- **Kronos dashboard:** `kronos_foundation.html` + inference backend `api/server.js`
-  (`POST /api/kronos/forecast`). Real OHLCV via Binance/CoinGecko/CSV. See the
-  `kronos-foundation` skill.
+- **Kronos dashboard:** `kronos_foundation.html`. It calls Binance/CoinGecko
+  **directly from the browser** (CORS, no key — so live crypto already works on
+  production). The **backend** (Alpaca equities + AI chat) runs as **Vercel
+  serverless functions** sharing `api/_core.js`:
+  - `api/kronos/forecast.js` → `POST /api/kronos/forecast`
+  - `api/stocks/klines.js` → `GET /api/stocks/klines` (Alpaca, server-side key)
+  - `api/ai/chat.js` → `POST /api/ai/chat` (DeepSeek/Kimi, server-side key)
+  - `api/_server.js` is the **local dev** server (long-lived; `node api/_server.js`,
+    port 8787). Files prefixed with `_` (`_core.js`, `_ai_providers.js`, `_server.js`)
+    are shared helpers, not deployed as endpoints.
+  - Secrets (ALPACA_API_KEY, ALPACA_SECRET_KEY, DEEPSEEK_API_KEY, KIMI_API_KEY)
+    are set in **Vercel project env vars** (and `api/.env` locally, gitignored).
+  See the `kronos-foundation` skill.
 
 ## Critical operating rules
 - 🚫 **NEVER push to `main` without explicit user confirmation.** A push = a
@@ -76,7 +87,12 @@ trading-education and tools business. This repository **is** the live website.
 ```bash
 cd ~/snipertrader
 git status                       # what changed
-git add -A && git commit -m "…"  # local only
+git add <named files>            # NEVER `git add -A` (two unrelated files below)
+git commit -m "…"                # local only
 # only after explicit user OK:
-git push origin main             # → live deploy
+git push origin main             # → Vercel live deploy (site + api/* functions)
+# local backend dev:
+node api/_server.js              # → http://localhost:8787/api/kronos/forecast
 ```
+NOTE: `git add -A` would sweep in `Prop_firm_MasterPlan.html` and
+`Sniper_news.html` (unrelated pre-existing modifications). Always stage named files.

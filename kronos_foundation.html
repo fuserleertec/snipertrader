@@ -204,8 +204,10 @@ const MAX_CTX=512, TOK_PER_BAR=3.0;
 /* ───────────────────────── state ───────────────────────── */
 const S={source:'sim',symbol:'BTCUSDT',interval:'1h',limit:80,bars:80,horizon:24,paths:16,temp:1.0,vol:0.018,drift:0.0002,seed:0x9E3779B1};
 S.history=null; // real OHLCV [{o,h,l,c,v}] when source != 'sim'
-/* Backend hook: point this at your hosted Kronos inference service.
-   GitHub Pages is static and cannot run it locally. When unreachable,
+/* Backend hook: the Kronos inference API. In production it is served by
+   Vercel serverless functions at the same origin (api/kronos/forecast,
+   api/stocks/klines, api/ai/chat); locally it's api/_server.js on :8787.
+   API_BASE is the origin prefix — '' means same-origin. When a call fails
    the page falls back to deterministic in-browser simulation. */
 const API_BASE = (location.hostname==='localhost'||location.hostname==='127.0.0.1')
   ? 'http://localhost:8787' : '';   // '' => same-origin prod endpoint
@@ -502,11 +504,11 @@ async function runForecast(){
   const btn=document.getElementById('runBtn');
   if(btn){btn.disabled=true;btn.textContent='⏳ Computing…';}
   let result=null;
-  if(USE_BACKEND && API_BASE){
+  if(USE_BACKEND){
     try{
       const payload={config:{bars:S.bars,horizon:S.horizon,paths:S.paths,temp:S.temp,vol:S.vol,drift:S.drift,seed:S.seed>>>0}};
       if(S.history&&S.history.length) payload.history=S.history; // real OHLCV to model
-      const resp=await fetch(API_BASE+'/api/kronos/forecast',{
+      const resp=await fetch((API_BASE||'')+'/api/kronos/forecast',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify(payload)
