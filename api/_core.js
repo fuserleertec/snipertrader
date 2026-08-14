@@ -238,9 +238,104 @@ function buildChat(req, res) {
   });
 }
 
+
+/* ── ALPACA trading API (paper by default) ── */
+function alpacaGet(pathname) {
+  return new Promise((resolve, reject) => {
+    const key = process.env.ALPACA_API_KEY, sec = process.env.ALPACA_SECRET_KEY;
+    if (!key || !sec) return reject(new Error('Alpaca credentials not configured — set ALPACA_API_KEY and ALPACA_SECRET_KEY'));
+    const host = process.env.ALPACA_TRADE_HOST || 'paper-api.alpaca.markets';
+    const p = pathname.startsWith('/') ? pathname : '/' + pathname;
+    const req = https.request({
+      hostname: host,
+      path: p,
+      method: 'GET',
+      headers: { 'Apca-Api-Key-Id': key, 'Apca-Api-Secret-Key': sec, 'Accept': 'application/json' }
+    }, res => {
+      let body = '';
+      res.on('data', c => body += c);
+      res.on('end', () => {
+        if (res.statusCode >= 400) {
+          let m = 'Alpaca HTTP ' + res.statusCode;
+          try { const e = JSON.parse(body); if (e && (e.message || e.error)) m = e.message || e.error; } catch (_) {}
+          return reject(new Error(m));
+        }
+        try { resolve(JSON.parse(body || '{}')); }
+        catch (e) { reject(new Error('Alpaca response parse error: ' + e.message)); }
+      });
+    });
+    req.on('error', e => reject(new Error('Alpaca request failed: ' + e.message)));
+    req.setTimeout(15000, () => req.destroy(new Error('Alpaca timeout')));
+    req.end();
+  });
+}
+
+function toNum(v, d) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : (d === undefined ? 0 : d);
+}
+
+/* ── PROP ACCOUNT aggregator (GET /api/prop/account) ── */
+function buildPropAccount(req, res, url) {
+  Promise.all([
+    alpacaGet('/v2/account'),
+    alpacaGet('/v2/positions'),
+    alpacaGet('/v2/orders?status=closed&limit=20&direction=desc'),
+    alpacaGet('/v2/account/portfolio/history?period=1M&timeframe=1D')
+  ]).then(([acct, positions, orders, history]) => {
+    const equity = toNum(acct && acct.equity);
+    const lastEquity = toNum(acct && acct.last_equity);
+    const dayPnl = +(equity - lastEquity).toFixed(2);
+    const payload = {
+      broker: 'alpaca-paper',
+      account: {
+        id: (acct && acct.id) || '',
+        number: (acct && acct.account_number) || '',
+        status: (acct && acct.status) || '',
+        equity,
+        cash: toNum(acct && acct.cash),
+        buying_power: toNum(acct && acct.buying_power),
+        last_equity: lastEquity,
+        day_pnl: dayPnl,
+        portfolio_value: toNum(acct && (acct.portfolio_value || acct.equity)),
+        trading_blocked: !!(acct && acct.trading_blocked)
+      },
+      positions: Array.isArray(positions) ? positions.map(p => ({
+        symbol: p.symbol,
+        qty: toNum(p.qty),
+        side: p.side,
+        market_value: toNum(p.market_value),
+        unrealized_pl: toNum(p.unrealized_pl),
+        avg_entry_price: toNum(p.avg_entry_price),
+        current_price: toNum(p.current_price)
+      })) : [],
+      orders: Array.isArray(orders) ? orders.map(o => ({
+        id: o.id,
+        symbol: o.symbol,
+        side: o.side,
+        qty: toNum(o.filled_qty != null && o.filled_qty !== '' ? o.filled_qty : o.qty),
+        filled_avg_price: toNum(o.filled_avg_price),
+        filled_at: o.filled_at || o.updated_at || o.submitted_at || null,
+        status: o.status,
+        type: o.type
+      })) : [],
+      history: {
+        timestamp: (history && history.timestamp) || [],
+        equity: (history && history.equity) || [],
+        profit_loss: (history && history.profit_loss) || []
+      }
+    };
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(payload));
+  }).catch(e => {
+    res.writeHead(502, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: String(e && e.message || e) }));
+  });
+}
+
 module.exports = {
   MAX_CTX, MAX_BARS,
   mulberry32, gauss, genHistory, genPaths, computeBands, computeStats, runModel,
-  alpacaBars, buildForecast, buildStocks, buildChat,
+  alpacaBars, alpacaGet, buildForecast, buildStocks, buildChat, buildPropAccount,
   aiChat, isConfigured, PROVIDERS
 };

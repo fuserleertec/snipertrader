@@ -2,12 +2,13 @@
 /*
  * Kronos backend — LOCAL DEV server (long-lived http server).
  * For production this repo deploys the same logic as Vercel serverless
- * functions (api/kronos/forecast.js, api/stocks/klines.js, api/ai/chat.js),
- * all sharing api/_core.js. This file is for `node api/_server.js` dev only.
+ * functions (api/kronos/forecast.js, api/stocks/klines.js, api/ai/chat.js,
+ * api/prop/account.js), all sharing api/_core.js. This file is for
+ * `node api/_server.js` dev only.
  */
 'use strict';
 const http = require('http');
-const { buildForecast, buildStocks, buildChat } = require('./_core');
+const { buildForecast, buildStocks, buildChat, buildPropAccount } = require('./_core');
 
 const PORT = process.env.KRONOS_PORT || 8787;
 
@@ -20,6 +21,9 @@ const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   if (url.pathname === '/api/stocks/klines' && req.method === 'GET') {
     return buildStocks(req, res, url);
+  }
+  if (url.pathname === '/api/prop/account' && req.method === 'GET') {
+    return buildPropAccount(req, res, url);
   }
   if (url.pathname === '/api/ai/chat' && req.method === 'POST') {
     return buildChat(req, res);
