@@ -192,7 +192,15 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;padding:16px 48px;display:fl
 .cmd-stat-val{font-family:'Orbitron',monospace;font-size:14px;font-weight:900;display:block;}
 .cmd-stat-label{font-size:7px;color:var(--text3);font-family:'Space Mono',monospace;display:block;margin-top:2px;letter-spacing:.5px;text-transform:uppercase;}
 .cmd-alert{display:flex;align-items:center;gap:8px;background:rgba(255,68,85,.06);border:1px solid rgba(255,68,85,.2);border-radius:6px;padding:8px 10px;margin-bottom:10px;}
+.cmd-alert.info{background:rgba(0,212,255,.06);border-color:rgba(0,212,255,.22);}
+.cmd-alert.ok{background:var(--green-dim);border-color:rgba(0,255,136,.22);}
+.cmd-alert.error{background:rgba(255,68,85,.06);border-color:rgba(255,68,85,.25);}
 .cmd-alert-txt{font-family:'Space Mono',monospace;font-size:8px;color:#FF8899;}
+.cmd-alert.info .cmd-alert-txt{color:var(--cyan);}
+.cmd-alert.ok .cmd-alert-txt{color:var(--green);}
+.cmd-status.error{color:var(--red);}
+.cmd-status.error .cmd-status-dot{background:var(--red);animation:none;}
+.firms-grid.live-one{grid-template-columns:minmax(280px,480px);}
 .cmd-firms-mini{display:flex;flex-direction:column;gap:6px;}
 .cmd-firm-mini{background:rgba(17,24,32,.9);border:1px solid var(--border);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:10px;}
 .cmd-firm-logo{width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:7px;font-weight:700;color:#fff;flex-shrink:0;}
@@ -466,7 +474,7 @@ footer{background:var(--obs2);border-top:1px solid var(--border);padding:36px 48
       </div>
       <div class="live-badge">
         <span class="pulse"></span>
-        Live API · Auto-refresh every session
+        <span id="liveBadgeTxt">Live Alpaca Paper</span>
       </div>
     </div>
 
@@ -476,42 +484,20 @@ footer{background:var(--obs2);border-top:1px solid var(--border);padding:36px 48
         <div class="cmd-glass">
           <div class="cmd-topbar">
             <div class="cmd-logo">PROP FIRM COMMAND CENTER</div>
-            <div class="cmd-status"><div class="cmd-status-dot"></div> 3 ACCOUNTS LIVE</div>
+            <div class="cmd-status" id="cmdStatus"><div class="cmd-status-dot"></div> <span id="cmdStatusTxt">LOADING…</span></div>
           </div>
           <div class="cmd-body">
             <div class="cmd-summary-row">
-              <div class="cmd-stat"><span class="cmd-stat-val" style="color:var(--green);font-size:13px;">+$3,847</span><span class="cmd-stat-label">Net P&L</span></div>
-              <div class="cmd-stat"><span class="cmd-stat-val" style="color:var(--cyan);font-size:13px;">3</span><span class="cmd-stat-label">Connected</span></div>
-              <div class="cmd-stat"><span class="cmd-stat-val" style="color:var(--gold);font-size:13px;">$280K</span><span class="cmd-stat-label">Buying Power</span></div>
-              <div class="cmd-stat"><span class="cmd-stat-val" style="color:var(--red);font-size:13px;">1</span><span class="cmd-stat-label">At Risk</span></div>
+              <div class="cmd-stat"><span class="cmd-stat-val" id="cmdNetPnl" style="color:var(--cyan);font-size:13px;">—</span><span class="cmd-stat-label">Net P&L</span></div>
+              <div class="cmd-stat"><span class="cmd-stat-val" id="cmdConnected" style="color:var(--cyan);font-size:13px;">—</span><span class="cmd-stat-label">Connected</span></div>
+              <div class="cmd-stat"><span class="cmd-stat-val" id="cmdBuyingPower" style="color:var(--gold);font-size:13px;">—</span><span class="cmd-stat-label">Buying Power</span></div>
+              <div class="cmd-stat"><span class="cmd-stat-val" id="cmdAtRisk" style="color:var(--green);font-size:13px;">—</span><span class="cmd-stat-label">At Risk</span></div>
             </div>
-            <div class="cmd-alert">
-              <span style="font-size:12px;">⚠</span>
-              <span class="cmd-alert-txt">APEX — Daily loss 78% consumed. One more loss may breach funded rules.</span>
+            <div class="cmd-alert info" id="cmdAlert">
+              <span id="cmdAlertIcon" style="font-size:12px;">⬡</span>
+              <span class="cmd-alert-txt" id="cmdAlertTxt">Loading Alpaca paper account…</span>
             </div>
-            <div class="cmd-firms-mini">
-              <div class="cmd-firm-mini">
-                <div class="cmd-firm-logo" style="background:linear-gradient(135deg,#0a2a1f,#0f3a28);">TS</div>
-                <div class="cmd-firm-info"><div class="cmd-firm-name">TOPSTEP</div><div class="cmd-firm-phase">$150K · FUNDED</div></div>
-                <div class="cmd-firm-bar"><div class="cmd-firm-bar-fill" style="width:31%;background:var(--green);"></div></div>
-                <div class="cmd-firm-pnl pos">+$2,140</div>
-                <div class="cmd-firm-badge ok">HEALTHY</div>
-              </div>
-              <div class="cmd-firm-mini">
-                <div class="cmd-firm-logo" style="background:linear-gradient(135deg,#2a0a0a,#3a1010);">AP</div>
-                <div class="cmd-firm-info"><div class="cmd-firm-name">APEX</div><div class="cmd-firm-phase">$100K · FUNDED</div></div>
-                <div class="cmd-firm-bar"><div class="cmd-firm-bar-fill" style="width:78%;background:var(--red);"></div></div>
-                <div class="cmd-firm-pnl neg">-$420</div>
-                <div class="cmd-firm-badge warn">AT RISK</div>
-              </div>
-              <div class="cmd-firm-mini">
-                <div class="cmd-firm-logo" style="background:linear-gradient(135deg,#0a1a2a,#0f2235);">E8</div>
-                <div class="cmd-firm-info"><div class="cmd-firm-name">E8 FUNDING</div><div class="cmd-firm-phase">$50K · EVALUATION</div></div>
-                <div class="cmd-firm-bar"><div class="cmd-firm-bar-fill" style="width:72%;background:var(--gold);"></div></div>
-                <div class="cmd-firm-pnl pos">+$2,127</div>
-                <div class="cmd-firm-badge prog">IN PROGRESS</div>
-              </div>
-            </div>
+            <div class="cmd-firms-mini" id="cmdFirmsMini"></div>
           </div>
         </div>
       </div>
@@ -530,50 +516,45 @@ footer{background:var(--obs2);border-top:1px solid var(--border);padding:36px 48
       <p class="sec-lead" style="margin-bottom:32px;">Your complete prop firm portfolio at a glance — total P&L, buying power, drawdown health, and real-time breach risk across every connected account.</p>
     </div>
 
-    <div class="portfolio-top fu d1">
+    <div class="portfolio-top fu d1" id="portfolioTiles">
       <div class="pf-stat">
-        <span class="pf-stat-val" style="color:var(--green);">+$3,847</span>
-        <span class="pf-stat-label">Total Net P&L</span>
-        <span class="pf-stat-change up">▲ +$1,240 today</span>
+        <span class="pf-stat-val" id="pfEquity" style="color:var(--cyan);">—</span>
+        <span class="pf-stat-label">Equity</span>
+        <span class="pf-stat-change nt" id="pfEquitySub">Alpaca paper</span>
       </div>
       <div class="pf-stat">
-        <span class="pf-stat-val" style="color:var(--cyan);">$280K</span>
-        <span class="pf-stat-label">Total Buying Power</span>
-        <span class="pf-stat-change nt">3 accounts active</span>
+        <span class="pf-stat-val" id="pfBuyingPower" style="color:var(--gold);">—</span>
+        <span class="pf-stat-label">Buying Power</span>
+        <span class="pf-stat-change nt" id="pfBuyingPowerSub">Loading…</span>
       </div>
       <div class="pf-stat">
-        <span class="pf-stat-val" style="color:var(--gold);">$8,430</span>
-        <span class="pf-stat-label">Total Drawdown Left</span>
-        <span class="pf-stat-change nt">Combined headroom</span>
+        <span class="pf-stat-val" id="pfDayPnl" style="color:var(--cyan);">—</span>
+        <span class="pf-stat-label">Day P&amp;L</span>
+        <span class="pf-stat-change nt" id="pfDayPnlSub">vs last equity</span>
       </div>
       <div class="pf-stat">
-        <span class="pf-stat-val" style="color:var(--red);">78%</span>
-        <span class="pf-stat-label">Highest DL Used</span>
-        <span class="pf-stat-change dn">▼ Apex — critical</span>
+        <span class="pf-stat-val" id="pfCash" style="color:var(--green);">—</span>
+        <span class="pf-stat-label">Cash</span>
+        <span class="pf-stat-change nt" id="pfCashSub">Uninvested</span>
       </div>
       <div class="pf-stat">
-        <span class="pf-stat-val" style="color:var(--green);">67%</span>
-        <span class="pf-stat-label">Win Rate (30d)</span>
-        <span class="pf-stat-change up">▲ +4% vs last month</span>
+        <span class="pf-stat-val" id="pfPositions" style="color:var(--cyan);">—</span>
+        <span class="pf-stat-label">Open Positions</span>
+        <span class="pf-stat-change nt" id="pfPositionsSub">Live book</span>
       </div>
     </div>
 
-    <div class="alert-row fu d2">
-      <div class="alert-banner warn"><span class="alert-icon">⚠</span> <strong>APEX TRADER FUNDING</strong> — Daily loss limit 78% consumed ($780 of $1,000). Stop trading this account for today or risk breach.</div>
-      <div class="alert-banner ok"><span class="alert-icon">✓</span> <strong>TOPSTEP</strong> — All thresholds healthy. Trailing drawdown at 93% remaining. Clear to trade.</div>
-      <div class="alert-banner info"><span class="alert-icon">⬡</span> <strong>E8 FUNDING</strong> — Evaluation 72% complete. 1.7% profit target remaining. Stay disciplined — you're close.</div>
+    <div class="alert-row fu d2" id="alertRow">
+      <div class="alert-banner info"><span class="alert-icon">⬡</span> Loading live Alpaca paper snapshot…</div>
     </div>
 
     <!-- P&L CHART -->
     <div class="chart-section fu d2">
       <div class="chart-header">
-        <div class="chart-title">Combined P&L Performance</div>
+        <div class="chart-title">Alpaca Paper Equity</div>
         <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
           <div class="chart-legend">
-            <div class="cl-item"><div class="cl-dot" style="background:var(--cyan);"></div>TopStep</div>
-            <div class="cl-item"><div class="cl-dot" style="background:var(--red);"></div>Apex</div>
-            <div class="cl-item"><div class="cl-dot" style="background:var(--gold);"></div>E8</div>
-            <div class="cl-item"><div class="cl-dot" style="background:var(--green);"></div>Combined</div>
+            <div class="cl-item"><div class="cl-dot" style="background:var(--cyan);"></div>Equity</div>
           </div>
           <div class="chart-controls">
             <button class="range-btn active" onclick="setRange('7d',this)">7D</button>
@@ -592,126 +573,44 @@ footer{background:var(--obs2);border-top:1px solid var(--border);padding:36px 48
       <div class="eyebrow" style="margin-top:48px;margin-bottom:12px;">Account Details</div>
       <div class="sec-line"></div>
     </div>
-    <div class="firms-grid fu d3">
-
-      <!-- TOPSTEP -->
+    <div class="firms-grid fu d3 live-one" id="firmsGrid">
       <div class="firm-card healthy">
         <div class="fc-header">
           <div class="fc-firm-row">
-            <div class="fc-logo" style="background:linear-gradient(135deg,#0a2a1f,#0f3a28);border:1px solid rgba(0,255,136,.2);">TS</div>
+            <div class="fc-logo" style="background:linear-gradient(135deg,#062018,#0b2e24);border:1px solid rgba(0,255,136,.2);">AP</div>
             <div>
-              <div class="fc-name">TOPSTEP</div>
-              <div class="fc-meta">FUTURES · $150,000 · FUNDED</div>
+              <div class="fc-name">ALPACA PAPER</div>
+              <div class="fc-meta" id="fcMeta">EQUITIES · LOADING…</div>
             </div>
           </div>
-          <div class="fc-badge funded">FUNDED</div>
+          <div class="fc-badge funded" id="fcBadge">LIVE</div>
         </div>
         <div class="fc-body">
           <div class="fc-metrics">
-            <div class="fc-metric"><span class="fc-m-val" style="color:var(--green);">+$2,140</span><span class="fc-m-label">Net P&L</span></div>
-            <div class="fc-metric"><span class="fc-m-val" style="color:var(--cyan);">$4,200</span><span class="fc-m-label">DD Left</span></div>
-            <div class="fc-metric"><span class="fc-m-val" style="color:var(--gold);">-$310</span><span class="fc-m-label">Today</span></div>
+            <div class="fc-metric"><span class="fc-m-val" id="fcEquity" style="color:var(--cyan);">—</span><span class="fc-m-label">Equity</span></div>
+            <div class="fc-metric"><span class="fc-m-val" id="fcCash" style="color:var(--green);">—</span><span class="fc-m-label">Cash</span></div>
+            <div class="fc-metric"><span class="fc-m-val" id="fcDayPnl" style="color:var(--gold);">—</span><span class="fc-m-label">Today</span></div>
           </div>
           <div class="fc-bars">
             <div class="fc-bar-wrap">
-              <div class="fc-bar-row"><span class="fc-bar-name">Daily Loss</span><span class="fc-bar-val" style="color:var(--green);">31% of $1,000</span></div>
-              <div class="fc-bar-track"><div class="fc-bar-fill" style="width:31%;background:var(--green);"></div></div>
+              <div class="fc-bar-row"><span class="fc-bar-name">Cash vs Equity</span><span class="fc-bar-val" id="fcCashBarVal" style="color:var(--cyan);">—</span></div>
+              <div class="fc-bar-track"><div class="fc-bar-fill" id="fcCashBarFill" style="width:0%;background:var(--cyan);"></div></div>
             </div>
             <div class="fc-bar-wrap">
-              <div class="fc-bar-row"><span class="fc-bar-name">Trailing Drawdown</span><span class="fc-bar-val" style="color:var(--cyan);">$4,200 / $4,500</span></div>
-              <div class="fc-bar-track"><div class="fc-bar-fill" style="width:93%;background:var(--cyan);"></div></div>
+              <div class="fc-bar-row"><span class="fc-bar-name">Buying Power</span><span class="fc-bar-val" id="fcBpBarVal" style="color:var(--gold);">—</span></div>
+              <div class="fc-bar-track"><div class="fc-bar-fill" id="fcBpBarFill" style="width:0%;background:var(--gold);"></div></div>
             </div>
           </div>
-          <div class="fc-trades-label">Recent Trades</div>
-          <div class="fc-trade-row"><span class="fc-t-sym">NQ</span><span class="fc-t-type long">LONG</span><span class="fc-t-time">Apr 08 09:34</span><span class="fc-t-pnl pos">+$520</span></div>
-          <div class="fc-trade-row"><span class="fc-t-sym">ES</span><span class="fc-t-type short">SHORT</span><span class="fc-t-time">Apr 08 10:12</span><span class="fc-t-pnl neg">-$310</span></div>
-          <div class="fc-trade-row"><span class="fc-t-sym">NQ</span><span class="fc-t-type long">LONG</span><span class="fc-t-time">Apr 07 14:20</span><span class="fc-t-pnl pos">+$1,930</span></div>
+          <div class="fc-trades-label">Recent Fills</div>
+          <div id="fcTrades">
+            <div class="fc-trade-row"><span class="fc-t-time">Waiting for live snapshot…</span></div>
+          </div>
           <div class="fc-actions">
-            <div class="fc-btn primary" onclick="refreshFirmCard(this,'TopStep')">↻ REFRESH</div>
-            <div class="fc-btn" onclick="analyzeAccount('TopStep',$2140,31,93)">⬡ AI ANALYSIS</div>
+            <div class="fc-btn primary" onclick="refreshFirmCard(this)">↻ REFRESH</div>
+            <div class="fc-btn" onclick="analyzeAccount()">⬡ AI ANALYSIS</div>
           </div>
         </div>
       </div>
-
-      <!-- APEX -->
-      <div class="firm-card warning">
-        <div class="fc-header">
-          <div class="fc-firm-row">
-            <div class="fc-logo" style="background:linear-gradient(135deg,#2a0a0a,#3a1010);border:1px solid rgba(255,68,85,.2);">AP</div>
-            <div>
-              <div class="fc-name">APEX TRADER FUNDING</div>
-              <div class="fc-meta">FUTURES · $100,000 · FUNDED</div>
-            </div>
-          </div>
-          <div class="fc-badge breach">AT RISK</div>
-        </div>
-        <div class="fc-body">
-          <div class="fc-metrics">
-            <div class="fc-metric"><span class="fc-m-val" style="color:var(--red);">-$420</span><span class="fc-m-label">Net P&L</span></div>
-            <div class="fc-metric"><span class="fc-m-val" style="color:var(--red);">$230</span><span class="fc-m-label">DL Left</span></div>
-            <div class="fc-metric"><span class="fc-m-val" style="color:var(--red);">-$1,050</span><span class="fc-m-label">Today</span></div>
-          </div>
-          <div class="fc-bars">
-            <div class="fc-bar-wrap">
-              <div class="fc-bar-row"><span class="fc-bar-name">Daily Loss</span><span class="fc-bar-val" style="color:var(--red);">78% of $1,000 — CRITICAL</span></div>
-              <div class="fc-bar-track"><div class="fc-bar-fill" style="width:78%;background:var(--red);"></div></div>
-            </div>
-            <div class="fc-bar-wrap">
-              <div class="fc-bar-row"><span class="fc-bar-name">Overall Drawdown</span><span class="fc-bar-val" style="color:var(--gold);">$2,080 / $3,000 used</span></div>
-              <div class="fc-bar-track"><div class="fc-bar-fill" style="width:69%;background:var(--gold);"></div></div>
-            </div>
-          </div>
-          <div class="fc-trades-label">Recent Trades</div>
-          <div class="fc-trade-row"><span class="fc-t-sym">NQ</span><span class="fc-t-type short">SHORT</span><span class="fc-t-time">Apr 08 09:50</span><span class="fc-t-pnl neg">-$650</span></div>
-          <div class="fc-trade-row"><span class="fc-t-sym">ES</span><span class="fc-t-type long">LONG</span><span class="fc-t-time">Apr 08 10:30</span><span class="fc-t-pnl neg">-$400</span></div>
-          <div class="fc-trade-row"><span class="fc-t-sym">GC</span><span class="fc-t-type long">LONG</span><span class="fc-t-time">Apr 07 11:05</span><span class="fc-t-pnl pos">+$630</span></div>
-          <div class="fc-actions">
-            <div class="fc-btn primary" onclick="refreshFirmCard(this,'Apex')">↻ REFRESH</div>
-            <div class="fc-btn" onclick="analyzeAccount('Apex',-420,78,69)">⬡ AI ANALYSIS</div>
-            <div class="fc-btn danger">✕ STOP TRADING</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- E8 -->
-      <div class="firm-card progress">
-        <div class="fc-header">
-          <div class="fc-firm-row">
-            <div class="fc-logo" style="background:linear-gradient(135deg,#0a1a2a,#0f2235);border:1px solid rgba(0,212,255,.2);">E8</div>
-            <div>
-              <div class="fc-name">E8 FUNDING</div>
-              <div class="fc-meta">FUTURES · $50,000 · EVALUATION</div>
-            </div>
-          </div>
-          <div class="fc-badge eval">EVALUATION</div>
-        </div>
-        <div class="fc-body">
-          <div class="fc-metrics">
-            <div class="fc-metric"><span class="fc-m-val" style="color:var(--green);">+$2,127</span><span class="fc-m-label">Net P&L</span></div>
-            <div class="fc-metric"><span class="fc-m-val" style="color:var(--cyan);">4.3%</span><span class="fc-m-label">Progress</span></div>
-            <div class="fc-metric"><span class="fc-m-val" style="color:var(--gold);">6%</span><span class="fc-m-label">Target</span></div>
-          </div>
-          <div class="fc-bars">
-            <div class="fc-bar-wrap">
-              <div class="fc-bar-row"><span class="fc-bar-name">Profit Target</span><span class="fc-bar-val" style="color:var(--cyan);">4.3% / 6% — 72%</span></div>
-              <div class="fc-bar-track"><div class="fc-bar-fill" style="width:72%;background:var(--cyan);"></div></div>
-            </div>
-            <div class="fc-bar-wrap">
-              <div class="fc-bar-row"><span class="fc-bar-name">Max Daily Loss</span><span class="fc-bar-val" style="color:var(--green);">18% used</span></div>
-              <div class="fc-bar-track"><div class="fc-bar-fill" style="width:18%;background:var(--green);"></div></div>
-            </div>
-          </div>
-          <div class="fc-trades-label">Recent Trades</div>
-          <div class="fc-trade-row"><span class="fc-t-sym">GC</span><span class="fc-t-type long">LONG</span><span class="fc-t-time">Apr 08 08:55</span><span class="fc-t-pnl pos">+$480</span></div>
-          <div class="fc-trade-row"><span class="fc-t-sym">NQ</span><span class="fc-t-type long">LONG</span><span class="fc-t-time">Apr 07 13:40</span><span class="fc-t-pnl pos">+$960</span></div>
-          <div class="fc-trade-row"><span class="fc-t-sym">CL</span><span class="fc-t-type short">SHORT</span><span class="fc-t-time">Apr 07 10:20</span><span class="fc-t-pnl pos">+$687</span></div>
-          <div class="fc-actions">
-            <div class="fc-btn primary" onclick="refreshFirmCard(this,'E8')">↻ REFRESH</div>
-            <div class="fc-btn" onclick="analyzeAccount('E8',2127,18,72)">⬡ AI ANALYSIS</div>
-          </div>
-        </div>
-      </div>
-
     </div><!-- /firms-grid -->
 
     <!-- PROGRESS CHARTS -->
@@ -721,11 +620,11 @@ footer{background:var(--obs2);border-top:1px solid var(--border);padding:36px 48
         <div class="prog-card-title">⬡ Drawdown Risk Gauge</div>
         <div class="prog-ring-wrap">
           <canvas id="ringChart" width="140" height="140" class="prog-ring"></canvas>
-          <div class="prog-ring-stats">
-            <div class="prog-stat-row"><span class="prog-stat-name">TopStep DD</span><span class="prog-stat-val" style="color:var(--green);">7% used</span></div>
-            <div class="prog-stat-row"><span class="prog-stat-name">Apex DD</span><span class="prog-stat-val" style="color:var(--red);">69% used</span></div>
-            <div class="prog-stat-row"><span class="prog-stat-name">E8 Daily</span><span class="prog-stat-val" style="color:var(--green);">18% used</span></div>
-            <div class="prog-stat-row"><span class="prog-stat-name">Portfolio Risk</span><span class="prog-stat-val" style="color:var(--gold);">MEDIUM</span></div>
+          <div class="prog-ring-stats" id="ringStats">
+            <div class="prog-stat-row"><span class="prog-stat-name">Cash vs Equity</span><span class="prog-stat-val" id="ringCash" style="color:var(--cyan);">—</span></div>
+            <div class="prog-stat-row"><span class="prog-stat-name">Deployed Capital</span><span class="prog-stat-val" id="ringDeployed" style="color:var(--gold);">—</span></div>
+            <div class="prog-stat-row"><span class="prog-stat-name">Buying Power</span><span class="prog-stat-val" id="ringBp" style="color:var(--green);">—</span></div>
+            <div class="prog-stat-row"><span class="prog-stat-name">Portfolio Risk</span><span class="prog-stat-val" id="ringRisk" style="color:var(--green);">—</span></div>
           </div>
         </div>
       </div>
@@ -752,7 +651,7 @@ footer{background:var(--obs2);border-top:1px solid var(--border);padding:36px 48
       <div class="eyebrow">AI Risk Intelligence</div>
       <div class="sec-line"></div>
       <h2 class="sec-h2">Your AI prop firm <span>risk advisor.</span></h2>
-      <p class="sec-lead">Ask Claude to analyze your account health, flag rule violation risks, optimize position sizing across accounts, or give you a daily action plan before the open.</p>
+      <p class="sec-lead">Ask the risk advisor to analyze your live Alpaca paper book, flag concentration or buying-power risk, and give you a daily action plan before the open.</p>
     </div>
 
     <div class="ai-panel fu d1">
@@ -761,25 +660,24 @@ footer{background:var(--obs2);border-top:1px solid var(--border);padding:36px 48
           <div class="ai-icon-box">🤖</div>
           <div>
             <div class="ai-title">AI Prop Firm Risk Advisor</div>
-            <div class="ai-sub">Powered by Claude · Analyzes all connected accounts</div>
+            <div class="ai-sub">Powered by DeepSeek · Live Alpaca paper context</div>
           </div>
         </div>
         <button class="ask-btn" onclick="analyzeAllAccounts()"><span id="aiAllIcon">⬡</span> ANALYZE ALL ACCOUNTS</button>
       </div>
       <div class="ai-presets">
         <button class="preset-pill" onclick="setQ(this,'What is my biggest account risk today and what should I do about it?')">Biggest Risk Today</button>
-        <button class="preset-pill" onclick="setQ(this,'How should I allocate my remaining trades today across all three accounts?')">Trade Allocation</button>
-        <button class="preset-pill" onclick="setQ(this,'Based on my Apex account drawdown, should I keep trading today?')">Apex Trading Decision</button>
-        <button class="preset-pill" onclick="setQ(this,'What is the optimal position size for NQ on my TopStep account given current drawdown?')">Position Sizing</button>
-        <button class="preset-pill" onclick="setQ(this,'How close am I to passing my E8 evaluation and what do I need to do?')">E8 Eval Strategy</button>
-        <button class="preset-pill" onclick="setQ(this,'Give me a complete risk management plan for all three accounts today.')">Full Risk Plan</button>
+        <button class="preset-pill" onclick="setQ(this,'How should I size the first equity trade on this Alpaca paper account?')">Position Sizing</button>
+        <button class="preset-pill" onclick="setQ(this,'The paper book is flat at $100k. What is a disciplined first-week plan?')">First-Week Plan</button>
+        <button class="preset-pill" onclick="setQ(this,'How should I use $400k buying power without over-leveraging a $100k paper account?')">Buying Power</button>
+        <button class="preset-pill" onclick="setQ(this,'Give me a complete risk management plan for this live Alpaca paper account today.')">Full Risk Plan</button>
       </div>
       <div class="ai-input-row">
         <input class="ai-inp" id="aiQ" type="text" placeholder="Ask anything about your prop firm accounts, rules, risk, or strategy..." />
         <button class="ask-btn" onclick="askRiskAI()"><span>▶</span></button>
       </div>
       <div class="ai-resp" id="aiResp">
-        <span style="color:var(--text4);font-family:'Space Mono',monospace;font-size:11px;display:block;text-align:center;padding:16px;">Select a preset or type your question — the AI Risk Advisor has full context on all your accounts.</span>
+        <span style="color:var(--text4);font-family:'Space Mono',monospace;font-size:11px;display:block;text-align:center;padding:16px;">Select a preset or type your question — the advisor uses the live Alpaca paper snapshot.</span>
       </div>
     </div>
   </div>
@@ -796,22 +694,28 @@ footer{background:var(--obs2);border-top:1px solid var(--border);padding:36px 48
     </div>
     <div class="connect-firms-grid fu d1">
       <div class="connect-firm-card connected">
+        <div class="cfc-logo" style="background:linear-gradient(135deg,#062018,#0b2e24);">AL</div>
+        <div class="cfc-name">Alpaca Paper</div>
+        <div class="cfc-type">Equities · Paper Trading</div>
+        <div class="cfc-status connected">Connected</div>
+      </div>
+      <div class="connect-firm-card">
         <div class="cfc-logo" style="background:linear-gradient(135deg,#0a2a1f,#0f3a28);">TS</div>
         <div class="cfc-name">TopStep</div>
         <div class="cfc-type">Futures · CME / CBOT</div>
-        <div class="cfc-status connected">Connected</div>
+        <div class="cfc-status available">+ Connect</div>
       </div>
-      <div class="connect-firm-card connected">
+      <div class="connect-firm-card">
         <div class="cfc-logo" style="background:linear-gradient(135deg,#2a0a0a,#3a1010);">AP</div>
         <div class="cfc-name">Apex Trader</div>
         <div class="cfc-type">Futures · All CME Products</div>
-        <div class="cfc-status connected">Connected</div>
+        <div class="cfc-status available">+ Connect</div>
       </div>
-      <div class="connect-firm-card connected">
+      <div class="connect-firm-card">
         <div class="cfc-logo" style="background:linear-gradient(135deg,#0a1a2a,#0f2235);">E8</div>
         <div class="cfc-name">E8 Funding</div>
         <div class="cfc-type">Futures / Forex</div>
-        <div class="cfc-status connected">Connected</div>
+        <div class="cfc-status available">+ Connect</div>
       </div>
       <div class="connect-firm-card">
         <div class="cfc-logo" style="background:linear-gradient(135deg,#1a0a20,#250f2f);">FT</div>
@@ -976,95 +880,141 @@ document.addEventListener('mousemove',e=>{
 const so=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('v');}),{threshold:.06});
 document.querySelectorAll('.fu').forEach(el=>so.observe(el));
 
-// ── P&L CHART ──
-const chartData={
-  '7d':{
-    labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
-    ts:[320,580,820,760,1100,1400,2140],
-    apex:[200,150,-80,-200,-420,-380,-420],
-    e8:[400,680,900,1200,1600,1900,2127],
-    combined:[920,1410,1640,1760,2280,2920,3847]
-  },
-  '30d':{
-    labels:['Wk1','Wk2','Wk3','Wk4'],
-    ts:[400,900,1600,2140],
-    apex:[600,200,-100,-420],
-    e8:[200,700,1400,2127],
-    combined:[1200,1800,2900,3847]
-  },
-  '90d':{
-    labels:['Jan','Feb','Mar','Apr'],
-    ts:[-200,400,1200,2140],
-    apex:[800,400,-100,-420],
-    e8:[0,300,1100,2127],
-    combined:[600,1100,2200,3847]
-  }
-};
+// ── LIVE ALPACA PAPER ──
+let liveSnap=null;
+let liveHistory={timestamp:[],equity:[],profit_loss:[]};
 let activeRange='7d';
+
+function n(v){const x=Number(v);return Number.isFinite(x)?x:0;}
+function fmtUsd(v,signed){
+  const num=n(v),abs=Math.abs(num);
+  const sign=num<0?'-':(signed&&num>0?'+':'');
+  const digits=abs>=100||abs===0?0:2;
+  return sign+'$'+abs.toLocaleString('en-US',{minimumFractionDigits:digits,maximumFractionDigits:digits});
+}
+function fmtCompact(v){
+  const num=n(v),abs=Math.abs(num),sign=num<0?'-':'';
+  if(abs>=1e6) return sign+'$'+(abs/1e6).toFixed(2).replace(/\.00$/,'')+'M';
+  if(abs>=10000) return sign+'$'+Math.round(abs/1000)+'K';
+  if(abs>=1000) return sign+'$'+(abs/1000).toFixed(1).replace(/\.0$/,'')+'K';
+  return fmtUsd(num,false);
+}
+function pnlColor(v){
+  const num=n(v);
+  if(num>0) return 'var(--green)';
+  if(num<0) return 'var(--red)';
+  return 'var(--cyan)';
+}
+function tsMs(t){
+  if(t==null) return NaN;
+  if(typeof t==='string') return Date.parse(t);
+  const x=Number(t);
+  if(!Number.isFinite(x)) return NaN;
+  return x<1e12?x*1000:x;
+}
+function fmtWhen(t){
+  const ms=tsMs(t);
+  if(!Number.isFinite(ms)) return '—';
+  const d=new Date(ms);
+  const mo=d.toLocaleString('en-US',{month:'short'});
+  const day=String(d.getDate()).padStart(2,'0');
+  const hh=String(d.getHours()).padStart(2,'0');
+  const mm=String(d.getMinutes()).padStart(2,'0');
+  return mo+' '+day+' '+hh+':'+mm;
+}
+
+function setCmdAlert(kind,icon,text){
+  const el=document.getElementById('cmdAlert');
+  el.className='cmd-alert '+(kind||'');
+  document.getElementById('cmdAlertIcon').textContent=icon;
+  document.getElementById('cmdAlertTxt').textContent=text;
+}
+
+function showAccountError(msg){
+  const st=document.getElementById('cmdStatus');
+  st.classList.add('error');
+  document.getElementById('cmdStatusTxt').textContent='ACCOUNT ERROR';
+  ['cmdNetPnl','cmdConnected','cmdBuyingPower','cmdAtRisk'].forEach(id=>{
+    const el=document.getElementById(id);el.textContent='—';el.style.color='var(--red)';
+  });
+  setCmdAlert('error','✕', msg||'Could not load Alpaca paper account.');
+  document.getElementById('cmdFirmsMini').innerHTML='<div class="cmd-firm-mini"><div class="cmd-firm-info"><div class="cmd-firm-name">ALPACA PAPER</div><div class="cmd-firm-phase">UNAVAILABLE</div></div><div class="cmd-firm-badge warn">ERROR</div></div>';
+  document.getElementById('alertRow').innerHTML='<div class="alert-banner warn"><span class="alert-icon">✕</span> <strong>ALPACA PAPER</strong> — '+escapeHtml(msg||'Live snapshot failed. Dummy numbers were not loaded.')+'</div>';
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function sliceHistory(range){
+  const ts=liveHistory.timestamp||[];
+  const eq=liveHistory.equity||[];
+  const days=range==='7d'?7:range==='30d'?30:90;
+  const cutoff=Date.now()-days*86400000;
+  const labels=[],equity=[];
+  for(let i=0;i<eq.length;i++){
+    const ms=tsMs(ts[i]);
+    if(Number.isFinite(ms)&&ms<cutoff) continue;
+    const d=Number.isFinite(ms)?new Date(ms):null;
+    labels.push(d?(d.getMonth()+1)+'/'+d.getDate():String(i+1));
+    equity.push(n(eq[i]));
+  }
+  return {labels,equity};
+}
 
 function drawPnLChart(range){
   const canvas=document.getElementById('pnlChart');
+  if(!canvas) return;
   const ctx=canvas.getContext('2d');
-  const W=canvas.offsetWidth;const H=280;
+  const W=canvas.offsetWidth||800;const H=280;
   canvas.width=W;canvas.height=H;
-  const d=chartData[range];
-  const allVals=[...d.ts,...d.apex,...d.e8,...d.combined];
-  const minV=Math.min(...allVals);const maxV=Math.max(...allVals);
-  const pad={l:60,r:20,t:24,b:36};
+  const sliced=sliceHistory(range||activeRange);
+  let labels=sliced.labels.slice();
+  let data=sliced.equity.slice();
+  if(!data.length && liveSnap && liveSnap.account){
+    labels=['Now'];data=[n(liveSnap.account.equity)];
+  }
+  if(data.length===1){labels=[labels[0],labels[0]];data=[data[0],data[0]];}
+  if(!data.length){
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='rgba(120,153,170,0.7)';ctx.font='11px Space Mono,monospace';ctx.textAlign='center';
+    ctx.fillText('No equity history yet — fresh paper book',W/2,H/2);
+    return;
+  }
+  const minV=Math.min(...data);const maxV=Math.max(...data);
+  const span=maxV-minV || Math.max(Math.abs(maxV)*0.01,1);
+  const lo=minV-span*0.08;const hi=maxV+span*0.08;
+  const pad={l:70,r:20,t:24,b:36};
   const gW=W-pad.l-pad.r;const gH=H-pad.t-pad.b;
-  const toX=(i)=>pad.l+gW*i/(d.labels.length-1);
-  const toY=(v)=>pad.t+gH*(1-(v-minV)/(maxV-minV));
+  const den=Math.max(1,labels.length-1);
+  const toX=(i)=>pad.l+gW*i/den;
+  const toY=(v)=>pad.t+gH*(1-(v-lo)/(hi-lo));
 
-  // Grid lines
+  ctx.clearRect(0,0,W,H);
   ctx.strokeStyle='rgba(255,255,255,0.04)';ctx.lineWidth=1;
   for(let i=0;i<=4;i++){
     const y=pad.t+gH*i/4;
     ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
-    const val=maxV-(maxV-minV)*i/4;
+    const val=hi-(hi-lo)*i/4;
     ctx.fillStyle='rgba(120,153,170,0.7)';ctx.font='9px Space Mono,monospace';ctx.textAlign='right';
-    ctx.fillText((val>=0?'+':'')+Math.round(val/100)/10+'K',pad.l-6,y+3);
+    ctx.fillText(fmtCompact(val),pad.l-6,y+3);
   }
-
-  // Zero line
-  if(minV<0){
-    const zy=toY(0);
-    ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
-    ctx.beginPath();ctx.moveTo(pad.l,zy);ctx.lineTo(W-pad.r,zy);ctx.stroke();
-    ctx.setLineDash([]);
-  }
-
-  // X labels
   ctx.fillStyle='rgba(120,153,170,0.7)';ctx.font='9px Space Mono,monospace';ctx.textAlign='center';
-  d.labels.forEach((l,i)=>ctx.fillText(l,toX(i),H-8));
+  const step=Math.max(1,Math.ceil(labels.length/8));
+  labels.forEach((l,i)=>{if(i%step===0||i===labels.length-1) ctx.fillText(l,toX(i),H-8);});
 
-  // Draw lines
-  const series=[
-    {data:d.ts,color:'rgba(0,212,255,1)',fill:'rgba(0,212,255,0.05)'},
-    {data:d.apex,color:'rgba(255,68,85,1)',fill:'rgba(255,68,85,0.05)'},
-    {data:d.e8,color:'rgba(240,192,64,1)',fill:'rgba(240,192,64,0.05)'},
-    {data:d.combined,color:'rgba(0,255,136,1)',fill:'rgba(0,255,136,0.07)'},
-  ];
+  ctx.beginPath();
+  data.forEach((v,i)=>i===0?ctx.moveTo(toX(i),toY(v)):ctx.lineTo(toX(i),toY(v)));
+  ctx.lineTo(toX(data.length-1),toY(lo));
+  ctx.lineTo(toX(0),toY(lo));
+  ctx.closePath();ctx.fillStyle='rgba(0,212,255,0.07)';ctx.fill();
 
-  series.forEach(s=>{
-    // Fill
-    ctx.beginPath();
-    s.data.forEach((v,i)=>i===0?ctx.moveTo(toX(i),toY(v)):ctx.lineTo(toX(i),toY(v)));
-    ctx.lineTo(toX(s.data.length-1),toY(Math.max(minV,0)));
-    ctx.lineTo(toX(0),toY(Math.max(minV,0)));
-    ctx.closePath();ctx.fillStyle=s.fill;ctx.fill();
-
-    // Line
-    ctx.beginPath();ctx.strokeStyle=s.color;ctx.lineWidth=2;
-    s.data.forEach((v,i)=>i===0?ctx.moveTo(toX(i),toY(v)):ctx.lineTo(toX(i),toY(v)));
-    ctx.stroke();
-
-    // Dots on last point
-    const lv=s.data[s.data.length-1],lx=toX(s.data.length-1),ly=toY(lv);
-    ctx.beginPath();ctx.arc(lx,ly,4,0,Math.PI*2);ctx.fillStyle=s.color;ctx.fill();
-  });
+  ctx.beginPath();ctx.strokeStyle='rgba(0,212,255,1)';ctx.lineWidth=2;
+  data.forEach((v,i)=>i===0?ctx.moveTo(toX(i),toY(v)):ctx.lineTo(toX(i),toY(v)));
+  ctx.stroke();
+  const lv=data[data.length-1],lx=toX(data.length-1),ly=toY(lv);
+  ctx.beginPath();ctx.arc(lx,ly,4,0,Math.PI*2);ctx.fillStyle='rgba(0,212,255,1)';ctx.fill();
 }
-window.addEventListener('load',()=>drawPnLChart('7d'));
-window.addEventListener('resize',()=>drawPnLChart(activeRange));
 
 function setRange(r,btn){
   document.querySelectorAll('.range-btn').forEach(b=>b.classList.remove('active'));
@@ -1072,129 +1022,298 @@ function setRange(r,btn){
   activeRange=r;drawPnLChart(r);
 }
 
-// ── RING CHART ──
 function drawRingChart(){
   const canvas=document.getElementById('ringChart');
+  if(!canvas) return;
   const ctx=canvas.getContext('2d');
   const cx=70,cy=70,r=56;
-  const segs=[
-    {pct:.07,color:'rgba(0,255,136,.8)',label:'TS'},
-    {pct:.69,color:'rgba(255,68,85,.8)',label:'AP'},
-    {pct:.18,color:'rgba(240,192,64,.8)',label:'E8'},
-  ];
   ctx.clearRect(0,0,140,140);
+  const acct=liveSnap&&liveSnap.account;
+  const equity=acct?n(acct.equity):0;
+  const cash=acct?n(acct.cash):0;
+  const cashPct=equity>0?Math.max(0,Math.min(1,cash/equity)):0;
+  const deployedPct=equity>0?Math.max(0,Math.min(1,(equity-cash)/equity)):0;
+  const segs=[
+    {pct:cashPct,color:'rgba(0,212,255,.85)'},
+    {pct:deployedPct,color:'rgba(240,192,64,.85)'}
+  ];
+  const rest=Math.max(0,1-cashPct-deployedPct);
+  if(rest>0.001) segs.push({pct:rest,color:'rgba(255,255,255,.08)'});
   let start=-Math.PI/2;
-  segs.forEach(s=>{
-    const sweep=s.pct*2*Math.PI;
-    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,start+sweep);ctx.closePath();
-    ctx.fillStyle=s.color;ctx.fill();
-    start+=sweep+0.02;
-  });
-  // Donut hole
+  const total=segs.reduce((a,s)=>a+s.pct,0);
+  if(total<=0){
+    ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.strokeStyle='rgba(255,255,255,.08)';ctx.lineWidth=10;ctx.stroke();
+  } else {
+    segs.forEach(s=>{
+      if(s.pct<=0) return;
+      const sweep=s.pct*2*Math.PI;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,start+sweep);ctx.closePath();
+      ctx.fillStyle=s.color;ctx.fill();
+      start+=sweep+0.02;
+    });
+  }
   ctx.beginPath();ctx.arc(cx,cy,36,0,Math.PI*2);ctx.fillStyle='#0A1018';ctx.fill();
-  // Center text
   ctx.fillStyle='#FFFFFF';ctx.font='bold 11px Orbitron,monospace';ctx.textAlign='center';
-  ctx.fillText('RISK',cx,cy-4);
+  ctx.fillText('BOOK',cx,cy-4);
   ctx.fillStyle='rgba(120,153,170,0.8)';ctx.font='9px Space Mono,monospace';
   ctx.fillText('GAUGE',cx,cy+9);
 }
-window.addEventListener('load',drawRingChart);
 
-// ── HEATMAP ──
 function buildHeatmap(){
   const grid=document.getElementById('heatmapGrid');
-  const days=Array.from({length:35},(_,i)=>{
-    const r=Math.random();
-    if(r<.05) return{type:'rest',intensity:0};
-    if(r<.35) return{type:'loss',intensity:Math.random()};
-    return{type:'win',intensity:Math.random()};
-  });
-  // headers
+  if(!grid) return;
+  grid.innerHTML='';
+  const ts=liveHistory.timestamp||[];
+  const pl=liveHistory.profit_loss||[];
+  const byDay={};
+  let maxAbs=1;
+  for(let i=0;i<pl.length;i++){
+    const ms=tsMs(ts[i]);
+    if(!Number.isFinite(ms)) continue;
+    const key=new Date(ms).toISOString().slice(0,10);
+    const v=n(pl[i]);
+    byDay[key]=(byDay[key]||0)+v;
+    maxAbs=Math.max(maxAbs,Math.abs(byDay[key]));
+  }
   ['M','T','W','T','F','S','S'].forEach(d=>{
     const h=document.createElement('div');
     h.style.cssText='text-align:center;font-size:8px;color:rgba(120,153,170,0.5);font-family:Space Mono,monospace;padding-bottom:2px;';
     h.textContent=d;grid.appendChild(h);
   });
-  days.forEach((d,i)=>{
+  const today=new Date();today.setHours(0,0,0,0);
+  const start=new Date(today);
+  start.setDate(start.getDate()-34);
+  while(start.getDay()!==1) start.setDate(start.getDate()-1);
+  for(let i=0;i<35;i++){
+    const day=new Date(start);day.setDate(start.getDate()+i);
+    const key=day.toISOString().slice(0,10);
     const cell=document.createElement('div');
     cell.className='hm-day';
-    if(d.type==='win'){
-      const a=0.2+d.intensity*.6;
-      cell.style.background=`rgba(0,255,136,${a})`;
-      cell.style.boxShadow=d.intensity>.7?`0 0 6px rgba(0,255,136,${a*0.5})`:'';
-    } else if(d.type==='loss'){
-      const a=0.2+d.intensity*.6;
-      cell.style.background=`rgba(255,68,85,${a})`;
-    } else {
+    if(day>today){
+      cell.style.background='rgba(255,255,255,0.02)';
+    } else if(!(key in byDay)){
       cell.style.background='rgba(255,255,255,0.04)';
+    } else {
+      const v=byDay[key];
+      if(v===0){
+        cell.style.background='rgba(255,255,255,0.04)';
+      } else if(v>0){
+        const a=0.2+(Math.abs(v)/maxAbs)*.6;
+        cell.style.background=`rgba(0,255,136,${a})`;
+      } else {
+        const a=0.2+(Math.abs(v)/maxAbs)*.6;
+        cell.style.background=`rgba(255,68,85,${a})`;
+      }
     }
     grid.appendChild(cell);
-  });
+  }
 }
-window.addEventListener('load',buildHeatmap);
 
-// ── REFRESH FIRM ──
-function refreshFirmCard(btn,name){
+function hydrate(snap){
+  liveSnap=snap;
+  liveHistory=snap.history||{timestamp:[],equity:[],profit_loss:[]};
+  const acct=snap.account||{};
+  const positions=Array.isArray(snap.positions)?snap.positions:[];
+  const orders=Array.isArray(snap.orders)?snap.orders:[];
+  const equity=n(acct.equity);
+  const cash=n(acct.cash);
+  const bp=n(acct.buying_power);
+  const dayPnl=acct.day_pnl!=null?n(acct.day_pnl):(equity-n(acct.last_equity));
+  const blocked=!!acct.trading_blocked;
+  const atRisk=blocked?1:0;
+  const cashPct=equity>0?Math.max(0,Math.min(100,(cash/equity)*100)):0;
+  const deployedPct=equity>0?Math.max(0,Math.min(100,((equity-cash)/equity)*100)):0;
+  const statusTxt=(acct.status||'ACTIVE').toUpperCase();
+
+  document.getElementById('cmdStatus').classList.remove('error');
+  document.getElementById('cmdStatusTxt').textContent='1 ACCOUNT LIVE';
+  const netEl=document.getElementById('cmdNetPnl');
+  netEl.textContent=fmtUsd(dayPnl,true);
+  netEl.style.color=pnlColor(dayPnl);
+  document.getElementById('cmdConnected').textContent='1';
+  document.getElementById('cmdConnected').style.color='var(--cyan)';
+  document.getElementById('cmdBuyingPower').textContent=fmtCompact(bp);
+  document.getElementById('cmdBuyingPower').style.color='var(--gold)';
+  const ar=document.getElementById('cmdAtRisk');
+  ar.textContent=String(atRisk);
+  ar.style.color=atRisk?'var(--red)':'var(--green)';
+
+  if(blocked){
+    setCmdAlert('error','⚠','ALPACA PAPER — trading is blocked on this account.');
+  } else if(!positions.length){
+    setCmdAlert('info','⬡','Alpaca paper is live and flat — no open positions. Fresh $'+fmtCompact(equity).replace('$','')+' book.');
+  } else {
+    const upl=positions.reduce((s,p)=>s+n(p.unrealized_pl),0);
+    setCmdAlert(upl<0?'':'ok', upl<0?'⚠':'✓', 'ALPACA PAPER — '+positions.length+' open position'+(positions.length===1?'':'s')+' · unrealized '+fmtUsd(upl,true)+'.');
+  }
+
+  const badge=blocked?'AT RISK':'HEALTHY';
+  const badgeCls=blocked?'warn':'ok';
+  const barW=Math.max(4,Math.min(100,cashPct));
+  document.getElementById('cmdFirmsMini').innerHTML=
+    '<div class="cmd-firm-mini">'+
+      '<div class="cmd-firm-logo" style="background:linear-gradient(135deg,#062018,#0b2e24);">AL</div>'+
+      '<div class="cmd-firm-info"><div class="cmd-firm-name">ALPACA PAPER</div><div class="cmd-firm-phase">'+(acct.number||'PAPER')+' · '+statusTxt+'</div></div>'+
+      '<div class="cmd-firm-bar"><div class="cmd-firm-bar-fill" style="width:'+barW+'%;background:var(--cyan);"></div></div>'+
+      '<div class="cmd-firm-pnl '+(equity>=0?'pos':'neg')+'">'+fmtCompact(equity)+'</div>'+
+      '<div class="cmd-firm-badge '+badgeCls+'">'+badge+'</div>'+
+    '</div>';
+
+  document.getElementById('pfEquity').textContent=fmtUsd(equity,false);
+  document.getElementById('pfEquity').style.color='var(--cyan)';
+  document.getElementById('pfEquitySub').textContent=(acct.number||'Paper')+' · '+statusTxt;
+  document.getElementById('pfBuyingPower').textContent=fmtCompact(bp);
+  document.getElementById('pfBuyingPowerSub').textContent='1 account live';
+  const dEl=document.getElementById('pfDayPnl');
+  dEl.textContent=fmtUsd(dayPnl,true);
+  dEl.style.color=pnlColor(dayPnl);
+  document.getElementById('pfDayPnlSub').textContent='equity − last equity';
+  document.getElementById('pfDayPnlSub').className='pf-stat-change '+(dayPnl>0?'up':dayPnl<0?'dn':'nt');
+  document.getElementById('pfCash').textContent=fmtUsd(cash,false);
+  document.getElementById('pfCashSub').textContent=cashPct.toFixed(0)+'% of equity';
+  document.getElementById('pfPositions').textContent=String(positions.length);
+  document.getElementById('pfPositionsSub').textContent=positions.length?'Live book':'Flat — no positions';
+
+  const alerts=[];
+  if(blocked){
+    alerts.push('<div class="alert-banner warn"><span class="alert-icon">⚠</span> <strong>ALPACA PAPER</strong> — Trading is blocked on this account.</div>');
+  } else if(!positions.length){
+    alerts.push('<div class="alert-banner info"><span class="alert-icon">⬡</span> <strong>ALPACA PAPER</strong> — Live and flat. No open positions, no fills to replay. This is a fresh paper book at '+fmtUsd(equity,false)+' equity.</div>');
+  } else {
+    alerts.push('<div class="alert-banner ok"><span class="alert-icon">✓</span> <strong>ALPACA PAPER</strong> — '+positions.length+' open position'+(positions.length===1?'':'s')+' · equity '+fmtUsd(equity,false)+'.</div>');
+  }
+  if(!blocked){
+    alerts.push('<div class="alert-banner ok"><span class="alert-icon">✓</span> <strong>STATUS</strong> — Account '+statusTxt+'. Buying power '+fmtCompact(bp)+'. At-risk count 0.</div>');
+  }
+  document.getElementById('alertRow').innerHTML=alerts.join('');
+
+  document.getElementById('fcMeta').textContent='EQUITIES · '+(acct.number||'PAPER')+' · '+statusTxt;
+  document.getElementById('fcBadge').textContent=blocked?'BLOCKED':'PAPER LIVE';
+  document.getElementById('fcEquity').textContent=fmtUsd(equity,false);
+  document.getElementById('fcCash').textContent=fmtUsd(cash,false);
+  const fcDay=document.getElementById('fcDayPnl');
+  fcDay.textContent=fmtUsd(dayPnl,true);
+  fcDay.style.color=pnlColor(dayPnl);
+  document.getElementById('fcCashBarVal').textContent=cashPct.toFixed(0)+'% cash';
+  document.getElementById('fcCashBarFill').style.width=cashPct.toFixed(0)+'%';
+  document.getElementById('fcBpBarVal').textContent=fmtCompact(bp);
+  const bpPct=bp>0?Math.max(8,Math.min(100,(equity/bp)*100)):0;
+  document.getElementById('fcBpBarFill').style.width=bpPct.toFixed(0)+'%';
+
+  const trades=document.getElementById('fcTrades');
+  if(!orders.length){
+    trades.innerHTML='<div class="fc-trade-row"><span class="fc-t-time">No fills yet — paper book is flat.</span></div>';
+  } else {
+    trades.innerHTML=orders.slice(0,5).map(o=>{
+      const side=(o.side||'').toLowerCase();
+      const sideCls=side==='sell'||side==='short'?'short':'long';
+      const sideLbl=sideCls==='short'?'SELL':'BUY';
+      const px=n(o.filled_avg_price);
+      return '<div class="fc-trade-row"><span class="fc-t-sym">'+escapeHtml(o.symbol||'—')+'</span><span class="fc-t-type '+sideCls+'">'+sideLbl+'</span><span class="fc-t-time">'+fmtWhen(o.filled_at)+'</span><span class="fc-t-pnl">'+n(o.qty)+' @ '+fmtUsd(px,false)+'</span></div>';
+    }).join('');
+  }
+
+  document.getElementById('ringCash').textContent=cashPct.toFixed(0)+'%';
+  document.getElementById('ringCash').style.color='var(--cyan)';
+  document.getElementById('ringDeployed').textContent=deployedPct.toFixed(0)+'%';
+  document.getElementById('ringDeployed').style.color=deployedPct>60?'var(--gold)':'var(--green)';
+  document.getElementById('ringBp').textContent=fmtCompact(bp);
+  document.getElementById('ringRisk').textContent=blocked?'BLOCKED':(positions.length?'ACTIVE':'FLAT / LOW');
+  document.getElementById('ringRisk').style.color=blocked?'var(--red)':'var(--green)';
+
+  drawPnLChart(activeRange);
+  drawRingChart();
+  buildHeatmap();
+}
+
+async function loadPropAccount(){
+  const res=await fetch('/api/prop/account');
+  let data=null;
+  try{data=await res.json();}catch(_){data=null;}
+  if(!res.ok || !data || data.error || !data.account){
+    throw new Error((data && data.error) || ('HTTP '+res.status));
+  }
+  hydrate(data);
+  return data;
+}
+
+async function bootPropCenter(){
+  try{
+    await loadPropAccount();
+  }catch(e){
+    showAccountError(String(e && e.message || e));
+  }
+}
+
+async function refreshFirmCard(btn){
   const orig=btn.textContent;
   btn.textContent='↻ SYNCING...';btn.style.background='rgba(0,212,255,.05)';
-  setTimeout(()=>{
+  try{
+    await loadPropAccount();
     btn.textContent='↻ SYNCED ✓';btn.style.background='rgba(0,255,136,.08)';btn.style.borderColor='rgba(0,255,136,.3)';btn.style.color='var(--green)';
-    setTimeout(()=>{btn.textContent=orig;btn.style.background='';btn.style.borderColor='';btn.style.color='';},1500);
-  },1800);
+  }catch(e){
+    showAccountError(String(e && e.message || e));
+    btn.textContent='↻ FAILED';btn.style.background='rgba(255,68,85,.08)';btn.style.borderColor='rgba(255,68,85,.3)';btn.style.color='var(--red)';
+  }
+  setTimeout(()=>{btn.textContent=orig;btn.style.background='';btn.style.borderColor='';btn.style.color='';},1500);
 }
 
-// ── ANALYZE SINGLE ACCOUNT ──
-async function analyzeAccount(name,pnl,dlPct,ddPct){
-  const resp=document.getElementById('aiResp');
-  document.getElementById('aiQ').value=`Analyze my ${name} account: P&L is $${pnl}, daily loss is ${dlPct}% consumed, overall drawdown ${ddPct}% used. What specific actions should I take today?`;
+function buildLiveAccountCtx(){
+  if(!liveSnap || !liveSnap.account){
+    return 'Live Alpaca paper snapshot is not loaded. Do not invent TopStep, Apex, or E8 balances.';
+  }
+  const a=liveSnap.account;
+  const pos=(liveSnap.positions||[]).map(p=>p.symbol+' '+p.side+' qty '+p.qty+' mv '+fmtUsd(p.market_value,false)+' uPL '+fmtUsd(p.unrealized_pl,true)).join('; ')||'none';
+  const fills=(liveSnap.orders||[]).slice(0,8).map(o=>(o.side||'')+' '+(o.symbol||'')+' qty '+o.qty+' @ '+o.filled_avg_price+' ('+(o.status||'')+')').join('; ')||'none';
+  return [
+    'Broker: Alpaca Paper (live).',
+    'Account '+a.number+' status '+a.status+'.',
+    'Equity '+a.equity+', last equity '+a.last_equity+', cash '+a.cash+', buying power '+a.buying_power+', portfolio value '+a.portfolio_value+'.',
+    'Day P&L '+a.day_pnl+'. Trading blocked: '+!!a.trading_blocked+'.',
+    'Open positions: '+pos+'.',
+    'Recent closed orders: '+fills+'.',
+    'This is a paper book. Do not reference TopStep, Apex, or E8 as connected live accounts.'
+  ].join('\n');
+}
+
+async function analyzeAccount(){
+  document.getElementById('aiQ').value='Analyze my live Alpaca paper account. What specific actions should I take today?';
   await askRiskAI();
   document.getElementById('ai').scrollIntoView({behavior:'smooth'});
 }
 
-// ── ANALYZE ALL ──
 async function analyzeAllAccounts(){
-  document.getElementById('aiQ').value='Give me a complete risk assessment and action plan for all three accounts today.';
+  document.getElementById('aiQ').value='Give me a complete risk assessment and action plan for the live Alpaca paper account today.';
   await askRiskAI();
 }
 
-// ── ASK RISK AI ──
 async function askRiskAI(){
   const q=document.getElementById('aiQ').value.trim();
   if(!q) return;
-  const btn=document.getElementById('askBtn');
   const resp=document.getElementById('aiResp');
   const icon=document.getElementById('aiAllIcon');
   if(icon){icon.innerHTML='<span class="spin">◌</span>';}
-  resp.innerHTML='<span style="color:var(--text3);font-family:\'Space Mono\',monospace;font-size:11px;display:block;text-align:center;padding:16px;"><span class="spin">◌</span> Claude is analyzing your accounts...</span>';
-  const accountCtx=`Current prop firm account data:
-- TopStep $150K Funded: Net P&L +$2,140 cumulative. Today: -$310. Daily loss 31% of $1,000 limit consumed. Trailing drawdown $4,200 of $4,500 remaining (healthy). Recent: NQ long +$520, ES short -$310, NQ long +$1,930.
-- Apex Trader Funding $100K Funded: Net P&L -$420 cumulative. Today: -$1,050 (CRITICAL). Daily loss 78% of $1,000 limit consumed ($230 remaining before breach). Overall drawdown $2,080 of $3,000 used. Recent: NQ short -$650, ES long -$400, GC long +$630.
-- E8 Funding $50K Evaluation Phase 1: Net P&L +$2,127 cumulative. Profit target 4.3% reached of 6% required (72% progress). Daily loss 18% consumed. Recent: GC long +$480, NQ long +$960, CL short +$687.
-Portfolio: Total net P&L +$3,847. Total buying power $280K. One account (Apex) at critical daily loss risk.`;
+  resp.innerHTML='<span style="color:var(--text3);font-family:\'Space Mono\',monospace;font-size:11px;display:block;text-align:center;padding:16px;"><span class="spin">◌</span> Analyzing live Alpaca paper context...</span>';
+  const prompt='You are a prop firm risk advisor and trading psychologist. Give direct, specific, actionable advice. Be concise but thorough. Reference specific numbers from the data. Prioritize account preservation. Format clearly. Keep response under 250 words.\n\nLIVE ACCOUNT CONTEXT:\n'+buildLiveAccountCtx()+'\n\nTrader question: '+q;
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',max_tokens:700,
-        system:`You are a prop firm risk advisor and trading psychologist. You have access to real-time account data for all three accounts. Give direct, specific, actionable advice. Be concise but thorough. Reference specific numbers from the data. Prioritize account preservation and funded account rules. Format clearly with account names when discussing multiple accounts. Keep response under 250 words.`,
-        messages:[{role:'user',content:`${accountCtx}\n\nTrader question: ${q}`}]
-      })
+    const res=await fetch('/api/ai/chat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({provider:'deepseek',prompt})
     });
     const d=await res.json();
-    const text=d.content.filter(x=>x.type==='text').map(x=>x.text).join('');
-    resp.innerHTML=`<span class="ai-resp-tag">⬡ AI PROP FIRM RISK ADVISOR</span>${text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}`;
+    if(!res.ok || d.error) throw new Error(d.error || ('HTTP '+res.status));
+    const text=String(d.content||'');
+    resp.innerHTML='<span class="ai-resp-tag">⬡ AI PROP FIRM RISK ADVISOR</span>'+text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
   }catch(e){
-    resp.innerHTML=`<span style="color:var(--red);font-family:'Space Mono',monospace;font-size:11px;display:block;text-align:center;padding:16px;">Connection failed. Check API key in app settings.</span>`;
+    resp.innerHTML='<span style="color:var(--red);font-family:\'Space Mono\',monospace;font-size:11px;display:block;text-align:center;padding:16px;">Advisor request failed: '+escapeHtml(String(e && e.message || e))+'</span>';
   }
   if(icon) icon.innerHTML='⬡';
 }
 document.getElementById('aiQ').addEventListener('keydown',e=>{if(e.key==='Enter')askRiskAI();});
+window.addEventListener('load',bootPropCenter);
+window.addEventListener('resize',()=>drawPnLChart(activeRange));
 
-function setQ(btn,text){
-  document.getElementById('aiQ').value=text;
-  document.querySelectorAll('.preset-pill').forEach(b=>{b.style.borderColor='';b.style.color='';});
-  btn.style.borderColor='var(--gold)';btn.style.color='var(--gold)';
-}
 
 // Smooth scroll
 document.querySelectorAll('a[href^="#"]').forEach(a=>{
