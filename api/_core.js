@@ -122,6 +122,7 @@ async function runModel({ history, config, requestedBars }) {
 
 /* ── ALPACA equity k-lines (server-side only) ── */
 const ALPACA_TF = { '1m': '1Min', '5m': '5Min', '15m': '15Min', '1h': '1Hour', '1d': '1Day', '4h': '4Hour' };
+const ALPACA_TF_MS = { '1Min': 60e3, '5Min': 300e3, '15Min': 900e3, '1Hour': 3600e3, '4Hour': 14400e3, '1Day': 86400e3 };
 const MAX_ALPACA = 512; // Kronos max_context ceiling
 function alpacaBars({ symbol, timeframe, limit }) {
   return new Promise((resolve, reject) => {
@@ -130,7 +131,9 @@ function alpacaBars({ symbol, timeframe, limit }) {
     const tf = ALPACA_TF[timeframe] || '1Hour';
     const sym = String(symbol || '').toUpperCase();
     const lim = Math.max(1, Math.min(MAX_ALPACA, parseInt(limit, 10) || MAX_ALPACA));
-    const q = `symbols=${encodeURIComponent(sym)}&timeframe=${tf}&limit=${lim}&format=rfc3339&adjustment=split&feed=sip`;
+    const lookback = (ALPACA_TF_MS[tf] || 3600e3) * lim * 3;
+    const start = new Date(Date.now() - lookback).toISOString();
+    const q = `symbols=${encodeURIComponent(sym)}&timeframe=${tf}&limit=${lim}&adjustment=split&feed=iex&start=${encodeURIComponent(start)}`;
     const req = https.request({
       hostname: 'data.alpaca.markets',
       path: `/v2/stocks/bars?${q}`,
@@ -149,7 +152,7 @@ function alpacaBars({ symbol, timeframe, limit }) {
           const j = JSON.parse(body);
           const arr = (j.bars && j.bars[sym]) || [];
           const out = arr.map(b => ({
-            timestamp: b.timestamp || new Date((b.t || 0) * 1000).toISOString(),
+            timestamp: b.timestamp || (typeof b.t === 'string' ? b.t : new Date((b.t || 0) * 1000).toISOString()),
             open: +b.o, high: +b.h, low: +b.l, close: +b.c, volume: +b.v
           }));
           resolve(out);
