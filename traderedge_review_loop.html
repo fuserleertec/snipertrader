@@ -1307,7 +1307,7 @@ async function runDailyAnalysis() {
   const ctrl = new AbortController();
   const to = setTimeout(() => ctrl.abort(), 25000); // 25s client timeout
   try {
-    const res = await fetch('/api/review-loop/analyze', {
+    const res = await fetch('/api/review_loop/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tickers, provider: '' }),

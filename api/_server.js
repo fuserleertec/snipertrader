@@ -31,7 +31,7 @@ const server = http.createServer((req, res) => {
   if (url.pathname === '/api/kronos/forecast' && req.method === 'POST') {
     return buildForecast(req, res);
   }
-  if (url.pathname === '/api/review-loop/analyze' && req.method === 'POST') {
+  if (url.pathname === '/api/review_loop/analyze' && req.method === 'POST') {
     return buildReviewLoop(req, res);
   }
   res.writeHead(404, { 'Content-Type': 'application/json' });
