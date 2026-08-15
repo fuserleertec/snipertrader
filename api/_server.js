@@ -34,6 +34,10 @@ const server = http.createServer((req, res) => {
   if (url.pathname === '/api/review_loop/analyze' && req.method === 'POST') {
     return buildReviewLoop(req, res);
   }
+  if (url.pathname === '/api/debug/alpaca' && req.method === 'POST') {
+    const { buildHandler } = require('./_debug_alpaca');
+    return buildHandler('iex')(req, res);
+  }
   res.writeHead(404, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ error: 'not found — POST /api/kronos/forecast' }));
 });
