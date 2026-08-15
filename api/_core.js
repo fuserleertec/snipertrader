@@ -611,11 +611,20 @@ function syntheticBars(tkr, n = 120) {
 async function runDailyAnalysis({ ticker, provider, lookback = 120, synthetic = false }) {
   const tkr = String(ticker || '').toUpperCase().trim();
   if (!tkr) throw new Error('ticker is required');
-  const useSynth = synthetic || !process.env.ALPACA_API_KEY;
-  const bars = useSynth
-    ? syntheticBars(tkr, Math.max(30, Math.min(300, lookback)))
-    : await alpacaBars({ symbol: tkr, timeframe: '1d', limit: Math.max(30, Math.min(300, lookback)) });
-  if (!bars || !bars.length) throw new Error(`no price data returned for ${tkr}`);
+  const wantSynth = synthetic || !process.env.ALPACA_API_KEY;
+  let bars, usedSynth = wantSynth;
+  if (wantSynth) {
+    bars = syntheticBars(tkr, Math.max(30, Math.min(300, lookback)));
+  } else {
+    try {
+      bars = await alpacaBars({ symbol: tkr, timeframe: '1d', limit: Math.max(30, Math.min(300, lookback)) });
+    } catch (e) { bars = []; }
+    // If Alpaca returned nothing usable (feed glitch / missing fields), degrade to synthetic
+    // so the analysis never shows a hollow "insufficient data" result.
+    const usable = (bars || []).filter(b => b && Number.isFinite(b.c)).length;
+    if (usable < 2) { bars = syntheticBars(tkr, Math.max(30, Math.min(300, lookback))); usedSynth = true; }
+  }
+  if (!bars || bars.length < 2) throw new Error(`no price data returned for ${tkr}`);
 
   const ctx = buildDailyContext(bars);
   const prov = provider && PROVIDERS[provider] ? provider
@@ -629,18 +638,18 @@ async function runDailyAnalysis({ ticker, provider, lookback = 120, synthetic = 
       const raw = JSON.parse(text);
       const out = normalizeDailyPayload(tkr, raw, bars, 'ai:' + prov);
       out.context = ctx;
-      out.synthetic = useSynth;
+      out.synthetic = usedSynth;
       return out;
     } catch (e) {
       // model failure → transparent fallback (DSA data-degradation philosophy)
       const h = heuristicAnalysis(tkr, bars);
       h.source = 'heuristic(fallback:' + (e && e.message || 'ai-error') + ')';
-      h.context = ctx; h.synthetic = useSynth;
+      h.context = ctx; h.synthetic = usedSynth;
       return h;
     }
   }
   const h = heuristicAnalysis(tkr, bars);
-  h.context = ctx; h.synthetic = useSynth;
+  h.context = ctx; h.synthetic = usedSynth;
   return h;
 }
 
