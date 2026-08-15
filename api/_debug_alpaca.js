@@ -7,7 +7,7 @@ const https = require('https');
 function rawAlpaca({ symbol, timeframe = '1Day', limit = 120, feed = 'iex' }) {
   return new Promise((resolve) => {
     const key = process.env.ALPACA_API_KEY, sec = process.env.ALPACA_SECRET_KEY;
-    if (!key || !sec) return resolve({ error: 'no Alpaca creds on env' });
+    if (!key || !sec) return resolve({ status: null, bodyLen: 0, raw: null, rawText: '', error: 'no Alpaca creds on env' });
     const sym = String(symbol || '').toUpperCase();
     const TF_MS = { '1Day': 86400e3 };
     const lookback = (TF_MS[timeframe] || 86400e3) * limit * 3;
