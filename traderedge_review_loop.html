@@ -396,6 +396,41 @@ footer{background:var(--obs2);border-top:1px solid var(--border);padding:60px 48
   .score-grid{grid-template-columns:repeat(5,1fr);}
   .history-table{display:block;overflow-x:auto;}
 }
+
+/* ═══ DAILY ANALYSIS (ZhuLinsen/daily_stock_analysis engine) ═══ */
+.da-card{margin-top:18px;border:1px solid rgba(0,212,255,.2);background:rgba(0,212,255,.035);border-radius:14px;padding:16px;}
+.da-card-title{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--cyan);margin-bottom:4px;display:flex;align-items:center;gap:6px;}
+.da-sub{font-family:'Space Mono',monospace;font-size:8.5px;color:var(--text4);margin-bottom:12px;letter-spacing:.5px;}
+.da-input-row{display:flex;gap:8px;margin-bottom:10px;}
+.da-input{flex:1;background:var(--obs3);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 11px;font-family:'Space Mono',monospace;font-size:10px;outline:none;}
+.da-input::placeholder{color:var(--text4);}
+.da-run{background:linear-gradient(90deg,rgba(0,212,255,.85),rgba(0,255,136,.7));border:none;color:#001018;font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:1px;border-radius:8px;padding:9px 14px;cursor:pointer;white-space:nowrap;}
+.da-run:disabled{opacity:.55;cursor:default;}
+.da-skel{font-family:'Space Mono',monospace;font-size:10px;color:var(--text4);text-align:center;padding:18px 8px;}
+.spin{display:inline-block;animation:dspin 1s linear infinite;}
+@keyframes dspin{to{transform:rotate(360deg);}}
+.da-tk{background:var(--obs3);border:1px solid var(--border);border-radius:10px;padding:11px 12px;margin-bottom:9px;}
+.da-tk-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;}
+.da-sym{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;color:var(--text);}
+.da-tag{font-family:'Orbitron',monospace;font-size:8px;font-weight:700;letter-spacing:1px;padding:3px 8px;border-radius:20px;}
+.sig-strong_buy{background:rgba(0,255,136,.16);color:var(--green);border:1px solid rgba(0,255,136,.4);}
+.sig-buy{background:rgba(0,212,255,.14);color:var(--cyan);border:1px solid rgba(0,212,255,.4);}
+.sig-watch{background:rgba(240,192,64,.14);color:var(--gold);border:1px solid rgba(240,192,64,.4);}
+.sig-reduce{background:rgba(255,140,60,.14);color:#ff8c3c;border:1px solid rgba(255,140,60,.4);}
+.sig-sell{background:rgba(255,68,85,.14);color:var(--red);border:1px solid rgba(255,68,85,.4);}
+.sig-error{background:rgba(255,68,85,.1);color:var(--red);border:1px solid rgba(255,68,85,.3);}
+.da-score{font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);}
+.da-oneliner{font-size:11px;color:var(--text2);line-height:1.45;margin-bottom:8px;}
+.da-meta{display:flex;gap:14px;font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);margin-bottom:8px;flex-wrap:wrap;}
+.da-meta b{color:var(--text);font-weight:700;}
+.da-box{margin-top:7px;padding-top:7px;border-top:1px dashed var(--border);}
+.da-box-label{font-family:'Orbitron',monospace;font-size:7.5px;letter-spacing:1.5px;color:var(--text4);margin-bottom:4px;}
+.da-list{margin:0;padding-left:14px;font-size:10px;color:var(--text3);line-height:1.5;}
+.da-list li{margin-bottom:2px;}
+.da-foot{font-family:'Space Mono',monospace;font-size:8px;color:var(--text4);margin-top:9px;display:flex;justify-content:space-between;align-items:center;}
+.da-foot .prov{padding:2px 7px;border-radius:10px;background:var(--obs4);color:var(--cyan);}
+.da-err{color:var(--red);font-size:10px;font-family:'Space Mono',monospace;text-align:center;padding:12px;}
+body.light-mode .da-card{background:rgba(0,160,200,.06);}
 </style>
 </head>
 <body>
@@ -783,6 +818,19 @@ footer{background:var(--obs2);border-top:1px solid var(--border);padding:60px 48
           <div class="side-card-title" style="color:var(--violet);">💡 Today's Reminder</div>
           <p style="font-size:12px;color:var(--text2);line-height:1.7;font-style:italic;">"Your last lesson: Wait for the full candle close before entering. Review your entries from Apr 05 where this exact rule saved a trade."</p>
           <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);margin-top:10px;">— Carried from Apr 07 review</div>
+        </div>
+
+        <!-- DAILY ANALYSIS (ZhuLinsen/daily_stock_analysis engine) -->
+        <div class="da-card" id="daCard">
+          <div class="da-card-title">⬡ DAILY ANALYSIS ENGINE</div>
+          <div class="da-sub">Multi-source technicals · Buy/Watch/Sell score · catalysts &amp; risk</div>
+          <div class="da-input-row">
+            <input class="da-input" id="daTickers" type="text" placeholder="AAPL, NVDA, TSLA" value="AAPL, NVDA, TSLA" />
+            <button class="da-run" id="daRun" onclick="runDailyAnalysis()">RUN</button>
+          </div>
+          <div id="daResults">
+            <div class="da-skel">Enter a watchlist and hit RUN to analyze.</div>
+          </div>
         </div>
 
       </div><!-- /sidebar -->
@@ -1241,6 +1289,87 @@ function toggleTheme(){
     document.querySelector('.toggle-icon').textContent='☀';
   }
 })();
+
+// ══ DAILY ANALYSIS ENGINE (ZhuLinsen/daily_stock_analysis) ══
+// Calls POST /api/review-loop/analyze with a watchlist, then renders the
+// strict per-ticker payload into the sidebar panel. Graceful loading /
+// timeout / error handling so the review UI never breaks.
+async function runDailyAnalysis() {
+  const box = document.getElementById('daResults');
+  const btn = document.getElementById('daRun');
+  const raw = (document.getElementById('daTickers').value || '').trim();
+  const tickers = raw.split(/[\s,]+/).map(t => t.trim().toUpperCase()).filter(Boolean).slice(0, 15);
+  if (!tickers.length) { box.innerHTML = '<div class="da-err">Enter at least one ticker.</div>'; return; }
+
+  btn.disabled = true; btn.textContent = '◌';
+  box.innerHTML = '<div class="da-skel"><span class="spin">◌</span> Fetching multi-source data &amp; running analysis…</div>';
+
+  const ctrl = new AbortController();
+  const to = setTimeout(() => ctrl.abort(), 25000); // 25s client timeout
+  try {
+    const res = await fetch('/api/review-loop/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tickers, provider: '' }),
+      signal: ctrl.signal
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || ('HTTP ' + res.status));
+    }
+    const data = await res.json();
+    renderDailyAnalysis(data);
+  } catch (e) {
+    const msg = (e && e.name === 'AbortError') ? 'Request timed out (25s). Try fewer tickers.' : (e && e.message || 'Network error');
+    box.innerHTML = '<div class="da-err">⚠ ' + msg + '<br><br><span style="opacity:.7;">The engine needs Alpaca equity data (server-side key) to run.</span></div>';
+  } finally {
+    clearTimeout(to);
+    btn.disabled = false; btn.textContent = 'RUN';
+  }
+}
+
+function daRow(r) {
+  if (r.error) {
+    return '<div class="da-tk"><div class="da-tk-top"><span class="da-sym">' + r.ticker +
+      '</span><span class="da-tag sig-error">ERROR</span></div>' +
+      '<div class="da-oneliner" style="color:var(--red);">' + r.error + '</div></div>';
+  }
+  const sig = r.signal || 'watch';
+  const price = (r.price != null) ? '$' + r.price : '—';
+  const chg = (r.change_pct != null) ? (r.change_pct >= 0 ? '+' : '') + r.change_pct + '%' : '';
+  const meta = [];
+  meta.push('<span>Price <b>' + price + '</b></span>');
+  if (chg) meta.push('<span>Chg <b>' + chg + '</b></span>');
+  if (r.entry != null) meta.push('<span>Entry <b>$' + r.entry + '</b></span>');
+  if (r.exit != null) meta.push('<span>Target <b>$' + r.exit + '</b></span>');
+  if (r.position_pct != null) meta.push('<span>Size <b>' + r.position_pct + '%</b></span>');
+
+  const list = (arr) => (arr && arr.length)
+    ? '<ul class="da-list">' + arr.map(x => '<li>' + String(x).replace(/</g, '&lt;') + '</li>').join('') + '</ul>'
+    : '<div class="da-oneliner" style="font-size:10px;opacity:.6;">None flagged</div>';
+
+  return '<div class="da-tk">' +
+    '<div class="da-tk-top"><span class="da-sym">' + r.ticker + '</span>' +
+      '<span class="da-tag sig-' + sig + '">' + (r.score_label || sig).toUpperCase() + '</span></div>' +
+    '<div class="da-oneliner">' + String(r.one_liner || '').replace(/</g, '&lt;') + '</div>' +
+    '<div class="da-meta">' + meta.join('') + '</div>' +
+    (r.data_perspective ? '<div class="da-box"><div class="da-box-label">DATA PERSPECTIVE</div><div class="da-oneliner" style="font-size:10px;margin:0;">' + String(r.data_perspective).replace(/</g, '&lt;') + '</div></div>' : '') +
+    '<div class="da-box"><div class="da-box-label">CATALYSTS</div>' + list(r.catalysts) + '</div>' +
+    '<div class="da-box"><div class="da-box-label">RISK ALERTS</div>' + list(r.risks) + '</div>' +
+    (r.strategy_notes ? '<div class="da-box"><div class="da-box-label">TRADE REVIEW / STRATEGY</div><div class="da-oneliner" style="font-size:10px;margin:0;">' + String(r.strategy_notes).replace(/</g, '&lt;') + '</div></div>' : '') +
+    '<div class="da-foot"><span>score ' + (r.score != null ? r.score : '—') + ' / 100 · ' + (r.confidence || '—') + ' conf</span>' +
+      '<span class="prov">' + String(r.source || '').replace('heuristic(fallback', 'heuristic ↩').replace('ai:', 'AI·') + (r.synthetic ? ' · SIM' : '') + '</span></div>' +
+    '</div>';
+}
+
+function renderDailyAnalysis(data) {
+  const box = document.getElementById('daResults');
+  const results = (data && Array.isArray(data.results)) ? data.results : [];
+  if (!results.length) { box.innerHTML = '<div class="da-err">No analysis returned.</div>'; return; }
+  const at = data.analyzed_at ? new Date(data.analyzed_at).toLocaleTimeString() : '';
+  box.innerHTML = results.map(daRow).join('') +
+    '<div class="da-foot"><span>' + results.length + ' tickers analyzed</span><span>' + at + '</span></div>';
+}
 
 // SMOOTH SCROLL
 document.querySelectorAll('a[href^="#"]').forEach(a=>{

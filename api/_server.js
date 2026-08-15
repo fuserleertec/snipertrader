@@ -8,7 +8,7 @@
  */
 'use strict';
 const http = require('http');
-const { buildForecast, buildStocks, buildChat, buildPropAccount } = require('./_core');
+const { buildForecast, buildStocks, buildChat, buildPropAccount, buildReviewLoop } = require('./_core');
 
 const PORT = process.env.KRONOS_PORT || 8787;
 
@@ -30,6 +30,9 @@ const server = http.createServer((req, res) => {
   }
   if (url.pathname === '/api/kronos/forecast' && req.method === 'POST') {
     return buildForecast(req, res);
+  }
+  if (url.pathname === '/api/review-loop/analyze' && req.method === 'POST') {
+    return buildReviewLoop(req, res);
   }
   res.writeHead(404, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ error: 'not found — POST /api/kronos/forecast' }));

@@ -333,9 +333,341 @@ function buildPropAccount(req, res, url) {
   });
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+ * DAILY ANALYSIS ENGINE  (adapted from ZhuLinsen/daily_stock_analysis)
+ * -------------------------------------------------------------------------
+ * Ported methodology (NOT a line-for-line copy of the A-share Python repo):
+ *   - Multi-source price/technical context via Alpaca equity bars
+ *     (the US-equity analogue of DSA's yfinance_fetcher priority path).
+ *   - Technical indicators identical in spirit to DSA's analyzer:
+ *     MA trend + MA distance, RSI(14), MACD, ATR, volume ratio.
+ *   - The canonical DECISION_SCALE from DSA src/schemas/decision_scale.py:
+ *     80-100 strong_buy · 60-79 buy · 40-59 watch(hold) ·
+ *     20-39 reduce(sell) · 0-19 sell.  score + signal_key + action all
+ *     expressed on the same scale.
+ *   - LLM synthesis using the SAME dashboard quadrant contract DSA uses:
+ *     core_conclusion (signal + score + one-line), data_perspective
+ *     (technicals), intelligence (news/catalysts/risks), battle_plan
+ *     (sniper entry/exit checkpoints, position sizing, risk checklist).
+ *   - Strict, validated JSON output. When the AI key is absent or the model
+ *     fails, a transparent deterministic heuristic path runs so the UI never
+ *     breaks (mirrors DSA's data-fallback philosophy).
+ * Reuses the existing alpacaBars() + aiChat()/PROVIDERS plumbing below.
+ * ─────────────────────────────────────────────────────────────────────── */
+
+/* ── technical indicators (vector math over OHLCV bars) ── */
+function ema(arr, period) {
+  const k = 2 / (period + 1);
+  const out = [];
+  let prev = arr[0];
+  for (let i = 0; i < arr.length; i++) {
+    prev = i === 0 ? arr[0] : arr[i] * k + prev * (1 - k);
+    out.push(prev);
+  }
+  return out;
+}
+function sma(arr, period) {
+  const out = [];
+  let sum = 0;
+  for (let i = 0; i < arr.length; i++) {
+    sum += arr[i];
+    if (i >= period) sum -= arr[i - period];
+    out.push(i >= period - 1 ? sum / period : null);
+  }
+  return out;
+}
+function rsi(close, period = 14) {
+  if (close.length <= period) return null;
+  let gain = 0, loss = 0;
+  for (let i = 1; i <= period; i++) {
+    const d = close[i] - close[i - 1];
+    if (d >= 0) gain += d; else loss -= d;
+  }
+  gain /= period; loss /= period;
+  if (loss === 0) return 100;
+  const rs = gain / loss;
+  return 100 - 100 / (1 + rs);
+}
+function macd(close, fast = 12, slow = 26, sig = 9) {
+  if (close.length < slow + sig) return null;
+  const ef = ema(close, fast), es = ema(close, slow);
+  const dif = close.map((c, i) => c && es[i] != null ? ef[i] - es[i] : null).filter(v => v != null);
+  const dea = ema(dif, sig);
+  const hist = dif.map((d, i) => d - dea[i]);
+  return { dif: +dif[dif.length - 1].toFixed(4), dea: +dea[dea.length - 1].toFixed(4), hist: +hist[hist.length - 1].toFixed(4) };
+}
+function calcATR(bars, period = 14) {
+  if (bars.length <= period) return null;
+  const tr = [bars[0].h - bars[0].l];
+  for (let i = 1; i < bars.length; i++) {
+    const pc = bars[i - 1].c;
+    tr.push(Math.max(bars[i].h - bars[i].l, Math.abs(bars[i].h - pc), Math.abs(bars[i].l - pc)));
+  }
+  const atr = sma(tr, period).filter(v => v != null);
+  return atr.length ? +atr[atr.length - 1].toFixed(4) : null;
+}
+function last(arr, n = 20) { return arr.slice(-n); }
+
+/* ── DSA canonical decision scale (src/schemas/decision_scale.py) ── */
+const DECISION_SCALE = [
+  { min: 80, max: 100, signal: 'strong_buy', action: 'buy',  decision_type: 'buy',  label: 'STRONG BUY' },
+  { min: 60, max: 79,  signal: 'buy',        action: 'buy',  decision_type: 'buy',  label: 'BUY' },
+  { min: 40, max: 59,  signal: 'watch',      action: 'watch', decision_type: 'hold', label: 'WATCH' },
+  { min: 20, max: 39,  signal: 'reduce',     action: 'reduce', decision_type: 'sell', label: 'REDUCE' },
+  { min: 0,  max: 19,  signal: 'sell',       action: 'sell',  decision_type: 'sell', label: 'SELL' }
+];
+function scaleForScore(score) {
+  const s = Math.max(0, Math.min(100, Math.round(score)));
+  const band = DECISION_SCALE.find(b => s >= b.min && s <= b.max) || DECISION_SCALE[DECISION_SCALE.length - 1];
+  return { score: s, signal: band.signal, action: band.action, decision_type: band.decision_type, label: band.label };
+}
+
+/* ── deterministic heuristic (no-AI fallback) ── */
+function heuristicAnalysis(tkr, bars) {
+  const close = bars.map(b => b.c);
+  const vol = bars.map(b => b.v);
+  const lastClose = close[close.length - 1];
+  const ma20 = sma(close, 20).filter(v => v != null);
+  const ma60 = sma(close, 60).filter(v => v != null);
+  const ma20v = ma20.length ? ma20[ma20.length - 1] : lastClose;
+  const ma60v = ma60.length ? ma60[ma60.length - 1] : lastClose;
+  const r = rsi(close, 14);
+  const m = macd(close);
+  const atr = calcATR(bars, 14);
+  const avgVol = vol.slice(-20).reduce((a, b) => a + b, 0) / Math.min(20, vol.length);
+  const volRatio = avgVol ? (vol[vol.length - 1] / avgVol) : 1;
+  const maDist = ((lastClose / ma20v) - 1) * 100;
+  const trendUp = lastClose > ma20v && ma20v > ma60v;
+
+  // transparent 0-100 score, weighted like DSA's multi-factor blend
+  let score = 50;
+  score += trendUp ? 18 : -18;
+  if (r != null) score += (r - 50) * 0.25;            // RSI tilt
+  if (m && m.hist > 0) score += 8; else if (m) score -= 8;
+  if (maDist > 0) score += Math.min(10, maDist); else score -= Math.min(10, -maDist);
+  if (volRatio > 1.5) score += 4;                      // volume confirmation
+  const sc = scaleForScore(score);
+
+  const stop = atr ? +(lastClose - 1.5 * atr).toFixed(2) : +(lastClose * 0.97).toFixed(2);
+  const target = atr ? +(lastClose + 2 * atr).toFixed(2) : +(lastClose * 1.04).toFixed(2);
+  const risk = lastClose - stop;
+  const posPct = risk > 0 ? +(1 / (risk / lastClose) * 0.01).toFixed(1) : 5; // ~1% risk sizing
+
+  const dataPerspective = [
+    `Trend: ${trendUp ? 'bullish (price > MA20 > MA60)' : 'bearish / below trend'}`,
+    `MA20 ${ma20v.toFixed(2)} (${maDist >= 0 ? '+' : ''}${maDist.toFixed(2)}% vs price)`,
+    `RSI(14): ${r != null ? r.toFixed(1) : 'n/a'}`,
+    `MACD: ${m ? (m.hist >= 0 ? 'bullish cross' : 'bearish cross') : 'n/a'} (DIF ${m ? m.dif : 'n/a'}, DEA ${m ? m.dea : 'n/a'})`,
+    `ATR(14): ${atr != null ? atr.toFixed(2) : 'n/a'} · Vol ratio: ${volRatio.toFixed(2)}x`
+  ].join(' · ');
+
+  return {
+    ticker: tkr,
+    name: tkr,
+    price: +lastClose.toFixed(2),
+    change_pct: +(((lastClose / close[0]) - 1) * 100).toFixed(2),
+    signal: sc.signal,
+    action: sc.action,
+    decision_type: sc.decision_type,
+    score: sc.score,
+    score_label: sc.label,
+    one_liner: `${tkr} reads ${sc.label} on ${trendUp ? 'up' : 'down'}trend momentum (heuristic).`,
+    data_perspective: dataPerspective,
+    catalysts: [],
+    risks: [
+      r != null && r > 70 ? 'RSI overbought (>70) — mean-reversion risk' :
+      r != null && r < 30 ? 'RSI oversold (<30) — relief-risk if no base' : 'No abnormal risk flag from technicals'
+    ],
+    strategy_notes: `Sniper entry ${stop.toFixed(2)} (1.5 ATR stop) · target ${target.toFixed(2)} · size ~${posPct}% of book for 1% risk.`,
+    entry: +stop.toFixed(2),
+    exit: +target.toFixed(2),
+    position_pct: posPct,
+    confidence: 'low',
+    source: 'heuristic',
+    generated_at: new Date().toISOString()
+  };
+}
+
+/* ── strict AI payload normalization + validation ── */
+const SIGNALS = new Set(['strong_buy', 'buy', 'watch', 'reduce', 'sell']);
+function cleanText(v, fb = '') {
+  if (v == null) return fb;
+  if (Array.isArray(v)) return v.map(x => (typeof x === 'string' ? x : (x && x.summary) || JSON.stringify(x))).join(' · ');
+  return String(v);
+}
+function asArray(v) {
+  if (Array.isArray(v)) return v.map(x => (typeof x === 'string' ? x : (x && x.summary) || String(x)));
+  if (typeof v === 'string' && v.trim()) return [v.trim()];
+  return [];
+}
+function normalizeDailyPayload(tkr, raw, bars, source) {
+  const lastClose = bars.length ? bars[bars.length - 1].c : null;
+  const sc = scaleForScore(raw.score != null ? raw.score : 50);
+  const sig = SIGNALS.has(raw.signal) ? raw.signal : sc.signal;
+  const action = (raw.action && ['buy', 'watch', 'reduce', 'sell'].includes(raw.action)) ? raw.action : (sig === 'strong_buy' || sig === 'buy' ? 'buy' : sig === 'watch' ? 'watch' : 'sell');
+
+  const dash = raw.dashboard || raw;
+  const core = dash.core_conclusion || raw.core_conclusion || {};
+  const intel = dash.intelligence || raw.intelligence || {};
+  const plan = dash.battle_plan || raw.battle_plan || {};
+
+  return {
+    ticker: tkr,
+    name: cleanText(raw.name || core.name, tkr),
+    price: Number.isFinite(raw.price) ? raw.price : (lastClose != null ? +lastClose.toFixed(2) : null),
+    change_pct: Number.isFinite(raw.change_pct) ? raw.change_pct : null,
+    signal: sig,
+    action,
+    decision_type: (['buy', 'hold', 'sell'].includes(raw.decision_type) ? raw.decision_type : sc.decision_type),
+    score: sc.score,
+    score_label: sc.label,
+    one_liner: cleanText(core.one_liner || raw.one_liner, `${tkr}: ${sc.label} (${sc.score}).`),
+    data_perspective: cleanText(core.data_perspective || dash.data_perspective || raw.data_perspective, ''),
+    catalysts: asArray(intel.catalysts || raw.catalysts),
+    risks: asArray(intel.risks || raw.risks),
+    strategy_notes: cleanText(plan.notes || plan.strategy || raw.strategy_notes, cleanText(plan.summary, '')),
+    entry: Number.isFinite(plan.entry ?? raw.entry) ? +(plan.entry ?? raw.entry) : null,
+    exit: Number.isFinite(plan.exit ?? raw.exit) ? +(plan.exit ?? raw.exit) : null,
+    position_pct: Number.isFinite(plan.position_pct ?? raw.position_pct) ? +(plan.position_pct ?? raw.position_pct) : null,
+    confidence: ['low', 'medium', 'high'].includes(raw.confidence) ? raw.confidence : 'medium',
+    source,
+    generated_at: new Date().toISOString()
+  };
+}
+
+/* ── LLM prompt: DSA dashboard contract, enforces tracked schema ── */
+function buildDailyPrompt(tkr, ctx) {
+  return [
+    { role: 'system', content:
+`You are the SniperTrader Daily Analysis engine, trained on ZhuLinsen/daily_stock_analysis methodology.
+Score the stock on a 0-100 scale using the CANONICAL DECISION SCALE:
+ - 80-100 strong_buy (action=buy)  · 60-79 buy (action=buy)  · 40-59 watch (action=watch, hold)
+ - 20-39 reduce (action=sell)      · 0-19 sell (action=sell)
+Return ONLY valid minified JSON (no markdown, no prose) matching EXACTLY this contract:
+{"ticker":"${tkr}","name":string,"price":number,"change_pct":number,"signal":"strong_buy|buy|watch|reduce|sell","action":"buy|watch|reduce|sell","decision_type":"buy|hold|sell","score":0-100,"one_liner":string,"data_perspective":string,"catalysts":[string],"risks":[string],"strategy_notes":string,"entry":number|null,"exit":number|null,"position_pct":number|null,"confidence":"low|medium|high"}
+Use the technical context to justify data_perspective. Keep each string tight (<160 chars).` },
+    { role: 'user', content: `Analyze ${tkr} for tomorrow's session.\n\nTECHNICAL CONTEXT:\n${ctx}` }
+  ];
+}
+
+function buildDailyContext(bars) {
+  const close = bars.map(b => b.c);
+  const vol = bars.map(b => b.v);
+  const lastClose = close[close.length - 1];
+  const ma20 = sma(close, 20).filter(v => v != null);
+  const ma60 = sma(close, 60).filter(v => v != null);
+  const r = rsi(close, 14);
+  const m = macd(close);
+  const atr = calcATR(bars, 14);
+  const avgVol = vol.slice(-20).reduce((a, b) => a + b, 0) / Math.min(20, vol.length);
+  const volRatio = avgVol ? (vol[vol.length - 1] / avgVol) : 1;
+  const hi = Math.max(...last(bars, 20).map(b => b.h));
+  const lo = Math.min(...last(bars, 20).map(b => b.l));
+  const recent = last(bars, 5).map(b =>
+    `${b.timestamp ? b.timestamp.slice(0, 10) : ''} O${b.o} H${b.h} L${b.l} C${b.c} V${b.v}`).join(' | ');
+  return [
+    `Last close: ${lastClose}`,
+    `20-bar range: ${lo.toFixed(2)} – ${hi.toFixed(2)}`,
+    `MA20: ${ma20.length ? ma20[ma20.length - 1].toFixed(2) : 'n/a'} · MA60: ${ma60.length ? ma60[ma60.length - 1].toFixed(2) : 'n/a'}`,
+    `RSI(14): ${r != null ? r.toFixed(1) : 'n/a'}`,
+    `MACD: ${m ? `DIF ${m.dif} DEA ${m.dea} HIST ${m.hist}` : 'n/a'}`,
+    `ATR(14): ${atr != null ? atr.toFixed(2) : 'n/a'}`,
+    `Volume ratio: ${volRatio.toFixed(2)}x`,
+    `Recent bars: ${recent}`
+  ].join('\n');
+}
+
+/* ── deterministic synthetic bars (offline / no-Alpaca demo mode) ──
+ * Mirrors the Kronos backend's `synthetic` flag. Used when synthetic:true
+ * is requested OR when no Alpaca server-side key is configured, so the
+ * engine stays demoable and the UI never breaks on missing creds. */
+function syntheticBars(tkr, n = 120) {
+  // seed from ticker so each symbol is stable but distinct
+  let seed = 0; for (const ch of tkr) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+  const rng = mulberry32(seed || 1);
+  let price = 80 + rng() * 220;
+  const drift = (rng() - 0.42) * 0.006;     // slight upward bias like real legs
+  const bars = [];
+  for (let i = 0; i < n; i++) {
+    const o = price;
+    const c = o * (1 + drift + (rng() - 0.5) * 0.022);
+    const h = Math.max(o, c) * (1 + rng() * 0.012);
+    const l = Math.min(o, c) * (1 - rng() * 0.012);
+    const v = Math.round((1e6 + rng() * 4e6) * (0.7 + 0.6 * rng()));
+    bars.push({ timestamp: new Date(Date.now() - (n - i) * 86400000).toISOString(), o: +o.toFixed(2), h: +h.toFixed(2), l: +l.toFixed(2), c: +c.toFixed(2), v });
+    price = c;
+  }
+  return bars;
+}
+
+/* ── main daily analysis orchestrator ── */
+async function runDailyAnalysis({ ticker, provider, lookback = 120, synthetic = false }) {
+  const tkr = String(ticker || '').toUpperCase().trim();
+  if (!tkr) throw new Error('ticker is required');
+  const useSynth = synthetic || !process.env.ALPACA_API_KEY;
+  const bars = useSynth
+    ? syntheticBars(tkr, Math.max(30, Math.min(300, lookback)))
+    : await alpacaBars({ symbol: tkr, timeframe: '1d', limit: Math.max(30, Math.min(300, lookback)) });
+  if (!bars || !bars.length) throw new Error(`no price data returned for ${tkr}`);
+
+  const ctx = buildDailyContext(bars);
+  const prov = provider && PROVIDERS[provider] ? provider
+             : isConfigured('deepseek') ? 'deepseek'
+             : isConfigured('kimi') ? 'kimi' : null;
+
+  if (prov) {
+    try {
+      const r = await aiChat({ provider: prov, messages: buildDailyPrompt(tkr, ctx), options: { temperature: 0.3, maxTokens: 900 } });
+      const text = (r.content || '').replace(/```json|```/g, '').trim();
+      const raw = JSON.parse(text);
+      const out = normalizeDailyPayload(tkr, raw, bars, 'ai:' + prov);
+      out.context = ctx;
+      out.synthetic = useSynth;
+      return out;
+    } catch (e) {
+      // model failure → transparent fallback (DSA data-degradation philosophy)
+      const h = heuristicAnalysis(tkr, bars);
+      h.source = 'heuristic(fallback:' + (e && e.message || 'ai-error') + ')';
+      h.context = ctx; h.synthetic = useSynth;
+      return h;
+    }
+  }
+  const h = heuristicAnalysis(tkr, bars);
+  h.context = ctx; h.synthetic = useSynth;
+  return h;
+}
+
+/* ── REVIEW LOOP handler ── */
+function buildReviewLoop(req, res) {
+  let body = '';
+  req.on('data', c => { body += c; if (body.length > 1e5) req.destroy(); });
+  req.on('end', async () => {
+    let payload;
+    try { payload = JSON.parse(body || '{}'); }
+    catch (e) { res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'invalid JSON' })); }
+    const tickers = Array.isArray(payload.tickers) ? payload.tickers
+                  : (payload.ticker ? [payload.ticker] : [])
+                      .map(t => String(t).trim()).filter(Boolean).slice(0, 15);
+    if (!tickers.length) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: 'provide tickers[] (max 15)' }));
+    }
+    const provider = String(payload.provider || '').toLowerCase();
+    const results = [];
+    for (const t of tickers) {
+      try { results.push(await runDailyAnalysis({ ticker: t, provider })); }
+      catch (e) { results.push({ ticker: t, error: String(e && e.message || e), signal: 'error', score: 0, source: 'error' }); }
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ analyzed_at: new Date().toISOString(), count: results.length, results }));
+  });
+}
+
 module.exports = {
   MAX_CTX, MAX_BARS,
   mulberry32, gauss, genHistory, genPaths, computeBands, computeStats, runModel,
   alpacaBars, alpacaGet, buildForecast, buildStocks, buildChat, buildPropAccount,
+  ema, sma, rsi, macd, calcATR, scaleForScore, heuristicAnalysis, syntheticBars, buildDailyContext,
+  normalizeDailyPayload, buildDailyPrompt, runDailyAnalysis, buildReviewLoop,
   aiChat, isConfigured, PROVIDERS
 };
