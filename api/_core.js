@@ -424,8 +424,10 @@ function scaleForScore(score) {
 
 /* ── deterministic heuristic (no-AI fallback) ── */
 function heuristicAnalysis(tkr, bars) {
-  const close = bars.map(b => b.c);
-  const vol = bars.map(b => b.v);
+  const clean = (bars || []).filter(b => b && Number.isFinite(b.c));
+  const close = clean.map(b => b.c);
+  const vol = clean.map(b => (Number.isFinite(b.v) ? b.v : 0));
+  if (!close.length) return { ticker: tkr, name: tkr, price: null, change_pct: null, signal: 'watch', action: 'watch', decision_type: 'hold', score: 50, score_label: 'WATCH', one_liner: `${tkr}: insufficient price data (heuristic).`, data_perspective: 'No usable bars returned.', catalysts: [], risks: ['No price history available'], strategy_notes: 'Wait for valid market data before sizing.', entry: null, exit: null, position_pct: null, confidence: 'low', source: 'heuristic', generated_at: new Date().toISOString() };
   const lastClose = close[close.length - 1];
   const ma20 = sma(close, 20).filter(v => v != null);
   const ma60 = sma(close, 60).filter(v => v != null);
@@ -501,7 +503,8 @@ function asArray(v) {
   return [];
 }
 function normalizeDailyPayload(tkr, raw, bars, source) {
-  const lastClose = bars.length ? bars[bars.length - 1].c : null;
+  const lastBar = (bars && bars.length) ? bars[bars.length - 1] : null;
+  const lastClose = (lastBar && Number.isFinite(lastBar.c)) ? lastBar.c : null;
   const sc = scaleForScore(raw.score != null ? raw.score : 50);
   const sig = SIGNALS.has(raw.signal) ? raw.signal : sc.signal;
   const action = (raw.action && ['buy', 'watch', 'reduce', 'sell'].includes(raw.action)) ? raw.action : (sig === 'strong_buy' || sig === 'buy' ? 'buy' : sig === 'watch' ? 'watch' : 'sell');
@@ -511,11 +514,13 @@ function normalizeDailyPayload(tkr, raw, bars, source) {
   const intel = dash.intelligence || raw.intelligence || {};
   const plan = dash.battle_plan || raw.battle_plan || {};
 
+  const num = (v) => (Number.isFinite(v) ? +v : null);
+
   return {
     ticker: tkr,
     name: cleanText(raw.name || core.name, tkr),
-    price: Number.isFinite(raw.price) ? raw.price : (lastClose != null ? +lastClose.toFixed(2) : null),
-    change_pct: Number.isFinite(raw.change_pct) ? raw.change_pct : null,
+    price: num(raw.price) != null ? num(raw.price) : (lastClose != null ? +lastClose.toFixed(2) : null),
+    change_pct: num(raw.change_pct),
     signal: sig,
     action,
     decision_type: (['buy', 'hold', 'sell'].includes(raw.decision_type) ? raw.decision_type : sc.decision_type),
@@ -526,9 +531,9 @@ function normalizeDailyPayload(tkr, raw, bars, source) {
     catalysts: asArray(intel.catalysts || raw.catalysts),
     risks: asArray(intel.risks || raw.risks),
     strategy_notes: cleanText(plan.notes || plan.strategy || raw.strategy_notes, cleanText(plan.summary, '')),
-    entry: Number.isFinite(plan.entry ?? raw.entry) ? +(plan.entry ?? raw.entry) : null,
-    exit: Number.isFinite(plan.exit ?? raw.exit) ? +(plan.exit ?? raw.exit) : null,
-    position_pct: Number.isFinite(plan.position_pct ?? raw.position_pct) ? +(plan.position_pct ?? raw.position_pct) : null,
+    entry: num(plan.entry ?? raw.entry),
+    exit: num(plan.exit ?? raw.exit),
+    position_pct: num(plan.position_pct ?? raw.position_pct),
     confidence: ['low', 'medium', 'high'].includes(raw.confidence) ? raw.confidence : 'medium',
     source,
     generated_at: new Date().toISOString()
@@ -551,8 +556,10 @@ Use the technical context to justify data_perspective. Keep each string tight (<
 }
 
 function buildDailyContext(bars) {
-  const close = bars.map(b => b.c);
-  const vol = bars.map(b => b.v);
+  const clean = (bars || []).filter(b => b && Number.isFinite(b.c));
+  const close = clean.map(b => b.c);
+  const vol = clean.map(b => (Number.isFinite(b.v) ? b.v : 0));
+  if (!close.length) return `No usable price bars returned for context.`;
   const lastClose = close[close.length - 1];
   const ma20 = sma(close, 20).filter(v => v != null);
   const ma60 = sma(close, 60).filter(v => v != null);
