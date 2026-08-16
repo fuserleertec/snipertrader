@@ -14,6 +14,8 @@
   --red:#FF4455;--red-dim:rgba(255,68,85,0.09);
   --green:#00FF88;--green-dim:rgba(0,255,136,0.08);
   --amber:#FF9F43;--amber-dim:rgba(255,159,67,0.09);
+  --violet:#9B6DFF;--violet-dim:rgba(155,109,255,0.09);--violet-border:rgba(155,109,255,0.22);
+  --emerald:#00E5A0;--emerald-dim:rgba(0,229,160,0.09);
   --text:#FFFFFF;--text2:#E8F2FA;--text3:#A8C4D8;--text4:#5A7888;
   --border:rgba(0,212,255,0.13);--border2:rgba(0,212,255,0.26);
   --gold-border:rgba(240,192,64,0.18);
@@ -427,6 +429,138 @@ body.light-mode .site-nav{background:rgba(240,244,248,.97);}
 .pf-bar-track{height:6px;background:var(--obs4);border-radius:4px;overflow:hidden;}
 .pf-bar-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--green));border-radius:4px;}
 .pf-card-foot{font-family:'Space Mono',monospace;font-size:8px;color:var(--text4);margin-top:10px;display:flex;justify-content:space-between;align-items:center;}
+
+/* ════════════════════════════════════════════════════════════════════════
+   TRADEREDGE RESKIN LAYER — mirrors the traderedge product-surface look
+   (review-loop / chart-ai / prop-firm command center): glowing panels,
+   mono pill badges, gradient actions, status dots, masked-grid backdrop,
+   Orbitron headers. Re-skins existing admin classes; no JS/IDs touched.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ── masked-grid hero backdrop (traderedge signature) ── */
+.login-grid{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(0,229,160,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.04) 1px,transparent 1px);background-size:58px 58px;mask-image:radial-gradient(ellipse 80% 70% at 50% 45%,black 15%,transparent 100%);-webkit-mask-image:radial-gradient(ellipse 80% 70% at 50% 45%,black 15%,transparent 100%);pointer-events:none;}
+.login-orb1{position:fixed;top:-120px;left:-80px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(0,212,255,.16),transparent 70%);filter:blur(20px);z-index:0;pointer-events:none;animation:orbFloat 14s ease-in-out infinite;}
+.login-orb2{position:fixed;bottom:-140px;right:-60px;width:480px;height:480px;border-radius:50%;background:radial-gradient(circle,rgba(0,229,160,.16),transparent 70%);filter:blur(20px);z-index:0;pointer-events:none;animation:orbFloat 18s ease-in-out infinite reverse;}
+@keyframes orbFloat{0%,100%{transform:translateY(0) translateX(0);}50%{transform:translateY(30px) translateX(20px);}}
+
+/* ── login card: traderedge glass panel ── */
+.login-card{background:linear-gradient(160deg,var(--obs3),var(--obs2));border:1px solid var(--border2);border-radius:22px;padding:38px 36px;box-shadow:0 0 60px rgba(0,229,160,.10),inset 0 1px 0 rgba(255,255,255,.04);max-width:420px;width:100%;}
+.login-title{font-family:'Orbitron',monospace;font-size:26px;font-weight:900;color:#fff;margin-bottom:8px;letter-spacing:-.5px;}
+.login-sub{font-size:12.5px;color:var(--text3);line-height:1.7;margin-bottom:24px;font-weight:300;}
+.login-logo{font-family:'Orbitron',monospace;font-size:24px;font-weight:900;letter-spacing:3px;color:#fff;}
+.login-logo span{color:var(--emerald);}
+.login-logo-sub{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-top:6px;}
+.login-btn{background:linear-gradient(90deg,var(--emerald),var(--cyan));box-shadow:0 0 28px rgba(0,229,160,.30);border-radius:12px;font-size:11px;}
+.login-btn:hover{transform:translateY(-1px);opacity:.94;}
+.lf-input{background:var(--obs4);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'Space Mono',monospace;font-size:11px;transition:border-color .2s,box-shadow .2s;}
+.lf-input:focus{outline:none;border-color:var(--emerald);box-shadow:0 0 0 3px rgba(0,229,160,.12);}
+.lf-label{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);}
+.tfa-input{background:var(--obs4);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Orbitron',monospace;text-align:center;font-size:14px;}
+.tfa-input:focus{outline:none;border-color:var(--emerald);box-shadow:0 0 0 3px rgba(0,229,160,.12);}
+.lbio-btn{background:var(--obs4);border:1px solid var(--border);border-radius:10px;color:var(--text3);font-family:'Space Mono',monospace;font-size:9px;cursor:none;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 8px;flex:1;}
+.lbio-btn:hover{border-color:var(--emerald);color:var(--emerald);}
+.login-divider-txt{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--text4);}
+
+/* ── TOP NAV: traderedge kf-nav feel ── */
+.site-nav{background:rgba(2,4,8,.94);border-bottom:1px solid var(--border);box-shadow:0 1px 0 rgba(0,229,160,.06);}
+.site-nav-logo{font-family:'Orbitron',monospace;font-size:15px;font-weight:900;letter-spacing:3px;color:#fff;text-decoration:none;}
+.site-nav-logo span{color:var(--emerald);}
+.site-nav-link{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1.5px;color:var(--text3);text-decoration:none;text-transform:uppercase;transition:color .2s;}
+.site-nav-link:hover{color:var(--text);}
+.admin-user-badge{background:var(--obs3);border:1px solid var(--border);border-radius:30px;padding:4px 12px 4px 4px;display:flex;align-items:center;gap:8px;}
+.aub-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--emerald),var(--cyan));color:#001016;font-family:'Orbitron',monospace;font-size:10px;font-weight:900;display:flex;align-items:center;justify-content:center;}
+.aub-name{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:#fff;}
+.aub-role{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:1.5px;color:var(--emerald);text-transform:uppercase;}
+.admin-logout-btn{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--text3);border:1px solid var(--border);border-radius:20px;padding:6px 12px;cursor:none;transition:all .2s;}
+.admin-logout-btn:hover{border-color:var(--red);color:var(--red);}
+
+/* ── SIDEBAR: traderedge sidebar-link with accent bar + status dot ── */
+.admin-sidebar{background:linear-gradient(180deg,var(--obs2),var(--obs));border-right:1px solid var(--border);}
+.sidebar-section-label{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text4);padding:18px 22px 8px;}
+.sidebar-link{border-left:2px solid transparent;padding:11px 20px 11px 18px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.5px;}
+.sidebar-link:hover{background:linear-gradient(90deg,rgba(0,229,160,.06),transparent);color:var(--text);}
+.sidebar-link.active{background:linear-gradient(90deg,rgba(0,229,160,.10),transparent);border-left-color:var(--emerald);color:#fff;}
+.sidebar-link.active .sidebar-link-icon{color:var(--emerald);}
+.sidebar-link-icon{color:var(--text4);transition:color .2s;}
+.sidebar-badge{font-family:'Orbitron',monospace;font-size:7px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:.5px;}
+.sidebar-badge.red{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,68,85,.3);}
+.sidebar-badge.gold{background:var(--gold-dim);color:var(--gold);border:1px solid var(--gold-border);}
+.sidebar-badge.green{background:var(--emerald-dim);color:var(--emerald);border:1px solid rgba(0,229,160,.3);}
+
+/* ── PANELS: traderedge .ai-panel glow ── */
+.dash-panel{display:none;padding:32px 36px;max-width:1320px;margin:0 auto;}
+.dash-panel.active{display:block;animation:panelIn .35s ease;}
+@keyframes panelIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+.g-panel{background:linear-gradient(160deg,var(--obs3),var(--obs2));border:1px solid var(--border);border-radius:18px;padding:24px;margin-bottom:20px;box-shadow:0 0 0 1px rgba(0,229,160,.02),0 10px 30px rgba(0,0,0,.25);transition:border-color .3s,box-shadow .3s;position:relative;overflow:hidden;}
+.g-panel::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--emerald),transparent);opacity:.4;}
+.g-panel:hover{border-color:var(--border2);box-shadow:0 0 30px rgba(0,229,160,.08);}
+.gph-title{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;color:#fff;letter-spacing:.5px;}
+.gph-sub{font-family:'Space Mono',monospace;font-size:9px;color:var(--text4);letter-spacing:.5px;}
+.gph-icon{border-radius:9px;background:var(--emerald-dim);color:var(--emerald);}
+.gph-icon.c{background:rgba(0,212,255,.10);color:var(--cyan);}
+.gph-icon.gr{background:var(--emerald-dim);color:var(--emerald);}
+
+/* ── STAT CARDS: command-center stat look ── */
+.stat-card{background:linear-gradient(160deg,var(--obs3),var(--obs2));border:1px solid var(--border);border-radius:16px;padding:20px;overflow:hidden;transition:border-color .3s,transform .3s;}
+.stat-card:hover{border-color:var(--border2);transform:translateY(-2px);}
+.stat-val{font-family:'Orbitron',monospace;font-size:26px;font-weight:900;color:#fff;letter-spacing:-.5px;}
+.stat-label{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text4);margin-top:4px;}
+.stat-spark{height:3px;border-radius:3px;background:linear-gradient(90deg,var(--emerald),var(--cyan));margin-top:14px;opacity:.7;}
+
+/* ── BADGES / PILLS: mono pill language ── */
+.badge{font-family:'Orbitron',monospace;font-size:8px;font-weight:700;letter-spacing:1px;padding:3px 11px;border-radius:20px;text-transform:uppercase;background:var(--obs4);color:var(--text3);border:1px solid var(--border);}
+.badge.active,.badge.elite{background:var(--emerald-dim);color:var(--emerald);border-color:rgba(0,229,160,.35);}
+.badge.funded{background:rgba(0,212,255,.10);color:var(--cyan);border-color:rgba(0,212,255,.35);}
+.badge.breach{background:var(--red-dim);color:var(--red);border-color:rgba(255,68,85,.35);}
+.badge.funding{background:var(--gold-dim);color:var(--gold);border-color:var(--gold-border);}
+.badge.challenge{background:var(--violet-dim);color:var(--violet);border-color:var(--violet-border);}
+.pf-status{font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:1px;padding:4px 9px;border-radius:6px;white-space:nowrap;}
+.pf-status.active{background:var(--emerald-dim);color:var(--emerald);}
+.pf-status.funded{background:rgba(0,212,255,.10);color:var(--cyan);}
+.pf-status.breach{background:var(--red-dim);color:var(--red);}
+.pf-status.funding,.pf-status.challenge{background:var(--gold-dim);color:var(--gold);}
+.pf-status.paused{background:var(--obs4);color:var(--text3);}
+
+/* ── MODULE / DOWNLOAD / PROP CARDS ── */
+.mp-card{background:linear-gradient(160deg,var(--obs4),var(--obs3));border:1px solid var(--border);border-radius:12px;padding:16px;transition:border-color .3s,transform .3s;}
+.mp-card:hover{border-color:var(--border2);transform:translateY(-2px);}
+.dl-card{background:linear-gradient(160deg,var(--obs4),var(--obs3));border:1px solid var(--border);border-radius:14px;padding:18px;transition:all .3s;}
+.dl-card:hover{border-color:var(--emerald);box-shadow:0 0 24px rgba(0,229,160,.08);transform:translateY(-2px);}
+.dl-card-name{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:#fff;margin:10px 0 6px;}
+.dl-card-meta{font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);line-height:1.6;}
+.dl-card-icon{font-size:22px;}
+.dl-card-btn{display:inline-flex;align-items:center;gap:6px;margin-top:12px;background:var(--emerald-dim);border:1px solid rgba(0,229,160,.3);color:var(--emerald);font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.5px;padding:7px 12px;border-radius:8px;cursor:none;transition:all .2s;}
+.dl-card-btn:hover{background:rgba(0,229,160,.16);}
+.pf-card{background:linear-gradient(160deg,var(--obs3),var(--obs2));border:1px solid var(--border);border-radius:14px;padding:16px;position:relative;overflow:hidden;transition:border-color .3s,box-shadow .3s;}
+.pf-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--emerald);opacity:.6;}
+.pf-card.is-breach::before{background:var(--red);}
+.pf-card.is-funding::before{background:var(--gold);}
+.pf-card:hover{border-color:var(--border2);box-shadow:0 0 26px rgba(0,229,160,.08);}
+.pf-card-title{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:#fff;}
+.pf-card-sub{font-family:'Space Mono',monospace;font-size:8px;color:var(--text4);letter-spacing:.5px;}
+.pf-card-stat{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;color:#fff;}
+.pf-metric-label{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:1px;text-transform:uppercase;color:var(--text4);}
+
+/* ── BUTTONS: traderedge gradient action ── */
+.action-btn{font-family:'Orbitron',monospace;font-size:8px;font-weight:700;letter-spacing:1px;padding:6px 13px;border-radius:7px;cursor:none;text-transform:uppercase;transition:all .2s;border:none;background:var(--emerald-dim);color:var(--emerald);}
+.action-btn:hover{background:rgba(0,229,160,.18);}
+.action-btn.cyan{background:rgba(0,212,255,.10);color:var(--cyan);}
+.action-btn.cyan:hover{background:rgba(0,212,255,.18);}
+
+/* ── LIVE banner + status dot ── */
+.live-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:linear-gradient(135deg,rgba(0,229,160,.08),rgba(0,212,255,.05));border:1px solid rgba(0,229,160,.28);border-radius:14px;padding:13px 18px;margin-bottom:20px;font-family:'Space Mono',monospace;font-size:11px;color:var(--text2);}
+.lb-dot{width:9px;height:9px;border-radius:50%;background:var(--emerald);box-shadow:0 0 10px rgba(0,229,160,.7);animation:pls 1.6s infinite;flex:none;}
+.pf-live-head .pulse,.pf-live-meta .pulse{width:7px;height:7px;border-radius:50%;display:inline-block;animation:pls 1.6s infinite;}
+@keyframes pls{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.35;transform:scale(.7);}}
+
+/* ── SECTION LABELS inside Licenses/Downloads ── */
+.dl-cards.fu{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;}
+
+/* ── dashboard masked-grid backdrop (traderedge hero parity) ── */
+.admin-main{position:relative;}
+.admin-main::before{content:'';position:fixed;inset:57px 0 0 240px;z-index:-1;background-image:linear-gradient(rgba(0,229,160,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.03) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 80% 80% at 50% 30%,black 10%,transparent 90%);-webkit-mask-image:radial-gradient(ellipse 80% 80% at 50% 30%,black 10%,transparent 90%);pointer-events:none;}
+body.light-mode .admin-main::before{opacity:.5;}
+
 </style>
 </head>
 <body>
