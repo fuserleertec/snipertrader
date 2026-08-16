@@ -21,8 +21,13 @@ const DEMO_TOKEN = process.env.ADMIN_DEMO_TOKEN || 'demo-admin-token';
 
 const PUBLIC_RESOURCES = [
   'profile', 'overview', 'alerts', 'sessions', 'modules',
-  'licenses', 'billing', 'notifications', 'security', 'downloads'
+  'licenses', 'billing', 'notifications', 'security', 'downloads', 'propfirms'
 ];
+
+// URL segment → actual data key (camelCase) so GET /api/admin/propfirms resolves.
+const RESOURCE_ALIASES = { propfirms: 'propFirms' };
+
+const PROPFIRM_STATUSES = ['ACTIVE', 'FUNDING', 'CHALLENGE', 'FUNDED', 'BREACH', 'PAUSED'];
 
 const PROFILE_FIELDS = ['displayName', 'email', 'timezone', 'primaryMarket', 'tradingStyle'];
 
@@ -72,12 +77,43 @@ function buildAdmin(req, res, url) {
       }
       if (PUBLIC_RESOURCES.includes(seg)) {
         // Return the sub-object; if missing, 404 with error shape.
-        if (data[seg] === undefined) {
+        const key = RESOURCE_ALIASES[seg] || seg;
+        if (data[key] === undefined) {
           return sendJSON(res, 404, { error: 'unknown resource: ' + seg });
         }
-        return sendJSON(res, 200, { ...data.meta, [seg]: data[seg] });
+        return sendJSON(res, 200, { ...data.meta, [key]: data[key] });
       }
       return sendJSON(res, 404, { error: 'unknown admin route: /api/admin/' + seg });
+    });
+  }
+
+  if (req.method === 'PATCH' && seg === 'propfirms') {
+    return withAuth(req, res, url, async () => {
+      let patch;
+      try { patch = await readBody(req); }
+      catch (e) { return sendJSON(res, 400, { error: e.message }); }
+      const data = store.load();
+      const next = store.deepClone(data);
+      const id = typeof patch.id === 'string' ? patch.id : '';
+      const list = Array.isArray(next.propFirms) ? next.propFirms : [];
+      const acc = list.find(x => x.id === id);
+      if (!acc) return sendJSON(res, 404, { error: 'prop firm account not found: ' + id });
+      let changed = false;
+      if (typeof patch.status === 'string' && PROPFIRM_STATUSES.includes(patch.status.toUpperCase())) {
+        acc.status = patch.status.toUpperCase(); changed = true;
+      }
+      if (Number.isFinite(patch.progress)) {
+        acc.progress = Math.max(0, Math.min(100, Math.round(patch.progress))); changed = true;
+      }
+      if (typeof patch.lastUpdate === 'string' && patch.lastUpdate.length <= 60) {
+        acc.lastUpdate = patch.lastUpdate; changed = true;
+      }
+      if (!changed) return sendJSON(res, 400, { error: 'no valid prop-firm fields supplied (status|progress|lastUpdate)' });
+      const persisted = store.save(next);
+      return sendJSON(res, 200, {
+        ...next.meta, propFirms: next.propFirms, persisted,
+        warning: persisted ? undefined : 'changes not persisted (read-only environment) — in-memory only this session'
+      });
     });
   }
 

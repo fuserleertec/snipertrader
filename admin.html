@@ -387,6 +387,46 @@ body.light-mode .site-nav{background:rgba(240,244,248,.97);}
 .lm-card .lm-sub{font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);margin-top:4px;}
 .lm-val.pos{color:var(--green);} .lm-val.neg{color:var(--red);}
 .pos-flag{color:var(--green);} .neg-flag{color:var(--red);}
+.pf-live-tile{display:flex;flex-direction:column;gap:14px;}
+.pf-live-head{display:flex;align-items:center;justify-content:space-between;font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:1px;}
+.pf-live-dot{display:inline-flex;align-items:center;gap:6px;color:var(--green);}
+.pf-live-dot .pulse{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pfPulse 1.6s infinite;}
+.pf-live-tile.lb-err .pf-live-dot{color:var(--red);}
+.pf-live-tile.lb-err .pulse{background:var(--red);box-shadow:0 0 8px var(--red);animation:none;}
+.pf-live-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+.pf-live-stat{background:var(--obs3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;}
+.pf-live-label{font-family:'Space Mono',monospace;font-size:8px;color:var(--text4);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+.pf-live-val{font-family:'Orbitron',monospace;font-size:15px;font-weight:700;color:#fff;}
+.pos-flag{color:var(--green);} .neg-flag{color:var(--red);}
+.pf-live-foot{font-family:'Space Mono',monospace;font-size:9px;color:var(--text4);border-top:1px solid var(--border);padding-top:10px;}
+.pf-live-tile.refreshing .pf-live-val{opacity:.5;}
+@keyframes pfPulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.4);opacity:.5;}}
+.pf-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+.pf-card{background:var(--obs2);border:1px solid var(--border);border-radius:12px;padding:16px;position:relative;overflow:hidden;}
+.pf-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--cyan);opacity:.8;}
+.pf-card.is-breach::before{background:var(--red);}
+.pf-card.is-funding::before{background:var(--gold);}
+.pf-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;}
+.pf-name{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:#fff;}
+.pf-prog{font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);margin-top:2px;}
+.pf-status{font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:1px;padding:4px 8px;border-radius:5px;white-space:nowrap;}
+.pf-status.active{background:var(--green-dim);color:var(--green);border:1px solid var(--green);}
+.pf-status.funded{background:rgba(0,212,255,.1);color:var(--cyan);border:1px solid var(--cyan);}
+.pf-status.challenge{background:var(--gold-dim);color:var(--gold);border:1px solid var(--gold);}
+.pf-status.funding{background:rgba(155,109,255,.12);color:#9B6DFF;border:1px solid #9B6DFF;}
+.pf-status.breach{background:var(--red-dim);color:var(--red);border:1px solid var(--red);}
+.pf-status.paused{background:rgba(120,140,160,.15);color:var(--text3);border:1px solid var(--text4);}
+.pf-alloc{font-family:'Orbitron',monospace;font-size:20px;font-weight:900;color:var(--cyan);margin-bottom:4px;}
+.pf-equity-line{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);margin-bottom:12px;}
+.pf-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.pf-metric{background:var(--obs3);border-radius:6px;padding:8px;}
+.pf-metric .l{font-size:8px;color:var(--text4);letter-spacing:.5px;text-transform:uppercase;font-family:'Space Mono',monospace;}
+.pf-metric .v{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:#fff;margin-top:2px;}
+.pf-bar-wrap{margin-bottom:6px;}
+.pf-bar-label{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:8px;color:var(--text4);margin-bottom:3px;}
+.pf-bar-track{height:6px;background:var(--obs4);border-radius:4px;overflow:hidden;}
+.pf-bar-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--green));border-radius:4px;}
+.pf-card-foot{font-family:'Space Mono',monospace;font-size:8px;color:var(--text4);margin-top:10px;display:flex;justify-content:space-between;align-items:center;}
 </style>
 </head>
 <body>
@@ -548,6 +588,9 @@ body.light-mode .site-nav{background:rgba(240,244,248,.97);}
       </div>
       <div class="sidebar-link" onclick="showPanel('security',this)">
         <span class="sidebar-link-icon">🛡</span> Security
+      </div>
+      <div class="sidebar-link" onclick="showPanel('propfirms',this)">
+        <span class="sidebar-link-icon">🏦</span> Prop Firm Center
       </div>
       <div class="sidebar-section-label">Navigation</div>
       <a class="sidebar-link" href="traderedge_landing.html">
@@ -751,6 +794,22 @@ body.light-mode .site-nav{background:rgba(240,244,248,.97);}
         </div>
       </div>
 
+      <!-- ── PROP FIRM COMMAND CENTER ── -->
+      <div class="dash-panel" id="panel-propfirms">
+        <div style="margin-bottom:24px;"><div style="font-family:'Orbitron',monospace;font-size:20px;font-weight:900;color:#fff;margin-bottom:5px;">Prop Firm Command Center</div><div style="font-size:12px;color:var(--text3);font-family:'Space Mono',monospace;">Complete view of every funded, challenge, and live member account</div></div>
+
+        <!-- LIVE tile (real Alpaca feed) -->
+        <div class="g-panel fu" id="pfLiveTile" style="margin-bottom:20px;">
+          <div class="pf-live-head">
+            <span class="pf-live-dot"><span class="pulse"></span> LIVE · Founder Alpaca Account</span>
+            <span id="pfLiveMeta" style="color:var(--text4);"></span>
+          </div>
+          <div id="pfLiveBody" class="pf-live-tile"><div class="dash-loader" style="padding:18px;"><span class="spin">◌</span> Connecting to live broker feed…</div></div>
+        </div>
+
+        <div id="propFirmsGrid" class="pf-cards fu"><div class="dash-loader" style="grid-column:1/-1;"><span class="spin">◌</span>Loading prop firm accounts…</div></div>
+      </div>
+
     </div><!-- /admin-main -->
   </div><!-- /admin-layout -->
 
@@ -896,8 +955,10 @@ async function loadDashboard(){
     renderNotifications(data.notifications);
     renderSecurity(data.security);
     renderDownloads(data.downloads);
-    // Kick off the one live source
+    renderPropFirms(data.propFirms);
+    // Kick off the one live source + the live Alpaca tile in the prop panel
     refreshLiveAccount();
+    refreshPropLive();
   } catch (e) {
     const msg = `Could not reach the admin service (${esc(e.message)}). Showing retry below.`;
     ['statRow','activityChart','neuralReadiness','alertsList','sessionsBody','modulesGrid',
@@ -1043,6 +1104,77 @@ function renderNotifications(list){
     `<div class="tl-content"><div class="tl-title">${esc(n.title)}<br>` +
     `<span style="font-size:11px;color:var(--text3);">${esc(n.detail||'')}</span></div>` +
     `<div class="tl-meta">${esc(n.meta||'')}</div></div></div>`).join('');
+}
+
+function renderPropFirms(list){
+  const el = document.getElementById('propFirmsGrid'); if (!el) return;
+  if (!Array.isArray(list) || !list.length){ showEmpty('propFirmsGrid','No prop firm accounts linked yet.'); return; }
+  el.innerHTML = list.map(p => {
+    const status = (p.status||'ACTIVE').toLowerCase();
+    const dpl = Number(p.dayPnl||0);
+    const eq = Number(p.equity||0);
+    const dd = Number(p.drawdownUsed||0), ddMax = Number(p.drawdownMax||0);
+    const ddPct = ddMax ? Math.round(dd/ddMax*100) : 0;
+    return `<div class="pf-card${status==='breach'?' is-breach':''}${status==='funding'?' is-funding':''}">` +
+      `<div class="pf-card-top"><div><div class="pf-name">${esc(p.firm)}</div>` +
+      `<div class="pf-prog">${esc(p.program||'')} · ${esc(p.phase||'')}</div></div>` +
+      `<span class="pf-status ${status}">${esc(p.status)}</span></div>` +
+      `<div class="pf-alloc">${esc(p.allocation||'—')}</div>` +
+      `<div class="pf-equity-line"><span>Equity</span><span style="font-family:'Orbitron',monospace;font-size:11px;color:#fff;">${fmtMoney(eq)}</span></div>` +
+      `<div class="pf-metrics">` +
+        `<div class="pf-metric"><div class="l">Day P&L</div><div class="v" style="color:${pnlClass(dpl)};">${pnlText(dpl)}</div></div>` +
+        `<div class="pf-metric"><div class="l">Consistency</div><div class="v" style="color:${p.consistency>=90?'var(--green)':'var(--gold)'};">${esc(p.consistency)}%</div></div>` +
+      `</div>` +
+      `<div class="pf-bar-wrap"><div class="pf-bar-label"><span>Phase Progress</span><span>${esc(p.progress||0)}%</span></div>` +
+        `<div class="pf-bar-track"><div class="pf-bar-fill" style="width:${esc(p.progress||0)}%;"></div></div></div>` +
+      `<div class="pf-bar-wrap"><div class="pf-bar-label"><span>Drawdown Used</span><span>${ddPct}%</span></div>` +
+        `<div class="pf-bar-track"><div class="pf-bar-fill" style="width:${ddPct}%;background:${ddPct>=80?'var(--red)':'linear-gradient(90deg,var(--gold),var(--red))'};"></div></div></div>` +
+      `<div class="pf-card-foot"><span>Updated ${esc(p.lastUpdate||'—')}</span>` +
+        `<button class="action-btn cyan" onclick="cyclePropStatus('${esc(p.id)}')">CYCLE STATUS</button></div>` +
+      `</div>`;
+  }).join('');
+}
+
+// Cycle a demo account's status (PATCH to /api/admin/propfirms)
+function cyclePropStatus(id){
+  const order = ['ACTIVE','CHALLENGE','FUNDING','FUNDING','PAUSED','BREACH'];
+  const cur = (window.__pfStatus && window.__pfStatus[id]) || 'ACTIVE';
+  const next = order[(order.indexOf(cur)+1)%order.length];
+  window.__pfStatus = window.__pfStatus || {}; window.__pfStatus[id] = next;
+  fetch('/api/admin/propfirms',{method:'PATCH',headers:ADMIN_HEADERS,body:JSON.stringify({id,status:next,lastUpdate:'Just now'})})
+    .then(r=>r.json()).then(j=>{ if (j.propFirms) renderPropFirms(j.propFirms); })
+    .catch(()=>{ /* offline: leave optimistic UI */ });
+}
+
+/* ── LIVE tile: founder's real Alpaca account (graceful) ── */
+async function refreshPropLive(){
+  const tile = document.getElementById('pfLiveBody');
+  const meta = document.getElementById('pfLiveMeta');
+  if (!tile) return;
+  tile.classList.add('refreshing');
+  meta.textContent = '';
+  try {
+    const res = await fetch('/api/prop/account');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+    if (d.error) throw new Error(d.error);
+    const a = d.account || {};
+    const eq = Number(a.equity||0), bp = Number(a.buying_power||0), dpl = Number(a.day_pnl||0);
+    const pos = (d.positions||[]).length, ord = (d.orders||[]).length;
+    tile.classList.remove('refreshing','lb-err');
+    tile.innerHTML = `<div class="pf-live-grid">` +
+      `<div class="pf-live-stat"><div class="pf-live-label">Equity</div><div class="pf-live-val">${fmtMoney(eq)}</div></div>` +
+      `<div class="pf-live-stat"><div class="pf-live-label">Day P&L</div><div class="pf-live-val ${dpl>=0?'pos-flag':'neg-flag'}">${pnlText(dpl)}</div></div>` +
+      `<div class="pf-live-stat"><div class="pf-live-label">Buying Power</div><div class="pf-live-val">${fmtMoney(bp)}</div></div>` +
+      `<div class="pf-live-stat"><div class="pf-live-label">Positions</div><div class="pf-live-val">${pos}<span style="font-size:9px;color:var(--text4);"> · ${ord} orders</span></div></div>` +
+      `</div>` +
+      `<div class="pf-live-foot">Broker: ${esc(a.status||'paper')} · Acct ${esc((a.number||'').slice(-4)||'—')} · refreshes every 60s</div>`;
+    meta.textContent = '● LIVE';
+  } catch (e) {
+    tile.classList.remove('refreshing'); tile.classList.add('lb-err');
+    tile.innerHTML = `<div class="pf-live-foot" style="border:0;padding:0;color:var(--red);">⚠ Live broker feed unavailable — ${esc(e.message)}.<br>The accounts below are DEMO DATA.</div>`;
+    meta.textContent = '○ OFFLINE';
+  }
 }
 
 function renderSecurity(sec){
