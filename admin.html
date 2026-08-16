@@ -574,7 +574,7 @@ body.light-mode .site-nav{background:rgba(240,244,248,.97);}
         <span class="sidebar-badge gold">PRO</span>
       </div>
       <div class="sidebar-link" onclick="showPanel('downloads',this)">
-        <span class="sidebar-link-icon">⬇</span> Downloads
+        <span class="sidebar-link-icon">⬇</span> Licenses/Downloads
         <span class="sidebar-badge green">3</span>
       </div>
       <div class="sidebar-link" onclick="showPanel('billing',this)">
@@ -725,8 +725,13 @@ body.light-mode .site-nav{background:rgba(240,244,248,.97);}
 
       <!-- ── DOWNLOADS ── -->
       <div class="dash-panel" id="panel-downloads">
-        <div style="margin-bottom:24px;"><div style="font-family:'Orbitron',monospace;font-size:20px;font-weight:900;color:#fff;margin-bottom:5px;">Downloads</div><div style="font-size:12px;color:var(--text3);font-family:'Space Mono',monospace;">All licensed products, indicators, and documents available for download</div></div>
-        <div class="dl-cards fu" id="downloadsGrid"><div class="dash-loader" style="grid-column:1/-1;"><span class="spin">◌</span>Loading downloads…</div></div>
+        <div style="margin-bottom:24px;"><div style="font-family:'Orbitron',monospace;font-size:20px;font-weight:900;color:#fff;margin-bottom:5px;">Licenses / Downloads</div><div style="font-size:12px;color:var(--text3);font-family:'Space Mono',monospace;">Direct purchases, monthly licensed specials, and paying-customer access — monitor everything members have access to</div></div>
+        <div style="font-family:'Orbitron',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin:8px 0 14px;">1 · Direct Purchases — Downloads</div>
+<div class="dl-cards fu" id="downloadsGrid"><div class="dash-loader" style="grid-column:1/-1;"><span class="spin">◌</span>Loading downloads…</div></div>
+<div style="font-family:'Orbitron',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin:28px 0 14px;">2 · Special Licensed Access — Monthly</div>
+<div class="dl-cards fu" id="specialLicensesGrid"><div class="dash-loader" style="grid-column:1/-1;"><span class="spin">◌</span>Loading special licenses…</div></div>
+<div style="font-family:'Orbitron',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin:28px 0 14px;">3 · Paying-Customer Special Access</div>
+<div class="dl-cards fu" id="memberAccessGrid"><div class="dash-loader" style="grid-column:1/-1;"><span class="spin">◌</span>Loading member access…</div></div>
         <div class="app-strip" style="margin-top:24px;">
           <div class="app-strip-text"><div class="app-strip-title">Always have TraderEdge with you.</div><div class="app-strip-sub">Mobile app keeps all 7 modules available before, during, and after every session.</div></div>
           <div class="app-strip-btns">
@@ -955,6 +960,8 @@ async function loadDashboard(){
     renderNotifications(data.notifications);
     renderSecurity(data.security);
     renderDownloads(data.downloads);
+    renderSpecialLicenses(data.specialLicenses);
+    renderMemberAccess(data.memberAccess);
     renderPropFirms(data.propFirms);
     // Kick off the one live source + the live Alpaca tile in the prop panel
     refreshLiveAccount();
@@ -1198,14 +1205,31 @@ function renderDownloads(list){
   if (!Array.isArray(list) || !list.length){ showEmpty('downloadsGrid','No downloads available.'); return; }
   el.innerHTML = list.map(d => {
     let btn;
-    if (d.type==='appstore')      btn = `<a href="#" class="dl-card-btn">🍎 Download on App Store →</a>`;
-    else if (d.type==='googleplay')btn = `<a href="#" class="dl-card-btn">▶ Get on Google Play →</a>`;
-    else                          btn = `<div class="dl-card-btn" onclick="simulateDownload(this,'${esc(d.file||'package.zip')}')">⬇ Download Package →</div>`;
-    return `<div class="dl-card"><span class="dl-card-icon">${d.icon||'📦'}</span>` +
-      `<div class="dl-card-name">${esc(d.name)}</div>` +
-      `<div class="dl-card-meta">${d.meta||''}</div>${btn}</div>`;
+    if (d.type==='appstore')      btn = `<a href=\"#\" class=\"dl-card-btn\">🍎 Download on App Store →</a>`;
+    else if (d.type==='googleplay')btn = `<a href=\"#\" class=\"dl-card-btn\">▶ Get on Google Play →</a>`;
+    else                          btn = `<div class=\"dl-card-btn\" onclick=\"simulateDownload(this,'${esc(d.file||'package.zip')}')\">⬇ Download Package →</div>`;
+    const chip = (d.status ? `<div style=\"margin-top:8px;\"><span class=\"badge active\">${esc(d.status)}</span>${d.renews?` <span style=\"font-family:'Space Mono',monospace;font-size:9px;color:var(--text4);\">${esc(d.renews)}</span>`:''}</div>` : '');
+    return `<div class=\"dl-card\"><span class=\"dl-card-icon\">${d.icon||'📦'}</span>` +
+      `<div class=\"dl-card-name\">${esc(d.name)}</div>` +
+      `<div class=\"dl-card-meta\">${d.meta||''}</div>${btn}${chip}</div>`;
   }).join('');
 }
+
+function renderLicensesGrid(list, gridId, emptyMsg){
+  const el = document.getElementById(gridId); if (!el) return;
+  if (!Array.isArray(list) || !list.length){ showEmpty(gridId, emptyMsg); return; }
+  el.innerHTML = list.map(d => {
+    const btn = d.type==='access'
+      ? `<div class=\"dl-card-btn\" style=\"cursor:default;\">✓ ${esc(d.status||'GRANTED')}</div>`
+      : `<div class=\"dl-card-btn\" onclick=\"simulateDownload(this,'${esc(d.file||'package.zip')}')\">⬇ Download Package →</div>`;
+    const chip = (d.status ? `<div style=\"margin-top:8px;\"><span class=\"badge ${d.type==='access'?'elite':'active'}\">${esc(d.status)}</span>${d.renews?` <span style=\"font-family:'Space Mono',monospace;font-size:9px;color:var(--text4);\">${esc(d.renews)}</span>`:''}</div>` : '');
+    return `<div class=\"dl-card\"><span class=\"dl-card-icon\">${d.icon||(d.type==='access'?'🔓':'📦')}</span>` +
+      `<div class=\"dl-card-name\">${esc(d.name)}</div>` +
+      `<div class=\"dl-card-meta\">${d.meta||''}</div>${btn}${chip}</div>`;
+  }).join('');
+}
+function renderSpecialLicenses(list){ renderLicensesGrid(list, 'specialLicensesGrid', 'No special licenses.'); }
+function renderMemberAccess(list){ renderLicensesGrid(list, 'memberAccessGrid', 'No member access granted.'); }
 
 /* ── LIVE source: Alpaca prop account (graceful) ── */
 let _liveTimer = null;
