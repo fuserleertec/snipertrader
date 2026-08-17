@@ -339,10 +339,17 @@ def main():
     with open("scripts/sniper_brief.md", "w") as f:
         f.write(md)
     print("[+] Wrote scripts/sniper_brief.md")
+    # Emit the static data cache the live page reads. NEVER overwrite stock_picks.html
+    # (the canonical themed page) — that would clobber the merged, styled UI.
+    import os
+    os.makedirs("data", exist_ok=True)
     html = build_html(payload)
-    with open("stock_picks.html", "w") as f:
+    with open("data/recon.json", "w") as f:
+        json.dump(payload, f, indent=2)
+    print("[+] Wrote data/recon.json (static cache; page loads /api/recon/picks live)")
+    with open("scripts/sniper_recon_report.html", "w") as f:
         f.write(html)
-    print("[+] Wrote stock_picks.html (live webpage)")
+    print("[+] Wrote scripts/sniper_recon_report.html (legacy report; stock_picks.html untouched)")
 
 def build_markdown(payload):
     ts = payload["timestamp"]

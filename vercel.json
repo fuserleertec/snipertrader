@@ -3,5 +3,9 @@
   "framework": null,
   "functions": {
     "api/**/*.js": { "maxDuration": 60 }
-  }
+  },
+  "crons": [
+    { "path": "/api/recon/refresh", "schedule": "0 13 * * *" },
+    { "path": "/api/recon/refresh", "schedule": "0 22 * * *" }
+  ]
 }
