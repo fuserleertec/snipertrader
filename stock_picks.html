@@ -16,6 +16,13 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .hero-h1{font-family:'Orbitron',sans-serif;font-weight:900;font-size:38px;letter-spacing:2px;line-height:1.05;margin-bottom:10px;}
 .hero-h1 span{background:linear-gradient(90deg,var(--emerald),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 .hero-sub{color:var(--text3);font-size:14px;max-width:860px;line-height:1.6;margin-bottom:6px;}
+.intro{background:linear-gradient(145deg,var(--obs3),var(--obs2));border:1px solid var(--border);border-left:3px solid var(--emerald);border-radius:12px;padding:16px 18px;margin-bottom:34px;margin-top:6px;}
+.intro p{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:10px;}
+.intro ul{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:12px;}
+.intro li{font-size:13px;color:var(--text3);line-height:1.6;padding-left:16px;position:relative;}
+.intro li::before{content:'';position:absolute;left:0;top:7px;width:7px;height:7px;border-radius:2px;background:var(--emerald);box-shadow:0 0 8px var(--emerald);}
+.intro li b{color:var(--text);}
+.intro .intro-note{color:var(--text4)!important;font-size:11.5px!important;margin-bottom:0!important;}
 .tag{display:inline-block;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--emerald);border:1px solid var(--border2);padding:4px 10px;border-radius:20px;margin-bottom:18px;text-transform:uppercase;}
 .section{margin-top:46px;}
 .sec-h{font-family:'Orbitron',sans-serif;font-size:18px;letter-spacing:2px;color:var(--text2);text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:10px;}
@@ -146,6 +153,15 @@ details.raw pre{margin-top:12px;background:var(--obs);border:1px solid var(--bor
   <span class="tag">⬡ Conviction Engine · Tier 4 Trading Decision</span>
   <h1 class="hero-h1">Conviction Engine <span>&amp; Stock Picks</span></h1>
   <p class="hero-sub">Aggregate verified signals into a normalized Composite Score (0.00–1.00), map it to an execution tier, size the position with Fractional-Kelly + hard guardrails — then open any pick on a live TradingView chart. Client-side only; no orders are placed.</p>
+
+  <div class="intro">
+    <p><b style="color:var(--text)">Conviction Engine &amp; Stock Picks</b> — a unified decision-support terminal that turns raw market signals into disciplined, risk-bounded trades.</p>
+    <ul>
+      <li><b>The Conviction Scoring Engine</b> aggregates verified signals across four sub-agents — Technical (0.35), Insider/Political (0.30), Retail Sentiment (0.20), and Fundamental/DD Catalyst (0.15) — into a single normalized Composite Score (0.00–1.00). That score maps to a clear execution tier: <b>Ultra-High</b> (≥0.88) fires an immediate simulated order, <b>High</b> (0.78–0.87) scales in via staggered limits, <b>Moderate</b> (0.65–0.77) is watchlist-only paper, and anything below 0.65 is dropped. Position sizing uses a Fractional-Kelly model capped by hard guardrails — 30% sector limit, 70% total deployment / 30% cash floor, 5-position max, and a correlation &gt;0.85 halving rule.</li>
+      <li><b>Categorized Stock Picks</b> surfaces the live watchlist as a filterable card grid (Ultra-High / High / Watchlist), each card one click from a <b>TradingView light-box</b> with its embedded advanced chart. Below that, the <b>Recon Audit</b> shows full funnel transparency — every scanned ticker that failed the conviction gate, why, and its community bullish ratio.</li>
+    </ul>
+    <p class="intro-note"><b>Educational simulation only. Not financial advice.</b> Everything runs client-side — no orders are placed, no positions opened.</p>
+  </div>
 
   <!-- SECTION 1: CONVICTION ENGINE -->
   <div class="section">
