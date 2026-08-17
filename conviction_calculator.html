@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conviction Engine — Position Sizing & Risk Controls | SniperTrader.ai</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Space+Mono:wght@400;700&family=Syne:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/theme.css">
+<style>
+/* Adopt canonical tokens from /assets/theme.css. Only layout/component styles below. */
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--obs);color:var(--text);font-family:'Syne',sans-serif;overflow-x:hidden;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.4;}
+.wrap{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:110px 28px 60px;}
+.hero-h1{font-family:'Orbitron',sans-serif;font-weight:900;font-size:38px;letter-spacing:2px;line-height:1.05;margin-bottom:10px;}
+.hero-h1 span{background:linear-gradient(90deg,var(--emerald),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-sub{color:var(--text3);font-size:14px;max-width:820px;line-height:1.6;margin-bottom:6px;}
+.tag{display:inline-block;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--emerald);border:1px solid var(--border2);padding:4px 10px;border-radius:20px;margin-bottom:18px;text-transform:uppercase;}
+.grid{display:grid;grid-template-columns:420px 1fr;gap:24px;margin-top:26px;align-items:start;}
+@media(max-width:980px){.grid{grid-template-columns:1fr;}}
+.kf-panel{margin-bottom:20px;}
+.kf-panel h3{font-family:'Orbitron',sans-serif;font-size:12px;letter-spacing:2px;color:var(--text2);text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.kf-panel h3::before{content:'';width:8px;height:8px;border-radius:2px;background:var(--emerald);box-shadow:0 0 10px var(--emerald);}
+/* Factor rows */
+.factor{margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+.factor:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+.factor .flabel{display:flex;justify-content:space-between;align-items:baseline;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--text3);text-transform:uppercase;margin-bottom:8px;}
+.factor .flabel b{color:var(--emerald);font-size:11px;}
+.factor .fdesc{font-size:11px;color:var(--text4);margin-bottom:9px;line-height:1.5;min-height:30px;}
+select,input[type=number]{width:100%;background:var(--obs4);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Space Mono',monospace;font-size:12px;outline:none;transition:border-color .2s;}
+select:focus,input[type=number]:focus{border-color:var(--emerald);}
+select option{background:var(--obs3);color:var(--text);}
+.tier-mark{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:middle;}
+/* Account params */
+.ap-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.ap-grid .full{grid-column:1 / -1;}
+.ctrl label{display:block;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--text3);text-transform:uppercase;margin-bottom:7px;}
+.ctrl label span{color:var(--text4);text-transform:none;letter-spacing:0;}
+.run-btn{width:100%;margin-top:8px;padding:13px;border-radius:12px;border:1px solid var(--emerald);background:linear-gradient(90deg,var(--emerald-dim),var(--cyan-dim));color:var(--text);font-family:'Orbitron',sans-serif;font-weight:700;font-size:12px;letter-spacing:2px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+.run-btn:hover{box-shadow:0 0 24px rgba(0,229,160,.35);transform:translateY(-1px);}
+.reset-btn{width:100%;margin-top:10px;padding:10px;border-radius:12px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+.reset-btn:hover{border-color:var(--red);color:var(--red);}
+
+/* RESULTS */
+.score-hero{text-align:center;padding:8px 0 4px;}
+.score-num{font-family:'Orbitron',sans-serif;font-weight:900;font-size:62px;line-height:1;letter-spacing:1px;}
+.score-bar-track{height:16px;border-radius:9px;background:var(--obs4);overflow:hidden;border:1px solid var(--border);position:relative;margin:16px 0 6px;}
+.score-bar-fill{height:100%;width:0%;border-radius:9px;transition:width .35s ease,background .35s ease;}
+.score-ticks{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:9px;color:var(--text4);}
+.tier-badge{display:inline-flex;align-items:center;gap:9px;font-family:'Orbitron',sans-serif;font-weight:700;font-size:15px;letter-spacing:1.5px;padding:12px 20px;border-radius:14px;margin:18px auto 0;width:100%;justify-content:center;text-transform:uppercase;}
+.tier-action{text-align:center;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:1px;color:var(--text3);margin-top:12px;}
+.tier-action b{color:var(--text);}
+
+.readout{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:20px;}
+.stat{background:var(--obs3);border:1px solid var(--border);border-radius:12px;padding:12px 14px;}
+.stat .k{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--text4);text-transform:uppercase;}
+.stat .v{font-family:'Orbitron',sans-serif;font-size:17px;margin-top:6px;}
+.v.pos{color:var(--emerald);} .v.neg{color:var(--red);} .v.neu{color:var(--gold);} .v.cy{color:var(--cyan);}
+
+.guard{margin-top:18px;}
+.guard-title{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--text3);text-transform:uppercase;margin-bottom:10px;border-top:1px solid var(--border);padding-top:16px;}
+.gitem{display:flex;align-items:flex-start;gap:10px;padding:9px 0;font-size:12px;line-height:1.5;border-bottom:1px solid var(--border);}
+.gitem:last-child{border-bottom:none;}
+.gicon{flex:0 0 auto;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-top:1px;}
+.g-ok{background:var(--emerald-dim);color:var(--emerald);border:1px solid var(--border2);}
+.g-fail{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,68,85,.4);}
+.g-warn{background:var(--gold-dim);color:var(--gold);border:1px solid rgba(240,192,64,.3);}
+.gitem .gtext{flex:1;}
+.gitem .gtext b{color:var(--text);}
+.gitem .gtext span{color:var(--text4);font-size:11px;}
+
+.note{font-size:11px;color:var(--text4);margin-top:14px;line-height:1.6;}
+.note b{color:var(--text3);}
+.foot{margin-top:40px;text-align:center;font-family:'Space Mono',monospace;font-size:10px;color:var(--text4);letter-spacing:1px;}
+.foot a{color:var(--text3);text-decoration:none;}
+</style>
+</head>
+<body>
+<nav class="kf-nav">
+  <a href="/index.html" class="nav-logo">SNIPER<span>TRADER</span></a>
+  <div class="nav-links">
+    <a href="/traderedge_baseline.html">Baseline</a>
+    <a href="/traderedge_guardrails.html">Guardrails</a>
+    <a href="/traderedge_review_loop.html">Review Loop</a>
+    <a href="/traderedge_ai_sentiment.html">Ai Sentiment</a>
+    <a href="/traderedge_chartai.html">Ai Chart</a>
+    <a href="/kronos_foundation.html" class="nav-pill">⬡ Kronos KFM</a>
+    <a href="/traderedge_prop_firms_command_center.html">Prop Firm Center</a>
+    <button class="kf-theme-toggle" onclick="toggleTheme()" id="themeToggle"><span class="tt-icon">🌙</span><span id="themeLabel">DARK</span></button>
+  </div>
+</nav>
+
+<div class="wrap">
+  <span class="tag">⬡ Conviction Engine · Tier 4 Trading Decision</span>
+  <h1 class="hero-h1">Multi-Factor <span>Conviction Scoring &amp; Position Sizing</span></h1>
+  <p class="hero-sub">Aggregates verified signals across four sub-agents into a normalized Composite Score (0.00–1.00), maps it to an execution tier, and applies Fractional-Kelly position sizing with hard risk guardrails. All computation is local &amp; client-side — no orders are placed.</p>
+
+  <div class="grid">
+    <!-- LEFT: INPUTS -->
+    <div>
+      <div class="kf-panel">
+        <h3>Signal Inputs · Composite Score</h3>
+
+        <div class="factor" data-factor="tech">
+          <div class="flabel">Technical Proof <b id="techVal">0.00</b></div>
+          <div class="fdesc" id="techDesc">Select the strongest verified chart pattern.</div>
+          <select id="tech" onchange="compute()">
+            <option value="0.00">— None verified —</option>
+            <option value="0.60">Single Valid Pattern (BOS / FVG / Breakout)</option>
+            <option value="0.80">Valid FVG or BOS + 20-Day High Breach</option>
+            <option value="1.00">Daily Bullish FVG + 20-Day Breakout + BOS</option>
+          </select>
+        </div>
+
+        <div class="factor" data-factor="insider">
+          <div class="flabel">Insider / Political <b id="insiderVal">0.00</b></div>
+          <div class="fdesc" id="insiderDesc">SEC Form 4 clusters &amp; STOCK Act filings.</div>
+          <select id="insider" onchange="compute()">
+            <option value="0.00">No Insider Buying (Neutral)</option>
+            <option value="0.50">Single Executive Open-Market Purchase</option>
+            <option value="0.75">C-Suite Form 4 Cluster OR Congressional Purchase</option>
+            <option value="1.00">Congressional Buy + C-Suite Form 4 Cluster (&lt; 7 Days)</option>
+          </select>
+        </div>
+
+        <div class="factor" data-factor="sent">
+          <div class="flabel">Retail Sentiment &amp; Velocity <b id="sentVal">0.00</b></div>
+          <div class="fdesc" id="sentDesc">Bullish ratio &amp; social message volume surge.</div>
+          <select id="sent" onchange="compute()">
+            <option value="0.00">— Below threshold —</option>
+            <option value="0.50">70% – 74% Bullish Ratio</option>
+            <option value="0.75">75% – 84% Bullish Ratio + High Velocity</option>
+            <option value="1.00">&gt; 85% Bullish + 3x Avg Daily Social Volume</option>
+          </select>
+        </div>
+
+        <div class="factor" data-factor="dd">
+          <div class="flabel">Fundamental / DD Catalyst <b id="ddVal">0.00</b></div>
+          <div class="fdesc" id="ddDesc">Verified news catalyst, short float, or float constraint.</div>
+          <select id="dd" onchange="compute()">
+            <option value="0.00">— No hard catalyst —</option>
+            <option value="0.40">General Social DD (no immediate hard catalyst)</option>
+            <option value="0.75">Validated DD Thesis + Short Squeeze (&gt;20% Float)</option>
+            <option value="1.00">Tier 1 News Catalyst (Earnings Beat / SEC Filing / Contract)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="kf-panel">
+        <h3>Account &amp; Position Parameters</h3>
+        <div class="ap-grid">
+          <div class="ctrl full">
+            <label>Account Equity ($)</label>
+            <input type="number" id="equity" value="25000" min="0" step="500" oninput="compute()">
+          </div>
+          <div class="ctrl">
+            <label>Entry Price ($)</label>
+            <input type="number" id="entry" value="100.00" min="0" step="0.01" oninput="compute()">
+          </div>
+          <div class="ctrl">
+            <label>Stop-Loss Anchor ($)</label>
+            <input type="number" id="stop" value="94.00" min="0" step="0.01" oninput="compute()">
+          </div>
+          <div class="ctrl full">
+            <label>Current Sector Allocation <span>(% of equity already in this sector)</span></label>
+            <input type="number" id="sectorUsed" value="0" min="0" max="100" step="1" oninput="compute()">
+          </div>
+          <div class="ctrl full">
+            <label>Total Portfolio Allocation <span>(% of equity already deployed)</span></label>
+            <input type="number" id="portUsed" value="0" min="0" max="100" step="1" oninput="compute()">
+          </div>
+          <div class="ctrl">
+            <label>Open Positions</label>
+            <input type="number" id="openPos" value="0" min="0" step="1" oninput="compute()">
+          </div>
+          <div class="ctrl">
+            <label>30-Day Corr. w/ Peer <span>(0.00–1.00)</span></label>
+            <input type="number" id="corr" value="0.00" min="0" max="1" step="0.01" oninput="compute()">
+          </div>
+        </div>
+        <button class="run-btn" onclick="compute()">▶ RECOMPUTE</button>
+        <button class="reset-btn" onclick="resetAll()">RESET TO NEUTRAL</button>
+        <div class="note"><b>Weights:</b> Technical 0.35 · Insider 0.30 · Sentiment 0.20 · DD 0.15. Position sizing uses Fractional-Kelly × conviction multiplier, capped at the tier's base allocation, with hard per-trade risk and exposure limits.</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: RESULTS -->
+    <div>
+      <div class="kf-panel">
+        <h3>Composite Score &amp; Tier</h3>
+        <div class="score-hero">
+          <div class="score-num" id="scoreNum">0.00</div>
+          <div class="score-bar-track"><div class="score-bar-fill" id="scoreFill"></div></div>
+          <div class="score-ticks"><span>0.00</span><span>0.65 REJECT</span><span>0.78 HIGH</span><span>0.88 ULTRA</span><span>1.00</span></div>
+        </div>
+        <div class="tier-badge" id="tierBadge"><span class="tier-mark"></span><span id="tierName">—</span></div>
+        <div class="tier-action" id="tierAction"></div>
+      </div>
+
+      <div class="kf-panel">
+        <h3>Position Sizing &amp; Risk</h3>
+        <div class="readout">
+          <div class="stat"><div class="k">Allocation %</div><div class="v" id="allocPct">—</div></div>
+          <div class="stat"><div class="k">Position $</div><div class="v cy" id="posDollars">—</div></div>
+          <div class="stat"><div class="k">Shares</div><div class="v" id="shares">—</div></div>
+          <div class="stat"><div class="k">Risk / Trade $</div><div class="v neg" id="riskDollars">—</div></div>
+          <div class="stat"><div class="k">Take-Profit $</div><div class="v pos" id="tpPrice">—</div></div>
+          <div class="stat"><div class="k">Reward : Risk</div><div class="v neu" id="rrRatio">—</div></div>
+        </div>
+        <div class="note" id="sizingNote"></div>
+      </div>
+
+      <div class="kf-panel">
+        <h3>Risk Guardrails</h3>
+        <div class="guard" id="guardList"></div>
+        <div class="note"><b>Hard limits:</b> 30% single-sector cap · 70% total deployment / 30% cash floor · max 5 open positions · correlation &gt; 0.85 halves the lower-scoring peer. Moderate tier (&lt; 0.78) = paper/WATCHLIST only.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">SNIPERTRADER.AI · Conviction Engine is a decision-support simulator — <a href="/disclaimer.html">not financial advice</a>. No live orders are placed.</div>
+</div>
+
+<script>
+/* ── Scoring weights (mirror risk_rules.scoring_weights) ── */
+const W = { tech:0.35, insider:0.30, sent:0.20, dd:0.15 };
+
+/* ── Tier thresholds (mirror risk_rules.conviction_thresholds) ── */
+const T_ULTRA = 0.88, T_HIGH = 0.78, T_MIN_EXEC = 0.78;
+
+/* ── Position sizing (mirror risk_rules.position_sizing) ── */
+const SIZE = {
+  ultra:{ allocation_pct:0.12, max_risk_pct:0.02,  min_rr_ratio:2.5 },
+  high: { allocation_pct:0.08, max_risk_pct:0.0125, min_rr_ratio:2.0 }
+};
+
+/* ── Hard guardrail caps ── */
+const MAX_SECTOR_PCT = 0.30, MAX_TOTAL_PCT = 0.70, MAX_OPEN_POS = 5, CORR_HALVE = 0.85;
+
+/* Fractional-Kelly multiplier per tier (budget neutral: ultra ~1.0, high ~0.66) */
+const KELLY = { ultra:1.0, high:0.66 };
+
+const TIER_STYLE = {
+  ultra:{ name:'Ultra-High Conviction', color:'var(--emerald)', rgb:'0,255,136',  action:'BUY · Immediate Simulated Market Order' },
+  high: { name:'High Conviction',       color:'var(--green)',   rgb:'0,255,136',  action:'BUY · Scaled / Staggered Limit Entry' },
+  mod:  { name:'Moderate Conviction',   color:'var(--gold)',    rgb:'240,192,64', action:'WATCHLIST · Flag for manual review (no auto order)' },
+  rej:  { name:'Rejected',              color:'var(--red)',     rgb:'255,68,85',  action:'IGNORE · Drop immediately' }
+};
+
+function num(id){ const v = parseFloat(document.getElementById(id).value); return isNaN(v) ? 0 : v; }
+
+function compute(){
+  /* 1. Composite score */
+  const sTech = num('tech'), sIns = num('insider'), sSent = num('sent'), sDd = num('dd');
+  const sComp = W.tech*sTech + W.insider*sIns + W.sent*sSent + W.dd*sDd;
+  const sCompR = Math.round(sComp*100)/100;
+
+  /* 2. Tier */
+  let tier, tk;
+  if (sComp >= T_ULTRA){ tier='ultra'; tk='ultra'; }
+  else if (sComp >= T_HIGH){ tier='high'; tk='high'; }
+  else if (sComp >= 0.65){ tier='mod'; tk='mod'; }
+  else { tier='rej'; tk='rej'; }
+
+  /* 3. Render score + tier */
+  document.getElementById('scoreNum').textContent = sCompR.toFixed(2);
+  document.getElementById('scoreNum').style.color = TIER_STYLE[tk].color;
+  const fill = document.getElementById('scoreFill');
+  fill.style.width = (sComp*100).toFixed(1) + '%';
+  fill.style.background = 'linear-gradient(90deg,rgba('+TIER_STYLE[tk].rgb+',.35),'+TIER_STYLE[tk].color+')';
+  fill.style.boxShadow = '0 0 14px rgba('+TIER_STYLE[tk].rgb+',.5)';
+
+  const badge = document.getElementById('tierBadge');
+  badge.style.color = TIER_STYLE[tk].color;
+  badge.style.border = '1px solid rgba('+TIER_STYLE[tk].rgb+',.4)';
+  badge.style.background = 'rgba('+TIER_STYLE[tk].rgb+',.08)';
+  badge.querySelector('.tier-mark').style.background = TIER_STYLE[tk].color;
+  badge.querySelector('.tier-mark').style.boxShadow = '0 0 10px '+TIER_STYLE[tk].color;
+  document.getElementById('tierName').textContent = TIER_STYLE[tk].name;
+  document.getElementById('tierAction').innerHTML = '<b>ACTION:</b> ' + TIER_STYLE[tk].action;
+
+  /* update factor point readouts */
+  document.getElementById('techVal').textContent = sTech.toFixed(2);
+  document.getElementById('insiderVal').textContent = sIns.toFixed(2);
+  document.getElementById('sentVal').textContent = sSent.toFixed(2);
+  document.getElementById('ddVal').textContent = sDd.toFixed(2);
+
+  /* 4. Position sizing (only if executable tier) */
+  const equity = num('equity'), entry = num('entry'), stop = num('stop');
+  const elAlloc = document.getElementById('allocPct');
+  const elPos = document.getElementById('posDollars');
+  const elShares = document.getElementById('shares');
+  const elRisk = document.getElementById('riskDollars');
+  const elTp = document.getElementById('tpPrice');
+  const elRr = document.getElementById('rrRatio');
+  const elNote = document.getElementById('sizingNote');
+
+  if (tk==='ultra' || tk==='high'){
+    const cfg = SIZE[tk];
+    const riskPerShare = (entry>0 && stop>0) ? Math.abs(entry-stop) : 0;
+
+    /* Fractional Kelly budget */
+    let allocFrac = cfg.allocation_pct * KELLY[tk];
+
+    /* hard caps: max single position cap by total deployment headroom */
+    const portUsed = num('portUsed')/100;
+    const headroom = Math.max(0, MAX_TOTAL_PCT - portUsed);
+    allocFrac = Math.min(allocFrac, headroom);
+
+    /* correlation halving */
+    const corr = num('corr');
+    if (corr > CORR_HALVE){ allocFrac = allocFrac/2; }
+
+    const posDollars = equity * allocFrac;
+    const shares = riskPerShare>0 ? Math.floor(posDollars/entry) : 0;
+    const riskDollars = shares * riskPerShare;
+    const riskPct = equity>0 ? riskDollars/equity : 0;
+
+    /* enforce per-trade risk cap: if risk exceeds max_risk_pct, scale shares down */
+    let riskCapNote = '';
+    if (riskPct > cfg.max_risk_pct){
+      const maxRiskDollars = equity * cfg.max_risk_pct;
+      const maxShares = riskPerShare>0 ? Math.floor(maxRiskDollars/riskPerShare) : 0;
+      elPos.textContent = '$'+(maxShares*entry).toLocaleString(undefined,{maximumFractionDigits:0});
+      elShares.textContent = maxShares.toLocaleString();
+      elRisk.textContent = '$'+ (maxShares*riskPerShare).toLocaleString(undefined,{maximumFractionDigits:0});
+      riskCapNote = ' Per-trade risk capped at '+(cfg.max_risk_pct*100).toFixed(2)+'% ('+'$'+(maxShares*riskPerShare).toLocaleString(undefined,{maximumFractionDigits:0})+' ≥ planned '+'$'+(riskDollars).toLocaleString(undefined,{maximumFractionDigits:0})+'): shares reduced to '+maxShares+'.';
+    } else {
+      elPos.textContent = '$'+(shares*entry).toLocaleString(undefined,{maximumFractionDigits:0});
+      elShares.textContent = shares.toLocaleString();
+      elRisk.textContent = '$'+riskDollars.toLocaleString(undefined,{maximumFractionDigits:0});
+    }
+
+    elAlloc.textContent = (allocFrac*100).toFixed(2)+'%';
+    const tpPrice = entry + (riskPerShare * cfg.min_rr_ratio);
+    elTp.textContent = '$'+tpPrice.toFixed(2);
+    elRr.textContent = '1 : '+cfg.min_rr_ratio.toFixed(1);
+
+    let notes = [];
+    notes.push('Tier base allocation '+(cfg.allocation_pct*100).toFixed(0)+'% × Kelly '+(KELLY[tk]*100).toFixed(0)+'% = '+(cfg.allocation_pct*KELLY[tk]*100).toFixed(1)+'% target.');
+    if (corr > CORR_HALVE) notes.push('Correlation '+(corr).toFixed(2)+' &gt; 0.85 → position halved.');
+    if (allocFrac <= 0.0001) notes.push('Total deployment headroom exhausted (70% cap reached) → allocation floored to 0.');
+    notes.push(riskCapNote);
+    elNote.innerHTML = notes.join(' ');
+  } else {
+    elAlloc.textContent = '0.00%';
+    elPos.textContent = '$0';
+    elShares.textContent = '0';
+    elRisk.textContent = '$0';
+    elTp.textContent = '—';
+    elRr.textContent = '—';
+    elNote.innerHTML = tk==='mod'
+      ? 'Moderate tier (&lt; 0.78): <b>paper trade only</b> — no capital allocated, no automatic order.'
+      : 'Rejected (&lt; 0.65): signal dropped. No position.';
+  }
+
+  /* 5. Guardrails */
+  renderGuardrails(tk, sCompR);
+}
+
+function renderGuardrails(tk, sCompR){
+  const list = document.getElementById('guardList');
+  const items = [];
+
+  /* Execution eligibility */
+  if (tk==='rej' || tk==='mod'){
+    items.push(['warn', 'Execution Blocked', tk==='rej'
+      ? 'Composite '+sCompR.toFixed(2)+' &lt; 0.65 → REJECTED. No order.'
+      : 'Composite '+sCompR.toFixed(2)+' in 0.65–0.77 → WATCHLIST only (no auto order).']);
+  } else {
+    items.push(['ok', 'Execution Eligible', 'Composite '+sCompR.toFixed(2)+' ≥ 0.78 → auto-execution path open.']);
+  }
+
+  /* Max open positions */
+  const open = num('openPos');
+  if (open >= MAX_OPEN_POS){
+    items.push(['fail', 'Position Limit', open+' open positions = cap of '+MAX_OPEN_POS+'. Hold new entries.']);
+  } else {
+    items.push(['ok', 'Position Limit', open+' / '+MAX_OPEN_POS+' open — within limit.']);
+  }
+
+  /* Sector cap */
+  const sectorUsed = num('sectorUsed');
+  if (sectorUsed >= MAX_SECTOR_PCT*100){
+    items.push(['fail', 'Sector Cap', 'Sector already at '+sectorUsed.toFixed(0)+'% ≥ 30% cap. Block.']);
+  } else {
+    const room = (MAX_SECTOR_PCT*100 - sectorUsed).toFixed(0);
+    items.push(['ok', 'Sector Cap', room+'% sector headroom remaining (cap 30%).']);
+  }
+
+  /* Total deployment / cash floor */
+  const portUsed = num('portUsed');
+  if (portUsed >= MAX_TOTAL_PCT*100){
+    items.push(['fail', 'Total Exposure', 'Portfolio '+portUsed.toFixed(0)+'% deployed ≥ 70% cap — cash floor breached.']);
+  } else {
+    const cash = (100 - portUsed).toFixed(0);
+    items.push(['ok', 'Total Exposure', portUsed.toFixed(0)+'% deployed · '+cash+'% cash reserve held (≥30% floor OK).']);
+  }
+
+  /* Correlation halving */
+  const corr = num('corr');
+  if (corr > CORR_HALVE){
+    items.push(['warn', 'Correlation Filter', '30-day corr '+corr.toFixed(2)+' &gt; 0.85 → lower-scoring peer position halved.']);
+  } else {
+    items.push(['ok', 'Correlation Filter', 'Corr '+corr.toFixed(2)+' ≤ 0.85 — no concentration penalty.']);
+  }
+
+  list.innerHTML = items.map(([cls,title,txt])=>{
+    const icon = cls==='ok' ? '✓' : (cls==='fail' ? '✕' : '!');
+    return '<div class="gitem"><div class="gicon g-'+cls+'">'+icon+'</div><div class="gtext"><b>'+title+'</b><br><span>'+txt+'</span></div></div>';
+  }).join('');
+}
+
+function resetAll(){
+  ['tech','insider','sent','dd'].forEach(id=>document.getElementById(id).selectedIndex=0);
+  ['equity','entry','stop','sectorUsed','portUsed','openPos','corr'].forEach(id=>{
+    const def = {equity:25000,entry:100,stop:94,sectorUsed:0,portUsed:0,openPos:0,corr:0}[id];
+    document.getElementById(id).value = def;
+  });
+  compute();
+}
+
+/* Theme toggle (shared with canonical theme) */
+function toggleTheme(){
+  document.body.classList.toggle('light-mode');
+  const isLight = document.body.classList.contains('light-mode');
+  document.getElementById('themeLabel').textContent = isLight ? 'LIGHT' : 'DARK';
+  document.querySelector('.tt-icon').textContent = isLight ? '☀️' : '🌙';
+}
+
+/* initial render */
+compute();
+</script>
+</body>
+</html>
