@@ -1,253 +1,385 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark h-full bg-slate-950 text-slate-100">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMC Algorithmic Execution Engine</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <style>
-        .mono { font-family: 'Courier New', Courier, monospace; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SniperTrader.ai | Kronos + MiroFish Engine Cockpit</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              500: '#3b82f6',
+              600: '#2563eb',
+              400: '#60a5fa',
+            },
+            slate: {
+              950: '#030712',
+              900: '#0f172a',
+              850: '#131f37',
+              800: '#1e293b',
+              700: '#334155'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js CDN for interactive visual canvases -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Custom scrollbar for dense data panels */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+  </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen p-6">
 
-    <div class="max-w-7xl mx-auto space-y-6">
-        
-        <header class="flex justify-between items-center border-b border-slate-800 pb-4">
-            <div>
-                <h1 class="text-2xl font-bold tracking-tight text-emerald-400">TradeSniper Engine v4.0</h1>
-                <p class="text-slate-400 text-sm">Automated Liquidity Sweep & FVG Confluence Matrix</p>
-            </div>
-            <div class="flex items-center space-x-3">
-                <span class="flex h-3 w-3 relative">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                </span>
-                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 bg-slate-900 px-3 py-1.5 rounded border border-slate-800">Engine Live</span>
-            </div>
-        </header>
+<body class="h-full flex flex-col font-sans antialiased bg-slate-950 text-slate-200 overflow-hidden">
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
-                <div class="text-xs text-slate-400 font-semibold uppercase">Lookback Period</div>
-                <div class="text-xl font-bold text-slate-200 mt-1">15 Candles</div>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
-                <div class="text-xs text-slate-400 font-semibold uppercase">Confluence Window</div>
-                <div class="text-xl font-bold text-slate-200 mt-1">5 Candles Max</div>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
-                <div class="text-xs text-slate-400 font-semibold uppercase">Execution Rules</div>
-                <div class="text-xl font-bold text-emerald-400 mt-1">No Martingale / Strict SL</div>
-            </div>
+  <!-- TOP NAVIGATION HEADER -->
+  <header class="h-14 border-b border-slate-800 bg-slate-900/90 px-4 flex items-center justify-between shrink-0 z-20">
+    <div class="flex items-center space-x-3">
+      <div class="flex items-center space-x-2">
+        <div class="h-8 w-8 rounded bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-black text-white text-lg tracking-wider shadow-lg shadow-blue-500/20">
+          S
         </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col h-[520px]">
-                <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider border-b border-slate-800 pb-2 mb-3">Live Order Routing Logs</h2>
-                <div id="log-container" class="space-y-2 overflow-y-auto flex-1 text-xs mono pr-2">
-                    </div>
-            </div>
-
-            <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col h-[520px]">
-                <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider border-b border-slate-800 pb-2 mb-3">Market Microstructure Matrix</h2>
-                <div class="overflow-auto flex-1 rounded border border-slate-800">
-                    <table class="w-full text-left border-collapse text-xs">
-                        <thead class="bg-slate-950 sticky top-0 border-b border-slate-800 text-slate-400 uppercase tracking-wider">
-                            <tr>
-                                <th class="p-2.5">Idx</th>
-                                <th class="p-2.5">Open</th>
-                                <th class="p-2.5">High</th>
-                                <th class="p-2.5">Low</th>
-                                <th class="p-2.5">Close</th>
-                                <th class="p-2.5 text-center">Liquidity Sweep</th>
-                                <th class="p-2.5 text-center">FVG Gap Zone</th>
-                                <th class="p-2.5 text-right">Execution Signal</th>
-                            </tr>
-                        </thead>
-                        <tbody id="matrix-body" class="divide-y divide-slate-800/50 mono">
-                            </tbody>
-                    </table>
-                </div>
-            </div>
-
+        <div>
+          <span class="font-bold text-slate-100 tracking-wide text-sm block leading-none">SniperTrader<span class="text-blue-400">.ai</span></span>
+          <span class="text-[10px] text-slate-400 tracking-wider uppercase font-mono">Kronos x MiroFish Engine</span>
         </div>
+      </div>
+      <span class="h-4 w-px bg-slate-700 mx-2"></span>
+      <div class="flex items-center space-x-2 text-xs font-mono bg-slate-800/80 px-2.5 py-1 rounded border border-slate-700/50">
+        <span class="text-slate-400">SYMBOL:</span>
+        <span class="text-emerald-400 font-bold">NQ1! (E-mini Nasdaq)</span>
+        <span class="text-slate-500">|</span>
+        <span class="text-slate-400">TF:</span>
+        <span class="text-amber-400 font-bold">5M</span>
+      </div>
     </div>
 
-    <script>
-        // Generate Mock Data designed to force a liquidity sweep and a subsequent FVG trigger
-        function generateMarketData() {
-            let data = [];
-            let basePrice = 150.00;
-            
-            for (let i = 0; i < 35; i++) {
-                // Baseline structural price behavior
-                let change = (Math.sin(i * 0.4) * 1.5) + (Math.random() - 0.5) * 0.4;
-                let close = basePrice + change;
-                let open = close - (Math.random() - 0.5) * 0.6;
-                let high = Math.max(open, close) + Math.random() * 0.3;
-                let low = Math.min(open, close) - Math.random() * 0.3;
-                
-                // Force an explicit Bearish Sweep at Index 25
-                if (i === 25) {
-                    let historicalHigh = Math.max(...data.map(d => d.high));
-                    high = historicalHigh + 1.25; // Stop hunt print
-                    open = historicalHigh + 0.80;
-                    close = historicalHigh - 0.40; // Aggressive rejection close
-                    low = close - 0.20;
-                }
-                
-                // Force a massive institutional Bearish Imbalance (Candle 2 of FVG) at Index 26
-                if (i === 26) {
-                    open = data[25].close - 0.10;
-                    close = open - 3.50; // Massive expansion downward
-                    high = open + 0.15;
-                    low = close - 0.15;
-                }
+    <!-- Live Status Indicators -->
+    <div class="flex items-center space-x-4 text-xs font-mono">
+      <div class="flex items-center space-x-1.5 bg-emerald-950/40 border border-emerald-800/50 px-2.5 py-1 rounded">
+        <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="text-emerald-300 font-medium">KRONOS-V4: ACTIVE</span>
+      </div>
+      <div class="flex items-center space-x-1.5 bg-indigo-950/40 border border-indigo-800/50 px-2.5 py-1 rounded">
+        <span class="h-2 w-2 rounded-full bg-indigo-400 animate-ping"></span>
+        <span class="text-indigo-300 font-medium">SWARM: 2,048 AGENTS</span>
+      </div>
+      <div class="text-slate-400">
+        LATENCY: <span class="text-slate-200">12ms</span>
+      </div>
+      <button class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-3 py-1 rounded transition text-xs flex items-center space-x-1">
+        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+        <span>RE-SYNC</span>
+      </button>
+    </div>
+  </header>
 
-                // Force FVG validation candle (Candle 3 of FVG) at Index 27
-                if (i === 27) {
-                    open = data[26].close - 0.05;
-                    close = open - 0.80;
-                    high = open + 0.40; // High stays significantly below Candle 25's Low (creates FVG)
-                    low = close - 0.20;
-                }
+  <!-- MAIN 4-QUADRANT DASHBOARD COCKPIT -->
+  <main class="flex-1 grid grid-cols-12 grid-rows-12 gap-1 p-1 bg-slate-950 overflow-hidden">
 
-                data.push({ index: i, open, high, low, close });
-            }
-            return data;
+    <!-- QUADRANT 1: PRIMARY CANVAS (Top-Left / Center - 7 Cols, 8 Rows) -->
+    <section class="col-span-7 row-span-8 bg-slate-900 rounded border border-slate-800 flex flex-col overflow-hidden relative">
+      <!-- Toolbar -->
+      <div class="h-9 px-3 border-b border-slate-800/80 bg-slate-900 flex items-center justify-between text-xs shrink-0">
+        <div class="flex items-center space-x-3 font-mono">
+          <span class="text-slate-300 font-semibold flex items-center gap-1.5">
+            <i data-lucide="candlestick-chart" class="w-4 h-4 text-blue-400"></i>
+            PROBABILISTIC SCENARIO CONE
+          </span>
+          <span class="text-slate-600">|</span>
+          <span class="text-emerald-400">Bullish Expansion: 62%</span>
+          <span class="text-amber-400">Sweep Reversal: 28%</span>
+          <span class="text-rose-400">Breakdown: 10%</span>
+        </div>
+        <div class="flex items-center space-x-2 text-slate-400 text-[11px]">
+          <label class="flex items-center space-x-1 cursor-pointer">
+            <input type="checkbox" checked class="rounded bg-slate-800 border-slate-700 text-blue-500 focus:ring-0 w-3 h-3">
+            <span>Kronos FVGs</span>
+          </label>
+          <label class="flex items-center space-x-1 cursor-pointer">
+            <input type="checkbox" checked class="rounded bg-slate-800 border-slate-700 text-blue-500 focus:ring-0 w-3 h-3">
+            <span>Swarm Paths</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Chart Viewport -->
+      <div class="flex-1 relative w-full h-full p-2">
+        <canvas id="primaryChartCanvas" class="w-full h-full"></canvas>
+
+        <!-- Dynamic Overlay Indicators on Chart -->
+        <div class="absolute top-4 left-4 bg-slate-950/80 backdrop-blur border border-slate-800 p-2 rounded text-[11px] font-mono space-y-1">
+          <div class="text-slate-400 font-sans font-bold uppercase tracking-wide border-b border-slate-800 pb-1 mb-1">Structural Context</div>
+          <div class="flex justify-between space-x-4"><span class="text-slate-400">Key Liquidity Pool:</span> <span class="text-amber-400 font-bold">19,840.25 (BSL)</span></div>
+          <div class="flex justify-between space-x-4"><span class="text-slate-400">Active Fair Value Gap:</span> <span class="text-emerald-400 font-bold">19,795 - 19,810</span></div>
+          <div class="flex justify-between space-x-4"><span class="text-slate-400">MiroFish Target:</span> <span class="text-blue-400 font-bold">19,885.50</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- QUADRANT 2: ORDER FLOW & SWARM SIMULATION (Top-Right - 5 Cols, 8 Rows) -->
+    <section class="col-span-5 row-span-8 bg-slate-900 rounded border border-slate-800 flex flex-col overflow-hidden">
+      <div class="h-9 px-3 border-b border-slate-800/80 bg-slate-900 flex items-center justify-between text-xs shrink-0">
+        <span class="text-slate-300 font-semibold flex items-center gap-1.5 font-mono">
+          <i data-lucide="users" class="w-4 h-4 text-indigo-400"></i>
+          ORDER FLOW & SMART MONEY SWARM
+        </span>
+        <span class="text-[10px] font-mono bg-indigo-950 text-indigo-300 px-2 py-0.5 rounded border border-indigo-800/40">REAL-TIME SIMULATION</span>
+      </div>
+
+      <div class="flex-1 p-3 flex flex-col space-y-3 overflow-y-auto">
+        <!-- Swarm Bias Gauges -->
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div class="bg-slate-950 p-2 rounded border border-slate-800">
+            <div class="text-[10px] text-slate-400 font-mono">SMART MONEY / ICT</div>
+            <div class="text-base font-bold text-emerald-400 font-mono mt-0.5">84% BULL</div>
+            <div class="w-full bg-slate-800 h-1.5 rounded-full mt-1 overflow-hidden">
+              <div class="bg-emerald-500 h-full" style="width: 84%"></div>
+            </div>
+          </div>
+          <div class="bg-slate-950 p-2 rounded border border-slate-800">
+            <div class="text-[10px] text-slate-400 font-mono">MARKET MAKERS</div>
+            <div class="text-base font-bold text-amber-400 font-mono mt-0.5">NEUTRAL</div>
+            <div class="w-full bg-slate-800 h-1.5 rounded-full mt-1 overflow-hidden">
+              <div class="bg-amber-500 h-full" style="width: 52%"></div>
+            </div>
+          </div>
+          <div class="bg-slate-950 p-2 rounded border border-slate-800">
+            <div class="text-[10px] text-slate-400 font-mono">RETAIL MOMENTUM</div>
+            <div class="text-base font-bold text-rose-400 font-mono mt-0.5">68% BEAR</div>
+            <div class="w-full bg-slate-800 h-1.5 rounded-full mt-1 overflow-hidden">
+              <div class="bg-rose-500 h-full" style="width: 68%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Liquidity Sweep Alert Box -->
+        <div class="bg-amber-950/30 border border-amber-800/50 rounded p-2.5 flex items-start space-x-2 text-xs">
+          <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400 shrink-0 mt-0.5"></i>
+          <div>
+            <span class="font-bold text-amber-300 block font-mono">Liquidity Sweep Imminent at 19,840.25</span>
+            <span class="text-slate-300 text-[11px]">812 Smart Money Agents positioning for a stop-run into BSL followed by immediate displacement into the lower FVG.</span>
+          </div>
+        </div>
+
+        <!-- Agent Interaction Live Stream Log -->
+        <div class="flex-1 bg-slate-950 rounded border border-slate-800 p-2 font-mono text-[11px] flex flex-col">
+          <div class="text-[10px] text-slate-400 border-b border-slate-800 pb-1 mb-1 font-sans font-bold uppercase tracking-wider">Live Agent Order Events</div>
+          <div class="flex-1 space-y-1.5 overflow-y-auto pr-1">
+            <div class="flex items-center justify-between text-emerald-400">
+              <span>[17:04:11] AGENT_ICT_902: Limit Buy Placed</span>
+              <span class="text-slate-400">19,802.50</span>
+            </div>
+            <div class="flex items-center justify-between text-indigo-300">
+              <span>[17:04:09] AGENT_MM_014: Liquidity Injected</span>
+              <span class="text-slate-400">+120 Lots</span>
+            </div>
+            <div class="flex items-center justify-between text-rose-400">
+              <span>[17:04:05] AGENT_RETAIL_55: Stop Market Triggered</span>
+              <span class="text-slate-400">19,838.00</span>
+            </div>
+            <div class="flex items-center justify-between text-emerald-400">
+              <span>[17:03:58] AGENT_QUANT_41: Order Block Sweep</span>
+              <span class="text-slate-400">19,798.00</span>
+            </div>
+            <div class="flex items-center justify-between text-slate-400">
+              <span>[17:03:51] AGENT_ICT_112: FVG Entry Confirmed</span>
+              <span class="text-slate-300">19,805.25</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- QUADRANT 3: NARRATIVE & VOLATILITY INJECTION (Bottom-Left - 6 Cols, 4 Rows) -->
+    <section class="col-span-6 row-span-4 bg-slate-900 rounded border border-slate-800 flex flex-col overflow-hidden">
+      <div class="h-9 px-3 border-b border-slate-800/80 bg-slate-900 flex items-center justify-between text-xs shrink-0">
+        <span class="text-slate-300 font-semibold flex items-center gap-1.5 font-mono">
+          <i data-lucide="newspaper" class="w-4 h-4 text-amber-400"></i>
+          NARRATIVE & EVENT-DRIVEN VOLATILITY INJECTION
+        </span>
+        <span class="text-[10px] font-mono text-slate-400">Knowledge Graph: Active</span>
+      </div>
+
+      <div class="flex-1 p-3 grid grid-cols-2 gap-3 overflow-hidden">
+        <!-- Event Feed -->
+        <div class="flex flex-col space-y-2 overflow-y-auto pr-1">
+          <div class="bg-slate-950 p-2 rounded border border-slate-800 text-xs">
+            <div class="flex justify-between items-center text-[10px] text-slate-400 mb-1">
+              <span class="bg-rose-950 text-rose-300 border border-rose-800 px-1.5 py-0.2 rounded font-mono">HIGH IMPACT</span>
+              <span>14:00 EST (In 12m)</span>
+            </div>
+            <div class="font-bold text-slate-200">FOMC Rate Decision & Policy Statement</div>
+            <p class="text-[11px] text-slate-400 mt-0.5">GraphRAG extracted 42 hawkish entity shifts in recent speeches.</p>
+          </div>
+          <div class="bg-slate-950 p-2 rounded border border-slate-800 text-xs opacity-75">
+            <div class="flex justify-between items-center text-[10px] text-slate-400 mb-1">
+              <span class="bg-blue-950 text-blue-300 border border-blue-800 px-1.5 py-0.2 rounded font-mono">SPEAKER</span>
+              <span>Logged 1h ago</span>
+            </div>
+            <div class="font-bold text-slate-300">Fed Chair Speech Node Analysis</div>
+            <p class="text-[11px] text-slate-400 mt-0.5">Entity correlation score: 0.88 with Tech Sector liquidity pullback.</p>
+          </div>
+        </div>
+
+        <!-- Volatility Multiplier Controls -->
+        <div class="bg-slate-950 p-3 rounded border border-slate-800 flex flex-col justify-between">
+          <div>
+            <div class="text-xs font-mono font-bold text-slate-300 mb-2 flex items-center justify-between">
+              <span>VOLATILITY MULTIPLIER</span>
+              <span class="text-amber-400 text-sm">1.85x</span>
+            </div>
+            <input type="range" min="0.5" max="3.0" step="0.05" value="1.85" class="w-full accent-amber-500 bg-slate-800 rounded cursor-pointer h-1.5">
+            <p class="text-[10px] text-slate-400 mt-2">Adjusting the multiplier injects synthetic news shock parameters directly into Kronos variance models.</p>
+          </div>
+
+          <div class="border-t border-slate-800 pt-2 text-xs font-mono">
+            <div class="flex justify-between text-[11px] text-slate-400">
+              <span>Predicted Volatility Expansion:</span>
+              <span class="text-emerald-400 font-bold">+145 Pips</span>
+            </div>
+            <div class="flex justify-between text-[11px] text-slate-400 mt-1">
+              <span>Tail-Risk Disruption Index:</span>
+              <span class="text-amber-400 font-bold">HIGH</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- QUADRANT 4: GROUNDED EXECUTION & POSITION ENGINE (Bottom-Right - 6 Cols, 4 Rows) -->
+    <section class="col-span-6 row-span-4 bg-slate-900 rounded border border-slate-800 flex flex-col overflow-hidden">
+      <div class="h-9 px-3 border-b border-slate-800/80 bg-slate-900 flex items-center justify-between text-xs shrink-0">
+        <span class="text-slate-300 font-semibold flex items-center gap-1.5 font-mono">
+          <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+          GROUNDED EXECUTION & POSITION ENGINE
+        </span>
+        <span class="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-800/50 px-2 py-0.5 rounded">AUTO-ROUTING READY</span>
+      </div>
+
+      <div class="flex-1 p-3 grid grid-cols-2 gap-3">
+        <!-- Trade Parameter Matrix -->
+        <div class="bg-slate-950 p-3 rounded border border-slate-800 font-mono text-xs flex flex-col justify-between">
+          <div class="space-y-1.5">
+            <div class="text-[10px] text-slate-400 font-sans font-bold uppercase tracking-wider border-b border-slate-800 pb-1">Automated Setup Matrix</div>
+            <div class="flex justify-between"><span class="text-slate-400">DIRECTION:</span> <span class="text-emerald-400 font-bold">LONG (FVG RE-TEST)</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">ENTRY ZONE:</span> <span class="text-slate-200">19,802.00 - 19,806.50</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">STOP LOSS:</span> <span class="text-rose-400 font-bold">19,788.00 (-16 pts)</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">TARGET 1 (BSL):</span> <span class="text-emerald-400 font-bold">19,840.00 (+35 pts)</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">R:R RATIO:</span> <span class="text-blue-400 font-bold">1 : 2.18</span></div>
+          </div>
+          <div class="text-[10px] text-slate-500 italic">Sizing auto-adjusted for 1.85x Volatility.</div>
+        </div>
+
+        <!-- Stress Test Controls & Actions -->
+        <div class="bg-slate-950 p-3 rounded border border-slate-800 flex flex-col justify-between">
+          <div>
+            <span class="text-xs font-mono font-bold text-slate-300 block mb-1">SWARM STRESS TEST</span>
+            <p class="text-[11px] text-slate-400 mb-2">Simulate 1,000 Monte Carlo execution passes against hostile agent swarms.</p>
+            <div class="flex items-center space-x-2 text-xs font-mono mb-3">
+              <span class="text-slate-400">Passed Win-Rate:</span>
+              <span class="text-emerald-400 font-bold">78.4%</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <button class="bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-bold py-2 rounded transition flex items-center justify-center space-x-1">
+              <i data-lucide="play" class="w-3.5 h-3.5"></i>
+              <span>STRESS TEST</span>
+            </button>
+            <button class="bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs font-bold py-2 rounded transition flex items-center justify-center space-x-1 shadow-lg shadow-emerald-900/40">
+              <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+              <span>EXECUTE SIGNAL</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- INITIALIZATION & CHART RENDERING SCRIPT -->
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // Chart.js Setup for Canvas Canvas Simulation
+    const ctx = document.getElementById('primaryChartCanvas').getContext('2d');
+    
+    // Gradient definitions for scenario cone
+    const primaryGradient = ctx.createLinearGradient(0, 0, 0, 300);
+    primaryGradient.addColorStop(0, 'rgba(16, 185, 129, 0.25)');
+    primaryGradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+    const secondaryGradient = ctx.createLinearGradient(0, 0, 0, 300);
+    secondaryGradient.addColorStop(0, 'rgba(245, 158, 11, 0.2)');
+    secondaryGradient.addColorStop(1, 'rgba(245, 158, 11, 0.0)');
+
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['16:30', '16:35', '16:40', '16:45', '16:50', '16:55', '17:00', '17:05 (NOW)', '17:10 (FCST)', '17:15 (FCST)', '17:20 (FCST)', '17:25 (FCST)'],
+        datasets: [
+          {
+            label: 'Historical / Actual Price',
+            data: [19760, 19772, 19768, 19785, 19790, 19782, 19795, 19804, null, null, null, null],
+            borderColor: '#60a5fa',
+            borderWidth: 2,
+            pointBackgroundColor: '#3b82f6',
+            tension: 0.1
+          },
+          {
+            label: 'Primary Bullish Path (62%)',
+            data: [null, null, null, null, null, null, null, 19804, 19815, 19842, 19865, 19885],
+            borderColor: '#10b981',
+            borderWidth: 2,
+            borderDash: [4, 4],
+            backgroundColor: primaryGradient,
+            fill: true,
+            tension: 0.2
+          },
+          {
+            label: 'Sweep Reversal Path (28%)',
+            data: [null, null, null, null, null, null, null, 19804, 19838, 19810, 19790, 19775],
+            borderColor: '#f59e0b',
+            borderWidth: 2,
+            borderDash: [2, 2],
+            backgroundColor: secondaryGradient,
+            fill: true,
+            tension: 0.3
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: {
+            grid: { color: '#1e293b' },
+            ticks: { color: '#64748b', font: { family: 'monospace', size: 10 } }
+          },
+          y: {
+            grid: { color: '#1e293b' },
+            ticks: { color: '#64748b', font: { family: 'monospace', size: 10 } }
+          }
         }
-
-        // Process algorithmic logic on array
-        function processSMCEngine(data, lookback = 15) {
-            let logs = [];
-            
-            for (let i = 0; i < data.length; i++) {
-                if (i < lookback) {
-                    data[i].sweep = "None";
-                    data[i].fvg = "None";
-                    data[i].signal = "HOLD";
-                    continue;
-                }
-
-                // --- 1. Sweep Logic Math ---
-                let slice = data.slice(i - lookback, i);
-                let structHigh = Math.max(...slice.map(d => d.high));
-                let structLow = Math.min(...slice.map(d => d.low));
-
-                let sweep = "None";
-                if (data[i].low < structLow && data[i].close > structLow) {
-                    sweep = "BULLISH";
-                    logs.push(`[SWEEP DETECTED] Index ${i}: Liquidity swept below key structural low (${structLow.toFixed(2)}). Rejection confirmed.`);
-                } else if (data[i].high > structHigh && data[i].close < structHigh) {
-                    sweep = "BEARISH";
-                    logs.push(`[SWEEP DETECTED] Index ${i}: Liquidity swept above key structural high (${structHigh.toFixed(2)}). Rejection confirmed.`);
-                }
-                data[i].sweep = sweep;
-
-                // --- 2. FVG Logic Math ---
-                let fvg = "None";
-                let fvgZone = "";
-                if (i >= 2) {
-                    let candle1 = data[i-2];
-                    let candle3 = data[i];
-                    
-                    if (candle3.low > candle1.high) {
-                        fvg = "BULLISH";
-                        fvgZone = `${candle1.high.toFixed(2)} - ${candle3.low.toFixed(2)}`;
-                    } else if (candle3.high < candle1.low) {
-                        fvg = "BEARISH";
-                        fvgZone = `${candle3.high.toFixed(2)} - ${candle1.low.toFixed(2)}`;
-                    }
-                }
-                data[i].fvg = fvg;
-                data[i].fvgZone = fvgZone;
-
-                // --- 3. Confluence Execution Tracking ---
-                let signal = "HOLD";
-                if (data[i].fvg === "BEARISH") {
-                    // Scan historical 5 frames for structural sweep match
-                    let recentSweep = data.slice(Math.max(0, i - 4), i + 1).some(d => d.sweep === "BEARISH");
-                    if (recentSweep) {
-                        signal = "SELL / SHORT";
-                        logs.push(`[ORDER EXECUTION] Index ${i}: SELL Order sent. Reason: FVG Imbalance confirmed directly inside Bearish Sweep Zone.`);
-                    }
-                } else if (data[i].fvg === "BULLISH") {
-                    let recentSweep = data.slice(Math.max(0, i - 4), i + 1).some(d => d.sweep === "BULLISH");
-                    if (recentSweep) {
-                        signal = "BUY / LONG";
-                        logs.push(`[ORDER EXECUTION] Index ${i}: BUY Order sent. Reason: FVG Imbalance confirmed directly inside Bullish Sweep Zone.`);
-                    }
-                }
-                data[i].signal = signal;
-            }
-            return { processedData: data, logs };
-        }
-
-        // Render data layers into HTML DOM elements
-        function runDashboard() {
-            const rawData = generateMarketData();
-            const { processedData, logs } = processSMCEngine(rawData);
-
-            // Populate Table
-            const tbody = document.getElementById("matrix-body");
-            processedData.forEach(row => {
-                let tr = document.createElement("tr");
-                tr.className = "hover:bg-slate-900/50 transition-colors";
-
-                let sweepBadge = `<span class="text-slate-600">-</span>`;
-                if (row.sweep === "BEARISH") sweepBadge = `<span class="bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded border border-amber-500/20 font-bold text-[10px]">BEARISH SWEEP</span>`;
-                if (row.sweep === "BULLISH") sweepBadge = `<span class="bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20 font-bold text-[10px]">BULLISH SWEEP</span>`;
-
-                let fvgBadge = `<span class="text-slate-600">-</span>`;
-                if (row.fvg !== "None") {
-                    let colorClass = row.fvg === "BEARISH" ? "text-amber-500" : "text-emerald-500";
-                    fvgBadge = `<div class="flex flex-col items-center"><span class="${colorClass} font-semibold">${row.fvg} FVG</span><span class="text-[10px] text-slate-500">${row.fvgZone}</span></div>`;
-                }
-
-                let signalBadge = `<span class="text-slate-500 font-medium">HOLD</span>`;
-                if (row.signal.includes("SELL")) {
-                    tr.className = "bg-rose-950/20 hover:bg-rose-950/30 transition-colors border-y border-rose-900/30";
-                    signalBadge = `<span class="bg-rose-500 text-white font-bold px-2 py-1 rounded text-[10px] tracking-wide animate-pulse">EXECUTE SELL</span>`;
-                } else if (row.signal.includes("BUY")) {
-                    tr.className = "bg-emerald-950/20 hover:bg-emerald-950/30 transition-colors border-y border-emerald-900/30";
-                    signalBadge = `<span class="bg-emerald-500 text-white font-bold px-2 py-1 rounded text-[10px] tracking-wide animate-pulse">EXECUTE BUY</span>`;
-                }
-
-                tr.innerHTML = `
-                    <td class="p-2.5 text-slate-500 font-semibold">${row.index}</td>
-                    <td class="p-2.5 text-slate-300">${row.open.toFixed(2)}</td>
-                    <td class="p-2.5 text-slate-300">${row.high.toFixed(2)}</td>
-                    <td class="p-2.5 text-slate-300">${row.low.toFixed(2)}</td>
-                    <td class="p-2.5 text-slate-100 font-medium">${row.close.toFixed(2)}</td>
-                    <td class="p-2.5 text-center">${sweepBadge}</td>
-                    <td class="p-2.5 text-center">${fvgBadge}</td>
-                    <td class="p-2.5 text-right">${signalBadge}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            // Populate Console Terminal logs
-            const logContainer = document.getElementById("log-container");
-            if (logs.length === 0) {
-                logContainer.innerHTML = `<div class="text-slate-600 italic">Listening for incoming exchange feeds...</div>`;
-            } else {
-                logs.forEach(log => {
-                    let logDiv = document.createElement("div");
-                    if (log.includes("ORDER")) {
-                        logDiv.className = "p-2 rounded bg-slate-950 text-emerald-400 border border-emerald-500/20 leading-relaxed font-bold";
-                    } else {
-                        logDiv.className = "text-slate-400 border-l-2 border-slate-700 pl-2 py-0.5";
-                    }
-                    logDiv.innerText = log;
-                    logContainer.appendChild(logDiv);
-                });
-            }
-        }
-
-        // Initialize engine on window load
-        window.onload = runDashboard;
-    </script>
+      }
+    });
+  </script>
 </body>
 </html>
