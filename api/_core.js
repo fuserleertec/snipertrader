@@ -67,12 +67,13 @@ function genHistory(n, rng) {
   }
   return bars;
 }
-function genPaths(lastClose, rng, st) {
+function genPaths(lastClose, rng, st, volOverride) {
   const paths = [];
+  const v = (volOverride !== undefined) ? volOverride : st.vol;
   for (let p = 0; p < st.paths; p++) {
     let price = lastClose; const path = [price];
     for (let t = 0; t < st.horizon; t++) {
-      const step = st.drift + gauss(rng) * st.vol * st.temp;
+      const step = st.drift + gauss(rng) * v * st.temp;
       price = price * (1 + step); path.push(price);
     }
     paths.push(path);
@@ -108,7 +109,8 @@ async function runModel({ history, config, requestedBars }) {
   const truncated = synthetic && requestedBars > MAX_BARS;
   if (truncated) bars = bars.slice(-MAX_BARS);
   const lastClose = bars[bars.length - 1].c;
-  const paths = genPaths(lastClose, rng, config);
+  const effVol = config.vol * (config.volInject || 1) * (1 + (config.newsShock || 0) / 100 * 0.8);
+  const paths = genPaths(lastClose, rng, config, effVol);
   const bands = computeBands(paths);
   const stats = computeStats(lastClose, paths, bands);
   return {
@@ -118,6 +120,78 @@ async function runModel({ history, config, requestedBars }) {
     stats,
     meta: { backend: 'kronos-reference', max_context: MAX_CTX, truncated }
   };
+}
+
+/* ── MIROFISH SWARM + CONFLUENCE (honest server-side simulation) ──
+   Mirrors the in-browser engine so the same-origin endpoint returns the
+   full payload the multi-dimensional UI consumes. No live order flow. */
+const SWARM_ARCHETYPES = [
+  { id: 'MM',  name: 'Market Makers',     weight: 0.30, base: 0.50, color: 'cyan',   volatility: 0.6 },
+  { id: 'SM',  name: 'Smart Money / ICT', weight: 0.30, base: 0.58, color: 'emerald', volatility: 0.4 },
+  { id: 'RET', name: 'Retail Momentum',   weight: 0.20, base: 0.46, color: 'gold',    volatility: 1.2 },
+  { id: 'QF',  name: 'Quant Funds',       weight: 0.20, base: 0.52, color: 'red',     volatility: 0.8 },
+];
+const clampN = (x, a, b) => Math.max(a, Math.min(b, x));
+function computeSwarm(config) {
+  const rng = mulberry32((config.seed >>> 0 || 0x9E3779B1) ^ 0x9E37);
+  const swarmBias = config.swarmBias || 0;
+  const newsShock = config.newsShock || 0;
+  const agents = SWARM_ARCHETYPES.map(a => {
+    const noise = (rng() - 0.5) * 0.12 * (1 + newsShock / 120);
+    const longBias = clampN(a.base + swarmBias * 0.45 + noise, 0.02, 0.98);
+    const activity = clampN(0.35 + 0.4 * Math.abs(swarmBias) + newsShock / 200 + rng() * 0.2, 0, 1);
+    return { id: a.id, name: a.name, weight: a.weight, color: a.color,
+      longBias: +longBias.toFixed(3), shortBias: +(1 - longBias).toFixed(3),
+      activity: +activity.toFixed(3), vol: a.volatility };
+  });
+  const consensusUp = agents.reduce((s, a) => s + a.weight * a.longBias, 0);
+  return { agents, consensusUp: +consensusUp.toFixed(3), netBias: +(consensusUp - 0.5).toFixed(3),
+    aggAct: +agents.reduce((s, a) => s + a.weight * a.activity, 0).toFixed(3) };
+}
+function buildConfluence(bands, swarm) {
+  const F = bands.p50.length;
+  const bend = (swarm.netBias) * 2 * 0.10;
+  const tailAmp = 0.05 + (swarm.newsShock || 0) / 100 * 0.30;
+  const primary = [], secondary = [], tailRisk = [];
+  for (let j = 0; j < F; j++) {
+    const t = (j + 1) / F;
+    const base = bands.p50[j];
+    primary.push(+(base * (1 + bend * t)).toFixed(2));
+    secondary.push(+(base * (1 - bend * 0.6 * t)).toFixed(2));
+    const dir = swarm.netBias >= 0 ? -1 : 1;
+    tailRisk.push(+(base * (1 + dir * tailAmp * t)).toFixed(2));
+  }
+  return { primary, secondary, tailRisk };
+}
+function detectICT(bars) {
+  const n = bars.length, obs = [], fvgs = [], liq = [];
+  for (let i = 2; i < n - 3; i++) {
+    const up = bars[i + 1].c > bars[i + 1].o && bars[i + 2].c > bars[i + 2].o;
+    const down = bars[i + 1].c < bars[i + 1].o && bars[i + 2].c < bars[i + 2].o;
+    if (up && bars[i].c < bars[i].o) obs.push({ type: 'bull', price: bars[i].l, top: bars[i].h, bot: bars[i].l, idx: i });
+    if (down && bars[i].c > bars[i].o) obs.push({ type: 'bear', price: bars[i].h, top: bars[i].h, bot: bars[i].l, idx: i });
+  }
+  for (let i = 0; i < n - 2; i++) {
+    const gapBull = bars[i + 2].l - bars[i].h;
+    if (gapBull > Math.abs(bars[i].c) * 0.0015) fvgs.push({ type: 'bull', top: bars[i + 2].l, bot: bars[i].h, idx: i });
+    const gapBear = bars[i].l - bars[i + 2].h;
+    if (gapBear > Math.abs(bars[i].c) * 0.0015) fvgs.push({ type: 'bear', top: bars[i].l, bot: bars[i + 2].h, idx: i });
+  }
+  for (let i = 2; i < n - 2; i++) {
+    if (bars[i].h > bars[i - 1].h && bars[i].h > bars[i - 2].h && bars[i].h > bars[i + 1].h)
+      liq.push({ type: 'sell', price: bars[i].h, idx: i });
+    if (bars[i].l < bars[i - 1].l && bars[i].l < bars[i - 2].l && bars[i].l < bars[i + 1].l)
+      liq.push({ type: 'buy', price: bars[i].l, idx: i });
+  }
+  return { obs: obs.slice(-4), fvgs: fvgs.slice(-4), liq: liq.slice(-4) };
+}
+/* Enriched model used by the multi-dimensional UI (adds mirofish/confluence/ict). */
+async function runModelFull({ history, config, requestedBars }) {
+  const base = await runModel({ history, config, requestedBars });
+  const swarm = computeSwarm(config);
+  const confluence = buildConfluence(base.bands, swarm);
+  const ict = detectICT(base.history);
+  return { ...base, mirofish: swarm, confluence, ict };
 }
 
 /* ── ALPACA equity k-lines (server-side only) ── */
@@ -183,10 +257,17 @@ function buildForecast(req, res) {
       temp: Math.max(0.1, Math.min(2.5, num(cfg.temp, 1.0))),
       vol: Math.max(0.003, Math.min(0.06, num(cfg.vol, 0.018))),
       drift: Math.max(-0.005, Math.min(0.005, num(cfg.drift, 0.0002))),
-      seed: Math.floor(num(cfg.seed, 0x9E3779B1)) >>> 0
+      seed: Math.floor(num(cfg.seed, 0x9E3779B1)) >>> 0,
+      // MiroFish / confluence inputs (optional)
+      volInject: Math.max(0.5, Math.min(3, num(cfg.volInject, 1))),
+      swarmBias: Math.max(-1, Math.min(1, num(cfg.swarmBias, 0))),
+      newsShock: Math.max(0, Math.min(100, num(cfg.newsShock, 0)))
     };
     try {
-      const out = await runModel({ history: Array.isArray(payload.history) ? payload.history : null, config, requestedBars });
+      const full = payload.mode === 'full' || payload.full === true;
+      const out = full
+        ? await runModelFull({ history: Array.isArray(payload.history) ? payload.history : null, config, requestedBars })
+        : await runModel({ history: Array.isArray(payload.history) ? payload.history : null, config, requestedBars });
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(out));
     } catch (e) {
@@ -681,7 +762,8 @@ function buildReviewLoop(req, res) {
 
 module.exports = {
   MAX_CTX, MAX_BARS,
-  mulberry32, gauss, genHistory, genPaths, computeBands, computeStats, runModel,
+  mulberry32, gauss, genHistory, genPaths, computeBands, computeStats, runModel, runModelFull,
+  computeSwarm, buildConfluence, detectICT, SWARM_ARCHETYPES,
   alpacaBars, alpacaGet, buildForecast, buildStocks, buildChat, buildPropAccount,
   ema, sma, rsi, macd, calcATR, scaleForScore, heuristicAnalysis, syntheticBars, buildDailyContext,
   normalizeDailyPayload, buildDailyPrompt, runDailyAnalysis, buildReviewLoop,

@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kronos Foundation Model — OHLCV K-Line Forecasting | SniperTrader.ai</title>
+<title>Kronos × MiroFish — Multi-Dimensional Market Simulation Engine | SniperTrader.ai</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Space+Mono:wght@400;700&family=Syne:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <link rel="stylesheet" href="/assets/theme.css">
 <style>
-/* Brand tokens + light/dark now live in /assets/theme.css (unified canonical theme). */
+/* Brand tokens + light/dark live in /assets/theme.css (unified canonical theme). */
 *{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 body{background:var(--obs);color:var(--text);font-family:'Syne',sans-serif;overflow-x:hidden;min-height:100vh;}
@@ -24,51 +24,86 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;padding:16px 48px;display:fl
 .theme-toggle{background:var(--obs3);border:1px solid var(--border2);border-radius:20px;padding:6px 14px;font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:7px;letter-spacing:1px;}
 .theme-toggle:hover{border-color:var(--emerald);color:var(--emerald);}
 /* LAYOUT */
-.wrap{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:110px 28px 60px;}
-.hero-h1{font-family:'Orbitron',sans-serif;font-weight:900;font-size:40px;letter-spacing:2px;line-height:1.05;margin-bottom:10px;}
+.wrap{position:relative;z-index:1;max-width:1500px;margin:0 auto;padding:110px 28px 60px;}
+.hero-h1{font-family:'Orbitron',sans-serif;font-weight:900;font-size:34px;letter-spacing:2px;line-height:1.05;margin-bottom:10px;}
 .hero-h1 span{background:linear-gradient(90deg,var(--emerald),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.hero-sub{color:var(--text3);font-size:14px;max-width:760px;line-height:1.6;margin-bottom:6px;}
-.tag{display:inline-block;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--emerald);border:1px solid var(--border2);padding:4px 10px;border-radius:20px;margin-bottom:18px;text-transform:uppercase;}
-.grid{display:grid;grid-template-columns:340px 1fr;gap:24px;margin-top:26px;align-items:start;}
-@media(max-width:980px){.grid{grid-template-columns:1fr;}}
-.panel{background:linear-gradient(145deg,var(--obs3),var(--obs2));border:1px solid var(--border);border-radius:16px;padding:20px;}
-.panel h3{font-family:'Orbitron',sans-serif;font-size:12px;letter-spacing:2px;color:var(--text2);text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.hero-sub{color:var(--text3);font-size:13px;max-width:820px;line-height:1.6;}
+.tag{display:inline-block;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--emerald);border:1px solid var(--border2);padding:4px 10px;border-radius:20px;margin-bottom:14px;text-transform:uppercase;}
+.disclaimer{font-size:10px;color:var(--text4);margin-top:8px;line-height:1.5;border-left:2px solid var(--gold);padding-left:10px;max-width:900px;}
+/* QUADRANT GRID */
+.qgrid{display:grid;grid-template-columns:60% 40%;gap:20px;margin-top:24px;}
+.qgrid .row2{grid-column:1 / -1;display:grid;grid-template-columns:50% 50%;gap:20px;}
+@media(max-width:1100px){.qgrid{grid-template-columns:1fr;}.qgrid .row2{grid-template-columns:1fr;}}
+.panel{background:linear-gradient(145deg,var(--obs3),var(--obs2));border:1px solid var(--border);border-radius:16px;padding:18px;display:flex;flex-direction:column;}
+.panel h3{font-family:'Orbitron',sans-serif;font-size:12px;letter-spacing:2px;color:var(--text2);text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
 .panel h3::before{content:'';width:8px;height:8px;border-radius:2px;background:var(--emerald);box-shadow:0 0 10px var(--emerald);}
-/* CONTEXT MONITOR */
-.ctx-bar-track{height:14px;border-radius:8px;background:var(--obs4);overflow:hidden;border:1px solid var(--border);position:relative;}
-.ctx-bar-fill{height:100%;width:0%;border-radius:8px;transition:width .25s ease,background .25s ease;background:var(--emerald);box-shadow:0 0 14px rgba(0,229,160,.5);}
-.ctx-stats{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:11px;margin-top:10px;color:var(--text3);}
-.ctx-stats b{color:var(--text);}
-.ctx-status{margin-top:12px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;padding:6px 10px;border-radius:8px;text-align:center;text-transform:uppercase;}
-.st-ok{background:var(--emerald-dim);color:var(--emerald);border:1px solid var(--border2);}
-.st-warn{background:var(--gold-dim);color:var(--gold);border:1px solid rgba(240,192,64,.3);}
-.st-crit{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,68,85,.4);}
-.ctx-note{font-size:11px;color:var(--text4);margin-top:10px;line-height:1.5;}
+.panel .sub{font-size:10px;color:var(--text4);margin-bottom:14px;font-family:'Space Mono',monospace;}
+/* CHART */
+.chart-shell{position:relative;height:480px;width:100%;}
+.readout{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;}
+@media(max-width:680px){.readout{grid-template-columns:repeat(2,1fr);}}
+.stat{background:var(--obs3);border:1px solid var(--border);border-radius:12px;padding:10px 12px;}
+.stat .k{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--text4);text-transform:uppercase;}
+.stat .v{font-family:'Orbitron',sans-serif;font-size:16px;margin-top:5px;}
+.v.pos{color:var(--emerald);} .v.neg{color:var(--red);} .v.neu{color:var(--gold);}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle;}
+.hover-readout{font-family:'Space Mono',monospace;font-size:11px;color:var(--text3);margin-top:12px;min-height:18px;line-height:1.6;}
+.hover-readout b{color:var(--text);}
 /* CONTROLS */
-.ctrl{margin-bottom:18px;}
-.ctrl label{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--text3);text-transform:uppercase;margin-bottom:7px;}
+.ctrl{margin-bottom:14px;}
+.ctrl label{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--text3);text-transform:uppercase;margin-bottom:6px;}
 .ctrl label b{color:var(--emerald);}
 input[type=range]{-webkit-appearance:none;width:100%;height:4px;border-radius:4px;background:var(--obs4);outline:none;}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--emerald);cursor:pointer;box-shadow:0 0 10px rgba(0,229,160,.6);border:2px solid var(--obs);}
 input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--emerald);cursor:pointer;border:2px solid var(--obs);}
-.run-btn{width:100%;margin-top:6px;padding:13px;border-radius:12px;border:1px solid var(--emerald);background:linear-gradient(90deg,var(--emerald-dim),var(--cyan-dim));color:var(--text);font-family:'Orbitron',sans-serif;font-weight:700;font-size:12px;letter-spacing:2px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+.run-btn{width:100%;margin-top:6px;padding:12px;border-radius:12px;border:1px solid var(--emerald);background:linear-gradient(90deg,var(--emerald-dim),var(--cyan-dim));color:var(--text);font-family:'Orbitron',sans-serif;font-weight:700;font-size:12px;letter-spacing:2px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
 .run-btn:hover{box-shadow:0 0 24px rgba(0,229,160,.35);transform:translateY(-1px);}
 .run-btn:active{transform:translateY(0);}
-/* CHART */
-.chart-shell{position:relative;height:440px;width:100%;}
-.chart-panel{display:flex;flex-direction:column;}
-.readout{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px;}
-@media(max-width:680px){.readout{grid-template-columns:repeat(2,1fr);}}
-.stat{background:var(--obs3);border:1px solid var(--border);border-radius:12px;padding:12px 14px;}
-.stat .k{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--text4);text-transform:uppercase;}
-.stat .v{font-family:'Orbitron',sans-serif;font-size:18px;margin-top:6px;}
-.v.pos{color:var(--emerald);} .v.neg{color:var(--red);} .v.neu{color:var(--gold);}
-.legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);}
-.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle;}
-.hover-readout{font-family:'Space Mono',monospace;font-size:11px;color:var(--text3);margin-top:14px;min-height:18px;line-height:1.6;}
-.hover-readout b{color:var(--text);}
+.run-btn.alt{border-color:var(--cyan);background:linear-gradient(90deg,var(--cyan-dim),var(--emerald-dim));}
+.run-btn.alt:hover{box-shadow:0 0 24px rgba(0,212,255,.35);}
+.ctl-cols{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;}
+@media(max-width:560px){.ctl-cols{grid-template-columns:1fr;}}
+/* SWARM */
+.arch{margin-bottom:12px;}
+.arch-head{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);margin-bottom:5px;}
+.arch-head b{color:var(--text);}
+.meter{height:9px;border-radius:6px;background:var(--obs4);overflow:hidden;border:1px solid var(--border);position:relative;}
+.meter .long{position:absolute;left:50%;top:0;bottom:0;background:var(--emerald);transition:width .25s;}
+.meter .short{position:absolute;right:50%;top:0;bottom:0;background:var(--red);transition:width .25s;}
+.meter .mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--text4);}
+.log{margin-top:6px;background:var(--obs4);border:1px solid var(--border);border-radius:10px;padding:8px;height:180px;overflow-y:auto;font-family:'Space Mono',monospace;font-size:9.5px;line-height:1.7;color:var(--text3);}
+.log .e{display:block;opacity:.95;}
+.log .e .t{color:var(--text4);}
+.log .e.sm{color:var(--emerald);} .log .e.mm{color:var(--cyan);} .log .e.ret{color:var(--gold);} .log .e.qf{color:var(--red);}
+.log .e.fill{color:var(--emerald);} .log .e.sweep{color:var(--red);}
+/* NARRATIVE */
+.kgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;}
+.kcard{background:var(--obs3);border:1px solid var(--border);border-radius:12px;padding:10px 12px;position:relative;overflow:hidden;}
+.kcard .name{font-family:'Orbitron',sans-serif;font-size:11px;color:var(--text);letter-spacing:1px;}
+.kcard .type{font-family:'Space Mono',monospace;font-size:8px;color:var(--text4);text-transform:uppercase;margin-top:2px;}
+.kcard .sent{font-family:'Space Mono',monospace;font-size:10px;margin-top:6px;}
+.kcard .bar{height:5px;border-radius:4px;background:var(--obs4);margin-top:6px;overflow:hidden;}
+.kcard .bar i{display:block;height:100%;}
+.kcard .edge{position:absolute;left:0;top:0;bottom:0;width:3px;}
+textarea#narrative{width:100%;min-height:64px;background:var(--obs4);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px;font-family:'Space Mono',monospace;font-size:11px;resize:vertical;}
+.gauge-wrap{display:flex;align-items:center;gap:14px;margin-top:12px;}
+.gauge{position:relative;width:96px;height:96px;}
+.gauge svg{transform:rotate(-90deg);}
+.gauge .val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:font;flex-direction:column;font-family:'Orbitron',sans-serif;font-size:18px;color:var(--text);}
+.gauge .lbl{font-family:'Space Mono',monospace;font-size:8px;color:var(--text4);text-align:center;}
+/* COCKPIT */
+.sor{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.sor .field{background:var(--obs3);border:1px solid var(--border);border-radius:10px;padding:8px 10px;}
+.sor .field label{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1px;color:var(--text4);text-transform:uppercase;display:block;margin-bottom:4px;}
+.sor .field input{width:100%;background:var(--obs4);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px;font-family:'Space Mono',monospace;font-size:11px;}
+.stress-out{margin-top:14px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+.stress-out .o{background:var(--obs4);border:1px solid var(--border);border-radius:10px;padding:10px 12px;}
+.stress-out .o .k{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1px;color:var(--text4);text-transform:uppercase;}
+.stress-out .o .v{font-family:'Orbitron',sans-serif;font-size:15px;margin-top:5px;}
 .foot{margin-top:40px;text-align:center;font-family:'Space Mono',monospace;font-size:10px;color:var(--text4);letter-spacing:1px;}
 .foot a{color:var(--text3);text-decoration:none;}
+.spin{display:inline-block;animation:sp 1s linear infinite;}@keyframes sp{to{transform:rotate(360deg);}}
 </style>
 </head>
 <body>
@@ -80,44 +115,121 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
     <a href="/traderedge_review_loop.html">Review Loop</a>
     <a href="/traderedge_ai_sentiment.html">Ai Sentiment</a>
     <a href="/traderedge_chartai.html">Ai Chart</a>
-    <a href="/kronos_foundation.html" class="nav-pill">⬡ Kronos KFM</a>
+    <a href="/kronos_foundation.html" class="nav-pill">⬡ Kronos × MiroFish</a>
     <a href="/traderedge_prop_firms_command_center.html">Prop Firm Center</a>
     <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle"><span class="tt-icon">🌙</span><span id="themeLabel">DARK</span></button>
   </div>
 </nav>
 
 <div class="wrap">
-  <span class="tag">⬡ Kronos: AI-Powered Price Projections for Traders</span>
-  <h1 class="hero-h1">OHLCV <span>K-Line Forecasting future price action using an AI model trained on over 12 billion global market candles.</span></h1>
-  <p class="hero-sub">What is Kronos?</p><p>Think of Kronos as an AI model designed specifically for financial charts. Just as language models learn to predict the next word in a sentence, Kronos reads past chart patterns to forecast where price is likely to head next.</p>
-<br><p>By analyzing massive amounts of historical chart data across 45 global exchanges, Kronos spots deep market patterns that traditional technical indicators miss.</p>
-  <br><p class="hero-sub">How to Use the Interactive Workspace</p><p>
-<li>Load Your Data: Feed the chart up to 512 candles of historical price action (Open, High, Low, Close, Volume).</li><li>
-Generate Projections: Kronos simulates multiple potential forward price paths based on historical probabilities.</li><li>
-Analyze the Forecast: View the most likely median price path along with shaded confidence bands to gauge risk, potential volatility, and price targets.</li></p>
-<br><p class="hero-sub">Why It Matters</p><p>
-<li>Smarter Price Targets: Outperforms traditional forecasting models by projecting realistic price trajectories instead of single static numbers.</li>
-<li>Built-in Risk Assessment: Visual confidence bands show you high-probability zones, helping you manage risk before entering a trade.</li><li>
-Institutional-Grade AI: Leverages pre-trained market intelligence without requiring complex setup or coding.</li></p>
-  <div class="grid">
-    <!-- LEFT: context + controls -->
-    <div>
-      <div class="panel" style="margin-bottom:20px;">
-        <h3>Context Window Monitor</h3>
-        <div class="ctx-bar-track"><div class="ctx-bar-fill" id="ctxFill"></div></div>
-        <div class="ctx-stats">
-          <span>USED <b id="ctxUsed">0</b> tok</span>
-          <span>MAX <b>512</b> tok</span>
-          <span>FREE <b id="ctxFree">512</b> tok</span>
+  <span class="tag">⬡ Kronos KFM × MiroFish Swarm · Multi-Dimensional Simulation Engine</span>
+  <h1 class="hero-h1">Market <span>Simulation Engine</span></h1>
+  <p class="hero-sub">Kronos computes autoregressive K-line structure (FVGs, liquidity pools, MSS) while the MiroFish agent swarm simulates Market Makers, Smart Money, Retail, and Quant agents against those levels. Their consensus is fused into weighted scenario cones.</p>
+  <p class="disclaimer">⚠ SIMULATION NOTICE — Both Kronos forecasting and the MiroFish swarm are <b>transparent in-browser Monte-Carlo simulations</b> with an honest backend hook. No proprietary model or live order flow is represented. Outputs are for research/education only and are NOT trading advice.</p>
+
+  <div class="qgrid">
+    <!-- Q1 MAIN STAGE -->
+    <div class="panel">
+      <h3>Main Stage · Kronos Structure + MiroFish Scenario Cones</h3>
+      <div class="sub">Candles = Kronos history · shaded cones = Primary / Secondary / Tail-Risk scenarios · dashed zones = ICT/SMC levels</div>
+      <div class="chart-shell"><canvas id="kchart"></canvas></div>
+      <div class="legend">
+        <span><i style="background:var(--emerald)"></i>Historical OHLC</span>
+        <span><i style="background:var(--gold)"></i>Primary cone</span>
+        <span><i style="background:var(--cyan)"></i>Secondary cone</span>
+        <span><i style="background:rgba(255,68,85,.7)"></i>Tail risk</span>
+        <span><i style="background:rgba(240,192,64,.4)"></i>Kronos P25–P75</span>
+      </div>
+      <div class="readout">
+        <div class="stat"><div class="k">Consensus Up</div><div class="v neu" id="stConsensus">—</div></div>
+        <div class="stat"><div class="k">Primary Target</div><div class="v pos" id="stPrimary">—</div></div>
+        <div class="stat"><div class="k">Tail Risk</div><div class="v neg" id="stTail">—</div></div>
+        <div class="stat"><div class="k">VaR₅ (worst 5%)</div><div class="v neg" id="stVar">—</div></div>
+      </div>
+      <div class="hover-readout" id="hoverReadout">Hover the chart to inspect a bar or scenario step.</div>
+      <div class="hover-readout" id="srcTag" style="margin-top:6px;color:var(--emerald);font-size:10px;letter-spacing:1px;">◌ LOCAL SIMULATION</div>
+    </div>
+
+    <!-- Q2 SWARM -->
+    <div class="panel">
+      <h3>Swarm Intelligence · Agent Archetypes</h3>
+      <div class="sub">Live long/short positioning bias per agent class</div>
+      <div id="swarmBox"></div>
+      <div style="display:flex;justify-content:space-between;margin-top:10px;font-family:'Space Mono',monospace;font-size:9px;color:var(--text4);">
+        <span>NET SWARM BIAS <b id="netBias" style="color:var(--gold)">0.0%</b></span>
+        <span>AGGREGATE ACTIVITY <b id="netAct" style="color:var(--cyan)">0%</b></span>
+      </div>
+      <h3 style="margin-top:16px;">Agent Event Log · Liquidity-Pool Interactions</h3>
+      <div class="log" id="agentLog"></div>
+    </div>
+
+    <!-- ROW 2 -->
+    <div class="row2">
+      <!-- Q3 NARRATIVE -->
+      <div class="panel">
+        <h3>Narrative & Catalyst Engine</h3>
+        <div class="sub">Paste qualitative inputs (Fed speeches, CPI, earnings) → knowledge-graph entities → volatility multiplier</div>
+        <textarea id="narrative" placeholder="e.g. Fed chair signals patient stance. CPI came in hot at 3.4%. Smart money positioning into earnings. Geopolitical risk rising.">Fed chair signals patient stance. CPI came in hot at 3.4%. Institutional accumulation visible. Geopolitical risk rising.</textarea>
+        <div style="display:flex;gap:10px;margin-top:10px;">
+          <button class="run-btn alt" id="parseBtn" style="margin-top:0;">⤓ Extract Entities</button>
+          <button class="run-btn" id="applyNarrBtn" style="margin-top:0;">⟳ Apply → Vol Shock</button>
         </div>
-        <div class="ctx-status st-ok" id="ctxStatus">● CONTEXT NOMINAL</div>
-        <div class="ctx-note">Estimated tokens = bars × 3.0 (OHLCV quantized). Exceeding 512 truncates the oldest bars before inference.</div>
+        <div class="kgrid" id="kgrid" style="margin-top:14px;"></div>
+        <div class="gauge-wrap">
+          <div class="gauge">
+            <svg width="96" height="96" viewBox="0 0 96 96">
+              <circle cx="48" cy="48" r="42" fill="none" stroke="var(--obs4)" stroke-width="8"/>
+              <circle id="gaugeArc" cx="48" cy="48" r="42" fill="none" stroke="var(--gold)" stroke-width="8" stroke-linecap="round" stroke-dasharray="263.9" stroke-dashoffset="200"/>
+            </svg>
+            <div class="val"><span id="gaugeVal">1.00</span><div class="lbl">VOL ×</div></div>
+          </div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);line-height:1.6;">
+            Event-shock multiplier feeds directly into position risk sizing and the Tail-Risk cone width. Higher = wider uncertainty band, tighter invalidation.
+          </div>
+        </div>
       </div>
 
-      <div class="panel" style="margin-bottom:20px;">
-        <h3>Data Source · Real OHLCV</h3>
-        <div class="ctrl">
-          <label>Source</label>
+      <!-- Q4 COCKPIT -->
+      <div class="panel">
+        <h3>Execution & Risk Cockpit</h3>
+        <div class="sub">Smart Order Routing setup + 1,000-pass agent swarm stress test</div>
+        <div class="sor">
+          <div class="field"><label>Entry (auto = last close)</label><input id="sorEntry" type="number" step="0.01" placeholder="auto"></div>
+          <div class="field"><label>Stop Loss %</label><input id="sorSL" type="number" step="0.1" value="2.0"></div>
+          <div class="field"><label>TP1 %</label><input id="sorTP1" type="number" step="0.1" value="1.0"></div>
+          <div class="field"><label>TP2 %</label><input id="sorTP2" type="number" step="0.1" value="2.0"></div>
+          <div class="field"><label>TP3 %</label><input id="sorTP3" type="number" step="0.1" value="3.5"></div>
+          <div class="field"><label>Position % (risk)</label><input id="sorPos" type="number" step="0.5" value="1.0"></div>
+        </div>
+        <button class="run-btn" id="stressBtn" style="margin-top:14px;">⚡ Swarm Stress Test (1,000 passes)</button>
+        <div class="stress-out" id="stressOut">
+          <div class="o"><div class="k">Win Rate (TP1)</div><div class="v pos" id="soWin">—</div></div>
+          <div class="o"><div class="k">Max Drawdown</div><div class="v neg" id="soDD">—</div></div>
+          <div class="o"><div class="k">Avg Slippage</div><div class="v neu" id="soSlip">—</div></div>
+          <div class="o"><div class="k">Expectancy (R)</div><div class="v neu" id="soExp">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTROLS STRIP -->
+  <div class="panel" style="margin-top:20px;">
+    <h3>Simulation Controls · Sampling + Injection</h3>
+    <div class="ctl-cols">
+      <div>
+        <div class="ctrl"><label>Context Bars <b id="vBars">80</b></label><input type="range" id="sBars" min="8" max="200" step="1" value="80"></div>
+        <div class="ctrl"><label>Forecast Horizon <b id="vHorizon">24</b></label><input type="range" id="sHorizon" min="4" max="60" step="1" value="24"></div>
+        <div class="ctrl"><label>Sampled Paths <b id="vPaths">24</b></label><input type="range" id="sPaths" min="1" max="64" step="1" value="24"></div>
+        <div class="ctrl"><label>Volatility σ (Kronos) <b id="vVol">1.8%</b></label><input type="range" id="sVol" min="0.3" max="6" step="0.1" value="1.8"></div>
+        <div class="ctrl"><label>Drift Bias <b id="vDrift">+0.02%</b></label><input type="range" id="sDrift" min="-0.4" max="0.4" step="0.02" value="0.02"></div>
+        <div class="ctrl"><label>Temperature <b id="vTemp">1.00</b></label><input type="range" id="sTemp" min="0.1" max="2.5" step="0.05" value="1.0"></div>
+      </div>
+      <div>
+        <div class="ctrl"><label>Volatility Injection (news/regime) <b id="vVolInj">1.00×</b></label><input type="range" id="sVolInj" min="0.5" max="3" step="0.05" value="1.0"></div>
+        <div class="ctrl"><label>Swarm Bias (short ◄ ► long) <b id="vSwarm">0.0%</b></label><input type="range" id="sSwarm" min="-1" max="1" step="0.05" value="0"></div>
+        <div class="ctrl"><label>News Event Shock <b id="vShock">0</b></label><input type="range" id="sShock" min="0" max="100" step="1" value="0"></div>
+        <div class="ctrl" style="margin-top:10px;">
+          <label>Data Source</label>
           <select id="sSource" style="width:100%;background:var(--obs4);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;font-family:'Space Mono',monospace;font-size:11px;">
             <option value="sim">⬡ Simulator (deterministic)</option>
             <option value="binance">⚡ Binance live (klines)</option>
@@ -130,73 +242,25 @@ Institutional-Grade AI: Leverages pre-trained market intelligence without requir
           <label>Symbol / Coin <b id="vSym">BTCUSDT</b></label>
           <input type="text" id="sSym" value="BTCUSDT" style="width:100%;background:var(--obs4);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;font-family:'Space Mono',monospace;font-size:11px;">
           <div style="display:flex;gap:8px;margin-top:8px;">
-            <select id="sInterval" style="flex:1;background:var(--obs4);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px;font-family:'Space Mono',monospace;font-size:10px;">
-              <option value="15m">15m</option><option value="1h" selected>1h</option><option value="4h">4h</option><option value="1d">1d</option>
-            </select>
+            <select id="sInterval" style="flex:1;background:var(--obs4);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px;font-family:'Space Mono',monospace;font-size:10px;"><option value="15m">15m</option><option value="1h" selected>1h</option><option value="4h">4h</option><option value="1d">1d</option></select>
             <input type="number" id="sLimit" value="80" min="8" max="1000" style="width:90px;background:var(--obs4);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px;font-family:'Space Mono',monospace;font-size:10px;">
           </div>
         </div>
         <div class="ctrl" id="csvRow" style="display:none;">
-          <label>CSV (columns: time,open,high,low,close,volume)</label>
+          <label>CSV (time,open,high,low,close,volume)</label>
           <input type="file" id="sCsv" accept=".csv,text/csv" style="font-size:10px;color:var(--text3);">
         </div>
-        <button class="run-btn" id="loadBtn" style="margin-top:4px;">⬇ Load Real Data</button>
-        <div class="ctx-note" id="dataNote">Simulator active. Switch source and Load to pull live market OHLCV.</div>
+        <div style="display:flex;gap:10px;">
+          <button class="run-btn" id="loadBtn" style="margin-top:0;">⬇ Load Data</button>
+          <button class="run-btn alt" id="runBtn" style="margin-top:0;">⚡ Run Simulation</button>
+        </div>
+        <div class="ctx-note" id="dataNote" style="font-size:10px;color:var(--text4);margin-top:8px;line-height:1.5;">Simulator active. Switch source and Load to pull live market OHLCV.</div>
       </div>
-
-      <div class="panel">
-        <h3>Sampling Controls</h3>
-        <div class="ctrl">
-          <label>Context Bars <b id="vBars">80</b></label>
-          <input type="range" id="sBars" min="8" max="200" step="1" value="80">
-        </div>
-        <div class="ctrl">
-          <label>Forecast Horizon <b id="vHorizon">24</b></label>
-          <input type="range" id="sHorizon" min="4" max="60" step="1" value="24">
-        </div>
-        <div class="ctrl">
-          <label>Sampled Paths <b id="vPaths">16</b></label>
-          <input type="range" id="sPaths" min="1" max="64" step="1" value="16">
-        </div>
-        <div class="ctrl">
-          <label>Temperature <b id="vTemp">1.00</b></label>
-          <input type="range" id="sTemp" min="0.1" max="2.5" step="0.05" value="1.0">
-        </div>
-        <div class="ctrl">
-          <label>Volatility σ <b id="vVol">1.8%</b></label>
-          <input type="range" id="sVol" min="0.3" max="6" step="0.1" value="1.8">
-        </div>
-        <div class="ctrl">
-          <label>Drift Bias <b id="vDrift">+0.02%</b></label>
-          <input type="range" id="sDrift" min="-0.4" max="0.4" step="0.02" value="0.02">
-        </div>
-        <button class="run-btn" id="runBtn">⚡ Run Forecast</button>
-      </div>
-    </div>
-
-    <!-- RIGHT: chart + stats -->
-    <div class="panel chart-panel">
-      <h3>Price Trajectory · History + Sampled Forecast</h3>
-      <div class="chart-shell"><canvas id="kchart"></canvas></div>
-      <div class="legend">
-        <span><i style="background:var(--emerald)"></i>Historical OHLC (K-line)</span>
-        <span><i style="background:var(--gold)"></i>Median forecast</span>
-        <span><i style="background:rgba(240,192,64,.5)"></i>P25–P75 band</span>
-        <span><i style="background:rgba(0,212,255,.4)"></i>P5–P95 band</span>
-      </div>
-      <div class="readout">
-        <div class="stat"><div class="k">Exp. Return (median)</div><div class="v neu" id="stReturn">—</div></div>
-        <div class="stat"><div class="k">P(up) over horizon</div><div class="v pos" id="stUp">—</div></div>
-        <div class="stat"><div class="k">VaR₅ (worst 5%)</div><div class="v neg" id="stVar">—</div></div>
-        <div class="stat"><div class="k">Path Entropy</div><div class="v neu" id="stEnt">—</div></div>
-      </div>
-      <div class="hover-readout" id="hoverReadout">Hover the chart to inspect a bar or forecast step.</div>
-      <div class="hover-readout" id="srcTag" style="margin-top:6px;color:var(--emerald);font-size:10px;letter-spacing:1px;">◌ LOCAL SIMULATION</div>
     </div>
   </div>
 
   <div class="foot">
-    SniperTrader.ai · Kronos Foundation Model reference interface ·
+    SniperTrader.ai · Kronos × MiroFish Simulation Engine · Educational simulation, not investment advice ·
     <a href="/traderedge_chartai.html">AI Chart Analyzer</a> ·
     <a href="/index.html">Home</a>
   </div>
@@ -207,23 +271,19 @@ Institutional-Grade AI: Leverages pre-trained market intelligence without requir
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 function gauss(rng){let u=0,v=0;while(u===0)u=rng();while(v===0)v=rng();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
 function cssVar(n){return getComputedStyle(document.body).getPropertyValue(n).trim();}
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const MAX_CTX=512, TOK_PER_BAR=3.0;
 
 /* ───────────────────────── state ───────────────────────── */
-const S={source:'sim',symbol:'BTCUSDT',interval:'1h',limit:80,bars:80,horizon:24,paths:16,temp:1.0,vol:0.018,drift:0.0002,seed:0x9E3779B1};
+const S={source:'sim',symbol:'BTCUSDT',interval:'1h',limit:80,bars:80,horizon:24,paths:24,temp:1.0,vol:0.018,drift:0.0002,seed:0x9E3779B1,
+  volInject:1.0, swarmBias:0.0, newsShock:0.0,
+  entry:null, slPct:2.0, tp1:1.0, tp2:2.0, tp3:3.5, posPct:1.0};
 S.history=null; // real OHLCV [{o,h,l,c,v}] when source != 'sim'
-/* Backend hook: the Kronos inference API. In production it is served by
-   Vercel serverless functions at the same origin (api/kronos/forecast,
-   api/stocks/klines, api/ai/chat); locally it's api/_server.js on :8787.
-   API_BASE is the origin prefix — '' means same-origin. When a call fails
-   the page falls back to deterministic in-browser simulation. */
 const API_BASE = (location.hostname==='localhost'||location.hostname==='127.0.0.1')
-  ? 'http://localhost:8787' : '';   // '' => same-origin prod endpoint
+  ? 'http://localhost:8787' : '';
 const USE_BACKEND = true;
 
-/* ───────────────────────── real OHLCV sources ───────────────────────── */
-/* Binance is crypto-only. Accept base tickers (btc, eth/usdt, btc/usd)
-   and resolve to a valid Binance pair (default quote = USDT). */
+/* ───────────────────────── real OHLCV sources (verified working) ───────────────────────── */
 function resolveBinanceSymbol(raw){
   let s=(raw||'').trim().toUpperCase().replace(/\s+/g,'').replace(/\//g,'');
   if(!s) return 'BTCUSDT';
@@ -242,20 +302,20 @@ async function fetchBinance(symbol,interval,limit){
 const CG_MAP={BTC:'bitcoin',ETH:'ethereum',SOL:'solana',BNB:'binancecoin',ADA:'cardano',XRP:'ripple',DOGE:'dogecoin',DOT:'polkadot',AVAX:'avalanche-2',MATIC:'matic-network',LINK:'chainlink',LTC:'litecoin',TRX:'tron',ATOM:'cosmos',UNI:'uniswap',XLM:'stellar',NEAR:'near',APT:'aptos',ARB:'arbitrum',OP:'optimism'};
 async function fetchCoinGecko(coin,days){
   const base=(coin||'btc').toUpperCase().replace(/USDT|USDC|BUSD|USD$/,'');
-  const id=CG_MAP[base]||base.toLowerCase();   // unknown -> try lowercase base as id (will 404 clearly if invalid)
+  const id=CG_MAP[base]||base.toLowerCase();
   const url=`https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=${Math.max(1,Math.ceil(days/24))}&interval=hourly`;
   const r=await fetch(url); if(!r.ok){ let m='CoinGecko HTTP '+r.status; try{const e=await r.json(); if(e&&e.error) m='CoinGecko: '+e.error;}catch(_){} throw new Error(m); }
   const j=await r.json(); const pts=j.prices||[];
-  const out=[];
+  const out=[]; const lim=Math.max(8,S.limit);
   for(let i=0;i<pts.length;i++){
     const c=pts[i][1]; const prev=i>0?pts[i-1][1]:c*0.999;
     const o=prev, h=Math.max(o,c)*(1+0.002), l=Math.min(o,c)*(1-0.002);
     out.push({o,h,l,c,v:1});
   }
-  return out.slice(-Math.max(8,limit));
+  return out.slice(-lim);
 }
 async function fetchAlpaca(symbol,timeframe,limit){
-  const base = API_BASE || '';   // '' => same-origin prod endpoint; localhost => :8787
+  const base = API_BASE || '';
   const url = `${base}/api/stocks/klines?symbol=${encodeURIComponent(symbol.toUpperCase())}&timeframe=${encodeURIComponent(timeframe)}&limit=${limit}`;
   const r=await fetch(url);
   if(!r.ok){ let m='Stocks API HTTP '+r.status; try{const e=await r.json(); if(e&&e.error) m=e.error;}catch(_){} throw new Error(m); }
@@ -268,7 +328,6 @@ function parseCSV(text){
   const out=[];
   for(const ln of lines){
     const c=ln.split(/[,;\t]/).map(s=>s.trim().replace(/^"|"$/g,''));
-    // skip header if first cell isn't numeric-ish
     if(isNaN(+c[1]) && /time|open|date/i.test(c[0])) continue;
     const o=+c[1],h=+c[2],l=+c[3],cl=+c[4],v=+c[5]||1;
     if([o,h,l,cl].some(x=>isNaN(x))) continue;
@@ -323,7 +382,7 @@ async function loadRealData(){
         note.textContent='✖ '+hint+' — reverted to simulator'; note.style.color='var(--red)';
         return;
       } }
-    else if(src==='csv'){ const f=document.getElementById('sCsv').files[0]; if(!f) throw new Error('no file'); bars=parseCSV(await f.text()); }
+    else if(src==='csv'){ const f=document.getElementById('sCsv').files[0]; if(!1){} if(!f) throw new Error('no file'); bars=parseCSV(await f.text()); }
     if(!bars||!bars.length) throw new Error('empty data');
     S.history=bars; S.bars=bars.length;
     document.getElementById('sBars').value=Math.min(200,bars.length);
@@ -339,7 +398,7 @@ async function loadRealData(){
   }
 }
 
-/* ───────────────────────── data generation ───────────────────────── */
+/* ───────────────────────── Kronos data generation ───────────────────────── */
 function genHistory(n,rng){
   let price=100+rng()*50, bars=[];
   const vbase=1200+rng()*5000;
@@ -354,12 +413,15 @@ function genHistory(n,rng){
   }
   return bars;
 }
-function genPaths(lastClose,rng,st){
+/* effective volatility combines Kronos σ, injection, and news shock */
+function effVol(){ return S.vol * S.volInject * (1 + S.newsShock/100 * 0.8); }
+function genPaths(lastClose,rng,st,vol){
   const P=st.paths, paths=[];
+  const v=vol!==undefined?vol:effVol();
   for(let p=0;p<P;p++){
     let price=lastClose; const path=[price];
     for(let t=0;t<st.horizon;t++){
-      const step=st.drift + gauss(rng)*st.vol*st.temp;
+      const step=st.drift + gauss(rng)*v*st.temp;
       price=price*(1+step); path.push(price);
     }
     paths.push(path);
@@ -379,12 +441,111 @@ function computeBands(paths){
   return out;
 }
 
-/* ───────────────────────── context monitor (real-time) ───────────────────────── */
+/* ───────────────────────── MiroFish swarm (SIMULATION) ───────────────────────── */
+const ARCHETYPES=[
+  {id:'MM',  name:'Market Makers',     weight:0.30, base:0.50, color:'var(--cyan)',   volatility:0.6},
+  {id:'SM',  name:'Smart Money / ICT', weight:0.30, base:0.58, color:'var(--emerald)', volatility:0.4},
+  {id:'RET', name:'Retail Momentum',   weight:0.20, base:0.46, color:'var(--gold)',    volatility:1.2},
+  {id:'QF',  name:'Quant Funds',       weight:0.20, base:0.52, color:'var(--red)',     volatility:0.8},
+];
+function computeSwarm(rng){
+  const agents=ARCHETYPES.map(a=>{
+    // swarm bias slider nudges everyone; archetype base differs; news shock adds noise/activity
+    const noise=(rng()-0.5)*0.12*(1+S.newsShock/120);
+    const longBias=clamp((a.base + S.swarmBias*0.45 + noise),0.02,0.98);
+    const activity=clamp(0.35 + 0.4*Math.abs(S.swarmBias) + S.newsShock/200 + (rng()*0.2),0,1);
+    return {id:a.id,name:a.name,weight:a.weight,color:a.color,longBias,activity,
+            shortBias:1-longBias, vol:a.volatility};
+  });
+  const consensusUp=agents.reduce((s,a)=>s+a.weight*a.longBias,0);
+  const netBias=consensusUp-0.5; // -0.5..0.5
+  const aggAct=agents.reduce((s,a)=>s+a.weight*a.activity,0);
+  return {agents,consensusUp,netBias,aggAct};
+}
+
+/* ───────────────────────── Confluence: scenario cones ───────────────────────── */
+/* Three weighted cones derived from Kronos median + MiroFish consensus + news shock. */
+function buildConfluence(bands,swarm){
+  const F=bands.p50.length;
+  const bend=(swarm.netBias)*2*0.10;            // primary cone bends toward consensus
+  const tailAmp=(0.05 + S.newsShock/100*0.30);  // tail widens with news shock
+  const primary=[],secondary=[],tailRisk=[];
+  const last=bands.p50[0]; // p50[0] corresponds to step 1; use p50 array (length F)
+  for(let j=0;j<F;j++){
+    const t=(j+1)/F;
+    const base=bands.p50[j];
+    primary.push(base*(1+bend*t));
+    secondary.push(base*(1-bend*0.6*t));
+    const dir = swarm.netBias>=0 ? -1 : 1; // tail risk = adverse extreme
+    tailRisk.push(base*(1+dir*tailAmp*t));
+  }
+  return {primary,secondary,tailRisk,base:last};
+}
+
+/* ───────────────────────── ICT / SMC detection ───────────────────────── */
+function detectICT(bars){
+  const n=bars.length, obs=[], fvgs=[], liq=[];
+  // Order Blocks: last candle opposing the impulse before a strong move
+  for(let i=2;i<n-3;i++){
+    const up= bars[i+1].c>bars[i+1].o && bars[i+2].c>bars[i+2].o;
+    const down= bars[i+1].c<bars[i+1].o && bars[i+2].c<bars[i+2].o;
+    if(up && bars[i].c<bars[i].o){ obs.push({type:'bull',price:bars[i].l,top:bars[i].h,bot:bars[i].l,idx:i}); }
+    if(down && bars[i].c>bars[i].o){ obs.push({type:'bear',price:bars[i].h,top:bars[i].h,bot:bars[i].l,idx:i}); }
+  }
+  // FVG: gap between candle i high and candle i+2 low (bull) / candle i low & i+2 high (bear)
+  for(let i=0;i<n-2;i++){
+    const gapBull=bars[i+2].l - bars[i].h;
+    if(gapBull>Math.abs(bars[i].c)*0.0015) fvgs.push({type:'bull',top:bars[i+2].l,bot:bars[i].h,idx:i});
+    const gapBear=bars[i].l - bars[i+2].h;
+    if(gapBear>Math.abs(bars[i].c)*0.0015) fvgs.push({type:'bear',top:bars[i].l,bot:bars[i+2].h,idx:i});
+  }
+  // Liquidity: recent swing highs (sellside liq above) & lows (buyside liq below)
+  for(let i=2;i<n-2;i++){
+    if(bars[i].h>bars[i-1].h&&bars[i].h>bars[i-2].h&&bars[i].h>bars[i+1].h)
+      liq.push({type:'sell',price:bars[i].h,idx:i});
+    if(bars[i].l<bars[i-1].l&&bars[i].l<bars[i-2].l&&bars[i].l<bars[i+1].l)
+      liq.push({type:'buy',price:bars[i].l,idx:i});
+  }
+  return {obs:obs.slice(-4),fvgs:fvgs.slice(-4),liq:liq.slice(-4)};
+}
+
+/* ───────────────────────── Narrative / KG extraction (SIMULATION) ───────────────────────── */
+const ENTITY_RULES=[
+  {re:/fed|fomc|chair|powell|central bank/i, name:'Federal Reserve', type:'monetary', sent:-0.1, w:0.9},
+  {re:/cpi|inflation|pce|hot|cool/i,          name:'Inflation (CPI/PCE)', type:'macro', sent:-0.2, w:0.8},
+  {re:/rate (hike|cut|cut)|hike|cut/i,        name:'Rate Decision', type:'monetary', sent:-0.15, w:0.8},
+  {re:/earnings|eps|revenue|guidance/i,       name:'Earnings', type:'corporate', sent:0.1, w:0.7},
+  {re:/smart money|accumul|institution|whale/i, name:'Smart Money Flow', type:'flow', sent:0.25, w:0.9},
+  {re:/retail|reddit|robinhood/i,            name:'Retail Sentiment', type:'flow', sent:-0.1, w:0.6},
+  {re:/geopolit|war|sanction|conflict|risk/i,name:'Geopolitical Risk', type:'risk', sent:-0.3, w:1.0},
+  {re:/patient|dovish|accommodat/i,           name:'Dovish Tone', type:'monetary', sent:0.2, w:0.7},
+  {re:/hawkish|tighten/i,                     name:'Hawkish Tone', type:'monetary', sent:-0.2, w:0.7},
+];
+function parseNarrative(text){
+  const cards=[];
+  for(const r of ENTITY_RULES){
+    if(r.re.test(text)){
+      const sentiment=clamp(r.sent + (Math.random()-0.5)*0.1, -1, 1);
+      cards.push({name:r.name, type:r.type, sentiment, weight:r.w});
+    }
+  }
+  if(!cards.length) cards.push({name:'No catalyst detected', type:'neutral', sentiment:0, weight:0.2});
+  return cards;
+}
+function volMultiplierFromCards(cards){
+  // positive sentiment lowers vol, negative raises it; bounded 1.0..2.5
+  const sum=cards.reduce((s,c)=>s + c.sentiment*c.weight,0);
+  return clamp(1.0 - sum*0.6, 1.0, 2.5);
+}
+
+/* ───────────────────────── context monitor ───────────────────────── */
 function updateContextMonitor(){
   const used=Math.round(S.bars*TOK_PER_BAR);
   const free=MAX_CTX-used;
   const pct=Math.max(0,Math.min(1,used/MAX_CTX));
   const fill=document.getElementById('ctxFill');
+  // (monitor element may be hidden in new layout; guard)
+  if(!fill) return;
   fill.style.width=(pct*100).toFixed(1)+'%';
   document.getElementById('ctxUsed').textContent=used;
   document.getElementById('ctxFree').textContent=free;
@@ -401,7 +562,7 @@ const kronosPlugin={
   afterDatasetsDraw(chart){
     const meta=chart.$k; if(!meta) return;
     const {ctx,scales:{x,y}}=chart;
-    const eme=cssVar('--emerald'), red=cssVar('--red'), gold=cssVar('--gold'), cyan=cssVar('--cyan');
+    const eme=cssVar('--emerald'), red=cssVar('--red'), gold=cssVar('--gold'), cyan=cssVar('--cyan'), border=cssVar('--border');
     const H=meta.bars.length, F=meta.bands.p50.length;
     const bw=Math.max(2,(x.getPixelForValue(1)-x.getPixelForValue(0))*0.62);
     // history candlesticks
@@ -417,28 +578,49 @@ const kronosPlugin={
     const bx=x.getPixelForValue(H-0.5);
     ctx.save(); ctx.strokeStyle=cyan; ctx.setLineDash([4,4]); ctx.globalAlpha=0.5;
     ctx.beginPath(); ctx.moveTo(bx,y.top); ctx.lineTo(bx,y.bottom); ctx.stroke(); ctx.restore();
-    // bands + median
-    let prevX=null,prevY=null;
+    // Kronos P25-P75 faint
     for(let j=0;j<F;j++){
       const cx=x.getPixelForValue(H+j);
-      const y95=y.getPixelForValue(meta.bands.p95[j]), y5=y.getPixelForValue(meta.bands.p5[j]);
       const y75=y.getPixelForValue(meta.bands.p75[j]), y25=y.getPixelForValue(meta.bands.p25[j]);
-      const y50=y.getPixelForValue(meta.bands.p50[j]);
-      ctx.fillStyle='rgba(0,212,255,0.10)'; ctx.fillRect(cx-bw/2,y95,bw,Math.max(0,y5-y95));
-      ctx.fillStyle='rgba(240,192,64,0.18)'; ctx.fillRect(cx-bw/2,y75,bw,Math.max(0,y25-y75));
-      // median polyline
-      ctx.strokeStyle=gold; ctx.lineWidth=1.6;
-      if(prevX!==null){ctx.beginPath();ctx.moveTo(prevX,prevY);ctx.lineTo(cx,y50);ctx.stroke();}
-      prevX=cx; prevY=y50;
+      ctx.fillStyle='rgba(240,192,64,0.14)'; ctx.fillRect(cx-bw/2,y25,bw,Math.max(0,y75-y25));
     }
-    // a few sample paths (faint)
-    ctx.strokeStyle='rgba(255,255,255,0.10)'; ctx.lineWidth=1;
-    const sampleN=Math.min(6,meta.paths.length);
-    for(let p=0;p<sampleN;p++){
-      const path=meta.paths[p]; ctx.beginPath();
+    // ICT overlays
+    if(meta.ict){
+      ctx.save();
+      meta.ict.obs.forEach(o=>{
+        const yT=y.getPixelForValue(o.top), yB=y.getPixelForValue(o.bot);
+        ctx.fillStyle=o.type==='bull'?'rgba(0,229,160,0.10)':'rgba(255,68,85,0.10)';
+        ctx.fillRect(bx+2,yT,Math.max(20,(x.getPixelForValue(H+F)-bx)),Math.max(2,yB-yT));
+      });
+      meta.ict.fvgs.forEach(f=>{
+        const yT=y.getPixelForValue(f.top), yB=y.getPixelForValue(f.bot);
+        ctx.fillStyle=f.type==='bull'?'rgba(0,212,255,0.12)':'rgba(255,68,85,0.12)';
+        ctx.fillRect(bx+2,yT,Math.max(20,(x.getPixelForValue(H+F)-bx)),Math.max(2,yB-yT));
+      });
+      meta.ict.liq.forEach(l=>{
+        const yL=y.getPixelForValue(l.price);
+        ctx.strokeStyle=l.type==='sell'?'rgba(255,68,85,0.5)':'rgba(0,229,160,0.5)';
+        ctx.setLineDash([6,4]); ctx.lineWidth=1;
+        ctx.beginPath(); ctx.moveTo(bx,yL); ctx.lineTo(x.getPixelForValue(H+F),yL); ctx.stroke();
+      });
+      ctx.restore();
+    }
+    // scenario cones (drawn as polylines)
+    const drawCone=(arr,color,w,dash)=>{
+      ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=w; if(dash)ctx.setLineDash(dash);
+      ctx.beginPath();
+      for(let j=0;j<F;j++){const cx=x.getPixelForValue(H+j),cy=y.getPixelForValue(arr[j]);j===0?ctx.moveTo(cx,cy):ctx.lineTo(cx,cy);}
+      ctx.stroke(); ctx.restore();
+    };
+    drawCone(meta.confluence.tailRisk, 'rgba(255,68,85,0.85)', 1.8, [2,3]);
+    drawCone(meta.confluence.secondary, cyan, 1.6, [5,4]);
+    drawCone(meta.confluence.primary, gold, 2.2, null);
+    // a few sample paths faint
+    ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=1;
+    const sampleN=Math.min(5,meta.paths.length);
+    for(let p=0;p<sampleN;p++){ const path=meta.paths[p]; ctx.beginPath();
       for(let j=0;j<F;j++){const cx=x.getPixelForValue(H+j),cy=y.getPixelForValue(path[j+1]);j===0?ctx.moveTo(cx,cy):ctx.lineTo(cx,cy);}
-      ctx.stroke();
-    }
+      ctx.stroke(); }
   }
 };
 let chart;
@@ -451,108 +633,193 @@ function buildChart(){
       responsive:true,maintainAspectRatio:false,animation:false,
       interaction:{mode:'index',intersect:false},
       scales:{
-        x:{grid:{color:cssVar('--border')},ticks:{color:cssVar('--text4'),maxTicksLimit:14,font:{family:'Space Mono',size:9}},border:{color:cssVar('--border')}},
+        x:{grid:{color:cssVar('--border')},ticks:{color:cssVar('--text4'),maxTicksLimit:16,font:{family:'Space Mono',size:9}},border:{color:cssVar('--border')}},
         y:{grid:{color:cssVar('--border')},ticks:{color:cssVar('--text4'),font:{family:'Space Mono',size:9}},border:{color:cssVar('--border')}}
       },
       plugins:{legend:{display:false},tooltip:{enabled:false}},
-      onHover(evt){
-        if(!chart||!chart.$k) return;
-        const idx=Math.round(chart.scales.x.getValueForPixel(evt.x));
-        showReadout(idx);
-      }
+      onHover(evt){ if(!chart||!chart.$k) return; const idx=Math.round(chart.scales.x.getValueForPixel(evt.x)); showReadout(idx); }
     },
     plugins:[kronosPlugin]
   });
 }
 function showReadout(idx){
   const meta=chart.$k; if(!meta) return;
-  const H=meta.bars.length, F=meta.bands.p50.length, el=document.getElementById('hoverReadout');
+  const H=meta.bars.length, F=meta.confluence.primary.length, el=document.getElementById('hoverReadout');
   if(idx<0||idx>=H+F) return;
   if(idx<H){const b=meta.bars[idx];
     el.innerHTML=`BAR <b>#${idx+1}</b> · O <b>${b.o.toFixed(2)}</b> H <b>${b.h.toFixed(2)}</b> L <b>${b.l.toFixed(2)}</b> C <b>${b.c.toFixed(2)}</b> · Vol <b>${b.v.toLocaleString()}</b>`;
   } else {const j=idx-H;
-    el.innerHTML=`STEP <b>+${j+1}</b> · P50 <b>${meta.bands.p50[j].toFixed(2)}</b> · P25–P75 <b>${meta.bands.p25[j].toFixed(2)}–${meta.bands.p75[j].toFixed(2)}</b> · P5–P95 <b>${meta.bands.p5[j].toFixed(2)}–${meta.bands.p95[j].toFixed(2)}</b>`;
+    el.innerHTML=`STEP <b>+${j+1}</b> · Primary <b>${meta.confluence.primary[j].toFixed(2)}</b> · Secondary <b>${meta.confluence.secondary[j].toFixed(2)}</b> · Tail <b>${meta.confluence.tailRisk[j].toFixed(2)}</b>`;
   }
 }
 
+/* ───────────────────────── local simulation pipeline ───────────────────────── */
 function localSim(){
   const rng=mulberry32(S.seed);
-  let bars=S.history; // real OHLCV if loaded, else synthesize
+  let bars=S.history;
   if(!bars||!bars.length) bars=genHistory(S.bars,rng);
   const lastClose=bars[bars.length-1].c;
-  const paths=genPaths(lastClose,rng,S);
+  const v=effVol();
+  const paths=genPaths(lastClose,rng,S,v);
   const bands=computeBands(paths);
-  return {bars,paths,bands,lastClose,backend:S.history?'real-local':'local-sim'};
+  const swarm=computeSwarm(rng);
+  const confluence=buildConfluence(bands,swarm);
+  const ict=detectICT(bars);
+  return {bars,paths,bands,lastClose,swarm,confluence,ict,
+          entry:S.entry??lastClose, backend:S.history?'real-local':'local-sim'};
 }
+
+/* ───────────────────────── paint / stats ───────────────────────── */
 function paint(r){
   const bars=r.bars, paths=r.paths, bands=r.bands, lastClose=r.lastClose;
   const H=bars.length, F=paths[0].length-1;
-  const labels=[]; for(let i=0;i<H;i++)labels.push('h'+(i+1)); for(let j=0;j<F;j++)labels.push('+'+ (j+1));
+  const labels=[]; for(let i=0;i<H;i++)labels.push('h'+(i+1)); for(let j=0;j<F;j++)labels.push('+'+(j+1));
   const closes=bars.map(b=>b.c).concat(bands.p50);
   let lo=Infinity,hi=-Infinity;
   bars.forEach(b=>{lo=Math.min(lo,b.l);hi=Math.max(hi,b.h);});
   bands.p5.forEach(v=>lo=Math.min(lo,v)); bands.p95.forEach(v=>hi=Math.max(hi,v));
+  r.confluence.primary.forEach(v=>{lo=Math.min(lo,v);hi=hi;});
+  r.confluence.tailRisk.forEach(v=>{lo=Math.min(lo,v);hi=Math.max(hi,v);});
   const pad=(hi-lo)*0.06; lo-=pad; hi+=pad;
   chart.data.labels=labels;
   chart.data.datasets[0].data=closes;
   chart.options.scales.y.min=lo; chart.options.scales.y.max=hi;
-  chart.$k={bars,paths,bands};
+  chart.$k={bars,paths,bands,confluence:r.confluence,ict:r.ict,lastClose,swarm:r.swarm};
   chart.update('none');
-  updateStats(lastClose,paths,bands);
-  updateContextMonitor();
+  // stats
+  const end=bands.p50.length-1;
+  const set=(id,val,cls)=>{const e=document.getElementById(id);if(!e)return;e.textContent=val;e.className='v '+cls;};
+  set('stConsensus', (r.swarm.consensusUp*100).toFixed(0)+'%', r.swarm.consensusUp>=0.5?'pos':'neg');
+  set('stPrimary', (r.confluence.primary[end]/lastClose-1>=0?'+':'')+((r.confluence.primary[end]/lastClose-1)*100).toFixed(2)+'%', 'pos');
+  set('stTail', (r.confluence.tailRisk[end]/lastClose-1>=0?'+':'')+((r.confluence.tailRisk[end]/lastClose-1)*100).toFixed(2)+'%', 'neg');
+  set('stVar', ((bands.p5[end]/lastClose-1)*100).toFixed(2)+'%','neg');
+  // swarm UI
+  renderSwarm(r.swarm);
+  // src tag
   const src=document.getElementById('srcTag');
-  if(src){
-    let label='◌ LOCAL SIMULATION';
-    if(r.backend==='backend') label = r.real ? '⬢ LIVE INFERENCE · REAL DATA' : '⬢ LIVE INFERENCE';
+  if(src){ let label='◌ LOCAL SIMULATION (Kronos+MiroFish)';
+    if(r.backend==='backend') label='⬢ LIVE INFERENCE';
     else if(r.backend==='real-local') label='◌ LOCAL SIM ON REAL DATA';
-    src.textContent = label + (r.truncated?' · context truncated @512tok':'');
-  }
+    src.textContent=label; }
 }
+function renderSwarm(swarm){
+  const box=document.getElementById('swarmBox'); if(!box) return;
+  box.innerHTML='';
+  swarm.agents.forEach(a=>{
+    const longPct=Math.round(a.longBias*100), shortPct=100-longPct;
+    const div=document.createElement('div'); div.className='arch';
+    div.innerHTML=`<div class="arch-head"><span>${a.name}</span><b>${longPct}% L / ${shortPct}% S</b></div>
+      <div class="meter"><div class="mid"></div><div class="long" style="width:${longPct/2}%"></div><div class="short" style="width:${shortPct/2}%"></div></div>`;
+    box.appendChild(div);
+  });
+  document.getElementById('netBias').textContent=(swarm.netBias*200).toFixed(1)+'%';
+  document.getElementById('netBias').style.color = swarm.netBias>=0?'var(--emerald)':'var(--red)';
+  document.getElementById('netAct').textContent=Math.round(swarm.aggAct*100)+'%';
+  // event log seeded by liquidity pools
+  buildAgentLog(swarm);
+}
+function buildAgentLog(swarm){
+  const log=document.getElementById('agentLog'); if(!log) return;
+  const ict=chart&&chart.$k?chart.$k.ict:null;
+  const pools=(ict&&ict.liq.length)?ict.liq:[{type:'buy',price:swarm.consensusUp>=0.5?90000:88000}];
+  const verbs=['filled','swept','absorbed','stacked','faded','accumulated'];
+  const clsMap={MM:'mm',SM:'sm',RET:'ret',QF:'qf'};
+  let html='';
+  const rng=mulberry32((S.seed^0x55)^S.bars);
+  for(let i=0;i<14;i++){
+    const a=swarm.agents[Math.floor(rng()*swarm.agents.length)];
+    const pool=pools[Math.floor(rng()*pools.length)];
+    const v=verbs[Math.floor(rng()*verbs.length)];
+    const side= rng()<a.longBias?'long':'short';
+    const sz=(rng()*3+0.2).toFixed(1);
+    const act = (v==='swept'||v==='filled')?'fill':(v==='faded'?'sweep':'');
+    const t='+'+(i*2+1)+'m';
+    html+=`<span class="e ${clsMap[a.id]} ${act}"><span class="t">${t}</span> ${a.id} ${v} ${sz}M ${side} @ liq ${pool.price.toFixed(0)} (${pool.type}side)</span>`;
+  }
+  log.innerHTML=html;
+}
+
+/* ───────────────────────── stress test (1,000 passes) ───────────────────────── */
+function runStress(){
+  const btn=document.getElementById('stressBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spin">↻</span> Running 1,000 passes…';
+  // read SOR
+  S.slPct=parseFloat(document.getElementById('sorSL').value)||2;
+  S.tp1=parseFloat(document.getElementById('sorTP1').value)||1;
+  S.tp2=parseFloat(document.getElementById('sorTP2').value)||2;
+  S.tp3=parseFloat(document.getElementById('sorTP3').value)||3.5;
+  const entry=S.entry??(chart.$k?chart.$k.lastClose:100);
+  const sl=entry*(1-S.slPct/100);
+  const tp=[entry*(1+S.tp1/100),entry*(1+S.tp2/100),entry*(1+S.tp3/100)];
+  const N=1000, rng=mulberry32((S.seed^0xABCD));
+  const swarm=chart.$k?undefined:undefined;
+  // aggregate swarm activity for slippage
+  let aggAct=0.5;
+  if(chart&&chart.$k&&chart.$k.swarm) aggAct=chart.$k.swarm.aggAct;
+  let wins=0, ddSum=0, slipSum=0, rSum=0, maxDD=0;
+  for(let i=0;i<N;i++){
+    let p=entry, peak=entry, worst=0, slip=(0.0004+aggAct*0.0018)*entry*(0.5+rng());
+    slipSum+=slip;
+    let hit=false, pnl=0;
+    for(let t=0;t<S.horizon;t++){
+      const step=S.drift + gauss(rng)*effVol()*S.temp;
+      p=p*(1+step);
+      peak=Math.max(peak,p); const dd=(peak-p)/peak; worst=Math.max(worst,dd);
+      if(p>=tp[0]){ wins++; pnl=(tp[0]-entry)-slip; hit=true; break; }
+      if(p<=sl){ pnl=(sl-entry)-slip; hit=true; break; }
+    }
+    if(!hit) pnl=(p-entry)-slip;
+    ddSum+=worst; maxDD=Math.max(maxDD,worst);
+    // R-multiple: risk = entry-sl
+    const risk=entry-sl; rSum += risk>0?pnl/risk:0;
+  }
+  const winRate=wins/N*100;
+  const avgSlip=slipSum/N;
+  const exp=rSum/N;
+  document.getElementById('soWin').textContent=winRate.toFixed(1)+'%';
+  document.getElementById('soWin').className='v '+(winRate>=50?'pos':'neg');
+  document.getElementById('soDD').textContent='-'+(ddSum/N*100).toFixed(2)+'%';
+  document.getElementById('soSlip').textContent=avgSlip.toFixed(2);
+  document.getElementById('soExp').textContent=(exp>=0?'+':'')+exp.toFixed(2)+'R';
+  document.getElementById('soExp').className='v '+(exp>=0?'pos':'neg');
+  btn.disabled=false; btn.textContent='⚡ Swarm Stress Test (1,000 passes)';
+}
+
+/* ───────────────────────── run / render ───────────────────────── */
 async function runForecast(){
   const btn=document.getElementById('runBtn');
   if(btn){btn.disabled=true;btn.textContent='⏳ Computing…';}
   let result=null;
   if(USE_BACKEND){
     try{
-      const payload={config:{bars:S.bars,horizon:S.horizon,paths:S.paths,temp:S.temp,vol:S.vol,drift:S.drift,seed:S.seed>>>0}};
-      if(S.history&&S.history.length) payload.history=S.history; // real OHLCV to model
-      const resp=await fetch((API_BASE||'')+'/api/kronos/forecast',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(payload)
-      });
+      const payload={mode:'full',config:{bars:S.bars,horizon:S.horizon,paths:S.paths,temp:S.temp,vol:S.vol,drift:S.drift,seed:S.seed>>>0,
+        volInject:S.volInject,swarmBias:S.swarmBias,newsShock:S.newsShock},
+        swarm:ARCHETYPES};
+      if(S.history&&S.history.length) payload.history=S.history;
+      const resp=await fetch((API_BASE||'')+'/api/kronos/forecast',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
       if(!resp.ok) throw new Error('HTTP '+resp.status);
       const j=await resp.json();
-      result={bars:j.history,paths:j.paths,bands:j.bands,lastClose:j.history[j.history.length-1].c,backend:'backend',truncated:j.meta&&j.meta.truncated,real:!!(S.history&&S.history.length)};
-    }catch(e){ result=null; /* fall through to local sim */ }
+      result={bars:j.history,paths:j.paths,bands:j.bands,lastClose:j.history[j.history.length-1].c,
+              swarm:j.mirofish||computeSwarm(mulberry32(S.seed)),
+              confluence:j.confluence||buildConfluence(j.bands,j.mirofish||computeSwarm(mulberry32(S.seed))),
+              ict:j.ict||detectICT(j.history), backend:'backend', real:!!(S.history&&S.history.length)};
+    }catch(e){ result=null; }
   }
   if(!result) result=localSim();
   paint(result);
-  if(btn){btn.disabled=false;btn.textContent='⚡ Run Forecast';}
+  if(btn){btn.disabled=false;btn.textContent='⚡ Run Simulation';}
 }
 function render(){ runForecast(); }
-function updateStats(lastClose,paths,bands){
-  const end=bands.p50.length-1;
-  const ret=(bands.p50[end]/lastClose-1)*100;
-  const up=paths.filter(p=>p[p.length-1]>lastClose).length/paths.length*100;
-  const var5=(bands.p5[end]/lastClose-1)*100;
-  const meanSpread=bands.spread.reduce((a,b)=>a+b,0)/bands.spread.length;
-  const ent=Math.log(1+meanSpread*100*paths.length)/Math.log(1+100); // normalized 0..~1
-  const set=(id,val,cls)=>{const e=document.getElementById(id);e.textContent=val;e.className='v '+cls;};
-  set('stReturn',(ret>=0?'+':'')+ret.toFixed(2)+'%',ret>=0?'pos':'neg');
-  set('stUp',up.toFixed(0)+'%',up>=50?'pos':'neg');
-  set('stVar',var5.toFixed(2)+'%','neg');
-  set('stEnt',ent.toFixed(3),'neu');
-}
 
 /* ───────────────────────── wiring ───────────────────────── */
 function bindSlider(id,key,fmt,transform){
   const el=document.getElementById(id), out=document.getElementById('v'+id.slice(1));
+  if(!el) return;
   el.addEventListener('input',()=>{
     const raw=parseFloat(el.value);
     S[key]=transform?transform(raw):raw;
-    out.textContent=fmt(raw);
-    if(key==='bars') updateContextMonitor(); // real-time context tracking
+    if(out) out.textContent=fmt(raw);
+    if(key==='bars') updateContextMonitor();
   });
 }
 function toggleTheme(){
@@ -560,7 +827,7 @@ function toggleTheme(){
   const dark=!document.body.classList.contains('light-mode');
   document.getElementById('themeLabel').textContent=dark?'DARK':'LIGHT';
   document.getElementById('themeToggle').querySelector('.tt-icon').textContent=dark?'🌙':'☀';
-  if(chart){ // refresh axis colors + redraw
+  if(chart){
     chart.options.scales.x.grid.color=cssVar('--border');
     chart.options.scales.x.ticks.color=cssVar('--text4');
     chart.options.scales.x.border.color=cssVar('--border');
@@ -570,6 +837,28 @@ function toggleTheme(){
     chart.update('none');
   }
 }
+function applyNarrative(){
+  const text=document.getElementById('narrative').value;
+  const cards=parseNarrative(text);
+  const kgrid=document.getElementById('kgrid'); kgrid.innerHTML='';
+  cards.forEach(c=>{
+    const col=c.sentiment>=0?'var(--emerald)':'var(--red)';
+    const w=Math.round(Math.abs(c.sentiment)*100);
+    const div=document.createElement('div'); div.className='kcard';
+    div.innerHTML=`<div class="edge" style="background:${col}"></div>
+      <div class="name">${c.name}</div><div class="type">${c.type}</div>
+      <div class="sent" style="color:${col}">${c.sentiment>=0?'+':''}${c.sentiment.toFixed(2)} sentiment</div>
+      <div class="bar"><i style="width:${w}%;background:${col}"></i></div>`;
+    kgrid.appendChild(div);
+  });
+  const mult=volMultiplierFromCards(cards);
+  const arc=document.getElementById('gaugeArc');
+  const C=263.9, off=C*(1-(mult-1)/1.5*0.85+0.15);
+  arc.style.strokeDashoffset=clamp(C-off,0,C).toFixed(1);
+  arc.setAttribute('stroke', mult>1.6?'var(--red)':mult>1.3?'var(--gold)':'var(--emerald)');
+  document.getElementById('gaugeVal').textContent=mult.toFixed(2);
+  return mult;
+}
 window.addEventListener('DOMContentLoaded',()=>{
   buildChart();
   bindSlider('sBars','bars',v=>v,null);
@@ -578,8 +867,10 @@ window.addEventListener('DOMContentLoaded',()=>{
   bindSlider('sTemp','temp',v=>v.toFixed(2),null);
   bindSlider('sVol','vol',v=>v.toFixed(1)+'%',v=>v/100);
   bindSlider('sDrift','drift',v=>(v>=0?'+':'')+v.toFixed(2)+'%',v=>v/100);
-  document.getElementById('runBtn').addEventListener('click',render);
-  // real-data source wiring
+  bindSlider('sVolInj','volInject',v=>v.toFixed(2),null);
+  bindSlider('sSwarm','swarmBias',v=>(v*100).toFixed(0)+'%',null);
+  bindSlider('sShock','newsShock',v=>v,null);
+  // data source selector
   const srcSel=document.getElementById('sSource');
   const liveRow=document.getElementById('liveRow'), csvRow=document.getElementById('csvRow');
   srcSel.addEventListener('change',()=>{
@@ -593,6 +884,21 @@ window.addEventListener('DOMContentLoaded',()=>{
     else if(v==='csv'){ dn.textContent='Upload OHLCV CSV: time,open,high,low,close,volume (equities OK).'; dn.style.color='var(--text3)'; }
   });
   document.getElementById('loadBtn').addEventListener('click',loadRealData);
+  document.getElementById('runBtn').addEventListener('click',render);
+  document.getElementById('stressBtn').addEventListener('click',runStress);
+  document.getElementById('parseBtn').addEventListener('click',()=>{applyNarrative();});
+  document.getElementById('applyNarrBtn').addEventListener('click',()=>{
+    const mult=applyNarrative();
+    // map vol multiplier -> news shock so the cones widen realistically
+    const shock=Math.round((mult-1)/1.5*100);
+    S.newsShock=shock;
+    document.getElementById('sShock').value=shock;
+    document.getElementById('vShock').textContent=shock;
+    render();
+  });
+  // initial SOR entry sync
+  document.getElementById('sorEntry').addEventListener('change',e=>{ S.entry=parseFloat(e.target.value)||null; });
+  applyNarrative();
   render();
 });
 </script>
