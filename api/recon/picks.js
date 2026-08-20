@@ -9,9 +9,9 @@
 // read-only FS except /tmp) keyed by run window to avoid hammering upstreams.
 
 const https = require('https');
-const { convictionScore, tierOf, TIER_META, computeLevels } = require('./engine');
-const { insiderFor, insiderStrength } = require('./insider');
-const { congressionalRecent, congressionalStrength } = require('./congressional');
+const { convictionScore, tierOf, TIER_META, computeLevels } = require('../_lib/recon/engine');
+const { insiderFor, insiderStrength } = require('../_lib/recon/insider');
+const { congressionalRecent, congressionalStrength } = require('../_lib/recon/congressional');
 
 const UA = { 'User-Agent': 'Mozilla/5.0 (research; snipertrader.ai recon pipeline)' };
 const CACHE_TTL_MS = 30 * 60 * 1000;
@@ -241,7 +241,7 @@ if (require.main === module) {
   if (arg) {
     (async () => {
       const { buildSymbol } = require('./picks');
-      const cong = await require('./congressional').congressionalRecent(7);
+      const cong = await require('../_lib/recon/congressional').congressionalRecent(7);
       const r = await buildSymbol(arg, 'NASDAQ', cong);
       console.log(JSON.stringify(r, null, 2));
     })().catch((e) => { console.error('ERR', e); process.exit(1); });
