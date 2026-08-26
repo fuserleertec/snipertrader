@@ -788,6 +788,7 @@ function paint(r){
   renderSwarm(r.swarm);
   // actionable key levels (populate TV chart-exec buttons with real structural levels)
   populateKeyLevels(r, lastClose);
+  renderPartnerCard();   // populate dynamic execution-partner card (asset-class aware)
   // src tag
   const src=document.getElementById('srcTag');
   if(src){ let label='◌ LOCAL SIMULATION (Sniper Vector Matrix)';
@@ -1053,7 +1054,8 @@ window.addEventListener('DOMContentLoaded',()=>{
   // initial SOR entry sync
   document.getElementById('sorEntry').addEventListener('change',e=>{ S.entry=parseFloat(e.target.value)||null; });
   applyNarrative();
-  render();
+  initAffiliateLinks();   // wire VPS + TraderSync referral hrefs
+  render();               // runForecast → paint → renderPartnerCard()
 });
 </script>
 </body>
