@@ -22,7 +22,7 @@ const DEMO_TOKEN = process.env.ADMIN_DEMO_TOKEN || 'demo-admin-token';
 const PUBLIC_RESOURCES = [
   'profile', 'overview', 'alerts', 'sessions', 'modules',
   'licenses', 'billing', 'notifications', 'security', 'downloads',
-  'speciallicenses', 'memberaccess', 'propfirms'
+  'speciallicenses', 'memberaccess', 'propfirms', 'preflights'
 ];
 
 // URL segment → actual data key (camelCase) so GET /api/admin/propfirms resolves.

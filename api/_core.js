@@ -760,6 +760,91 @@ function buildReviewLoop(req, res) {
   });
 }
 
+/* ── TRADEREDGE PRE-FLIGHT PROTOCOL (POST /api/traderedge/preflight) ── */
+// Validates + normalizes the Pre-Flight payload, recomputes authorization
+// server-side (never trusts the client's authorizationStatus), and persists
+// the record to the admin oversight store (demo store — in-memory on Vercel
+// read-only FS, mirror file locally). Returns a strict, validated response.
+const NEURAL_STATES = ['FLOW', 'FOCUSED', 'NEUTRAL', 'ANXIOUS', 'REVENGE'];
+const GATE_KEYS = [
+  'gate01_level', 'gate02_liquidity', 'gate03_doji', 'gate04_close',
+  'gate05_entry', 'gate06_bos', 'gate07_slLocked', 'gate08_drawdownOk', 'gate09_maxLossesOk'
+];
+
+function clampInt(v, lo, hi, d) {
+  const n = Math.round(Number(v));
+  if (!Number.isFinite(n)) return d;
+  return Math.min(hi, Math.max(lo, n));
+}
+function str(v, max) {
+  return String(v == null ? '' : v).slice(0, max);
+}
+
+function buildPreflight(req, res) {
+  let body = '';
+  req.on('data', c => { body += c; if (body.length > 1e5) req.destroy(); });
+  req.on('end', () => {
+    let p;
+    try { p = JSON.parse(body || '{}'); }
+    catch (e) { res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'invalid JSON' })); }
+
+    const ns = (p && typeof p.neuralState === 'object') ? p.neuralState : {};
+    const gr = (p && typeof p.guardrails === 'object') ? p.guardrails : {};
+
+    const state = NEURAL_STATES.includes(ns.state) ? ns.state : 'NEUTRAL';
+    const neuralState = {
+      state,
+      stressLevel: clampInt(ns.stressLevel, 1, 10, 3),
+      sleepQuality: clampInt(ns.sleepQuality, 1, 10, 7),
+      focusClarity: clampInt(ns.focusClarity, 1, 10, 8),
+      heartRateBpm: clampInt(ns.heartRateBpm, 45, 220, 72),
+      journalEntry: str(ns.journalEntry, 2000)
+    };
+
+    // Boolean gates — coerce truthy/falsy; server recomputes the count.
+    const guardrails = {};
+    let passed = 0;
+    for (const k of GATE_KEYS) { guardrails[k] = !!gr[k]; if (guardrails[k]) passed++; }
+    guardrails.passedGatesCount = passed;
+
+    // Authoritative authorization (server-side, mirrors the frontend rules).
+    const revenge = state === 'REVENGE';
+    const guardBreach = !guardrails.gate07_slLocked || !guardrails.gate08_drawdownOk || !guardrails.gate09_maxLossesOk;
+    const anyFailed = GATE_KEYS.some(k => !guardrails[k]);
+    const safeState = state === 'FLOW' || state === 'FOCUSED';
+    const authorizationStatus = (revenge || guardBreach || anyFailed || !(safeState && passed === 9))
+      ? 'LOCKED_OUT' : 'AUTHORIZED';
+
+    const record = {
+      timestamp: p.timestamp && !Number.isNaN(Date.parse(p.timestamp)) ? new Date(p.timestamp).toISOString() : new Date().toISOString(),
+      userId: str(p.userId, 120) || 'local-trader',
+      neuralState,
+      guardrails,
+      authorizationStatus
+    };
+
+    // Persist to admin oversight store (honest demo layer).
+    let persisted = false;
+    try {
+      const store = require('./_lib/admin/store');
+      const data = store.load();
+      const list = Array.isArray(data.preflights) ? data.preflights : (data.preflights = []);
+      list.push(record);
+      if (list.length > 500) list.splice(0, list.length - 500);
+      persisted = store.save(data);
+    } catch (e) { persisted = false; }
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      ...record,
+      server: 'traderedge-preflight',
+      receivedAt: new Date().toISOString(),
+      persisted,
+      warning: persisted ? undefined : 'record accepted but not persisted (read-only environment) — in-memory only this session'
+    }));
+  });
+}
+
 module.exports = {
   MAX_CTX, MAX_BARS,
   mulberry32, gauss, genHistory, genPaths, computeBands, computeStats, runModel, runModelFull,
@@ -767,5 +852,6 @@ module.exports = {
   alpacaBars, alpacaGet, buildForecast, buildStocks, buildChat, buildPropAccount,
   ema, sma, rsi, macd, calcATR, scaleForScore, heuristicAnalysis, syntheticBars, buildDailyContext,
   normalizeDailyPayload, buildDailyPrompt, runDailyAnalysis, buildReviewLoop,
+  buildPreflight, NEURAL_STATES, GATE_KEYS,
   aiChat, isConfigured, PROVIDERS
 };

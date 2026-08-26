@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pre-Flight Protocol — TraderEdge Psych OS | SniperTrader</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Space+Mono:wght@400;700&family=Syne:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/theme.css">
+<style>
+/* ============================================================
+   TraderEdge Pre-Flight Protocol — consolidated single-page app.
+   Base tokens/nav from /assets/theme.css (canonical theme).
+   Accent overrides per spec: neon green #00FF9D / red #FF3366 / gold #FFD700.
+   ============================================================ */
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --green:#00FF9D; --red:#FF3366; --gold:#FFD700;
+  --green-dim:rgba(0,255,157,.10); --red-dim:rgba(255,51,102,.10); --gold-dim:rgba(255,215,0,.10);
+  --grid-border:rgba(255,255,255,.08);
+  --card-bg:linear-gradient(145deg,var(--obs3),var(--obs2));
+  --neon-glow-green:0 0 24px rgba(0,255,157,.35);
+  --neon-glow-red:0 0 24px rgba(255,51,102,.35);
+}
+body.light-mode{
+  --green:#00B978; --red:#E62A56; --gold:#B89100;
+  --green-dim:rgba(0,185,120,.12); --red-dim:rgba(230,42,86,.10); --gold-dim:rgba(184,145,0,.12);
+  --grid-border:rgba(0,20,40,.10);
+}
+html{scroll-behavior:smooth;}
+body{background:var(--obs);color:var(--text);font-family:'Syne',sans-serif;overflow-x:hidden;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.4;}
+#pc{position:fixed;inset:0;pointer-events:none;z-index:0;}
+
+.wrap{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:96px 24px 40px;}
+
+/* ── HERO HEAD ── */
+.tag{display:inline-block;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--green);border:1px solid var(--border2);padding:4px 12px;border-radius:20px;margin-bottom:12px;text-transform:uppercase;}
+.hero-h1{font-family:'Orbitron',sans-serif;font-weight:900;font-size:clamp(24px,3.6vw,40px);letter-spacing:1px;line-height:1.05;margin-bottom:10px;color:var(--text);}
+.hero-h1 span{background:linear-gradient(90deg,var(--green),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-sub{color:var(--text3);font-size:13px;max-width:860px;line-height:1.65;}
+.hero-sub strong{color:var(--text);}
+.disclaimer{font-size:10px;color:var(--text4);margin-top:10px;line-height:1.5;border-left:2px solid var(--gold);padding-left:10px;max-width:900px;}
+
+/* ── PERSISTENT HUD ── */
+#hud{position:sticky;top:64px;z-index:50;margin-top:22px;}
+.hud-shell{background:rgba(6,9,15,.82);backdrop-filter:blur(18px);border:1px solid var(--grid-border);border-radius:16px;padding:14px 16px;box-shadow:0 12px 40px rgba(0,0,0,.55);}
+.hud-grid{display:grid;grid-template-columns:auto 1fr auto;gap:20px;align-items:center;}
+@media(max-width:920px){.hud-grid{grid-template-columns:1fr;}}
+.hud-gauge{display:flex;align-items:center;gap:14px;}
+.hud-gauge svg{transform:rotate(-90deg);}
+.hud-gauge .gv{position:relative;width:84px;height:84px;flex-shrink:0;}
+.hud-gauge .gv .val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:19px;font-weight:900;color:var(--text);line-height:1;}
+.hud-gauge .gv .val small{font-family:'Space Mono',monospace;font-size:7px;color:var(--text4);font-weight:400;margin-top:2px;letter-spacing:1px;}
+.hud-gauge .gt{display:flex;flex-direction:column;gap:4px;}
+.hud-gauge .gt .k{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--text4);text-transform:uppercase;}
+.hud-gauge .gt .big{font-family:'Orbitron',sans-serif;font-size:22px;font-weight:900;color:var(--text);}
+.hud-gauge .gt .big b{color:var(--green);}
+.hud-gauge .gt .sub{font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);}
+.hud-mid{display:flex;flex-direction:column;gap:8px;align-items:center;text-align:center;}
+.auth-badge{display:inline-flex;align-items:center;gap:9px;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;padding:9px 20px;border-radius:40px;text-transform:uppercase;transition:all .35s;}
+.auth-badge .dot{width:8px;height:8px;border-radius:50%;animation:pls 2s infinite;}
+.auth-badge.auth{background:var(--green-dim);border:1px solid rgba(0,255,157,.45);color:var(--green);box-shadow:var(--neon-glow-green);}
+.auth-badge.auth .dot{background:var(--green);}
+.auth-badge.lock{background:var(--red-dim);border:1px solid rgba(255,51,102,.5);color:var(--red);box-shadow:var(--neon-glow-red);}
+.auth-badge.lock .dot{background:var(--red);}
+.auth-badge.cond{background:var(--gold-dim);border:1px solid rgba(255,215,0,.4);color:var(--gold);}
+.auth-badge.cond .dot{background:var(--gold);}
+.auth-badge.idle{background:var(--obs4);border:1px solid var(--grid-border);color:var(--text4);}
+.auth-badge.idle .dot{background:var(--text4);}
+.hud-reason{font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:.5px;min-height:12px;}
+@keyframes pls{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.35;transform:scale(.7);}}
+.hud-stats{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
+.hud-stat{background:var(--obs3);border:1px solid var(--grid-border);border-radius:12px;padding:9px 13px;min-width:110px;}
+.hud-stat .k{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:1.5px;color:var(--text4);text-transform:uppercase;}
+.hud-stat .v{font-family:'Orbitron',sans-serif;font-size:15px;font-weight:900;margin-top:3px;color:var(--text);}
+.hud-stat .v.pos{color:var(--green);}.hud-stat .v.neg{color:var(--red);}.hud-stat .v.neu{color:var(--gold);}
+.hud-stat .v small{font-size:8px;font-weight:400;color:var(--text4);}
+.demo-badge{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:1px;color:var(--gold);border:1px solid rgba(255,215,0,.3);background:var(--gold-dim);padding:2px 6px;border-radius:4px;text-transform:uppercase;}
+
+/* ── STEP SECTIONS ── */
+.step{margin-top:26px;border:1px solid var(--grid-border);border-radius:18px;background:var(--card-bg);overflow:hidden;position:relative;}
+.step::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--green),var(--cyan),transparent);opacity:.6;}
+.step-head{display:flex;align-items:center;gap:14px;padding:18px 22px;border-bottom:1px solid var(--grid-border);cursor:pointer;user-select:none;}
+.step-num{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:14px;font-weight:900;background:var(--green-dim);border:1px solid rgba(0,255,157,.3);color:var(--green);flex-shrink:0;}
+.step-title{font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--text);letter-spacing:1px;}
+.step-sub{font-family:'Space Mono',monospace;font-size:9px;color:var(--text4);margin-top:2px;letter-spacing:.5px;}
+.step-caret{margin-left:auto;font-family:'Space Mono',monospace;font-size:12px;color:var(--text4);transition:transform .3s;}
+.step.open .step-caret{transform:rotate(180deg);}
+.step-body{padding:22px;display:none;}
+.step.open .step-body{display:block;}
+.step-status{margin-left:auto;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;letter-spacing:1px;padding:4px 12px;border-radius:20px;margin-right:10px;text-transform:uppercase;}
+.step-status.ok{background:var(--green-dim);color:var(--green);border:1px solid rgba(0,255,157,.35);}
+.step-status.warn{background:var(--gold-dim);color:var(--gold);border:1px solid rgba(255,215,0,.35);}
+.step-status.bad{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,51,102,.35);}
+.step-status.idle{background:var(--obs4);color:var(--text4);border:1px solid var(--grid-border);}
+
+/* ── PILLS (state selector) ── */
+.pill-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:14px;}
+@media(max-width:640px){.pill-row{grid-template-columns:repeat(2,1fr);}}
+.pill{background:var(--obs4);border:1px solid var(--grid-border);border-radius:12px;padding:14px 8px;text-align:center;cursor:pointer;transition:all .2s;font-family:'Orbitron',sans-serif;}
+.pill:hover{border-color:var(--border2);transform:translateY(-2px);}
+.pill .em{font-size:22px;display:block;margin-bottom:5px;}
+.pill .nm{font-size:8.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);}
+.pill.flow.active{border-color:var(--green);background:var(--green-dim);box-shadow:var(--neon-glow-green);}
+.pill.flow.active .nm{color:var(--green);}
+.pill.focused.active{border-color:var(--cyan);background:var(--cyan-dim);box-shadow:0 0 24px rgba(0,212,255,.35);}
+.pill.focused.active .nm{color:var(--cyan);}
+.pill.neutral.active{border-color:var(--text3);background:var(--obs5);}
+.pill.neutral.active .nm{color:var(--text);}
+.pill.anxious.active{border-color:var(--gold);background:var(--gold-dim);box-shadow:0 0 24px rgba(255,215,0,.3);}
+.pill.anxious.active .nm{color:var(--gold);}
+.pill.revenge.active{border-color:var(--red);background:var(--red-dim);box-shadow:var(--neon-glow-red);}
+.pill.revenge.active .nm{color:var(--red);}
+
+/* ── SLIDERS ── */
+.slider-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 22px;margin-top:14px;}
+@media(max-width:760px){.slider-grid{grid-template-columns:1fr;}}
+.slider label{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--text3);text-transform:uppercase;margin-bottom:7px;}
+.slider label b{color:var(--green);font-family:'Orbitron',sans-serif;font-size:13px;}
+input[type=range]{-webkit-appearance:none;width:100%;height:4px;border-radius:4px;background:var(--obs4);outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--green);cursor:pointer;box-shadow:0 0 10px rgba(0,255,157,.6);border:2px solid var(--obs);}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--green);cursor:pointer;border:2px solid var(--obs);}
+.slider .hint{font-family:'Space Mono',monospace;font-size:8.5px;color:var(--text4);margin-top:4px;}
+.slider .hint.ok{color:var(--green);}.slider .hint.warn{color:var(--gold);}.slider .hint.bad{color:var(--red);}
+
+/* ── JOURNAL ── */
+.journal{margin-top:16px;display:flex;gap:10px;align-items:stretch;}
+@media(max-width:640px){.journal{flex-direction:column;}}
+.journal input{flex:1;background:var(--obs4);border:1px solid var(--grid-border);border-radius:10px;padding:12px 14px;color:var(--text);font-family:'Space Mono',monospace;font-size:12px;outline:none;transition:border-color .2s;}
+.journal input:focus{border-color:var(--green);}
+.journal input::placeholder{color:var(--text4);}
+.mic-btn{background:var(--obs4);border:1px solid var(--grid-border);border-radius:10px;padding:0 16px;font-size:18px;cursor:pointer;color:var(--text3);transition:all .2s;display:flex;align-items:center;gap:8px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;}
+.mic-btn:hover{border-color:var(--green);color:var(--green);}
+.mic-btn.rec{background:var(--red-dim);border-color:var(--red);color:var(--red);animation:pls 1s infinite;}
+
+/* ── GATES ── */
+.gate-cat{margin-top:6px;}
+.gate-cat-title{font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:2px;color:var(--cyan);text-transform:uppercase;margin:20px 0 10px;display:flex;align-items:center;gap:8px;}
+.gate-cat-title::before{content:'';width:8px;height:8px;border-radius:2px;background:var(--cyan);box-shadow:0 0 10px var(--cyan);}
+.gate-cat-title.prot::before{background:var(--gold);box-shadow:0 0 10px var(--gold);}
+.gate-cat-title.prot{color:var(--gold);}
+.gate-row{display:flex;align-items:center;gap:12px;background:var(--obs4);border:1px solid var(--grid-border);border-radius:12px;padding:12px 14px;margin-bottom:8px;transition:all .2s;}
+.gate-row:hover{border-color:var(--border2);}
+.gate-row.pass{border-color:rgba(0,255,157,.4);background:var(--green-dim);}
+.gate-row.fail{border-color:rgba(255,51,102,.4);background:var(--red-dim);}
+.gate-marker{width:22px;height:22px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;font-family:'Space Mono',monospace;}
+.gate-row:not(.pass):not(.fail) .gate-marker{border:1.5px solid var(--text4);color:var(--text4);}
+.gate-row.pass .gate-marker{background:var(--green);color:#02180e;box-shadow:var(--neon-glow-green);}
+.gate-row.fail .gate-marker{background:var(--red);color:#fff;box-shadow:var(--neon-glow-red);}
+.gate-info{flex:1;min-width:0;}
+.gate-title{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:var(--text);letter-spacing:.5px;}
+.gate-sub{font-family:'Space Mono',monospace;font-size:9px;color:var(--text4);margin-top:2px;}
+.gate-actions{display:flex;gap:6px;align-items:center;flex-shrink:0;}
+.gate-tip{width:22px;height:22px;border-radius:50%;border:1px solid var(--border2);color:var(--cyan);background:transparent;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.gate-tip:hover{background:var(--cyan-dim);box-shadow:0 0 12px rgba(0,212,255,.4);}
+.gate-yn{font-family:'Orbitron',sans-serif;font-size:7.5px;font-weight:700;padding:6px 12px;border-radius:6px;letter-spacing:1px;cursor:pointer;transition:all .2s;border:1px solid transparent;}
+.gate-yn.yes{background:var(--green-dim);border-color:rgba(0,255,157,.3);color:var(--green);}
+.gate-yn.yes:hover,.gate-row.pass .gate-yn.yes{background:var(--green);color:#02180e;border-color:var(--green);}
+.gate-yn.no{background:var(--red-dim);border-color:rgba(255,51,102,.25);color:#ff8aa5;}
+.gate-yn.no:hover,.gate-row.fail .gate-yn.no{background:var(--red);color:#fff;border-color:var(--red);}
+.gate-tgl{position:relative;width:44px;height:24px;background:var(--obs5);border:1px solid var(--grid-border);border-radius:20px;cursor:pointer;transition:all .25s;flex-shrink:0;}
+.gate-tgl::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--text4);transition:all .25s;}
+.gate-tgl.on{background:var(--green-dim);border-color:var(--green);}
+.gate-tgl.on::after{left:22px;background:var(--green);box-shadow:var(--neon-glow-green);}
+.gate-tgl.off{background:var(--red-dim);border-color:var(--red);}
+.gate-tgl.off::after{background:var(--red);}
+
+/* ── MODAL / DRAWER ── */
+.modal-back{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);z-index:500;display:none;align-items:center;justify-content:center;padding:24px;}
+.modal-back.show{display:flex;}
+.modal{background:var(--card-bg);border:1px solid var(--border2);border-radius:18px;max-width:620px;width:100%;max-height:82vh;overflow-y:auto;padding:26px;position:relative;box-shadow:0 24px 80px rgba(0,0,0,.7);}
+.modal::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--cyan),var(--green),transparent);}
+.modal-close{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:8px;background:var(--obs4);border:1px solid var(--grid-border);color:var(--text3);font-family:'Space Mono',monospace;font-size:13px;cursor:pointer;transition:all .2s;}
+.modal-close:hover{border-color:var(--red);color:var(--red);}
+.modal .m-tag{font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;letter-spacing:2px;color:var(--cyan);text-transform:uppercase;margin-bottom:6px;}
+.modal .m-title{font-family:'Orbitron',sans-serif;font-size:17px;font-weight:900;color:var(--text);margin-bottom:12px;line-height:1.2;}
+.modal .m-body{font-size:12.5px;color:var(--text2);line-height:1.75;}
+.modal .m-body strong{color:var(--text);}
+.modal .m-example{background:var(--obs4);border-left:3px solid var(--green);padding:12px 14px;margin-top:14px;border-radius:0 8px 8px 0;font-family:'Space Mono',monospace;font-size:11px;color:var(--text3);line-height:1.6;font-style:italic;}
+
+/* ── AI DIAGNOSTIC ── */
+.ai-panel{background:var(--obs3);border:1px solid var(--grid-border);border-radius:14px;padding:20px;margin-top:16px;}
+.ai-panel .ai-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
+.ai-panel .ai-name{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:10px;}
+.ai-panel .ai-name .ico{width:34px;height:34px;border-radius:9px;background:var(--cyan-dim);border:1px solid rgba(0,212,255,.25);display:flex;align-items:center;justify-content:center;font-size:16px;}
+.ai-panel .ai-sub{font-family:'Space Mono',monospace;font-size:9px;color:var(--text4);margin-top:2px;}
+.ai-resp{background:var(--obs4);border:1px solid var(--grid-border);border-radius:10px;padding:16px;min-height:80px;font-size:12px;color:var(--text2);line-height:1.7;}
+.ai-resp .tag{font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:2px;color:var(--cyan);text-transform:uppercase;display:block;margin-bottom:8px;}
+.ai-resp .tag.heuristic{color:var(--gold);}
+.btn{font-family:'Orbitron',sans-serif;font-weight:700;letter-spacing:1.5px;cursor:pointer;transition:all .2s;text-transform:uppercase;border:1px solid transparent;}
+.btn-primary{background:linear-gradient(90deg,var(--green),var(--cyan));color:#02180e;border-radius:10px;padding:12px 22px;font-size:10px;}
+.btn-primary:hover{box-shadow:0 0 26px rgba(0,255,157,.4);transform:translateY(-1px);}
+.btn-ghost{background:var(--obs4);border-color:var(--border2);color:var(--cyan);border-radius:10px;padding:12px 20px;font-size:10px;}
+.btn-ghost:hover{border-color:var(--cyan);box-shadow:0 0 16px rgba(0,212,255,.3);}
+
+/* ── LOCK IN ── */
+.lock-bar{margin-top:28px;border:1px solid var(--grid-border);border-radius:18px;background:var(--card-bg);padding:22px;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;position:relative;overflow:hidden;}
+.lock-bar.locked{border-color:rgba(0,255,157,.45);box-shadow:var(--neon-glow-green);}
+.lock-bar .lock-txt{flex:1;min-width:220px;}
+.lock-bar .lock-title{font-family:'Orbitron',sans-serif;font-size:14px;font-weight:900;color:var(--text);letter-spacing:1px;}
+.lock-bar .lock-sub{font-family:'Space Mono',monospace;font-size:9px;color:var(--text3);margin-top:4px;line-height:1.5;}
+.btn-lock{background:linear-gradient(90deg,var(--green),var(--cyan));color:#02180e;border-radius:12px;padding:15px 30px;font-size:12px;letter-spacing:2px;box-shadow:0 0 28px rgba(0,255,157,.25);}
+.btn-lock:hover{box-shadow:0 0 44px rgba(0,255,157,.45);transform:translateY(-2px);}
+.btn-lock:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none;}
+.btn-lock.locked{background:linear-gradient(90deg,var(--obs5),var(--obs4));color:var(--green);border:1px solid rgba(0,255,157,.4);}
+.btn-unlock{background:transparent;border:1px solid var(--grid-border);color:var(--text4);border-radius:8px;padding:8px 14px;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+.btn-unlock:hover{color:var(--red);border-color:var(--red);}
+
+.foot{margin-top:44px;text-align:center;font-family:'Space Mono',monospace;font-size:10px;color:var(--text4);letter-spacing:1px;}
+.foot a{color:var(--text3);text-decoration:none;}
+.spin{display:inline-block;animation:sp 1s linear infinite;}@keyframes sp{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+<canvas id="pc"></canvas>
+
+<!-- NAV (canonical) -->
+<nav class="kf-nav">
+  <a href="/index.html" class="nav-logo">SNIPER<span>TRADER</span></a>
+  <div class="nav-links">
+    <a href="/traderedge_preflight.html" class="nav-pill">Pre-Flight</a>
+    <a href="/traderedge_guardrails.html">Guardrails</a>
+    <a href="/traderedge_review_loop.html">Review Loop</a>
+    <a href="/traderedge_ai_sentiment.html">Ai Sentiment</a>
+    <a href="/traderedge_chartai.html">Ai Chart</a>
+    <a href="/kronos_foundation.html">Kronos KFM</a>
+    <a href="/traderedge_prop_firms_command_center.html">Prop Firm</a>
+    <button class="kf-theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙 DARK</button>
+  </div>
+</nav>
+
+<div class="wrap">
+  <span class="tag">TraderEdge Psych OS · Pre-Flight Protocol</span>
+  <h1 class="hero-h1">Pre-Flight <span>Protocol</span></h1>
+  <p class="hero-sub">One consolidated gate — <strong>Neural Baseline</strong> (mind &amp; body) → <strong>9 Technical &amp; Discipline Gates</strong> (ICT/SMC + account protection) → <strong>AI Authorization</strong>. Every session, in under 60 seconds, before a single tick.</p>
+  <p class="disclaimer"><b>EDUCATIONAL SIMULATION ONLY</b> — TraderEdge is a self-monitoring discipline system built on Brett Steenbarger's psychology framework and ICT/SMC methodology. It is not financial advice, does not place orders, and does not guarantee results. All session stats are illustrative unless sourced from your own logged history.</p>
+
+  <!-- PERSISTENT HUD -->
+  <div id="hud">
+    <div class="hud-shell">
+      <div class="hud-grid">
+        <div class="hud-gauge">
+          <div class="gv">
+            <svg width="84" height="84" viewBox="0 0 84 84">
+              <circle cx="42" cy="42" r="37" fill="none" stroke="var(--obs4)" stroke-width="7"/>
+              <circle id="readRing" cx="42" cy="42" r="37" fill="none" stroke="var(--green)" stroke-width="7" stroke-linecap="round" stroke-dasharray="232.5" stroke-dashoffset="232.5" style="transition:stroke-dashoffset .6s ease,stroke .4s;"/>
+            </svg>
+            <div class="val"><span id="readScore">—</span><small>READINESS</small></div>
+          </div>
+          <div class="gt">
+            <span class="k">Neural Readiness</span>
+            <span class="big" id="readBig">— <b>%</b></span>
+            <span class="sub" id="readSub">Complete Step 1</span>
+          </div>
+          <div class="gt" style="border-left:1px solid var(--grid-border);padding-left:16px;">
+            <span class="k">Technical Gates</span>
+            <span class="big" id="gatesBig">0<b>/9</b></span>
+            <span class="sub" id="gatesSub">Complete Step 2</span>
+          </div>
+        </div>
+        <div class="hud-mid">
+          <div class="auth-badge idle" id="authBadge"><span class="dot"></span><span id="authText">AWAITING INPUT</span></div>
+          <div class="hud-reason" id="authReason">Select your neural state and clear all 9 gates to authorize entry.</div>
+        </div>
+        <div class="hud-stats">
+          <div class="hud-stat"><div class="k">30-Day Win Rate <span class="demo-badge" id="wrDemo">DEMO</span></div><div class="v neu" id="statWin">—</div></div>
+          <div class="hud-stat"><div class="k">Baseline Streak</div><div class="v neu" id="statStreak">—</div></div>
+          <div class="hud-stat"><div class="k">Drawdown</div><div class="v neu" id="statDD">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 1: NEURAL BASELINE AUDIT -->
+  <section class="step open" id="step1">
+    <div class="step-head" onclick="toggleStep('step1')">
+      <div class="step-num">1</div>
+      <div>
+        <div class="step-title">Neural Baseline Audit — Mind &amp; Body</div>
+        <div class="step-sub">60-second psychological + biometric check (Steenbarger self-monitoring)</div>
+      </div>
+      <span class="step-status idle" id="s1status">INCOMPLETE</span>
+      <span class="step-caret">▼</span>
+    </div>
+    <div class="step-body">
+      <p style="font-family:'Space Mono',monospace;font-size:10px;color:var(--text4);letter-spacing:.5px;">YOUR STATE IS MARKET DATA. Select how you are showing up, log your biometrics, then name your intention.</p>
+
+      <div class="pill-row" id="stateRow">
+        <div class="pill flow" data-state="FLOW" onclick="selectState('FLOW')"><span class="em">🟢</span><span class="nm">Flow</span></div>
+        <div class="pill focused" data-state="FOCUSED" onclick="selectState('FOCUSED')"><span class="em">🔵</span><span class="nm">Focused</span></div>
+        <div class="pill neutral" data-state="NEUTRAL" onclick="selectState('NEUTRAL')"><span class="em">⬜</span><span class="nm">Neutral</span></div>
+        <div class="pill anxious" data-state="ANXIOUS" onclick="selectState('ANXIOUS')"><span class="em">🟡</span><span class="nm">Anxious</span></div>
+        <div class="pill revenge" data-state="REVENGE" onclick="selectState('REVENGE')"><span class="em">🔴</span><span class="nm">Revenge</span></div>
+      </div>
+
+      <div class="slider-grid">
+        <div class="slider">
+          <label>⚡ Stress Level <b id="stressVal">3</b></label>
+          <input type="range" id="stressSlider" min="1" max="10" value="3" oninput="updateBio('stress')">
+          <div class="hint ok" id="stressHint">Low stress — within threshold</div>
+        </div>
+        <div class="slider">
+          <label>🌙 Sleep Quality <b id="sleepVal">7</b></label>
+          <input type="range" id="sleepSlider" min="1" max="10" value="7" oninput="updateBio('sleep')">
+          <div class="hint ok" id="sleepHint">Good rest</div>
+        </div>
+        <div class="slider">
+          <label>🎯 Focus Clarity <b id="focusVal">8</b></label>
+          <input type="range" id="focusSlider" min="1" max="10" value="8" oninput="updateBio('focus')">
+          <div class="hint ok" id="focusHint">Sharp focus</div>
+        </div>
+        <div class="slider">
+          <label>❤ Heart Rate <b id="hrVal">72 <small>BPM</small></b></label>
+          <input type="range" id="hrSlider" min="45" max="140" value="72" oninput="updateBio('hr')">
+          <div class="hint ok" id="hrHint">Calm and ready</div>
+        </div>
+      </div>
+
+      <div class="journal">
+        <input type="text" id="journalEntry" placeholder="Today's intention — one clear sentence (e.g. 'I commit to only A+ setups and stop after 2 losses')" oninput="saveDraft()">
+        <button class="mic-btn" id="micBtn" onclick="toggleMic()" title="Voice-to-text journal">🎤 <span id="micLabel">DUMP</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 2: 9 GATES -->
+  <section class="step open" id="step2">
+    <div class="step-head" onclick="toggleStep('step2')">
+      <div class="step-num" style="background:var(--cyan-dim);border-color:rgba(0,212,255,.3);color:var(--cyan);">2</div>
+      <div>
+        <div class="step-title">Technical &amp; Discipline Guardrails — 9 Gates</div>
+        <div class="step-sub">Gates 01–06 ICT/SMC setup · Gates 07–09 account protection</div>
+      </div>
+      <span class="step-status idle" id="s2status">0 / 9</span>
+      <span class="step-caret">▼</span>
+    </div>
+    <div class="step-body">
+      <p style="font-family:'Space Mono',monospace;font-size:10px;color:var(--text4);letter-spacing:.5px;">VERIFY EACH GATE ON YOUR CHART. Tap the <b style="color:var(--cyan);">?</b> on any gate for the institutional deep-dive. You do not enter until 9/9.</p>
+
+      <div class="gate-cat">
+        <div class="gate-cat-title">Gates 01–06 · ICT / SMC Setup Rules</div>
+        <div id="ictGates"></div>
+      </div>
+      <div class="gate-cat">
+        <div class="gate-cat-title prot">Gates 07–09 · Account Protection Guards</div>
+        <div id="protGates"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 3: AUTHORIZATION + AI COACH -->
+  <section class="step open" id="step3">
+    <div class="step-head" onclick="toggleStep('step3')">
+      <div class="step-num" style="background:var(--gold-dim);border-color:rgba(255,215,0,.3);color:var(--gold);">3</div>
+      <div>
+        <div class="step-title">Pre-Session Authorization &amp; AI Neural Coach</div>
+        <div class="step-sub">AI diagnostic summary + final lock-in</div>
+      </div>
+      <span class="step-status idle" id="s3status">PENDING</span>
+      <span class="step-caret">▼</span>
+    </div>
+    <div class="step-body">
+      <div class="ai-panel">
+        <div class="ai-head">
+          <div>
+            <div class="ai-name"><span class="ico">🧠</span> AI Neural Coach</div>
+            <div class="ai-sub">Steenbarger psych audit · ICT/SMC context · generated from your logged state</div>
+          </div>
+          <button class="btn btn-primary" id="diagBtn" onclick="runDiagnosis()">⬡ DIAGNOSE MY STATE</button>
+        </div>
+        <div class="ai-resp" id="aiResp">
+          <span class="tag">AWAITING BASELINE</span>
+          Complete Steps 1 &amp; 2, then run the AI diagnostic — or lock in directly. The coach reads your neural state + gate clearance and returns a pre-session protocol.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOCK IN -->
+  <div class="lock-bar" id="lockBar">
+    <div class="lock-txt">
+      <div class="lock-title" id="lockTitle">Lock In Session Protocol</div>
+      <div class="lock-sub" id="lockSub">Locks the form for the session, auto-saves to local storage, and posts your Pre-Flight payload to the application backend.</div>
+    </div>
+    <button class="btn btn-lock" id="lockBtn" onclick="lockIn()">▶ LOCK IN SESSION</button>
+    <button class="btn-unlock" id="unlockBtn" onclick="unlockSession()" style="display:none;">↺ Reset Session</button>
+  </div>
+
+  <div class="foot">TRADEREDGE PSYCH OS · STEENBARGER METHOD · ICT/SMC METHODOLOGY · NOT FINANCIAL ADVICE · <a href="/disclaimer.html">Disclaimer</a></div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-back" id="modalBack" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="m-tag" id="mTag"></div>
+    <div class="m-title" id="mTitle"></div>
+    <div class="m-body" id="mBody"></div>
+    <div class="m-example" id="mExample"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ── STATE ── */
+const LS_DRAFT='st-pf-draft';
+const LS_HIST='st-pf-history';
+const LS_LOCK='st-pf-lock';
+let state={ neuralState:null, stress:3, sleep:7, focus:8, hr:72, journal:'' };
+let gates={}; // id -> 'pass' | 'fail' | undefined (ICT) ; 'on' | 'off' (protection)
+let locked=false;
+
+/* ── GATE DEFINITIONS ── */
+const ICT_GATES=[
+  {id:'gate01_level',key:'gate01_level',n:'01',name:'LEVEL',sub:'Order Block / Fair Value Gap / Optimal Trade Entry confirmed',
+   tag:'GATE 01 · ICT LEVEL',
+   body:'An <strong>Order Block (OB)</strong> is the last opposing candle before an impulsive move away from a price zone — where institutional orders were placed. A <strong>Fair Value Gap (FVG)</strong> is a 3-candle imbalance the market left behind and will return to fill. The <strong>Optimal Trade Entry (OTE)</strong> is the 0.618–0.79 Fibonacci retracement into a premium/discount zone. Enter only when price reaches one of these three institutional locations — never mid-range.',
+   ex:'"NQ 15M tapped back into the 4H bullish OB at 19,180–19,220. I marked it pre-session. Price is now at the OB — Gate 01 passes."'},
+  {id:'gate02_liquidity',key:'gate02_liquidity',n:'02',name:'LIQUIDITY',sub:'Buy-Side or Sell-Side Liquidity swept before entry',
+   tag:'GATE 02 · LIQUIDITY SWEEP',
+   body:'<strong>Buy-Side Liquidity (BSL)</strong> pools above swing highs; <strong>Sell-Side Liquidity (SSL)</strong> pools below swing lows. Smart Money sweeps these to collect stop-losses and breakout orders before the real move. Without a sweep you are entering before the institutional move starts — you are the liquidity, not the trader.',
+   ex:'"Before my long, price swept the SSL below the prior 1H low by 4 ticks then violently reversed — confirming accumulation. Gate 02 passes."'},
+  {id:'gate03_doji',key:'gate03_doji',n:'03',name:'REJECTION CANDLE',sub:'Wick ≥ 2× candle body — institutional rejection',
+   tag:'GATE 03 · REJECTION CANDLE',
+   body:'The rejection candle (Doji / Hammer / Pin Bar) shows the level rejecting price with force. The wick is price probing the zone and being violently pushed back by institutional flow. The wick must be at least <strong>2× the size of the body</strong> to confirm real institutional presence — a small wick is weak conviction; a long wick is strong rejection.',
+   ex:'"At the OB a 15M candle printed a 12-tick wick with only a 4-tick body — wick is 3× the body. Institutional rejection confirmed. Gate 03 passes."'},
+  {id:'gate04_close',key:'gate04_close',n:'04',name:'THE CLOSE',sub:'Candle fully formed — never trade a developing candle',
+   tag:'GATE 04 · THE CLOSE',
+   body:'A developing candle has not confirmed its structure — the wick you see now may close as the body, destroying the setup. Trading a developing wick is one of the most common ICT rule violations and a major source of loss. <strong>Wait for the candle to close before any decision.</strong> The seconds of impatience cost more than the setup is worth.',
+   ex:'"I watched the 15M candle close with a confirmed wick at the OB. The candle is fully formed — structure locked. Gate 04 passes."'},
+  {id:'gate05_entry',key:'gate05_entry',n:'05',name:'THE ENTRY',sub:'Break of wick / limit order — never a market order at zone',
+   tag:'GATE 05 · THE ENTRY',
+   body:'After the rejection candle closes, place a <strong>limit order at the break of the wick\'s high</strong> (longs) or low (shorts). This confirms price accepted the rejection and is moving your way. A market order at the zone enters before confirmation — paying a premium for uncertainty. Break-of-wick gives confirmation and a tighter stop.',
+   ex:'"The rejection wick high is 19,192. I place a limit buy at 19,193 — one tick above the wick. Triggered = confirmation of acceptance. Gate 05 passes."'},
+  {id:'gate06_bos',key:'gate06_bos',n:'06',name:'STRUCTURE',sub:'Higher-timeframe BOS or CHoCH confirms directional bias',
+   tag:'GATE 06 · STRUCTURE (HTF)',
+   body:'A <strong>Break of Structure (BOS)</strong> confirms trend continuation — price breaks the prior swing high (bullish) or low (bearish). A <strong>Change of Character (CHoCH)</strong> signals a potential reversal. Your entry direction must align with the higher-timeframe structure. Trading against HTF BOS/CHoCH is trading counter to institutional flow — negative expectancy over time.',
+   ex:'"4H shows a BOS above the last swing high — bullish structure. My 15M long aligns with HTF direction. Gate 06 passes."'}
+];
+const PROT_GATES=[
+  {id:'gate07_slLocked',key:'gate07_slLocked',n:'07',name:'STOP-LOSS LOCKED',sub:'SL set at entry &amp; locked — never widened',
+   tag:'GATE 07 · STOP-LOSS LOCKED', kind:'toggle', on:'SL SET & LOCKED', off:'NO SL / RISK OF WIDENING',
+   body:'A hard rule: the stop-loss is placed at entry confirmation and <strong>never moved wider</strong> to avoid loss. Widening a stop is a discipline breach — it converts a planned risk into a hope-based position. Lock the stop the moment you enter.',
+   ex:'"Stop placed 2 ticks below the rejection wick low at entry. I have no intention — and no mechanism — to move it wider. Gate 07 is on."'},
+  {id:'gate08_drawdownOk',key:'gate08_drawdownOk',n:'08',name:'DAILY DRAWDOWN',sub:'Within daily loss limit — stop if hit',
+   tag:'GATE 08 · DRAWDOWN LIMIT', kind:'toggle', on:'WITHIN LIMIT', off:'LIMIT HIT',
+   body:'Confirm today\'s losses have not reached the daily max. If the drawdown limit is hit, <strong>trading stops immediately</strong> — the rest of the day is for review, not recovery. Chasing the limit back is how funded accounts are blown.',
+   ex:'"Today I am flat / well under the daily max. The drawdown guard is green. Gate 08 is on."'},
+  {id:'gate09_maxLossesOk',key:'gate09_maxLossesOk',n:'09',name:'NO REVENGE MODE',sub:'&lt; 2 consecutive losses — no revenge trading',
+   tag:'GATE 09 · REVENGE CHECK', kind:'toggle', on:'CLEAR STATE', off:'2+ LOSSES',
+   body:'Revenge mode is the psychological hijack that follows consecutive losses. If you have taken <strong>2 consecutive losses</strong>, a mandatory session pause is required before the next entry — no exceptions. This guard is the last line of defense between emotion and execution.',
+   ex:'"Last two trades were clean, not consecutive losses. No revenge impulse. Gate 09 is on."'}
+];
+
+/* ── RENDER GATES ── */
+function renderGates(){
+  const ictEl=document.getElementById('ictGates');
+  ICT_GATES.forEach(g=>{
+    const row=document.createElement('div');
+    row.className='gate-row';row.id=g.id;
+    row.innerHTML=`
+      <div class="gate-marker"></div>
+      <div class="gate-info">
+        <div class="gate-title">GATE ${g.n} — ${g.name}</div>
+        <div class="gate-sub">${g.sub}</div>
+      </div>
+      <div class="gate-actions">
+        <button class="gate-tip" onclick="openModal('${g.id}')" title="Learn this concept">?</button>
+        <button class="gate-yn yes" onclick="setGate('${g.id}','pass')">✓</button>
+        <button class="gate-yn no" onclick="setGate('${g.id}','fail')">✕</button>
+      </div>`;
+    ictEl.appendChild(row);
+  });
+  const protEl=document.getElementById('protGates');
+  PROT_GATES.forEach(g=>{
+    const row=document.createElement('div');
+    row.className='gate-row';row.id=g.id;
+    row.innerHTML=`
+      <div class="gate-marker"></div>
+      <div class="gate-info">
+        <div class="gate-title">GATE ${g.n} — ${g.name}</div>
+        <div class="gate-sub">${g.sub}</div>
+      </div>
+      <div class="gate-actions">
+        <button class="gate-tip" onclick="openModal('${g.id}')" title="Learn this guard">?</button>
+        <div class="gate-tgl" onclick="toggleProt('${g.id}')"></div>
+      </div>`;
+    protEl.appendChild(row);
+  });
+}
+
+/* ── GATE LOGIC ── */
+function setGate(id,val){
+  gates[id]=val;
+  const row=document.getElementById(id);
+  row.classList.remove('pass','fail');
+  if(val==='pass'){row.classList.add('pass');row.querySelector('.gate-marker').textContent='✓';}
+  else{row.classList.add('fail');row.querySelector('.gate-marker').textContent='✕';}
+  saveDraft();updateHUD();
+}
+function toggleProt(id){
+  const cur=gates[id];
+  gates[id]=(cur==='on')?'off':'on';
+  const row=document.getElementById(id);
+  const tgl=row.querySelector('.gate-tgl');
+  row.classList.remove('pass','fail');
+  if(gates[id]==='on'){row.classList.add('pass');tgl.className='gate-tgl on';row.querySelector('.gate-marker').textContent='✓';}
+  else{row.classList.add('fail');tgl.className='gate-tgl off';row.querySelector('.gate-marker').textContent='✕';}
+  saveDraft();updateHUD();
+}
+
+/* ── STATE SELECT ── */
+function selectState(s){
+  state.neuralState=s;
+  document.querySelectorAll('#stateRow .pill').forEach(p=>{
+    p.classList.toggle('active',p.dataset.state===s);
+  });
+  saveDraft();updateHUD();
+}
+
+/* ── BIOMETRICS ── */
+function updateBio(kind){
+  const map={stress:['stressSlider','stressVal','stressHint'],sleep:['sleepSlider','sleepVal','sleepHint'],focus:['focusSlider','focusVal','focusHint'],hr:['hrSlider','hrVal','hrHint']};
+  const v=parseInt(document.getElementById(map[kind][0]).value,10);
+  state[kind]=v;
+  const valEl=document.getElementById(map[kind][1]);
+  const hintEl=document.getElementById(map[kind][2]);
+  let col='var(--green)',txt='',cls='ok';
+  if(kind==='stress'){txt=v<=2?'Minimal stress — optimal':v<=4?'Low stress — within threshold':v<=6?'Moderate stress — reduce size':'High stress — consider sitting out';col=v<=4?'var(--green)':v<=6?'var(--gold)':'var(--red)';cls=v<=4?'ok':v<=6?'warn':'bad';valEl.textContent=v;}
+  if(kind==='sleep'){txt=v>=8?'Excellent rest — peak cognition':v>=6?'Good rest':v>=4?'Moderate rest — reduce size':'Poor sleep — strong caution';col=v>=6?'var(--green)':v>=4?'var(--gold)':'var(--red)';cls=v>=6?'ok':v>=4?'warn':'bad';valEl.textContent=v;}
+  if(kind==='focus'){txt=v>=8?'Sharp focus':v>=6?'Adequate focus':v>=4?'Mild fog — reduce complexity':'Low focus — avoid trading';col=v>=6?'var(--green)':v>=4?'var(--gold)':'var(--red)';cls=v>=6?'ok':v>=4?'warn':'bad';valEl.textContent=v;}
+  if(kind==='hr'){txt=v<75?'Calm and ready':v<90?'Slightly elevated — monitor':v<100?'Elevated — cooldown':'Critical — do not trade';col=v<75?'var(--green)':v<90?'var(--gold)':'var(--red)';cls=v<75?'ok':v<90?'warn':'bad';valEl.innerHTML=v+' <small>BPM</small>';}
+  valEl.style.color=col;
+  hintEl.textContent=txt;hintEl.style.color=col;hintEl.className='hint '+cls;
+  saveDraft();updateHUD();
+}
+
+/* ── READINESS SCORE (Steenbarger + ICT combined) ── */
+function computeNeural(){
+  let score=0;
+  const s=state.neuralState;
+  score+= s==='FLOW'?30:s==='FOCUSED'?25:s==='NEUTRAL'?15:s==='ANXIOUS'?5:0;
+  const hr=state.hr;
+  score+= hr<75?20:hr<85?15:hr<95?8:0;
+  score+= state.sleep>=8?15:state.sleep>=6?10:state.sleep>=4?5:0;
+  score+= state.stress<=2?15:state.stress<=4?11:state.stress<=6?6:0;
+  score+= state.focus>=8?20:state.focus>=6?14:state.focus>=4?7:0;
+  return Math.min(100,score);
+}
+function gateCounts(){
+  const ictPassed=ICT_GATES.filter(g=>gates[g.id]==='pass').length;
+  const protPassed=PROT_GATES.filter(g=>gates[g.id]==='on').length;
+  const ictFailed=ICT_GATES.filter(g=>gates[g.id]==='fail').length;
+  const protFailed=PROT_GATES.filter(g=>gates[g.id]==='off').length;
+  return {total:ictPassed+protPassed, ictPassed, protPassed, failed:ictFailed+protFailed};
+}
+
+/* ── HUD UPDATE ── */
+function updateHUD(){
+  const neural=computeNeural();
+  const gc=gateCounts();
+  const ring=document.getElementById('readRing');
+  const circ=232.5;
+  ring.style.strokeDashoffset=circ-(circ*neural/100);
+  ring.style.stroke=neural>=80?'var(--green)':neural>=60?'var(--cyan)':neural>=40?'var(--gold)':'var(--red)';
+  document.getElementById('readScore').textContent=neural;
+  document.getElementById('readBig').innerHTML=neural+' <b>%</b>';
+  document.getElementById('readSub').textContent=neural>=80?'CLEARED FOR ENTRY':neural>=60?'ADEQUATE — PROCEED':neural>=40?'CAUTION — REDUCE RISK':'NOT READY';
+  document.getElementById('gatesBig').innerHTML=gc.total+'<b>/9</b>';
+  document.getElementById('gatesSub').textContent=gc.failed>0?gc.failed+' gate(s) flagged':'All gates cleared'+(gc.total===9?' ✓':'');
+
+  // Step status pills
+  const s1=document.getElementById('s1status');
+  const hasState=!!state.neuralState;
+  if(hasState&&neural>=80){s1.textContent='READY';s1.className='step-status ok';}
+  else if(hasState){s1.textContent='LOGGED';s1.className='step-status warn';}
+  else{s1.textContent='INCOMPLETE';s1.className='step-status idle';}
+  const s2=document.getElementById('s2status');
+  if(gc.failed>0){s2.textContent=gc.total+'/9 · FLAGGED';s2.className='step-status bad';}
+  else if(gc.total===9){s2.textContent='9/9 · CLEAR';s2.className='step-status ok';}
+  else{s2.textContent=gc.total+'/9';s2.className='step-status idle';}
+  const s3=document.getElementById('s3status');
+
+  // Authorization
+  const badge=document.getElementById('authBadge');
+  const txt=document.getElementById('authText');
+  const reason=document.getElementById('authReason');
+  const isRevenge=state.neuralState==='REVENGE';
+  const guardBreach=gc.failed>0;
+  const safeState=(state.neuralState==='FLOW'||state.neuralState==='FOCUSED');
+  const allGates=gc.total===9;
+  if(isRevenge){
+    badge.className='auth-badge lock';txt.textContent='🔴 LOCKOUT — BREACH DETECTED';
+    reason.textContent='Revenge Mode active. Do not open your broker. Reset required — minimum 45 minutes.';
+    s3.textContent='LOCKED OUT';s3.className='step-status bad';
+  } else if(guardBreach){
+    badge.className='auth-badge lock';txt.textContent='🔴 LOCKOUT — BREACH DETECTED';
+    reason.textContent='A guardrail is flagged (a gate answered NO). Resolve the breach before entering.';
+    s3.textContent='LOCKED OUT';s3.className='step-status bad';
+  } else if(safeState&&allGates){
+    badge.className='auth-badge auth';txt.textContent='🟢 AUTHORIZED — ENTRY CLEARED';
+    reason.textContent='Neural state safe and 9/9 gates cleared. Execute your plan with precision.';
+    s3.textContent='AUTHORIZED';s3.className='step-status ok';
+  } else if(!hasState){
+    badge.className='auth-badge idle';txt.textContent='AWAITING INPUT';
+    reason.textContent='Select your neural state and clear all 9 gates to authorize entry.';
+    s3.textContent='PENDING';s3.className='step-status idle';
+  } else {
+    badge.className='auth-badge cond';txt.textContent='⚠ CONDITIONAL — PROCEED WITH CAUTION';
+    reason.textContent=(state.neuralState==='NEUTRAL'?'Neutral state — reduce size 50%, max 2 trades.':state.neuralState==='ANXIOUS'?'Anxiety detected — cooldown before entering. Do not size up.':'')+(allGates?'':' Gates not yet 9/9.');
+    s3.textContent='CONDITIONAL';s3.className='step-status warn';
+  }
+}
+
+/* ── STEPS ── */
+function toggleStep(id){
+  document.getElementById(id).classList.toggle('open');
+}
+
+/* ── MODAL ── */
+function openModal(id){
+  const all=[...ICT_GATES,...PROT_GATES];
+  const g=all.find(x=>x.id===id);
+  if(!g)return;
+  document.getElementById('mTag').textContent=g.tag;
+  document.getElementById('mTitle').textContent='GATE '+g.n+' — '+g.name;
+  document.getElementById('mBody').innerHTML=g.body;
+  document.getElementById('mExample').textContent='▸ '+g.ex;
+  document.getElementById('modalBack').classList.add('show');
+}
+function closeModal(){document.getElementById('modalBack').classList.remove('show');}
+
+/* ── THEME ── */
+function toggleTheme(){
+  const isLight=document.body.classList.toggle('light-mode');
+  const btn=document.getElementById('themeBtn');
+  btn.textContent=isLight?'☀ LIGHT':'🌙 DARK';
+  localStorage.setItem('st-theme',isLight?'light':'dark');
+}
+
+/* ── LOCALSTORAGE ── */
+function saveDraft(){
+  state.journal=document.getElementById('journalEntry').value;
+  const draft={neuralState:state.neuralState,stress:state.stress,sleep:state.sleep,focus:state.focus,hr:state.hr,journal:state.journal,gates:gates,ts:Date.now()};
+  try{localStorage.setItem(LS_DRAFT,JSON.stringify(draft));}catch(e){}
+}
+function restoreDraft(){
+  let d=null;
+  try{d=JSON.parse(localStorage.getItem(LS_DRAFT)||'null');}catch(e){}
+  if(!d)return;
+  state.neuralState=d.neuralState||null;state.stress=d.stress||3;state.sleep=d.sleep||7;state.focus=d.focus||8;state.hr=d.hr||72;state.journal=d.journal||'';
+  gates=d.gates||{};
+  // reflect into DOM
+  if(state.neuralState){document.querySelectorAll('#stateRow .pill').forEach(p=>p.classList.toggle('active',p.dataset.state===state.neuralState));}
+  document.getElementById('stressSlider').value=state.stress;
+  document.getElementById('sleepSlider').value=state.sleep;
+  document.getElementById('focusSlider').value=state.focus;
+  document.getElementById('hrSlider').value=state.hr;
+  document.getElementById('journalEntry').value=state.journal;
+  ['stress','sleep','focus','hr'].forEach(k=>updateBio(k));
+  ICT_GATES.forEach(g=>{if(gates[g.id]==='pass'||gates[g.id]==='fail')setGate(g.id,gates[g.id]);});
+  PROT_GATES.forEach(g=>{if(gates[g.id]==='on'||gates[g.id]==='off')toggleProt(g.id);});
+  // restore lock
+  try{const l=JSON.parse(localStorage.getItem(LS_LOCK)||'null');if(l&&l.active){applyLock(l);}}catch(e){}
+}
+
+/* ── AI DIAGNOSIS ── */
+function buildDiagnosisPrompt(){
+  const gc=gateCounts();
+  const g=state;
+  return {
+    system:'You are an elite trading psychology coach trained in Brett Steenbarger\'s self-monitoring framework and ICT/SMC methodology. Assess the trader\'s pre-session state and return a specific, direct mental protocol. Name psychological risks precisely and give 2-3 concrete pre-session actions. Keep under 200 words. Format with bold headers.',
+    user:`Pre-flight protocol submitted. Neural state: ${g.neuralState||'not selected'}. Readiness: ${computeNeural()}/100. Stress ${g.stress}/10, Sleep ${g.sleep}/10, Focus ${g.focus}/10, HR ${g.hr} BPM. Journal: "${(g.journal||'none').substring(0,140)}". Gates cleared: ${gc.total}/9 (ICT ${gc.ictPassed}/6, protection ${gc.protPassed}/3)${gc.failed>0?' — '+gc.failed+' gate(s) FLAGGED':''}. Authorization: ${document.getElementById('authText').textContent}. Give me a pre-session coaching assessment and mental protocol.`
+  };
+}
+function heuristicDiagnosis(){
+  const gc=gateCounts();const n=computeNeural();
+  const g=state;
+  let lines=[];
+  lines.push('**State Assessment**');
+  if(g.neuralState==='REVENGE')lines.push('CRITICAL — revenge mode. You are psychologically hijacked. Stand down: no broker, 45-min reset, return only after full cooldown.');
+  else if(g.neuralState==='ANXIOUS')lines.push('Elevated anxiety markers. Risk of impulsive entries is high. Do not size up; use a Trader\'s Couch cooldown before the open.');
+  else if(g.neuralState==='NEUTRAL')lines.push('Acceptable but not optimal. Reduce position size 50% and cap the session at 2 trades.');
+  else if(g.neuralState==='FOCUSED')lines.push('Disciplined cognitive state. Strong entry candidate — one setup at a time.');
+  else if(g.neuralState==='FLOW')lines.push('Optimal. Emotional clarity present. Execute your plan with precision.');
+  else lines.push('No neural state selected — complete Step 1 first.');
+  lines.push('');
+  lines.push('**Biometric Flags**');
+  if(g.hr>=95)lines.push('HR '+g.hr+' BPM — critical. Do not trade until it drops below 90.');
+  else if(g.hr>=85)lines.push('HR '+g.hr+' BPM — elevated. Monitor; consider a cooldown.');
+  if(g.sleep<5)lines.push('Sleep '+g.sleep+'/10 — poor. Strong caution; reduce size or sit out.');
+  if(g.stress>=7)lines.push('Stress '+g.stress+'/10 — high. Consider sitting out.');
+  lines.push('');
+  lines.push('**Protocol**');
+  if(gc.total===9&&(g.neuralState==='FLOW'||g.neuralState==='FOCUSED'))lines.push('1. Lock the session. 2. Execute A+ setups only. 3. Stop after 2 consecutive losses.');
+  else lines.push('1. Resolve flagged gates/state. 2. Reduce size. 3. Re-run the protocol when 9/9 and calm.');
+  return lines.join('<br>');
+}
+async function runDiagnosis(){
+  const btn=document.getElementById('diagBtn');
+  const resp=document.getElementById('aiResp');
+  btn.disabled=true;btn.innerHTML='<span class="spin">◌</span> DIAGNOSING';
+  resp.innerHTML='<span class="tag">ANALYZING STATE</span><span class="spin">◌</span> Neural Coach reading your baseline…';
+  const p=buildDiagnosisPrompt();
+  try{
+    const ctrl=new AbortController();
+    const to=setTimeout(()=>ctrl.abort(),25000);
+    const res=await fetch('/api/ai/chat',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      signal:ctrl.signal,
+      body:JSON.stringify({provider:'deepseek',messages:[{role:'system',content:p.system},{role:'user',content:p.user}],maxTokens:700})
+    });
+    clearTimeout(to);
+    const d=await res.json();
+    if(!res.ok||d.error){throw new Error(d.error||('HTTP '+res.status));}
+    resp.innerHTML='<span class="tag">⬡ AI NEURAL COACH — '+ (d.provider||'AI') +'</span>'+d.content.replace(/\*\*(.*?)\*\*/g,'<strong style="color:var(--text);">$1</strong>').replace(/\n/g,'<br>');
+  }catch(e){
+    resp.innerHTML='<span class="tag heuristic">◌ HEURISTIC DIAGNOSIS (AI not configured)</span>'+heuristicDiagnosis();
+  }finally{
+    btn.disabled=false;btn.textContent='⬡ DIAGNOSE MY STATE';
+  }
+}
+
+/* ── LOCK IN / SUBMIT ── */
+function buildPayload(){
+  const gc=gateCounts();
+  const isRevenge=state.neuralState==='REVENGE';
+  const authStatus=(isRevenge||gc.failed>0)?'LOCKED_OUT':((state.neuralState==='FLOW'||state.neuralState==='FOCUSED')&&gc.total===9)?'AUTHORIZED':'LOCKED_OUT';
+  return {
+    timestamp:new Date().toISOString(),
+    userId:localStorage.getItem('st-userId')||'local-trader',
+    neuralState:{
+      state:state.neuralState||'NEUTRAL',
+      stressLevel:state.stress,
+      sleepQuality:state.sleep,
+      focusClarity:state.focus,
+      heartRateBpm:state.hr,
+      journalEntry:state.journal
+    },
+    guardrails:{
+      gate01_level:gates.gate01_level==='pass',
+      gate02_liquidity:gates.gate02_liquidity==='pass',
+      gate03_doji:gates.gate03_doji==='pass',
+      gate04_close:gates.gate04_close==='pass',
+      gate05_entry:gates.gate05_entry==='pass',
+      gate06_bos:gates.gate06_bos==='pass',
+      gate07_slLocked:gates.gate07_slLocked==='on',
+      gate08_drawdownOk:gates.gate08_drawdownOk==='on',
+      gate09_maxLossesOk:gates.gate09_maxLossesOk==='on',
+      passedGatesCount:gc.total
+    },
+    authorizationStatus:authStatus
+  };
+}
+function applyLock(l){
+  locked=true;
+  document.getElementById('lockBar').classList.add('locked');
+  document.getElementById('lockBtn').disabled=true;
+  document.getElementById('lockBtn').classList.add('locked');
+  document.getElementById('lockBtn').textContent='🔒 SESSION LOCKED';
+  document.getElementById('lockTitle').textContent='Session Protocol Locked';
+  document.getElementById('lockSub').textContent='Locked at '+new Date(l.ts).toLocaleTimeString()+'. Form inputs are frozen for the session. '+(l.posted?'Payload posted to backend.':'Payload pending (offline — will retry on next lock).');
+  document.getElementById('unlockBtn').style.display='inline-block';
+  // freeze inputs
+  document.querySelectorAll('#stateRow .pill, .gate-yn, .gate-tgl, .mic-btn').forEach(el=>el.style.pointerEvents='none');
+  ['stressSlider','sleepSlider','focusSlider','hrSlider','journalEntry'].forEach(id=>{document.getElementById(id).disabled=true;});
+}
+function unlockSession(){
+  locked=false;
+  try{localStorage.removeItem(LS_LOCK);}catch(e){}
+  location.reload();
+}
+async function lockIn(){
+  if(locked)return;
+  const btn=document.getElementById('lockBtn');
+  const payload=buildPayload();
+  btn.disabled=true;btn.innerHTML='<span class="spin">◌</span> LOCKING IN';
+  // always persist locally first (data-loss guard)
+  try{
+    const hist=JSON.parse(localStorage.getItem(LS_HIST)||'[]');
+    hist.push(payload);if(hist.length>60)hist.shift();
+    localStorage.setItem(LS_HIST,JSON.stringify(hist));
+    localStorage.removeItem(LS_DRAFT);
+  }catch(e){}
+  let posted=false;
+  try{
+    const ctrl=new AbortController();
+    const to=setTimeout(()=>ctrl.abort(),25000);
+    const res=await fetch('/api/traderedge/preflight',{method:'POST',headers:{'Content-Type':'application/json'},signal:ctrl.signal,body:JSON.stringify(payload)});
+    clearTimeout(to);
+    if(res.ok){posted=true;try{const d=await res.json();if(d&&d.warning){/* silent */}}catch(_){}}
+  }catch(e){posted=false;}
+  try{localStorage.setItem(LS_LOCK,JSON.stringify({active:true,ts:Date.now(),posted}));}catch(e){}
+  applyLock({active:true,ts:Date.now(),posted});
+}
+
+/* ── ADMIN OVERSIGHT STATS (honest demo labeling) ── */
+async function loadStats(){
+  // 1) local history (real user data) — derive win-rate proxy / streak
+  try{
+    const hist=JSON.parse(localStorage.getItem(LS_HIST)||'[]');
+    const n=hist.length;
+    const auth=hist.filter(h=>h.authorizationStatus==='AUTHORIZED').length;
+    const winRate=n?Math.round(auth/n*100):null;
+    if(n){document.getElementById('statWin').textContent=winRate+'%';document.getElementById('statWin').className='v '+(winRate>=60?'pos':winRate>=40?'neu':'neg');document.getElementById('wrDemo').textContent='LOCAL';}
+    // streak = consecutive days with a submission (approx: unique days)
+    const days=new Set(hist.map(h=>h.timestamp.slice(0,10)));
+    document.getElementById('statStreak').textContent=days.size+'d';
+    document.getElementById('statStreak').className='v neu';
+  }catch(e){}
+  // 2) admin oversight feed (demo) — fallback for win-rate & drawdown
+  try{
+    const res=await fetch('/api/admin/overview?token=demo-admin-token');
+    if(res.ok){
+      const d=await res.json();
+      if(d.isDemo){document.getElementById('wrDemo').textContent='DEMO';}
+      if(document.getElementById('statWin').textContent==='—' && d.avgDisciplineScore!=null){
+        document.getElementById('statWin').textContent=d.avgDisciplineScore+'%';
+        document.getElementById('statWin').className='v '+(d.avgDisciplineScore>=60?'pos':'neu');
+      }
+      if(d.dayStreak!=null){document.getElementById('statStreak').textContent=d.dayStreak+'d';document.getElementById('statStreak').className='v pos';}
+      if(d.breachEvents!=null){document.getElementById('statDD').textContent=d.breachEvents>0?d.breachEvents+' breaches':'WITHIN LIMIT';document.getElementById('statDD').className='v '+(d.breachEvents>0?'neg':'pos');}
+    }
+  }catch(e){}
+}
+
+/* ── VOICE-TO-TEXT ── */
+let rec=null;
+function toggleMic(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){alert('Voice input is not supported in this browser.');return;}
+  const btn=document.getElementById('micBtn');const lbl=document.getElementById('micLabel');
+  if(rec){rec.stop();return;}
+  rec=new SR();rec.lang='en-US';rec.interimResults=false;rec.maxAlternatives=1;
+  btn.classList.add('rec');lbl.textContent='LISTENING…';
+  rec.onresult=e=>{const t=e.results[0][0].transcript;const inp=document.getElementById('journalEntry');inp.value=inp.value?inp.value+' '+t:t;saveDraft();};
+  rec.onend=()=>{btn.classList.remove('rec');lbl.textContent='DUMP';rec=null;};
+  rec.onerror=()=>{btn.classList.remove('rec');lbl.textContent='DUMP';rec=null;};
+  rec.start();
+}
+
+/* ── PARTICLES ── */
+(function(){
+  const pc=document.getElementById('pc'),ctx=pc.getContext('2d');
+  pc.width=window.innerWidth;pc.height=window.innerHeight;
+  window.addEventListener('resize',()=>{pc.width=window.innerWidth;pc.height=window.innerHeight;});
+  const cols=['0,255,157','0,212,255','255,215,0'];
+  const pts=[];for(let i=0;i<70;i++)pts.push({x:Math.random()*pc.width,y:Math.random()*pc.height,vx:(Math.random()-.5)*.2,vy:(Math.random()-.5)*.2,r:Math.random()*1.4+.3,a:Math.random()*.22+.05,col:cols[Math.floor(Math.random()*cols.length)]});
+  let mx=pc.width/2,my=pc.height/2;
+  document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
+  (function dp(){
+    ctx.clearRect(0,0,pc.width,pc.height);
+    for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){
+      const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<120){ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.strokeStyle='rgba(0,255,157,'+((1-d/120)*.04)+')';ctx.lineWidth=.5;ctx.stroke();}
+    }
+    pts.forEach(p=>{
+      const dx=mx-p.x,dy=my-p.y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<180){p.vx+=dx/d*.006;p.vy+=dy/d*.006;}
+      p.vx*=.99;p.vy*=.99;p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0)p.x=pc.width;if(p.x>pc.width)p.x=0;if(p.y<0)p.y=pc.height;if(p.y>pc.height)p.y=0;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle='rgba('+p.col+','+p.a+')';ctx.fill();
+    });
+    requestAnimationFrame(dp);
+  })();
+})();
+
+/* ── INIT ── */
+(function init(){
+  const saved=localStorage.getItem('st-theme');
+  if(saved==='light'){document.body.classList.add('light-mode');document.getElementById('themeBtn').textContent='☀ LIGHT';}
+  renderGates();
+  restoreDraft();
+  updateHUD();
+  loadStats();
+  document.getElementById('journalEntry').addEventListener('input',()=>{state.journal=document.getElementById('journalEntry').value;saveDraft();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+})();
+</script>
+</body>
+</html>

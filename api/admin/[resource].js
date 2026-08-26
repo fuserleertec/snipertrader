@@ -2,7 +2,7 @@
 // Vercel serverless function: GET /api/admin/<resource>
 // <resource> ∈ profile|overview|alerts|sessions|modules|licenses|
 //              billing|notifications|security|downloads
-const { buildAdmin } = require('./handlers');
+const { buildAdmin } = require('../_lib/admin/handlers');
 module.exports = (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, PATCH, OPTIONS');

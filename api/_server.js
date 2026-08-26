@@ -8,8 +8,8 @@
  */
 'use strict';
 const http = require('http');
-const { buildForecast, buildStocks, buildChat, buildPropAccount, buildReviewLoop } = require('./_core');
-const { buildAdmin } = require('./admin/handlers');
+const { buildForecast, buildStocks, buildChat, buildPropAccount, buildReviewLoop, buildPreflight } = require('./_core');
+const { buildAdmin } = require('./_lib/admin/handlers');
 
 const PORT = process.env.KRONOS_PORT || 8787;
 
@@ -34,6 +34,9 @@ const server = http.createServer((req, res) => {
   }
   if (url.pathname === '/api/review_loop/analyze' && req.method === 'POST') {
     return buildReviewLoop(req, res);
+  }
+  if (url.pathname === '/api/traderedge/preflight' && req.method === 'POST') {
+    return buildPreflight(req, res);
   }
   if (url.pathname.startsWith('/api/admin')) {
     return buildAdmin(req, res, url);

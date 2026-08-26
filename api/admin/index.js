@@ -1,7 +1,7 @@
 'use strict';
 // Vercel serverless function: GET /api/admin  (and /api/admin/all)
 // Returns the full admin dashboard payload. Dispatches through handlers.js.
-const { buildAdmin } = require('./handlers');
+const { buildAdmin } = require('../_lib/admin/handlers');
 module.exports = (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, PATCH, OPTIONS');
