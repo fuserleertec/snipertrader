@@ -209,6 +209,41 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .foot{margin-top:44px;text-align:center;font-family:'Space Mono',monospace;font-size:10px;color:var(--text4);letter-spacing:1px;}
 .foot a{color:var(--text3);text-decoration:none;}
 .spin{display:inline-block;animation:sp 1s linear infinite;}@keyframes sp{to{transform:rotate(360deg);}}
+
+/* ── FTC TRANSPARENCY BANNER ── */
+.affiliate-note{margin-top:16px;display:flex;align-items:flex-start;gap:10px;background:var(--gold-dim);border:1px solid rgba(255,215,0,.20);border-left:2px solid var(--gold);border-radius:10px;padding:12px 14px;font-size:11px;color:var(--text2);line-height:1.55;max-width:900px;}
+.affiliate-note b{color:var(--gold);font-family:'Orbitron',sans-serif;font-size:8.5px;letter-spacing:1.5px;text-transform:uppercase;}
+.affiliate-note .an-ico{font-size:15px;line-height:1;flex-shrink:0;margin-top:1px;}
+
+/* ── TIERED INFRASTRUCTURE STACK ── */
+.stack-section{margin-top:28px;border:1px solid var(--grid-border);border-radius:18px;background:var(--card-bg);overflow:hidden;position:relative;}
+.stack-section::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),var(--green),transparent);opacity:.6;}
+.stack-head{padding:20px 22px;border-bottom:1px solid var(--grid-border);}
+.stack-head .eyebrow{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:2.5px;color:var(--gold);text-transform:uppercase;margin-bottom:6px;}
+.stack-head h2{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--text);letter-spacing:.5px;}
+.stack-head h2 span{background:linear-gradient(90deg,var(--gold),var(--green));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.stack-head p{font-size:11px;color:var(--text3);line-height:1.6;margin-top:6px;max-width:820px;}
+.tier{padding:18px 22px;}
+.tier + .tier{border-top:1px solid var(--grid-border);}
+.tier-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.tier-num{font-family:'Orbitron',sans-serif;font-size:10px;font-weight:900;color:#02180e;background:linear-gradient(90deg,var(--gold),var(--green));border-radius:6px;padding:4px 9px;letter-spacing:1px;}
+.tier-title{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;color:var(--text);letter-spacing:1px;text-transform:uppercase;}
+.tier-focus{font-family:'Space Mono',monospace;font-size:9px;color:var(--text4);margin-left:auto;text-align:right;}
+@media(max-width:760px){.tier-focus{margin-left:0;text-align:left;}}
+.tool-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+@media(max-width:1080px){.tool-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:680px){.tool-grid{grid-template-columns:1fr;}}
+.tool-card{background:var(--obs3);border:1px solid var(--grid-border);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;transition:border-color .25s,transform .2s;}
+.tool-card:hover{border-color:var(--border2);transform:translateY(-2px);}
+.tool-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.tool-name{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:var(--text);letter-spacing:.5px;}
+.tool-badge{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.5px;color:var(--cyan);background:var(--cyan-dim);border:1px solid rgba(0,212,255,.22);padding:3px 8px;border-radius:20px;white-space:nowrap;text-transform:uppercase;}
+.tool-rationale{font-size:11px;color:var(--text3);line-height:1.6;flex:1;}
+.promo-box{display:flex;align-items:center;gap:8px;background:var(--gold-dim);border:1px solid rgba(255,215,0,.20);border-radius:8px;padding:8px 10px;}
+.promo-tag{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:1px;color:var(--gold);text-transform:uppercase;white-space:nowrap;}
+.promo-code{font-family:'Orbitron',sans-serif;font-size:11.5px;font-weight:900;color:var(--gold);letter-spacing:1px;}
+.tool-cta{display:inline-flex;align-items:center;justify-content:center;gap:7px;background:linear-gradient(90deg,var(--green),var(--cyan));color:#02180e;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;border-radius:9px;padding:11px 14px;transition:box-shadow .2s,transform .2s;}
+.tool-cta:hover{box-shadow:0 0 22px rgba(0,255,157,.35);transform:translateY(-1px);}
 </style>
 </head>
 <body>
@@ -233,6 +268,9 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
   <h1 class="hero-h1">Pre-Flight <span>Protocol</span></h1>
   <p class="hero-sub">One consolidated gate — <strong>Neural Baseline</strong> (mind &amp; body) → <strong>9 Technical &amp; Discipline Gates</strong> (ICT/SMC + account protection) → <strong>AI Authorization</strong>. Every session, in under 60 seconds, before a single tick.</p>
   <p class="disclaimer"><b>EDUCATIONAL SIMULATION ONLY</b> — TraderEdge is a self-monitoring discipline system built on Brett Steenbarger's psychology framework and ICT/SMC methodology. It is not financial advice, does not place orders, and does not guarantee results. All session stats are illustrative unless sourced from your own logged history.</p>
+
+  <!-- FTC TRANSPARENCY DISCLOSURE -->
+  <div class="affiliate-note"><span class="an-ico">🛈</span><div><b>Transparency Note:</b> Some links below are affiliate links. If you sign up through them, we may earn a commission at no additional cost to you. We only recommend software and services validated in live market conditions.</div></div>
 
   <!-- PERSISTENT HUD -->
   <div id="hud">
@@ -384,6 +422,120 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
     <button class="btn btn-lock" id="lockBtn" onclick="lockIn()">▶ LOCK IN SESSION</button>
     <button class="btn-unlock" id="unlockBtn" onclick="unlockSession()" style="display:none;">↺ Reset Session</button>
   </div>
+
+  <!-- TIERED INFRASTRUCTURE STACK -->
+  <section class="stack-section" id="stack">
+    <div class="stack-head">
+      <div class="eyebrow">Pre-Flight Infrastructure · Tiered Stack</div>
+      <h2>Run Your Protocol On a <span>Battle-Tested Stack</span></h2>
+      <p>The Pre-Flight Protocol is only as sharp as the tools it runs on. Below is the validated infrastructure we use across charting, execution, and post-trade review — organized into three tiers so you can build out exactly what your process needs.</p>
+    </div>
+
+    <!-- TIER 1 -->
+    <div class="tier">
+      <div class="tier-head">
+        <span class="tier-num">T1</span>
+        <span class="tier-title">Charting &amp; Core Analytics</span>
+        <span class="tier-focus">Microstructure · Liquidity heatmaps · Pine Script charting</span>
+      </div>
+      <div class="tool-grid">
+        <div class="tool-card">
+          <div class="tool-top"><span class="tool-name">TradingView</span><span class="tool-badge">Best for Order Flow &amp; Liquidity</span></div>
+          <p class="tool-rationale">Industry-standard charting for marking OBs, FVGs, and OTE zones before the open, with a full Pine Script engine for custom pre-flight scanners. Its liquidity-map overlays and multi-timeframe layout keep your gate checks fast and repeatable.</p>
+          <div class="promo-box"><span class="promo-tag">Promo</span><span class="promo-code">Check Site</span></div>
+          <a class="tool-cta" href="https://www.tradingview.com/" target="_blank" rel="noopener sponsored">Get TradingView ↗</a>
+        </div>
+        <div class="tool-card">
+          <div class="tool-top"><span class="tool-name">Sierra Chart</span><span class="tool-badge">Best for Microstructure &amp; DOM</span></div>
+          <p class="tool-rationale">Tick-level order-flow, footprint charts, and Depth of Market for reading absorption at your liquidity levels. The gold standard for futures traders who need precise microstructure confirmation before committing size.</p>
+          <div class="promo-box"><span class="promo-tag">Promo</span><span class="promo-code">Check Site</span></div>
+          <a class="tool-cta" href="https://www.sierrachart.com/" target="_blank" rel="noopener sponsored">Get Sierra Chart ↗</a>
+        </div>
+        <div class="tool-card">
+          <div class="tool-top"><span class="tool-name">Bookmap</span><span class="tool-badge">Best for Liquidity Heatmaps</span></div>
+          <p class="tool-rationale">Real-time liquidity heatmaps reveal where resting orders sit, so you can time entries where Smart Money actually transacts. Turns abstract "liquidity" into a visual you can pre-flight before every session.</p>
+          <div class="promo-box"><span class="promo-tag">Promo</span><span class="promo-code">Check Site</span></div>
+          <a class="tool-cta" href="https://bookmap.com/" target="_blank" rel="noopener sponsored">Get Bookmap ↗</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- TIER 2 -->
+    <div class="tier">
+      <div class="tier-head">
+        <span class="tier-num">T2</span>
+        <span class="tier-title">Brokerage &amp; Prop Capital</span>
+        <span class="tier-focus">Low-latency routing · Evaluation funding for index/futures traders</span>
+      </div>
+      <div class="tool-grid">
+        <div class="tool-card">
+          <div class="tool-top"><span class="tool-name">Interactive Brokers</span><span class="tool-badge">Best for Direct Routing</span></div>
+          <p class="tool-rationale">Direct-market-access routing and institutional-grade fills across equities and futures, with the deepest multi-asset coverage in the industry. The reliability backbone for traders executing size on their pre-flight plan.</p>
+          <div class="promo-box"><span class="promo-tag">Promo</span><span class="promo-code">Check Site</span></div>
+          <a class="tool-cta" href="https://www.interactivebrokers.com/" target="_blank" rel="noopener sponsored">Open IB Account ↗</a>
+        </div>
+        <div class="tool-card">
+          <div class="tool-top"><span class="tool-name">Tradovate</span><span class="tool-badge">Best for Futures Execution</span></div>
+          <p class="tool-rationale">Commission-free futures plans with fast, modern order entry built for index-day-traders and scalpers. Its API and mobile parity keep your pre-flight plan executable from anywhere without latency tax.</p>
+          <div class="promo-box"><span class="promo-tag">Promo</span><span class="promo-code">Check Site</span></div>
+          <a class="tool-cta" href="https://www.tradovate.com/" target="_blank" rel="noopener sponsored">Get Tradovate ↗</a>
+        </div>
+        <div class="tool-card">
+          <div class="tool-top"><span class="tool-name">Topstep</span><span class="tool-badge">Best for Futures Funding</span></div>
+          <p class="tool-rationale">The most established futures funding evaluation — prove you can follow your rules and trade firm capital instead of your own. Its Trading Combine pairs perfectly with a disciplined pre-flight ritual.</p>
+          <div class="promo-box"><span class="promo-tag">Promo</span><span class="promo-code">Check Site</span></div>
+          <a class="tool-cta" href="https://www.topstep.com/" target="_blank" rel="noopener sponsored">Start Combine ↗</a>
+        </div>
+        <div class="tool-card">
+          <div class="tool-top"><span class="tool-name">Apex Trader Funding</span><span class="tool-badge">Best for High-Frequency Evals</span></div>
+          <p class="tool-rationale">Frequent promotional evaluation windows and a fast path to funded futures accounts for disciplined traders. A cost-effective way to scale your pre-flight edge into meaningful buying power.</p>
+          <div class="promo-box"><span class="promo-tag">Promo</span><span class="promo-code">Check Site</span></div>
+          <a class="tool-cta" href="https://apextraderfunding.com/" target="_blank" rel="noopener sponsored">Get Apex ↗</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- TIER 3 -->
+    <div class="tier">
+      <div class="tier-head">
+        <span class="tier-num">T3</span>
+        <span class="tier-title">Infrastructure, Backtesting &amp; Journaling</span>
+        <span class="tier-focus">Sub-millisecond execution · Strategy playback · Automated logging</span>
+      </div>
+      <div class="tool-grid">
+        <div class="tool-card">
+          <div class="tool-top"><span class="tool-name">BeeksFX VPS</span><span class="tool-badge">Best for Low-Latency Hosting</span></div>
+          <p class="tool-rationale">Sub-millisecond colocated execution servers that keep your automated strategies running 24/7 with near-zero slippage. Removes your home connection from the critical path when every tick counts.</p>
+          <div class="promo-box"><span class="promo-tag">Promo</span><span class="promo-code">Check Site</span></div>
+          <a class="tool-cta" href="https://www.beeksfx.com/" target="_blank" rel="noopener sponsored">Get BeeksFX ↗</a>
+        </div>
+        <div class="tool-card">
+          <div class="tool-top"><span class="tool-name">TraderSync</span><span class="tool-badge">Best for AI Trade Journaling</span></div>
+          <p class="tool-rationale">Auto-synced trade journaling with AI-assisted review that surfaces your edge and your leaks automatically. Turns the post-session review loop into a data-driven habit instead of a chore.</p>
+          <div class="promo-box"><span class="promo-tag">Promo</span><span class="promo-code">Check Site</span></div>
+          <a class="tool-cta" href="https://tradersync.com/" target="_blank" rel="noopener sponsored">Get TraderSync ↗</a>
+        </div>
+        <div class="tool-card">
+          <div class="tool-top"><span class="tool-name">TradesViz</span><span class="tool-badge">Best for Visual Analytics</span></div>
+          <p class="tool-rationale">Deep-dive trade visualization — charts, calendars, and equity curves that reveal exactly where your process breaks down. The richest analytics layer for stress-testing your pre-flight discipline over time.</p>
+          <div class="promo-box"><span class="promo-tag">Promo</span><span class="promo-code">Check Site</span></div>
+          <a class="tool-cta" href="https://www.tradesviz.com/" target="_blank" rel="noopener sponsored">Get TradesViz ↗</a>
+        </div>
+        <div class="tool-card">
+          <div class="tool-top"><span class="tool-name">TradingSim</span><span class="tool-badge">Best for Strategy Playback</span></div>
+          <p class="tool-rationale">Market-replay simulation that lets you backtest your 9-gate checklist against historical price action before risking real capital. Compresses years of screen-time reps into focused practice sessions.</p>
+          <div class="promo-box"><span class="promo-tag">Promo</span><span class="promo-code">Check Site</span></div>
+          <a class="tool-cta" href="https://www.tradingsim.com/" target="_blank" rel="noopener sponsored">Get TradingSim ↗</a>
+        </div>
+        <div class="tool-card">
+          <div class="tool-top"><span class="tool-name">Forex Tester</span><span class="tool-badge">Best for Offline Backtesting</span></div>
+          <p class="tool-rationale">Dedicated backtesting software for replaying forex and futures setups bar-by-bar at your own speed. The fastest way to validate a new setup against years of data before it enters your live pre-flight checklist.</p>
+          <div class="promo-box"><span class="promo-tag">Promo</span><span class="promo-code">Check Site</span></div>
+          <a class="tool-cta" href="https://www.forextester.com/" target="_blank" rel="noopener sponsored">Get Forex Tester ↗</a>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <div class="foot">TRADEREDGE PSYCH OS · STEENBARGER METHOD · ICT/SMC METHODOLOGY · NOT FINANCIAL ADVICE · <a href="/disclaimer.html">Disclaimer</a></div>
 </div>
