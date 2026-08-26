@@ -104,6 +104,38 @@ textarea#narrative{width:100%;min-height:64px;background:var(--obs4);color:var(-
 .foot{margin-top:40px;text-align:center;font-family:'Space Mono',monospace;font-size:10px;color:var(--text4);letter-spacing:1px;}
 .foot a{color:var(--text3);text-decoration:none;}
 .spin{display:inline-block;animation:sp 1s linear infinite;}@keyframes sp{to{transform:rotate(360deg);}}
+/* AFFILIATE / PARTNER INTEGRATION */
+.ftc-bar{display:flex;align-items:flex-start;gap:10px;margin-top:14px;padding:10px 14px;border:1px solid var(--border2);border-radius:12px;background:rgba(0,229,160,0.04);font-family:'Space Mono',monospace;font-size:10px;line-height:1.6;color:var(--text3);}
+.ftc-bar .ico{color:var(--emerald);font-size:13px;line-height:1.3;}
+.ftc-bar b{color:var(--text);} .ftc-bar code{color:var(--gold);}
+.keylevels{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+@media(max-width:560px){.keylevels{grid-template-columns:1fr;}}
+.kblk{background:var(--obs3);border:1px solid var(--border);border-radius:10px;padding:8px 10px;}
+.kblk .kh{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--text4);}
+.kblk .kp{font-family:'Orbitron',sans-serif;font-size:13px;margin:3px 0 6px;}
+.kblk .kp.l{border-left:2px solid var(--emerald);padding-left:6px;}
+.kblk .kp.s{border-left:2px solid var(--red);padding-left:6px;}
+.kblk .kp.n{border-left:2px solid var(--gold);padding-left:6px;}
+.lvl-btn{display:inline-flex;align-items:center;gap:4px;font-family:'Space Mono',monospace;font-size:9px;color:var(--emerald);text-decoration:none;border:1px solid var(--border2);border-radius:8px;padding:4px 8px;transition:all .2s;}
+.lvl-btn:hover{border-color:var(--emerald);background:rgba(0,229,160,0.08);}
+.vps-note{margin-top:12px;font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);line-height:1.6;border:1px dashed var(--border2);border-radius:10px;padding:9px 11px;background:var(--obs4);}
+.vps-note a{color:var(--cyan);text-decoration:none;font-weight:700;}
+.vps-note a:hover{text-decoration:underline;}
+.export-row{margin-top:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;}
+.export-row .sum{font-family:'Space Mono',monospace;font-size:9px;color:var(--text4);line-height:1.5;}
+.export-row .sum b{color:var(--text2);}
+.trade-btn{display:inline-flex;align-items:center;gap:5px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--text);text-decoration:none;border:1px solid var(--emerald);border-radius:10px;padding:9px 12px;background:linear-gradient(90deg,var(--emerald-dim),var(--cyan-dim));transition:all .2s;text-transform:uppercase;white-space:nowrap;}
+.trade-btn:hover{box-shadow:0 0 18px rgba(0,229,160,0.3);}
+.trade-btn.alt{border-color:var(--cyan);background:linear-gradient(90deg,var(--cyan-dim),var(--emerald-dim));}
+.partner-card{border:1px solid var(--border);border-radius:16px;padding:18px;background:linear-gradient(145deg,var(--obs3),var(--obs2));margin-top:20px;}
+.partner-card .pc-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px;}
+.partner-card .pc-title{font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:2px;color:var(--text2);text-transform:uppercase;}
+.promo{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--gold);border:1px solid var(--gold);border-radius:20px;padding:4px 10px;background:rgba(240,192,64,0.06);}
+.partner-card .pc-body{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;align-items:center;}
+@media(max-width:760px){.partner-card .pc-body{grid-template-columns:1fr;}}
+.partner-card .pc-desc{font-size:12px;color:var(--text3);line-height:1.7;}
+.partner-card .pc-desc b{color:var(--text);}
+.partner-card .pc-cta{display:flex;flex-direction:column;gap:10px;}
 </style>
 </head>
 <body>
@@ -149,6 +181,14 @@ textarea#narrative{width:100%;min-height:64px;background:var(--obs4);color:var(-
       </div>
       <div class="hover-readout" id="hoverReadout">Hover the chart to inspect a bar or scenario step.</div>
       <div class="hover-readout" id="srcTag" style="margin-top:6px;color:var(--emerald);font-size:10px;letter-spacing:1px;">◌ LOCAL SIMULATION</div>
+
+      <!-- Actionable Output: key levels → TradingView chart execution (populated after each run) -->
+      <div class="keylevels" id="keyLevels" aria-label="Key levels — open in TradingView">
+        <div class="kblk"><div class="kh">Liquidity Sweep (Sellside)</div><div class="kp s" id="lvlSell">—</div><a class="lvl-btn" id="lvlSellBtn" target="_blank" rel="noopener sponsored" href="#">Open Level in TradingView ↗</a></div>
+        <div class="kblk"><div class="kh">Liquidity Sweep (Buyside)</div><div class="kp l" id="lvlBuy">—</div><a class="lvl-btn" id="lvlBuyBtn" target="_blank" rel="noopener sponsored" href="#">Open Level in TradingView ↗</a></div>
+        <div class="kblk"><div class="kh">VWAP / Mean</div><div class="kp n" id="lvlVwap">—</div><a class="lvl-btn" id="lvlVwapBtn" target="_blank" rel="noopener sponsored" href="#">Open Level in TradingView ↗</a></div>
+        <div class="kblk"><div class="kh">Nearest FVG Zone</div><div class="kp n" id="lvlFvg">—</div><a class="lvl-btn" id="lvlFvgBtn" target="_blank" rel="noopener sponsored" href="#">Open Level in TradingView ↗</a></div>
+      </div>
     </div>
 
     <!-- Q2 SWARM -->
@@ -162,6 +202,10 @@ textarea#narrative{width:100%;min-height:64px;background:var(--obs4);color:var(-
       </div>
       <h3 style="margin-top:16px;">Agent Event Log · Liquidity-Pool Interactions</h3>
       <div class="log" id="agentLog"></div>
+      <!-- Infrastructure / VPS callout: low-latency execution note under the automated signal logs -->
+      <div class="vps-note">
+        Running automated signals? Host on <a id="vpsLink1" href="#" target="_blank" rel="noopener sponsored">BeeksFX VPS</a> for &lt;1ms latency <a id="vpsLink2" href="#" target="_blank" rel="noopener sponsored">[Deploy VPS ↗]</a>
+      </div>
     </div>
 
     <!-- ROW 2 -->
@@ -208,6 +252,12 @@ textarea#narrative{width:100%;min-height:64px;background:var(--obs4);color:var(-
           <div class="o"><div class="k">Max Drawdown</div><div class="v neg" id="soDD">—</div></div>
           <div class="o"><div class="k">Avg Slippage</div><div class="v neu" id="soSlip">—</div></div>
           <div class="o"><div class="k">Expectancy (R)</div><div class="v neu" id="soExp">—</div></div>
+        </div>
+
+        <!-- Actionable Output: export the forecast / trade plan to a journal -->
+        <div class="export-row">
+          <div class="sum">Forecast Summary / Trade Plan — SOR entry, SL, TP1–TP3 + win-rate from the 1,000-pass swarm stress test.</div>
+          <a id="logForecastBtn" class="trade-btn" target="_blank" rel="noopener sponsored" href="#">🗒 Log Forecast to TraderSync ↗</a>
         </div>
       </div>
     </div>
@@ -258,6 +308,23 @@ textarea#narrative{width:100%;min-height:64px;background:var(--obs4);color:var(-
         <div class="ctx-note" id="dataNote" style="font-size:10px;color:var(--text4);margin-top:8px;line-height:1.5;">Simulator active. Switch source and Load to pull live market OHLCV.</div>
       </div>
     </div>
+    <!-- FTC compliance bar: inline disclosure at bottom of the main Forecaster control panel -->
+    <div class="ftc-bar">
+      <span class="ico">⚖</span>
+      <span><b>Disclosure:</b> Direct execution and charting links contain partner referral tags (<code>rel="noopener sponsored"</code>). We only link to platforms supported by the Forecaster algorithm.</span>
+    </div>
+  </div>
+
+  <!-- DYNAMIC EXECUTION PARTNER CARD — matches selected asset class (futures vs equities/spot) -->
+  <div class="partner-card" id="partnerCard">
+    <div class="pc-head">
+      <span class="pc-title">Execution Partner · <span id="partnerAsset">Futures</span></span>
+      <span class="promo" id="partnerPromo" style="display:none;"></span>
+    </div>
+    <div class="pc-body">
+      <div class="pc-desc" id="partnerDesc"></div>
+      <div class="pc-cta" id="partnerCta"></div>
+    </div>
   </div>
 
   <div class="foot">
@@ -283,6 +350,29 @@ S.history=null; // real OHLCV [{o,h,l,c,v}] when source != 'sim'
 const API_BASE = (location.hostname==='localhost'||location.hostname==='127.0.0.1')
   ? 'http://localhost:8787' : '';
 const USE_BACKEND = true;
+
+/* ───────────────────────── affiliate / partner links (FTC: rel="noopener sponsored") ─────────────────────────
+   Centralized config so every outbound link carries the required disclosure relation and partner referral tag.
+   These are real, supported platforms; no fabricated offers. Replace any referral id with your own before launch. */
+const AFFILIATE = {
+  tradingview:  'https://www.tradingview.com/?aff_id=YOUR_TV_AFF_ID',     // chart execution / analysis
+  tradersync:   'https://tradersync.io/?ref=YOUR_TS_REF',               // trade journaling export
+  beeksfx:      'https://www.beeksfx.com/?ref=YOUR_BEEKSFX_REF',         // low-latency VPS
+  topstep:      'https://www.topstep.com/?aff=YOUR_TOPSTEP_AFF',        // futures prop firm
+  apex:         'https://apextraderfunding.com/?aff=YOUR_APEX_AFF',     // futures prop firm
+  tradovate:    'https://www.tradovate.com/?aff=YOUR_TRADOVATE_AFF',    // futures execution
+  interactive:  'https://www.interactivebrokers.com/?f=YOUR_IB_AFF',    // equities broker
+  tradingviewpro:'https://www.tradingview.com/pricing/?aff_id=YOUR_TV_AFF_ID' // TV Pro
+};
+const SPONSORED = 'noopener sponsored';
+/* Build a TradingView chart deep-link for a symbol + price level (falls back to chart root). */
+function tvHref(symbol, level){
+  const sym = (symbol || 'BTCUSDT').replace(/[^A-Za-z0-9]/g,'');
+  const base = AFFILIATE.tradingview;
+  const q = '?symbol=' + encodeURIComponent(sym);
+  const lvl = (level!=null && isFinite(level)) ? '&popup=' + encodeURIComponent('level:'+level.toFixed(2)) : '';
+  return base + q + lvl;
+}
 
 /* ───────────────────────── real OHLCV sources (verified working) ───────────────────────── */
 function resolveBinanceSymbol(raw){
@@ -696,12 +786,34 @@ function paint(r){
   set('stVar', ((bands.p5[end]/lastClose-1)*100).toFixed(2)+'%','neg');
   // swarm UI
   renderSwarm(r.swarm);
+  // actionable key levels (populate TV chart-exec buttons with real structural levels)
+  populateKeyLevels(r, lastClose);
   // src tag
   const src=document.getElementById('srcTag');
   if(src){ let label='◌ LOCAL SIMULATION (Sniper Vector Matrix)';
     if(r.backend==='backend') label='⬢ LIVE INFERENCE';
     else if(r.backend==='real-local') label='◌ LOCAL SIM ON REAL DATA';
     src.textContent=label; }
+}
+function populateKeyLevels(r, lastClose){
+  const ict = r.ict || (chart.$k && chart.$k.ict) || null;
+  const set=(id, val)=>{ const e=document.getElementById(id); if(e) e.textContent = val; };
+  // Liquidity sweeps (sellside = recent swing high, buyside = recent swing low)
+  const sell = ict && ict.liq.find(l=>l.type==='sell');
+  const buy  = ict && ict.liq.find(l=>l.type==='buy');
+  const vwap = lastClose; // mean / VWAP proxy for the simulation
+  const fvg  = ict && ict.fvgs[0];
+  const sellP = sell? sell.price : Math.max(lastClose*1.01, ...(ict?ict.liq.map(l=>l.price):[lastClose*1.01]));
+  const buyP  = buy ? buy.price  : Math.min(lastClose*0.99, ...(ict?ict.liq.map(l=>l.price):[lastClose*0.99]));
+  set('lvlSell', sellP.toFixed(2));
+  set('lvlBuy',  buyP.toFixed(2));
+  set('lvlVwap', vwap.toFixed(2));
+  set('lvlFvg',  fvg ? ((fvg.top+fvg.bot)/2).toFixed(2) : '—');
+  // wire TradingView chart-exec deep links (symbol + level)
+  setHref('lvlSellBtn', tvHref(S.symbol, sellP));
+  setHref('lvlBuyBtn',  tvHref(S.symbol, buyP));
+  setHref('lvlVwapBtn', tvHref(S.symbol, vwap));
+  setHref('lvlFvgBtn',  tvHref(S.symbol, fvg?(fvg.top+fvg.bot)/2:null));
 }
 function renderSwarm(swarm){
   const box=document.getElementById('swarmBox'); if(!box) return;
@@ -822,6 +934,47 @@ function bindSlider(id,key,fmt,transform){
     if(out) out.textContent=fmt(raw);
     if(key==='bars') updateContextMonitor();
   });
+}
+/* ───────────────────────── affiliate / partner integration (JS) ───────────────────────── */
+function assetClassOf(sym){
+  const s=(sym||'').toUpperCase().replace(/[^A-Z]/g,'');
+  if(['NQ','ES','GC','YM','RTY','CL','ZB','ZN','NG','MES','MNQ','MGC'].includes(s)) return 'futures';
+  return 'equities'; // equities / spot / crypto → equities-class partner
+}
+function setHref(id, url){ const e=document.getElementById(id); if(e) e.href = url || '#'; }
+function initAffiliateLinks(){
+  // VPS note (static → single source of truth)
+  setHref('vpsLink1', AFFILIATE.beeksfx);
+  setHref('vpsLink2', AFFILIATE.beeksfx);
+  // TraderSync export (carries current symbol + summary in the referral url for the journal prefill)
+  const sym=encodeURIComponent(S.symbol||'BTCUSDT');
+  setHref('logForecastBtn', AFFILIATE.tradersync + '&note=' + encodeURIComponent('SniperForecaster:'+sym));
+  // TradingView key-level buttons (symbol-aware; precise level set in paint())
+  const tv = tvHref(S.symbol, null);
+  ['lvlSellBtn','lvlBuyBtn','lvlVwapBtn','lvlFvgBtn'].forEach(id=>setHref(id, tv));
+}
+function renderPartnerCard(){
+  const cls = assetClassOf(S.symbol);
+  const assetEl=document.getElementById('partnerAsset'),
+        promoEl=document.getElementById('partnerPromo'),
+        descEl=document.getElementById('partnerDesc'),
+        ctaEl=document.getElementById('partnerCta');
+  if(cls==='futures'){
+    assetEl.textContent='Futures ('+ (S.symbol||'NQ') +')';
+    promoEl.style.display=''; promoEl.textContent='PROMO · SAVE80';
+    descEl.innerHTML='<b>Topstep / Apex Trader Funding</b> — pass the Combine, trade a funded futures account. Active promo <b>SAVE80</b> on evaluation passes. Execute directly in <b>Tradovate</b> with the levels the Forecaster surfaces.';
+    ctaEl.innerHTML=
+      '<a class="trade-btn" target="_blank" rel="noopener sponsored" href="'+AFFILIATE.topstep+'">▲ Topstep (SAVE80) ↗</a>'+
+      '<a class="trade-btn alt" target="_blank" rel="noopener sponsored" href="'+AFFILIATE.apex+'">▲ Apex Trader Funding ↗</a>'+
+      '<a class="trade-btn" target="_blank" rel="noopener sponsored" href="'+AFFILIATE.tradovate+'">⚡ Execute in Tradovate ↗</a>';
+  } else {
+    assetEl.textContent='Equities / Spot ('+ (S.symbol||'AAPL') +')';
+    promoEl.style.display='none';
+    descEl.innerHTML='<b>Interactive Brokers</b> — direct equities & spot execution with tiered pricing. Pair with <b>TradingView Pro</b> for the Forecaster’s alerting and multi-timeframe charting.';
+    ctaEl.innerHTML=
+      '<a class="trade-btn" target="_blank" rel="noopener sponsored" href="'+AFFILIATE.interactive+'">▲ Open Interactive Brokers ↗</a>'+
+      '<a class="trade-btn alt" target="_blank" rel="noopener sponsored" href="'+AFFILIATE.tradingviewpro+'">📈 TradingView Pro ↗</a>';
+  }
 }
 function toggleTheme(){
   document.body.classList.toggle('light-mode');
