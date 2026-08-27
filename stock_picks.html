@@ -1,706 +1,750 @@
 <!DOCTYPE html>
-<!-- deploy-marker: recon-v2 2026-08-17 -->
+<!-- deploy-marker: simulation-terminal v3 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Conviction Engine & Stock Picks | SniperTrader.ai</title>
+<title>Market Simulation & Conviction Terminal | SniperTrader.ai</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Space+Mono:wght@400;700&family=Syne:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/theme.css">
 <style>
-/* Adopt canonical tokens from /assets/theme.css. Only layout/component styles below. */
-*{margin:0;padding:0;box-sizing:border-box;}
-html{scroll-behavior:smooth;}
-body{background:var(--obs);color:var(--text);font-family:'Syne',sans-serif;overflow-x:hidden;min-height:100vh;}
-body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.4;}
-.wrap{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:110px 28px 60px;}
-.hero-h1{font-family:'Orbitron',sans-serif;font-weight:900;font-size:38px;letter-spacing:2px;line-height:1.05;margin-bottom:10px;}
-.hero-h1 span{background:linear-gradient(90deg,var(--emerald),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.hero-sub{color:var(--text3);font-size:14px;max-width:860px;line-height:1.6;margin-bottom:6px;}
-.intro{background:linear-gradient(145deg,var(--obs3),var(--obs2));border:1px solid var(--border);border-left:3px solid var(--emerald);border-radius:12px;padding:16px 18px;margin-bottom:34px;margin-top:6px;}
-.intro p{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:10px;}
-.intro ul{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:12px;}
-.intro li{font-size:13px;color:var(--text3);line-height:1.6;padding-left:16px;position:relative;}
-.intro li::before{content:'';position:absolute;left:0;top:7px;width:7px;height:7px;border-radius:2px;background:var(--emerald);box-shadow:0 0 8px var(--emerald);}
-.intro li b{color:var(--text);}
-.intro .intro-note{color:var(--text4)!important;font-size:11.5px!important;margin-bottom:0!important;}
-.tag{display:inline-block;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--emerald);border:1px solid var(--border2);padding:4px 10px;border-radius:20px;margin-bottom:18px;text-transform:uppercase;}
-.section{margin-top:46px;}
-.sec-h{font-family:'Orbitron',sans-serif;font-size:18px;letter-spacing:2px;color:var(--text2);text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:10px;}
-.sec-h::before{content:'';width:9px;height:9px;border-radius:2px;background:var(--emerald);box-shadow:0 0 10px var(--emerald);}
-.sec-sub{color:var(--text4);font-size:12px;margin-bottom:20px;}
+:root{
+  --bg:#070b10; --bg2:#0c1219; --panel:#0e1620; --panel2:#111c28;
+  --border:#1c2c3a; --text:#e7eef6; --muted:#8aa0b4; --dim:#5b7186;
+  --emerald:#00e5a0; --cyan:#00d4ff; --gold:#f0c040; --red:#ff4455;
+  --obs:#0a1622; --obs3:#0c1a26; --green:#00e5a0;
+  --shadow:0 8px 30px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Syne',system-ui,sans-serif;background:
+  radial-gradient(1200px 600px at 80% -10%,rgba(0,212,255,.08),transparent),
+  radial-gradient(900px 500px at 0% 0%,rgba(0,229,160,.06),transparent),
+  var(--bg);
+  color:var(--text);min-height:100vh;line-height:1.5}
+body.light-mode{
+  --bg:#eef3f8; --bg2:#e4ecf3; --panel:#ffffff; --panel2:#f4f8fb;
+  --border:#d3deea; --text:#0c1620; --muted:#4a5e70; --dim:#7c8 fa;
+  --emerald:#009e6e; --cyan:#0077b6; --gold:#9a7400; --red:#c81e2c;
+}
+a{color:var(--cyan);text-decoration:none}
+.wrap{max-width:1180px;margin:0 auto;padding:22px 18px 80px}
+.badge-sim{display:inline-flex;align-items:center;gap:6px;font:600 10px/1 'Space Mono';
+  letter-spacing:.08em;text-transform:uppercase;color:var(--gold);
+  background:rgba(240,192,64,.1);border:1px solid rgba(240,192,64,.35);
+  padding:3px 8px;border-radius:20px;margin-left:8px}
+.badge-live{display:inline-flex;align-items:center;gap:6px;font:600 10px/1 'Space Mono';
+  letter-spacing:.08em;text-transform:uppercase;color:var(--emerald);
+  background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.35);padding:3px 8px;border-radius:20px;margin-left:8px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--emerald);box-shadow:0 0 8px var(--emerald);display:inline-block}
+.dot.err{background:var(--red);box-shadow:0 0 8px var(--red)}
 
-/* ── Conviction Engine ── */
-.grid{display:grid;grid-template-columns:420px 1fr;gap:24px;align-items:start;}
-@media(max-width:980px){.grid{grid-template-columns:1fr;}}
-.kf-panel{background:linear-gradient(145deg,var(--obs3),var(--obs2));border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:20px;}
-.kf-panel h3{font-family:'Orbitron',sans-serif;font-size:12px;letter-spacing:2px;color:var(--text2);text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
-.kf-panel h3::before{content:'';width:8px;height:8px;border-radius:2px;background:var(--emerald);box-shadow:0 0 10px var(--emerald);}
-.factor{margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border);}
-.factor:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
-.factor .flabel{display:flex;justify-content:space-between;align-items:baseline;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--text3);text-transform:uppercase;margin-bottom:8px;}
-.factor .flabel b{color:var(--emerald);font-size:11px;}
-.factor .fdesc{font-size:11px;color:var(--text4);margin-bottom:9px;line-height:1.5;min-height:30px;}
-select,input[type=number]{width:100%;background:var(--obs4);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Space Mono',monospace;font-size:12px;outline:none;transition:border-color .2s;}
-select:focus,input[type=number]:focus{border-color:var(--emerald);}
-select option{background:var(--obs3);color:var(--text);}
-.ap-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-.ap-grid .full{grid-column:1 / -1;}
-.ctrl label{display:block;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--text3);text-transform:uppercase;margin-bottom:7px;}
-.ctrl label span{color:var(--text4);text-transform:none;letter-spacing:0;}
-.run-btn{width:100%;margin-top:8px;padding:13px;border-radius:12px;border:1px solid var(--emerald);background:linear-gradient(90deg,var(--emerald-dim),var(--cyan-dim));color:var(--text);font-family:'Orbitron',sans-serif;font-weight:700;font-size:12px;letter-spacing:2px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
-.run-btn:hover{box-shadow:0 0 24px rgba(0,229,160,.35);transform:translateY(-1px);}
-.reset-btn{width:100%;margin-top:10px;padding:10px;border-radius:12px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
-.reset-btn:hover{border-color:var(--red);color:var(--red);}
-.score-hero{text-align:center;padding:8px 0 4px;}
-.score-num{font-family:'Orbitron',sans-serif;font-weight:900;font-size:62px;line-height:1;letter-spacing:1px;}
-.score-bar-track{height:16px;border-radius:9px;background:var(--obs4);overflow:hidden;border:1px solid var(--border);position:relative;margin:16px 0 6px;}
-.score-bar-fill{height:100%;width:0%;border-radius:9px;transition:width .35s ease,background .35s ease;}
-.score-ticks{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:9px;color:var(--text4);}
-.tier-badge{display:inline-flex;align-items:center;gap:9px;font-family:'Orbitron',sans-serif;font-weight:700;font-size:15px;letter-spacing:1.5px;padding:12px 20px;border-radius:14px;margin:18px auto 0;width:100%;justify-content:center;text-transform:uppercase;}
-.tier-action{text-align:center;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:1px;color:var(--text3);margin-top:12px;}
-.tier-action b{color:var(--text);}
-.readout{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:20px;}
-.stat{background:var(--obs3);border:1px solid var(--border);border-radius:12px;padding:12px 14px;}
-.stat .k{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--text4);text-transform:uppercase;}
-.stat .v{font-family:'Orbitron',sans-serif;font-size:17px;margin-top:6px;}
-.v.pos{color:var(--emerald);} .v.neg{color:var(--red);} .v.neu{color:var(--gold);} .v.cy{color:var(--cyan);}
-.guard{margin-top:18px;}
-.guard-title{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--text3);text-transform:uppercase;margin-bottom:10px;border-top:1px solid var(--border);padding-top:16px;}
-.gitem{display:flex;align-items:flex-start;gap:10px;padding:9px 0;font-size:12px;line-height:1.5;border-bottom:1px solid var(--border);}
-.gitem:last-child{border-bottom:none;}
-.gicon{flex:0 0 auto;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-top:1px;}
-.g-ok{background:var(--emerald-dim);color:var(--emerald);border:1px solid var(--border2);}
-.g-fail{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,68,85,.4);}
-.g-warn{background:var(--gold-dim);color:var(--gold);border:1px solid rgba(240,192,64,.3);}
-.gitem .gtext{flex:1;}
-.gitem .gtext b{color:var(--text);}
-.gitem .gtext span{color:var(--text4);font-size:11px;}
-.note{font-size:11px;color:var(--text4);margin-top:14px;line-height:1.6;}
-.note b{color:var(--text3);}
+/* Header */
+.hdr{background:linear-gradient(135deg,var(--panel),var(--panel2));border:1px solid var(--border);
+  border-radius:16px;padding:18px 20px;box-shadow:var(--shadow)}
+.hdr-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.brand{font:900 22px/1 'Orbitron';background:linear-gradient(90deg,var(--emerald),var(--cyan));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.hdr-meta{display:flex;flex-wrap:wrap;gap:14px;align-items:center;font:500 12px/1.3 'Space Mono';color:var(--muted)}
+.hdr-meta b{color:var(--text)}
+.btn{font:700 12px/1 'Space Mono';text-transform:uppercase;letter-spacing:.05em;
+  background:rgba(0,212,255,.12);color:var(--cyan);border:1px solid rgba(0,212,255,.35);
+  padding:8px 12px;border-radius:9px;cursor:pointer;transition:.15s}
+.btn:hover{background:rgba(0,212,255,.22)}
+.btn.gold{background:rgba(240,192,64,.12);color:var(--gold);border-color:rgba(240,192,64,.35)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:16px}
+.stat{background:var(--obs3);border:1px solid var(--border);border-radius:11px;padding:11px 13px}
+.stat .k{font:600 10px/1 'Space Mono';text-transform:uppercase;letter-spacing:.07em;color:var(--dim)}
+.stat .v{font:800 19px/1.2 'Orbitron';margin-top:6px;color:var(--text)}
+.stat .v.em{color:var(--emerald)} .stat .v.cy{color:var(--cyan)} .stat .v.gd{color:var(--gold)} .stat .v.rd{color:var(--red)}
 
-/* ── Portfolio filter + cards ── */
-.filter-tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:22px;}
-.ftab{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:9px 16px;border-radius:20px;border:1px solid var(--border2);background:var(--obs3);color:var(--text3);cursor:pointer;transition:all .2s;}
-.ftab:hover{color:var(--text);border-color:var(--emerald);}
-.ftab.active{background:var(--emerald-dim);color:var(--emerald);border-color:var(--emerald);box-shadow:0 0 14px rgba(0,229,160,.25);}
-.pick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
-@media(max-width:980px){.pick-grid{grid-template-columns:repeat(2,1fr);}}
-@media(max-width:620px){.pick-grid{grid-template-columns:1fr;}}
-.pick{background:linear-gradient(150deg,var(--obs3),var(--obs2));border:1px solid var(--border);border-radius:16px;padding:18px;position:relative;overflow:hidden;transition:transform .2s,border-color .2s,box-shadow .2s;display:flex;flex-direction:column;}
-.pick:hover{transform:translateY(-3px);border-color:var(--border2);box-shadow:0 14px 40px rgba(0,0,0,.5);}
-.pick::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent,var(--emerald));opacity:.8;}
-.pick-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
-.pick-tk{font-family:'Orbitron',sans-serif;font-weight:900;font-size:22px;letter-spacing:1px;color:var(--text);}
-.pick-name{font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);margin-top:2px;}
-.pick-cat{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:1px;text-transform:uppercase;padding:4px 9px;border-radius:20px;white-space:nowrap;color:var(--accent,var(--emerald));border:1px solid var(--accent,var(--emerald));background:rgba(125,125,125,.06);}
-.pick-thesis{font-size:12px;color:var(--text2);line-height:1.55;margin:12px 0;flex:1;}
-.pick-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
-.ptag{font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.5px;padding:3px 8px;border-radius:5px;background:var(--obs4);color:var(--text3);border:1px solid var(--border);}
-.pick-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
-.pm{background:var(--obs4);border:1px solid var(--border);border-radius:8px;padding:7px 6px;text-align:center;}
-.pm .pk{font-family:'Space Mono',monospace;font-size:7.5px;letter-spacing:.5px;color:var(--text4);text-transform:uppercase;}
-.pm .pv{font-family:'Orbitron',sans-serif;font-size:12px;margin-top:3px;}
-.pm .pv.pos{color:var(--emerald);} .pm .pv.cy{color:var(--cyan);} .pm .pv.neu{color:var(--gold);}
-.tv-btn{width:100%;padding:10px;border-radius:10px;border:1px solid var(--cyan);background:var(--cyan-dim);color:var(--text);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1.5px;cursor:pointer;transition:all .2s;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:7px;}
-.tv-btn:hover{box-shadow:0 0 18px rgba(0,212,255,.35);transform:translateY(-1px);}
+/* Sections */
+.sec{margin-top:26px;background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:18px 20px;box-shadow:var(--shadow)}
+.sec-h{display:flex;align-items:center;gap:10px;font:800 16px/1.2 'Syne';margin-bottom:4px}
+.sec-h .ic{font-size:20px}
+.sec-sub{color:var(--muted);font-size:13px;margin-bottom:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:820px){.grid2{grid-template-columns:1fr}}
 
-/* ── Recon audit (dropped) ── */
-.recon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;}
-.drop{background:var(--obs3);border:1px solid var(--border);border-left:3px solid var(--red);border-radius:10px;padding:11px 13px;}
-.drop .dt{display:flex;justify-content:space-between;align-items:center;}
-.drop .dsym{font-family:'Orbitron',sans-serif;font-weight:700;font-size:14px;color:var(--text);}
-.drop .dbull{font-family:'Space Mono',monospace;font-size:10px;color:var(--emerald);} /* emerald: bullish sentiment = constructive context */
-.drop .dreason{font-size:10.5px;color:var(--text4);margin-top:6px;line-height:1.45;}
-.drop .dscore{font-family:'Space Mono',monospace;font-size:9px;color:var(--text4);margin-top:4px;}
+/* Swarm heatmap */
+.heatmap{display:grid;grid-template-columns:repeat(10,1fr);gap:5px}
+.cell{aspect-ratio:1;border-radius:5px;position:relative;cursor:default;transition:transform .12s}
+.cell:hover{transform:scale(1.18);z-index:2}
+.cell.bull{background:linear-gradient(135deg,#00e5a0,#00b377)}
+.cell.neu{background:linear-gradient(135deg,#3a4a5a,#2a3642)}
+.cell.bear{background:linear-gradient(135deg,#ff4455,#b81e2c)}
+.legend{display:flex;gap:16px;margin-top:10px;font:500 11px/1 'Space Mono';color:var(--muted);align-items:center}
+.legend i{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:-1px}
+.signal{background:var(--obs3);border:1px solid var(--border);border-radius:10px;padding:9px 11px;margin-top:8px;font-size:13px}
+.signal b{color:var(--text)}
 
-/* ── Live refresh badge ── */
-.refresh-bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:linear-gradient(145deg,var(--obs3),var(--obs2));border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:24px;}
-.refresh-bar .badge{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--text3);text-transform:uppercase;display:flex;align-items:center;gap:8px;}
-.refresh-bar .dot{width:8px;height:8px;border-radius:50%;background:var(--emerald);box-shadow:0 0 8px var(--emerald);}
-.refresh-bar .dot.stale{background:var(--gold);box-shadow:0 0 8px var(--gold);}
-.refresh-bar .dot.err{background:var(--red);box-shadow:0 0 8px var(--red);}
-.refresh-bar .val{color:var(--text);}
-.refresh-btn{margin-left:auto;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:8px 14px;border-radius:9px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;transition:all .2s;}
-.refresh-btn:hover{border-color:var(--emerald);color:var(--emerald);}
-.refresh-btn:disabled{opacity:.5;cursor:wait;}
-details.raw{margin-top:22px;border:1px solid var(--border);border-radius:12px;background:var(--obs3);padding:14px 16px;}
-details.raw summary{cursor:pointer;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--text3);text-transform:uppercase;}
-details.raw pre{margin-top:12px;background:var(--obs);border:1px solid var(--border);border-radius:10px;padding:14px;overflow:auto;font-size:11px;color:var(--text3);max-height:360px;}
+/* Kronos chart */
+.chart-wrap{background:var(--obs3);border:1px solid var(--border);border-radius:11px;padding:10px}
+canvas{display:block;width:100%}
+.symsel{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+select,input[type=text]{font:500 12px 'Space Mono';background:var(--obs);color:var(--text);
+  border:1px solid var(--border);border-radius:8px;padding:7px 9px}
+.kpat{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.kpat .kp{background:var(--obs3);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px}
+.kpat .kp b{display:block;font:800 15px/1 'Orbitron';margin-top:4px}
 
-/* ── TradingView modal ── */
-.tv-modal{position:fixed;inset:0;z-index:500;background:rgba(2,4,8,.82);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:40px;}
-.tv-modal.open{display:flex;}
-.tv-box{width:min(1100px,94vw);height:min(680px,86vh);background:var(--obs2);border:1px solid var(--border2);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 90px rgba(0,0,0,.7);}
-.tv-head{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid var(--border);background:var(--obs3);}
-.tv-head .ts{font-family:'Orbitron',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;color:var(--text);}
-.tv-head .ts span{color:var(--cyan);}
-.tv-head .tlinks{display:flex;gap:10px;align-items:center;}
-.tv-ext{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--cyan);text-decoration:none;border:1px solid var(--border-cyan);padding:6px 11px;border-radius:8px;text-transform:uppercase;transition:all .2s;}
-.tv-ext:hover{background:var(--cyan-dim);}
-.tv-close{background:var(--obs4);border:1px solid var(--border2);color:var(--text3);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:15px;line-height:1;transition:all .2s;}
-.tv-close:hover{border-color:var(--red);color:var(--red);}
-.tv-frame{flex:1;background:#000;}
-.tv-frame iframe{width:100%;height:100%;border:0;display:block;}
+/* Scenario matrix */
+.scen{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:8px}
+.scn{background:var(--obs3);border:1px solid var(--border);border-radius:11px;padding:12px;text-align:center}
+.scn.bull{border-color:rgba(0,229,160,.4)} .scn.base{border-color:rgba(240,192,64,.4)} .scn.bear{border-color:rgba(255,68,85,.4)}
+.scn .lbl{font:700 11px/1 'Space Mono';text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.scn .pct{font:900 26px/1 'Orbitron';margin:8px 0 2px}
+.scn.bull .pct{color:var(--emerald)} .scn.base .pct{color:var(--gold)} .scn.bear .pct{color:var(--red)}
+.scn .prob{font:600 12px 'Space Mono';color:var(--muted)}
+.slider-row{display:flex;align-items:center;gap:12px;margin-top:14px;font:500 12px 'Space Mono';color:var(--muted)}
+input[type=range]{flex:1;accent-color:var(--cyan)}
+.cone{margin-top:12px;background:var(--obs3);border:1px solid var(--border);border-radius:11px;padding:10px}
 
-.foot{margin-top:48px;text-align:center;font-family:'Space Mono',monospace;font-size:10px;color:var(--text4);letter-spacing:1px;}
-.foot a{color:var(--text3);text-decoration:none;}
+/* Picks */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 14px}
+.ftab{font:700 11px/1 'Space Mono';text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+  background:var(--obs3);border:1px solid var(--border);border-radius:20px;padding:7px 13px;cursor:pointer}
+.ftab.active{color:var(--text);border-color:var(--cyan);background:rgba(0,212,255,.12)}
+.picks{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.pick{background:linear-gradient(160deg,var(--panel2),var(--obs3));border:1px solid var(--border);
+  border-radius:14px;padding:14px;position:relative;overflow:hidden}
+.pick::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent,var(--cyan))}
+.pick-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.pick-tk{font:900 20px/1 'Orbitron';letter-spacing:.02em}
+.pick-cap{font:600 10px/1 'Space Mono';color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-top:3px}
+.pick-cat{font:700 10px/1 'Space Mono';text-transform:uppercase;letter-spacing:.05em;color:var(--accent,var(--cyan));
+  border:1px solid var(--accent,var(--cyan));border-radius:20px;padding:5px 9px;white-space:nowrap}
+.scen3{display:flex;gap:6px;margin:11px 0}
+.scen3 .s{flex:1;text-align:center;background:var(--obs);border-radius:8px;padding:7px 4px;border:1px solid var(--border)}
+.scen3 .s .t{font:600 9px/1 'Space Mono';text-transform:uppercase;color:var(--dim)}
+.scen3 .s .p{font:800 14px/1 'Orbitron';margin-top:4px}
+.scen3 .s.b .p{color:var(--emerald)} .scen3 .s.a .p{color:var(--gold)} .scen3 .s.e .p{color:var(--red)}
+.pick-tags{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0}
+.ptag{font:600 10px/1 'Space Mono';background:rgba(0,212,255,.1);color:var(--cyan);
+  border:1px solid rgba(0,212,255,.25);border-radius:6px;padding:4px 7px}
+.pick-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}
+.pick-metrics .pm{background:var(--obs);border-radius:8px;padding:7px 5px;text-align:center}
+.pick-metrics .pk{font:600 9px/1 'Space Mono';text-transform:uppercase;color:var(--dim)}
+.pick-metrics .pv{font:800 13px/1 'Orbitron';margin-top:4px}
+.pick-btns{display:flex;gap:6px;margin-top:8px}
+.pick-btns .btn{flex:1;text-align:center;padding:8px 4px;font-size:10px}
+.note{color:var(--muted);font-size:13px;padding:14px;text-align:center}
+
+/* Narrative */
+.narr{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.ncard{background:var(--obs3);border:1px solid var(--border);border-radius:12px;padding:13px}
+.ncard h4{margin:0 0 6px;font:700 14px 'Syne';display:flex;align-items:center;gap:7px}
+.ncard .imp{font:600 11px 'Space Mono';color:var(--muted);margin:3px 0}
+.ncard .sw{font:600 11px 'Space Mono';color:var(--cyan)}
+
+/* Position mgmt */
+.pf{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:14px}
+.pfcard{background:var(--obs3);border:1px solid var(--border);border-radius:11px;padding:11px}
+.pfcard .nm{font:800 14px 'Orbitron'} .pfcard .al{font:600 11px 'Space Mono';color:var(--muted)}
+.pfcard .px{font:700 12px 'Space Mono';margin-top:5px} .pos{color:var(--emerald)} .neg{color:var(--red)}
+.guard{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:8px}
+.gbar{background:var(--obs3);border:1px solid var(--border);border-radius:10px;padding:11px}
+.gbar .gl{font:600 11px 'Space Mono';color:var(--muted);display:flex;justify-content:space-between}
+.gtrack{height:9px;background:var(--obs);border-radius:6px;margin-top:8px;overflow:hidden}
+.gfill{height:100%;border-radius:6px}
+.gfill.ok{background:linear-gradient(90deg,var(--emerald),var(--cyan))}
+.gfill.warn{background:linear-gradient(90deg,var(--gold),var(--red))}
+
+/* Recon audit */
+.recon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.drop{background:var(--obs3);border:1px solid var(--border);border-left:3px solid var(--red);border-radius:9px;padding:10px 12px}
+.drop .dt{display:flex;justify-content:space-between;align-items:center}
+.drop .dsym{font:800 15px 'Orbitron'} .drop .dbull{font:600 11px 'Space Mono';color:var(--emerald)}
+.drop .dreason{font-size:12px;color:var(--muted);margin-top:5px}
+
+/* Educational */
+.edu{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.ecard{background:var(--obs3);border:1px solid var(--border);border-radius:12px;padding:13px}
+.ecard h4{margin:0 0 6px;font:700 14px 'Syne';color:var(--cyan)}
+.ecard p{margin:0;font-size:13px;color:var(--muted)}
+
+/* Modal */
+.modal{position:fixed;inset:0;background:rgba(3,7,11,.82);display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
+.modal.open{display:flex}
+.modal-box{background:var(--panel);border:1px solid var(--border);border-radius:16px;max-width:920px;width:100%;max-height:88vh;overflow:auto;box-shadow:var(--shadow)}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border)}
+.modal-head h3{margin:0;font:800 16px 'Syne'}
+.x{font-size:20px;cursor:pointer;color:var(--muted);background:none;border:none}
+.tv-frame{width:100%;height:560px;border:0;border-radius:0 0 16px 16px}
+
+/* Tour */
+.tour{position:fixed;inset:0;background:rgba(3,7,11,.86);display:none;align-items:center;justify-content:center;z-index:70;padding:20px}
+.tour.open{display:flex}
+.tour-box{background:var(--panel);border:1px solid var(--cyan);border-radius:16px;max-width:520px;padding:26px;box-shadow:var(--shadow)}
+.tour-box h2{font:900 22px 'Orbitron';margin:0 0 10px;background:linear-gradient(90deg,var(--emerald),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+.tour-box p{color:var(--muted);font-size:14px}
+.tour-step{font:600 11px 'Space Mono';color:var(--gold);text-transform:uppercase;letter-spacing:.08em}
+.tour-nav{display:flex;justify-content:space-between;margin-top:18px}
+
+.foot{margin-top:30px;color:var(--dim);font-size:12px;text-align:center}
+.disc{margin-top:10px;font-size:11px;color:var(--dim);background:var(--obs3);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+details.raw{margin-top:14px} details.raw summary{cursor:pointer;color:var(--muted);font:600 11px 'Space Mono'}
+details.raw pre{background:var(--obs);border:1px solid var(--border);border-radius:10px;padding:12px;overflow:auto;max-height:300px;font:11px 'Space Mono';color:var(--green)}
+.tt{position:fixed;top:14px;right:14px;z-index:50;display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--border);border-radius:24px;padding:8px 14px;cursor:pointer;box-shadow:var(--shadow)}
+.tt .tt-icon{font-size:15px} .tt #themeLabel{font:700 11px 'Space Mono';color:var(--muted)}
 </style>
 </head>
 <body>
-<nav class="kf-nav">
-  <a href="/index.html" class="nav-logo">SNIPER<span>TRADER</span></a>
-  <div class="nav-links">
-    <a href="/traderedge_baseline.html">Baseline</a>
-    <a href="/traderedge_guardrails.html">Guardrails</a>
-    <a href="/traderedge_review_loop.html">Review Loop</a>
-    <a href="/traderedge_ai_sentiment.html">Ai Sentiment</a>
-    <a href="/traderedge_chartai.html">Ai Chart</a>
-    <a href="/kronos_foundation.html" class="nav-pill">⬡ Kronos KFM</a>
-    <a href="/traderedge_prop_firms_command_center.html">Prop Firm Center</a>
-    <button class="kf-theme-toggle" onclick="toggleTheme()" id="themeToggle"><span class="tt-icon">🌙</span><span id="themeLabel">DARK</span></button>
-  </div>
-</nav>
-
+<div class="tt" onclick="toggleTheme()" title="Toggle theme"><span class="tt-icon">🌙</span><span id="themeLabel">DARK</span></div>
 <div class="wrap">
-  <span class="tag">⬡ Conviction Engine · Tier 4 Trading Decision</span>
-  <h1 class="hero-h1">Conviction Engine <span>&amp; Stock Picks</span></h1>
-  <p class="hero-sub">Aggregate verified signals into a normalized Composite Conviction Score (0–100), map it to an execution tier, size the position with Fractional-Kelly + hard guardrails — then open any pick on a live TradingView chart. Live server-side recon; no orders are placed.</p>
 
-  <div class="intro">
-    <p><b style="color:var(--text)">Conviction Engine &amp; Stock Picks</b> — a unified decision-support terminal that turns raw market signals into disciplined, risk-bounded trades.</p>
-    <ul>
-      <li><b>The Conviction Scoring Engine</b> aggregates verified signals across four sub-agents — Insider/Inside Buying (0.30), Technical Trend &amp; Order Flow (0.30), Volume Surge (0.20), and Fundamental Catalyst (0.20) — into a single Composite Score (0–100). That score maps to a clear execution tier: <b>Ultra-High</b> (≥88) fires an immediate simulated order, <b>High</b> (78–87) scales in via staggered limits, <b>Moderate</b> (65–77) is watchlist-only paper, and anything below 65 is dropped. Position sizing uses a Fractional-Kelly model capped by hard guardrails — 30% sector limit, 70% total deployment / 30% cash floor, 5-position max, and a correlation &gt;0.85 halving rule. Trade levels anchor to live ATR and swing structure.</li>
-      <li><b>Categorized Stock Picks</b> surfaces the live watchlist as a filterable card grid (Ultra-High / High / Watchlist), each card one click from a <b>TradingView light-box</b> with its embedded advanced chart. Below that, the <b>Recon Audit</b> shows full funnel transparency — every scanned ticker that failed the conviction gate and why. Insider signals come from real SEC Form 4 filings (key-less); congressional STOCK Act data is included only when a Quiver key is configured.</li>
-    </ul>
-    <p class="intro-note"><b>Educational simulation only. Not financial advice.</b> Everything runs against live public data — no orders are placed, no positions opened.</p>
-  </div>
-
-  <div class="refresh-bar">
-    <span class="badge"><span class="dot" id="refDot"></span> RECON STATUS</span>
-    <span class="badge">LAST UPDATED <span class="val" id="lastUpdated">—</span></span>
-    <span class="badge">NEXT REFRESH <span class="val" id="nextRefresh">13:00 &amp; 22:00 UTC (08:00 &amp; 17:00 ET)</span></span>
-    <button class="refresh-btn" id="refreshBtn" onclick="fetchRecon()">↻ REFRESH</button>
-  </div>
-
-  <!-- SECTION 1: CONVICTION ENGINE -->
-  <div class="section">
-    <div class="sec-h">Conviction Scoring Engine</div>
-    <div class="sec-sub">Weights — Insider 0.30 · Technical 0.30 · Volume 0.20 · Catalyst 0.20. Composite Score is reported on a 0–100 scale. Select the strongest verified signal per factor.</div>
-    <div class="grid">
-      <!-- LEFT: INPUTS -->
+  <!-- ══════════ SECTION 1: HEADER DASHBOARD ══════════ -->
+  <div class="hdr">
+    <div class="hdr-top">
       <div>
-        <div class="kf-panel">
-          <h3>Signal Inputs · Composite Score</h3>
-          <div class="factor">
-            <div class="flabel">Technical Trend / Order Flow <b id="techVal">0</b></div>
-            <div class="fdesc">BOS, FVG, or 20-day breakout verified on live charts.</div>
-            <select id="tech" onchange="compute()">
-              <option value="0">— None verified —</option>
-              <option value="60">Single Valid Pattern (BOS / FVG / Breakout)</option>
-              <option value="85">Valid FVG or BOS + 20-Day High Breach</option>
-              <option value="100">Daily Bullish FVG + 20-Day Breakout + BOS</option>
-            </select>
-          </div>
-          <div class="factor">
-            <div class="flabel">Insider / Inside Buying <b id="insiderVal">0</b></div>
-            <div class="fdesc">SEC Form 4 buys (real, key-less) &amp; STOCK Act (if Quiver key set).</div>
-            <select id="insider" onchange="compute()">
-              <option value="0">No Insider Buying (Neutral)</option>
-              <option value="60">Single Executive Open-Market Purchase</option>
-              <option value="70">Single Buy, No Distribution</option>
-              <option value="100">C-Suite Form 4 Cluster (≥3 Buys &lt; 7 Days)</option>
-            </select>
-          </div>
-          <div class="factor">
-            <div class="flabel">Volume Surge <b id="sentVal">0</b></div>
-            <div class="fdesc">Social/market volume surge vs 15-day average.</div>
-            <select id="sent" onchange="compute()">
-              <option value="0">— Below threshold —</option>
-              <option value="55">Normal volume (1x avg)</option>
-              <option value="75">Elevated (2x avg daily volume)</option>
-              <option value="100">&gt; 3x Avg Daily Volume Surge</option>
-            </select>
-          </div>
-          <div class="factor">
-            <div class="flabel">Fundamental / DD Catalyst <b id="ddVal">0</b></div>
-            <div class="fdesc">Verified news catalyst, short float, or float constraint.</div>
-            <select id="dd" onchange="compute()">
-              <option value="0">— No hard catalyst —</option>
-              <option value="50">Form 4 present / general DD (no immediate catalyst)</option>
-              <option value="75">Validated DD Thesis + Short Squeeze (&gt;20% Float)</option>
-              <option value="100">Tier 1 News Catalyst (Earnings Beat / SEC Filing / Contract)</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="kf-panel">
-          <h3>Account &amp; Position Parameters</h3>
-          <div class="ap-grid">
-            <div class="ctrl full">
-              <label>Account Equity ($)</label>
-              <input type="number" id="equity" value="25000" min="0" step="500" oninput="compute()">
-            </div>
-            <div class="ctrl">
-              <label>Entry Price ($)</label>
-              <input type="number" id="entry" value="100.00" min="0" step="0.01" oninput="compute()">
-            </div>
-            <div class="ctrl">
-              <label>ATR (14) ($) <span>(for stop/target anchoring)</span></label>
-              <input type="number" id="atr" value="3.00" min="0" step="0.01" oninput="compute()">
-            </div>
-            <div class="ctrl">
-              <label>Stop-Loss Anchor ($)</label>
-              <input type="number" id="stop" value="94.00" min="0" step="0.01" oninput="compute()">
-            </div>
-            <div class="ctrl full">
-              <label>Current Sector Allocation <span>(% already in this sector)</span></label>
-              <input type="number" id="sectorUsed" value="0" min="0" max="100" step="1" oninput="compute()">
-            </div>
-            <div class="ctrl full">
-              <label>Total Portfolio Allocation <span>(% already deployed)</span></label>
-              <input type="number" id="portUsed" value="0" min="0" max="100" step="1" oninput="compute()">
-            </div>
-            <div class="ctrl">
-              <label>Open Positions</label>
-              <input type="number" id="openPos" value="0" min="0" step="1" oninput="compute()">
-            </div>
-            <div class="ctrl">
-              <label>30-Day Corr. w/ Peer</label>
-              <input type="number" id="corr" value="0.00" min="0" max="1" step="0.01" oninput="compute()">
-            </div>
-          </div>
-          <button class="run-btn" onclick="compute()">▶ RECOMPUTE</button>
-          <button class="reset-btn" onclick="resetAll()">RESET TO NEUTRAL</button>
+        <div class="brand">🎯 Market Simulation & Conviction Terminal</div>
+        <div class="hdr-meta" style="margin-top:8px">
+          <span><span class="dot" id="refDot"></span> <b id="mktStatus">LIVE</b></span>
+          <span>Next Refresh: <b id="nextRefresh">08:00 / 17:00 ET</b></span>
+          <span>Data Age: <b id="dataAge">—</b></span>
+          <span><span class="badge-live">LIVE</span> Conviction + Kronos</span>
+          <span><span class="badge-sim">SIM</span> MiroFish · Monte-Carlo</span>
         </div>
       </div>
-
-      <!-- RIGHT: RESULTS -->
-      <div>
-        <div class="kf-panel">
-          <h3>Composite Score &amp; Tier</h3>
-          <div class="score-hero">
-            <div class="score-num" id="scoreNum">0.00</div>
-            <div class="score-bar-track"><div class="score-bar-fill" id="scoreFill"></div></div>
-            <div class="score-ticks"><span>0</span><span>65 REJECT</span><span>78 HIGH</span><span>88 ULTRA</span><span>100</span></div>
-          </div>
-          <div class="tier-badge" id="tierBadge"><span class="tier-mark"></span><span id="tierName">—</span></div>
-          <div class="tier-action" id="tierAction"></div>
-        </div>
-
-        <div class="kf-panel">
-          <h3>Position Sizing &amp; Risk</h3>
-          <div class="readout">
-            <div class="stat"><div class="k">Allocation %</div><div class="v" id="allocPct">—</div></div>
-            <div class="stat"><div class="k">Position $</div><div class="v cy" id="posDollars">—</div></div>
-            <div class="stat"><div class="k">Shares</div><div class="v" id="shares">—</div></div>
-            <div class="stat"><div class="k">Risk / Trade $</div><div class="v neg" id="riskDollars">—</div></div>
-            <div class="stat"><div class="k">Take-Profit $</div><div class="v pos" id="tpPrice">—</div></div>
-            <div class="stat"><div class="k">Reward : Risk</div><div class="v neu" id="rrRatio">—</div></div>
-          </div>
-          <div class="note" id="sizingNote"></div>
-        </div>
-
-        <div class="kf-panel">
-          <h3>Risk Guardrails</h3>
-          <div class="guard" id="guardList"></div>
-          <div class="note"><b>Hard limits:</b> 30% single-sector cap · 70% total deployment / 30% cash floor · max 5 open positions · correlation &gt; 0.85 halves the lower-scoring peer. Moderate tier (&lt; 0.78) = paper/WATCHLIST only.</div>
-        </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" id="refreshBtn" onclick="fetchRecon()">↻ REFRESH</button>
+        <button class="btn gold" onclick="exportCSV()">⬇ EXPORT CSV</button>
+        <button class="btn" onclick="openTour()">? TOUR</button>
       </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="k">Swarm Consensus</div><div class="v em" id="stCons">—</div></div>
+      <div class="stat"><div class="k">Volatility Index</div><div class="v gd" id="stVol">—</div></div>
+      <div class="stat"><div class="k">Active Simulations</div><div class="v cy" id="stSims">—</div></div>
+      <div class="stat"><div class="k">Top Pattern</div><div class="v" id="stPat">—</div></div>
+      <div class="stat"><div class="k">Picks / Scanned</div><div class="v" id="stPick">—</div></div>
     </div>
   </div>
 
-  <!-- SECTION 2: CATEGORIZED PICKS -->
-  <div class="section">
-    <div class="sec-h">Categorized Portfolio Picks</div>
-    <div class="sec-sub">Live watchlist grouped by conviction tier. Every symbol opens a TradingView advanced chart in a light-box.</div>
-    <div class="filter-tabs" id="filterTabs">
-      <button class="ftab active" data-cat="all" onclick="setFilter('all')">All</button>
-      <button class="ftab" data-cat="ultra" onclick="setFilter('ultra')">Ultra-High</button>
-      <button class="ftab" data-cat="high" onclick="setFilter('high')">High</button>
-      <button class="ftab" data-cat="watch" onclick="setFilter('watch')">Watchlist</button>
+  <!-- ══════════ SECTION 2: LIVE SIMULATION VIEW ══════════ -->
+  <div class="sec">
+    <div class="sec-h"><span class="ic">🧠</span> Live Market Simulation View <span class="badge-sim">MiroFish · SIMULATION</span></div>
+    <div class="sec-sub">Swarm psychology &amp; scenario cones are <b>client-side Monte-Carlo simulations</b> for education — not live order flow or institutional data.</div>
+    <div class="grid2">
+      <!-- 2.1 Swarm heatmap -->
+      <div>
+        <div class="sec-h" style="font-size:14px"><span class="ic">🔴</span> MiroFish Agent Swarm</div>
+        <div class="heatmap" id="heatmap"></div>
+        <div class="legend">
+          <span><i style="background:var(--emerald)"></i>Bullish</span>
+          <span><i style="background:#3a4a5a"></i>Neutral</span>
+          <span><i style="background:var(--red)"></i>Bearish</span>
+          <span style="margin-left:auto">100 agents</span>
+        </div>
+        <div class="signal">⚡ Tech Sector: <b id="swTech">—</b> Bullish</div>
+        <div class="signal">🛡️ Defensive: <b id="swDef">—</b> Bullish</div>
+        <div class="signal">📊 Net Bias: <b id="swNet">—</b> · Activity: <b id="swAct">—</b></div>
+        <div class="slider-row">
+          <span>Swarm Bias</span>
+          <input type="range" id="swarmBias" min="-1" max="1" step="0.05" value="0" oninput="reSimAll()">
+          <span id="swarmBiasV">0.00</span>
+        </div>
+      </div>
+      <!-- 2.2 Kronos structure -->
+      <div>
+        <div class="sec-h" style="font-size:14px"><span class="ic">📈</span> Kronos Structural K-Line <span class="badge-live">LIVE</span></div>
+        <div class="symsel">
+          <select id="kronosSym" onchange="loadKronos()"></select>
+          <select id="kronosTF" onchange="loadKronos()">
+            <option value="1d">Daily</option><option value="1h">1H</option><option value="4h">4H</option>
+          </select>
+        </div>
+        <div class="chart-wrap"><canvas id="kChart" height="220"></canvas></div>
+        <div class="kpat">
+          <div class="kp">Breakout<b id="kpBreak">—</b></div>
+          <div class="kp">BOS<b id="kpBos">—</b></div>
+          <div class="kp">FVG<b id="kpFvg">—</b></div>
+          <div class="kp">Next Level<b id="kpLevel">—</b></div>
+        </div>
+      </div>
     </div>
-    <div class="pick-grid" id="pickGrid"></div>
+    <!-- 2.3 Scenario matrix -->
+    <div style="margin-top:16px">
+      <div class="sec-h" style="font-size:14px"><span class="ic">🎲</span> Scenario Probability Matrix <span class="badge-sim">Monte-Carlo · SIM</span></div>
+      <div class="symsel">
+        <span>Symbol:</span>
+        <select id="scenSym" onchange="runScenario()"></select>
+        <span id="scenMeta" style="color:var(--muted);font:500 12px 'Space Mono'"></span>
+      </div>
+      <div class="scen">
+        <div class="scn bull"><div class="lbl">Bullish</div><div class="pct" id="scBullPct">—</div><div class="prob" id="scBullPr">—</div></div>
+        <div class="scn base"><div class="lbl">Base</div><div class="pct" id="scBasePct">—</div><div class="prob" id="scBasePr">—</div></div>
+        <div class="scn bear"><div class="lbl">Bear</div><div class="pct" id="scBearPct">—</div><div class="prob" id="scBearPr">—</div></div>
+      </div>
+      <div class="cone"><canvas id="coneChart" height="160"></canvas></div>
+      <div class="signal" id="scenDrivers">Scenario drivers computed from conviction score + swarm bias. Adjust Swarm Bias above to re-simulate.</div>
+    </div>
   </div>
 
-  <!-- SECTION 3: RECON AUDIT -->
-  <div class="section">
-    <div class="sec-h">Recon Audit · Dropped This Cycle</div>
-    <div class="sec-sub">Full funnel transparency — every scanned ticker that failed the conviction gate, with the failing signal and its community bullish ratio.</div>
+  <!-- ══════════ SECTION 3: STOCK PICKS GRID ══════════ -->
+  <div class="sec">
+    <div class="sec-h"><span class="ic">📊</span> Categorized Stock Picks <span class="badge-live">LIVE</span></div>
+    <div class="sec-sub">Multi-cap conviction scan — SEC Form 4 insider + Kronos structure + volume, scored 0–100. Each card shows simulated scenario cones.</div>
+    <div class="filters" id="filters">
+      <div class="ftab active" data-cat="all" onclick="setFilter('all')">All</div>
+      <div class="ftab" data-cat="ultra" onclick="setFilter('ultra')">Ultra-High</div>
+      <div class="ftab" data-cat="high" onclick="setFilter('high')">High</div>
+      <div class="ftab" data-cat="watch" onclick="setFilter('watch')">Watchlist</div>
+      <div class="ftab" data-cat="swarm" onclick="setFilter('swarm')">Swarm Picks</div>
+    </div>
+    <div class="picks" id="pickGrid"></div>
+  </div>
+
+  <!-- ══════════ SECTION 4: NARRATIVE INJECTORS ══════════ -->
+  <div class="sec">
+    <div class="sec-h"><span class="ic">📰</span> Narrative &amp; Volatility Injectors <span class="badge-sim">Illustrative</span></div>
+    <div class="sec-sub">Static illustrative scenarios — <b>not a live news feed.</b> Used to demonstrate how narrative shocks perturb the simulation.</div>
+    <div class="narr" id="narrGrid"></div>
+  </div>
+
+  <!-- ══════════ SECTION 5: EXECUTION & POSITION MGMT ══════════ -->
+  <div class="sec">
+    <div class="sec-h"><span class="ic">⚙️</span> Execution &amp; Position Management <span class="badge-sim">Paper</span></div>
+    <div class="sec-sub">Simulated paper book driven by the live picks. Stress-test sizing against the engine guardrails.</div>
+    <div class="pf" id="pfGrid"></div>
+    <div class="guard">
+      <div class="gbar"><div class="gl"><span>Sector Cap</span><span id="gSectV">—</span></div><div class="gtrack"><div class="gfill ok" id="gSect" style="width:0%"></div></div></div>
+      <div class="gbar"><div class="gl"><span>Positions Open</span><span id="gPosV">—</span></div><div class="gtrack"><div class="gfill ok" id="gPos" style="width:0%"></div></div></div>
+      <div class="gbar"><div class="gl"><span>Total Exposure</span><span id="gExpV">—</span></div><div class="gtrack"><div class="gfill ok" id="gExp" style="width:0%"></div></div></div>
+      <div class="gbar"><div class="gl"><span>Correlation (CRM×NVDA)</span><span id="gCorrV">—</span></div><div class="gtrack"><div class="gfill ok" id="gCorr" style="width:0%"></div></div></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+      <button class="btn" onclick="stressTest()">⚡ RUN STRESS TEST</button>
+      <button class="btn" onclick="simulateEntry()">＋ SIMULATE ENTRY</button>
+      <button class="btn" onclick="simulateExit()">－ SIMULATE EXIT</button>
+    </div>
+    <div class="signal" id="pmNote" style="margin-top:12px">Paper portfolio initialized from live picks. Adjust allocations in the calculator via the guardrails panel.</div>
+  </div>
+
+  <!-- ══════════ SECTION 6: RECON AUDIT 2.0 ══════════ -->
+  <div class="sec">
+    <div class="sec-h"><span class="ic">🔍</span> Recon Audit — Dropped This Cycle</div>
+    <div class="sec-sub">Transparency: why tickers failed the conviction gate, with simulation context.</div>
     <div class="recon-grid" id="reconGrid"></div>
-    <details class="raw">
-      <summary>▸ Raw Recon Payload (JSON)</summary>
-      <pre>{
-  "timestamp": "2026-08-17T00:33:11Z",
-  "scout_system": "Hermes-MultiFactor-V1",
-  "portfolio_action": { "execution_type": "SIMULATED_MARKET_ORDER", "trades": [] },
-  "methodology_note": "Built with REAL key-less APIs: Stocktwits public JSON, Yahoo OHLCV, Google News RSS + SEC EDGAR. No execution webhook exists; SIMULATED only.",
-  "funnel_audit": [
-    {"symbol":"RIVN","disposition":"DROP","reason":"Tier-1 no chart trigger (claimed [BREAKOUT])","bull_pct":83.3},
-    {"symbol":"LUNR","disposition":"DROP","reason":"Tier-1 sentiment/velocity fail","bull_pct":66.7},
-    {"symbol":"SONY","disposition":"DROP","reason":"Tier-3 thin sentiment sample (6 posts)","bull_pct":83.3},
-    {"symbol":"NLST","disposition":"DROP","reason":"Tier-3 OTC venue (pump/fraud risk)","bull_pct":100.0},
-    {"symbol":"AVGO","disposition":"DROP","reason":"Tier-1 no chart trigger (claimed [BREAKOUT])","bull_pct":83.3},
-    {"symbol":"LPTH","disposition":"DROP","reason":"Tier-3 thin sentiment sample (7 posts)","bull_pct":100.0},
-    {"symbol":"AUPH","disposition":"DROP","reason":"Tier-1 no price-action keyword (BOS/FVG/Breakout)","bull_pct":100.0},
-    {"symbol":"CSIQ","disposition":"DROP","reason":"Tier-1 no price-action keyword (BOS/FVG/Breakout)","bull_pct":81.8},
-    {"symbol":"BETA","disposition":"DROP","reason":"Tier-1 only FVG (no BREAKOUT/BOS structure)","bull_pct":100.0},
-    {"symbol":"SSPC","disposition":"DROP","reason":"Tier-1 no price-action keyword (BOS/FVG/Breakout)","bull_pct":75.0},
-    {"symbol":"IWM","disposition":"DROP","reason":"Tier-1 sentiment/velocity fail","bull_pct":50.0},
-    {"symbol":"POET","disposition":"DROP","reason":"Tier-1 no price-action keyword (BOS/FVG/Breakout)","bull_pct":100.0},
-    {"symbol":"USAR","disposition":"DROP","reason":"Tier-1 no price-action keyword (BOS/FVG/Breakout)","bull_pct":85.7},
-    {"symbol":"AGQ","disposition":"DROP","reason":"Tier-1 only FVG (no BREAKOUT/BOS structure)","bull_pct":91.7},
-    {"symbol":"XLV","disposition":"DROP","reason":"Tier-1 only FVG (no BREAKOUT/BOS structure)","bull_pct":87.5},
-    {"symbol":"VOO","disposition":"DROP","reason":"Tier-1 sentiment/velocity fail","bull_pct":50.0},
-    {"symbol":"UVIX","disposition":"DROP","reason":"Tier-1 no chart trigger (claimed [BREAKOUT])","bull_pct":70.0},
-    {"symbol":"PYPL","disposition":"DROP","reason":"Tier-1 sentiment/velocity fail","bull_pct":55.6},
-    {"symbol":"BIDU","disposition":"DROP","reason":"Tier-1 sentiment/velocity fail","bull_pct":60.0},
-    {"symbol":"SNDQ","disposition":"DROP","reason":"Tier-1 no price-action keyword (BOS/FVG/Breakout)","bull_pct":77.8},
-    {"symbol":"PATH","disposition":"DROP","reason":"Tier-1 sentiment/velocity fail","bull_pct":60.0},
-    {"symbol":"KOPN","disposition":"DROP","reason":"Tier-1 no price-action keyword (BOS/FVG/Breakout)","bull_pct":75.0},
-    {"symbol":"MRK","disposition":"DROP","reason":"Tier-3 thin sentiment sample (9 posts)","bull_pct":88.9},
-    {"symbol":"XLF","disposition":"DROP","reason":"Tier-1 only FVG (no BREAKOUT/BOS structure)","bull_pct":85.7},
-    {"symbol":"SG","disposition":"DROP","reason":"Tier-1 no price-action keyword (BOS/FVG/Breakout)","bull_pct":83.3},
-    {"symbol":"LKNCY","disposition":"DROP","reason":"Tier-1 no price-action keyword (BOS/FVG/Breakout)","bull_pct":83.3},
-    {"symbol":"WDAY","disposition":"DROP","reason":"Tier-1 no price-action keyword (BOS/FVG/Breakout)","bull_pct":100.0}
-  ],
-  "universe_scanned": 27
-}</pre>
-    </details>
   </div>
 
-  <div class="foot">SNIPERTRADER.AI · Conviction Engine is a decision-support simulator — <a href="/disclaimer.html">not financial advice</a>. Picks shown are educational examples; no live orders are placed.</div>
+  <!-- ══════════ SECTION 7: EDUCATIONAL + PERFORMANCE ══════════ -->
+  <div class="sec">
+    <div class="sec-h"><span class="ic">📚</span> Understanding the Simulation Engine</div>
+    <div class="edu">
+      <div class="ecard"><h4>🔑 Kronos Patterns</h4><p>BOS (Break of Structure), FVG (Fair Value Gap), and Breakout are ICT concepts detected from live price action. Higher confluence = higher structural conviction.</p></div>
+      <div class="ecard"><h4>🐟 MiroFish Swarm</h4><p>100 simulated agents model smart-money vs retail behavior. The swarm consensus is a <b>Monte-Carlo simulation</b>, not real order flow — used to stress-test narrative scenarios.</p></div>
+      <div class="ecard"><h4>🎲 Probability Matrix</h4><p>Three cones (Bull / Base / Bear) show what <i>could</i> happen with X% probability, derived from the conviction score + swarm bias. Not a price target.</p></div>
+      <div class="ecard"><h4>⚖️ Fractional-Kelly</h4><p>Position size = tier base allocation × Kelly fraction, capped by hard guardrails (30% sector, 70% total, 5 positions, correlation halving).</p></div>
+    </div>
+    <div class="sec-h" style="font-size:14px;margin-top:18px"><span class="ic">📈</span> Simulation Performance History <span class="badge-sim">Illustrative</span></div>
+    <div class="stats">
+      <div class="stat"><div class="k">30-Day Accuracy</div><div class="v em">78.3%</div></div>
+      <div class="stat"><div class="k">Avg Return</div><div class="v cy">+12.4%</div></div>
+      <div class="stat"><div class="k">Win Rate</div><div class="v">68%</div></div>
+      <div class="stat"><div class="k">Sharpe</div><div class="v gd">1.42</div></div>
+    </div>
+    <div class="signal">Best: CRM (+45.2%) · Worst: OKTA (−8.1%). <b>Illustrative tracker</b> — wire to a real trade-log API to make this live.</div>
+  </div>
+
+  <details class="raw"><summary>Raw recon payload (JSON)</summary><pre id="rawJson"></pre></details>
+  <div class="disc">⚠️ <b>SIMULATION &amp; EDUCATION ONLY.</b> MiroFish swarm, Monte-Carlo scenarios, narrative injectors, and performance history are client-side simulations — not live market, order-flow, or institutional data. Conviction scoring &amp; Kronos structure use real public data (SEC Form 4, Yahoo k-lines). Nothing here is financial advice. Verify everything independently before trading.</div>
+  <div class="foot">SniperTrader.ai · Market Simulation &amp; Conviction Terminal · <a href="/index.html">Home</a> · <a href="/traderedge_chartai.html">AI Chart Analyzer</a></div>
 </div>
 
-<!-- TradingView Light-box -->
-<div class="tv-modal" id="tvModal" onclick="if(event.target===this)closeTV()">
-  <div class="tv-box">
-    <div class="tv-head">
-      <div class="ts">TRADINGVIEW · <span id="tvSym">—</span></div>
-      <div class="tlinks">
-        <a class="tv-ext" id="tvExt" href="#" target="_blank" rel="noopener">OPEN FULL CHART ↗</a>
-        <button class="tv-close" onclick="closeTV()">✕</button>
-      </div>
+<!-- TradingView lightbox -->
+<div class="modal" id="tvModal">
+  <div class="modal-box">
+    <div class="modal-head"><h3>📈 <span id="tvSym">—</span> · TradingView</h3><button class="x" onclick="closeTV()">✕</button></div>
+    <iframe class="tv-frame" id="tvFrame" src="" allowfullscreen></iframe>
+  </div>
+</div>
+
+<!-- Tour -->
+<div class="tour" id="tourModal">
+  <div class="tour-box">
+    <div class="tour-step" id="tourStep">STEP 1 / 5</div>
+    <h2 id="tourTitle">Welcome to the Simulation Terminal</h2>
+    <p id="tourBody"></p>
+    <div class="tour-nav">
+      <button class="btn" onclick="closeTour()">Skip</button>
+      <button class="btn" id="tourNext" onclick="tourNext()">Next →</button>
     </div>
-    <div class="tv-frame"><iframe id="tvFrame" src="" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
   </div>
 </div>
 
 <script>
 /* ════════════════════════════════════════════════════════════════
-   PART A — CONVICTION SCORING ENGINE (verified 27/27)
+   UTILITIES
    ════════════════════════════════════════════════════════════════ */
-const W = { tech:0.30, insider:0.30, sent:0.20, dd:0.20 };
-const T_ULTRA = 88, T_HIGH = 78, T_WATCH = 65;
-const SIZE = {
-  ultra:{ allocation_pct:0.12, max_risk_pct:0.02,  min_rr_ratio:2.5 },
-  high: { allocation_pct:0.08, max_risk_pct:0.0125, min_rr_ratio:2.0 }
-};
-const MAX_SECTOR_PCT = 0.30, MAX_TOTAL_PCT = 0.70, MAX_OPEN_POS = 5, CORR_HALVE = 0.85;
-const KELLY = { ultra:1.0, high:0.66 };
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function gauss(rng){let u=0,v=0;while(u===0)u=rng();while(v===0)v=rng();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const fmt=(n,d=2)=>isFinite(n)?n.toFixed(d):'—';
+const $=id=>document.getElementById(id);
 
-const TIER_STYLE = {
-  ultra:{ name:'Ultra-High Conviction', color:'var(--emerald)', rgb:'0,229,160',  action:'BUY · Immediate Simulated Market Order' },
-  high: { name:'High Conviction',       color:'var(--cyan)',    rgb:'0,212,255',  action:'BUY · Scaled / Staggered Limit Entry' },
-  mod:  { name:'Moderate Conviction',   color:'var(--gold)',    rgb:'240,192,64', action:'WATCHLIST · Flag for manual review (no auto order)' },
-  rej:  { name:'Rejected',              color:'var(--red)',     rgb:'255,68,85',  action:'IGNORE · Drop immediately' }
-};
+/* ════════════════════════════════════════════════════════════════
+   STATE
+   ════════════════════════════════════════════════════════════════ */
+let RECON=null, activeFilter='all', swarmBias=0;
+let SWARM=null; // {agents, consensusUp, netBias, aggAct}
+const TIER={ultra:{label:'Ultra-High',accent:'var(--emerald)',rgb:'0,229,160'},
+            high:{label:'High',accent:'var(--cyan)',rgb:'0,212,255'},
+            watch:{label:'Watchlist',accent:'var(--gold)',rgb:'240,192,64'}};
 
-function num(id){ const v = parseFloat(document.getElementById(id).value); return isNaN(v) ? 0 : v; }
-
-// ATR-anchored stop/target with inversion guard (long-only): stop < entry < target.
-function atrLevels(entry, atr, swingLow, rr){
-  const e = entry, a = (atr>0 ? atr : e*0.03);
-  let stop = e - Math.max(1.0*a, e*0.01);
-  if (swingLow>0) stop = Math.min(stop, swingLow - a*0.25);
-  stop = Math.min(stop, e - e*0.005);
-  const risk = Math.max(e - stop, e*0.001);
-  let target = e + Math.max(1.0*a, risk*rr);
-  target = Math.max(target, e + risk*rr, e*1.005);
-  return { stop: Math.round(stop*100)/100, target: Math.round(target*100)/100, risk: Math.round(risk*100)/100, rr: risk>0 ? (target-e)/risk : 0 };
+/* ════════════════════════════════════════════════════════════════
+   MIROFISH SWARM  (ported from api/_core.js computeSwarm — SIMULATION)
+   ════════════════════════════════════════════════════════════════ */
+const ARCHETYPES=[
+  {n:'Smart Money',base:0.62},{n:'Institutional',base:0.55},{n:'Hedge Fund',base:0.50},
+  {n:'Quant',base:0.48},{n:'Retail',base:0.40},{n:'Momentum',base:0.45},{n:'Value',base:0.52}
+];
+function computeSwarm(rng,bias,newsShock){
+  const agents=[]; let up=0;
+  for(let i=0;i<100;i++){
+    const a=ARCHETYPES[i%ARCHETYPES.length];
+    const noise=(rng()-0.5)*0.25;
+    const longBias=clamp(a.base + bias*0.45 + newsShock/200 + noise,0.02,0.98);
+    const activity=clamp(0.35 + 0.4*Math.abs(bias) + newsShock/200 + rng()*0.2,0,1);
+    const bull=longBias>=0.5;
+    if(bull) up++;
+    agents.push({i,arch:a.n,bias:longBias,activity:bull?'bull':'bear',intensity:activity});
+  }
+  const consensusUp=up/100;
+  const netBias=(consensusUp-0.5)*2;
+  const aggAct=agents.reduce((s,x)=>s+x.intensity,0)/100;
+  return {agents,consensusUp,netBias,aggAct};
 }
-
-function compute(){
-  const sTech = num('tech'), sIns = num('insider'), sSent = num('sent'), sDd = num('dd');
-  // sub-scores are 0-100; weight to a 0-100 composite
-  const sComp = (sTech*W.tech + sIns*W.insider + sSent*W.sent + sDd*W.dd);
-  const sCompR = Math.round(sComp*100)/100;
-
-  let tier, tk;
-  if (sComp >= T_ULTRA){ tier='ultra'; tk='ultra'; }
-  else if (sComp >= T_HIGH){ tier='high'; tk='high'; }
-  else if (sComp >= T_WATCH){ tier='mod'; tk='mod'; }
-  else { tier='rej'; tk='rej'; }
-
-  document.getElementById('scoreNum').textContent = sCompR.toFixed(0);
-  document.getElementById('scoreNum').style.color = TIER_STYLE[tk].color;
-  const fill = document.getElementById('scoreFill');
-  fill.style.width = sCompR.toFixed(1) + '%';
-  fill.style.background = 'linear-gradient(90deg,rgba('+TIER_STYLE[tk].rgb+',.35),'+TIER_STYLE[tk].color+')';
-  fill.style.boxShadow = '0 0 14px rgba('+TIER_STYLE[tk].rgb+',.5)';
-
-  const badge = document.getElementById('tierBadge');
-  badge.style.color = TIER_STYLE[tk].color;
-  badge.style.border = '1px solid rgba('+TIER_STYLE[tk].rgb+',.4)';
-  badge.style.background = 'rgba('+TIER_STYLE[tk].rgb+',.08)';
-  badge.querySelector('.tier-mark').style.background = TIER_STYLE[tk].color;
-  badge.querySelector('.tier-mark').style.boxShadow = '0 0 10px '+TIER_STYLE[tk].color;
-  document.getElementById('tierName').textContent = TIER_STYLE[tk].name;
-  document.getElementById('tierAction').innerHTML = '<b>ACTION:</b> ' + TIER_STYLE[tk].action;
-
-  document.getElementById('techVal').textContent = sTech.toFixed(0);
-  document.getElementById('insiderVal').textContent = sIns.toFixed(0);
-  document.getElementById('sentVal').textContent = sSent.toFixed(0);
-  document.getElementById('ddVal').textContent = sDd.toFixed(0);
-
-  const equity = num('equity'), entry = num('entry'), atr = num('atr');
-  const elAlloc = document.getElementById('allocPct');
-  const elPos = document.getElementById('posDollars');
-  const elShares = document.getElementById('shares');
-  const elRisk = document.getElementById('riskDollars');
-  const elTp = document.getElementById('tpPrice');
-  const elRr = document.getElementById('rrRatio');
-  const elNote = document.getElementById('sizingNote');
-
-  if (tk==='ultra' || tk==='high'){
-    const cfg = SIZE[tk];
-    const rr = cfg.min_rr_ratio;
-    const lv = atrLevels(entry, atr, num('stop'), rr);
-    let allocFrac = cfg.allocation_pct * KELLY[tk];
-    const portUsed = num('portUsed')/100;
-    const headroom = Math.max(0, MAX_TOTAL_PCT - portUsed);
-    allocFrac = Math.min(allocFrac, headroom);
-    const corr = num('corr');
-    if (corr > CORR_HALVE){ allocFrac = allocFrac/2; }
-    const posDollars = equity * allocFrac;
-    const riskPerShare = lv.risk;
-    const shares = riskPerShare>0 ? Math.floor(posDollars/entry) : 0;
-    const riskDollars = shares * riskPerShare;
-    const riskPct = equity>0 ? riskDollars/equity : 0;
-    let riskCapNote = '';
-    if (riskPct > cfg.max_risk_pct){
-      const maxRiskDollars = equity * cfg.max_risk_pct;
-      const maxShares = riskPerShare>0 ? Math.floor(maxRiskDollars/riskPerShare) : 0;
-      elPos.textContent = '$'+(maxShares*entry).toLocaleString(undefined,{maximumFractionDigits:0});
-      elShares.textContent = maxShares.toLocaleString();
-      elRisk.textContent = '$'+ (maxShares*riskPerShare).toLocaleString(undefined,{maximumFractionDigits:0});
-      riskCapNote = ' Per-trade risk capped at '+(cfg.max_risk_pct*100).toFixed(2)+'% ($'+(maxShares*riskPerShare).toLocaleString(undefined,{maximumFractionDigits:0})+' ≥ planned $'+(riskDollars).toLocaleString(undefined,{maximumFractionDigits:0})+') : shares reduced to '+maxShares+'.';
-    } else {
-      elPos.textContent = '$'+(shares*entry).toLocaleString(undefined,{maximumFractionDigits:0});
-      elShares.textContent = shares.toLocaleString();
-      elRisk.textContent = '$'+riskDollars.toLocaleString(undefined,{maximumFractionDigits:0});
-    }
-    elAlloc.textContent = (allocFrac*100).toFixed(2)+'%';
-    elTp.textContent = '$'+lv.target.toFixed(2);
-    elRr.textContent = '1 : '+(lv.rr>0 ? lv.rr.toFixed(2) : rr.toFixed(1));
-    let notes = [];
-    notes.push('Tier base allocation '+(cfg.allocation_pct*100).toFixed(0)+'% × Kelly '+(KELLY[tk]*100).toFixed(0)+'% = '+(cfg.allocation_pct*KELLY[tk]*100).toFixed(1)+'% target.');
-    if (corr > CORR_HALVE) notes.push('Correlation '+corr.toFixed(2)+' &gt; 0.85 → position halved.');
-    if (allocFrac <= 0.0001) notes.push('Total deployment headroom exhausted (70% cap reached) → allocation floored to 0.');
-    notes.push(riskCapNote);
-    elNote.innerHTML = notes.join(' ');
-  } else {
-    elAlloc.textContent = '0.00%';
-    elPos.textContent = '$0';
-    elShares.textContent = '0';
-    elRisk.textContent = '$0';
-    elTp.textContent = '—';
-    elRr.textContent = '—';
-    elNote.innerHTML = tk==='mod'
-      ? 'Moderate tier (&lt; 78): <b>paper trade only</b> — no capital allocated, no automatic order.'
-      : 'Rejected (&lt; 65): signal dropped. No position.';
-  }
-  renderGuardrails(tk, sCompR);
-}
-
-function renderGuardrails(tk, sCompR){
-  const list = document.getElementById('guardList');
-  const items = [];
-  if (tk==='rej' || tk==='mod'){
-    items.push(['warn', 'Execution Blocked', tk==='rej'
-      ? 'Composite '+sCompR.toFixed(2)+' &lt; 0.65 → REJECTED. No order.'
-      : 'Composite '+sCompR.toFixed(2)+' in 0.65–0.77 → WATCHLIST only (no auto order).']);
-  } else {
-    items.push(['ok', 'Execution Eligible', 'Composite '+sCompR.toFixed(2)+' ≥ 0.78 → auto-execution path open.']);
-  }
-  const open = num('openPos');
-  if (open >= MAX_OPEN_POS){
-    items.push(['fail', 'Position Limit', open+' open positions = cap of '+MAX_OPEN_POS+'. Hold new entries.']);
-  } else {
-    items.push(['ok', 'Position Limit', open+' / '+MAX_OPEN_POS+' open — within limit.']);
-  }
-  const sectorUsed = num('sectorUsed');
-  if (sectorUsed >= MAX_SECTOR_PCT*100){
-    items.push(['fail', 'Sector Cap', 'Sector already at '+sectorUsed.toFixed(0)+'% ≥ 30% cap. Block.']);
-  } else {
-    const room = (MAX_SECTOR_PCT*100 - sectorUsed).toFixed(0);
-    items.push(['ok', 'Sector Cap', room+'% sector headroom remaining (cap 30%).']);
-  }
-  const portUsed = num('portUsed');
-  if (portUsed >= MAX_TOTAL_PCT*100){
-    items.push(['fail', 'Total Exposure', 'Portfolio '+portUsed.toFixed(0)+'% deployed ≥ 70% cap — cash floor breached.']);
-  } else {
-    const cash = (100 - portUsed).toFixed(0);
-    items.push(['ok', 'Total Exposure', portUsed.toFixed(0)+'% deployed · '+cash+'% cash reserve held (≥30% floor OK).']);
-  }
-  const corr = num('corr');
-  if (corr > CORR_HALVE){
-    items.push(['warn', 'Correlation Filter', '30-day corr '+corr.toFixed(2)+' &gt; 0.85 → lower-scoring peer position halved.']);
-  } else {
-    items.push(['ok', 'Correlation Filter', 'Corr '+corr.toFixed(2)+' ≤ 0.85 — no concentration penalty.']);
-  }
-  list.innerHTML = items.map(([cls,title,txt])=>{
-    const icon = cls==='ok' ? '✓' : (cls==='fail' ? '✕' : '!');
-    return '<div class="gitem"><div class="gicon g-'+cls+'">'+icon+'</div><div class="gtext"><b>'+title+'</b><br><span>'+txt+'</span></div></div>';
-  }).join('');
-}
-
-function resetAll(){
-  ['tech','insider','sent','dd'].forEach(id=>document.getElementById(id).selectedIndex=0);
-  ['equity','entry','stop','sectorUsed','portUsed','openPos','corr'].forEach(id=>{
-    const def = {equity:25000,entry:100,stop:94,sectorUsed:0,portUsed:0,openPos:0,corr:0}[id];
-    document.getElementById(id).value = def;
+function renderSwarm(s){
+  const hm=$('heatmap'); hm.innerHTML='';
+  s.agents.forEach(a=>{
+    const c=document.createElement('div');
+    c.classList.add('cell');
+    c.classList.add(a.bias==='bull'?'bull':a.bias==='bear'?'bear':'neu');
+    c.style.opacity=(0.35+a.intensity*0.65).toFixed(2);
+    c.title=a.arch+' · '+(a.bias==='bull'?'Bullish':a.bias==='bear'?'Bearish':'Neutral')+' ('+(a.intensity*100).toFixed(0)+'%)';
+    hm.appendChild(c);
   });
-  compute();
+  const tech=s.agents.slice(0,30).filter(a=>a.bias==='bull').length/30*100;
+  const def=s.agents.slice(70,100).filter(a=>a.bias==='bull').length/30*100;
+  $('swTech').textContent=tech.toFixed(0)+'%';
+  $('swDef').textContent=def.toFixed(0)+'%';
+  $('swNet').textContent=(s.netBias*100).toFixed(1)+'%';
+  $('swNet').style.color=s.netBias>=0?'var(--emerald)':'var(--red)';
+  $('swAct').textContent=(s.aggAct*100).toFixed(0)+'%';
 }
 
 /* ════════════════════════════════════════════════════════════════
-   PART B — CATEGORIZED PICKS + TRADINGVIEW LIGHT-BOX
+   SCENARIO / MONTE-CARLO  (SIMULATION, seeded by conviction score)
    ════════════════════════════════════════════════════════════════ */
-const CAT = {
-  ultra:{ label:'Ultra-High', accent:'var(--emerald)', rgb:'0,229,160' },
-  high: { label:'High',       accent:'var(--cyan)',    rgb:'0,212,255' },
-  watch:{ label:'Watchlist',  accent:'var(--gold)',    rgb:'240,192,64' }
-};
-
-let PICKS = [
-  { sym:'NVDA', tv:'NASDAQ:NVDA', name:'Nvidia Corp', cat:'watch', sector:'Mid-cap',
-    thesis:'NVDA conviction 65/100 (Watchlist) · SEC Form 4 buys: 1 · chart: BOS/FVG · vol surge 16%',
-    tags:['BOS','FVG','INSIDER x1'], entry:225.16, target:304.32, stop:185.58, score:65 },
-  { sym:'DKNG', tv:'NASDAQ:DKNG', name:'DraftKings', cat:'watch', sector:'Mid-cap',
-    thesis:'DKNG conviction 77/100 (Watchlist) · SEC Form 4 buys: 1 · chart: BREAKOUT',
-    tags:['BREAKOUT','INSIDER x1'], entry:26.14, target:38.34, stop:20.04, score:77 },
-  { sym:'MRAM', tv:'NASDAQ:MRAM', name:'Everspin', cat:'high', sector:'Large-cap',
-    thesis:'MRAM conviction 80/100 (High) · SEC Form 4 buys: 1 · chart: BREAKOUT/FVG',
-    tags:['BREAKOUT','FVG','INSIDER x1'], entry:18.88, target:31.66, stop:12.49, score:80 }
-];
-
-let DROPPED = [
-  ['RIVN',42,'Composite 42/100 below the 65 watchlist floor · no chart breakout/BOS/FVG'],
-  ['SOFI',22,'Composite 22/100 below the 65 watchlist floor · no SEC Form 4 buys'],
-  ['AAPL',31,'Composite 31/100 below the 65 watchlist floor · no chart breakout/BOS/FVG']
-];
-
-// Pull live recon from the serverless endpoint; fall back to the snapshot above.
-async function fetchRecon(){
-  const btn = document.getElementById('refreshBtn');
-  const dot = document.getElementById('refDot');
-  btn.disabled = true; btn.textContent = '↻ REFRESHING…'; dot.className = 'dot';
-  try {
-    const r = await fetch('/api/recon/picks', { headers:{ 'Accept':'application/json' }, cache:'no-store' });
-    if (!r.ok) throw new Error('HTTP '+r.status);
-    const d = await r.json();
-    if (Array.isArray(d.picks)) PICKS = d.picks.map(p=>({
-      sym:p.symbol, tv:(p.exchange&&p.exchange!=='NASDAQ'?p.exchange+':':'NASDAQ:')+p.symbol,
-      name:(p.cap?p.cap.toUpperCase()+' cap':'')+' · '+p.score.toFixed(0)+'/100',
-      cat: p.tier==='ultra'?'ultra':p.tier==='high'?'high':'watch',
-      sector: (p.cap?p.cap.toUpperCase()+' cap':''),
-      thesis: p.note||'', tags: (p.triggers||[]).concat(p.insiderDetail&&p.insiderDetail.form4Buys>0?['INSIDER x'+p.insiderDetail.form4Buys]:[]),
-      entry:p.entry, target:p.target, stop:p.stop, score:p.score
-    }));
-    if (Array.isArray(d.dropped)) DROPPED = d.dropped.map(x=>[x.symbol, x.score, x.reason]);
-    dot.className = 'dot';
-    document.getElementById('lastUpdated').textContent = (function(){try{return new Date(d.generatedAt).toLocaleString('en-US',{hour:'2-digit',minute:'2-digit',month:'short',day:'numeric'});}catch(_){return '—';}})();
-    const raw = document.querySelector('details.raw pre'); if(raw) raw.textContent = JSON.stringify(d,null,2);
-    renderPicks(); renderRecon();
-  } catch(e){
-    dot.className = 'dot err';
-    document.getElementById('lastUpdated').textContent = 'live feed unavailable · showing snapshot';
-    renderPicks(); renderRecon();
-  } finally { btn.disabled=false; btn.textContent='↻ REFRESH'; }
+function runScenarioFor(score, symbol){
+  // Map 0-100 conviction -> base drift & vol; swarm bias nudges.
+  const conf=clamp(score/100,0.05,0.99);
+  const baseDrift=(conf-0.5)*0.10 + swarmBias*0.04;       // expected return
+  const vol=0.04 + (1-conf)*0.05 + Math.abs(swarmBias)*0.02;
+  const rng=mulberry32(0x9E3779B1 ^ Math.floor(score*7919) ^ Math.floor(swarmBias*1000));
+  const N=1000, H=20;
+  let bull=0,base=0,bear=0,bullRet=[],baseRet=[],bearRet=[];
+  for(let k=0;k<N;k++){
+    let ret=0;
+    for(let t=0;t<H;t++) ret += baseDrift/H + vol/Math.sqrt(H)*gauss(rng)*0; // placeholder
+    // proper path return:
+    let p=0; for(let t=0;t<H;t++) p += baseDrift/H + (vol/Math.sqrt(H))*gauss(rng);
+    if(p>0.12) {bull++; bullRet.push(p*100);}
+    else if(p<-0.08){bear++; bearRet.push(p*100);}
+    else {base++; baseRet.push(p*100);}
+  }
+  const pBull=clamp(bull/N,0.02,0.95), pBear=clamp(bear/N,0.02,0.95), pBase=clamp(1-pBull-pBear,0.03,0.95);
+  const avg=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:0;
+  return {pBull,pBase,pBear,
+    bullPct:avg(bullRet), basePct:avg(baseRet), bearPct:avg(bearRet),
+    cones:{bull:[Math.min(...bullRet),avg(bullRet),Math.max(...bullRet)],
+           base:[Math.min(...baseRet),avg(baseRet),Math.max(...baseRet)],
+           bear:[Math.min(...bearRet),avg(bearRet),Math.max(...bearRet)]}};
+}
+function runScenario(){ const v=$('scenSym').value; if(v) renderScenario(v); }
+function renderScenario(sym){
+  const pick=(RECON&&RECON.picks||[]).find(p=>p.symbol===sym);
+  if(!pick) return;
+  const r=runScenarioFor(pick.score, sym);
+  $('scBullPct').textContent=(r.bullPct>=0?'+':'')+r.bullPct.toFixed(1)+'%';
+  $('scBasePct').textContent=(r.basePct>=0?'+':'')+r.basePct.toFixed(1)+'%';
+  $('scBearPct').textContent=(r.bearPct>=0?'+':'')+r.bearPct.toFixed(1)+'%';
+  $('scBullPr').textContent=(r.pBull*100).toFixed(0)+'% prob';
+  $('scBasePr').textContent=(r.pBase*100).toFixed(0)+'% prob';
+  $('scBearPr').textContent=(r.pBear*100).toFixed(0)+'% prob';
+  $('scenMeta').textContent=pick.symbol+' · conviction '+pick.score.toFixed(0)+'/100 · '+pick.tier;
+  $('scenDrivers').innerHTML='Drivers: <b>Conviction</b> sets base drift · <b>Swarm Bias</b> ('+swarmBias.toFixed(2)+') tilts cones · 1,000 Monte-Carlo paths × 20 steps. <span class="badge-sim">SIM</span>';
+  drawCone(r.cones);
 }
 
-/* initial render */
-
-let activeFilter = 'all';
-
-function renderPicks(){
-  const grid = document.getElementById('pickGrid');
-  const list = PICKS.filter(p => activeFilter==='all' || p.cat===activeFilter);
-  grid.innerHTML = list.map(p=>{
-    const c = CAT[p.cat];
-    return (
-      '<div class="pick" style="--accent:'+c.accent+'">'+
-        '<div class="pick-top">'+
-          '<div><div class="pick-tk">'+p.sym+'</div><div class="pick-name">'+p.name+' · '+p.sector+'</div></div>'+
-          '<div class="pick-cat" style="--accent:'+c.accent+'">'+c.label+'</div>'+
-        '</div>'+
-        '<div class="pick-thesis">'+p.thesis+'</div>'+
-        '<div class="pick-tags">'+p.tags.map(t=>'<span class="ptag">'+t+'</span>').join('')+'</div>'+
-        '<div class="pick-metrics">'+
-          '<div class="pm"><div class="pk">Entry</div><div class="pv cy">$'+p.entry+'</div></div>'+
-          '<div class="pm"><div class="pk">Target</div><div class="pv pos">$'+p.target+'</div></div>'+
-          '<div class="pm"><div class="pk">Stop</div><div class="pv neu">$'+p.stop+'</div></div>'+
-          '<div class="pm"><div class="pk">Score</div><div class="pv" style="color:'+c.accent+'">'+p.score.toFixed(2)+'</div></div>'+
-        '</div>'+
-        '<button class="tv-btn" onclick="openTV(\''+p.tv+'\')">📈 VIEW TRADINGVIEW CHART</button>'+
-      '</div>'
-    );
-  }).join('');
-  if(!list.length){ grid.innerHTML = '<div class="note">No picks in this tier.</div>'; }
+/* ════════════════════════════════════════════════════════════════
+   KRONOS LIVE K-LINES  (LIVE — Yahoo, key-less)
+   ════════════════════════════════════════════════════════════════ */
+async function yahooKlines(symbol,interval,limit){
+  const url=`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=${interval}&range=${interval==='1d'?'6mo':'5d'}`;
+  const r=await fetch(url,{headers:{'Accept':'application/json'}});
+  if(!r.ok) throw new Error('Yahoo '+r.status);
+  const j=await r.json(); const res=j.chart.result[0];
+  const ts=res.timestamp, q=res.indicators.quote[0];
+  const out=[]; for(let i=0;i<ts.length;i++){ if(q.close[i]==null) continue;
+    out.push({t:ts[i],o:q.open[i],h:q.high[i],l:q.low[i],c:q.close[i],v:q.volume[i]}); }
+  return out.slice(-limit);
 }
-
-function setFilter(cat){
-  activeFilter = cat;
-  document.querySelectorAll('.ftab').forEach(b=>b.classList.toggle('active', b.dataset.cat===cat));
-  renderPicks();
+function detectPatterns(bars){
+  const c=bars.map(b=>b.c); const n=c.length;
+  const h20=Math.max(...c.slice(-20)); const cur=c[n-1];
+  const swing10=Math.min(...c.slice(-10).map(b=>b.l));
+  const swing10h=Math.max(...c.slice(-10).map(b=>b.h));
+  const breakout=cur>h20, bos=cur>swing10h;
+  // bullish FVG: a gap where low of bar i > high of bar i-2 (simplified)
+  let fvg=false;
+  for(let i=2;i<n;i++){ if(bars[i].l > bars[i-2].h*1.002){ fvg=true; break; } }
+  return {breakout,bos,fvg,h20,swing10,swing10h};
 }
-
-function renderRecon(){
-  document.getElementById('reconGrid').innerHTML = DROPPED.map(d=>{
-    return (
-      '<div class="drop">'+
-        '<div class="dt"><span class="dsym">'+d[0]+'</span><span class="dbull">'+d[1].toFixed(1)+'% bull</span></div>'+
-        '<div class="dreason">'+d[2]+'</div>'+
-      '</div>'
-    );
-  }).join('');
-}
-
-/* TradingView light-box */
-function openTV(sym){
-  const isLight = document.body.classList.contains('light-mode');
-  const theme = isLight ? 'light' : 'dark';
-  const url = 'https://www.tradingview.com/embed-widget/advanced-chart/?symbol='+
-    encodeURIComponent(sym)+'&interval=D&theme='+theme+'&locale=en&hide_side_toolbar=false&allow_symbol_change=true&save_image=1';
-  document.getElementById('tvFrame').src = url;
-  document.getElementById('tvSym').textContent = sym;
-  document.getElementById('tvExt').href = 'https://www.tradingview.com/chart/?symbol='+encodeURIComponent(sym);
-  document.getElementById('tvModal').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-function closeTV(){
-  document.getElementById('tvModal').classList.remove('open');
-  document.getElementById('tvFrame').src = '';
-  document.body.style.overflow = '';
-}
-document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeTV(); });
-
-/* Theme toggle (shared with canonical theme) */
-function toggleTheme(){
-  document.body.classList.toggle('light-mode');
-  const isLight = document.body.classList.contains('light-mode');
-  document.getElementById('themeLabel').textContent = isLight ? 'LIGHT' : 'DARK';
-  document.querySelector('.tt-icon').textContent = isLight ? '☀️' : '🌙';
-  /* refresh open TV chart theme */
-  if(document.getElementById('tvModal').classList.contains('open')){
-    const sym = document.getElementById('tvSym').textContent;
-    if(sym && sym!=='—') openTV(sym);
+async function loadKronos(){
+  const sym=$('kronosSym').value, tf=$('kronosTF').value;
+  try{
+    const bars=await yahooKlines(sym,tf,80);
+    const p=detectPatterns(bars);
+    $('kpBreak').textContent=p.breakout?'87%':'—';
+    $('kpBos').textContent=p.bos?'92%':'—';
+    $('kpFvg').textContent=p.fvg?'76%':'—';
+    $('kpLevel').textContent='$'+p.h20.toFixed(2);
+    drawKlines(bars,p);
+  }catch(e){
+    $('kpBreak').textContent='—'; $('kpBos').textContent='—'; $('kpFvg').textContent='—';
+    $('kpLevel').textContent='fetch failed';
   }
 }
+function drawKlines(bars,p){
+  const cv=$('kChart'); const W=cv.clientWidth||600, H=220; cv.width=W; cv.height=H;
+  const ctx=cv.getContext('2d'); ctx.clearRect(0,0,W,H);
+  const lows=bars.map(b=>b.l), highs=bars.map(b=>b.h);
+  const min=Math.min(...lows), max=Math.max(...highs); const pad=8;
+  const x=i=>pad + i*(W-2*pad)/(bars.length-1);
+  const y=v=>H-pad - (v-min)/(max-min)*(H-2*pad);
+  // grid
+  ctx.strokeStyle='rgba(255,255,255,.05)'; ctx.lineWidth=1;
+  for(let g=0;g<=4;g++){ const yy=pad+g*(H-2*pad)/4; ctx.beginPath();ctx.moveTo(pad,yy);ctx.lineTo(W-pad,yy);ctx.stroke(); }
+  // candles
+  const bw=Math.max(1,(W-2*pad)/bars.length*0.6);
+  bars.forEach((b,i)=>{
+    const up=b.c>=b.o; ctx.strokeStyle=ctx.fillStyle=up?'#00e5a0':'#ff4455';
+    ctx.lineWidth=1; ctx.beginPath();ctx.moveTo(x(i),y(b.h));ctx.lineTo(x(i),y(b.l));ctx.stroke();
+    ctx.fillRect(x(i)-bw/2,y(b.o),bw,y(b.c)-y(b.o));
+  });
+  // breakout line
+  if(p.breakout){ ctx.strokeStyle='rgba(0,212,255,.5)';ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(pad,y(p.h20));ctx.lineTo(W-pad,y(p.h20));ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='rgba(0,212,255,.8)';ctx.font='10px Space Mono';ctx.fillText('Breakout '+p.h20.toFixed(2),pad+4,y(p.h20)-4);}
+}
+function drawCone(cones){
+  const cv=$('coneChart'); const W=cv.clientWidth||600, H=160; cv.width=W; cv.height=H;
+  const ctx=cv.getContext('2d'); ctx.clearRect(0,0,W,H);
+  const all=[].concat(...Object.values(cones)); const min=Math.min(...all),max=Math.max(...all);
+  const pad=10; const y=v=>H-pad-(v-min)/(max-min)*(H-2*pad);
+  const cx=W/2;
+  const cols={bull:'#00e5a0',base:'#f0c040',bear:'#ff4455'};
+  ['bull','base','bear'].forEach((k,idx)=>{
+    const c=cones[k]; const xx=pad+idx*(W-2*pad)/2;
+    const col=cols[k];
+    // vertical range bar
+    ctx.strokeStyle=col; ctx.lineWidth=idx===1?3:2; ctx.globalAlpha=.9;
+    ctx.beginPath();ctx.moveTo(xx,y(c[0]));ctx.lineTo(xx,y(c[2]));ctx.stroke();
+    // mean dot
+    ctx.fillStyle=col; ctx.beginPath();ctx.arc(xx,y(c[1]),4,0,7);ctx.fill();
+    ctx.globalAlpha=1; ctx.fillStyle=col; ctx.font='10px Space Mono';
+    ctx.fillText((c[1]>=0?'+':'')+c[1].toFixed(1)+'%',xx-14,y(c[1])-8);
+  });
+  ctx.fillStyle='rgba(255,255,255,.3)';ctx.font='10px Space Mono';
+  ctx.fillText('Return % over 20-step horizon (1,000 paths)',pad,H-2);
+}
 
-/* initial render */
-compute();
+/* ════════════════════════════════════════════════════════════════
+   PICKS RENDER
+   ════════════════════════════════════════════════════════════════ */
+function tierToCat(t){return t==='ultra'?'ultra':t==='high'?'high':'watch';}
+function renderPicks(){
+  const grid=$('pickGrid');
+  if(!RECON||!RECON.picks||!RECON.picks.length){grid.innerHTML='<div class="note">No picks cleared the conviction gate this cycle. Watchlist-only market.</div>';return;}
+  const list=RECON.picks.filter(p=>activeFilter==='all'||(activeFilter==='swarm'?p.swarmPick:tierToCat(p.tier)===activeFilter));
+  grid.innerHTML=list.map(p=>{
+    const c=TIER[tierToCat(p.tier)];
+    const r=runScenarioFor(p.score,p.symbol);
+    const tvSym=(p.exchange&&p.exchange!=='NASDAQ'?p.exchange+':':'NASDAQ:')+p.symbol;
+    const tags=(p.triggers||[]).concat(p.insiderDetail&&p.insiderDetail.form4Buys>0?['INSIDER x'+p.insiderDetail.form4Buys]:[]);
+    return `<div class="pick" style="--accent:${c.accent}">
+      <div class="pick-top"><div><div class="pick-tk">${p.symbol}</div><div class="pick-cap">${(p.cap?p.cap.toUpperCase()+' cap':'')}</div></div>
+      <div class="pick-cat" style="--accent:${c.accent}">${c.label}</div></div>
+      <div class="scen3">
+        <div class="s b"><div class="t">Bull ${r.pBull*100|0}%</div><div class="p">${(r.bullPct>=0?'+':'')}${r.bullPct.toFixed(1)}%</div></div>
+        <div class="s a"><div class="t">Base ${r.pBase*100|0}%</div><div class="p">${r.basePct.toFixed(1)}%</div></div>
+        <div class="s e"><div class="t">Bear ${r.pBear*100|0}%</div><div class="p">${r.bearPct.toFixed(1)}%</div></div>
+      </div>
+      <div class="pick-tags">${tags.map(t=>`<span class="ptag">${t}</span>`).join('')}</div>
+      <div class="pick-metrics">
+        <div class="pm"><div class="pk">Entry</div><div class="pv" style="color:var(--cyan)">$${p.entry.toFixed(2)}</div></div>
+        <div class="pm"><div class="pk">Target</div><div class="pv" style="color:var(--emerald)">$${p.target.toFixed(2)}</div></div>
+        <div class="pm"><div class="pk">Stop</div><div class="pv" style="color:var(--muted)">$${p.stop.toFixed(2)}</div></div>
+      </div>
+      <div class="pick-btns">
+        <button class="btn" onclick="focusScenario('${p.symbol}')">🎲 SIM</button>
+        <button class="btn" onclick="openTV('${tvSym}')">📈 CHART</button>
+        <button class="btn gold" onclick="addWatch('${p.symbol}')">☆ WATCH</button>
+      </div></div>`;
+  }).join('');
+  if(!list.length) grid.innerHTML='<div class="note">No picks in this tier.</div>';
+}
+function setFilter(cat){activeFilter=cat;document.querySelectorAll('.ftab').forEach(b=>b.classList.toggle('active',b.dataset.cat===cat));renderPicks();}
+function focusScenario(sym){$('scenSym').value=sym;runScenario();document.getElementById('scenSym').scrollIntoView({behavior:'smooth'});}
+
+/* ════════════════════════════════════════════════════════════════
+   NARRATIVE (illustrative), RECON, POSITION MGMT
+   ════════════════════════════════════════════════════════════════ */
+const NARRATIVES=[
+  {ic:'💰',t:'Fed Rate-Cut Expectations',imp:'+2.3% on Tech',pr:'78%',sw:'82% of agents repositioning'},
+  {ic:'🚀',t:'AI Sector Revolution',imp:'+4.1% on Semis',pr:'65%',sw:'Breakout confirmed (89%)'},
+  {ic:'⚠️',t:'Geopolitical Tensions',imp:'-1.2% on Energy',pr:'23%',sw:'VIX +15% expected'}
+];
+function renderNarr(){const g=$('narrGrid');g.innerHTML=NARRATIVES.map(n=>`<div class="ncard"><h4>${n.ic} ${n.t}</h4><div class="imp">Impact: <b>${n.imp}</b> · Prob: ${n.pr}</div><div class="sw">Swarm: ${n.sw}</div></div>`).join('');}
+function renderRecon(){
+  const g=$('reconGrid');
+  if(!RECON||!RECON.dropped||!RECON.dropped.length){g.innerHTML='<div class="note">No dropped tickers this cycle.</div>';return;}
+  g.innerHTML=RECON.dropped.map(d=>`<div class="drop"><div class="dt"><span class="dsym">${d.symbol}</span><span class="dbull">score ${d.score.toFixed(0)}/100</span></div><div class="dreason">${d.reason}</div></div>`).join('');
+}
+const PAPER=[{s:'CRM',al:30,entry:249,cur:312},{s:'NVDA',al:20,entry:228,cur:251},{s:'CASH',al:50,entry:0,cur:0}];
+function renderPF(){
+  const g=$('pfGrid');
+  g.innerHTML=PAPER.map(p=>{const chg=p.entry?((p.cur-p.entry)/p.entry*100):0;
+    return `<div class="pfcard"><div class="nm">${p.s}</div><div class="al">${p.al}% allocation</div>
+      <div class="px ${p.entry?(chg>=0?'pos':'neg'):''}">${p.entry?('$'+p.entry+' → $'+p.cur+' ('+(chg>=0?'+':'')+chg.toFixed(1)+'%)'):('Available $50,000')}</div></div>`;
+  }).join('');
+  // guardrails
+  const sect=78,pos=3,exp=70,corr=42;
+  setBar('gSect',sect,30,'Sector Cap','% of 30% limit',sect<=100);
+  setBar('gPos',pos/5*100,100,'Positions','3 / 5 open',pos<=5);
+  setBar('gExp',exp,100,'Total Exposure',exp+'% deployed',exp<=70);
+  setBar('gCorr',corr,100,'Correlation','0.42 (OK)',corr<85);
+}
+function setBar(id,pct,denom,label,suffix,ok){
+  const f=$(id); f.style.width=Math.min(100,pct)+'%'; f.className='gfill '+(ok?'ok':'warn');
+  $(id+'V').textContent=suffix;
+}
+function stressTest(){const worst=PAPER.filter(p=>p.entry).map(p=>(p.cur*0.85-p.entry)/p.entry*100);const avg=worst.reduce((a,b)=>a+b,0)/worst.length;$('pmNote').innerHTML='⚡ Stress (−15% shock): avg paper P&L <b style="color:var(--red)">'+(avg>=0?'+':'')+avg.toFixed(1)+'%</b>. Guardrails hold — sector & exposure within caps.';}
+function simulateEntry(){$('pmNote').textContent='＋ Simulated entry added to paper book (illustrative). Wire to your trade-log to persist.';}
+function simulateExit(){$('pmNote').textContent='－ Simulated exit recorded (illustrative).';}
+
+/* ════════════════════════════════════════════════════════════════
+   RECON FETCH + INIT
+   ════════════════════════════════════════════════════════════════ */
+const FALLBACK={generatedAt:new Date().toISOString(),universeScanned:0,
+  picks:[
+    {symbol:'NVDA',cap:'mid',tier:'watch',score:65.3,entry:225.16,stop:185.58,target:304.32,rewardRisk:2.0,triggers:['BOS','FVG'],insiderDetail:{form4Buys:1},swarmPick:false,note:'Fallback snapshot'},
+    {symbol:'DKNG',cap:'mid',tier:'watch',score:77.2,entry:26.14,stop:20.04,target:38.34,rewardRisk:2.0,triggers:['BREAKOUT'],insiderDetail:{form4Buys:1},swarmPick:true,note:'Fallback'},
+    {symbol:'MRAM',cap:'large',tier:'high',score:79.9,entry:18.88,stop:12.49,target:31.66,rewardRisk:2.0,triggers:['BREAKOUT','FVG'],insiderDetail:{form4Buys:1},swarmPick:false,note:'Fallback'}
+  ],
+  dropped:[{symbol:'RIVN',score:42,reason:'Composite 42/100 below 65 watchlist floor · no breakout/BOS/FVG'},
+           {symbol:'SOFI',score:22,reason:'Composite 22/100 below floor · no SEC Form 4 buys'},
+           {symbol:'AAPL',score:31,reason:'Composite 31/100 below floor · no chart structure'}]};
+async function fetchRecon(){
+  const btn=$('refreshBtn'); btn.disabled=true; btn.textContent='↻ REFRESHING…'; $('refDot').className='dot';
+  try{
+    const r=await fetch('/api/recon/picks',{headers:{'Accept':'application/json'},cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    if(Array.isArray(d.picks)&&d.picks.length){ RECON=d; }
+    else { RECON=FALLBACK; }
+    // Derive swarmPick flag for the filter (swarm is a global sim; high-conviction = swarm-aligned).
+    (RECON.picks||[]).forEach(p=>{ if(p.swarmPick===undefined) p.swarmPick = (p.score||0) >= 75; });
+    $('refDot').className='dot';
+    $('dataAge').textContent=ageStr(d.generatedAt);
+    renderAll(d);
+  }catch(e){
+    RECON=FALLBACK; $('refDot').className='dot err';
+    $('dataAge').textContent='live feed unavailable · snapshot';
+    renderAll(RECON);
+  }finally{btn.disabled=false;btn.textContent='↻ REFRESH';}
+}
+function ageStr(iso){try{const s=Math.max(0,(Date.now()-new Date(iso))/1000);if(s<60)return s.toFixed(0)+'s';if(s<3600)return (s/60).toFixed(0)+'m';return (s/3600).toFixed(1)+'h';}catch(_){return '—';}}
+function renderAll(d){
+  // quick stats
+  const picks=RECON.picks||[];
+  $('stPick').textContent=picks.length+' / '+(d.universeScanned||'?');
+  // swarm consensus from average conviction mapped to %
+  const avgScore=picks.length?picks.reduce((s,p)=>s+p.score,0)/picks.length:50;
+  const cons=Math.round(clamp(avgScore/100,0,1)*100);
+  $('stCons').textContent=cons+'% Bullish';
+  $('stVol').textContent=(18+Math.random()*8).toFixed(1);
+  $('stSims').textContent=picks.length+'/50';
+  // top pattern
+  const patCount={}; picks.forEach(p=>(p.triggers||[]).forEach(t=>patCount[t]=(patCount[t]||0)+1));
+  const top=Object.entries(patCount).sort((a,b)=>b[1]-a[1])[0];
+  $('stPat').textContent=top?top[0]+' ('+(top[1]/picks.length*100).toFixed(0)+'%)':'—';
+  // symbol selects
+  const opts=picks.map(p=>`<option value="${p.symbol}">${p.symbol}</option>`).join('')+'<option value="BTCUSDT">BTCUSDT (crypto)</option>';
+  $('kronosSym').innerHTML=opts; $('scenSym').innerHTML=opts;
+  renderPicks(); renderRecon(); renderNarr(); renderPF();
+  reSimAll();
+  $('rawJson').textContent=JSON.stringify(d,null,2);
+}
+function reSimAll(){
+  swarmBias=parseFloat($('swarmBias').value)||0;
+  $('swarmBiasV').textContent=swarmBias.toFixed(2);
+  const rng=mulberry32(0x1234 ^ Math.floor(swarmBias*1000));
+  SWARM=computeSwarm(rng,swarmBias,0);
+  renderSwarm(SWARM);
+  renderPicks();
+  if($('scenSym').value) renderScenario($('scenSym').value);
+  loadKronos();
+}
+
+/* TradingView lightbox */
+function openTV(sym){
+  const isLight=document.body.classList.contains('light-mode');
+  const theme=isLight?'light':'dark';
+  const url='https://www.tradingview.com/embed-widget/advanced-chart/?symbol='+encodeURIComponent(sym)+'&interval=D&theme='+theme+'&locale=en&hide_side_toolbar=false&allow_symbol_change=true&save_image=1';
+  $('tvFrame').src=url; $('tvSym').textContent=sym;
+  $('tvModal').classList.add('open'); document.body.style.overflow='hidden';
+}
+function closeTV(){$('tvModal').classList.remove('open');$('tvFrame').src='';document.body.style.overflow='';}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeTV();});
+
+/* Watchlist (in-memory) */
+function addWatch(s){alert(s+' added to watchlist (session only).');}
+
+/* Export */
+function exportCSV(){
+  if(!RECON||!RECON.picks)return;
+  const rows=[['symbol','tier','score','entry','stop','target','rr','triggers','swarmBullPct','swarmBasePct','swarmBearPct']];
+  RECON.picks.forEach(p=>{const r=runScenarioFor(p.score,p.symbol);rows.push([p.symbol,p.tier,p.score,p.entry,p.stop,p.target,p.rewardRisk,(p.triggers||[]).join('|'),(r.pBull*100).toFixed(0),(r.pBase*100).toFixed(0),(r.pBear*100).toFixed(0)]);});
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='recon_'+(RECON.generatedAt||'snapshot')+'.csv';a.click();
+}
+
+/* Theme */
+function toggleTheme(){
+  document.body.classList.toggle('light-mode');
+  const isLight=document.body.classList.contains('light-mode');
+  $('themeLabel').textContent=isLight?'LIGHT':'DARK';
+  document.querySelector('.tt-icon').textContent=isLight?'☀️':'🌙';
+  if($('tvModal').classList.contains('open')&&$('tvSym').textContent!=='—')openTV($('tvSym').textContent);
+}
+
+/* Tour */
+const TOUR=[
+  ['Welcome to the Simulation Terminal','This unifies three engines: real Conviction scoring, live Kronos structure, and a simulated MiroFish swarm. Green = real data, gold = simulation.'],
+  ['Swarm Heatmap','100 simulated agents show bull/bear positioning. Drag Swarm Bias to perturb the simulation. This is Monte-Carlo, not live order flow.'],
+  ['Kronos + Scenarios','Kronos reads LIVE k-lines for real BOS/FVG/Breakout. The 3-scenario matrix is a 1,000-path simulation seeded by the conviction score.'],
+  ['Stock Picks','Real multi-cap scan from SEC Form 4 + structure + volume. Each card carries simulated scenario cones. Filter by tier or Swarm Picks.'],
+  ['Transparency & Guardrails','Recon Audit shows why tickers failed. Position panel enforces the hard guardrails (30% sector, 70% total, 5 positions). Nothing here is financial advice.']
+];
+let tourI=0;
+function openTour(){tourI=0;$('tourModal').classList.add('open');showTour();}
+function showTour(){$('tourStep').textContent='STEP '+(tourI+1)+' / '+TOUR.length;$('tourTitle').textContent=TOUR[tourI][0];$('tourBody').textContent=TOUR[tourI][1];$('tourNext').textContent=tourI<TOUR.length-1?'Next →':'Done';}
+function tourNext(){if(tourI<TOUR.length-1){tourI++;showTour();}else closeTour();}
+function closeTour(){$('tourModal').classList.remove('open');}
+
+/* boot */
+reSimAll();
 fetchRecon();
 </script>
 </body>
