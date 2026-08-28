@@ -17,7 +17,7 @@
   --green:#00FF9D; --red:#FF3366; --gold:#FFD700;
   --green-dim:rgba(0,255,157,.10); --red-dim:rgba(255,51,102,.10); --gold-dim:rgba(255,215,0,.10);
   --grid-border:rgba(255,255,255,.08);
-  --card-bg:linear-gradient(145deg,var(--obs3),var(--obs2));
+  --card-bg:linear-gradient(145deg,#0A1018,#06090F);
   --hud-bg:rgba(6,9,15,.82);
   --neon-glow-green:0 0 24px rgba(0,255,157,.35);
   --neon-glow-red:0 0 24px rgba(255,51,102,.35);
@@ -28,6 +28,8 @@ body.light-mode{
   --green-dim:rgba(0,160,80,.10); --red-dim:rgba(200,50,60,.08); --gold-dim:rgba(160,120,0,.10);
   --grid-border:rgba(0,20,40,.10);
   --hud-bg:rgba(255,255,255,.72);
+  --card-bg:linear-gradient(145deg,#D8E2EC,#E4EBF2);
+  --obs2:#E4EBF2; --obs3:#D8E2EC; --obs4:#C8D4DF; --obs5:#B8C8D6;
   --neon-glow-green:0 0 24px rgba(0,122,68,.18);
   --neon-glow-red:0 0 24px rgba(192,32,48,.18);
 }
@@ -270,7 +272,7 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
     <a href="/sniper_market_forecaster.html">Market Forecaster</a>
     <a href="/stock_picks.html">Daily Stock Picks</a>
     <a href="/traderedge_chartai.html">Ai Chart</a>
-    <a href="/traderedge_preflight.html class="nav-pill">⬡ Pre-Flight Protocols</a>
+    <a href="/traderedge_preflight.html" class="nav-pill">⬡ Pre-Flight Protocols</a>
     <a href="/traderedge_prop_firms_command_center.html">Prop Firm Center</a>
     <a href="/usme_products.html">Products</a>
     <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle"><span class="tt-icon">🌙</span><span id="themeLabel">DARK</span></button>
@@ -798,9 +800,11 @@ function closeModal(){document.getElementById('modalBack').classList.remove('sho
 /* ── THEME ── */
 function toggleTheme(){
   const isLight=document.body.classList.toggle('light-mode');
-  const btn=document.getElementById('themeBtn');
-  btn.textContent=isLight?'☀ LIGHT':'🌙 DARK';
-  localStorage.setItem('st-theme',isLight?'light':'dark');
+  const icon=document.querySelector('#themeToggle .tt-icon');
+  const lbl=document.getElementById('themeLabel');
+  if(icon)icon.textContent=isLight?'☀':'🌙';
+  if(lbl)lbl.textContent=isLight?'LIGHT':'DARK';
+  try{localStorage.setItem('st-theme',isLight?'light':'dark');}catch(e){}
 }
 
 /* ── LOCALSTORAGE ── */
@@ -1033,7 +1037,12 @@ function toggleMic(){
 /* ── INIT ── */
 (function init(){
   const saved=localStorage.getItem('st-theme');
-  if(saved==='light'){document.body.classList.add('light-mode');document.getElementById('themeBtn').textContent='☀ LIGHT';}
+  if(saved==='light'){
+    document.body.classList.add('light-mode');
+    const icon=document.querySelector('#themeToggle .tt-icon');
+    const lbl=document.getElementById('themeLabel');
+    if(icon)icon.textContent='☀'; if(lbl)lbl.textContent='LIGHT';
+  }
   renderGates();
   restoreDraft();
   updateHUD();
