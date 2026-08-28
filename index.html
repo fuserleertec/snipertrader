@@ -71,29 +71,30 @@ button{font-family:inherit;cursor:none;border:none;background:none;color:inherit
 ::-webkit-scrollbar-thumb:hover{background:var(--text4);}
 img,svg{display:block;max-width:100%;}
 
-/* ── Soft frosted-glass cursor lens ───────────────────────── */
-#lens{
+/* ── Precision scope cursor (transparent, no blur) ───────── */
+#scope{
   position:fixed;top:0;left:0;pointer-events:none;z-index:9990;
-  width:230px;height:230px;border-radius:50%;
-  transform:translate(-50%,-50%);will-change:transform;
-  backdrop-filter:blur(4px) saturate(1.12); -webkit-backdrop-filter:blur(4px) saturate(1.12);
-  background:radial-gradient(circle,rgba(255,255,255,.045) 0%,rgba(255,255,255,0) 62%);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);
+  width:240px;height:240px;transform:translate(-50%,-50%);will-change:transform;
 }
-#lens-ring{
+#scope .s-ring{position:absolute;border-radius:50%;pointer-events:none;}
+#scope .s-r1{inset:0;border:1px solid rgba(0,229,160,.20);}
+#scope .s-r2{inset:36px;border:1px dashed rgba(0,212,255,.24);}
+#scope .s-h{position:absolute;left:0;right:0;top:50%;height:1px;transform:translateY(-50%);
+  background:linear-gradient(90deg,transparent,rgba(0,229,160,.32) 30%,rgba(0,229,160,.32) 70%,transparent);}
+#scope .s-v{position:absolute;top:0;bottom:0;left:50%;width:1px;transform:translateX(-50%);
+  background:linear-gradient(180deg,transparent,rgba(0,229,160,.32) 30%,rgba(0,229,160,.32) 70%,transparent);}
+#scope .s-center{position:absolute;top:50%;left:50%;width:8px;height:8px;transform:translate(-50%,-50%);
+  border-radius:50%;background:var(--emerald);box-shadow:0 0 10px var(--emerald),0 0 22px rgba(0,229,160,.5);}
+#scope-ring{
   position:fixed;top:0;left:0;pointer-events:none;z-index:9991;
-  width:34px;height:34px;border-radius:50%;
-  border:1.5px solid var(--gold);
-  box-shadow:0 0 14px var(--gold),0 0 34px rgba(240,192,64,.35);
+  width:32px;height:32px;border-radius:50%;border:1.5px solid var(--emerald);
+  box-shadow:0 0 12px var(--emerald),0 0 28px rgba(0,229,160,.32);
   transform:translate(-50%,-50%);will-change:transform;
 }
-#lens-dot{
+#scope-dot{
   position:fixed;top:0;left:0;pointer-events:none;z-index:9992;
-  width:5px;height:5px;border-radius:50%;background:var(--gold);
-  box-shadow:0 0 8px var(--gold);transform:translate(-50%,-50%);
-}
-@media (prefers-reduced-motion:reduce){
-  #lens{backdrop-filter:none;-webkit-backdrop-filter:none;background:radial-gradient(circle,rgba(240,192,64,.05) 0%,transparent 60%);}
+  width:5px;height:5px;border-radius:50%;background:var(--emerald);
+  box-shadow:0 0 8px var(--emerald);transform:translate(-50%,-50%);
 }
 
 /* ── Nav ──────────────────────────────────────────────────── */
@@ -419,7 +420,7 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
   .nav-menu{display:none;}
   .nav-burger{display:flex;}
   .nav-cta{display:none;}
-  #lens{display:none;}
+  #scope,#scope-ring,#scope-dot{display:none;}
   body{cursor:auto;}
   button,a{cursor:pointer;}
   .container{padding:0 22px;}
@@ -437,10 +438,16 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
 </head>
 <body>
 
-<!-- Cursor lens -->
-<div id="lens"></div>
-<div id="lens-ring"></div>
-<div id="lens-dot"></div>
+<!-- Precision scope cursor (transparent — no blur) -->
+<div id="scope" aria-hidden="true">
+  <span class="s-ring s-r1"></span>
+  <span class="s-ring s-r2"></span>
+  <span class="s-h"></span>
+  <span class="s-v"></span>
+  <span class="s-center"></span>
+</div>
+<div id="scope-ring"></div>
+<div id="scope-dot"></div>
 
 <!-- NAV -->
 <nav>
@@ -807,14 +814,14 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
    SniperTrader.ai index — behaviors
    ============================================================ */
 
-/* ── Cursor lens ─────────────────────────────────────────── */
+/* ── Precision scope cursor ──────────────────────────────── */
 (function(){
-  var lens=document.getElementById('lens'), ring=document.getElementById('lens-ring'), dot=document.getElementById('lens-dot');
+  var scope=document.getElementById('scope'), ring=document.getElementById('scope-ring'), dot=document.getElementById('scope-dot');
   var mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my;
   document.addEventListener('mousemove',function(e){
     mx=e.clientX;my=e.clientY;
     if(dot){dot.style.left=mx+'px';dot.style.top=my+'px';}
-    if(lens){lens.style.left=mx+'px';lens.style.top=my+'px';}
+    if(scope){scope.style.left=mx+'px';scope.style.top=my+'px';}
   });
   (function loop(){
     rx+=(mx-rx)*0.16; ry+=(my-ry)*0.16;
