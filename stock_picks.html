@@ -15,6 +15,22 @@
   --green-soft:rgba(0,229,160,.12); --cyan-soft:rgba(0,212,255,.12); --gold-soft:rgba(240,192,64,.12); --red-soft:rgba(255,68,85,.12);
   --rad:14px; --mono:'Space Mono',ui-monospace,monospace; --disp:'Orbitron',sans-serif; --sans:'Syne',system-ui,sans-serif;
 }
+/* Light-mode: institutional slate/white palette aligned to traderedge_preflight.html */
+body.light-mode{
+  --bg:#f4f7fb; --bg2:#eef2f7; --panel:#ffffff; --panel2:#f1f5f9; --border:rgba(15,40,70,.12);
+  --text:#0f1f33; --dim:#5b6b80; --dim2:#8a99ad;
+  --emerald:#007A44; --cyan:#0a6fb0; --gold:#9A6E00; --red:#C02030; --obs:#0a7d8c;
+  --green-soft:rgba(0,122,68,.08); --cyan-soft:rgba(10,111,176,.08); --gold-soft:rgba(154,110,0,.08); --red-soft:rgba(192,32,48,.08);
+}
+body.light-mode{background:var(--bg);color:var(--text)}
+body.light-mode .kf-nav{background:rgba(255,255,255,.85)}
+body.light-mode .panel,body.light-mode .qstat,body.light-mode .pick,body.light-mode .drop,body.light-mode .ncard,body.light-mode .edu,body.light-mode .sc,body.light-mode .ssig,body.light-mode .gitem,body.light-mode .ao{box-shadow:0 1px 2px rgba(15,40,60,.06)}
+body.light-mode .hero h1,body.light-mode .sec-head h2,body.light-mode .pick-tk,body.light-mode .dsym,body.light-mode .score-big,body.light-mode .sc .sp,body.light-mode .qstat .qv{color:var(--text)}
+body.light-mode .cell{background:#cdd8e4}
+body.light-mode .pat-row .pt,body.light-mode .scen-mini,body.light-mode .pm,body.light-mode .ao,body.light-mode .pt{background:var(--bg2)}
+body.light-mode .statusbar{background:linear-gradient(180deg,#ffffff,var(--bg2))}
+body.light-mode .disclaimer{background:rgba(192,32,48,.07);color:#8a2730;border-color:rgba(192,32,48,.25)}
+body.light-mode .disclaimer b{color:var(--red)}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:radial-gradient(1200px 700px at 80% -10%,rgba(0,212,255,.07),transparent),var(--bg);color:var(--text);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased;padding-bottom:60px}
 a{color:var(--cyan);text-decoration:none}
@@ -108,6 +124,28 @@ a{color:var(--cyan);text-decoration:none}
 .drv{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim)}
 .drv .dt{width:10px;height:10px;border-radius:50%}
 .drv .dl{margin-left:auto;font-family:var(--mono)}
+
+/* leaderboard (Section 02 ranked velocity) */
+.lead{display:flex;flex-direction:column;gap:8px}
+.lead-row{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--accent,var(--cyan));border-radius:12px;padding:11px 14px;cursor:pointer;transition:border-color .15s,transform .1s}
+.lead-row:hover{border-color:var(--cyan);transform:translateX(2px)}
+.lead-rank{font-family:var(--mono);font-size:13px;color:var(--dim2);width:22px;text-align:center;flex-shrink:0}
+.lead-main{flex:1;min-width:0}
+.lead-sym{font-family:var(--disp);font-size:16px;color:#fff;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+body.light-mode .lead-sym{color:var(--text)}
+.lead-pill{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid}
+.lead-pill.up{color:var(--emerald);border-color:rgba(0,229,160,.4);background:var(--green-soft)}
+.lead-pill.down{color:var(--red);border-color:rgba(255,68,85,.4);background:var(--red-soft)}
+.lead-meta{font-size:11px;color:var(--dim2);font-family:var(--mono);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lead-bars{width:200px;flex-shrink:0}
+.lead-pbtxt{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;margin-bottom:3px}
+.lead-pbtxt .b{color:var(--emerald)} .lead-pbtxt .r{color:var(--red)}
+.lead-pbar{height:8px;border-radius:5px;overflow:hidden;display:flex;background:var(--bg2)}
+.lead-pbar .bb{background:var(--emerald)} .lead-pbar .bn{background:var(--dim2)} .lead-pbar .br{background:var(--red)}
+.lead-score{font-family:var(--disp);font-size:20px;width:64px;text-align:right;flex-shrink:0}
+.lead-score.up{color:var(--emerald)} .lead-score.down{color:var(--red)}
+.lead-sub{font-size:10px;color:var(--dim2);text-align:right;font-family:var(--mono)}
+@media(max-width:720px){.lead-bars{display:none}}
 
 /* picks */
 .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
@@ -244,22 +282,31 @@ details.raw pre{background:#04070c;border:1px solid var(--border);border-radius:
     <b>SIMULATION &amp; EDUCATION NOTICE.</b> Kronos structural patterns and the Conviction Engine derive from <b>real market data</b> (Yahoo k-lines, SEC Form 4). The MiroFish agent swarm, scenario probability cones, and narrative injectors are <b>client-side Monte-Carlo simulations</b> — they model how smart-money behavior <i>might</i> resolve, not live order flow, dark-pool, or options data. Nothing here is financial advice.
   </div>
 
-  <!-- SECTION 2: Live Simulation View -->
+  <!-- SECTION 2: Live Simulation View → Ranked Velocity Leaderboard -->
   <section class="sec">
     <div class="sec-head"><span class="ix">02</span><h2>Live Market Simulation View</h2><span class="sim">Simulation</span></div>
-    <div class="sec-sub">The "why" behind conviction: swarm psychology, structural patterns, and probabilistic outcomes. Swarm + scenario blocks are simulated; pattern detection is from live data.</div>
-    <div class="grid-2">
+    <div class="sec-sub">The Recon Audit (Section 06) candidates flow through Kronos pattern detection + MiroFish swarm consensus and are ranked by <b>net velocity</b> — highest run-up potential at the top, highest dump risk at the bottom. Swarm heatmap + scenario cones are the supporting panels, driven by the focused ticker.</div>
+
+    <!-- PRIMARY: ranked leaderboard -->
+    <div class="panel" style="padding:14px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-size:18px">📊</span><b>Conviction &amp; Velocity Leaderboard</b>
+        <span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--dim)" id="leadCount"></span>
+      </div>
+      <div class="lead" id="leaderboard"></div>
+    </div>
+
+    <div class="grid-2" style="margin-top:14px">
       <div class="panel">
         <div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">🔴</span><b>MiroFish Agent Swarm Activity</b></div>
         <div class="heatmap" id="heatmap" style="margin-top:12px"></div>
-        <div class="legend"><span><i style="background:#00e5a0"></i>Bullish</span><span><i style="background:#f0c040"></i>Neutral</span><span><i style="background:#ff4455"></i>Bearish</span></div>
+        <div class="legend"><span><i style="background:var(--emerald)"></i>Bullish</span><span><i style="background:var(--gold)"></i>Neutral</span><span><i style="background:var(--red)"></i>Bearish</span></div>
         <div class="swarm-signals" id="swarmSignals"></div>
       </div>
       <div class="panel">
-        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">📈</span><b>Kronos Structural K-Line Analysis</b></div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">📈</span><b>Kronos Structural K-Line — <span id="krSym">focus</span></b></div>
         <div class="kr-pair" style="margin-top:12px">
           <div>
-            <div class="kline-note">Current focus: <b id="krSym">NVDA</b> (live)</div>
             <div class="pat-bar" id="patBar"></div>
             <div class="kline-note" id="krNext">Next key level computed from ATR + swing liquidity.</div>
           </div>
@@ -277,7 +324,7 @@ details.raw pre{background:#04070c;border:1px solid var(--border);border-radius:
       </div>
     </div>
     <div class="panel" style="margin-top:14px">
-      <div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">🎲</span><b>Scenario Probability Matrix</b><span class="sim">Simulation</span></div>
+      <div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">🎲</span><b>Scenario Probability Matrix — <span id="scenSym">focus</span></b><span class="sim">Simulation</span></div>
       <div class="scen" style="margin-top:12px" id="scenMatrix"></div>
       <div class="drivers" id="scenDrivers"></div>
     </div>
@@ -522,12 +569,12 @@ async function fetchRecon(){
     RECON=d; dot.className='dot';
     document.getElementById('lastUpdated').textContent=fmtTime(d.generatedAt);
     document.getElementById('qScanned').textContent=(d.universeScanned||0);
-    renderPicks(); renderRecon(); renderRaw(d);
+    renderPicks(); renderRecon(); renderRaw(d); processSimulationLeaderboard(d.picks);
   }catch(e){
     if(!RECON) RECON=FALLBACK;
     dot.className='dot err';
     document.getElementById('lastUpdated').textContent='live feed unavailable · snapshot';
-    renderPicks(); renderRecon();
+    renderPicks(); renderRecon(); processSimulationLeaderboard(RECON?RECON.picks:[]);
   }finally{ btn.disabled=false; btn.textContent='↻ REFRESH'; }
 }
 function fmtTime(iso){ try{return new Date(iso).toLocaleString('en-US',{hour:'2-digit',minute:'2-digit',month:'short',day:'numeric'});}catch(_){return '—';} }
@@ -582,6 +629,54 @@ function renderRecon(){
   )).join('');
 }
 function renderRaw(d){ const pre=document.getElementById('rawPre'); if(pre) pre.textContent=JSON.stringify(d,null,2); }
+
+/* Leaderboard pipeline: Recon Audit picks → Kronos + MiroFish scoring → ranked velocity */
+function processSimulationLeaderboard(picks){
+  if(!picks||!picks.length){ document.getElementById('leaderboard').innerHTML='<div class="note">No candidates cleared the conviction gate this cycle.</div>'; document.getElementById('leadCount').textContent=''; return []; }
+  const scored=picks.map(p=>{
+    const sc=simScenario(p);                 // Kronos Monte-Carlo cone (simulated, ATR-anchored)
+    const convictionBias=clampN((p.score||0)/100,0.05,0.98);
+    const swarm=computeSwarm(convictionBias, 0.4+Math.abs(SIM_BIAS)*0.4);
+    const swarmScore=(swarm.netBias*100);    // -100..+100
+    // Run-Up / Dump Velocity Score (0-100) per blueprint weighting
+    const runUpScore=Math.round(sc.bull.p*0.6 + (swarmScore*0.5+50)*0.4);
+    const dumpScore=Math.round(sc.bear.p*0.6 + (50-swarmScore*0.5)*0.4);
+    const netBias=runUpScore-dumpScore;
+    const delta=sc.bull.p-sc.bear.p;          // Kronos probability delta
+    const pattern=(p.triggers&&p.triggers.length)?p.triggers.join(' + '):'BOS Confluence';
+    return Object.assign({},p,{runUpScore,dumpScore,netBias,delta,pattern,swarmScore,sc});
+  });
+  scored.sort((a,b)=>b.netBias-a.netBias);     // top run-up → bottom dump
+  renderLeaderboard(scored);
+  return scored;
+}
+function renderLeaderboard(scored){
+  const box=document.getElementById('leaderboard');
+  document.getElementById('leadCount').textContent=scored.length+' ranked';
+  box.innerHTML=scored.map((it,idx)=>{
+    const up=it.netBias>=0;
+    const accent=up?'var(--emerald)':'var(--red)';
+    const bullP=it.sc.bull.p, baseP=it.sc.base.p, bearP=it.sc.bear.p;
+    const pat=it.pattern||'BOS Confluence';
+    const lvl='$'+it.stop.toFixed(2)+' → $'+it.target.toFixed(2);
+    return (
+      '<div class="lead-row" style="--accent:'+accent+'" onclick="focusSim(\''+it.symbol+'\')">'+
+        '<div class="lead-rank">#'+(idx+1)+'</div>'+
+        '<div class="lead-main">'+
+          '<div class="lead-sym">'+it.symbol+
+            '<span class="lead-pill '+(up?'up':'down')+'">'+(up?'RUN-UP '+it.runUpScore:'DUMP '+it.dumpScore)+'</span>'+
+          '</div>'+
+          '<div class="lead-meta">'+pat+' · Δ '+it.delta.toFixed(0)+'% · ATR '+lvl+'</div>'+
+        '</div>'+
+        '<div class="lead-bars">'+
+          '<div class="lead-pbtxt"><span class="b">Bull '+bullP+'%</span><span class="r">Bear '+bearP+'%</span></div>'+
+          '<div class="lead-pbar"><div class="bb" style="width:'+bullP+'%"></div><div class="bn" style="width:'+baseP+'%"></div><div class="br" style="width:'+bearP+'%"></div></div>'+
+        '</div>'+
+        '<div><div class="lead-score '+(up?'up':'down')+'">'+(up?'+':'')+it.netBias+'</div><div class="lead-sub">velocity</div></div>'+
+      '</div>'
+    );
+  }).join('');
+}
 
 /* ════════════════════════════════════════════════════════════════
    PART C — MIROFISH SWARM SIMULATION (client-side, labeled)
@@ -699,9 +794,11 @@ function reSim(){
   const focus=RECON&&RECON.picks&&focusSym?RECON.picks.find(x=>x.symbol===focusSym):(RECON&&RECON.picks&&RECON.picks[0]);
   renderScenarioMatrix(focus);
   renderKronos(focus);
+  // re-rank leaderboard with new bias
+  if(RECON&&RECON.picks) processSimulationLeaderboard(RECON.picks);
 }
 let focusSym=null;
-function focusSim(sym){ focusSym=sym; const p=RECON&&RECON.picks?RECON.picks.find(x=>x.symbol===sym):null; renderScenarioMatrix(p); renderKronos(p); document.getElementById('swarmBias').scrollIntoView({behavior:'smooth'}); }
+function focusSim(sym){ focusSym=sym; const p=RECON&&RECON.picks?RECON.picks.find(x=>x.symbol===sym):null; renderScenarioMatrix(p); renderKronos(p); const ks=document.getElementById('krSym'), ss=document.getElementById('scenSym'); if(ks)ks.textContent=sym; if(ss)ss.textContent=sym; document.getElementById('swarmBias').scrollIntoView({behavior:'smooth'}); }
 
 /* static illustrative narratives */
 const NARRATIVES=[
