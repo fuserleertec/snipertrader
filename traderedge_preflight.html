@@ -44,6 +44,19 @@ body.light-mode .gate-row.pass .gate-yn.yes{color:#fff;}
 body.light-mode .hud-shell{box-shadow:0 12px 32px rgba(15,40,60,.16);}
 html{scroll-behavior:smooth;}
 body{background:var(--obs);color:var(--text);font-family:'Syne',sans-serif;overflow-x:hidden;min-height:100vh;}
+/* ── Precision scope cursor (mirrors /sniper_market_forecaster.html — transparent, follows mouse) ── */
+#scope{position:fixed;top:0;left:0;pointer-events:none;z-index:9990;width:240px;height:240px;transform:translate(-50%,-50%);will-change:transform;}
+#scope .s-ring{position:absolute;border-radius:50%;pointer-events:none;}
+#scope .s-r1{inset:0;border:1px solid rgba(0,255,157,.20);}
+#scope .s-r2{inset:36px;border:1px dashed rgba(0,212,255,.24);}
+#scope .s-h{position:absolute;left:0;right:0;top:50%;height:1px;transform:translateY(-50%);background:linear-gradient(90deg,transparent,rgba(0,255,157,.32) 30%,rgba(0,255,157,.32) 70%,transparent);}
+#scope .s-v{position:absolute;top:0;bottom:0;left:50%;width:1px;transform:translateX(-50%);background:linear-gradient(180deg,transparent,rgba(0,255,157,.32) 30%,rgba(0,255,157,.32) 70%,transparent);}
+#scope .s-center{position:absolute;top:50%;left:50%;width:8px;height:8px;transform:translate(-50%,-50%);border-radius:50%;background:#00FF9D;box-shadow:0 0 10px #00FF9D,0 0 22px rgba(0,255,157,.5);}
+#scope-ring{position:fixed;top:0;left:0;pointer-events:none;z-index:9991;width:32px;height:32px;border-radius:50%;border:1.5px solid #00FF9D;box-shadow:0 0 12px #00FF9D,0 0 28px rgba(0,255,157,.32);transform:translate(-50%,-50%);will-change:transform;}
+#scope-dot{position:fixed;top:0;left:0;pointer-events:none;z-index:9992;width:5px;height:5px;border-radius:50%;background:#00FF9D;box-shadow:0 0 8px #00FF9D;transform:translate(-50%,-50%);}
+body{cursor:none;}
+a,button,.btn,.theme-toggle,.nav-link,.nav-pill,.mic-btn,.pill,.gate-yn,.gate-tgl,.modal-close{cursor:none;}
+@media(max-width:900px){#scope,#scope-ring,#scope-dot{display:none;}body{cursor:auto;}a,button,.btn,.theme-toggle,.nav-link,.nav-pill,.mic-btn,.pill,.gate-yn,.gate-tgl,.modal-close{cursor:pointer;}}
 body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.4;}
 #pc{position:fixed;inset:0;pointer-events:none;z-index:0;}
 
@@ -280,6 +293,18 @@ footer{border-top:1px solid var(--grid-border);background:var(--obs);padding:64p
 </style>
 </head>
 <body>
+
+<!-- Precision scope cursor (transparent — no blur, mirrors /sniper_market_forecaster.html) -->
+<div id="scope" aria-hidden="true">
+  <span class="s-ring s-r1"></span>
+  <span class="s-ring s-r2"></span>
+  <span class="s-h"></span>
+  <span class="s-v"></span>
+  <span class="s-center"></span>
+</div>
+<div id="scope-ring"></div>
+<div id="scope-dot"></div>
+
 <canvas id="pc"></canvas>
 
 <!-- NAV (canonical) -->
@@ -1115,6 +1140,22 @@ function toggleMic(){
   loadStats();
   document.getElementById('journalEntry').addEventListener('input',()=>{state.journal=document.getElementById('journalEntry').value;saveDraft();});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+})();
+
+/* ── Precision scope cursor (mirrors /sniper_market_forecaster.html — transparent, follows mouse) ── */
+(function(){
+  var scope=document.getElementById('scope'), ring=document.getElementById('scope-ring'), dot=document.getElementById('scope-dot');
+  var mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my;
+  document.addEventListener('mousemove',function(e){
+    mx=e.clientX;my=e.clientY;
+    if(dot){dot.style.left=mx+'px';dot.style.top=my+'px';}
+    if(scope){scope.style.left=mx+'px';scope.style.top=my+'px';}
+  });
+  (function loop(){
+    rx+=(mx-rx)*0.16; ry+=(my-ry)*0.16;
+    if(ring){ring.style.left=rx+'px';ring.style.top=ry+'px';}
+    requestAnimationFrame(loop);
+  })();
 })();
 </script>
 </body>
