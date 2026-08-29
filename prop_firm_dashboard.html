@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prop Firm Intelligence — SniperTrader.ai</title>
+<meta name="description" content="Ranked proprietary trading firms by Sniper Score™ — payout splits, drawdown rules, active deals, and trading styles. Data refreshed daily.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   Prop Firm Intelligence — tactical obsidian/amber theme
+   Deep matte charcoal · neon amber · signal green/red
+   ============================================================ */
+:root{
+  --bg:#0b0e14; --bg2:#121824; --surface:#141b2a; --surface2:#1a2233;
+  --border:#1f2937; --border2:#2d3a4f;
+  --amber:#f59e0b; --amber-dim:rgba(245,158,11,.12); --amber-glow:rgba(245,158,11,.30);
+  --green:#10b981; --green-dim:rgba(16,185,129,.12);
+  --red:#ef4444; --red-dim:rgba(239,68,68,.12);
+  --text:#f8fafc; --text2:#cbd5e1; --text3:#94a3b8; --text4:#64748b;
+  --ff-d:'Orbitron',monospace; --ff-m:'Space Mono',monospace; --ff-b:'Inter',system-ui,sans-serif;
+  --shadow:0 24px 60px rgba(0,0,0,.5);
+}
+body.light{
+  --bg:#eef1f5; --bg2:#e6eaf0; --surface:#f7f9fc; --surface2:#eef1f6;
+  --border:#d8dee8; --border2:#c4ccda;
+  --amber:#b45309; --amber-dim:rgba(180,83,9,.10); --amber-glow:rgba(180,83,9,.22);
+  --green:#059669; --green-dim:rgba(5,150,105,.10);
+  --red:#dc2626; --red-dim:rgba(220,38,38,.10);
+  --text:#0f172a; --text2:#1e293b; --text3:#475569; --text4:#64748b;
+  --shadow:0 18px 40px rgba(30,41,59,.14);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--ff-b);line-height:1.55;overflow-x:hidden;cursor:none;-webkit-font-smoothing:antialiased;transition:background .35s,color .35s;}
+a{text-decoration:none;color:inherit;}
+button{font-family:inherit;cursor:none;border:none;background:none;color:inherit;}
+::selection{background:var(--amber);color:#0b0e14;}
+::-webkit-scrollbar{width:10px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:8px;}
+::-webkit-scrollbar-thumb:hover{background:var(--text4);}
+img,svg{display:block;max-width:100%;}
+.mono{font-family:var(--ff-m);}
+
+/* ── Scope cursor ─────────────────────────────────────────── */
+#scope{position:fixed;top:0;left:0;pointer-events:none;z-index:9990;width:200px;height:200px;transform:translate(-50%,-50%);will-change:transform;}
+#scope .s-ring{position:absolute;border-radius:50%;}
+#scope .s-r1{inset:0;border:1px solid rgba(245,158,11,.18);}
+#scope .s-r2{inset:30px;border:1px dashed rgba(245,158,11,.22);}
+#scope .s-h{position:absolute;left:0;right:0;top:50%;height:1px;background:linear-gradient(90deg,transparent,rgba(245,158,11,.30) 30%,rgba(245,158,11,.30) 70%,transparent);}
+#scope .s-v{position:absolute;top:0;bottom:0;left:50%;width:1px;background:linear-gradient(180deg,transparent,rgba(245,158,11,.30) 30%,rgba(245,158,11,.30) 70%,transparent);}
+#scope .s-center{position:absolute;top:50%;left:50%;width:6px;height:6px;transform:translate(-50%,-50%);border-radius:50%;background:var(--amber);box-shadow:0 0 10px var(--amber),0 0 20px var(--amber-glow);}
+#scope-ring{position:fixed;top:0;left:0;pointer-events:none;z-index:9991;width:28px;height:28px;border-radius:50%;border:1.5px solid var(--amber);box-shadow:0 0 12px var(--amber-glow);transform:translate(-50%,-50%);will-change:transform;}
+#scope-dot{position:fixed;top:0;left:0;pointer-events:none;z-index:9992;width:5px;height:5px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber);transform:translate(-50%,-50%);}
+
+/* ── Nav ──────────────────────────────────────────────────── */
+nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;align-items:center;gap:8px;padding:0 32px;height:64px;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+.logo{display:flex;align-items:baseline;gap:1px;font-family:var(--ff-d);font-weight:700;font-size:1.15rem;letter-spacing:.02em;color:var(--text);margin-right:22px;}
+.logo span{color:var(--amber);font-size:.78rem;font-family:var(--ff-m);letter-spacing:.05em;margin-left:2px;}
+.nav-menu{display:flex;align-items:center;gap:2px;list-style:none;flex:1;}
+.nav-link{display:flex;align-items:center;gap:6px;padding:9px 13px;font-size:.83rem;font-weight:500;color:var(--text3);border-radius:8px;transition:color .2s,background .2s;letter-spacing:.01em;}
+.nav-link:hover{color:var(--text);background:var(--surface2);}
+.nav-link.active{color:var(--amber);background:var(--amber-dim);}
+.nav-link .caret{transition:transform .25s;font-size:.7rem;}
+.nav-item{position:relative;}
+.nav-item.open .nav-link{color:var(--text);background:var(--surface2);}
+.nav-item.open .nav-link .caret{transform:rotate(180deg);}
+.dropdown{position:absolute;top:calc(100% + 10px);left:0;min-width:280px;background:var(--surface);backdrop-filter:blur(24px);border:1px solid var(--border);border-radius:12px;padding:8px;opacity:0;visibility:hidden;transform:translateY(-8px);transition:all .2s ease;box-shadow:var(--shadow);}
+.nav-item.open .dropdown,.nav-item:hover .dropdown{opacity:1;visibility:visible;transform:translateY(0);}
+.dropdown a{display:flex;flex-direction:column;gap:2px;padding:11px 13px;border-radius:9px;transition:background .16s;}
+.dropdown a:hover{background:var(--surface2);}
+.dropdown a .d-name{font-size:.88rem;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;}
+.dropdown a .d-name::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--amber);flex-shrink:0;}
+.dropdown a .d-sub{font-size:.76rem;color:var(--text3);line-height:1.4;}
+.nav-right{display:flex;align-items:center;gap:12px;margin-left:auto;}
+.theme-toggle{display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:22px;border:1px solid var(--border);color:var(--text3);font-size:.76rem;font-weight:500;transition:border-color .2s,color .2s;}
+.theme-toggle:hover{border-color:var(--amber);color:var(--amber);}
+.nav-cta{display:inline-flex;align-items:center;gap:8px;padding:9px 20px;border-radius:22px;background:var(--amber);color:#0b0e14;font-weight:700;font-size:.8rem;letter-spacing:.02em;transition:transform .2s,box-shadow .2s;box-shadow:0 5px 18px var(--amber-glow);}
+.nav-cta:hover{transform:translateY(-1px);box-shadow:0 9px 26px var(--amber-glow);}
+.nav-burger{display:none;flex-direction:column;gap:5px;padding:10px;border-radius:8px;border:1px solid var(--border);}
+.nav-burger span{width:18px;height:1.5px;background:var(--text2);}
+.mobile-menu{display:none;position:fixed;top:64px;left:0;right:0;z-index:499;background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 22px 22px;max-height:calc(100vh - 64px);overflow-y:auto;}
+.mobile-menu.open{display:block;}
+.mobile-menu a.mm-link{display:block;padding:12px 6px;font-size:.98rem;font-weight:600;color:var(--text);border-bottom:1px solid var(--border);}
+.mobile-menu .mm-group{font-family:var(--ff-m);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin:16px 6px 6px;}
+.mobile-menu a.mm-sub{display:block;padding:9px 6px;font-size:.88rem;color:var(--text3);}
+.mobile-menu a.mm-sub:hover{color:var(--text);}
+
+/* ── Layout ───────────────────────────────────────────────── */
+.container{max-width:1240px;margin:0 auto;padding:0 24px;}
+main{padding-top:64px;}
+.page-head{padding:46px 0 22px;}
+.eyebrow{font-family:var(--ff-m);font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;color:var(--amber);display:flex;align-items:center;gap:10px;}
+.eyebrow::before{content:'';width:22px;height:1px;background:var(--amber);}
+.page-title{font-family:var(--ff-d);font-size:clamp(1.7rem,3.6vw,2.6rem);font-weight:900;letter-spacing:.01em;margin:10px 0 6px;text-transform:uppercase;}
+.page-title em{font-style:normal;color:var(--amber);}
+.page-sub{color:var(--text3);max-width:680px;font-size:.95rem;}
+.meta-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;}
+.meta-chip{display:inline-flex;align-items:center;gap:7px;font-family:var(--ff-m);font-size:.72rem;letter-spacing:.03em;color:var(--text3);padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);}
+.meta-chip b{color:var(--text);font-weight:700;}
+.meta-chip .dot{width:7px;height:7px;border-radius:50%;}
+.dot-live{background:var(--green);box-shadow:0 0 8px var(--green);}
+.dot-seed{background:var(--amber);box-shadow:0 0 8px var(--amber);}
+
+/* ── Filter bar ───────────────────────────────────────────── */
+.filterbar{position:sticky;top:64px;z-index:400;background:color-mix(in srgb,var(--bg) 96%,transparent);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:22px;display:flex;flex-wrap:wrap;gap:14px 18px;align-items:center;}
+.fgroup{display:flex;flex-direction:column;gap:6px;}
+.fgroup>label{font-family:var(--ff-m);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text4);}
+.fchips{display:flex;flex-wrap:wrap;gap:6px;}
+.fchip{font-family:var(--ff-m);font-size:.72rem;padding:6px 11px;border-radius:7px;border:1px solid var(--border);color:var(--text3);background:var(--surface);transition:all .15s;letter-spacing:.02em;}
+.fchip:hover{color:var(--text);border-color:var(--border2);}
+.fchip.on{color:#0b0e14;background:var(--amber);border-color:var(--amber);font-weight:700;}
+.fsel{font-family:var(--ff-m);font-size:.74rem;padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text2);outline:none;}
+.fsel:focus{border-color:var(--amber);}
+.freset{font-family:var(--ff-m);font-size:.72rem;padding:7px 12px;border-radius:7px;border:1px solid var(--border2);color:var(--text3);background:transparent;transition:all .15s;}
+.freset:hover{color:var(--red);border-color:var(--red);}
+.result-count{font-family:var(--ff-m);font-size:.72rem;color:var(--text3);margin-left:auto;}
+
+/* ── Bullseye spotlight ───────────────────────────────────── */
+.bullseye{position:relative;display:grid;grid-template-columns:1.6fr 1fr;gap:20px;border:1px solid var(--amber);border-radius:14px;background:linear-gradient(135deg,var(--amber-dim),var(--surface));padding:24px 26px;margin-bottom:24px;overflow:hidden;box-shadow:0 0 0 1px var(--amber-glow) inset,0 18px 44px rgba(0,0,0,.35);}
+.bullseye::after{content:'';position:absolute;inset:0;background:radial-gradient(600px 200px at 15% 0%,var(--amber-glow),transparent 70%);pointer-events:none;}
+.bullseye-tag{position:absolute;top:0;right:0;font-family:var(--ff-d);font-size:.62rem;font-weight:900;letter-spacing:.18em;background:var(--amber);color:#0b0e14;padding:7px 14px;border-bottom-left-radius:10px;text-transform:uppercase;}
+.bullseye .b-left{position:relative;z-index:1;}
+.bullseye .b-name{font-family:var(--ff-d);font-size:1.6rem;font-weight:900;text-transform:uppercase;letter-spacing:.01em;}
+.bullseye .b-score{display:inline-flex;align-items:center;gap:10px;margin-top:6px;}
+.bullseye .b-score .num{font-family:var(--ff-d);font-size:2.6rem;font-weight:900;color:var(--amber);line-height:1;}
+.bullseye .b-score .lbl{font-family:var(--ff-m);font-size:.7rem;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;}
+.bullseye .b-why{margin-top:14px;font-size:.88rem;color:var(--text2);max-width:520px;}
+.bullseye .b-stats{margin-top:16px;display:flex;flex-wrap:wrap;gap:10px;}
+.bstat{font-family:var(--ff-m);font-size:.72rem;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text2);}
+.bstat b{color:var(--amber);}
+.bullseye .b-right{position:relative;z-index:1;display:flex;flex-direction:column;gap:10px;justify-content:center;}
+.bullseye .b-right .row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px dashed var(--border2);font-size:.82rem;}
+.bullseye .b-right .row span{color:var(--text3);}
+.bullseye .b-right .row b{font-family:var(--ff-m);color:var(--text);}
+
+/* ── Table ────────────────────────────────────────────────── */
+.view-toggle{display:flex;gap:8px;margin:0 0 14px;align-items:center;}
+.vbtn{font-family:var(--ff-m);font-size:.72rem;padding:7px 13px;border-radius:7px;border:1px solid var(--border);color:var(--text3);letter-spacing:.06em;text-transform:uppercase;}
+.vbtn.on{color:#0b0e14;background:var(--amber);border-color:var(--amber);font-weight:700;}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;background:var(--surface);}
+table{width:100%;border-collapse:collapse;min-width:980px;}
+thead th{position:sticky;top:0;font-family:var(--ff-m);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text4);text-align:left;padding:12px 14px;border-bottom:1px solid var(--border2);background:var(--surface);white-space:nowrap;cursor:pointer;user-select:none;}
+thead th:hover{color:var(--amber);}
+thead th.sort-by{color:var(--amber);}
+thead th .arr{font-size:.6rem;margin-left:4px;}
+tbody tr{border-bottom:1px solid var(--border);transition:background .14s;}
+tbody tr:hover{background:var(--surface2);}
+tbody tr:last-child{border-bottom:none;}
+tbody tr.bull-row{background:var(--amber-dim);}
+td{padding:13px 14px;font-size:.85rem;vertical-align:middle;white-space:nowrap;}
+td .firm-name{font-weight:700;color:var(--text);}
+td .firm-sub{font-family:var(--ff-m);font-size:.68rem;color:var(--text4);}
+.rank{font-family:var(--ff-d);font-size:1.05rem;font-weight:900;color:var(--text4);}
+tr.bull-row .rank{color:var(--amber);}
+.score-pill{display:inline-flex;align-items:center;gap:6px;font-family:var(--ff-d);font-weight:900;font-size:.95rem;color:var(--amber);background:var(--amber-dim);border:1px solid var(--amber);border-radius:8px;padding:5px 10px;}
+.score-pill small{font-size:.6rem;font-weight:500;color:var(--amber);}
+.split{font-family:var(--ff-m);font-weight:700;color:var(--text);}
+.split small{color:var(--text4);font-weight:400;}
+.fee{font-family:var(--ff-m);}
+.dd{font-family:var(--ff-m);}
+.styles{display:flex;gap:4px;flex-wrap:wrap;}
+.style-tag{font-family:var(--ff-m);font-size:.62rem;padding:2px 6px;border-radius:5px;border:1px solid var(--border);color:var(--text3);}
+.style-tag.yes{color:var(--green);border-color:var(--green);background:var(--green-dim);}
+.style-tag.no{color:var(--text4);opacity:.55;}
+
+/* ── Badges ───────────────────────────────────────────────── */
+.badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--ff-m);font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:5px;border:1px solid;}
+.b-verified{color:var(--green);border-color:var(--green);background:var(--green-dim);}
+.b-seed{color:var(--amber);border-color:var(--amber);background:var(--amber-dim);}
+.b-forex{color:#38bdf8;border-color:#38bdf8;background:rgba(56,189,248,.1);}
+.b-futures{color:#a78bfa;border-color:#a78bfa;background:rgba(167,139,250,.1);}
+.b-deal{color:var(--red);border-color:var(--red);background:var(--red-dim);}
+.src-link{font-family:var(--ff-m);font-size:.72rem;color:var(--amber);border-bottom:1px dotted var(--amber);padding-bottom:1px;}
+.src-link:hover{border-bottom-style:solid;}
+
+/* ── Card grid ────────────────────────────────────────────── */
+.cards{display:none;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
+.cards.show{display:grid;}
+.card{position:relative;border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:18px;transition:border-color .18s,transform .18s;}
+.card:hover{border-color:var(--border2);transform:translateY(-2px);}
+.card.bull{border-color:var(--amber);box-shadow:0 0 0 1px var(--amber-glow) inset;}
+.card .c-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px;}
+.card .c-name{font-family:var(--ff-d);font-size:1.05rem;font-weight:900;text-transform:uppercase;}
+.card .c-score{font-family:var(--ff-d);font-weight:900;font-size:1.3rem;color:var(--amber);}
+.card .c-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.card .c-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.78rem;}
+.card .c-grid .k{color:var(--text4);font-family:var(--ff-m);font-size:.64rem;text-transform:uppercase;letter-spacing:.06em;}
+.card .c-grid .v{font-family:var(--ff-m);color:var(--text2);}
+.card .c-foot{margin-top:14px;padding-top:12px;border-top:1px dashed var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.bull-tag{font-family:var(--ff-d);font-size:.56rem;font-weight:900;letter-spacing:.16em;color:#0b0e14;background:var(--amber);padding:4px 8px;border-radius:5px;text-transform:uppercase;}
+
+/* ── Footer + notes ───────────────────────────────────────── */
+.note-banner{margin:22px 0;border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:10px;background:var(--surface);padding:14px 16px;font-size:.8rem;color:var(--text3);}
+.note-banner b{color:var(--amber);}
+footer{margin-top:40px;border-top:1px solid var(--border);background:var(--bg2);}
+.footer-grid{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:36px;padding:46px 0 40px;}
+.f-logo{font-family:var(--ff-d);font-weight:700;font-size:1.1rem;color:var(--text);}
+.f-logo span{color:var(--amber);}
+.f-mission{font-size:.82rem;color:var(--text3);margin:12px 0 16px;max-width:300px;}
+.f-status{font-family:var(--ff-m);font-size:.72rem;color:var(--text3);display:flex;align-items:center;gap:8px;}
+.f-status i{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);}
+.f-social{display:flex;gap:14px;margin-top:16px;}
+.f-social a{font-size:.78rem;color:var(--text4);}
+.f-social a:hover{color:var(--amber);}
+.footer-col{display:flex;flex-direction:column;gap:10px;}
+.footer-col h4{font-family:var(--ff-m);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text4);margin-bottom:4px;}
+.footer-col a{font-size:.83rem;color:var(--text3);}
+.footer-col a:hover{color:var(--text);}
+.footer-bottom{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:20px 0;border-top:1px solid var(--border);font-size:.74rem;color:var(--text4);}
+.footer-disclaimer{font-size:.7rem;color:var(--text4);line-height:1.6;padding-bottom:34px;}
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media(max-width:900px){
+  body{cursor:auto;}
+  #scope,#scope-ring,#scope-dot{display:none;}
+  .nav-menu,.nav-right .nav-cta{display:none;}
+  .nav-burger{display:flex;}
+  .bullseye{grid-template-columns:1fr;}
+  .footer-grid{grid-template-columns:1fr 1fr;}
+  .result-count{margin-left:0;}
+}
+@media(max-width:560px){.footer-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div id="scope" aria-hidden="true"><span class="s-ring s-r1"></span><span class="s-ring s-r2"></span><span class="s-h"></span><span class="s-v"></span><span class="s-center"></span></div>
+<div id="scope-ring"></div>
+<div id="scope-dot"></div>
+
+<nav>
+  <a class="logo" href="/index.html">SNIPERTRADER<span>.ai</span></a>
+  <ul class="nav-menu">
+    <li class="nav-item" data-drop>
+      <button class="nav-link" onclick="toggleDrop(this)">Market Intelligence <span class="caret">▾</span></button>
+      <div class="dropdown">
+        <a href="/traderedge_preflight.html"><span class="d-name">Preflight Protocol</span><span class="d-sub">Daily pre-market playbook &amp; bias calibration</span></a>
+        <a href="/stock_picks.html"><span class="d-name">AI Stock Picks</span><span class="d-sub">High-probability setups scored by ML</span></a>
+        <a href="/traderedge_chartai.html"><span class="d-name">AI Chart Analyzer</span><span class="d-sub">Automated structure, liquidity &amp; order blocks</span></a>
+        <a href="/sniper_market_forecaster.html"><span class="d-name">Sniper Market Forecaster</span><span class="d-sub">Macro price targets &amp; pivot windows</span></a>
+      </div>
+    </li>
+    <li class="nav-item" data-drop>
+      <button class="nav-link" onclick="toggleDrop(this)">Proprietary Algos <span class="caret">▾</span></button>
+      <div class="dropdown">
+        <a href="/NoRepaint_Pivot_indicator.html"><span class="d-name">No Repaint Indicator</span><span class="d-sub">Confirmed-at-close signal execution</span></a>
+        <a href="/USME_ICT_Foundation.html"><span class="d-name">USME ICT Foundation Engine</span><span class="d-sub">Smart Money Concepts automation</span></a>
+        <a href="/USME_VWAP_Elite_Suite.html"><span class="d-name">USME VWAP Suite Engine</span><span class="d-sub">Institutional volume-weighted targeting</span></a>
+      </div>
+    </li>
+    <li class="nav-item"><a class="nav-link active" href="/prop_firm_dashboard.html">Prop Firm Center</a></li>
+    <li class="nav-item"><a class="nav-link" href="/usme_products.html">Academy</a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="theme-toggle" id="theme-btn" aria-label="Toggle light/dark mode">☾ <span id="theme-label">Light</span></button>
+    <a class="nav-cta" href="/admin.html">LOGIN</a>
+    <button class="nav-burger" id="burger" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+<div class="mobile-menu" id="mobileMenu">
+  <div class="mm-group">Market Intelligence</div>
+  <a class="mm-sub" href="/traderedge_preflight.html">Preflight Protocol</a>
+  <a class="mm-sub" href="/stock_picks.html">AI Stock Picks</a>
+  <a class="mm-sub" href="/traderedge_chartai.html">AI Chart Analyzer</a>
+  <a class="mm-sub" href="/sniper_market_forecaster.html">Sniper Market Forecaster</a>
+  <div class="mm-group">Proprietary Algos</div>
+  <a class="mm-sub" href="/NoRepaint_Pivot_indicator.html">No Repaint Indicator</a>
+  <a class="mm-sub" href="/USME_ICT_Foundation.html">USME ICT Foundation Engine</a>
+  <a class="mm-sub" href="/USME_VWAP_Elite_Suite.html">USME VWAP Suite Engine</a>
+  <div class="mm-group">Tools</div>
+  <a class="mm-link" href="/prop_firm_dashboard.html">Prop Firm Center</a>
+  <a class="mm-link" href="/usme_products.html">Academy</a>
+</div>
+
+<main>
+  <div class="container">
+    <section class="page-head">
+      <div class="eyebrow">Sniper Score™ Ranking Engine</div>
+      <h1 class="page-title">Prop Firm <em>Intelligence</em></h1>
+      <p class="page-sub">Every proprietary trading firm crawled, scored, and ranked on best all-around value — payout split, evaluation cost, drawdown flexibility, and payout speed.</p>
+      <div class="meta-row">
+        <span class="meta-chip"><span class="dot dot-live"></span> Data source: <b id="srcLabel">loading…</b></span>
+        <span class="meta-chip">Firms tracked: <b id="firmCount">—</b></span>
+        <span class="meta-chip">Last refreshed: <b id="lastRefreshed">—</b></span>
+      </div>
+    </section>
+
+    <section class="filterbar" id="filterbar">
+      <div class="fgroup">
+        <label>Market</label>
+        <div class="fchips" data-filter="market">
+          <button class="fchip on" data-v="all">All</button>
+          <button class="fchip" data-v="forex">Forex</button>
+          <button class="fchip" data-v="futures">Futures</button>
+        </div>
+      </div>
+      <div class="fgroup">
+        <label>Model</label>
+        <div class="fchips" data-filter="model">
+          <button class="fchip on" data-v="all">All</button>
+          <button class="fchip" data-v="1-step">1-Step</button>
+          <button class="fchip" data-v="2-step">2-Step</button>
+          <button class="fchip" data-v="instant">Instant</button>
+          <button class="fchip" data-v="multi-model">Multi</button>
+        </div>
+      </div>
+      <div class="fgroup">
+        <label>Min payout split</label>
+        <select class="fsel" data-filter="minsplit">
+          <option value="0">Any</option>
+          <option value="80">80%+</option>
+          <option value="85">85%+</option>
+          <option value="90">90%+</option>
+          <option value="95">95%+</option>
+        </select>
+      </div>
+      <div class="fgroup">
+        <label>Payout frequency</label>
+        <select class="fsel" data-filter="freq">
+          <option value="all">Any</option>
+          <option value="on-demand">On-Demand</option>
+          <option value="bi-weekly">Bi-Weekly</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </div>
+      <div class="fgroup">
+        <label>Active deal</label>
+        <div class="fchips" data-filter="deal">
+          <button class="fchip on" data-v="all">All</button>
+          <button class="fchip" data-v="yes">Deal / Discount</button>
+        </div>
+      </div>
+      <div class="fgroup">
+        <label>Allowed styles</label>
+        <div class="fchips" data-filter="style">
+          <button class="fchip on" data-v="all">All</button>
+          <button class="fchip" data-v="news">News</button>
+          <button class="fchip" data-v="eas">EAs</button>
+          <button class="fchip" data-v="weekend">Weekend</button>
+        </div>
+      </div>
+      <button class="freset" id="resetBtn">Reset ↺</button>
+      <span class="result-count" id="resultCount">—</span>
+    </section>
+
+    <section class="bullseye" id="bullseye" style="display:none"></section>
+
+    <div class="view-toggle">
+      <button class="vbtn on" id="viewTable" data-view="table">Table</button>
+      <button class="vbtn" id="viewCards" data-view="cards">Cards</button>
+    </div>
+
+    <div class="table-wrap" id="tableWrap">
+      <table id="firmTable">
+        <thead>
+          <tr>
+            <th data-sort="score" class="sort-by">Score <span class="arr">▼</span></th>
+            <th data-sort="name">Firm</th>
+            <th>Status</th>
+            <th>Market</th>
+            <th>Model</th>
+            <th data-sort="split">Payout Split</th>
+            <th>Frequency</th>
+            <th data-sort="fee">Eval Fee</th>
+            <th data-sort="dd">Max DD</th>
+            <th>Deal</th>
+            <th>Styles</th>
+            <th>Source</th>
+          </tr>
+        </thead>
+        <tbody id="firmBody"></tbody>
+      </table>
+    </div>
+
+    <div class="cards" id="cardsGrid"></div>
+
+    <div class="note-banner">
+      <b>Data integrity:</b> terms are published figures, machine-extracted by an LLM parser from each firm's public page (verified rows) or curated from published terms pending re-verification (seed rows — flagged amber). Futures firms quote drawdown/targets in dollars; % shown are approximate equivalents. Discounts rotate frequently and are <b>never presented as confirmed</b> — always verify at checkout. This page is informational, not financial advice.
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a class="f-logo" href="/index.html">SniperTrader<span>.ai</span></a>
+        <p class="f-mission">Precision market systems &amp; algorithmic engines — calm, surgical execution for the disciplined trader.</p>
+        <div class="f-status"><i></i> System Status: Operational</div>
+        <div class="f-social"><a href="#">X</a><a href="#">YouTube</a><a href="#">Discord</a><a href="#">Telegram</a></div>
+      </div>
+      <div class="footer-col">
+        <h4>Intelligence</h4>
+        <a href="/traderedge_preflight.html">Preflight Protocol</a>
+        <a href="/stock_picks.html">AI Stock Picks</a>
+        <a href="/traderedge_chartai.html">AI Chart Analyzer</a>
+        <a href="/sniper_market_forecaster.html">Market Forecaster</a>
+      </div>
+      <div class="footer-col">
+        <h4>Proprietary Algos</h4>
+        <a href="/NoRepaint_Pivot_indicator.html">No Repaint Engine</a>
+        <a href="/USME_ICT_Foundation.html">USME ICT Engine</a>
+        <a href="/USME_VWAP_Elite_Suite.html">USME VWAP Suite</a>
+        <a href="/prop_firm_dashboard.html">Prop Firm Center</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="/about.html">About Us</a>
+        <a href="/checkout.html">Pricing</a>
+        <a href="/terms.html">Terms</a>
+        <a href="/disclaimer.html">Legal</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 SniperTrader.ai — All rights reserved.</span>
+      <span>Calm. Precise. Deliberate.</span>
+    </div>
+    <p class="footer-disclaimer">DISCLAIMER: Trading involves substantial risk of loss and is not suitable for every investor. Past performance does not guarantee future results. Prop-firm terms, payout splits, fees, and discounts change frequently and are shown for reference only — always confirm directly with the firm before purchasing. All content on this site is for educational purposes only and does not constitute financial or investment advice.</p>
+  </div>
+</footer>
+
+<script>
+/* ── Scope cursor ─────────────────────────────────────────── */
+(function(){var scope=document.getElementById('scope'),ring=document.getElementById('scope-ring'),dot=document.getElementById('scope-dot');var mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my;document.addEventListener('mousemove',function(e){mx=e.clientX;my=e.clientY;if(dot){dot.style.left=mx+'px';dot.style.top=my+'px';}if(scope){scope.style.left=mx+'px';scope.style.top=my+'px';}});(function loop(){rx+=(mx-rx)*0.16;ry+=(my-ry)*0.16;if(ring){ring.style.left=rx+'px';ring.style.top=ry+'px';}requestAnimationFrame(loop);})();})();
+
+/* ── Theme toggle ─────────────────────────────────────────── */
+(function(){var btn=document.getElementById('theme-btn'),label=document.getElementById('theme-label');var light=false;function apply(l){light=l;document.body.classList.toggle('light',l);if(btn)btn.childNodes[0].nodeValue=l?'☀ ':'☾ ';if(label)label.textContent=l?'Dark':'Light';}if(btn)btn.addEventListener('click',function(){apply(!light);});apply(false);})();
+
+/* ── Nav dropdowns + mobile menu ──────────────────────────── */
+function toggleDrop(btn){var item=btn.closest('.nav-item');var was=item.classList.contains('open');document.querySelectorAll('.nav-item.open').forEach(function(i){i.classList.remove('open');});if(!was)item.classList.add('open');}
+document.addEventListener('click',function(e){if(!e.target.closest('.nav-item'))document.querySelectorAll('.nav-item.open').forEach(function(i){i.classList.remove('open');});});
+(function(){var b=document.getElementById('burger'),m=document.getElementById('mobileMenu');if(b&&m)b.addEventListener('click',function(){m.classList.toggle('open');});})();
+
+/* ── Embedded seed (fallback when /api/prop/firms is unavailable) ── */
+var S=function(id,name,website,market,model,tr,mx,freq,speed,fee,dd,ddt,dddy,deal,note){return {id:id,name:name,website:website,market:market,model:model,verified:false,confidence:"manual_seed",last_refreshed:null,payout_split:{trader:tr,max_trader:mx},payout_frequency:freq,payout_speed:{label:speed,estimated:true},eval_fee:{min_usd:fee},max_drawdown:{value:dd,type:ddt,daily:dddy},deal:deal||{active:false},trading_styles:{news:true,eas:true,weekend:true},data_note:note||""};};
+var SEED=[
+S("ftmo","FTMO","https://ftmo.com/en/","forex","multi-model",80,90,"bi-weekly","on-demand (first) / bi-weekly",155,10,"static",5,null,"Split scales 80→90%."),
+S("fundednext","FundedNext","https://fundednext.com/","forex","multi-model",80,95,"bi-weekly","bi-weekly (first on-demand)",119,10,"static",5,null,"Split scales to 95% (Stellar)."),
+S("the5ers","The5ers","https://the5ers.com/","forex","instant",80,100,"bi-weekly","bi-weekly",24,10,"static",null,null,"Instant funding; scales to 100%."),
+S("e8markets","E8 Markets","https://e8markets.com/","forex","2-step",80,100,"bi-weekly","bi-weekly (first on-demand)",138,8,"static",5,null,"Bot-blocked (403) to a plain GET."),
+S("fundedtradingplus","Funded Trading Plus","https://fundedtradingplus.com/","forex","instant",80,100,"bi-weekly","bi-weekly (on-demand after)",99,10,"static",5,null,"Instant funding; scales to 100%."),
+S("apextrader","Apex Trader Funding","https://apextraderfunding.com/","futures","1-step",90,100,"bi-weekly","bi-weekly",30,5,"trailing",null,{active:true,discount_pct:80,verified:false},"Near-constant 80–90% sales."),
+S("topstep","Topstep","https://www.topstep.com/","futures","2-step",90,90,"on-demand","on-demand (up to 5x/month)",49,4,"trailing",4,{active:true,discount_pct:50,verified:false},"100% of first $10k, then 90/10."),
+S("takeprofittrader","Take Profit Trader","https://takeprofittrader.com/","futures","1-step",90,90,"bi-weekly","bi-weekly",150,5,"trailing",null,{active:true,discount_pct:90,verified:false},"Frequent 90% off promos."),
+S("tradeify","Tradeify","https://tradeify.co/","futures","1-step",90,90,"bi-weekly","bi-weekly",125,5,"trailing",null,null,""),
+S("myfundedfutures","My Funded Futures","https://myfundedfutures.com/","futures","1-step",90,90,"on-demand","on-demand (after 5 days)",70,7.5,"trailing",null,null,""),
+S("tickticktrader","TickTick Trader","https://tickticktrader.com/","futures","2-step",90,90,"bi-weekly","bi-weekly",100,10,"static",null,null,""),
+S("blueberryfunded","Blueberry Funded","https://blueberryfunded.com/","futures","1-step",90,95,"bi-weekly","bi-weekly",60,7.5,"trailing",null,null,""),
+S("elitetraderfunding","Elite Trader Funding","https://elitetraderfunding.com/","futures","1-step",90,90,"on-demand","on-demand (after 5 days)",100,10,"static",5,null,""),
+S("bulenox","Bulenox","https://bulenox.com/","futures","1-step",90,90,"bi-weekly","bi-weekly",100,10,"static",null,{active:true,discount_pct:90,verified:false},"Frequent ~90% off.")
+];
+
+/* ── Sniper Score (client port — exact parity with api/_lib/prop/score.js) ── */
+var W={payout:0.35,cost:0.25,drawdown:0.25,speed:0.15};
+function c01(x){var n=+x;return isFinite(n)?Math.max(0,Math.min(1,n)):0;}
+function scoreOf(f){
+  var p=f.payout_split||{},trader=Math.max(+p.trader||0,+p.max_trader||0);
+  var payout=trader?c01((trader-50)/50):0.5;
+  var fee=f.eval_fee&&(f.eval_fee.min_usd!=null?f.eval_fee.min_usd:f.eval_fee.usd);
+  var costBase=fee==null?0.5:c01(1-fee/600);
+  var disc=f.deal&&f.deal.active?(+f.deal.discount_pct||0):0;
+  var cost=c01(costBase+(disc>0?Math.min(0.15,disc/100*0.30):0));
+  var dd=f.max_drawdown||{},dv=dd.value!=null?+dd.value:null;
+  var ddBase=dv==null?0.5:c01((dv-4)/10);
+  if(dd.type==='static')ddBase+=0.10;
+  if(dd.type==='trailing')ddBase-=0.05;
+  if(dd.daily!=null&&+dd.daily>=5)ddBase+=0.05;
+  var drawdown=c01(ddBase);
+  var freq=((f.payout_frequency||'')+' '+((f.payout_speed&&f.payout_speed.label)||'')).toLowerCase();
+  var speed;
+  if(/on-demand|instant|anytime|daily|same[- ]day/.test(freq))speed=1;
+  else if(/1[- ]2|24 ?h|48 ?h|1[- ]day|2[- ]day|fast/.test(freq))speed=0.9;
+  else if(/3[- ]5|weekly|bi[- ]?weekly/.test(freq))speed=0.7;
+  else if(/bi[- ]?weekly/.test(freq))speed=0.55;
+  else if(/monthly/.test(freq))speed=0.4;
+  else speed=0.3;
+  var total=payout*W.payout+cost*W.cost+drawdown*W.drawdown+speed*W.speed;
+  return Math.round(c01(total)*100);
+}
+/* ── State + helpers ─────────────────────────────────────── */
+var firms=[],filtered=[],meta={};
+var state={market:'all',model:'all',minsplit:0,freq:'all',deal:'all',style:'all'};
+var sortKey='score',sortDir=-1,dirByKey={score:-1,split:-1,dd:-1,fee:1,name:1};
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function splitMax(f){var p=f.payout_split||{};return Math.max(+p.trader||0,+p.max_trader||0);}
+function splitStr(f){var p=f.payout_split||{};var t=p.trader,m=p.max_trader;if(m&&m>t)return t+'\u2013'+m+'%';return ((t||m)!=null?(t||m)+'%':'—');}
+function feeStr(f){var v=f.eval_fee&&(f.eval_fee.min_usd!=null?f.eval_fee.min_usd:f.eval_fee.usd);return v==null?'—':'$'+v;}
+function ddStr(f){var d=f.max_drawdown||{};if(d.value==null)return '—';var s=d.value+'%';if(d.type)s+=' '+d.type;if(d.daily!=null)s+=' \u00b7 '+d.daily+'% daily';return s;}
+function dealStr(f){var d=f.deal;if(d&&d.active){var n=d.discount_pct||0;return '<span class="badge b-deal" title="'+esc(d.note||'unverified discount')+'">-'+n+'%</span>';}return '<span class="mono" style="color:var(--text4)">—</span>';}
+function statusBadge(f){return f.verified?'<span class="badge b-verified">Verified</span>':'<span class="badge b-seed">Seed</span>';}
+function marketBadge(f){return f.market==='futures'?'<span class="badge b-futures">Futures</span>':(f.market==='forex'?'<span class="badge b-forex">Forex</span>':'<span class="badge b-seed">'+esc(f.market||'?')+'</span>');}
+function marketLabel(f){return f.market==='futures'?'Futures':(f.market==='forex'?'Forex':(f.market||'—'));}
+function styleTags(f){var s=f.trading_styles||{};function t(v,lbl){return '<span class="style-tag '+(v?'yes':'no')+'">'+lbl+'</span>';}return t(s.news,'News')+t(s.eas,'EAs')+t(s.weekend,'Weekend');}
+function srcLink(f){return '<a class="src-link" href="'+esc(f.source_page||f.website)+'" target="_blank" rel="noopener sponsored">site ↗</a>';}
+function noteSub(f){var n=f.data_note||'';if(!n)return '';var cut=n.length>54?n.slice(0,54)+'…':n;return '<div class="firm-sub" title="'+esc(n)+'">'+esc(cut)+'</div>';}
+function sortVal(f,key){
+  if(key==='score')return f.__score;
+  if(key==='name')return (f.name||'').toLowerCase();
+  if(key==='split')return splitMax(f);
+  if(key==='fee'){var v=f.eval_fee&&(f.eval_fee.min_usd!=null?f.eval_fee.min_usd:f.eval_fee.usd);return v==null?1e9:v;}
+  if(key==='dd'){var d=f.max_drawdown||{};return d.value==null?-1e9:+d.value;}
+  return 0;
+}
+
+/* ── Filter + sort + render ──────────────────────────────── */
+function applyFilters(){
+  filtered=firms.filter(function(f){
+    if(state.market!=='all'&&f.market!==state.market)return false;
+    if(state.model!=='all'&&f.model!==state.model)return false;
+    if(splitMax(f)<state.minsplit)return false;
+    if(state.freq!=='all'){
+      var lab=((f.payout_frequency||'')+' '+((f.payout_speed&&f.payout_speed.label)||'')).toLowerCase();
+      if(f.payout_frequency!==state.freq&&lab.indexOf(state.freq)===-1)return false;
+    }
+    if(state.deal==='yes'&&!(f.deal&&f.deal.active))return false;
+    if(state.style!=='all'){var st=f.trading_styles||{};if(!st[state.style])return false;}
+    return true;
+  });
+  sortList();
+  render();
+}
+function sortList(){
+  filtered.sort(function(a,b){
+    var va=sortVal(a,sortKey),vb=sortVal(b,sortKey);
+    if(va===vb)return (a.name||'').localeCompare(b.name||'');
+    return (va<vb?-1:1)*sortDir;
+  });
+}
+function render(){
+  document.getElementById('resultCount').textContent=filtered.length+' of '+firms.length+' firms';
+  renderBullseye();renderTable();renderCards();
+}
+function renderBullseye(){
+  var el=document.getElementById('bullseye');
+  if(!filtered.length){el.style.display='none';return;}
+  el.style.display='grid';
+  var f=filtered[0],p=f.payout_split||{};
+  var share=(p.max_trader&&p.max_trader>p.trader)?(p.trader+'\u2013'+p.max_trader+'%'):((p.trader||p.max_trader||'—')+'%');
+  var why=share+' profit share, '+feeStr(f)+' evaluation, '+ddStr(f)+' drawdown, '+((f.payout_speed&&f.payout_speed.label)||f.payout_frequency||'')+' payouts.';
+  el.innerHTML=
+    '<div class="bullseye-tag">Bullseye Pick · Best Overall</div>'+
+    '<div class="b-left">'+
+      '<div class="b-name">'+esc(f.name)+'</div>'+
+      '<div class="b-score"><span class="num">'+f.__score+'</span><span class="lbl">Sniper Score™ /100</span></div>'+
+      '<p class="b-why">'+esc(why)+'</p>'+
+      '<div class="b-stats">'+
+        '<span class="bstat">Split <b>'+splitStr(f)+'</b></span>'+
+        '<span class="bstat">Eval <b>'+feeStr(f)+'</b></span>'+
+        '<span class="bstat">Max DD <b>'+ddStr(f)+'</b></span>'+
+        '<span class="bstat">Payout <b>'+esc(f.payout_frequency||'—')+'</b></span>'+
+        '<span class="bstat">Model <b>'+esc(f.model||'—')+'</b></span>'+
+      '</div>'+
+    '</div>'+
+    '<div class="b-right">'+
+      '<div class="row"><span>Market</span><b>'+marketLabel(f)+'</b></div>'+
+      '<div class="row"><span>Payout split</span><b>'+splitStr(f)+'</b></div>'+
+      '<div class="row"><span>Evaluation fee</span><b>'+feeStr(f)+'</b></div>'+
+      '<div class="row"><span>Max drawdown</span><b>'+ddStr(f)+'</b></div>'+
+      '<div class="row"><span>Active deal</span><b>'+(f.deal&&f.deal.active?'-'+f.deal.discount_pct+'% <span style="color:var(--text4);font-weight:400">(unverified)</span>':'none')+'</b></div>'+
+      '<div class="row"><span>Source</span><b>'+srcLink(f)+'</b></div>'+
+    '</div>';
+}
+function renderTable(){
+  var rows=filtered.map(function(f,i){
+    var bull=i===0;
+    return '<tr'+(bull?' class="bull-row"':'')+'>'+
+      '<td><span class="rank">#'+(i+1)+'</span> <span class="score-pill">'+f.__score+'<small>/100</small></span></td>'+
+      '<td><div class="firm-name">'+esc(f.name)+'</div>'+noteSub(f)+'</td>'+
+      '<td>'+statusBadge(f)+'</td>'+
+      '<td>'+marketBadge(f)+'</td>'+
+      '<td class="mono">'+esc(f.model||'—')+'</td>'+
+      '<td><span class="split">'+splitStr(f)+'</span> <span class="firm-sub">trader</span></td>'+
+      '<td class="mono">'+esc(f.payout_frequency||'—')+'</td>'+
+      '<td class="fee">'+feeStr(f)+'</td>'+
+      '<td class="dd">'+ddStr(f)+'</td>'+
+      '<td>'+dealStr(f)+'</td>'+
+      '<td class="styles">'+styleTags(f)+'</td>'+
+      '<td>'+srcLink(f)+'</td>'+
+    '</tr>';
+  }).join('');
+  document.getElementById('firmBody').innerHTML=rows||'<tr><td colspan="12" style="text-align:center;color:var(--text4);padding:32px;font-family:var(--ff-m);font-size:.8rem;">No firms match the current filters.</td></tr>';
+}
+function renderCards(){
+  document.getElementById('cardsGrid').innerHTML=filtered.map(function(f,i){
+    var bull=i===0;
+    return '<div class="card'+(bull?' bull':'')+'">'+
+      '<div class="c-head"><div><div class="c-name">'+esc(f.name)+'</div>'+(bull?'<span class="bull-tag">Bullseye Pick</span>':'')+'</div>'+
+      '<div class="c-score">'+f.__score+'</div></div>'+
+      '<div class="c-tags">'+statusBadge(f)+marketBadge(f)+(f.deal&&f.deal.active?'<span class="badge b-deal">-'+f.deal.discount_pct+'%</span>':'')+'</div>'+
+      '<div class="c-grid">'+
+        '<div><div class="k">Payout split</div><div class="v">'+splitStr(f)+'</div></div>'+
+        '<div><div class="k">Frequency</div><div class="v">'+esc(f.payout_frequency||'—')+'</div></div>'+
+        '<div><div class="k">Eval fee</div><div class="v">'+feeStr(f)+'</div></div>'+
+        '<div><div class="k">Max DD</div><div class="v">'+ddStr(f)+'</div></div>'+
+        '<div><div class="k">Model</div><div class="v">'+esc(f.model||'—')+'</div></div>'+
+        '<div><div class="k">Styles</div><div class="v" style="display:flex;gap:4px">'+styleTags(f)+'</div></div>'+
+      '</div>'+
+      '<div class="c-foot"><span>'+statusBadge(f)+'</span>'+srcLink(f)+'</div>'+
+    '</div>';
+  }).join('')||'<div style="grid-column:1/-1;text-align:center;color:var(--text4);padding:32px;font-family:var(--ff-m);font-size:.8rem;">No firms match the current filters.</div>';
+}
+
+/* ── Load (API with embedded-seed fallback) ──────────────── */
+function load(){
+  var ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
+  var timer=setTimeout(function(){if(ctrl)ctrl.abort();},8000);
+  fetch('/api/prop/firms',{signal:ctrl?ctrl.signal:undefined})
+    .then(function(r){if(!r.ok)throw new Error('http '+r.status);return r.json();})
+    .then(function(j){
+      clearTimeout(timer);
+      firms=j.firms||[];meta=j.meta||{};
+      document.getElementById('srcLabel').textContent='live API';
+      init();
+    })
+    .catch(function(){
+      clearTimeout(timer);
+      firms=SEED;meta={last_refreshed:null,refresh_source:'embedded-seed'};
+      document.getElementById('srcLabel').textContent='embedded seed (API offline)';
+      var dot=document.querySelector('#srcLabel').closest('.meta-chip').querySelector('.dot');
+      dot.className='dot dot-seed';
+      init();
+    });
+}
+function init(){
+  firms.forEach(function(f){f.__score=scoreOf(f);});
+  firms.sort(function(a,b){if(b.__score!==a.__score)return b.__score-a.__score;if(!!b.verified!==!!a.verified)return b.verified?1:-1;return (a.name||'').localeCompare(b.name||'');});
+  document.getElementById('firmCount').textContent=firms.length;
+  document.getElementById('lastRefreshed').textContent=meta.last_refreshed?new Date(meta.last_refreshed).toLocaleString():'pending crawl';
+  applyFilters();
+}
+
+/* ── Events ──────────────────────────────────────────────── */
+document.querySelectorAll('.fchips[data-filter]').forEach(function(group){
+  var key=group.getAttribute('data-filter');
+  group.addEventListener('click',function(e){
+    var b=e.target.closest('.fchip');if(!b)return;
+    group.querySelectorAll('.fchip').forEach(function(c){c.classList.remove('on');});
+    b.classList.add('on');state[key]=b.getAttribute('data-v');applyFilters();
+  });
+});
+document.querySelectorAll('.fsel[data-filter]').forEach(function(sel){
+  var key=sel.getAttribute('data-filter');
+  sel.addEventListener('change',function(){state[key]=key==='minsplit'?+sel.value:sel.value;applyFilters();});
+});
+document.getElementById('resetBtn').addEventListener('click',function(){
+  state={market:'all',model:'all',minsplit:0,freq:'all',deal:'all',style:'all'};
+  document.querySelectorAll('.fchips[data-filter]').forEach(function(g){g.querySelectorAll('.fchip').forEach(function(c){c.classList.toggle('on',c.getAttribute('data-v')==='all');});});
+  document.querySelectorAll('.fsel[data-filter]').forEach(function(s){s.value=s.getAttribute('data-filter')==='minsplit'?'0':'all';});
+  applyFilters();
+});
+document.querySelectorAll('thead th[data-sort]').forEach(function(th){
+  th.addEventListener('click',function(){
+    var k=th.getAttribute('data-sort');
+    if(sortKey===k){sortDir*=-1;}else{sortKey=k;sortDir=dirByKey[k]||-1;}
+    document.querySelectorAll('thead th').forEach(function(t){t.classList.remove('sort-by');var a=t.querySelector('.arr');if(a)a.textContent='';});
+    th.classList.add('sort-by');var arr=th.querySelector('.arr');if(arr)arr.textContent=sortDir<0?'▼':'▲';
+    sortList();render();
+  });
+});
+document.getElementById('viewTable').addEventListener('click',function(){view('table');});
+document.getElementById('viewCards').addEventListener('click',function(){view('cards');});
+function view(mode){
+  document.getElementById('viewTable').classList.toggle('on',mode==='table');
+  document.getElementById('viewCards').classList.toggle('on',mode==='cards');
+  document.getElementById('tableWrap').style.display=mode==='table'?'':'none';
+  document.getElementById('cardsGrid').classList.toggle('show',mode==='cards');
+}
+
+document.addEventListener('DOMContentLoaded',load);
+
+</script>
+
+
+</body>
+</html>

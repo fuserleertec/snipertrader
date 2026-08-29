@@ -10,8 +10,19 @@
 const http = require('http');
 const { buildForecast, buildStocks, buildChat, buildPropAccount, buildReviewLoop, buildPreflight } = require('./_core');
 const { buildAdmin } = require('./_lib/admin/handlers');
+const propFirms = require('./prop/firms');
+const propRefresh = require('./prop/refresh');
 
 const PORT = process.env.KRONOS_PORT || 8787;
+
+// Vercel-style res shim for the standalone prop handlers (they use res.json/res.status).
+function vc(res) {
+  if (!res.json) {
+    res.json = function (o) { if (!res.headersSent) res.writeHead(res.statusCode || 200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(o)); };
+    res.status = function (c) { res.statusCode = c; return res; };
+  }
+  return res;
+}
 
 const server = http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -37,6 +48,12 @@ const server = http.createServer((req, res) => {
   }
   if (url.pathname === '/api/traderedge/preflight' && req.method === 'POST') {
     return buildPreflight(req, res);
+  }
+  if (url.pathname === '/api/prop/firms' && req.method === 'GET') {
+    return propFirms(req, vc(res));
+  }
+  if (url.pathname === '/api/prop/refresh' && req.method === 'GET') {
+    return propRefresh(req, vc(res));
   }
   if (url.pathname.startsWith('/api/admin')) {
     return buildAdmin(req, res, url);
