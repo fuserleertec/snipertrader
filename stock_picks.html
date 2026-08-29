@@ -255,7 +255,10 @@ select,input{width:100%;background:var(--bg2);border:1px solid var(--border);col
 .drop .dsym{font-family:var(--disp);font-size:15px;color:#fff}
 .drop .dbull{font-family:var(--mono);font-size:11px;color:var(--emerald)}
 .drop .dreason{font-size:12px;color:var(--dim);margin-top:6px;line-height:1.4}
-
+.tv-link{margin-left:auto;background:var(--cyan-soft);border:1px solid var(--cyan);color:var(--cyan);border-radius:8px;padding:5px 10px;font-family:var(--mono);font-size:11px;cursor:pointer}
+.tv-link:hover{background:var(--cyan);color:#001018}
+body.light-mode .drop .dsym{color:var(--text)}
+body.light-mode .tv-link{color:#0a6fb0;border-color:#0a6fb0;background:rgba(10,111,176,.08)}
 /* education */
 .edu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
 .edu{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px}
@@ -294,12 +297,12 @@ details.raw pre{background:#04070c;border:1px solid var(--border);border-radius:
 <div id="scope-dot"></div>
 
 <nav class="kf-nav">
-  <a href="/index.html"><span class="brand">SNIPER<b>TRADER</b></span></a>
+  <span class="brand">Market Intelligence <b>Sniper System</b></span>
   <div class="links">
     <a href="/sniper_market_forecaster.html">Market Forecaster</a>
-    <a href="/stock_picks.html" class="nav-pill">⬡ Daily Stock Picks</a>
+    <a href="/stock_picks.html">Daily Stock Picks</a>
     <a href="/traderedge_chartai.html">AI Chart</a>
-    <a href="/traderedge_preflight.html">Pre-Flight Protocols</a>
+    <a href="/traderedge_preflight.html">⬡ Pre-Flight Protocols</a>
     <a href="/traderedge_prop_firms_command_center.html">Prop Firm Center</a>
     <a href="/usme_products.html">Products</a>
   </div>
@@ -669,12 +672,12 @@ async function fetchRecon(){
     RECON=d; dot.className='dot';
     document.getElementById('lastUpdated').textContent=fmtTime(d.generatedAt);
     document.getElementById('qScanned').textContent=(d.universeScanned||0);
-    renderPicks(); renderRecon(); renderRaw(d); processSimulationLeaderboard(d.picks);
+    renderPicks(); renderRecon(); renderRaw(d); processSimulationLeaderboard(d);
   }catch(e){
     if(!RECON) RECON=FALLBACK;
     dot.className='dot err';
     document.getElementById('lastUpdated').textContent='live feed unavailable · snapshot';
-    renderPicks(); renderRecon(); processSimulationLeaderboard(RECON?RECON.picks:[]);
+    renderPicks(); renderRecon(); processSimulationLeaderboard(RECON||FALLBACK);
   }finally{ btn.disabled=false; btn.textContent='↻ REFRESH'; }
 }
 function fmtTime(iso){ try{return new Date(iso).toLocaleString('en-US',{hour:'2-digit',minute:'2-digit',month:'short',day:'numeric'});}catch(_){return '—';} }
@@ -723,27 +726,42 @@ function renderPicks(){
 function renderRecon(){
   const grid=document.getElementById('reconGrid');
   if(!RECON||!RECON.dropped||!RECON.dropped.length){ grid.innerHTML='<div class="note">No dropped tickers this cycle.</div>'; return; }
-  grid.innerHTML=RECON.dropped.map(d=>(
-    '<div class="drop"><div class="dt"><span class="dsym">'+d.symbol+'</span><span class="dbull">score '+d.score.toFixed(0)+'/100</span></div>'+
-    '<div class="dreason">'+d.reason+'</div></div>'
-  )).join('');
+  grid.innerHTML=RECON.dropped.map(d=>{
+    const sc=(typeof d.score==='number')?d.score:(typeof d.score==='object'&&d.score?d.score.total:0);
+    const tvSym=(d.exchange&&d.exchange!=='NASDAQ'?'NASDAQ:':'')+d.symbol;
+    return (
+      '<div class="drop"><div class="dt"><span class="dsym">'+d.symbol+'</span><span class="dbull">score '+sc.toFixed(0)+'/100</span>'+
+      '<button class="tv-link" onclick="openTV(\''+tvSym+'\')">📈 TradingView</button></div>'+
+      '<div class="dreason">'+d.reason+'</div></div>'
+    );
+  }).join('');
 }
 function renderRaw(d){ const pre=document.getElementById('rawPre'); if(pre) pre.textContent=JSON.stringify(d,null,2); }
 
-/* Leaderboard pipeline: Recon Audit picks → Kronos + MiroFish scoring → ranked velocity */
-function processSimulationLeaderboard(picks){
-  if(!picks||!picks.length){ document.getElementById('leaderboard').innerHTML='<div class="note">No candidates cleared the conviction gate this cycle.</div>'; document.getElementById('leadCount').textContent=''; return []; }
-  const scored=picks.map(p=>{
+/* Leaderboard pipeline: Recon Audit picks + dropped → Kronos + MiroFish scoring → ranked velocity (run-up → dump) */
+function processSimulationLeaderboard(payload){
+  const picks=(payload&&payload.picks)||[];
+  const dropped=(payload&&payload.dropped)||[];
+  if(!picks.length && !dropped.length){ document.getElementById('leaderboard').innerHTML='<div class="note">No candidates evaluated this cycle.</div>'; document.getElementById('leadCount').textContent=''; return []; }
+  // Build a uniform candidate list: accepted picks + dropped audit items
+  const all=picks.map(p=>Object.assign({},p,{source:'pick'}));
+  dropped.forEach(d=>{
+    const score=(typeof d.score==='number')?d.score:(typeof d.score==='object'&&d.score?d.score.total:0);
+    // dropped items have no live ATR/levels — synthesize a band so the row renders, clearly marked
+    const synth={symbol:d.symbol, score, source:'recon', dropped:true,
+      atr:1.5, entry:1, stop:1, target:1, triggers:[], note:(d.reason||'Failed watchlist floor')};
+    all.push(synth);
+  });
+  const scored=all.map(p=>{
     const sc=simScenario(p);                 // Kronos Monte-Carlo cone (simulated, ATR-anchored)
     const convictionBias=clampN((p.score||0)/100,0.05,0.98);
     const swarm=computeSwarm(convictionBias, 0.4+Math.abs(SIM_BIAS)*0.4);
     const swarmScore=(swarm.netBias*100);    // -100..+100
-    // Run-Up / Dump Velocity Score (0-100) per blueprint weighting
     const runUpScore=Math.round(sc.bull.p*0.6 + (swarmScore*0.5+50)*0.4);
     const dumpScore=Math.round(sc.bear.p*0.6 + (50-swarmScore*0.5)*0.4);
     const netBias=runUpScore-dumpScore;
     const delta=sc.bull.p-sc.bear.p;          // Kronos probability delta
-    const pattern=(p.triggers&&p.triggers.length)?p.triggers.join(' + '):'BOS Confluence';
+    const pattern=(p.triggers&&p.triggers.length)?p.triggers.join(' + '):'No pattern';
     return Object.assign({},p,{runUpScore,dumpScore,netBias,delta,pattern,swarmScore,sc});
   });
   scored.sort((a,b)=>b.netBias-a.netBias);     // top run-up → bottom dump
@@ -752,21 +770,22 @@ function processSimulationLeaderboard(picks){
 }
 function renderLeaderboard(scored){
   const box=document.getElementById('leaderboard');
-  document.getElementById('leadCount').textContent=scored.length+' ranked';
+  document.getElementById('leadCount').textContent=scored.length+' ranked · '+scored.filter(s=>s.source==='recon').length+' dropped';
   box.innerHTML=scored.map((it,idx)=>{
     const up=it.netBias>=0;
-    const accent=up?'var(--emerald)':'var(--red)';
     const bullP=it.sc.bull.p, baseP=it.sc.base.p, bearP=it.sc.bear.p;
-    const pat=it.pattern||'BOS Confluence';
-    const lvl='$'+it.stop.toFixed(2)+' → $'+it.target.toFixed(2);
+    const pat=it.pattern||'No pattern';
+    const accent=it.dropped?'var(--dim2)':(up?'var(--emerald)':'var(--red)');
+    const lvl=it.dropped?'audit — no live levels':('$'+it.stop.toFixed(2)+' → $'+it.target.toFixed(2));
+    const pill=it.dropped
+      ? '<span class="lead-pill down">DROPPED</span>'
+      : '<span class="lead-pill '+(up?'up':'down')+'">'+(up?'RUN-UP '+it.runUpScore:'DUMP '+it.dumpScore)+'</span>';
     return (
       '<div class="lead-row" style="--accent:'+accent+'" onclick="focusSim(\''+it.symbol+'\')">'+
         '<div class="lead-rank">#'+(idx+1)+'</div>'+
         '<div class="lead-main">'+
-          '<div class="lead-sym">'+it.symbol+
-            '<span class="lead-pill '+(up?'up':'down')+'">'+(up?'RUN-UP '+it.runUpScore:'DUMP '+it.dumpScore)+'</span>'+
-          '</div>'+
-          '<div class="lead-meta">'+pat+' · Δ '+it.delta.toFixed(0)+'% · ATR '+lvl+'</div>'+
+          '<div class="lead-sym">'+it.symbol+pill+'</div>'+
+          '<div class="lead-meta">'+pat+' · Δ '+it.delta.toFixed(0)+'% · '+(it.dropped?'no conviction · '+lvl:('ATR '+lvl))+'</div>'+
         '</div>'+
         '<div class="lead-bars">'+
           '<div class="lead-pbtxt"><span class="b">Bull '+bullP+'%</span><span class="r">Bear '+bearP+'%</span></div>'+
@@ -895,7 +914,7 @@ function reSim(){
   renderScenarioMatrix(focus);
   renderKronos(focus);
   // re-rank leaderboard with new bias
-  if(RECON&&RECON.picks) processSimulationLeaderboard(RECON.picks);
+  if(RECON) processSimulationLeaderboard(RECON);
 }
 let focusSym=null;
 function focusSim(sym){ focusSym=sym; const p=RECON&&RECON.picks?RECON.picks.find(x=>x.symbol===sym):null; renderScenarioMatrix(p); renderKronos(p); const ks=document.getElementById('krSym'), ss=document.getElementById('scenSym'); if(ks)ks.textContent=sym; if(ss)ss.textContent=sym; document.getElementById('swarmBias').scrollIntoView({behavior:'smooth'}); }
