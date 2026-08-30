@@ -8,10 +8,9 @@
  */
 'use strict';
 const http = require('http');
-const { buildForecast, buildStocks, buildChat, buildPropAccount, buildReviewLoop, buildPreflight } = require('./_core');
+const { buildForecast, buildStocks, buildChat, buildReviewLoop, buildPreflight } = require('./_core');
 const { buildAdmin } = require('./_lib/admin/handlers');
-const propFirms = require('./prop/firms');
-const propRefresh = require('./prop/refresh');
+const propApi = require('./prop/[action]');
 
 const PORT = process.env.KRONOS_PORT || 8787;
 
@@ -34,8 +33,8 @@ const server = http.createServer((req, res) => {
   if (url.pathname === '/api/stocks/klines' && req.method === 'GET') {
     return buildStocks(req, res, url);
   }
-  if (url.pathname === '/api/prop/account' && req.method === 'GET') {
-    return buildPropAccount(req, res, url);
+  if (url.pathname.startsWith('/api/prop/')) {
+    return propApi(req, vc(res));
   }
   if (url.pathname === '/api/ai/chat' && req.method === 'POST') {
     return buildChat(req, res);
@@ -48,12 +47,6 @@ const server = http.createServer((req, res) => {
   }
   if (url.pathname === '/api/traderedge/preflight' && req.method === 'POST') {
     return buildPreflight(req, res);
-  }
-  if (url.pathname === '/api/prop/firms' && req.method === 'GET') {
-    return propFirms(req, vc(res));
-  }
-  if (url.pathname === '/api/prop/refresh' && req.method === 'GET') {
-    return propRefresh(req, vc(res));
   }
   if (url.pathname.startsWith('/api/admin')) {
     return buildAdmin(req, res, url);
