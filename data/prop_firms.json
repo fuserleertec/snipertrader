@@ -20,7 +20,7 @@
       "confidence": "crawled",
       "last_refreshed": "2026-08-30T11:18:43.985Z",
       "payout_split": {
-        "trader": 90,
+        "trader": 80,
         "max_trader": 90
       },
       "payout_frequency": "bi-weekly",
@@ -54,7 +54,7 @@
         "enabled": true
       },
       "refund_fee": true,
-      "data_note": "Extracted by LLM parser from https://ftmo.com/en/",
+      "data_note": "Extracted by LLM parser from https://ftmo.com/en/ \u2014 split corrected to 80% base / 90% scaling (crawler misread \"up to 90%\" as flat 90%).",
       "profit_target": {
         "phase1": 10,
         "phase2": 5
@@ -120,21 +120,21 @@
       "confidence": "crawled",
       "last_refreshed": "2026-08-30T11:33:58.836Z",
       "payout_split": {
-        "trader": 75,
+        "trader": 80,
         "max_trader": 100
       },
-      "payout_frequency": "monthly",
+      "payout_frequency": "bi-weekly",
       "payout_speed": {
-        "label": "16h",
-        "estimated": false
+        "label": "bi-weekly",
+        "estimated": true
       },
       "max_drawdown": {
-        "value": 6,
+        "value": 10,
         "type": "static",
-        "daily": 3
+        "daily": null
       },
       "eval_fee": {
-        "min_usd": 249
+        "min_usd": 24
       },
       "account_sizes": {
         "min": 5000,
@@ -152,9 +152,9 @@
         "enabled": true
       },
       "refund_fee": true,
-      "data_note": "Extracted by LLM parser from https://the5ers.com/",
+      "data_note": "Instant funding; split scales to 100%. Corrected (crawler misread $249/max fee as min, \"monthly\" payout, and 6%/3% drawdown).",
       "profit_target": {
-        "phase1": 10,
+        "phase1": null,
         "phase2": null
       }
     },
@@ -301,7 +301,7 @@
         "enabled": true
       },
       "refund_fee": null,
-      "data_note": "Curated from published terms; machine re-verification via the daily crawler is pending. Bot-blocked (HTTP 403). Futures firms publish dollar-based drawdown/profit targets; % figures are approximate equivalents for a standard-size account — confirm on the firm's page."
+      "data_note": "Curated from published terms; machine re-verification via the daily crawler is pending. Bot-blocked (HTTP 403). Futures firms publish dollar-based drawdown/profit targets; % figures are approximate equivalents for a standard-size account \u2014 confirm on the firm's page."
     },
     {
       "id": "topstep",
@@ -317,10 +317,10 @@
         "trader": 90,
         "max_trader": 90
       },
-      "payout_frequency": "weekly",
+      "payout_frequency": "on-demand",
       "payout_speed": {
-        "label": "3-5 days",
-        "estimated": false
+        "label": "on-demand (up to 5x/month)",
+        "estimated": true
       },
       "max_drawdown": {
         "value": 4,
@@ -367,7 +367,7 @@
       "confidence": "crawled",
       "last_refreshed": "2026-08-30T11:34:12.536Z",
       "payout_split": {
-        "trader": 80,
+        "trader": 90,
         "max_trader": 90
       },
       "payout_frequency": "on-demand",
@@ -403,7 +403,7 @@
         "enabled": false
       },
       "refund_fee": null,
-      "data_note": "Extracted by LLM parser from https://takeprofittrader.com/, https://takeprofittrader.com/en/faq, https://takeprofittrader.com/en/pricing"
+      "data_note": "Extracted by LLM parser \u2014 split corrected to 90/10 (crawler mixed up the PRO 80/20 tier)."
     },
     {
       "id": "tradeify",
@@ -542,7 +542,7 @@
         "enabled": false
       },
       "refund_fee": null,
-      "data_note": "Curated from published terms; machine re-verification via the daily crawler is pending. Futures firms publish dollar-based drawdown/profit targets; % figures are approximate equivalents for a standard-size account — confirm on the firm's page."
+      "data_note": "Curated from published terms; machine re-verification via the daily crawler is pending. Futures firms publish dollar-based drawdown/profit targets; % figures are approximate equivalents for a standard-size account \u2014 confirm on the firm's page."
     },
     {
       "id": "blueberryfunded",
