@@ -168,7 +168,8 @@ tr.bull-row .rank{color:var(--amber);}
 /* ── Badges ───────────────────────────────────────────────── */
 .badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--ff-m);font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:5px;border:1px solid;}
 .b-verified{color:var(--green);border-color:var(--green);background:var(--green-dim);}
-.b-seed{color:var(--amber);border-color:var(--amber);background:var(--amber-dim);}
+.b-crawled{color:var(--amber);border-color:var(--amber);background:var(--amber-dim);}
+.b-seed{color:var(--text4);border-color:var(--border2);background:var(--surface2);}
 .b-forex{color:#38bdf8;border-color:#38bdf8;background:rgba(56,189,248,.1);}
 .b-futures{color:#a78bfa;border-color:#a78bfa;background:rgba(167,139,250,.1);}
 .b-deal{color:var(--red);border-color:var(--red);background:var(--red-dim);}
@@ -377,7 +378,7 @@ footer{margin-top:40px;border-top:1px solid var(--border);background:var(--bg2);
     <div class="cards" id="cardsGrid"></div>
 
     <div class="note-banner">
-      <b>Data integrity:</b> terms are published figures, machine-extracted by an LLM parser from each firm's public page (verified rows) or curated from published terms pending re-verification (seed rows — flagged amber). Futures firms quote drawdown/targets in dollars; % shown are approximate equivalents. Discounts rotate frequently and are <b>never presented as confirmed</b> — always verify at checkout. This page is informational, not financial advice.
+      <b>Data integrity:</b> terms are machine-extracted by an LLM parser from each firm's public page (<b style="color:var(--amber)">Crawled</b> — unvalidated, flagged amber) or curated from published terms (<b>Seed</b> — grey). <b style="color:var(--green)">Verified</b> (green) appears only after human/cross-check review. Futures firms quote drawdown/targets in dollars; % shown are approximate equivalents. Discounts rotate frequently and are <b>never presented as confirmed</b> — always verify at checkout. This page is informational, not financial advice.
     </div>
   </div>
 </main>
@@ -489,7 +490,7 @@ function splitStr(f){var p=f.payout_split||{};var t=p.trader,m=p.max_trader;if(m
 function feeStr(f){var v=f.eval_fee&&(f.eval_fee.min_usd!=null?f.eval_fee.min_usd:f.eval_fee.usd);return v==null?'—':'$'+v;}
 function ddStr(f){var d=f.max_drawdown||{};if(d.value==null)return '—';var s=d.value+'%';if(d.type)s+=' '+d.type;if(d.daily!=null)s+=' \u00b7 '+d.daily+'% daily';return s;}
 function dealStr(f){var d=f.deal;if(d&&d.active){var n=d.discount_pct||0;return '<span class="badge b-deal" title="'+esc(d.note||'unverified discount')+'">-'+n+'%</span>';}return '<span class="mono" style="color:var(--text4)">—</span>';}
-function statusBadge(f){return f.verified?'<span class="badge b-verified">Verified</span>':'<span class="badge b-seed">Seed</span>';}
+function statusBadge(f){if(f.verified)return '<span class="badge b-verified">Verified</span>';if(f.confidence==='crawled')return '<span class="badge b-crawled">Crawled</span>';return '<span class="badge b-seed">Seed</span>';}
 function marketBadge(f){return f.market==='futures'?'<span class="badge b-futures">Futures</span>':(f.market==='forex'?'<span class="badge b-forex">Forex</span>':'<span class="badge b-seed">'+esc(f.market||'?')+'</span>');}
 function marketLabel(f){return f.market==='futures'?'Futures':(f.market==='forex'?'Forex':(f.market||'—'));}
 function styleTags(f){var s=f.trading_styles||{};function t(v,lbl){return '<span class="style-tag '+(v?'yes':'no')+'">'+lbl+'</span>';}return t(s.news,'News')+t(s.eas,'EAs')+t(s.weekend,'Weekend');}

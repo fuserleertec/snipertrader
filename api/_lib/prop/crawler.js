@@ -6,7 +6,7 @@
  * the HTML to text, and ask DeepSeek/Kimi (via _ai_providers) to extract the
  * published terms into a strict schema. Values the page does NOT state are left
  * null (never guessed; 0 is never accepted as a placeholder). Extracted records
- * are stamped `verified:true` + `confidence:'crawled'` + `last_refreshed`;
+ * are stamped `verified:false` + `confidence:'crawled'` + `last_refreshed`;
  * failures keep the prior seed values with `verified:false`.
  *
  * NOTE on bot-protection: some firms (e.g. Apex, E8) return 403 to a plain GET.
@@ -249,7 +249,9 @@ async function extractFirm(firm) {
       return { ok: false, status: fetched.status, error: 'unparseable model output', firm: null, source: provider };
     }
     const updated = normalize(firm, parsed);
-    updated.verified = true;
+    // LLM extraction is UNVALIDATED — never auto-stamp verified:true. A row
+    // becomes verified:true only after human/cross-check review (see CRAWLED badge).
+    updated.verified = false;
     updated.confidence = 'crawled';
     updated.last_refreshed = new Date().toISOString();
     updated.source_page = fetched.pages[0] || firm.website;
