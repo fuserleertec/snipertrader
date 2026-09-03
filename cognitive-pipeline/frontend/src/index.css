@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px) 0 0 / 100% 42px,
+    #0a0e13;
+  color: #e7ecf2;
+  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* heartbeat status dot */
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+.heartbeat-dot {
+  animation: pulse-dot 2.2s ease-in-out infinite;
+}
+
+/* animated pipeline arrows */
+@keyframes flow-dash {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -16;
+  }
+}
+.connector-arrow {
+  stroke-dasharray: 6 10;
+  animation: flow-dash 1.4s linear infinite;
+}
+
+/* conviction bars animate smoothly when a new score arrives */
+.conviction-fill {
+  transition: width 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
