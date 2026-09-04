@@ -166,7 +166,7 @@ a{color:var(--cyan);text-decoration:none}
 .drv .dt{width:10px;height:10px;border-radius:50%}
 .drv .dl{margin-left:auto;font-family:var(--mono)}
 
-/* leaderboard (Section 02 ranked velocity) */
+/* leaderboard (Section 03 ranked velocity) */
 .lead{display:flex;flex-direction:column;gap:8px}
 .lead-row{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--accent,var(--cyan));border-radius:12px;padding:11px 14px;cursor:pointer;transition:border-color .15s,transform .1s}
 .lead-row:hover{border-color:var(--cyan);transform:translateX(2px)}
@@ -341,68 +341,7 @@ details.raw pre{background:#04070c;border:1px solid var(--border);border-radius:
     <b>SIMULATION &amp; EDUCATION NOTICE.</b> Kronos structural patterns and the Conviction Engine derive from <b>real market data</b> (Yahoo k-lines, SEC Form 4). The MiroFish agent swarm, scenario probability cones, and narrative injectors are <b>client-side Monte-Carlo simulations</b> — they model how smart-money behavior <i>might</i> resolve, not live order flow, dark-pool, or options data. Nothing here is financial advice.
   </div>
 
-  <!-- SECTION 2: Live Simulation View → Ranked Velocity Leaderboard -->
-  <section class="sec">
-    <div class="sec-head"><span class="ix">02</span><h2>Live Market Simulation View</h2><span class="sim">Simulation</span></div>
-    <div class="sec-sub">The Recon Audit (Section 06) candidates flow through Kronos pattern detection + MiroFish swarm consensus and are ranked by <b>net velocity</b> — highest run-up potential at the top, highest dump risk at the bottom. Swarm heatmap + scenario cones are the supporting panels, driven by the focused ticker.</div>
-
-    <!-- PRIMARY: ranked leaderboard -->
-    <div class="panel" style="padding:14px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-        <span style="font-size:18px">📊</span><b>Conviction &amp; Velocity Leaderboard</b>
-        <span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--dim)" id="leadCount"></span>
-      </div>
-      <div class="lead" id="leaderboard"></div>
-    </div>
-
-    <div class="grid-2" style="margin-top:14px">
-      <div class="panel">
-        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">🔴</span><b>MiroFish Agent Swarm Activity</b></div>
-        <div class="heatmap" id="heatmap" style="margin-top:12px"></div>
-        <div class="legend"><span><i style="background:var(--emerald)"></i>Bullish</span><span><i style="background:var(--gold)"></i>Neutral</span><span><i style="background:var(--red)"></i>Bearish</span></div>
-        <div class="swarm-signals" id="swarmSignals"></div>
-      </div>
-      <div class="panel">
-        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">📈</span><b>Kronos Structural K-Line — <span id="krSym">focus</span></b></div>
-        <div class="kr-pair" style="margin-top:12px">
-          <div>
-            <div class="pat-bar" id="patBar"></div>
-            <div class="kline-note" id="krNext">Next key level computed from ATR + swing liquidity.</div>
-          </div>
-          <div>
-            <div class="pat-row"><span class="pn">Bull</span><div class="pt"><div class="pf" id="pfBull" style="width:0%"></div></div><span class="pv" id="pvBull">0%</span></div>
-            <div class="pat-row"><span class="pn">Base</span><div class="pt"><div class="pf" id="pfBase" style="width:0%;background:linear-gradient(90deg,var(--gold),#b8902a)"></div></div><span class="pv" id="pvBase">0%</span></div>
-            <div class="pat-row"><span class="pn">Bear</span><div class="pt"><div class="pf" id="pfBear" style="width:0%;background:linear-gradient(90deg,var(--red),#b8202f)"></div></div><span class="pv" id="pvBear">0%</span></div>
-            <div class="kline-note" style="color:var(--dim)">Scenario cone probabilities (simulated Monte-Carlo, 1,000 passes).</div>
-          </div>
-        </div>
-        <div class="slider" style="margin-top:10px">
-          <div style="font-size:11px;color:var(--dim2);font-family:var(--mono);display:flex;justify-content:space-between"><span>Swarm Bias</span><span id="biasLbl">neutral</span></div>
-          <input type="range" id="swarmBias" min="-1" max="1" step="0.05" value="0" oninput="reSim()">
-        </div>
-      </div>
-    </div>
-    <div class="panel" style="margin-top:14px">
-      <div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">🎲</span><b>Scenario Probability Matrix — <span id="scenSym">focus</span></b><span class="sim">Simulation</span></div>
-      <div class="scen" style="margin-top:12px" id="scenMatrix"></div>
-      <div class="drivers" id="scenDrivers"></div>
-    </div>
-  </section>
-
-  <!-- SECTION 3: Picks Grid -->
-  <section class="sec">
-    <div class="sec-head"><span class="ix">03</span><h2>Categorized Stock Picks</h2></div>
-    <div class="sec-sub">Multi-cap grid from the live Conviction Engine. Each card appends a <span class="sim">Simulation</span> scenario cone derived from its real ATR + conviction. Click any card's buttons to open the live chart or inspect the simulation.</div>
-    <div class="filters" id="filters">
-      <button class="ftab active" data-cat="all" onclick="setFilter('all')">All</button>
-      <button class="ftab" data-cat="ultra" onclick="setFilter('ultra')">Ultra-High</button>
-      <button class="ftab" data-cat="high" onclick="setFilter('high')">High</button>
-      <button class="ftab" data-cat="watch" onclick="setFilter('watch')">Watchlist</button>
-    </div>
-    <div class="pick-grid" id="pickGrid"></div>
-  </section>
-
-<style>
+  <style>
 /* ── Quantum Ensemble Picks (synthetic demo) ── */
 :root{--qep-k:#5FA8FF;--qep-s:#33C2B8;--qep-m:#A98BFF;--qep-f:#E3A93E;--qep-q:#FF6FB0}
 body.light-mode{--qep-k:#2F6FD6;--qep-s:#0A7D8C;--qep-m:#7A5FD6;--qep-f:#9A6E00;--qep-q:#D64A8A}
@@ -465,9 +404,9 @@ body.light-mode{--qep-k:#2F6FD6;--qep-s:#0A7D8C;--qep-m:#7A5FD6;--qep-f:#9A6E00;
 @media(max-width:820px){.qep-detail-inner{grid-template-columns:1fr 1fr}.qep-reason{display:none}}
 </style>
 
-<!-- SECTION 4: Quantum Ensemble Picks (synthetic demo) -->
+<!-- SECTION 2: Quantum Ensemble Picks (synthetic demo) -->
 <section class="sec">
-  <div class="sec-head"><span class="ix">04</span><h2>Quantum Ensemble Picks</h2><span class="sim">Synthetic Demo</span></div>
+  <div class="sec-head"><span class="ix">02</span><h2>Quantum Ensemble Picks</h2><span class="sim">Synthetic Demo</span></div>
   <div class="sec-sub">Five engines — Kronos (temporal), SNN (spike/regime), MiroFish (pattern), Fundamental (filings), Quantum (weighted resolver) — vote into a single 0–100 conviction, then rank into a provenance-tagged table. All prices, signals and filings below are <b>synthetic demo data</b> (not live market data or advice); conviction pulses ±2 every 3s to simulate the heartbeat.</div>
 
   <div class="qep-bar">
@@ -566,14 +505,77 @@ body.light-mode{--qep-k:#2F6FD6;--qep-s:#0A7D8C;--qep-m:#7A5FD6;--qep-f:#9A6E00;
 })();
 </script>
 
-  <!-- SECTION 4: Narrative -->
+<!-- SECTION 3: Live Simulation View → Ranked Velocity Leaderboard -->
+  <section class="sec">
+    <div class="sec-head"><span class="ix">03</span><h2>Live Market Simulation View</h2><span class="sim">Simulation</span></div>
+    <div class="sec-sub">The Recon Audit (Section 07) candidates flow through Kronos pattern detection + MiroFish swarm consensus and are ranked by <b>net velocity</b> — highest run-up potential at the top, highest dump risk at the bottom. Swarm heatmap + scenario cones are the supporting panels, driven by the focused ticker.</div>
+
+    <!-- PRIMARY: ranked leaderboard -->
+    <div class="panel" style="padding:14px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-size:18px">📊</span><b>Conviction &amp; Velocity Leaderboard</b>
+        <span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--dim)" id="leadCount"></span>
+      </div>
+      <div class="lead" id="leaderboard"></div>
+    </div>
+
+    <div class="grid-2" style="margin-top:14px">
+      <div class="panel">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">🔴</span><b>MiroFish Agent Swarm Activity</b></div>
+        <div class="heatmap" id="heatmap" style="margin-top:12px"></div>
+        <div class="legend"><span><i style="background:var(--emerald)"></i>Bullish</span><span><i style="background:var(--gold)"></i>Neutral</span><span><i style="background:var(--red)"></i>Bearish</span></div>
+        <div class="swarm-signals" id="swarmSignals"></div>
+      </div>
+      <div class="panel">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">📈</span><b>Kronos Structural K-Line — <span id="krSym">focus</span></b></div>
+        <div class="kr-pair" style="margin-top:12px">
+          <div>
+            <div class="pat-bar" id="patBar"></div>
+            <div class="kline-note" id="krNext">Next key level computed from ATR + swing liquidity.</div>
+          </div>
+          <div>
+            <div class="pat-row"><span class="pn">Bull</span><div class="pt"><div class="pf" id="pfBull" style="width:0%"></div></div><span class="pv" id="pvBull">0%</span></div>
+            <div class="pat-row"><span class="pn">Base</span><div class="pt"><div class="pf" id="pfBase" style="width:0%;background:linear-gradient(90deg,var(--gold),#b8902a)"></div></div><span class="pv" id="pvBase">0%</span></div>
+            <div class="pat-row"><span class="pn">Bear</span><div class="pt"><div class="pf" id="pfBear" style="width:0%;background:linear-gradient(90deg,var(--red),#b8202f)"></div></div><span class="pv" id="pvBear">0%</span></div>
+            <div class="kline-note" style="color:var(--dim)">Scenario cone probabilities (simulated Monte-Carlo, 1,000 passes).</div>
+          </div>
+        </div>
+        <div class="slider" style="margin-top:10px">
+          <div style="font-size:11px;color:var(--dim2);font-family:var(--mono);display:flex;justify-content:space-between"><span>Swarm Bias</span><span id="biasLbl">neutral</span></div>
+          <input type="range" id="swarmBias" min="-1" max="1" step="0.05" value="0" oninput="reSim()">
+        </div>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:14px">
+      <div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">🎲</span><b>Scenario Probability Matrix — <span id="scenSym">focus</span></b><span class="sim">Simulation</span></div>
+      <div class="scen" style="margin-top:12px" id="scenMatrix"></div>
+      <div class="drivers" id="scenDrivers"></div>
+    </div>
+  </section>
+
+  <!-- SECTION 4: Picks Grid -->
+  <section class="sec">
+    <div class="sec-head"><span class="ix">04</span><h2>Categorized Stock Picks</h2></div>
+    <div class="sec-sub">Multi-cap grid from the live Conviction Engine. Each card appends a <span class="sim">Simulation</span> scenario cone derived from its real ATR + conviction. Click any card's buttons to open the live chart or inspect the simulation.</div>
+    <div class="filters" id="filters">
+      <button class="ftab active" data-cat="all" onclick="setFilter('all')">All</button>
+      <button class="ftab" data-cat="ultra" onclick="setFilter('ultra')">Ultra-High</button>
+      <button class="ftab" data-cat="high" onclick="setFilter('high')">High</button>
+      <button class="ftab" data-cat="watch" onclick="setFilter('watch')">Watchlist</button>
+    </div>
+    <div class="pick-grid" id="pickGrid"></div>
+  </section>
+
+
+
+  <!-- SECTION 5: Narrative -->
   <section class="sec">
     <div class="sec-head"><span class="ix">05</span><h2>Narrative &amp; Volatility Injectors</h2><span class="sim">Illustrative</span></div>
     <div class="sec-sub">Example macro narratives that would shift swarm behavior. <b>Static/illustrative</b> — not a live news feed. Shown to demonstrate how the engine ingests narrative shocks.</div>
     <div class="narr" id="narrGrid"></div>
   </section>
 
-  <!-- SECTION 5: Execution -->
+  <!-- SECTION 6: Execution -->
   <section class="sec">
     <div class="sec-head"><span class="ix">06</span><h2>Execution &amp; Position Management</h2></div>
     <div class="sec-sub">Fractional-Kelly sizing + hard guardrails from the Conviction Engine. Weights: Insider 0.30 · Technical 0.30 · Volume 0.20 · Catalyst 0.20. Composite score on a 0–100 scale; ATR-anchored levels with an inversion guard.</div>
@@ -623,14 +625,14 @@ body.light-mode{--qep-k:#2F6FD6;--qep-s:#0A7D8C;--qep-m:#7A5FD6;--qep-f:#9A6E00;
     </div>
   </section>
 
-  <!-- SECTION 6: Recon Audit -->
+  <!-- SECTION 7: Recon Audit -->
   <section class="sec">
     <div class="sec-head"><span class="ix">07</span><h2>Recon Audit — Dropped This Cycle</h2></div>
     <div class="sec-sub">Transparency: every scanned name that fell below the 65 watchlist floor, with the reason it failed (real signals).</div>
     <div class="recon-grid" id="reconGrid"></div>
   </section>
 
-  <!-- SECTION 7: Education -->
+  <!-- SECTION 8: Education -->
   <section class="sec">
     <div class="sec-head"><span class="ix">08</span><h2>Understanding the Engine</h2></div>
     <div class="sec-sub">Built-in glossary and an illustrative performance tracker. Tracker figures are <b>example/backtest-style</b> placeholders, not verified live results.</div>
@@ -933,12 +935,12 @@ function processSimulationLeaderboard(payload){
     return Object.assign({},p,{runUpScore,dumpScore,netBias,delta,pattern,swarmScore,sc});
   });
   scored.sort((a,b)=>b.netBias-a.netBias);     // top run-up → bottom dump
-  LEADERBOARD=scored;
-  renderLeaderboard(scored);
+  LEADERBOARD=scored.slice(0,20);              // cap leaderboard at 20 tickers
+  renderLeaderboard(LEADERBOARD);
   const qp=document.getElementById('qPattern');
   if(qp) qp.textContent=(scored[0]&&scored[0].pattern&&scored[0].pattern!=='No pattern')?scored[0].pattern:'—';
   if(LEADERBOARD.length && !focusSym){ focusSym=LEADERBOARD[0].symbol; renderFocusPanels(focusSym, false); }
-  return scored;
+  return LEADERBOARD;
 }
 function tvSymFor(it){
   if(!it) return '';
