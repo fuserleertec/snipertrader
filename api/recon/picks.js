@@ -222,6 +222,29 @@ function selectBalanced(built, n) {
   return out;
 }
 
+// Health probe: cheap liveness + cache-state snapshot (no upstream re-scrape).
+// On the long-lived local dev server this shares run()'s in-memory cache; on Vercel
+// it is a liveness probe (separate instance, cache fields read cold/empty).
+function health() {
+  const now = Date.now();
+  const p = _cache.payload;
+  const cacheAgeMs = _cache.ts ? now - _cache.ts : null;
+  return {
+    status: 'ok',
+    service: 'recon',
+    uptimeSec: Math.round(process.uptime()),
+    generatedAt: p ? p.generatedAt : null,
+    cacheAgeMs,
+    cacheFresh: cacheAgeMs !== null && cacheAgeMs < CACHE_TTL_MS,
+    picks: p ? p.picks.length : 0,
+    dropped: p ? p.dropped.length : 0,
+    universeScanned: p ? p.universeScanned : 0,
+    congressionalAvailable: p ? !!p.congressionalAvailable : false,
+    nextRefreshHint: p ? p.nextRefreshHint : '08:00 & 17:00 ET',
+    timestamp: new Date().toISOString(),
+  };
+}
+
 module.exports = async (req, res) => {
   try {
     const payload = await run();
@@ -234,6 +257,7 @@ module.exports = async (req, res) => {
 };
 module.exports.buildSymbol = buildSymbol;
 module.exports.run = run;
+module.exports.health = health;
 
 // Test/diagnostic hook (harmless in prod; used by node test harness)
 if (require.main === module) {

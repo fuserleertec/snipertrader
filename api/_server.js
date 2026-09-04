@@ -11,6 +11,9 @@ const http = require('http');
 const { buildForecast, buildStocks, buildChat, buildReviewLoop, buildPreflight } = require('./_core');
 const { buildAdmin } = require('./_lib/admin/handlers');
 const propApi = require('./prop/[action]');
+const reconPicks = require('./recon/picks');
+const reconRefresh = require('./recon/refresh');
+const reconHealth = require('./recon/health');
 
 const PORT = process.env.KRONOS_PORT || 8787;
 
@@ -35,6 +38,15 @@ const server = http.createServer((req, res) => {
   }
   if (url.pathname.startsWith('/api/prop/')) {
     return propApi(req, vc(res));
+  }
+  if (url.pathname === '/api/recon/picks' && req.method === 'GET') {
+    return reconPicks(req, vc(res));
+  }
+  if (url.pathname === '/api/recon/refresh' && req.method === 'GET') {
+    return reconRefresh(req, vc(res));
+  }
+  if (url.pathname === '/api/recon/health' && req.method === 'GET') {
+    return reconHealth(req, vc(res));
   }
   if (url.pathname === '/api/ai/chat' && req.method === 'POST') {
     return buildChat(req, res);

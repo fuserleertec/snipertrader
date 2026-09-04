@@ -93,6 +93,7 @@ a{color:var(--cyan);text-decoration:none}
 .statusbar .live{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;color:var(--dim)}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--emerald);box-shadow:0 0 10px var(--emerald);animation:pulse 1.8s infinite}
 .dot.err{background:var(--red);box-shadow:0 0 10px var(--red);animation:none}
+.dot.idle{background:var(--dim2);box-shadow:none;animation:none}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 .statusbar b{color:var(--text)}
 .statusbar .spacer{flex:1}
@@ -320,6 +321,8 @@ details.raw pre{background:#04070c;border:1px solid var(--border);border-radius:
     <span class="live"><span class="dot" id="refDot"></span> <b id="marketStatus">LIVE</b></span>
     <span class="live">Next Refresh: <b id="nextRefresh">08:00 &amp; 17:00 ET</b></span>
     <span class="live">Data Age: <b id="lastUpdated">—</b></span>
+    <span class="live"><span class="dot idle" id="hbDot"></span> Heartbeat <b id="hbInfo">—</b></span>
+    <span class="live">Health <b id="healthInfo">—</b></span>
     <span class="spacer"></span>
     <button class="btn" id="refreshBtn" onclick="fetchRecon()">↻ REFRESH</button>
     <button class="btn" onclick="shareDashboard()">🔗 SHARE</button>
@@ -670,13 +673,13 @@ async function fetchRecon(){
     const r=await fetch('/api/recon/picks',{headers:{'Accept':'application/json'},cache:'no-store'});
     if(!r.ok) throw new Error('HTTP '+r.status);
     const d=await r.json();
-    RECON=d; dot.className='dot';
+    RECON=d; dot.className='dot'; document.getElementById('marketStatus').textContent='LIVE';
     document.getElementById('lastUpdated').textContent=fmtTime(d.generatedAt);
     document.getElementById('qScanned').textContent=(d.universeScanned||0);
     renderPicks(); renderRecon(); renderRaw(d); processSimulationLeaderboard(d);
   }catch(e){
     if(!RECON) RECON=FALLBACK;
-    dot.className='dot err';
+    dot.className='dot err'; document.getElementById('marketStatus').textContent='SNAPSHOT';
     document.getElementById('lastUpdated').textContent='live feed unavailable · snapshot';
     renderPicks(); renderRecon(); processSimulationLeaderboard(RECON||FALLBACK);
   }finally{ btn.disabled=false; btn.textContent='↻ REFRESH'; }
@@ -1023,12 +1026,49 @@ const FALLBACK={ generatedAt:new Date().toISOString(), nextRefreshHint:'08:00 & 
     {symbol:'MRAM',exchange:'NASDAQ',cap:'large',tier:'high',score:79.9,entry:18.88,stop:12.49,target:31.66,atr:1.4,rewardRisk:2.0,triggers:['BREAKOUT','FVG'],insiderDetail:{form4Buys:1},note:'MRAM conviction 80/100 · SEC Form 4 buys: 1 · chart: BREAKOUT/FVG'} ],
   dropped:[ {symbol:'RIVN',score:42,reason:'Composite 42/100 below 65 floor · no chart breakout/BOS/FVG'}, {symbol:'SOFI',score:22,reason:'Composite 22/100 below 65 floor · no SEC Form 4 buys'} ] };
 
+/* ════════════════════════════════════════════════════════════════
+   HEARTBEAT + HEALTH — backend liveness pulse (every 3s) + auto-refresh
+   when the recon cache serves a NEWER snapshot than what's rendered.
+   ════════════════════════════════════════════════════════════════ */
+const HEARTBEAT_MS = 3000;
+let HB_BEAT = 0;
+async function heartbeat(){
+  const dot = document.getElementById('hbDot');
+  const hb  = document.getElementById('hbInfo');
+  const hi  = document.getElementById('healthInfo');
+  const t0  = performance.now();
+  try{
+    const r = await fetch('/api/recon/health', { headers:{'Accept':'application/json'}, cache:'no-store' });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const h = await r.json();
+    const lat = Math.round(performance.now() - t0);
+    HB_BEAT++;
+    if(dot) dot.className = 'dot';
+    if(hb) hb.textContent = 'beat ' + HB_BEAT + ' · ' + lat + 'ms';
+    if(hi){
+      const age = (h.cacheAgeMs != null) ? Math.round(h.cacheAgeMs/1000) + 's' : 'cold';
+      hi.textContent = 'up ' + (h.uptimeSec||0) + 's · cache ' + age + ((h.picks!=null) ? ' · ' + h.picks + ' picks' : '');
+    }
+    // Auto-refresh the full recon payload only when a NEWER snapshot is available.
+    if(h.generatedAt && (!RECON || RECON.generatedAt !== h.generatedAt)){
+      fetchRecon();
+    }
+  }catch(e){
+    HB_BEAT++;
+    if(dot) dot.className = 'dot err';
+    if(hb) hb.textContent = 'beat ' + HB_BEAT + ' · fail';
+    if(hi) hi.textContent = 'backend unreachable';
+  }
+}
+
 /* init */
 compute();
 renderNarratives();
 renderEdu();
 reSim();
 fetchRecon();
+heartbeat();
+setInterval(heartbeat, HEARTBEAT_MS);
 </script>
 </body>
 </html>
