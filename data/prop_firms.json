@@ -2,11 +2,11 @@
   "meta": {
     "title": "Prop-Firm Intelligence",
     "generator": "manual seed (hermes); upgrade to llm-crawl via scripts/prop_crawl.js",
-    "data_policy": "Real published terms, machine-extracted by an LLM parser from each firm's public page (confidence=crawled) or curated from published terms (confidence=manual_seed). verified=true requires human/cross-check review \u2014 the crawler never auto-verifies. Nothing is fabricated; every row carries a source_page link.",
-    "last_refreshed": "2026-08-30T11:34:33.026Z",
+    "data_policy": "Real published terms, machine-extracted by an LLM parser from each firm's public page (confidence=crawled) or curated from published terms (confidence=manual_seed). verified=true requires human/cross-check review — the crawler never auto-verifies. Nothing is fabricated; every row carries a source_page link.",
+    "last_refreshed": "2026-09-04T11:24:04.743Z",
     "refresh_source": "llm-crawl",
-    "refreshed_count": 11,
-    "failed_count": 3
+    "refreshed_count": 12,
+    "failed_count": 2
   },
   "firms": [
     {
@@ -18,7 +18,7 @@
       "model": "multi-model",
       "verified": false,
       "confidence": "crawled",
-      "last_refreshed": "2026-08-30T11:18:43.985Z",
+      "last_refreshed": "2026-09-04T11:23:19.135Z",
       "payout_split": {
         "trader": 80,
         "max_trader": 90
@@ -54,7 +54,7 @@
         "enabled": true
       },
       "refund_fee": true,
-      "data_note": "Extracted by LLM parser from https://ftmo.com/en/ \u2014 split corrected to 80% base / 90% scaling (crawler misread \"up to 90%\" as flat 90%).",
+      "data_note": "Extracted by LLM parser from https://ftmo.com/en/",
       "profit_target": {
         "phase1": 10,
         "phase2": 5
@@ -64,12 +64,12 @@
       "id": "fundednext",
       "name": "FundedNext",
       "website": "https://fundednext.com/",
-      "source_page": "https://fundednext.com/en/pricing",
+      "source_page": "https://fundednext.com/",
       "market": "forex",
       "model": "multi-model",
       "verified": false,
       "confidence": "crawled",
-      "last_refreshed": "2026-08-30T11:33:52.810Z",
+      "last_refreshed": "2026-09-04T11:23:25.211Z",
       "payout_split": {
         "trader": 85,
         "max_trader": 95
@@ -103,7 +103,7 @@
         "enabled": true
       },
       "refund_fee": true,
-      "data_note": "Extracted by LLM parser from https://fundednext.com/en/pricing",
+      "data_note": "Extracted by LLM parser from https://fundednext.com/, https://fundednext.com/en/pricing",
       "profit_target": {
         "phase1": 8,
         "phase2": 5
@@ -118,26 +118,26 @@
       "model": "multi-model",
       "verified": false,
       "confidence": "crawled",
-      "last_refreshed": "2026-08-30T11:33:58.836Z",
+      "last_refreshed": "2026-09-04T11:23:29.761Z",
       "payout_split": {
-        "trader": 80,
+        "trader": 75,
         "max_trader": 100
       },
-      "payout_frequency": "bi-weekly",
+      "payout_frequency": "monthly",
       "payout_speed": {
         "label": "bi-weekly",
         "estimated": true
       },
       "max_drawdown": {
-        "value": 10,
+        "value": 6,
         "type": "static",
-        "daily": null
+        "daily": 3
       },
       "eval_fee": {
-        "min_usd": 24
+        "min_usd": 249
       },
       "account_sizes": {
-        "min": 5000,
+        "min": 10000,
         "max": 4000000
       },
       "deal": {
@@ -152,9 +152,9 @@
         "enabled": true
       },
       "refund_fee": true,
-      "data_note": "Instant funding; split scales to 100%. Corrected (crawler misread $249/max fee as min, \"monthly\" payout, and 6%/3% drawdown).",
+      "data_note": "Extracted by LLM parser from https://the5ers.com/",
       "profit_target": {
-        "phase1": null,
+        "phase1": 10,
         "phase2": null
       }
     },
@@ -164,10 +164,10 @@
       "website": "https://e8markets.com/",
       "source_page": "https://e8markets.com/",
       "market": "forex",
-      "model": "2-step",
+      "model": "multi-model",
       "verified": false,
       "confidence": "crawled",
-      "last_refreshed": "2026-08-30T11:34:02.443Z",
+      "last_refreshed": "2026-09-04T11:23:34.572Z",
       "payout_split": {
         "trader": 80,
         "max_trader": 100
@@ -183,11 +183,11 @@
         "daily": 5
       },
       "eval_fee": {
-        "min_usd": 299
+        "min_usd": 22
       },
       "account_sizes": {
-        "min": 25000,
-        "max": 100000
+        "min": 5000,
+        "max": 500000
       },
       "deal": {
         "active": true,
@@ -260,22 +260,22 @@
       "website": "https://apextraderfunding.com/",
       "source_page": "https://apextraderfunding.com/",
       "market": "futures",
-      "model": "1-step",
+      "model": "multi-model",
       "verified": false,
-      "confidence": "manual_seed",
-      "last_refreshed": null,
+      "confidence": "crawled",
+      "last_refreshed": "2026-09-04T11:23:39.611Z",
       "payout_split": {
         "trader": 90,
         "max_trader": 100
       },
       "payout_frequency": "bi-weekly",
       "payout_speed": {
-        "label": "bi-weekly",
-        "estimated": true
+        "label": "5 trading days",
+        "estimated": false
       },
       "max_drawdown": {
         "value": 5,
-        "type": "trailing",
+        "type": "static",
         "daily": null
       },
       "eval_fee": {
@@ -287,7 +287,7 @@
       },
       "deal": {
         "active": true,
-        "discount_pct": 80,
+        "discount_pct": 90,
         "code": null,
         "verified": false,
         "note": "Near-constant 80-90% site-wide sales; verify at checkout."
@@ -301,7 +301,7 @@
         "enabled": true
       },
       "refund_fee": null,
-      "data_note": "Curated from published terms; machine re-verification via the daily crawler is pending. Bot-blocked (HTTP 403). Futures firms publish dollar-based drawdown/profit targets; % figures are approximate equivalents for a standard-size account \u2014 confirm on the firm's page."
+      "data_note": "Extracted by LLM parser from https://apextraderfunding.com/"
     },
     {
       "id": "topstep",
@@ -312,15 +312,15 @@
       "model": "multi-model",
       "verified": false,
       "confidence": "crawled",
-      "last_refreshed": "2026-08-30T11:34:07.162Z",
+      "last_refreshed": "2026-09-04T11:23:42.742Z",
       "payout_split": {
         "trader": 90,
         "max_trader": 90
       },
-      "payout_frequency": "on-demand",
+      "payout_frequency": "weekly",
       "payout_speed": {
-        "label": "on-demand (up to 5x/month)",
-        "estimated": true
+        "label": "3-5 days",
+        "estimated": false
       },
       "max_drawdown": {
         "value": 4,
@@ -365,9 +365,9 @@
       "model": "1-step",
       "verified": false,
       "confidence": "crawled",
-      "last_refreshed": "2026-08-30T11:34:12.536Z",
+      "last_refreshed": "2026-09-04T11:23:46.063Z",
       "payout_split": {
-        "trader": 90,
+        "trader": 80,
         "max_trader": 90
       },
       "payout_frequency": "on-demand",
@@ -403,7 +403,7 @@
         "enabled": false
       },
       "refund_fee": null,
-      "data_note": "Extracted by LLM parser \u2014 split corrected to 90/10 (crawler mixed up the PRO 80/20 tier)."
+      "data_note": "Extracted by LLM parser from https://takeprofittrader.com/, https://takeprofittrader.com/en/faq, https://takeprofittrader.com/en/pricing"
     },
     {
       "id": "tradeify",
@@ -414,7 +414,7 @@
       "model": "multi-model",
       "verified": false,
       "confidence": "crawled",
-      "last_refreshed": "2026-08-30T11:34:15.916Z",
+      "last_refreshed": "2026-09-04T11:23:48.259Z",
       "payout_split": {
         "trader": 90,
         "max_trader": 90
@@ -426,7 +426,7 @@
       },
       "max_drawdown": {
         "value": 5,
-        "type": "trailing",
+        "type": "static",
         "daily": null
       },
       "eval_fee": {
@@ -438,7 +438,7 @@
       },
       "deal": {
         "active": true,
-        "discount_pct": 40,
+        "discount_pct": 50,
         "verified": false
       },
       "trading_styles": {
@@ -461,7 +461,7 @@
       "model": "1-step",
       "verified": false,
       "confidence": "crawled",
-      "last_refreshed": "2026-08-30T11:34:18.574Z",
+      "last_refreshed": "2026-09-04T11:23:50.789Z",
       "payout_split": {
         "trader": 90,
         "max_trader": 90
@@ -542,7 +542,7 @@
         "enabled": false
       },
       "refund_fee": null,
-      "data_note": "Curated from published terms; machine re-verification via the daily crawler is pending. Futures firms publish dollar-based drawdown/profit targets; % figures are approximate equivalents for a standard-size account \u2014 confirm on the firm's page."
+      "data_note": "Curated from published terms; machine re-verification via the daily crawler is pending. Futures firms publish dollar-based drawdown/profit targets; % figures are approximate equivalents for a standard-size account — confirm on the firm's page."
     },
     {
       "id": "blueberryfunded",
@@ -553,7 +553,7 @@
       "model": "1-step",
       "verified": false,
       "confidence": "crawled",
-      "last_refreshed": "2026-08-30T11:34:26.505Z",
+      "last_refreshed": "2026-09-04T11:23:58.704Z",
       "payout_split": {
         "trader": 90,
         "max_trader": 95
@@ -600,7 +600,7 @@
       "model": "multi-model",
       "verified": false,
       "confidence": "crawled",
-      "last_refreshed": "2026-08-30T11:34:30.015Z",
+      "last_refreshed": "2026-09-04T11:24:02.289Z",
       "payout_split": {
         "trader": 90,
         "max_trader": 100
@@ -645,7 +645,7 @@
       "model": "multi-model",
       "verified": false,
       "confidence": "crawled",
-      "last_refreshed": "2026-08-30T11:34:33.025Z",
+      "last_refreshed": "2026-09-04T11:24:04.742Z",
       "payout_split": {
         "trader": 90,
         "max_trader": 90
