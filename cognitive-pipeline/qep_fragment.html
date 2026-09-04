@@ -1,0 +1,163 @@
+<style>
+/* ── Quantum Ensemble Picks (synthetic demo) ── */
+:root{--qep-k:#5FA8FF;--qep-s:#33C2B8;--qep-m:#A98BFF;--qep-f:#E3A93E;--qep-q:#FF6FB0}
+body.light-mode{--qep-k:#2F6FD6;--qep-s:#0A7D8C;--qep-m:#7A5FD6;--qep-f:#9A6E00;--qep-q:#D64A8A}
+.qep-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px}
+.qep-toggle{display:inline-flex;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:3px;gap:2px}
+.qep-toggle button{font-family:var(--sans);font-size:12.5px;font-weight:600;color:var(--dim);background:transparent;border:none;padding:7px 14px;border-radius:8px;cursor:pointer;transition:background .15s,color .15s}
+.qep-toggle button:hover{color:var(--text)}
+.qep-toggle button.active{background:var(--panel2);color:var(--text);box-shadow:inset 0 0 0 1px var(--border)}
+.qep-legend{display:flex;gap:14px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--dim)}
+.qep-legend b{font-weight:700}
+.qep-tabs{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.qep-cats{display:flex;gap:4px;border-bottom:1px solid var(--border)}
+.qep-cats button{font-family:var(--sans);font-size:13px;color:var(--dim);background:none;border:none;padding:9px 14px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s}
+.qep-cats button:hover{color:var(--text)}
+.qep-cats button.active{color:var(--text);border-bottom-color:var(--qep-q)}
+.qep-subs{display:flex;gap:6px}
+.qep-subs button{font-family:var(--mono);font-size:11px;color:var(--dim);background:var(--panel);border:1px solid var(--border);padding:5px 11px;border-radius:20px;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.qep-subs button.active{color:var(--bg);background:var(--text);border-color:var(--text)}
+.qep-subs button[data-sub="Buy"].active{background:var(--emerald);border-color:var(--emerald);color:#06231a}
+.qep-subs button[data-sub="Sell"].active{background:var(--red);border-color:var(--red);color:#2a0a0d}
+.qep-subs button[data-sub="Hold"].active{background:var(--gold);border-color:var(--gold);color:#241a02}
+.qep-wrap{border:1px solid var(--border);border-radius:var(--rad);overflow:hidden;overflow-x:auto;background:var(--panel)}
+.qep-table{width:100%;border-collapse:collapse;min-width:820px}
+.qep-table thead th{text-align:left;font-family:var(--mono);font-size:10.5px;font-weight:500;color:var(--dim2);letter-spacing:.03em;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--panel2);white-space:nowrap}
+.qep-table tbody tr.qep-row{cursor:pointer;border-bottom:1px solid var(--border);transition:background .12s}
+.qep-table tbody tr.qep-row:hover{background:var(--panel2)}
+.qep-table tbody tr.qep-row.sel{background:var(--panel2)}
+.qep-table tbody tr.qep-row.sel td:first-child{box-shadow:inset 3px 0 0 var(--qep-q)}
+.qep-table td{padding:11px 14px;font-size:13px;vertical-align:middle}
+.qep-rank{font-family:var(--mono);color:var(--dim2);font-size:12px}
+.qep-tk{font-family:var(--disp);font-weight:700;font-size:13.5px;color:var(--text);letter-spacing:.01em}
+.qep-name{color:var(--dim);font-size:11.5px;margin-top:1px}
+.qep-sig{display:inline-block;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.03em;padding:3px 9px;border-radius:20px}
+.qep-sig.buy{background:var(--green-soft);color:var(--emerald)}
+.qep-sig.sell{background:var(--red-soft);color:var(--red)}
+.qep-sig.hold{background:var(--gold-soft);color:var(--gold)}
+.qep-price{font-family:var(--mono);font-size:12.5px;color:var(--text)}
+.qep-chg-up{color:var(--emerald)}.qep-chg-down{color:var(--red)}
+.qep-target{font-family:var(--mono);font-size:12.5px;color:var(--dim)}
+.qep-conv{display:flex;align-items:center;gap:8px;min-width:110px}
+.qep-track{flex:1;height:5px;border-radius:3px;background:var(--border);overflow:hidden}
+.qep-fill{height:100%;border-radius:3px;transition:width .7s cubic-bezier(.2,.7,.2,1)}
+.qep-num{font-family:var(--mono);font-size:11px;color:var(--dim);width:26px;text-align:right}
+.qep-chips{display:flex;gap:3px}
+.qep-chip{width:19px;height:19px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:9.5px;font-weight:700;border:1px solid;background:transparent}
+.qep-reason{color:var(--dim);font-size:12.5px;line-height:1.4;max-width:280px}
+.qep-detail td{background:var(--panel2);padding:0;border-bottom:1px solid var(--border)}
+.qep-detail-inner{padding:18px 22px 20px;display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.qep-dm{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.qep-dm-title{font-size:13px;color:var(--text);font-weight:700}
+.qep-dm-sub{font-family:var(--mono);font-size:11px;color:var(--dim2)}
+.qep-dm-act{font-size:12px;color:var(--gold);font-family:var(--mono)}
+.qep-ecard{border:1px solid var(--border);border-radius:10px;padding:11px 12px;background:var(--panel)}
+.qep-ehead{display:flex;align-items:center;gap:7px;margin-bottom:7px}
+.qep-edot{width:8px;height:8px;border-radius:2px;flex:0 0 auto}
+.qep-ename{font-size:12px;font-weight:700;color:var(--text)}
+.qep-estance{font-family:var(--mono);font-size:9.5px;letter-spacing:.03em;padding:1px 7px;border-radius:20px;margin-left:auto}
+.qep-escore{font-family:var(--mono);font-size:18px;font-weight:700;margin:4px 0}
+.qep-emetric{font-size:11px;color:var(--dim);line-height:1.4}
+@media(max-width:820px){.qep-detail-inner{grid-template-columns:1fr 1fr}.qep-reason{display:none}}
+</style>
+
+<!-- SECTION 4: Quantum Ensemble Picks (synthetic demo) -->
+<section class="sec">
+  <div class="sec-head"><span class="ix">04</span><h2>Quantum Ensemble Picks</h2><span class="sim">Synthetic Demo</span></div>
+  <div class="sec-sub">Five engines — Kronos (temporal), SNN (spike/regime), MiroFish (pattern), Fundamental (filings), Quantum (weighted resolver) — vote into a single 0–100 conviction, then rank into a provenance-tagged table. All prices, signals and filings below are <b>synthetic demo data</b> (not live market data or advice); conviction pulses ±2 every 3s to simulate the heartbeat.</div>
+
+  <div class="qep-bar">
+    <div class="qep-toggle" id="qepMode">
+      <button data-mode="market" class="active">Market Signals</button>
+      <button data-mode="activity">Smart Money Activity</button>
+    </div>
+    <div class="qep-legend">
+      <b style="color:var(--qep-k)">K</b> Kronos &nbsp;
+      <b style="color:var(--qep-s)">S</b> SNN &nbsp;
+      <b style="color:var(--qep-m)">M</b> MiroFish &nbsp;
+      <b style="color:var(--qep-f)">F</b> Fundamental &nbsp;
+      <b style="color:var(--qep-q)">Q</b> Quantum
+    </div>
+  </div>
+
+  <div class="qep-tabs">
+    <div class="qep-cats" id="qepCats"></div>
+    <div class="qep-subs" id="qepSubs"></div>
+  </div>
+
+  <div class="qep-wrap">
+    <table class="qep-table">
+      <thead><tr>
+        <th>#</th><th>Asset</th><th>Signal</th><th>Last / Chg</th><th>Target</th><th>Conviction</th><th>Engines</th><th>Why</th>
+      </tr></thead>
+      <tbody id="qepBody"></tbody>
+    </table>
+  </div>
+</section>
+
+<script>
+(function(){
+  var PICKS = __QEP_PICKS__;
+  var META={K:{label:'Kronos',v:'var(--qep-k)'},S:{label:'SNN',v:'var(--qep-s)'},M:{label:'MiroFish',v:'var(--qep-m)'},F:{label:'Fundamental',v:'var(--qep-f)'},Q:{label:'Quantum',v:'var(--qep-q)'}};
+  var ORDER=['K','S','M','F','Q'];
+  var CATS={market:['Futures','Stocks','Cryptos'],activity:['Insiders','Executives','Whales','Gov']};
+  var ST={mode:'market',cat:'Futures',sub:'All',open:null};
+  var STANCE={buy:{c:'var(--emerald)',bg:'var(--green-soft)'},sell:{c:'var(--red)',bg:'var(--red-soft)'},hold:{c:'var(--gold)',bg:'var(--gold-soft)'}};
+  function sigCls(s){return s==='Buy'?'buy':(s==='Sell'?'sell':'hold');}
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function convColor(c){return c>=70?'var(--emerald)':(c>=50?'var(--gold)':'var(--red)');}
+  function score(k,p){var v;switch(k){case'K':v=50+p.drift*4;break;case'S':v=50+p.sigma*8;break;case'M':v=p.similarity;break;case'F':v=50+p.epsSurprise*3;break;default:v=p.conviction;}return Math.max(1,Math.min(99,Math.round(v)));}
+  function metric(k,p){switch(k){case'K':return'Forecasts '+(p.drift>=0?'+':'')+p.drift+'% drift over the pipeline horizon.';case'S':return'Flags a '+p.sigma+'σ spike vs. the trailing baseline.';case'M':return p.similarity+'% match against a historical analogue pattern.';case'F':return (p.epsSurprise>=0?'Beats':'Misses')+' consensus by '+Math.abs(p.epsSurprise)+'% on the latest print.';default:return'Resolves '+p.conviction+'/100 conviction after weighting all four inputs.';}}
+  function rows(){return PICKS.filter(function(p){return p.mode===ST.mode&&p.category===ST.cat&&(ST.sub==='All'||p.signal===ST.sub);});}
+  function renderCats(){
+    var el=document.getElementById('qepCats');
+    el.innerHTML=CATS[ST.mode].map(function(c){return '<button data-cat="'+c+'" class="'+(c===ST.cat?'active':'')+'">'+c+'</button>';}).join('');
+    el.querySelectorAll('button').forEach(function(b){b.onclick=function(){ST.cat=b.getAttribute('data-cat');ST.open=null;renderCats();renderTable();};});
+  }
+  function renderSubs(){
+    var el=document.getElementById('qepSubs');
+    el.innerHTML=['All','Buy','Sell','Hold'].map(function(s){return '<button data-sub="'+s+'" class="'+(s===ST.sub?'active':'')+'">'+s+'</button>';}).join('');
+    el.querySelectorAll('button').forEach(function(b){b.onclick=function(){ST.sub=b.getAttribute('data-sub');ST.open=null;renderSubs();renderTable();};});
+  }
+  function renderTable(){
+    var list=rows(),body=document.getElementById('qepBody'),h='';
+    if(!list.length){body.innerHTML='<tr><td colspan="8" style="padding:32px;text-align:center;color:var(--dim2);font-family:var(--mono);font-size:12px">No rows match this filter.</td></tr>';return;}
+    list.forEach(function(p,i){
+      var up=p.chg.trim().charAt(0)==='+', key=p.mode+':'+p.category+':'+p.ticker, cc=convColor(p.conviction);
+      h+='<tr class="qep-row'+(ST.open===key?' sel':'')+'" data-key="'+key+'">'
+        +'<td class="qep-rank">'+(i+1)+'</td>'
+        +'<td><div class="qep-tk">'+esc(p.ticker)+'</div><div class="qep-name">'+esc(p.company)+'</div></td>'
+        +'<td><span class="qep-sig '+sigCls(p.signal)+'">'+p.signal.toUpperCase()+'</span></td>'
+        +'<td class="qep-price">'+esc(p.last)+'<br><span class="'+(up?'qep-chg-up':'qep-chg-down')+'">'+esc(p.chg)+'</span></td>'
+        +'<td class="qep-target">'+esc(p.target)+'</td>'
+        +'<td><div class="qep-conv"><div class="qep-track"><div class="qep-fill" style="width:'+p.conviction+'%;background:'+cc+'"></div></div><div class="qep-num">'+p.conviction+'</div></div></td>'
+        +'<td><div class="qep-chips">'+ORDER.map(function(k){var s=p.engines[k];return '<span class="qep-chip" title="'+META[k].label+': '+s+'" style="color:'+META[k].v+'">'+k+'</span>';}).join('')+'</div></td>'
+        +'<td class="qep-reason">'+esc(p.reason)+'</td>'
+        +'</tr>';
+      if(ST.open===key){
+        h+='<tr class="qep-detail"><td colspan="8"><div class="qep-detail-inner">'
+          +'<div class="qep-dm"><div><div class="qep-dm-title">'+esc(p.ticker)+' — engine breakdown</div><div class="qep-dm-sub">source: '+esc(p.source)+' · lag: '+esc(p.latency)+'</div></div>'
+          +(p.activityNote?'<div class="qep-dm-act">'+esc(p.activityNote)+'</div>':'')
+          +'</div>'
+          +ORDER.map(function(k){var s=p.engines[k],m=META[k],sc=score(k,p);return '<div class="qep-ecard"><div class="qep-ehead"><span class="qep-edot" style="background:'+m.v+'"></span><span class="qep-ename">'+m.label+'</span><span class="qep-estance" style="color:'+STANCE[s].c+';background:'+STANCE[s].bg+'">'+s.toUpperCase()+'</span></div><div class="qep-escore" style="color:'+m.v+'">'+sc+'</div><div class="qep-emetric">'+metric(k,p)+'</div></div>';}).join('')
+          +'</div></td></tr>';
+      }
+    });
+    body.innerHTML=h;
+    body.querySelectorAll('tr.qep-row').forEach(function(tr){tr.onclick=function(){var k=tr.getAttribute('data-key');ST.open=(ST.open===k)?null:k;renderTable();};});
+  }
+  document.getElementById('qepMode').querySelectorAll('button').forEach(function(b){
+    b.onclick=function(){
+      ST.mode=b.getAttribute('data-mode');ST.cat=CATS[ST.mode][0];ST.sub='All';ST.open=null;
+      document.getElementById('qepMode').querySelectorAll('button').forEach(function(x){x.classList.toggle('active',x===b);});
+      renderCats();renderSubs();renderTable();
+    };
+  });
+  renderCats();renderSubs();renderTable();
+  // live heartbeat — jitter conviction ±2 every 3s (synthetic, labeled)
+  setInterval(function(){
+    PICKS.forEach(function(p){p.conviction=Math.max(1,Math.min(99,p.conviction+Math.round((Math.random()-0.5)*4)));});
+    renderTable();
+  },3000);
+})();
+</script>
