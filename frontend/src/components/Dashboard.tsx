@@ -9,12 +9,13 @@ import { useTheme } from "@/hooks/useTheme";
 import { inferAssetClass } from "@/lib/constants";
 import { isLivePatternWs, wsBase } from "@/lib/env";
 import { overlayForSetup, parseOverlayParam } from "@/lib/setups";
+import { overlayForFilter } from "@/lib/setupView";
 import { useSearchParams } from "next/navigation";
 import type { QepMode } from "@/lib/mocks/terminal";
 import { dropUniverse } from "@/lib/mocks/universe";
 import { convictionOf, tierOf } from "@/lib/mocks/terminal";
 import { defaultVisibleSessions } from "@/lib/sessions";
-import type { OverlayPreset, Signal, Timeframe } from "@/lib/types";
+import type { OverlayPreset, SetupType, Signal, Timeframe } from "@/lib/types";
 import { SignalTable } from "./SignalTable";
 import { SetupCards } from "./SetupCards";
 import { playAlert, ToastHost, type ToastItem } from "./ToastHost";
@@ -33,13 +34,14 @@ export function Dashboard() {
   const [overlayPreset, setOverlayPreset] = useState<OverlayPreset>(
     () => parseOverlayParam(params.get("overlay")) ?? "all",
   );
-  const [selected, setSelected] = useState<Signal | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [soundOn, setSoundOn] = useState(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [tick, setTick] = useState(0);
   const seenHigh = useRef(new Set<string>());
   const primedHigh = useRef(false);
   const chartRef = useRef<HTMLDivElement>(null);
+  const scrollTimer = useRef<number | null>(null);
 
   const market = useMarketData(symbol, timeframe);
   const priceRef = useRef(100);
@@ -47,6 +49,7 @@ export function Dashboard() {
     if (market.lastPrice != null) priceRef.current = market.lastPrice;
   }, [market.lastPrice]);
   const allSignals = useSignals(symbol, () => priceRef.current);
+  const selected = selectedId ? allSignals.find((row) => row.id === selectedId) ?? null : null;
   const patterns = usePatterns(symbol);
   const performance = usePerformance(tick);
 
@@ -81,18 +84,42 @@ export function Dashboard() {
   const onSymbol = (next: string) => {
     dropUniverse(symbol);
     setSymbol(next);
-    setSelected(null);
+    if (selected?.symbol !== next) {
+      setSelectedId(null);
+    }
   };
 
   const onSelect = (signal: Signal) => {
-    setSelected((prev) => (prev?.id === signal.id ? null : signal));
+    const nextId = selectedId === signal.id ? null : signal.id;
+    setSelectedId(nextId);
+    if (!nextId) return;
     setOverlayPreset(overlayForSetup(signal.setup_type));
-    if (signal.symbol && signal.symbol !== symbol) onSymbol(signal.symbol);
+    if (signal.symbol && signal.symbol !== symbol) {
+      dropUniverse(symbol);
+      setSymbol(signal.symbol);
+    }
+  };
+
+  const scrollToChart = () => {
+    if (scrollTimer.current) window.clearTimeout(scrollTimer.current);
+    scrollTimer.current = window.setTimeout(() => {
+      const node = chartRef.current;
+      if (!node) return;
+      const nav = document.querySelector(".kf-nav");
+      const navH = nav instanceof HTMLElement ? nav.offsetHeight + 8 : 72;
+      const top = node.getBoundingClientRect().top + window.scrollY - navH;
+      window.scrollTo({ top: Math.max(0, top), behavior: "auto" });
+    }, 80);
   };
 
   const onOpenChart = (signal: Signal) => {
     onSelect(signal);
-    chartRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    scrollToChart();
+  };
+
+  const onSetupFilter = (setup: SetupType | "all") => {
+    const next = overlayForFilter(setup);
+    if (next) setOverlayPreset(next);
   };
 
   const visibleSessions = defaultVisibleSessions(inferAssetClass(symbol), market.lastBar?.close_ts_ms ?? 0);
@@ -234,29 +261,37 @@ export function Dashboard() {
           financial advice.
         </div>
 
-        {selected && <SignalDetail signal={selected} onClose={() => setSelected(null)} />}
-
-        <SetupCards signals={allSignals} selectedId={selected?.id ?? null} onSelect={onOpenChart} />
+        {selected && <SignalDetail signal={selected} onClose={() => setSelectedId(null)} />}
 
         <QepTable
           signals={allSignals}
           lastPrice={market.lastPrice}
-          selectedId={selected?.id ?? null}
+          selectedId={selectedId}
           onSelectSignal={onOpenChart}
           soundOn={soundOn}
           onToggleSound={() => setSoundOn((v) => !v)}
           initialMode={(params.get("tab") as QepMode | null) ?? undefined}
+          onSetupFilter={onSetupFilter}
+          cards={
+            <SetupCards signals={allSignals} selectedId={selectedId} onSelect={onOpenChart} />
+          }
         />
 
-        <SignalTable
-          rows={allSignals}
-          selectedId={selected?.id ?? null}
-          onSelect={onOpenChart}
-          soundOn={soundOn}
-          onToggleSound={() => setSoundOn((v) => !v)}
-        />
+        <details className="hist-fold">
+          <summary>
+            Signal History — <code>GET /signals</code>
+          </summary>
+          <SignalTable
+            rows={allSignals}
+            selectedId={selectedId}
+            onSelect={onOpenChart}
+            soundOn={soundOn}
+            onToggleSound={() => setSoundOn((v) => !v)}
+            embedded
+          />
+        </details>
 
-        <div ref={chartRef}>
+        <div id="kronos-chart" ref={chartRef}>
           <SimulationView
             signals={allSignals}
             selected={selected}
@@ -303,6 +338,8 @@ export function Dashboard() {
                 trigger_event_ids: selected?.trigger_event_ids ?? [],
                 pattern_ws: isLivePatternWs() ? wsBase() : "mock",
                 pattern_ws_paths: ["/v1/ws/sweep", "/v1/ws/fvg", "/v1/ws/mss", "/v1/ws/ob"],
+                phase2_ws_paths: ["/v1/ws/avwap", "/v1/ws/volume-profile", "/v1/ws/kill-zone"],
+                overlay_preset: overlayPreset,
               },
               null,
               2,

@@ -8,7 +8,11 @@ The UI runs **offline by default** on in-browser mock streams that emit the
 exact JSON shapes in `/schemas`. Flip one env var to point at live
 `ws://localhost:8000` **after** the Quant Risk Pre-Filter checklist gate.
 
-## Setup
+## Setup (local paper preview)
+
+The **repo-root Vercel project is the static marketing site**. It does **not**
+serve this Next.js app. PR previews of the marketing project will 404 `/` as
+the Conviction Terminal. Use one of the paths below.
 
 ```bash
 cd frontend
@@ -24,6 +28,24 @@ From the repo root:
 ```bash
 npm run dev:dashboard
 ```
+
+### Dual deploy path (do not flip production marketing)
+
+| Path | What it serves | How |
+|---|---|---|
+| **Marketing (existing)** | Static HTML at repo root (`stock_picks.html`, …) | Root `vercel.json` · Root Directory = `.` · **leave this on the live snipertrader.ai project** |
+| **Dashboard (this app)** | Next.js Conviction Terminal | New Vercel project · Root Directory = `frontend` · uses `frontend/vercel.json` |
+
+```bash
+# Preview this app without touching the marketing project:
+cd frontend
+npx vercel            # preview URL for the Next dashboard
+# or: Vercel Dashboard → Project Settings → Root Directory = frontend
+```
+
+`frontend/vercel.json` is scoped to that project only. Do **not** change the
+marketing project's Root Directory to `frontend` — that would unpublish the
+static site.
 
 `NEXT_PUBLIC_USE_MOCKS=false npm run dev` talks to Data Eng (`:8000`) and
 Quant (`:8001`). Quant local:
@@ -309,6 +331,10 @@ live client is `openPatternSockets` (`src/lib/patternWs.ts`). Sweep is
 | Setup 3 | `po3_judas` | Asia session box (`high`/`low`/`session_start_ms`→`session_end_ms` from `session:{symbol}:asia` / `GET /v1/session/{symbol}/asia`) + Asia-extreme sweep + displacement at entry + kill-zone shade when `active`. Highlight the sweep id only |
 
 Setups 4–6 keep the Phase 1 overlays (σ fade, pullback, AVWAP+OB).
+
+Active setup tab / card filter is an **allow-list**. `sweep_reclaim` never
+draws FVG, OB, or DISP. `fvg_entry` never draws sweep / MSS / Asia / kill-zone.
+`ob_fvg` is not a `setup_type`.
 
 ### Signal history
 

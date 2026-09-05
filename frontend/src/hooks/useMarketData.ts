@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { HISTORY_LIMIT } from "@/lib/constants";
 import { isMockMode } from "@/lib/env";
 import { fetchAvwap, fetchKillZone, fetchOhlcv, fetchSession, fetchSessions, fetchVolumeProfile, fetchVwap } from "@/lib/http";
-import { avwapToVwapValues, isAnchoredVwap, isKillZone, isVolumeProfile } from "@/lib/overlays";
+import { avwapToVwapValues, normalizeAvwap, normalizeKillZone, normalizeVolumeProfile } from "@/lib/overlays";
 import { buildMockMarketState, startMockMarket } from "@/lib/mocks/market";
 import type {
   AnchorType,
@@ -166,9 +166,10 @@ export function useMarketData(symbol: string, timeframe: Timeframe): MarketState
     };
 
     (async () => {
-      const [hist, vwapSnap, sessionList, asiaSnap, avwapSnap, kz, vp] = await Promise.all([
+      const [hist, vwapSnap, weeklySnap, sessionList, asiaSnap, avwapSnap, kz, vp] = await Promise.all([
         fetchOhlcv(symbol, timeframe, HISTORY_LIMIT),
         fetchVwap(symbol, "session"),
+        fetchVwap(symbol, "weekly"),
         fetchSessions(symbol),
         fetchSession(symbol, "asia"),
         fetchAvwap(symbol),
@@ -202,18 +203,25 @@ export function useMarketData(symbol: string, timeframe: Timeframe): MarketState
         if (asiaSnap?.session_type) map.asia = asiaSnap;
         setState((prev) => ({ ...prev, sessions: { ...prev.sessions, ...map } }));
       }
-      if (vp && isVolumeProfile(vp)) {
-        setState((prev) => ({ ...prev, volumeProfile: vp }));
+      const profile = normalizeVolumeProfile(vp);
+      if (profile) {
+        setState((prev) => ({ ...prev, volumeProfile: profile }));
       }
-      if (isAnchoredVwap(avwapSnap)) {
-        const mapped = avwapToVwapValues(avwapSnap);
+      const avwap = normalizeAvwap(avwapSnap);
+      if (avwap) {
         setState((prev) => ({
           ...prev,
-          vwaps: { ...prev.vwaps, weekly: mapped },
+          vwaps: { ...prev.vwaps, weekly: avwapToVwapValues(avwap) },
+        }));
+      } else if (weeklySnap) {
+        setState((prev) => ({
+          ...prev,
+          vwaps: { ...prev.vwaps, weekly: weeklySnap },
         }));
       }
-      if (kz && isKillZone(kz)) {
-        setState((prev) => ({ ...prev, killZone: kz }));
+      const zone = normalizeKillZone(kz);
+      if (zone) {
+        setState((prev) => ({ ...prev, killZone: zone }));
       }
     })();
 
@@ -244,24 +252,26 @@ export function useMarketData(symbol: string, timeframe: Timeframe): MarketState
     );
     stops.push(
       openJsonWs("/v1/ws/avwap", { symbol }, (data) => {
-        if (!isAnchoredVwap(data)) return;
-        const mapped = avwapToVwapValues(data);
+        const avwap = normalizeAvwap(data);
+        if (!avwap) return;
         setState((prev) => ({
           ...prev,
-          vwaps: { ...prev.vwaps, weekly: mapped },
+          vwaps: { ...prev.vwaps, weekly: avwapToVwapValues(avwap) },
         }));
       }, () => undefined),
     );
     stops.push(
       openJsonWs("/v1/ws/kill-zone", { symbol }, (data) => {
-        if (!isKillZone(data)) return;
-        setState((prev) => ({ ...prev, killZone: data as KillZoneEvent }));
+        const zone = normalizeKillZone(data);
+        if (!zone) return;
+        setState((prev) => ({ ...prev, killZone: zone }));
       }, () => undefined),
     );
     stops.push(
       openJsonWs("/v1/ws/volume-profile", { symbol }, (data) => {
-        if (!isVolumeProfile(data)) return;
-        setState((prev) => ({ ...prev, volumeProfile: data }));
+        const profile = normalizeVolumeProfile(data);
+        if (!profile) return;
+        setState((prev) => ({ ...prev, volumeProfile: profile }));
       }, () => undefined),
     );
 

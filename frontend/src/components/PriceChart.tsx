@@ -25,6 +25,7 @@ import type {
 } from "@/lib/types";
 import type { Theme } from "@/hooks/useTheme";
 import { buildDrawModelFromOverlays, highlightIds, normalizeOverlays } from "@/lib/draw";
+import { viewAllows } from "@/lib/setupView";
 import { PatternZonesPrimitive } from "./PatternZonesPrimitive";
 import { VwapBandsPrimitive } from "./VwapBandsPrimitive";
 
@@ -217,11 +218,15 @@ export function PriceChart({
     const series = seriesRef.current;
     if (!series) return;
     const fade = overlayPreset === "sd_extension_fade";
-    bandsRef.current?.setLevels(vwap, fade ? "sigma23" : "all");
+    const showVwap = viewAllows(overlayPreset, "vwap");
+    bandsRef.current?.setLevels(showVwap ? vwap : null, fade ? "sigma23" : "all");
     const vwapTitle =
       overlayPreset === "sweep_reclaim" ? "ref_vwap" : fade ? "VWAP tgt" : "VWAP";
-    const refPrice =
-      overlayPreset === "sweep_reclaim" && selected?.ref_vwap != null ? selected.ref_vwap : vwap?.vwap;
+    const refPrice = !showVwap
+      ? null
+      : overlayPreset === "sweep_reclaim" && selected?.ref_vwap != null
+        ? selected.ref_vwap
+        : vwap?.vwap;
     if (refPrice == null) {
       if (vwapLineRef.current) {
         series.removePriceLine(vwapLineRef.current);
@@ -240,7 +245,7 @@ export function PriceChart({
       vwapLineRef.current.applyOptions({ price: refPrice, title: vwapTitle });
     }
 
-    const showAvwap = overlayPreset === "avwap_ob_confluence" || overlayPreset === "all";
+    const showAvwap = viewAllows(overlayPreset, "avwap");
     const av = showAvwap ? (anchorVwap ?? null) : null;
     if (!av) {
       if (avwapLineRef.current) {
@@ -331,7 +336,7 @@ export function PriceChart({
       if (line.end_ms != null) line.end_ms = snap(line.end_ms);
     }
     for (const arrow of model.arrows) arrow.ts_ms = snap(arrow.ts_ms);
-    if ((overlayPreset === "vwap_pullback_cont" || overlayPreset === "all") && vwap) {
+    if (viewAllows(overlayPreset, "pullback") && vwap) {
       const touch = patterns.obs[0] ?? patterns.fvgs[0];
       if (touch) {
         const start = bars[0]?.open_ts_ms ?? touch.created_ts_ms;
@@ -348,7 +353,7 @@ export function PriceChart({
         });
       }
     }
-    if ((overlayPreset === "avwap_ob_confluence" || overlayPreset === "all") && patterns.obs[0]) {
+    if (viewAllows(overlayPreset, "avwap") && patterns.obs[0]) {
       const av = anchorVwap ?? vwap;
       const ob = patterns.obs[0];
       if (av) {
@@ -391,7 +396,7 @@ export function PriceChart({
     }
     for (const ov of overlays) {
       if (ov.kind !== "marker" || ov.source !== "mss") continue;
-      if (overlayPreset !== "all" && overlayPreset !== "sweep_reclaim") continue;
+      if (!viewAllows(overlayPreset, "mss")) continue;
       const hot = highlight.has(ov.id);
       markers.push({
         time: snapTime(bars, ov.time),
@@ -401,7 +406,7 @@ export function PriceChart({
         text: hot ? "MSS ★" : "MSS",
       });
     }
-    if (overlayPreset === "sd_extension_fade" || overlayPreset === "all") {
+    if (viewAllows(overlayPreset, "rejection")) {
       if (vwap) {
         for (const bar of bars.slice(-40)) {
           const rejectHigh = bar.high >= vwap.band_p2 && bar.close < vwap.band_p2;
@@ -417,7 +422,7 @@ export function PriceChart({
         }
       }
     }
-    if (selected && (overlayPreset === "fvg_ob" || overlayPreset === "all")) {
+    if (selected && viewAllows(overlayPreset, "entry")) {
       markers.push({
         time: snapTime(bars, selected.ts_ms),
         position: "belowBar",
@@ -426,7 +431,7 @@ export function PriceChart({
         text: "ENTRY",
       });
     }
-    if (selected && overlayPreset === "po3_judas") {
+    if (selected && viewAllows(overlayPreset, "disp")) {
       markers.push({
         time: snapTime(bars, selected.ts_ms),
         position: selected.side === "short" ? "aboveBar" : "belowBar",
@@ -440,7 +445,7 @@ export function PriceChart({
     series.setMarkers([...byTime.values()].sort((a, b) => Number(a.time) - Number(b.time)));
 
     const hvnWanted = new Set<string>();
-    const showHvn = overlayPreset === "fvg_ob" || overlayPreset === "all";
+    const showHvn = viewAllows(overlayPreset, "hvn");
     if (showHvn && volumeProfile) {
       for (const [i, node] of volumeProfile.high_volume_nodes.entries()) {
         const id = `hvn_${i}`;

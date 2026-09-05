@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   ENGINE_META,
   ENGINE_ORDER,
@@ -32,6 +32,8 @@ export function QepTable({
   soundOn,
   onToggleSound,
   initialMode,
+  cards,
+  onSetupFilter,
 }: {
   signals: Signal[];
   lastPrice: number | null;
@@ -40,6 +42,8 @@ export function QepTable({
   soundOn: boolean;
   onToggleSound: () => void;
   initialMode?: QepMode;
+  cards?: ReactNode;
+  onSetupFilter?: (setup: SetupType | "all") => void;
 }) {
   const startMode: QepMode = initialMode === "setups" || initialMode === "activity" ? initialMode : "market";
   const [mode, setMode] = useState<QepMode>(startMode);
@@ -95,10 +99,11 @@ export function QepTable({
       </div>
       <div className="sec-sub">
         Five engines — Kronos (temporal), SNN (spike/regime), MiroFish (pattern), Fundamental
-        (filings), Quantum (weighted resolver) — vote into a single 0–100 conviction. Setup rows
-        are Quant <code>setup_signals</code>; click joins FVG / OB / sweep / MSS via{" "}
-        <code>trigger_event_ids</code>.
+        (filings), Quantum (weighted resolver) — vote into a single 0–100 conviction, then rank
+        into a provenance-tagged table. Setup cards pin by <code>signal.id</code> (one ACTIVE per
+        locked setup 1–6). Click joins overlays via <code>trigger_event_ids</code>.
       </div>
+      {cards}
 
       <div className="qep-bar">
         <div className="qep-toggle">
@@ -166,7 +171,14 @@ export function QepTable({
               </option>
             ))}
           </select>
-          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as SetupType | "all")}>
+          <select
+            value={typeFilter}
+            onChange={(e) => {
+              const next = e.target.value as SetupType | "all";
+              setTypeFilter(next);
+              onSetupFilter?.(next);
+            }}
+          >
             <option value="all">all setup_type</option>
             {SETUP_TYPES.map((t) => (
               <option key={t} value={t}>
