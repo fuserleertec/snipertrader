@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
+from sniper_data.models import RISK_VALIDATE_FIELDS
 from sniper_data.setup_detection.e2e import (
     LOCKED_TUNABLES,
     build_phase2_e2e_report,
@@ -14,6 +17,7 @@ from sniper_data.setup_detection.e2e import (
     run_setup1_e2e,
     run_setup2_e2e,
     run_setup3_e2e,
+    write_quant_replay_pack,
 )
 from sniper_data.setup_detection.params import SetupParams
 
@@ -92,7 +96,54 @@ async def test_e2e_cli_inmemory_replay_all_three():
 
 
 @pytest.mark.asyncio
+async def test_e2e_setup1_reject_zero_publish():
+    result = await run_setup1_e2e(approved=False)
+    _require_pass(result)
+    assert result["publish_count"] == 0
+    assert result["published_signal"] is None
+    assert result["trace"] == ["validate"]
+    assert "id" not in result["risk_request"]
+
+
+@pytest.mark.asyncio
+async def test_e2e_setup2_and_3_reject_zero_publish():
+    s2 = await run_setup2_e2e(with_ob=False, approved=False)
+    s3 = await run_setup3_e2e(approved=False)
+    _require_pass(s2)
+    _require_pass(s3)
+    assert s2["publish_count"] == s3["publish_count"] == 0
+    assert s2["published_signal"] is None
+    assert s3["published_signal"] is None
+
+
+@pytest.mark.asyncio
 async def test_e2e_phase2_report_overall_pass():
     report = await build_phase2_e2e_report()
     assert report["summary"]["overall"] == "PASS", report["summary"]
     assert report["summary"]["failed"] == 0
+    rows = report["quant_replay"]["per_setup"]
+    assert {r["setup_type"] for r in rows} == {"sweep_reclaim", "fvg_entry", "po3_judas"}
+    for row in rows:
+        req = row["validate_request"]
+        assert "id" not in req
+        assert set(req) <= set(RISK_VALIDATE_FIELDS)
+        sig = row["mocked_approve"]["published_setup_signal"]
+        assert sig["id"]
+        assert sig["setup_type"] == row["setup_type"]
+        assert row["mocked_approve"]["publish_count"] == 1
+        assert row["mocked_reject"]["publish_count"] == 0
+        assert row["mocked_reject"]["published_setup_signal"] is None
+
+
+@pytest.mark.asyncio
+async def test_quant_replay_pack_files(tmp_path):
+    report = await build_phase2_e2e_report()
+    dest = tmp_path / "quant_replay"
+    written = write_quant_replay_pack(report, dest)
+    assert (dest / "curl_replay.sh").exists()
+    for kind in ("sweep_reclaim", "fvg_entry", "po3_judas"):
+        req = json.loads((dest / f"{kind}.validate.json").read_text())
+        sig = json.loads((dest / f"{kind}.setup_signal.json").read_text())
+        assert "id" not in req
+        assert sig["id"]
+        assert written[f"{kind}.validate.json"]

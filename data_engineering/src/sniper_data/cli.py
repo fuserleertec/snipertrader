@@ -49,7 +49,7 @@ def main(argv: list[str] | None = None) -> int:
         from sniper_data.pipeline import run_setup_loop, run_setup_replay
 
         if args.e2e_report or args.e2e_out:
-            from sniper_data.setup_detection.e2e import build_phase2_e2e_report
+            from sniper_data.setup_detection.e2e import build_phase2_e2e_report, write_quant_replay_pack
 
             report = asyncio.run(build_phase2_e2e_report())
             text = json.dumps(report, indent=2, default=str)
@@ -58,6 +58,7 @@ def main(argv: list[str] | None = None) -> int:
                 dest = Path(args.e2e_out)
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 dest.write_text(text)
+                write_quant_replay_pack(report, dest.parent / "quant_replay")
             return 0 if report["summary"]["overall"] == "PASS" else 1
         if args.replay or args.inmemory:
             result = asyncio.run(run_setup_replay())

@@ -354,6 +354,14 @@ def test_cli_setups_e2e_report(tmp_path):
     report = json.loads(dest.read_text())
     assert report["summary"]["overall"] == "PASS"
     assert report["phase"] == 2
+    pack = tmp_path / "quant_replay"
+    assert (pack / "sweep_reclaim.validate.json").exists()
+    assert (pack / "fvg_entry.validate.json").exists()
+    assert (pack / "po3_judas.validate.json").exists()
+    req = json.loads((pack / "sweep_reclaim.validate.json").read_text())
+    sig = json.loads((pack / "sweep_reclaim.setup_signal.json").read_text())
+    assert "id" not in req
+    assert sig["id"]
 
 
 @pytest.mark.asyncio

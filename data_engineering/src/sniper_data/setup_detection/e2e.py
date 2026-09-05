@@ -79,6 +79,12 @@ def _http_risk(*, approved: bool, trace: list[str], captured: list[dict]) -> Htt
     return HttpRiskClient(DEFAULT_RISK_URL, transport=httpx.MockTransport(handler))
 
 
+def _mocked_risk_response(approved: bool) -> dict[str, Any]:
+    if approved:
+        return {"approved": True, "reason": "ok", "adjusted_position_size": 1.0}
+    return {"approved": False, "reason": "daily_loss", "adjusted_position_size": None}
+
+
 def _assert(name: str, ok: bool, *, actual: Any = None, expected: Any = None) -> dict[str, Any]:
     row = {"name": name, "pass": bool(ok)}
     if actual is not None or expected is not None:
@@ -164,7 +170,9 @@ async def run_setup1_e2e(*, approved: bool = True) -> dict[str, Any]:
         "assertions": checks,
         "raw": raw,
         "risk_request": body,
+        "mocked_risk_response": _mocked_risk_response(approved),
         "published_signal": signals[0] if signals else None,
+        "publish_count": len(signals),
         "trace": trace,
     }
 
@@ -204,20 +212,27 @@ async def run_setup2_e2e(*, with_ob: bool = False, approved: bool = True) -> dic
         _assert("conviction_ge_60", (raw.get("conviction") or 0) >= 60, actual=raw.get("conviction")),
         *_order_validate_before_publish(trace, expect_publish=approved),
         *(_locked_risk_ok(body) if body else [_assert("risk_body", False)]),
-        _assert("published_one", len(signals) == 1, actual=len(signals)),
     ]
-    if signals:
-        validate_topic("setup_signals", signals[0])
-        checks.append(_assert("signal_schema", True))
+    if approved:
+        checks.append(_assert("published_one", len(signals) == 1, actual=len(signals)))
+        if signals:
+            validate_topic("setup_signals", signals[0])
+            checks.append(_assert("signal_schema", True))
+            checks.append(_assert("signal_has_id", bool(signals[0].get("id"))))
+    else:
+        checks.append(_assert("no_publish_on_reject", signals == [], actual=signals))
+    tag = "setup2_e2e_ob" if with_ob else "setup2_e2e"
     return {
-        "id": "setup2_e2e_ob" if with_ob else "setup2_e2e",
+        "id": tag if approved else f"{tag}_rejected",
         "name": "Setup 2 — FVG + VWAP/HVN confluence" + (" (OB overlap)" if with_ob else ""),
         "status": "PASS" if all(c["pass"] for c in checks) else "FAIL",
         "setup_type": actual_type,
         "assertions": checks,
         "raw": raw,
         "risk_request": body,
+        "mocked_risk_response": _mocked_risk_response(approved),
         "published_signal": signals[0] if signals else None,
+        "publish_count": len(signals),
         "trace": trace,
     }
 
@@ -260,20 +275,26 @@ async def run_setup3_e2e(*, approved: bool = True) -> dict[str, Any]:
         _assert("conviction_ge_60", (raw.get("conviction") or 0) >= 60, actual=raw.get("conviction")),
         *_order_validate_before_publish(trace, expect_publish=approved),
         *(_locked_risk_ok(body) if body else [_assert("risk_body", False)]),
-        _assert("published_one", len(signals) == 1, actual=len(signals)),
     ]
-    if signals:
-        validate_topic("setup_signals", signals[0])
-        checks.append(_assert("signal_schema", True))
+    if approved:
+        checks.append(_assert("published_one", len(signals) == 1, actual=len(signals)))
+        if signals:
+            validate_topic("setup_signals", signals[0])
+            checks.append(_assert("signal_schema", True))
+            checks.append(_assert("signal_has_id", bool(signals[0].get("id"))))
+    else:
+        checks.append(_assert("no_publish_on_reject", signals == [], actual=signals))
     return {
-        "id": "setup3_e2e",
+        "id": "setup3_e2e" if approved else "setup3_e2e_rejected",
         "name": "Setup 3 — Asia range sweep during NY AM kill zone (Judas / displacement)",
         "status": "PASS" if all(c["pass"] for c in checks) else "FAIL",
         "setup_type": "po3_judas",
         "assertions": checks,
         "raw": raw,
         "risk_request": body,
+        "mocked_risk_response": _mocked_risk_response(approved),
         "published_signal": signals[0] if signals else None,
+        "publish_count": len(signals),
         "trace": trace,
     }
 
@@ -324,14 +345,54 @@ async def run_gate_conviction_skips_validate() -> dict[str, Any]:
 
 
 async def run_gate_reject_never_publishes() -> dict[str, Any]:
-    scenario = await run_setup1_e2e(approved=False)
+    s1 = await run_setup1_e2e(approved=False)
+    s2 = await run_setup2_e2e(with_ob=False, approved=False)
+    s3 = await run_setup3_e2e(approved=False)
+    checks = [
+        _assert("setup1_reject_no_publish", s1["publish_count"] == 0 and s1["status"] == "PASS", actual=s1["publish_count"]),
+        _assert("setup2_reject_no_publish", s2["publish_count"] == 0 and s2["status"] == "PASS", actual=s2["publish_count"]),
+        _assert("setup3_reject_no_publish", s3["publish_count"] == 0 and s3["status"] == "PASS", actual=s3["publish_count"]),
+        _assert("all_validated", all("validate" in s["trace"] for s in (s1, s2, s3))),
+    ]
     return {
         "id": "gate_reject_never_publishes",
-        "name": "Rejected validate never publishes setup_signals",
-        "status": scenario["status"],
-        "assertions": [a for a in scenario["assertions"] if a["name"] in {"validate_before_publish", "rejected_never_publishes", "no_publish_on_reject", "risk_omits_id", "risk_locked_fields_only", "risk_validate_called"} or a["name"].startswith("risk") or a["name"].startswith("rejected") or a["name"].startswith("no_publish")],
-        "risk_request": scenario["risk_request"],
-        "trace": scenario["trace"],
+        "name": "Rejected validate never publishes setup_signals (setups 1–3)",
+        "status": "PASS" if all(c["pass"] for c in checks) else "FAIL",
+        "assertions": checks,
+        "per_setup": {
+            "sweep_reclaim": {"risk_request": s1["risk_request"], "publish_count": s1["publish_count"], "trace": s1["trace"]},
+            "fvg_entry": {"risk_request": s2["risk_request"], "publish_count": s2["publish_count"], "trace": s2["trace"]},
+            "po3_judas": {"risk_request": s3["risk_request"], "publish_count": s3["publish_count"], "trace": s3["trace"]},
+        },
+    }
+
+
+def _handshake_row(*, setup_type: str, approve: dict[str, Any], reject: dict[str, Any]) -> dict[str, Any]:
+    req = dict(approve.get("risk_request") or {})
+    signal = approve.get("published_signal")
+    return {
+        "setup_type": setup_type,
+        "validate_request": req,
+        "validate_omits_id": "id" not in req,
+        "validate_locked_fields_only": set(req) <= set(RISK_VALIDATE_FIELDS),
+        "mocked_approve": {
+            "risk_response": _mocked_risk_response(True),
+            "published_setup_signal": signal,
+            "signal_has_id": bool(signal and signal.get("id")),
+            "publish_count": approve.get("publish_count", 1 if signal else 0),
+            "trace": approve.get("trace"),
+        },
+        "mocked_reject": {
+            "risk_response": _mocked_risk_response(False),
+            "published_setup_signal": None,
+            "publish_count": reject.get("publish_count", 0),
+            "trace": reject.get("trace"),
+        },
+        "curl": (
+            f"curl -sS -X POST {DEFAULT_RISK_URL} "
+            f"-H 'content-type: application/json' "
+            f"-d @quant_replay/{setup_type}.validate.json"
+        ),
     }
 
 
@@ -395,22 +456,47 @@ async def run_cli_replay_check() -> dict[str, Any]:
 
 
 async def build_phase2_e2e_report() -> dict[str, Any]:
+    s1_ok = await run_setup1_e2e(approved=True)
+    s1_no = await run_setup1_e2e(approved=False)
+    s2_ok = await run_setup2_e2e(with_ob=False, approved=True)
+    s2_no = await run_setup2_e2e(with_ob=False, approved=False)
+    s2_ob = await run_setup2_e2e(with_ob=True, approved=True)
+    s3_ok = await run_setup3_e2e(approved=True)
+    s3_no = await run_setup3_e2e(approved=False)
     scenarios = [
-        await run_setup1_e2e(approved=True),
-        await run_setup2_e2e(with_ob=False, approved=True),
-        await run_setup2_e2e(with_ob=True, approved=True),
-        await run_setup3_e2e(approved=True),
+        s1_ok,
+        s1_no,
+        s2_ok,
+        s2_no,
+        s2_ob,
+        s3_ok,
+        s3_no,
         await run_gate_conviction_skips_validate(),
         await run_gate_reject_never_publishes(),
         await run_gate_dedupe_300s(),
         await run_cli_replay_check(),
     ]
     failed = [s["id"] for s in scenarios if s["status"] != "PASS"]
+    handshake = [
+        _handshake_row(setup_type="sweep_reclaim", approve=s1_ok, reject=s1_no),
+        _handshake_row(setup_type="fvg_entry", approve=s2_ok, reject=s2_no),
+        _handshake_row(setup_type="po3_judas", approve=s3_ok, reject=s3_no),
+    ]
     return {
         "phase": 2,
         "branch": "cursor/ml-research-setups-c8a9",
         "locked_tunables": LOCKED_TUNABLES,
         "risk_validate_url": DEFAULT_RISK_URL,
+        "quant_replay": {
+            "start": "sniper-quant api --inmemory --port 8001",
+            "endpoint": DEFAULT_RISK_URL,
+            "note": (
+                "POST each validate_request (no id) at the Quant in-memory API. "
+                "ML mocked approve → publishes setup_signals with id; "
+                "mocked reject (daily_loss) → zero publish. Phase 3 not started."
+            ),
+            "per_setup": handshake,
+        },
         "note": "Risk validate is mocked via httpx POST to the Quant URL. Phase 3 not started.",
         "scenarios": scenarios,
         "summary": {
@@ -420,3 +506,65 @@ async def build_phase2_e2e_report() -> dict[str, Any]:
             "overall": "PASS" if not failed else "FAIL",
         },
     }
+
+
+def write_quant_replay_pack(report: dict[str, Any], directory) -> dict[str, str]:
+    """Write per-setup JSON + curl script Quant can replay on :8001."""
+    from pathlib import Path
+
+    dest = Path(directory)
+    dest.mkdir(parents=True, exist_ok=True)
+    written: dict[str, str] = {}
+    rows = report.get("quant_replay", {}).get("per_setup", [])
+    lines = [
+        "#!/usr/bin/env bash",
+        "# Replay locked validate payloads against Quant PR #2 in-memory API.",
+        "#   sniper-quant api --inmemory --port 8001",
+        "set -euo pipefail",
+        f'DIR="$(cd "$(dirname "$0")" && pwd)"',
+        'URL="${RISK_VALIDATE_URL:-http://localhost:8001/risk/validate}"',
+        'echo "POST $URL"',
+    ]
+    for row in rows:
+        kind = row["setup_type"]
+        req_name = f"{kind}.validate.json"
+        ok_name = f"{kind}.approve_response.json"
+        sig_name = f"{kind}.setup_signal.json"
+        no_name = f"{kind}.reject_response.json"
+        mapping = {
+            req_name: row["validate_request"],
+            ok_name: row["mocked_approve"]["risk_response"],
+            sig_name: row["mocked_approve"]["published_setup_signal"],
+            no_name: row["mocked_reject"]["risk_response"],
+        }
+        for name, payload in mapping.items():
+            path = dest / name
+            path.write_text(json.dumps(payload, indent=2, default=str) + "\n")
+            written[name] = str(path)
+        lines.extend(
+            [
+                f'echo "=== {kind} ==="',
+                f'curl -sS -X POST "$URL" -H "content-type: application/json" --data-binary "@$DIR/{req_name}"',
+                "echo",
+            ]
+        )
+    index = dest / "index.json"
+    index.write_text(
+        json.dumps(
+            {
+                "start": "sniper-quant api --inmemory --port 8001",
+                "endpoint": DEFAULT_RISK_URL,
+                "files": list(written),
+                "per_setup": rows,
+            },
+            indent=2,
+            default=str,
+        )
+        + "\n"
+    )
+    written["index.json"] = str(index)
+    script = dest / "curl_replay.sh"
+    script.write_text("\n".join(lines) + "\n")
+    script.chmod(0o755)
+    written["curl_replay.sh"] = str(script)
+    return written
