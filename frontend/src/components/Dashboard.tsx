@@ -7,7 +7,9 @@ import { usePerformance } from "@/hooks/usePerformance";
 import { useSignals } from "@/hooks/useSignals";
 import { useTheme } from "@/hooks/useTheme";
 import { inferAssetClass } from "@/lib/constants";
-import { overlayForSetup } from "@/lib/setups";
+import { overlayForSetup, parseOverlayParam } from "@/lib/setups";
+import { useSearchParams } from "next/navigation";
+import type { QepMode } from "@/lib/mocks/terminal";
 import { dropUniverse } from "@/lib/mocks/universe";
 import { convictionOf, tierOf } from "@/lib/mocks/terminal";
 import { defaultVisibleSessions } from "@/lib/sessions";
@@ -22,9 +24,12 @@ import { SiteFooter, StatusStrip, TerminalNav } from "./terminal/SiteChrome";
 
 export function Dashboard() {
   const { theme, toggle } = useTheme();
+  const params = useSearchParams();
   const [symbol, setSymbol] = useState("BTCUSDT");
   const [timeframe, setTimeframe] = useState<Timeframe>("5m");
-  const [overlayPreset, setOverlayPreset] = useState<OverlayPreset>("all");
+  const [overlayPreset, setOverlayPreset] = useState<OverlayPreset>(
+    () => parseOverlayParam(params.get("overlay")) ?? "all",
+  );
   const [selected, setSelected] = useState<Signal | null>(null);
   const [soundOn, setSoundOn] = useState(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
@@ -213,6 +218,7 @@ export function Dashboard() {
           onSelectSignal={onOpenChart}
           soundOn={soundOn}
           onToggleSound={() => setSoundOn((v) => !v)}
+          initialMode={(params.get("tab") as QepMode | null) ?? undefined}
         />
 
         <div ref={chartRef}>

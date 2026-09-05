@@ -275,6 +275,7 @@ export function SimulationView({
                 key={p.id}
                 type="button"
                 className={`ftab${overlayPreset === p.id ? " active" : ""}`}
+                data-overlay={p.id}
                 onClick={() => onOverlayPreset(p.id)}
               >
                 {p.label}

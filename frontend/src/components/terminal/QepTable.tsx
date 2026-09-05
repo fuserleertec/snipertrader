@@ -31,6 +31,7 @@ export function QepTable({
   onSelectSignal,
   soundOn,
   onToggleSound,
+  initialMode,
 }: {
   signals: Signal[];
   lastPrice: number | null;
@@ -38,9 +39,11 @@ export function QepTable({
   onSelectSignal: (signal: Signal) => void;
   soundOn: boolean;
   onToggleSound: () => void;
+  initialMode?: QepMode;
 }) {
-  const [mode, setMode] = useState<QepMode>("market");
-  const [cat, setCat] = useState("Futures");
+  const startMode: QepMode = initialMode === "setups" || initialMode === "activity" ? initialMode : "market";
+  const [mode, setMode] = useState<QepMode>(startMode);
+  const [cat, setCat] = useState(startMode === "setups" ? "Setups" : QEP_CATS[startMode][0]);
   const [sub, setSub] = useState<"All" | "Buy" | "Sell" | "Hold">("All");
   const [typeFilter, setTypeFilter] = useState<SetupType | "all">("all");
   const [statusFilter, setStatusFilter] = useState<SignalStatus | "all">("all");
@@ -108,6 +111,7 @@ export function QepTable({
               key={id}
               type="button"
               className={mode === id ? "active" : ""}
+              data-qep={id}
               onClick={() => {
                 setMode(id);
                 setCat(id === "setups" ? "Setups" : QEP_CATS[id][0]);

@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { PageShell } from "@/components/terminal/PageShell";
+import { PerformanceTracker } from "@/components/terminal/PerformanceTracker";
 import { usePerformance } from "@/hooks/usePerformance";
 import { PERFORMANCE_SETUP_KEYS } from "@/lib/constants";
 
@@ -133,6 +134,9 @@ export default function AnalyticsPage() {
             })}
           </div>
         </div>
+      </div>
+      <div className="panel" style={{ marginTop: 14 }}>
+        <PerformanceTracker summary={summary} />
       </div>
       <div className="panel" style={{ marginTop: 14 }}>
         <b>Cumulative P&amp;L</b>

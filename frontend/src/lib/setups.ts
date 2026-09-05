@@ -1,3 +1,4 @@
+import { OVERLAY_PRESETS } from "./constants";
 import type { OverlayPreset, PerformanceSetupKey, SetupType } from "./types";
 
 /** Locked GET /performance/summary keys. Index by_setup by these strings only. */
@@ -26,4 +27,10 @@ export function productKeyOf(setup: SetupType): PerformanceSetupKey {
 export function overlayForSetup(setup: SetupType): OverlayPreset {
   if (setup === "fvg_entry") return "fvg_ob";
   return setup;
+}
+
+export function parseOverlayParam(raw: string | null | undefined): OverlayPreset | null {
+  if (!raw) return null;
+  const hit = OVERLAY_PRESETS.find((p) => p.id === raw || p.label === raw);
+  return hit?.id ?? null;
 }
