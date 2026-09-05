@@ -1,4 +1,4 @@
-# SniperTrader data-engineering — Phase 1 (Rev. 1.1)
+# SniperTrader data-engineering — Phase 1 (Rev. 1.1) + Phase 2
 
 Streaming market-data pipeline and **correct VWAP** (volume-weighted variance)
 for SniperTrader.ai. This package lives beside the static site; it does not
@@ -24,6 +24,14 @@ Pattern topics (contracts only in Phase 1; Redis+Kafka, no Timescale hypertables
   mss_events        → Redis mss:{symbol}:{id}     TTL ≤ 48h
   order_block_zones → Redis ob:{symbol}:{id}      TTL ≤ 48h
   setup_signals
+
+Phase 2 (same raw_ticks stream; asset_class differentiates crypto / equity / futures):
+  raw_ticks ─┬─► Anchored VWAP ─► Redis avwap:{symbol}:{anchor_id}
+             ├─► Volume profile ─► Redis volume_profile:{symbol}:{session_type}
+             └─► (ticks only; kill zones are time-driven)
+
+  anchor_events (ML / HTTP) ─► AVWAP engine
+  kill_zone_events (scheduler) ─► Redis kill_zone:{symbol}
 ```
 
 Session windows are **asset-class specific**. They are never hardcoded to
@@ -89,8 +97,9 @@ docker compose up --build
 
 | Service | Port | Role |
 |---|---|---|
-| `pipeline` | — | Mock producer + consumers (end-to-end) |
-| `api` | **8000** | Quant HTTP + WebSocket |
+| `pipeline` | **9101** | Mock producer + consumers (end-to-end). Prometheus `:9101/metrics` |
+| `api` | **8000** | Quant HTTP + WebSocket. Prometheus `GET /metrics` |
+| `killzone` | **9102** | Kill-zone scheduler. Prometheus `:9102/metrics` |
 | `redpanda` | 19092 | Kafka-compatible broker |
 | `redis` | 6379 | Real-time state |
 | `timescaledb` | 5432 | Historical OHLCV |
@@ -106,6 +115,15 @@ curl -s "http://localhost:8000/v1/ohlcv/BTCUSDT?timeframe=1m&limit=200"
 # ws://localhost:8000/v1/ws/vwap?symbol=BTCUSDT
 # ws://localhost:8000/v1/ws/session?symbol=BTCUSDT
 # ws://localhost:8000/v1/ws/ohlcv?symbol=BTCUSDT&timeframe=1m
+curl -s http://localhost:8000/v1/kill-zone/BTCUSDT
+curl -s http://localhost:8000/v1/volume-profile/BTCUSDT
+curl -s -X POST http://localhost:8000/v1/anchors -H 'content-type: application/json' \
+  -d '{"symbol":"BTCUSDT","anchor_time":1725458400000,"anchor_price":64000,"source":"manual"}'
+curl -s http://localhost:8000/v1/avwap/BTCUSDT
+curl -s http://localhost:8000/metrics
+# ws://localhost:8000/v1/ws/avwap?symbol=BTCUSDT
+# ws://localhost:8000/v1/ws/volume-profile?symbol=BTCUSDT
+# ws://localhost:8000/v1/ws/kill-zone?symbol=BTCUSDT
 ```
 
 Host-side pipeline against compose infra:
@@ -132,6 +150,11 @@ All secrets are environment variables. See [`.env.example`](.env.example).
 | `FVG_TTL_SECONDS` | `172800` | Clamped to ≤ 48h |
 | `TICK_INTERVAL_MS` | `80` | Mock print interval |
 | `USE_INMEMORY` | `false` | Skip brokers |
+| `KILLZONE_INPROCESS` | `true` | Run the timer inside `pipeline` (compose sets `0`) |
+| `KILLZONE_POLL_S` | `1` | Scheduler poll interval |
+| `METRICS_PORT` | `0` | Pipeline/killzone Prometheus port (`0` = off) |
+| `MAX_ANCHORS_PER_SYMBOL` | `32` | Cap on live AVWAP anchors |
+| `SWING_DETECT` | `true` | In-process fractal swing → anchors |
 | `BINANCE_*` / `ALPACA_*` | empty | Live stubs only |
 
 ## Exchange adapters
@@ -143,9 +166,14 @@ Pluggable `ExchangeConnector` implementations in `src/sniper_data/connectors/`:
 | `MockConnector` | Working demo feed (book depth, bid/ask, UTC ms). No keys. |
 | `BinanceConnector` | Binance-shaped REST/WS stub. `parse_trade` is real. Live WS requires `BINANCE_ENABLE=1`. |
 | `USEquitiesConnector` | Alpaca-shaped REST/WS placeholder. Raises until keys are wired. |
+| `FuturesConnector` | CME / Globex placeholder. Demo futures ticks come from `MockConnector`. |
 
 Symbols are normalized to **uppercase, no hyphens**, with an `asset_class`
 field (`crypto` · `equity` · `futures`). All event times are **UTC milliseconds**.
+
+**Futures convention:** root / continuous `ES` (demo default) or dated CME
+`ESZ2024` = root + month code (FGHJKMNQUVXZ) + 4-digit year. `ESZ24` is
+accepted as-is (not rewritten). Always `^[A-Z0-9]+$`.
 
 ## Redis key map (for ML Researchers)
 
@@ -159,6 +187,19 @@ field (`crypto` · `equity` · `futures`). All event times are **UTC millisecond
 | `ob:{symbol}:{id}` | **required, ≤ 48h** | Order block (`schemas/order_block.schema.json`) |
 
 `session_type` ∈ `asia` · `london` · `ny_am` · `ny_pm` · `rth` · `eth` · `globex`.
+
+Phase 2 keys (no TTL; live books):
+
+| Key | Payload |
+|---|---|
+| `avwap:{symbol}:{anchor_id}` | Anchored VWAP + ±1/2/3σ bands (exact Phase 2 JSON) |
+| `avwap:latest:{symbol}` | Convenience pointer; same JSON as the last AVWAP write |
+| `avwap:meta:{symbol}:{anchor_id}` | Anchor metadata (`source`, times) — not a wire schema |
+| `avwap:index:{symbol}` | JSON list of `anchor_id`s |
+| `avwap:acc:{symbol}:{anchor_id}` | Incremental W/S/Q stats for worker restart |
+| `volume_profile:{symbol}:{session_type}` | HVN / LVN / POC |
+| `kill_zone:{symbol}` | Current (or last) kill-zone event — exact Kafka JSON |
+| `kill_zone:active:{asset_class}` | Class-level view: `kill_zone`, `start_time`, `end_time`, `active`, `asset_class` |
 
 Zone writes go through `store_fvg` / `store_sweep` / `store_mss` / `store_ob`,
 which always `SET … EX`. A missing TTL raises. TTL > 48h is clamped. The
@@ -214,7 +255,7 @@ Created on pipeline startup (Redpanda also auto-creates):
 
 `raw_ticks` · `ohlcv_bars` · `session_levels` · `vwap_values` ·
 `sweep_events` · `fvg_zones` · `mss_events` · `order_block_zones` ·
-`setup_signals`
+`setup_signals` · `kill_zone_events` · `anchor_events`
 
 ## Layout
 
@@ -235,4 +276,155 @@ sniper-data pipeline [--inmemory] [--duration N]
 sniper-data demo     [--inmemory] [--duration N]   # alias of pipeline
 sniper-data api      [--host 0.0.0.0 --port 8000]
 sniper-data evict    [--inmemory]
+sniper-data killzones [--inmemory] [--duration N]
 ```
+
+## Phase 2 — Multi-asset, Anchored VWAP, volume profile, kill zones
+
+Phase 1 contracts are unchanged. The mock/demo feed already streams **three**
+asset classes on the existing `raw_ticks` topic (`DEMO_SYMBOLS=BTCUSDT,AAPL,ES`).
+Session windows stay asset-class specific (see table above).
+
+### ML contract — register / request anchors
+
+Three equivalent ways to create an anchor. The engine then computes VWAP from
+`anchor_time` → now on subsequent ticks (`ts_ms >= anchor_time`).
+
+**HTTP (preferred for tools / notebooks)**
+
+```http
+POST /v1/anchors
+Content-Type: application/json
+
+{
+  "symbol": "BTCUSDT",
+  "anchor_time": 1725458400000,
+  "anchor_price": 64000.00,
+  "source": "swing_high",
+  "asset_class": "crypto",
+  "anchor_id": "optional-uuid"
+}
+```
+
+`source` ∈ `manual` · `swing_high` · `swing_low` · `earnings` · `news`.
+`asset_class` and `anchor_id` are optional (`asset_class` is inferred;
+`anchor_id` is a UUID if omitted). Response is `201` with the assigned
+`anchor_id` plus Redis keys.
+
+`GET /v1/anchors?symbol=BTCUSDT` lists `avwap:meta:{symbol}:{id}` rows.
+
+**Kafka (same JSON as the POST body)**
+
+Publish to `anchor_events` (key = symbol). The pipeline consumer registers
+the anchor and begins accumulating. Idempotent on `anchor_id`.
+
+**In-process hooks**
+
+* Fractal swing detector (`SWING_DETECT=1`) emits `swing_high` / `swing_low`.
+* `sniper_data.swings.earnings_anchor` / `news_anchor` are placeholders —
+  call them when an earnings or news timestamp is known; they produce the
+  same `AnchorRegistration` object.
+
+### Frontend contract — AVWAP + volume profile
+
+| Method | Path | Redis / channel |
+|---|---|---|
+| `GET` | `/v1/avwap/{symbol}` | `avwap:latest:{symbol}` |
+| `GET` | `/v1/avwap/{symbol}/{anchor_id}` | `avwap:{symbol}:{anchor_id}` |
+| `WS` | `/v1/ws/avwap?symbol=BTCUSDT` | seed + channel `avwap:{symbol}` |
+| `WS` | `/v1/ws/avwap?symbol=BTCUSDT&anchor_id=` | filtered to one anchor |
+| `GET` | `/v1/volume-profile/{symbol}` | all `volume_profile:{symbol}:*` |
+| `GET` | `/v1/volume-profile/{symbol}/{session_type}` | one session book |
+| `WS` | `/v1/ws/volume-profile?symbol=BTCUSDT` | channel `volume_profile:{symbol}` |
+| `GET` | `/v1/kill-zone/{symbol}` | `kill_zone:{symbol}` |
+| `GET` | `/v1/kill-zone/active/{asset_class}` | `kill_zone:active:{asset_class}` |
+| `WS` | `/v1/ws/kill-zone?symbol=BTCUSDT` | channel `kill_zone:{symbol}` |
+| `GET` | `/metrics` | Prometheus (API process) |
+
+AVWAP wire JSON (no `schema_version`):
+
+```json
+{
+  "anchor_id": "uuid",
+  "symbol": "BTCUSDT",
+  "anchor_time": 1725458400000,
+  "anchor_price": 64000.00,
+  "vwap_value": 64500.00,
+  "bands": {
+    "plus_1_sigma": 64700.00,
+    "plus_2_sigma": 64950.00,
+    "plus_3_sigma": 65200.00,
+    "minus_1_sigma": 64300.00,
+    "minus_2_sigma": 64050.00,
+    "minus_3_sigma": 63800.00
+  },
+  "asset_class": "crypto"
+}
+```
+
+σ is the Phase 1 volume-weighted variance:
+`sqrt( Σ v_i (p_i − VWAP)² / Σ v_i )`.
+
+Volume-profile wire JSON:
+
+```json
+{
+  "symbol": "BTCUSDT",
+  "session_type": "ny_am",
+  "high_volume_nodes": [{"price": 65000.00, "volume": 1500.5}],
+  "low_volume_nodes": [{"price": 64900.00, "volume": 200.0}],
+  "poc": 65000.00,
+  "timestamp": 1725459000000
+}
+```
+
+POC = max-volume price bin. HVN = local maxima ≥ mean bin volume (POC always
+included). LVN = local minima ≤ mean (never the POC). Tick sizes: BTC `$5`,
+ETH `$1`, AAPL `$0.05`, ES `$0.25` (overridable).
+
+Kill-zone events (Kafka `kill_zone_events` + Redis `kill_zone:{symbol}`):
+
+```json
+{
+  "symbol": "BTCUSDT",
+  "kill_zone": "ny_am",
+  "start_time": 1725458400000,
+  "end_time": 1725462000000,
+  "active": true,
+  "asset_class": "crypto"
+}
+```
+
+Crypto windows are the Phase 1 UTC sessions (Asia 00:00–07:00, London
+07:00–13:30, NY AM 13:30–15:00, NY PM 18:00–20:00). Equities use RTH/ETH;
+futures use RTH/Globex. Redis `kill_zone:{symbol}` stores the **primary**
+window (RTH over ETH). `kill_zone:active:{asset_class}` is the class-level
+lookup (no `symbol` field).
+
+### Prometheus
+
+| Process | Scrape |
+|---|---|
+| API | `http://localhost:8000/metrics` |
+| Pipeline | `http://localhost:9101/metrics` (compose) |
+| Kill-zone timer | `http://localhost:9102/metrics` (compose) |
+
+Series: `sniper_ticks_processed_total`, `sniper_avwap_updates_total`,
+`sniper_avwap_compute_seconds`, `sniper_volume_profile_updates_total`,
+`sniper_volume_profile_compute_seconds`,
+`sniper_kill_zone_transitions_total`, `sniper_http_request_duration_seconds`.
+
+### Horizontal scaling
+
+Workers are stateless: Kafka `raw_ticks` is keyed by symbol; Redis holds
+anchor metadata, AVWAP sufficient statistics (`avwap:acc:…`), volume-profile
+books, and the current kill zone. Run N pipeline replicas **partitioned by
+symbol** so two workers never increment the same accumulator. The kill-zone
+service is a single writer (compose `killzone`); it is idempotent on
+`(symbol, kill_zone, start_time, active)` and reconciles Redis after each
+tick. The API is a pure Redis reader/writer (anchor POST is fence-posted via
+`avwap:index:{symbol}`).
+
+In-memory demo (`sniper-data demo --inmemory --duration 5`) still runs the
+kill-zone loop inside the pipeline (`KILLZONE_INPROCESS=true`). Compose sets
+that to `0` and runs `sniper-data killzones` as its own service.

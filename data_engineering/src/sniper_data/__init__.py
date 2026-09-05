@@ -1,3 +1,3 @@
-"""SniperTrader Phase 1 data-engineering (Rev. 1.1)."""
+"""SniperTrader data-engineering (Phase 1 Rev. 1.1 + Phase 2)."""
 
-__version__ = "1.1.0"
+__version__ = "2.0.0"

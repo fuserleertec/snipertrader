@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snipertrader.ai/schemas/volume_profile.schema.json",
+  "title": "VolumeProfile",
+  "description": "Session volume profile with HVN/LVN nodes and POC. Redis key: volume_profile:{symbol}:{session_type}. Wire payload has NO schema_version (Phase 2 contract).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "symbol",
+    "session_type",
+    "high_volume_nodes",
+    "low_volume_nodes",
+    "poc",
+    "timestamp"
+  ],
+  "properties": {
+    "symbol": { "type": "string", "pattern": "^[A-Z0-9]+$" },
+    "session_type": {
+      "type": "string",
+      "enum": ["asia", "london", "ny_am", "ny_pm", "rth", "eth", "globex"]
+    },
+    "high_volume_nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["price", "volume"],
+        "properties": {
+          "price": { "type": "number" },
+          "volume": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "low_volume_nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["price", "volume"],
+        "properties": {
+          "price": { "type": "number" },
+          "volume": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "poc": { "type": "number" },
+    "timestamp": { "type": "integer" }
+  }
+}

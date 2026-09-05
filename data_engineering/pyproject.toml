@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sniper-data"
-version = "1.1.0"
-description = "SniperTrader Phase 1 data-engineering: ticks, sessions, OHLCV, volume-weighted VWAP."
+version = "2.0.0"
+description = "SniperTrader data-engineering: Phase 1 ticks/VWAP + Phase 2 AVWAP, volume profile, kill zones."
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "SniperTrader.ai" }]
@@ -21,6 +21,7 @@ dependencies = [
   "httpx>=0.27",
   "websockets>=12.0",
   "orjson>=3.9",
+  "prometheus-client>=0.20",
 ]
 
 [project.optional-dependencies]

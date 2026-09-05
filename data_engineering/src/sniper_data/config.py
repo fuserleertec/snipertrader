@@ -16,6 +16,9 @@ KAFKA_TOPICS = (
     "setup_signals",
     "mss_events",
     "order_block_zones",
+    # Phase 2
+    "kill_zone_events",
+    "anchor_events",
 )
 
 FVG_TTL_MAX_SECONDS = 48 * 60 * 60  # 48 hours
@@ -47,6 +50,13 @@ class Settings(BaseSettings):
     fvg_ttl_seconds: int = Field(default=FVG_TTL_MAX_SECONDS, alias="FVG_TTL_SECONDS")
     tick_interval_ms: int = Field(default=80, alias="TICK_INTERVAL_MS")
     use_inmemory: bool = Field(default=False, alias="USE_INMEMORY")
+    killzone_inprocess: bool = Field(default=True, alias="KILLZONE_INPROCESS")
+    killzone_poll_s: float = Field(default=1.0, alias="KILLZONE_POLL_S")
+    metrics_port: int = Field(default=0, alias="METRICS_PORT")
+    max_anchors_per_symbol: int = Field(default=32, alias="MAX_ANCHORS_PER_SYMBOL")
+    swing_detect: bool = Field(default=True, alias="SWING_DETECT")
+    swing_left: int = Field(default=2, alias="SWING_LEFT")
+    swing_right: int = Field(default=2, alias="SWING_RIGHT")
 
     binance_api_key: str = Field(default="", alias="BINANCE_API_KEY")
     binance_api_secret: str = Field(default="", alias="BINANCE_API_SECRET")

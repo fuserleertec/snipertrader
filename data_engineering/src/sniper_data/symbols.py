@@ -1,4 +1,15 @@
-"""Global symbol schema: uppercase, no hyphens, explicit asset class."""
+"""Global symbol schema: uppercase, no hyphens, explicit asset class.
+
+Futures convention (Phase 2)
+----------------------------
+Normalized form is ``^[A-Z0-9]+$`` (uppercase, no hyphens):
+
+* Root / continuous (demo default): ``ES``, ``NQ``, ``CL``
+* Dated CME contract (preferred): ``ESZ2024`` = root + month code + 4-digit year
+* 2-digit year is accepted as-is: ``ESZ24`` (not rewritten to ``ESZ2024``)
+
+CME month codes: F G H J K M N Q U V X Z (Jan–Dec).
+"""
 
 from __future__ import annotations
 
@@ -18,6 +29,10 @@ _EQUITY = {
 _FUTURES = {
     "ES", "NQ", "YM", "RTY", "CL", "GC", "SI", "NG", "ZB", "ZN", "MES", "MNQ",
 }
+_FUTURES_ROOTS = tuple(sorted(_FUTURES, key=len, reverse=True))
+_FUTURES_CONTRACT = re.compile(
+    rf"^({'|'.join(_FUTURES_ROOTS)})[FGHJKMNQUVXZ](\d{{2}}|\d{{4}})$"
+)
 
 _EXCHANGE_DEFAULT = {
     AssetClass.CRYPTO: "binance",
@@ -38,7 +53,7 @@ def normalize_symbol(raw: str) -> str:
 def infer_asset_class(symbol: str, hint: str | AssetClass | None = None) -> AssetClass:
     if hint is not None:
         return hint if isinstance(hint, AssetClass) else AssetClass(hint)
-    if symbol in _FUTURES:
+    if symbol in _FUTURES or _FUTURES_CONTRACT.match(symbol):
         return AssetClass.FUTURES
     if symbol in _EQUITY:
         return AssetClass.EQUITY

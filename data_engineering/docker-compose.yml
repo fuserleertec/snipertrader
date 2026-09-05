@@ -1,4 +1,4 @@
-# Local Phase 1 stack: Redpanda (Kafka API) + TimescaleDB + Redis + demo pipeline + API.
+# Local Phase 1+2 stack: Redpanda + TimescaleDB + Redis + demo pipeline + API + kill-zone timer.
 #
 #   cd data_engineering
 #   docker compose up --build
@@ -79,6 +79,11 @@ services:
       TICK_INTERVAL_MS: 80
       ROLLING_VWAP_PERIODS: 20
       FVG_TTL_SECONDS: 172800
+      KILLZONE_INPROCESS: "0"
+      METRICS_PORT: 9101
+      SWING_DETECT: "1"
+    ports:
+      - "9101:9101"
     command: ["sniper-data", "pipeline"]
     restart: unless-stopped
 
@@ -94,6 +99,25 @@ services:
     ports:
       - "8000:8000"
     command: ["sniper-data", "api", "--host", "0.0.0.0", "--port", "8000"]
+
+  killzone:
+    build: .
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SNIPER_ENV: demo
+      KAFKA_BOOTSTRAP: redpanda:9092
+      REDIS_URL: redis://redis:6379/0
+      DEMO_SYMBOLS: BTCUSDT,AAPL,ES
+      KILLZONE_POLL_S: "1"
+      METRICS_PORT: 9102
+    ports:
+      - "9102:9102"
+    command: ["sniper-data", "killzones"]
+    restart: unless-stopped
 
   evict:
     build: .

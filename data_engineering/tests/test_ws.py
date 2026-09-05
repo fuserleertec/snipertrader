@@ -91,6 +91,37 @@ def test_websocket_ohlcv_seeds_and_follows_channel():
         assert nxt["symbol"] == "BTCUSDT"
 
 
+def test_websocket_avwap_seeds_and_follows():
+    store = InMemoryStateStore()
+    snap = {
+        "anchor_id": "a1",
+        "symbol": "BTCUSDT",
+        "anchor_time": 1,
+        "anchor_price": 64000.0,
+        "vwap_value": 64500.0,
+        "bands": {
+            "plus_1_sigma": 64700.0,
+            "plus_2_sigma": 64950.0,
+            "plus_3_sigma": 65200.0,
+            "minus_1_sigma": 64300.0,
+            "minus_2_sigma": 64050.0,
+            "minus_3_sigma": 63800.0,
+        },
+        "asset_class": "crypto",
+    }
+    store.data["avwap:latest:BTCUSDT"] = __import__("json").dumps(snap)
+    store.data["avwap:index:BTCUSDT"] = '["a1"]'
+    store.data["avwap:BTCUSDT:a1"] = __import__("json").dumps(snap)
+    client, store, _ = _app(store=store)
+    with client.websocket_connect("/v1/ws/avwap?symbol=btc-usdt") as ws:
+        seeded = ws.receive_json()
+        assert seeded["vwap_value"] == 64500.0
+        live = {**snap, "vwap_value": 64600.0}
+        store.channels.setdefault("avwap:BTCUSDT", []).append(live)
+        nxt = ws.receive_json()
+        assert nxt["vwap_value"] == 64600.0
+
+
 def test_websocket_ohlcv_requires_timeframe():
     client, _, _ = _app()
     with pytest.raises(WebSocketDisconnect):

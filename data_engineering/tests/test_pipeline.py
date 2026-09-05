@@ -9,6 +9,7 @@ from sniper_data.bus.redis_store import InMemoryStateStore
 from sniper_data.bus.timescaledb import InMemoryOHLCVStore
 from sniper_data.connectors.binance import BinanceConnector
 from sniper_data.connectors.mock import MockConnector
+from sniper_data.connectors.futures import FuturesConnector
 from sniper_data.connectors.us_equities import USEquitiesConnector
 from sniper_data.connectors.base import ConnectorNotConfigured
 from sniper_data.models import AssetClass, Timeframe
@@ -100,6 +101,10 @@ async def test_binance_and_equity_stubs():
     eq = USEquitiesConnector()
     with pytest.raises(ConnectorNotConfigured):
         await anext(eq.stream())
+
+    fut = FuturesConnector()
+    with pytest.raises(ConnectorNotConfigured):
+        await anext(fut.stream())
 
 
 @pytest.mark.asyncio
