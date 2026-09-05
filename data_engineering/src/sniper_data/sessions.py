@@ -259,3 +259,7 @@ class SessionTracker:
 def redis_session_key(symbol: str, session_type: str | SessionType) -> str:
     st = session_type.value if isinstance(session_type, SessionType) else session_type
     return f"session:{symbol}:{st}"
+
+
+def redis_session_channel(symbol: str) -> str:
+    return f"session:{symbol}"

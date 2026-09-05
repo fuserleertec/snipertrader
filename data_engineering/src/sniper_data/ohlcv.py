@@ -44,6 +44,11 @@ def signed_volume(tick: RawTick) -> float | None:
     return tick.volume if side == "buy" else -tick.volume
 
 
+def redis_ohlcv_channel(symbol: str, timeframe: str | Timeframe) -> str:
+    tf = timeframe.value if isinstance(timeframe, Timeframe) else timeframe
+    return f"ohlcv:{symbol}:{tf}"
+
+
 def bar_open_ms(ts_ms: int, timeframe: Timeframe) -> int:
     width = TIMEFRAME_MS[timeframe]
     return (ts_ms // width) * width

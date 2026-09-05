@@ -100,9 +100,12 @@ OpenAPI: [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ```bash
 curl -s http://localhost:8000/health
-curl -s http://localhost:8000/v1/vwap/BTCUSDT?anchor=session
+curl -s "http://localhost:8000/v1/vwap/BTCUSDT?anchor=session"
 curl -s http://localhost:8000/v1/session/BTCUSDT
-# WebSocket: ws://localhost:8000/v1/ws/vwap?symbol=BTCUSDT
+curl -s "http://localhost:8000/v1/ohlcv/BTCUSDT?timeframe=1m&limit=200"
+# ws://localhost:8000/v1/ws/vwap?symbol=BTCUSDT
+# ws://localhost:8000/v1/ws/session?symbol=BTCUSDT
+# ws://localhost:8000/v1/ws/ohlcv?symbol=BTCUSDT&timeframe=1m
 ```
 
 Host-side pipeline against compose infra:
@@ -163,7 +166,7 @@ which always `SET … EX`. A missing TTL raises. TTL > 48h is clamped. The
 `sweep:*` / `mss:*` / `ob:*`, deletes rows older than 48h, and re-`EXPIRE`s
 keys with TTL `-1` or > 48h.
 
-## HTTP API (Quant Developers)
+## HTTP API (Quant Developers / frontend)
 
 | Method | Path | Notes |
 |---|---|---|
@@ -171,10 +174,39 @@ keys with TTL `-1` or > 48h.
 | `GET` | `/v1/vwap/{symbol}?anchor=session\|weekly\|rolling` | Latest VWAP + bands |
 | `GET` | `/v1/session/{symbol}/{session_type}` | One session book |
 | `GET` | `/v1/session/{symbol}` | All cached books for the symbol |
-| `WS` | `/v1/ws/vwap?symbol=BTCUSDT` | Pushes Redis pub/sub `vwap:{symbol}` |
+| `GET` | `/v1/ohlcv/{symbol}?timeframe=1m&limit=200` | Closed bars for chart bootstrap |
+| `WS` | `/v1/ws/vwap?symbol=BTCUSDT` | Seed + Redis `vwap:{symbol}` |
+| `WS` | `/v1/ws/session?symbol=BTCUSDT` | Seed `session:{symbol}:*` + Redis `session:{symbol}` |
+| `WS` | `/v1/ws/ohlcv?symbol=BTCUSDT&timeframe=1m` | Seed last N bars + Redis `ohlcv:{symbol}:{timeframe}` |
+
+`timeframe` is required on OHLCV routes: `1m` · `5m` · `15m` · `1h` · `4h`.
 
 Interactive docs at `/docs`. Hyphenated symbols are accepted and normalized
 (`btc-usdt` → `BTCUSDT`).
+
+Example session WS frame (`SessionLevels`):
+
+```json
+{"schema_version":"1.1","symbol":"BTCUSDT","asset_class":"crypto","session_type":"london",
+ "session_start_ms":1717500000000,"session_end_ms":1717523400000,
+ "open":100.0,"high":102.0,"low":98.0,"close":99.67,"volume":60.0,"updated_ts_ms":1717500003000}
+```
+
+Example OHLCV WS / HTTP bar (`ohlcv_bar` schema; optional `buy_volume` / `sell_volume`):
+
+```json
+{"schema_version":"1.1","symbol":"BTCUSDT","asset_class":"crypto","timeframe":"1m",
+ "open_ts_ms":1717502400000,"close_ts_ms":1717502460000,
+ "open":100.0,"high":101.0,"low":99.5,"close":100.5,"volume":14.0,"n_ticks":2,
+ "buy_volume":10.0,"sell_volume":4.0}
+```
+
+```bash
+curl -s "http://localhost:8000/v1/ohlcv/BTCUSDT?timeframe=1m&limit=200"
+# ws://localhost:8000/v1/ws/session?symbol=BTCUSDT
+# ws://localhost:8000/v1/ws/ohlcv?symbol=BTCUSDT&timeframe=1m
+# ws://localhost:8000/v1/ws/vwap?symbol=BTCUSDT
+```
 
 ## Kafka topics
 

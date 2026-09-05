@@ -44,6 +44,32 @@ async def test_mock_tick_to_ohlcv_session_vwap():
     assert sess["open"] == 100.0
     assert sess["high"] == 102.0
     assert sess["low"] == 98.0
+    assert store.channels["session:BTCUSDT"]
+    assert store.channels["session:BTCUSDT"][-1]["session_type"] == "london"
+    await rt.stop()
+
+
+@pytest.mark.asyncio
+async def test_pipeline_publishes_closed_ohlcv_channel():
+    bus = InMemoryBus()
+    store = InMemoryStateStore()
+    bars = InMemoryOHLCVStore()
+    rt = Runtime(inmemory=True, bus=bus, store=store, bars=bars)
+    await rt.start()
+    t0 = int(datetime(2024, 6, 4, 12, 0, tzinfo=timezone.utc).timestamp() * 1000)
+    await rt.handle_tick(
+        normalize_tick(symbol="BTCUSDT", price=100, volume=10, ts=t0, aggressor="buy")
+    )
+    await rt.handle_tick(
+        normalize_tick(symbol="BTCUSDT", price=101, volume=4, ts=t0 + 60_000, aggressor="sell")
+    )
+    channel = store.channels.get("ohlcv:BTCUSDT:1m", [])
+    assert channel
+    frame = channel[-1]
+    assert frame["timeframe"] == Timeframe.M1.value
+    assert frame["volume"] == 10
+    assert frame["buy_volume"] == 10
+    assert frame["sell_volume"] == 0
     await rt.stop()
 
 

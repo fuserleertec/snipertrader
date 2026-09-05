@@ -13,8 +13,8 @@ from sniper_data.bus.timescaledb import InMemoryOHLCVStore, OHLCVStore, Timescal
 from sniper_data.config import Settings, get_settings
 from sniper_data.connectors.mock import MockConnector
 from sniper_data.models import RawTick
-from sniper_data.ohlcv import OHLCVAggregator
-from sniper_data.sessions import SessionTracker, redis_session_key
+from sniper_data.ohlcv import OHLCVAggregator, redis_ohlcv_channel
+from sniper_data.sessions import SessionTracker, redis_session_channel, redis_session_key
 from sniper_data.vwap import VWAPEngine, redis_vwap_key
 from sniper_data.zones import evict_expired_zones
 
@@ -66,6 +66,7 @@ class Runtime:
         closed = self.aggregator.on_tick(tick)
         for bar in closed:
             await self.bars.upsert(bar)
+            await self.store.publish(redis_ohlcv_channel(bar.symbol, bar.timeframe), bar)
             await self.bus.publish("ohlcv_bars", bar, key=tick.symbol)
             self.bars_closed += 1
 
@@ -74,6 +75,7 @@ class Runtime:
         )
         if levels is not None:
             await self.store.set(redis_session_key(levels.symbol, levels.session_type), levels)
+            await self.store.publish(redis_session_channel(levels.symbol), levels)
             await self.bus.publish("session_levels", levels, key=tick.symbol)
 
         snapshots = self.vwap.on_tick(
