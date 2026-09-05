@@ -161,6 +161,7 @@ export type OverlayPreset =
   | "vwap_pullback_cont"
   | "avwap_ob_confluence";
 
+/** `/schemas/fvg_zone.schema.json` — Kafka `fvg_zones`, Redis `fvg:{symbol}:{id}`. */
 export interface FVGZone {
   schema_version: "1.1";
   id: string;
@@ -169,11 +170,12 @@ export interface FVGZone {
   direction: "bullish" | "bearish";
   high: number;
   low: number;
-  mitigated?: boolean;
   created_ts_ms: number;
+  mitigated?: boolean;
   ttl_seconds?: number;
 }
 
+/** `/schemas/sweep_event.schema.json` — Kafka `sweep_events`, Redis `sweep:{symbol}:{id}`. */
 export interface SweepEvent {
   schema_version: "1.1";
   id: string;
@@ -181,10 +183,15 @@ export interface SweepEvent {
   asset_class: AssetClass;
   side: "buy" | "sell";
   swept_level: number;
-  reclaim: boolean | null;
   ts_ms: number;
+  reclaim?: boolean | null;
+  volume_profile?: "aggressive" | "low_volume";
+  delta_divergence?: boolean;
+  time_to_reclaim_ms?: number | null;
+  confirmed?: boolean;
 }
 
+/** `/schemas/mss_event.schema.json` — Kafka `mss_events`, Redis `mss:{symbol}:{id}`. */
 export interface MssEvent {
   schema_version: "1.1";
   id: string;
@@ -201,6 +208,7 @@ export interface MssEvent {
   confirmed?: boolean;
 }
 
+/** `/schemas/order_block.schema.json` — Kafka `order_block_zones`, Redis `ob:{symbol}:{id}`. */
 export interface OrderBlock {
   schema_version: "1.1";
   id: string;
@@ -225,7 +233,7 @@ export interface PatternBook {
   mss: MssEvent[];
 }
 
-/** Discriminated overlay event until ML ships a dedicated overlay payload. */
+/** Adapter envelope around `/schemas` frames. Not a Kafka field. */
 export type OverlayKind = "fvg" | "order_block" | "sweep" | "mss";
 
 export type OverlayEvent =

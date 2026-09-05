@@ -5,6 +5,7 @@ import type {
   MssEvent,
   OrderBlock,
   OverlayEvent,
+  OverlayKind,
   PatternBook,
   SweepEvent,
   VWAPValues,
@@ -12,11 +13,22 @@ import type {
 
 const EMPTY: PatternBook = { fvgs: [], obs: [], sweeps: [], mss: [] };
 
+/**
+ * Future Data Eng seed+pubsub (not live yet).
+ * Kafka: sweep_events, fvg_zones, mss_events, order_block_zones.
+ * Redis: sweep|fvg|mss|ob:{symbol}:{id}
+ */
+export const FUTURE_PATTERN_WS: Record<OverlayKind, string> = {
+  fvg: "/v1/ws/fvg",
+  order_block: "/v1/ws/ob",
+  sweep: "/v1/ws/sweep",
+  mss: "/v1/ws/mss",
+};
+
 function upsertById<T extends { id: string }>(rows: T[], next: T): T[] {
   return [next, ...rows.filter((row) => row.id !== next.id)];
 }
 
-/** Chart adapter: typed overlay events → PatternBook (primitives + setMarkers). */
 export function bookFromOverlayEvents(events: OverlayEvent[]): PatternBook {
   const book: PatternBook = { fvgs: [], obs: [], sweeps: [], mss: [] };
   for (const event of events) applyOverlayEvent(book, event);
@@ -48,28 +60,168 @@ function isObj(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object";
 }
 
-export function parseOverlayFrame(value: unknown): OverlayEvent | null {
+function str(value: unknown): string | null {
+  return typeof value === "string" && value ? value : null;
+}
+
+function num(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function asset(value: unknown, symbol: string): FVGZone["asset_class"] {
+  if (value === "crypto" || value === "equity" || value === "futures") return value;
+  return inferAssetClass(symbol);
+}
+
+/** Copy only `/schemas/fvg_zone.schema.json` fields. */
+export function normalizeFvg(value: unknown): FVGZone | null {
   if (!isObj(value)) return null;
-  if (typeof value.high === "number" && typeof value.low === "number" && typeof value.created_ts_ms === "number") {
-    if (value.direction === "bullish" || value.direction === "bearish") {
-      const zone = value as unknown as FVGZone | OrderBlock;
-      if (typeof value.origin_open === "number" || typeof value.displacement_ts_ms === "number") {
-        return { kind: "order_block", payload: zone as OrderBlock };
-      }
-      if (typeof value.id === "string") {
-        const looksOb = typeof (value as { origin_close?: unknown }).origin_close === "number";
-        return looksOb
-          ? { kind: "order_block", payload: zone as OrderBlock }
-          : { kind: "fvg", payload: zone as FVGZone };
-      }
-    }
+  const id = str(value.id);
+  const symbol = str(value.symbol);
+  const high = num(value.high);
+  const low = num(value.low);
+  const created = num(value.created_ts_ms);
+  if (!id || !symbol || high == null || low == null || created == null) return null;
+  if (value.direction !== "bullish" && value.direction !== "bearish") return null;
+  const row: FVGZone = {
+    schema_version: "1.1",
+    id,
+    symbol,
+    asset_class: asset(value.asset_class, symbol),
+    direction: value.direction,
+    high,
+    low,
+    created_ts_ms: created,
+  };
+  if (typeof value.mitigated === "boolean") row.mitigated = value.mitigated;
+  if (typeof value.ttl_seconds === "number") row.ttl_seconds = value.ttl_seconds;
+  return row;
+}
+
+/** Copy only `/schemas/order_block.schema.json` fields. */
+export function normalizeOrderBlock(value: unknown): OrderBlock | null {
+  if (!isObj(value)) return null;
+  const id = str(value.id);
+  const symbol = str(value.symbol);
+  const high = num(value.high);
+  const low = num(value.low);
+  const created = num(value.created_ts_ms);
+  if (!id || !symbol || high == null || low == null || created == null) return null;
+  if (value.direction !== "bullish" && value.direction !== "bearish") return null;
+  const row: OrderBlock = {
+    schema_version: "1.1",
+    id,
+    symbol,
+    asset_class: asset(value.asset_class, symbol),
+    direction: value.direction,
+    high,
+    low,
+    created_ts_ms: created,
+  };
+  if (typeof value.mitigated === "boolean") row.mitigated = value.mitigated;
+  if (typeof value.ttl_seconds === "number") row.ttl_seconds = value.ttl_seconds;
+  if (value.timeframe === "1m" || value.timeframe === "5m" || value.timeframe === "15m" || value.timeframe === "1h" || value.timeframe === "4h") {
+    row.timeframe = value.timeframe;
   }
-  if (typeof value.swept_level === "number" && (value.side === "buy" || value.side === "sell")) {
-    return { kind: "sweep", payload: value as unknown as SweepEvent };
+  if (typeof value.displacement_ts_ms === "number") row.displacement_ts_ms = value.displacement_ts_ms;
+  if (typeof value.origin_open === "number") row.origin_open = value.origin_open;
+  if (typeof value.origin_close === "number") row.origin_close = value.origin_close;
+  return row;
+}
+
+/** Copy only `/schemas/sweep_event.schema.json` fields. */
+export function normalizeSweep(value: unknown): SweepEvent | null {
+  if (!isObj(value)) return null;
+  const id = str(value.id);
+  const symbol = str(value.symbol);
+  const swept = num(value.swept_level);
+  const ts = num(value.ts_ms);
+  if (!id || !symbol || swept == null || ts == null) return null;
+  if (value.side !== "buy" && value.side !== "sell") return null;
+  const row: SweepEvent = {
+    schema_version: "1.1",
+    id,
+    symbol,
+    asset_class: asset(value.asset_class, symbol),
+    side: value.side,
+    swept_level: swept,
+    ts_ms: ts,
+  };
+  if (value.reclaim === true || value.reclaim === false || value.reclaim === null) row.reclaim = value.reclaim;
+  if (value.volume_profile === "aggressive" || value.volume_profile === "low_volume") {
+    row.volume_profile = value.volume_profile;
   }
-  if (typeof value.broken_level === "number" && (value.direction === "bullish" || value.direction === "bearish")) {
-    return { kind: "mss", payload: value as unknown as MssEvent };
+  if (typeof value.delta_divergence === "boolean") row.delta_divergence = value.delta_divergence;
+  if (value.time_to_reclaim_ms === null || typeof value.time_to_reclaim_ms === "number") {
+    row.time_to_reclaim_ms = value.time_to_reclaim_ms;
   }
+  if (typeof value.confirmed === "boolean") row.confirmed = value.confirmed;
+  return row;
+}
+
+/** Copy only `/schemas/mss_event.schema.json` fields. */
+export function normalizeMss(value: unknown): MssEvent | null {
+  if (!isObj(value)) return null;
+  const id = str(value.id);
+  const symbol = str(value.symbol);
+  const ts = num(value.ts_ms);
+  const broken = num(value.broken_level);
+  const trigger = str(value.trigger_sweep_id);
+  if (!id || !symbol || ts == null || broken == null || !trigger) return null;
+  if (value.direction !== "bullish" && value.direction !== "bearish") return null;
+  if (value.trigger_sweep_side !== "buy" && value.trigger_sweep_side !== "sell") return null;
+  const row: MssEvent = {
+    schema_version: "1.1",
+    id,
+    symbol,
+    asset_class: asset(value.asset_class, symbol),
+    ts_ms: ts,
+    direction: value.direction,
+    broken_level: broken,
+    swing_high: value.swing_high === null ? null : num(value.swing_high),
+    swing_low: value.swing_low === null ? null : num(value.swing_low),
+    trigger_sweep_id: trigger,
+    trigger_sweep_side: value.trigger_sweep_side,
+  };
+  if (value.timeframe === "1m" || value.timeframe === "5m" || value.timeframe === "15m") row.timeframe = value.timeframe;
+  if (typeof value.confirmed === "boolean") row.confirmed = value.confirmed;
+  return row;
+}
+
+/**
+ * Adapter for a future `WS /v1/ws/{fvg|ob|sweep|mss}?symbol=` frame.
+ * `hint` is the socket path kind so FVG vs OB (same high/low keys) stay exact.
+ */
+export function parseOverlayFrame(value: unknown, hint?: OverlayKind): OverlayEvent | null {
+  if (hint === "fvg") {
+    const payload = normalizeFvg(value);
+    return payload ? { kind: "fvg", payload } : null;
+  }
+  if (hint === "order_block") {
+    const payload = normalizeOrderBlock(value);
+    return payload ? { kind: "order_block", payload } : null;
+  }
+  if (hint === "sweep") {
+    const payload = normalizeSweep(value);
+    return payload ? { kind: "sweep", payload } : null;
+  }
+  if (hint === "mss") {
+    const payload = normalizeMss(value);
+    return payload ? { kind: "mss", payload } : null;
+  }
+
+  const sweep = normalizeSweep(value);
+  if (sweep) return { kind: "sweep", payload: sweep };
+  const mss = normalizeMss(value);
+  if (mss) return { kind: "mss", payload: mss };
+  if (isObj(value) && (typeof value.origin_open === "number" || typeof value.displacement_ts_ms === "number")) {
+    const ob = normalizeOrderBlock(value);
+    if (ob) return { kind: "order_block", payload: ob };
+  }
+  const fvg = normalizeFvg(value);
+  if (fvg) return { kind: "fvg", payload: fvg };
+  const ob = normalizeOrderBlock(value);
+  if (ob) return { kind: "order_block", payload: ob };
   return null;
 }
 

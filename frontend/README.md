@@ -247,26 +247,23 @@ Newest `ACTIVE` Quant rows render as a card strip (symbol, color-coded
 UTC timestamp). Click → scroll the Kronos chart and apply that row’s
 `trigger_event_ids` annotations plus entry/stop/target lines.
 
-### Pattern overlays (performance)
+### Pattern overlays (`/schemas`, schema_version `"1.1"`)
 
-`lightweight-charts` v4: **one** `PatternZonesPrimitive` for FVG / OB / Asia
-rectangles + MSS lines + sweep arrows; **`setMarkers`** for sweep/MSS/rejection
-points. VWAP ±σ stays on `VwapBandsPrimitive`. Not many extra series.
+Types copy `/schemas/sweep_event.schema.json`, `fvg_zone.schema.json`,
+`mss_event.schema.json`, `order_block.schema.json` — no extra fields.
 
-Until ML ships a dedicated overlay payload, typed mock/live frames go through
-`src/lib/overlays.ts`:
+| Kind | Kafka | Redis | Chart |
+|---|---|---|---|
+| Sweep | `sweep_events` | `sweep:{symbol}:{id}` | `setMarkers` arrows (`sell`=session high, `buy`=session low) |
+| FVG | `fvg_zones` | `fvg:{symbol}:{id}` | primitive shaded rect `high`/`low` |
+| MSS | `mss_events` | `mss:{symbol}:{id}` | `setMarkers` + broken-level line |
+| OB | `order_block_zones` | `ob:{symbol}:{id}` | primitive shaded rect (different color) |
 
-```ts
-type OverlayEvent =
-  | { kind: "fvg"; payload: FVGZone }
-  | { kind: "order_block"; payload: OrderBlock }
-  | { kind: "sweep"; payload: SweepEvent }
-  | { kind: "mss"; payload: MssEvent };
-```
-
-`bookFromOverlayEvents` / `parseOverlayFrame` is the adapter. Live Data Eng
-(PR #5) sockets: `WS /v1/ws/fvg|ob|sweep|mss?symbol=`. Offline mocks emit the
-same Rev 1.1 shapes.
+**No pattern WS from Data Eng yet.** In-browser mock streams emit these exact
+shapes. `src/lib/overlays.ts` (`parseOverlayFrame(frame, hint?)` +
+`FUTURE_PATTERN_WS`) is the client adapter for a future
+`WS /v1/ws/fvg|ob|sweep|mss?symbol=` seed+pubsub. Do not invent `direction` /
+`sweep_level` aliases — sweep is `side` + `swept_level` only.
 
 ### Setup-specific views
 
@@ -297,7 +294,8 @@ payload (`—` while null). CSV uses those field names.
 Clients exist for PR #5: `GET/WS /v1/avwap`, `/v1/volume-profile`,
 `/v1/kill-zone`. AVWAP (`vwap_value`) maps onto the existing VWAPValues chart
 shape. Kill-zone active state is a chart note. Volume-profile is fetched-ready
-but not drawn yet. Overlay WS above is the useful Phase 2 stream for this UI.
+but not drawn yet. Pattern overlays stay on mock schema streams until DE
+ships `WS /v1/ws/fvg|ob|sweep|mss`.
 
 ## Theme
 

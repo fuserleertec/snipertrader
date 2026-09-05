@@ -94,8 +94,12 @@ export function buildPatternBook(symbol: string, price: number, now: number): Pa
     asset_class,
     side: "sell",
     swept_level: price * 1.0046,
-    reclaim: true,
     ts_ms: now - 40 * bar,
+    reclaim: true,
+    volume_profile: "aggressive",
+    delta_divergence: false,
+    time_to_reclaim_ms: 90_000,
+    confirmed: true,
   };
   const sweepBuy: SweepEvent = {
     schema_version: "1.1",
@@ -104,8 +108,12 @@ export function buildPatternBook(symbol: string, price: number, now: number): Pa
     asset_class,
     side: "buy",
     swept_level: price * 0.9952,
-    reclaim: true,
     ts_ms: now - 36 * bar,
+    reclaim: true,
+    volume_profile: "low_volume",
+    delta_divergence: true,
+    time_to_reclaim_ms: 120_000,
+    confirmed: true,
   };
 
   const mssBull: MssEvent = {

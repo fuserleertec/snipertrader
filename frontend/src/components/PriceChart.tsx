@@ -355,10 +355,11 @@ export function PriceChart({
       shape: "arrowUp" | "arrowDown" | "circle";
       text: string;
     }> = [];
+    // Sweeps + MSS → setMarkers. FVG / OB zones stay on PatternZonesPrimitive.
     if (showSweep) {
       for (const sw of patterns.sweeps) {
         const hot = highlight.has(sw.id);
-        // sell = session high swept (arrow at high); buy = session low swept (arrow at low)
+        // schema: sell = session high swept; buy = session low swept
         markers.push({
           time: snapTime(bars, sw.ts_ms),
           position: sw.side === "sell" ? "aboveBar" : "belowBar",
