@@ -156,6 +156,7 @@ All secrets are environment variables. See [`.env.example`](.env.example).
 | `MAX_ANCHORS_PER_SYMBOL` | `32` | Cap on live AVWAP anchors |
 | `SWING_DETECT` | `true` | In-process fractal swing → anchors |
 | `SWING_LOOKBACK` | `5` | MSS / ICT swing confirmation bars each side |
+| `RISK_VALIDATE_URL` | `http://localhost:8001/risk/validate` | Quant Risk Pre-Filter |
 | `BINANCE_*` / `ALPACA_*` | empty | Live stubs only |
 
 ## Exchange adapters
@@ -278,6 +279,8 @@ sniper-data pipeline [--inmemory] [--duration N]
 sniper-data demo     [--inmemory] [--duration N]   # alias of pipeline
 sniper-data patterns [--inmemory] [--duration N]
 sniper-data patterns --inmemory --replay           # ICT fixtures + swing→anchor wiring
+sniper-data setups   --inmemory                    # USME setups 1–3 fixtures + mock risk
+sniper-data setups   --inmemory --replay           # same
 sniper-data api      [--host 0.0.0.0 --port 8000]
 sniper-data evict    [--inmemory]
 sniper-data killzones [--inmemory] [--duration N]
@@ -393,7 +396,50 @@ profile = await get_volume_profile(store, "BTCUSDT", "ny_am")
 zone = await get_kill_zone(store, "BTCUSDT")
 ```
 
-Setup-signal publishing stays a later Phase 2 step. In-memory demo:
+## Phase 2 — USME setup detection (setups 1–3)
+
+`sniper_data.setup_detection` consumes **only** landed DE topics / Redis keys
+(`sweep_events`, `mss_events`, `fvg_zones`, `ohlcv_bars`, `session_levels`,
+`vwap_values`, `kill_zone_events`, `anchor_events`; Redis `session:`, `vwap:`,
+`fvg:`, `sweep:`, `mss:`, `ob:`, `avwap:`, `volume_profile:`, `kill_zone:`).
+
+DE sweep mapping (do not invert):
+
+* `side=buy` = session **low** swept (ICT sell-side liquidity) → Setup 1 **long**
+  after a bullish MSS (break last LH) whose candle **closes above**
+  `vwap:{symbol}:session`.
+* `side=sell` = session **high** swept (ICT buy-side liquidity) → Setup 1 **short**
+  after a bearish MSS (break last HL) whose candle **closes below** session VWAP.
+
+This reclaim pairing is **USME Setup 1**, not the Phase 1 MSS continuation
+pairing. Incoming `mss_events` are used when `direction` matches reclaim;
+otherwise the detector measures the LH/HL break from `ohlcv_bars`.
+
+| Setup | `setup_type` | Rule |
+|---|---|---|
+| 1 | `sweep_reclaim` | Confirmed/reclaim sweep + MSS + VWAP close. Entry = MSS close. Stop beyond sweep extreme. TP = opposite ±1σ/±2σ by proximity. Discard if R:R < 1:2. `trigger_event_ids` = sweep + MSS ids. |
+| 2 | `fvg_entry` or `ob_fvg` | Active `fvg:{symbol}:*` overlapping session VWAP **or** `volume_profile` HVN/POC. Retrace + engulfing/pin/reversal. `ob_fvg` only when an `ob:` zone overlaps. |
+| 3 | `po3_judas` | Accumulation `session:{symbol}:asia` (ETH / Globex for equity/futures). During active `kill_zone:{symbol}` (NY AM / London for crypto, RTH otherwise): sweep of that range, displacement back toward VWAP. Entry = displacement close; stop beyond the manipulation wick; TP = opposite side of the range. **Quant: add `po3_judas` to the locked enum.** |
+
+Orchestrator: setups 1–3 run in parallel. Dedupe keeps the highest conviction
+when symbol + side + overlapping `1m`/`5m`/`15m` fire within 5 minutes.
+Conviction (0–100) is logged only; Kafka / validate get `confidence = conviction/100`.
+
+**Risk gate (locked):** before `setup_signals`, `POST {RISK_VALIDATE_URL}` with
+**only** `schema_version`, `symbol`, `asset_class`, `setup_type`, `side`,
+`confidence`, `ref_vwap`, `ref_session`, `ts_ms`, `entry`, `stop`, `target`,
+`timeframe`, `trigger_event_ids`, optional `session_type`, optional
+`proposed_position_size`. **Omit `id`.** Do not send `risk_reward`,
+`setup_id`, `kill_zone*`, or `conviction`. Publish iff `approved: true`, then
+assign `id` and set `status=ACTIVE` / `position_size=adjusted_position_size`.
+Rejects are logged and dropped (Prometheus `sniper_setup_rejected_total` is
+the false-positive proxy).
+
+```bash
+sniper-data setups --inmemory
+```
+
+Pattern-detector in-memory demo (sweeps / FVG / MSS / anchors, not setups):
 
 ```bash
 sniper-data patterns --inmemory --replay
@@ -489,7 +535,9 @@ lookup (no `symbol` field).
 Series: `sniper_ticks_processed_total`, `sniper_avwap_updates_total`,
 `sniper_avwap_compute_seconds`, `sniper_volume_profile_updates_total`,
 `sniper_volume_profile_compute_seconds`,
-`sniper_kill_zone_transitions_total`, `sniper_http_request_duration_seconds`.
+`sniper_kill_zone_transitions_total`, `sniper_http_request_duration_seconds`,
+`sniper_setup_detection_latency_seconds`, `sniper_setup_candidates_total`,
+`sniper_setup_approved_total`, `sniper_setup_rejected_total`.
 
 ### Horizontal scaling
 

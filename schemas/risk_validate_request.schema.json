@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snipertrader.ai/schemas/risk_validate_request.schema.json",
+  "title": "RiskValidateRequest",
+  "description": "Candidate for POST /risk/validate. Omit id — ML assigns id only after approved:true when publishing to setup_signals (Phase 2). Do not send risk_reward, setup_id, kill_zone*, or conviction (use confidence = conviction/100).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "symbol",
+    "asset_class",
+    "setup_type",
+    "side",
+    "ts_ms",
+    "entry",
+    "stop",
+    "target",
+    "timeframe",
+    "trigger_event_ids"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.1" },
+    "symbol": { "type": "string", "pattern": "^[A-Z0-9]+$" },
+    "asset_class": { "type": "string", "enum": ["crypto", "equity", "futures"] },
+    "setup_type": {
+      "type": "string",
+      "enum": [
+        "sweep_reclaim",
+        "fvg_entry",
+        "mss_break",
+        "order_block",
+        "sweep_mss",
+        "ob_fvg",
+        "po3_judas"
+      ]
+    },
+    "side": { "type": "string", "enum": ["long", "short"] },
+    "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+    "ref_vwap": { "type": ["number", "null"] },
+    "ref_session": { "type": ["string", "null"] },
+    "ts_ms": { "type": "integer" },
+    "entry": { "type": "number", "description": "Intended entry. Required for risk." },
+    "stop": { "type": "number", "description": "Stop-loss price. Required for risk." },
+    "target": { "type": "number", "description": "Take-profit price. Required for risk." },
+    "timeframe": { "type": "string", "enum": ["1m", "5m", "15m"] },
+    "trigger_event_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Sweep / FVG / MSS event ids that triggered this candidate."
+    },
+    "session_type": {
+      "type": ["string", "null"],
+      "enum": ["asia", "london", "ny_am", "ny_pm", "rth", "eth", "globex", null],
+      "description": "Optional. Same enum as data_engineering session_levels."
+    },
+    "proposed_position_size": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "description": "Optional proposed size. Engine may overwrite via adjusted_position_size."
+    }
+  }
+}

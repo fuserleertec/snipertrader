@@ -58,6 +58,10 @@ class Settings(BaseSettings):
     swing_left: int = Field(default=2, alias="SWING_LEFT")
     swing_right: int = Field(default=2, alias="SWING_RIGHT")
     swing_lookback: int = Field(default=5, alias="SWING_LOOKBACK")
+    risk_validate_url: str = Field(
+        default="http://localhost:8001/risk/validate",
+        alias="RISK_VALIDATE_URL",
+    )
 
     binance_api_key: str = Field(default="", alias="BINANCE_API_KEY")
     binance_api_secret: str = Field(default="", alias="BINANCE_API_SECRET")

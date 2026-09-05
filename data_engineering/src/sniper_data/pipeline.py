@@ -387,6 +387,75 @@ async def run_anchor_wiring_demo() -> dict[str, Any]:
     }
 
 
+async def run_setup_replay() -> dict[str, Any]:
+    from sniper_data.setup_detection.replay import run_setup_replay as _replay
+
+    return await _replay()
+
+
+async def run_setup_loop(*, inmemory: bool = False, duration_s: float | None = None) -> dict[str, Any]:
+    """Live consumer: DE topics → setups 1–3 → risk → ``setup_signals``."""
+    from sniper_data.setup_detection.orchestrator import SetupOrchestrator, subscribe_inmemory
+    from sniper_data.setup_detection.risk_client import HttpRiskClient
+
+    settings = get_settings()
+    bus: EventBus = InMemoryBus() if inmemory else KafkaBus(settings.kafka_bootstrap)
+    store: StateStore = InMemoryStateStore() if inmemory else RedisStateStore(settings.redis_url)
+    risk = HttpRiskClient(settings.risk_validate_url)
+    orch = SetupOrchestrator(store, bus, risk, swing_lookback=settings.swing_lookback)
+    await bus.start()
+    if inmemory:
+        subscribe_inmemory(bus, orch)
+        if duration_s:
+            await asyncio.sleep(duration_s)
+        await bus.stop()
+        await store.close()
+        return orch.stats.as_dict()
+
+    await wait_for_kafka(settings.kafka_bootstrap)
+    stop = asyncio.Event()
+
+    async def _consume(topic: str, handler) -> None:
+        try:
+            async for payload in consume_topic(settings.kafka_bootstrap, topic, group_id=f"sniper-setups-{topic}"):
+                if stop.is_set():
+                    break
+                await handler(payload)
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:  # noqa: BLE001
+            log.warning("setup consumer %s: %s", topic, exc)
+
+    from sniper_data.models import FVGZone, KillZoneEvent, MssEvent, OHLCVBar, SessionLevels, SweepEvent, VWAPValues
+
+    tasks = [
+        asyncio.create_task(_consume("sweep_events", lambda p: _sync(orch.on_sweep, SweepEvent.model_validate(p)))),
+        asyncio.create_task(_consume("mss_events", lambda p: _sync(orch.on_mss, MssEvent.model_validate(p)))),
+        asyncio.create_task(_consume("fvg_zones", lambda p: _sync(orch.on_fvg, FVGZone.model_validate(p)))),
+        asyncio.create_task(_consume("ohlcv_bars", lambda p: orch.on_bar(OHLCVBar.model_validate(p)))),
+        asyncio.create_task(_consume("session_levels", lambda p: _sync(orch.on_session, SessionLevels.model_validate(p)))),
+        asyncio.create_task(_consume("vwap_values", lambda p: _sync(orch.on_vwap, VWAPValues.model_validate(p)))),
+        asyncio.create_task(_consume("kill_zone_events", lambda p: _sync(orch.on_kill_zone, KillZoneEvent.model_validate(p)))),
+        asyncio.create_task(_consume("anchor_events", lambda _p: asyncio.sleep(0))),
+    ]
+    try:
+        if duration_s is not None:
+            await asyncio.sleep(duration_s)
+        else:
+            await asyncio.gather(*tasks)
+    finally:
+        stop.set()
+        for t in tasks:
+            t.cancel()
+        await bus.stop()
+        await store.close()
+    return orch.stats.as_dict()
+
+
+async def _sync(fn, value) -> None:
+    fn(value)
+
+
 async def run_pipeline(*, inmemory: bool = False, duration_s: float | None = None) -> Runtime:
     logging.basicConfig(
         level=getattr(logging, get_settings().log_level.upper(), logging.INFO),
