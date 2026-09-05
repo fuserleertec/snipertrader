@@ -1,6 +1,6 @@
 import type { OverlayEvent, PatternBook, SweepEvent } from "../types";
 import { overlayEventsFromBook } from "../overlays";
-import { getUniverse } from "./universe";
+import { getUniverse, MOCK_NOW } from "./universe";
 
 /** In-browser overlay stream typed to `/schemas/*` 1.1. DE has no pattern WS yet. */
 export function startMockPatternStream(
@@ -25,7 +25,7 @@ export function startMockPatternStream(
       const next: SweepEvent = {
         ...ev.payload,
         id: `${ev.payload.id}_live_${seq}`,
-        ts_ms: Date.now(),
+        ts_ms: MOCK_NOW - (seq % 8) * 60_000,
         confirmed: true,
       };
       onEvent({ kind: "sweep", payload: next });
