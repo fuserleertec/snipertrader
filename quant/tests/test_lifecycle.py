@@ -109,3 +109,9 @@ def test_lifecycle_bar_endpoint():
     one = http.get(f"/signals/{created['id']}").json()
     assert one["status"] == "TP_HIT"
     assert one["r_multiple"] == 2.0
+    assert one["realized_r"] == 2.0
+    assert one["exit_price"] == 108.0
+    assert one["closed_ts_ms"] is not None
+    listed = http.get("/signals", params={"status": "TP_HIT"}).json()["items"]
+    assert listed[0]["realized_r"] == 2.0
+    assert listed[0]["exit_price"] == 108.0

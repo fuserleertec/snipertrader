@@ -11,7 +11,7 @@ from fastapi.openapi.utils import get_openapi
 from pydantic import BaseModel
 
 from sniper_quant.config import Settings, get_settings
-from sniper_quant.lifecycle import LifecycleMonitor
+from sniper_quant.lifecycle import LifecycleMonitor, resolve_close_patch
 from sniper_quant.live import SignalHub
 from sniper_quant.models import (
     CandidateSignal,
@@ -86,11 +86,15 @@ Reject reasons:
 
 Phase 2 second gate: Kafka `setup_signals` (or `POST /v1/signals/ingest`)
 re-checks geometry + 1.5R and persists ACTIVE. `POST /v1/lifecycle/bar`
-moves ACTIVE → TP_HIT / SL_HIT and records `outcome` + `r_multiple`.
+moves ACTIVE → TP_HIT / SL_HIT and records `realized_r`, `exit_price`,
+`closed_ts_ms`, plus `outcome`.
 
 Unknown `setup_type` or `timeframe` → HTTP 422.
 
 ## Frontend — dashboard signal table
+
+History is **`GET /signals`** with `from_ts` / `to_ts` plus `symbol`,
+`status`, `setup_type`. There is **no** `/signals/history` route.
 
 `GET /signals?symbol=&status=&setup_type=&from_ts=&to_ts=&limit=&cursor=`
 
@@ -103,7 +107,12 @@ Pass `cursor` from the previous page's `next_cursor`.
 `Signal` fields: `id`, `ts_ms`, `symbol`, `asset_class`, `setup_type`
 (seven locked values), `side`, `entry`, `stop`, `target`,
 `status` (`ACTIVE`|`TP_HIT`|`SL_HIT`|`CANCELLED`), `confidence`,
-`timeframe`, `ref_session`, `trigger_event_ids`.
+`timeframe`, `ref_session`, `trigger_event_ids`,
+`realized_r` (signed R on TP/SL; **null** for ACTIVE/CANCELLED),
+`exit_price` (optional), `closed_ts_ms` (optional).
+
+On lifecycle close (`TP_HIT` / `SL_HIT`) these three are persisted and
+returned on list, detail, and `WS signal.status`.
 
 `WS /ws/signals` pushes `{ "type": "signal.upsert"|"signal.status", "signal": Signal }`
 on create (`upsert`) and status change (`status`).
@@ -113,6 +122,9 @@ on create (`upsert`) and status change (`status`).
 class StatusBody(BaseModel):
     status: SignalStatus
     closed_ts_ms: int | None = None
+    exit_price: float | None = None
+    realized_r: float | None = None
+    # Storage aliases accepted on PATCH.
     exit_px: float | None = None
     r_multiple: float | None = None
     outcome: str | None = None
@@ -233,7 +245,7 @@ def create_app(
         limit: int = Query(default=50, ge=1, le=500),
         cursor: str | None = Query(default=None, description="Opaque cursor from next_cursor"),
     ) -> SignalListResponse:
-        """Dashboard table: filter + cursor page of Signal rows."""
+        """History + live table. Filter by time window — there is no /signals/history."""
         if symbol:
             symbol = normalize_symbol(symbol)
         rows = await _signals().list(
@@ -302,13 +314,26 @@ def create_app(
 
     @app.patch("/signals/{signal_id}", response_model=SignalView)
     async def patch_signal(signal_id: str, body: StatusBody) -> SignalView:
+        current = await _signals().get(signal_id)
+        if current is None:
+            raise HTTPException(404, f"signal {signal_id} not found")
+        exit_price = body.exit_price if body.exit_price is not None else body.exit_px
+        realized_r = body.realized_r if body.realized_r is not None else body.r_multiple
+        patch = resolve_close_patch(
+            current,
+            body.status,
+            exit_price=exit_price,
+            realized_r=realized_r,
+            closed_ts_ms=body.closed_ts_ms,
+            outcome=body.outcome,
+        )
         row = await _signals().update_status(
             signal_id,
             body.status,
-            closed_ts_ms=body.closed_ts_ms,
-            exit_px=body.exit_px,
-            r_multiple=body.r_multiple,
-            outcome=body.outcome,
+            closed_ts_ms=patch["closed_ts_ms"],
+            exit_px=patch["exit_px"],
+            r_multiple=patch["r_multiple"],
+            outcome=patch["outcome"],
         )
         if row is None:
             raise HTTPException(404, f"signal {signal_id} not found")
@@ -386,7 +411,8 @@ def create_app(
                 "description": (
                     "WebSocket upgrade. Each frame is "
                     '`{ "type": "signal.upsert" | "signal.status", "signal": Signal }`. '
-                    "Emitted on POST /signals (upsert) and PATCH /signals/{id} (status)."
+                    "Emitted on POST /signals (upsert) and PATCH /signals/{id} / lifecycle close (status). "
+                    "Closed frames include realized_r, exit_price, closed_ts_ms."
                 ),
                 "operationId": "ws_signals",
                 "responses": {

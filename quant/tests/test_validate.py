@@ -104,6 +104,11 @@ def test_openapi_and_health():
     assert "post" in spec["paths"]["/risk/validate"]
     assert "get" in spec["paths"]["/signals"]
     assert "/ws/signals" in spec["paths"]
+    assert "/signals/history" not in spec["paths"]
+    props = spec["components"]["schemas"]["SignalView"]["properties"]
+    assert "realized_r" in props
+    assert "exit_price" in props
+    assert "closed_ts_ms" in props
     assert http.get("/docs").status_code == 200
     params = http.get("/risk/params").json()
     assert params["risk_fraction"] == 0.02

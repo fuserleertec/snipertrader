@@ -118,6 +118,9 @@ SIGNAL_VIEW_FIELDS = (
     "timeframe",
     "ref_session",
     "trigger_event_ids",
+    "realized_r",
+    "exit_price",
+    "closed_ts_ms",
 )
 
 
@@ -138,6 +141,19 @@ class SignalView(BaseModel):
     timeframe: SignalTimeframe | None = None
     ref_session: str | None = None
     trigger_event_ids: list[str] = Field(default_factory=list)
+    realized_r: float | None = Field(
+        default=None,
+        description="Signed R multiple on TP_HIT / SL_HIT. Null for ACTIVE and CANCELLED.",
+    )
+    exit_price: float | None = Field(
+        default=None,
+        description="Fill price when the signal closes on TP/SL. Optional.",
+    )
+    closed_ts_ms: int | None = Field(
+        default=None,
+        description="UTC epoch ms when the signal left ACTIVE. Optional.",
+    )
+    # Storage / Grafana aliases — same values as exit_price / realized_r.
     exit_px: float | None = None
     r_multiple: float | None = None
     outcome: str | None = None
@@ -150,6 +166,9 @@ class SignalView(BaseModel):
         tf = row.timeframe
         if tf is not None and not isinstance(tf, SignalTimeframe):
             tf = SignalTimeframe(str(tf))
+        closed = row.status in {SignalStatus.TP_HIT, SignalStatus.SL_HIT}
+        realized = row.r_multiple if closed else None
+        exit_price = row.exit_px
         return cls(
             id=row.id,
             ts_ms=row.ts_ms,
@@ -165,8 +184,11 @@ class SignalView(BaseModel):
             timeframe=tf,
             ref_session=row.ref_session,
             trigger_event_ids=list(row.trigger_event_ids or []),
-            exit_px=row.exit_px,
-            r_multiple=row.r_multiple,
+            realized_r=realized,
+            exit_price=exit_price,
+            closed_ts_ms=row.closed_ts_ms,
+            exit_px=exit_price,
+            r_multiple=realized,
             outcome=row.outcome,
         )
 

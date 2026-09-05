@@ -187,9 +187,11 @@ Timescale table `signals` (see `data_engineering/sql/02-signals.sql`):
 
 `sniper-quant monitor` (or `POST /v1/lifecycle/bar`) watches OHLCV and
 auto-closes ACTIVE rows when price tags TP or SL. Same-bar SL+TP → **SL
-wins**. Closed rows store `exit_px`, `r_multiple`, and `outcome`
-(`win` / `loss`). Frontend `GET /signals` and `WS /ws/signals` keep the
-Phase 1 shape; outcome fields are additive.
+wins**. Closed rows persist `exit_price` / `realized_r` / `closed_ts_ms`
+(storage columns `exit_px`, `r_multiple`, `closed_ts`) plus `outcome`
+(`win` / `loss`). Those three Frontend fields are on `GET /signals`,
+`GET /signals/{id}`, and `WS signal.status`. `realized_r` is **null**
+for `ACTIVE` and `CANCELLED`.
 
 ## Frontend — dashboard signal table
 
@@ -205,6 +207,10 @@ JSON Schema: [`schemas/dashboard_signal.schema.json`](../schemas/dashboard_signa
 | `POST` | `/signals` | `Signal` (after pre-filter; emits `signal.upsert`) |
 | `PATCH` | `/signals/{id}` body `{"status":"TP_HIT"}` | `Signal` (emits `signal.status`) |
 
+History **is** `GET /signals` with `from_ts` / `to_ts` (plus `symbol` /
+`status` / `setup_type`). Do **not** call `/signals/history` — that route
+does not exist.
+
 `from_ts` / `to_ts` are inclusive UTC epoch milliseconds (same unit as `ts_ms`).
 Default `limit` is 50 (max 500). Pass `cursor` = previous `next_cursor` for the
 next page.
@@ -214,7 +220,9 @@ next page.
 `id`, `ts_ms`, `symbol`, `asset_class`, `setup_type` (seven locked values),
 `side`, `entry`, `stop`, `target`, `status`
 (`ACTIVE`\|`TP_HIT`\|`SL_HIT`\|`CANCELLED`), `confidence`, `timeframe`
-(`1m`\|`5m`\|`15m`), `ref_session`, `trigger_event_ids`.
+(`1m`\|`5m`\|`15m`), `ref_session`, `trigger_event_ids`,
+`realized_r` (signed R on TP/SL; null for ACTIVE/CANCELLED),
+`exit_price` (optional), `closed_ts_ms` (optional).
 
 ```js
 const ws = new WebSocket("ws://localhost:8001/ws/signals");

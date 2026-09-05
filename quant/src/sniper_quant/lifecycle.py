@@ -15,6 +15,47 @@ from sniper_quant.store.signals import SignalStore
 log = logging.getLogger(__name__)
 
 
+def resolve_close_patch(
+    row: StoredSignal,
+    status: SignalStatus,
+    *,
+    exit_price: float | None = None,
+    realized_r: float | None = None,
+    closed_ts_ms: int | None = None,
+    outcome: str | None = None,
+) -> dict:
+    """Persist Frontend close fields. ``realized_r`` is null unless TP/SL."""
+    if status is SignalStatus.ACTIVE:
+        return {
+            "closed_ts_ms": None,
+            "exit_px": None,
+            "r_multiple": None,
+            "outcome": None,
+        }
+    if status is SignalStatus.CANCELLED:
+        return {
+            "closed_ts_ms": closed_ts_ms,
+            "exit_px": exit_price,
+            "r_multiple": None,
+            "outcome": outcome or "cancelled",
+        }
+    px = exit_price
+    if px is None:
+        if status is SignalStatus.TP_HIT:
+            px = row.target
+        elif status is SignalStatus.SL_HIT:
+            px = row.stop
+    r_mult = realized_r
+    if r_mult is None and px is not None and row.entry is not None and row.stop is not None:
+        r_mult = r_multiple_achieved(side=row.side, entry=row.entry, stop=row.stop, exit_px=px)
+    return {
+        "closed_ts_ms": closed_ts_ms,
+        "exit_px": px,
+        "r_multiple": r_mult,
+        "outcome": outcome or outcome_from_status(status),
+    }
+
+
 def evaluate_signal_on_bar(signal: StoredSignal, bar: OHLCVBar) -> dict | None:
     """If this bar tags TP or SL, return the status patch. Same-bar SL wins."""
     if signal.status is not SignalStatus.ACTIVE:

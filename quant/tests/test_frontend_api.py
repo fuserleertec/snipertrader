@@ -81,9 +81,61 @@ def test_ws_upsert_and_status():
         assert SIGNAL_KEYS <= set(upsert["signal"])
         assert upsert["signal"]["id"] == created["id"]
         assert upsert["signal"]["status"] == "ACTIVE"
+        assert upsert["signal"]["realized_r"] is None
+        assert upsert["signal"]["exit_price"] is None
+        assert upsert["signal"]["closed_ts_ms"] is None
 
-        patched = http.patch(f"/signals/{created['id']}", json={"status": "SL_HIT"}).json()
+        patched = http.patch(
+            f"/signals/{created['id']}",
+            json={"status": "SL_HIT", "exit_price": 96.0, "realized_r": -1.0, "closed_ts_ms": 9},
+        ).json()
         status = ws.receive_json()
         assert status["type"] == "signal.status"
         assert status["signal"]["status"] == "SL_HIT"
+        assert status["signal"]["realized_r"] == -1.0
+        assert status["signal"]["exit_price"] == 96.0
+        assert status["signal"]["closed_ts_ms"] == 9
         assert patched["status"] == "SL_HIT"
+        assert patched["realized_r"] == -1.0
+        assert patched["exit_price"] == 96.0
+        assert patched["closed_ts_ms"] == 9
+
+
+def test_history_is_get_signals_not_a_separate_route():
+    http = _client()
+    spec = http.get("/openapi.json").json()
+    assert "/signals" in spec["paths"]
+    assert "/signals/history" not in spec["paths"]
+    assert http.get("/signals/history").status_code == 404
+
+
+def test_close_fields_on_list_detail_and_cancelled_null():
+    http = _client()
+    created = http.post("/signals", json=_payload()).json()
+    assert created["realized_r"] is None
+    assert created["exit_price"] is None
+    assert created["closed_ts_ms"] is None
+
+    closed = http.patch(
+        f"/signals/{created['id']}",
+        json={"status": "TP_HIT", "exit_price": 108.0, "realized_r": 2.0, "closed_ts_ms": 42},
+    ).json()
+    assert closed["realized_r"] == 2.0
+    assert closed["exit_price"] == 108.0
+    assert closed["closed_ts_ms"] == 42
+
+    listed = http.get("/signals", params={"status": "TP_HIT"}).json()["items"]
+    assert listed[0]["realized_r"] == 2.0
+    assert listed[0]["exit_price"] == 108.0
+    assert listed[0]["closed_ts_ms"] == 42
+
+    one = http.get(f"/signals/{created['id']}").json()
+    assert one["realized_r"] == 2.0
+    assert one["exit_price"] == 108.0
+    assert one["closed_ts_ms"] == 42
+
+    other = http.post("/signals", json=_payload(symbol="ETHUSDT")).json()
+    cancelled = http.patch(f"/signals/{other['id']}", json={"status": "CANCELLED"}).json()
+    assert cancelled["status"] == "CANCELLED"
+    assert cancelled["realized_r"] is None
+    assert cancelled["r_multiple"] is None

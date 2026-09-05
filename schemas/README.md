@@ -20,7 +20,7 @@ HTTP contracts used by Quant (`POST /risk/validate`) — not Kafka topics:
 |---|---|---|
 | `POST /risk/validate` body | [`risk_validate_request.schema.json`](risk_validate_request.schema.json) | Candidate — **omit `id`**. Required risk fields: `entry`, `stop`, `target`, `timeframe` ∈ {1m,5m,15m}, `trigger_event_ids` |
 | `POST /risk/validate` response | [`risk_validate_response.schema.json`](risk_validate_response.schema.json) | `{approved, reason, adjusted_position_size}` |
-| `GET /signals`, `GET /signals/{id}` | [`dashboard_signal.schema.json`](dashboard_signal.schema.json) | Frontend table row. List wrapper: `{items, next_cursor}` |
+| `GET /signals`, `GET /signals/{id}` | [`dashboard_signal.schema.json`](dashboard_signal.schema.json) | Frontend table + **history** (`from_ts`/`to_ts`). No `/signals/history`. Close fields: `realized_r`, `exit_price`, `closed_ts_ms` |
 | `WS /ws/signals` | [`signal_ws_event.schema.json`](signal_ws_event.schema.json) | `{type: signal.upsert\|signal.status, signal}` |
 
 `setup_type` (locked): `sweep_reclaim` · `fvg_entry` · `mss_break` · `order_block` · `sweep_mss` · `ob_fvg` · `po3_judas`.

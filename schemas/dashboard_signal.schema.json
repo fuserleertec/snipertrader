@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://snipertrader.ai/schemas/dashboard_signal.schema.json",
   "title": "DashboardSignal",
-  "description": "Frontend dashboard Signal row from GET /signals and GET /signals/{id}. Same setup_type / timeframe / trigger_event_ids as the ML validate candidate, plus id and status.",
+  "description": "Frontend dashboard Signal row from GET /signals (history = this list with from_ts/to_ts; there is no /signals/history), GET /signals/{id}, and WS /ws/signals. Same setup_type / timeframe / trigger_event_ids as the ML validate candidate, plus id, status, realized_r, exit_price, closed_ts_ms.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -47,8 +47,20 @@
     "timeframe": { "type": ["string", "null"], "enum": ["1m", "5m", "15m", null] },
     "ref_session": { "type": ["string", "null"] },
     "trigger_event_ids": { "type": "array", "items": { "type": "string" } },
-    "exit_px": { "type": ["number", "null"], "description": "Fill when TP/SL hits. Additive (Phase 2)." },
-    "r_multiple": { "type": ["number", "null"], "description": "R multiple achieved. Additive (Phase 2)." },
+    "realized_r": {
+      "type": ["number", "null"],
+      "description": "Signed R multiple achieved on TP_HIT / SL_HIT. Null for ACTIVE and CANCELLED."
+    },
+    "exit_price": {
+      "type": ["number", "null"],
+      "description": "Fill price when TP/SL hits. Optional."
+    },
+    "closed_ts_ms": {
+      "type": ["integer", "null"],
+      "description": "UTC epoch ms when the signal left ACTIVE. Optional."
+    },
+    "exit_px": { "type": ["number", "null"], "description": "Alias of exit_price (storage / Grafana)." },
+    "r_multiple": { "type": ["number", "null"], "description": "Alias of realized_r (storage / Grafana)." },
     "outcome": {
       "type": ["string", "null"],
       "enum": ["win", "loss", "cancelled", null],
