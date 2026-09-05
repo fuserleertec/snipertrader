@@ -97,13 +97,14 @@ Reject reasons: `ok`, `invalid_levels`, `position_size_exceeds_limit`,
 
 `GET /performance/summary` → top-level `win_rate`, `average_rr`,
 `sharpe_ratio`, `max_drawdown_pct`, `signals_today`, `signals_week`.
-`by_setup` is keyed by **`setup_type`**. Always includes `sweep_reclaim`,
-`fvg_entry`, `po3_judas`, `mss_break`, `order_block`, `sweep_mss`
-(zeros when empty). Each bucket has `product_key` (PM/DE lock):
+`by_setup` is keyed by **`product_key`**. Always includes
 `1_liquidity_sweep_vwap_reclaim`, `2_fvg_mitigation_vwap`,
-`3_po3_asia_range_sweep`, `4_pending_user_confirm`,
-`5_pending_user_confirm`, `6_pending_user_confirm`.
-`ob_fvg` is omitted (not in the validate enum).
+`3_po3_asia_range_sweep`, `4_sd_extension_fade`,
+`5_vwap_pullback_cont`, `6_avwap_ob_confluence` (zeros when empty).
+Each bucket includes `setup_type` (`sweep_reclaim`, `fvg_entry`,
+`po3_judas`, `sd_extension_fade`, `vwap_pullback_cont`,
+`avwap_ob_confluence`). Dormant `mss_break` / `order_block` /
+`sweep_mss` and `*_pending_user_confirm` are omitted.
 
 ## Alerts / paper / auth
 
@@ -283,14 +284,14 @@ def create_app(
 
     @app.get("/performance/summary", response_model=PerformanceSummary)
     async def performance_summary() -> PerformanceSummary:
-        """Live metrics. `by_setup` is keyed by `setup_type` (not product_key).
+        """Live metrics. `by_setup` is keyed by `product_key` (not setup_type).
 
-        Always includes `sweep_reclaim`, `fvg_entry`, `po3_judas`, `mss_break`,
-        `order_block`, `sweep_mss` (zeros when empty). `product_key` is the
-        PM/DE lock: `1_liquidity_sweep_vwap_reclaim`, `2_fvg_mitigation_vwap`,
-        `3_po3_asia_range_sweep`, `4_pending_user_confirm`,
-        `5_pending_user_confirm`, `6_pending_user_confirm`. Do not invent
-        Setup 4–6 entry-rule names. `ob_fvg` is omitted.
+        Always includes `1_liquidity_sweep_vwap_reclaim`,
+        `2_fvg_mitigation_vwap`, `3_po3_asia_range_sweep`,
+        `4_sd_extension_fade`, `5_vwap_pullback_cont`,
+        `6_avwap_ob_confluence` (zeros when empty). Each bucket includes
+        `setup_type`. Dormant `mss_break` / `order_block` / `sweep_mss`
+        and `*_pending_user_confirm` are omitted.
         """
         from sniper_quant.performance import summarize_signals
 

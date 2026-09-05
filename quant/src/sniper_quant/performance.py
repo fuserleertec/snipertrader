@@ -12,7 +12,7 @@ from sniper_quant.models import (
     SignalStatus,
     StoredSignal,
 )
-from sniper_quant.setups import PERFORMANCE_BY_SETUP_KEYS, product_key_for
+from sniper_quant.setups import PERFORMANCE_SETUP_TYPES, SETUP_TYPE_TO_PRODUCT, product_key_for
 
 DAY_MS = 24 * 60 * 60 * 1000
 WEEK_MS = 7 * DAY_MS
@@ -85,19 +85,19 @@ def summarize_signals(
 ) -> PerformanceSummary:
     now = now_ms if now_ms is not None else int(time.time() * 1000)
     overall = _bucket(rows, now_ms=now, risk_fraction=risk_fraction, setup_type="all")
-    grouped: dict[str, list[StoredSignal]] = {name: [] for name in PERFORMANCE_BY_SETUP_KEYS}
+    grouped: dict[str, list[StoredSignal]] = {name: [] for name in PERFORMANCE_SETUP_TYPES}
     for row in rows:
         name = _setup_name(row)
         if name in grouped:
             grouped[name].append(row)
     by_setup = {
-        name: _bucket(
-            grouped.get(name, []),
+        SETUP_TYPE_TO_PRODUCT[setup_type]: _bucket(
+            grouped.get(setup_type, []),
             now_ms=now,
             risk_fraction=risk_fraction,
-            setup_type=name,
+            setup_type=setup_type,
         )
-        for name in PERFORMANCE_BY_SETUP_KEYS
+        for setup_type in PERFORMANCE_SETUP_TYPES
     }
     closed_chrono = sorted(
         [r for r in rows if _is_closed(r)],

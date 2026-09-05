@@ -350,13 +350,17 @@ class BacktestMetrics(BaseModel):
 
 
 class PerformanceBucket(BaseModel):
-    setup_type: str = Field(description="setup_type key; same as the by_setup map key.")
+    setup_type: str = Field(
+        description=(
+            "Live setup_type: sweep_reclaim, fvg_entry, po3_judas, "
+            "sd_extension_fade, vwap_pullback_cont, avwap_ob_confluence."
+        )
+    )
     product_key: str = Field(
         description=(
-            "PM/DE lock: 1_liquidity_sweep_vwap_reclaim, 2_fvg_mitigation_vwap, "
-            "3_po3_asia_range_sweep, 4_pending_user_confirm, "
-            "5_pending_user_confirm, 6_pending_user_confirm. "
-            "Setups 4–6 are placeholders — do not invent entry-rule names."
+            "Same string as the by_setup map key: 1_liquidity_sweep_vwap_reclaim, "
+            "2_fvg_mitigation_vwap, 3_po3_asia_range_sweep, 4_sd_extension_fade, "
+            "5_vwap_pullback_cont, 6_avwap_ob_confluence."
         )
     )
     win_rate: float = 0.0
@@ -380,10 +384,12 @@ class PerformanceSummary(BaseModel):
     n_closed: int = 0
     by_setup: dict[str, PerformanceBucket] = Field(
         description=(
-            "Keyed by setup_type (not product_key). Always includes "
-            "sweep_reclaim, fvg_entry, po3_judas, mss_break, order_block, "
-            "sweep_mss (empty buckets are zeros). product_key is the PM/DE "
-            "lock (3_po3_asia_range_sweep; 4/5/6_pending_user_confirm)."
+            "Keyed by product_key (not setup_type). Always includes "
+            "1_liquidity_sweep_vwap_reclaim, 2_fvg_mitigation_vwap, "
+            "3_po3_asia_range_sweep, 4_sd_extension_fade, "
+            "5_vwap_pullback_cont, 6_avwap_ob_confluence (zeros when empty). "
+            "Each bucket includes setup_type. Dormant mss_break / order_block / "
+            "sweep_mss and *_pending_user_confirm are omitted."
         )
     )
     rolling_win_rate_20: float | None = None

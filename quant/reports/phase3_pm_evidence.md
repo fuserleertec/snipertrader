@@ -9,7 +9,7 @@ PR https://github.com/fuserleertec/snipertrader/pull/2
 
 | # | Item | Result | Evidence |
 |---|---|---|---|
-| 1 | Backtest Setups 4–6 | **PASS** | [`quant/reports/setups_4_6_walkforward.md`](setups_4_6_walkforward.md). Enum excludes `mss_break` / `order_block` / `sweep_mss`. FE `product_key` for 4–6 is `*_pending_user_confirm` — no invented entry-rule names. |
+| 1 | Backtest Setups 4–6 | **PASS** | [`quant/reports/setups_4_6_walkforward.md`](setups_4_6_walkforward.md). Enum excludes `mss_break` / `order_block` / `sweep_mss`. FE `by_setup` keys are the six product strings (S4–S6 = `4_sd_extension_fade` / `5_vwap_pullback_cont` / `6_avwap_ob_confluence`). |
 | 2 | Risk API (S4–S6 rules + validate-before-publish) | **PASS** | `tests/test_phase3.py` + `tests/test_validate.py` + `tests/test_pr9_replay.py`. Reasons: `invalid_levels`, `news_window`, `low_conviction`, plus existing size/daily/corr/conflict. |
 | 3 | Alerts (Telegram/Discord/Email/webhook) + 5/hour throttle | **PASS** | `test_alerts_four_channels_and_throttle`: 4 stubs, max 5/hour/user, extras throttled. |
 | 4 | Public API auth + history + performance + load 100 | **PASS** | `GET /signals/history`, `GET /performance/summary` `by_setup` product keys, `X-API-Key` optional. Load: **p95 = 56.37 ms** (target &lt; 200 ms). |
@@ -36,8 +36,8 @@ Quant defaults match PR #9 `SetupParams` where the knobs exist on both sides:
 
 Intentional: Quant reporting weights stay **40/30/30**. PR #9 uses additive
 `conv_kill_zone_bonus=10` on a different scale. FE `/performance/summary`
-does **not** add PR #9 keys `4_sd_extension_fade` / `5_vwap_pullback_cont` /
-`6_avwap_ob_confluence`.
+`by_setup` **is** keyed by the six product strings, including
+`4_sd_extension_fade` / `5_vwap_pullback_cont` / `6_avwap_ob_confluence`.
 
 ## 1) Walk-forward 4–6 (synthetic 5m tape, 2134 bars, 3 folds, `core`)
 
@@ -47,16 +47,16 @@ does **not** add PR #9 keys `4_sd_extension_fade` / `5_vwap_pullback_cont` /
 | 5 | `vwap_pullback_cont` | 1 | 100% | 2 |
 | 6 | `avwap_ob_confluence` | 14 | 7.1% | 56 |
 
-Frontend `GET /performance/summary` `product_key` is a **separate** PM/DE lock (do not invent Setup 4–6 entry-rule names):
+Frontend `GET /performance/summary` `by_setup` is keyed by **product_key**. Each bucket includes `setup_type`. Dormant names and `*_pending_user_confirm` are omitted:
 
-| `setup_type` (`by_setup` key) | `product_key` |
+| `by_setup` key (`product_key`) | `setup_type` |
 |---|---|
-| `sweep_reclaim` | `1_liquidity_sweep_vwap_reclaim` |
-| `fvg_entry` | `2_fvg_mitigation_vwap` |
-| `po3_judas` | `3_po3_asia_range_sweep` |
-| `mss_break` | `4_pending_user_confirm` |
-| `order_block` | `5_pending_user_confirm` |
-| `sweep_mss` | `6_pending_user_confirm` |
+| `1_liquidity_sweep_vwap_reclaim` | `sweep_reclaim` |
+| `2_fvg_mitigation_vwap` | `fvg_entry` |
+| `3_po3_asia_range_sweep` | `po3_judas` |
+| `4_sd_extension_fade` | `sd_extension_fade` |
+| `5_vwap_pullback_cont` | `vwap_pullback_cont` |
+| `6_avwap_ob_confluence` | `avwap_ob_confluence` |
 
 Tape is **patterned synthetic** — OOS win rate is **not** a live edge. Re-run on Timescale `ohlcv_bars` before promoting a retune.
 
@@ -83,7 +83,7 @@ Stubs only (no network). Channels: `telegram`, `discord`, `email`, `webhook`. Im
 ## 4) Public API + load
 
 - History: `GET /signals` **and** `GET /signals/history` (same list; `side` filter added).
-- Performance: `GET /performance/summary` → `by_setup` keyed by `setup_type` (`sweep_reclaim`, `fvg_entry`, `po3_judas`, `mss_break`, `order_block`, `sweep_mss`). `product_key` lock: `1_liquidity_sweep_vwap_reclaim`, `2_fvg_mitigation_vwap`, `3_po3_asia_range_sweep` (not `3_po3_judas`), `4_pending_user_confirm`, `5_pending_user_confirm`, `6_pending_user_confirm`. Do not invent Setup 4–6 entry-rule names. Drift: rolling 20-trade WR &lt; 45% → `drift_warning`.
+- Performance: `GET /performance/summary` → `by_setup` keyed by **product_key** (`1_liquidity_sweep_vwap_reclaim`, `2_fvg_mitigation_vwap`, `3_po3_asia_range_sweep`, `4_sd_extension_fade`, `5_vwap_pullback_cont`, `6_avwap_ob_confluence`). Each bucket includes `setup_type`. Dormant `mss_break` / `order_block` / `sweep_mss` and `*_pending_user_confirm` are omitted. Drift: rolling 20-trade WR &lt; 45% → `drift_warning`.
 - Auth: `SNIPER_API_KEY` → require `X-API-Key` (default **off**). Optional `RATE_LIMIT_PER_MIN`.
 - Load methodology: **100 concurrent** in-process `TestClient` threads (`GET /signals?limit=20`), not 100 real sockets. Measured (2026-09-05): min 8.35 ms · p50 32.48 ms · **p95 56.37 ms** · p99 65.44 ms · max 71.42 ms. Target p95 &lt; 200 ms → **PASS**.
 

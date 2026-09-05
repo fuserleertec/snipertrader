@@ -35,28 +35,20 @@ DORMANT_SETUP_TYPES: tuple[str, ...] = (
     "ob_fvg",
 )
 
-# Frontend GET /performance/summary — by_setup is keyed by setup_type.
-# These six always appear (zeros when empty). ob_fvg is omitted (not in enum).
-# product_key strings are the PM/DE lock (do not invent Setup 4–6 names).
-PERFORMANCE_SETUP_TYPES: tuple[str, ...] = (
-    "sweep_reclaim",
-    "fvg_entry",
-    "po3_judas",
-    "mss_break",
-    "order_block",
-    "sweep_mss",
-)
-PERFORMANCE_BY_SETUP_KEYS: tuple[str, ...] = PERFORMANCE_SETUP_TYPES
-
+# Frontend GET /performance/summary — by_setup is keyed by product_key.
+# These six always appear (zeros when empty). Dormant names and
+# *_pending_user_confirm are omitted. Each bucket includes setup_type.
+PERFORMANCE_SETUP_TYPES: tuple[str, ...] = SETUP_TYPES
 SETUP_TYPE_TO_PRODUCT: dict[str, str] = {
     "sweep_reclaim": "1_liquidity_sweep_vwap_reclaim",
     "fvg_entry": "2_fvg_mitigation_vwap",
     "po3_judas": "3_po3_asia_range_sweep",
-    "mss_break": "4_pending_user_confirm",
-    "order_block": "5_pending_user_confirm",
-    "sweep_mss": "6_pending_user_confirm",
+    "sd_extension_fade": "4_sd_extension_fade",
+    "vwap_pullback_cont": "5_vwap_pullback_cont",
+    "avwap_ob_confluence": "6_avwap_ob_confluence",
 }
-PRODUCT_KEYS: tuple[str, ...] = tuple(SETUP_TYPE_TO_PRODUCT[k] for k in PERFORMANCE_BY_SETUP_KEYS)
+PRODUCT_KEYS: tuple[str, ...] = tuple(SETUP_TYPE_TO_PRODUCT[k] for k in PERFORMANCE_SETUP_TYPES)
+PERFORMANCE_BY_SETUP_KEYS: tuple[str, ...] = PRODUCT_KEYS
 PRODUCT_TO_SETUP_TYPE: dict[str, str] = {v: k for k, v in SETUP_TYPE_TO_PRODUCT.items()}
 
 # Setup-specific risk floors (validate). Conviction is 0–100; compare to confidence×100.

@@ -1,4 +1,4 @@
-"""GET /performance/summary — Frontend contract (by_setup keyed by setup_type)."""
+"""GET /performance/summary — Frontend contract (by_setup keyed by product_key)."""
 
 from __future__ import annotations
 
@@ -7,7 +7,12 @@ from fastapi.testclient import TestClient
 from sniper_quant.api import create_app
 from sniper_quant.performance import summarize_signals
 from sniper_quant.risk.engine import RiskEngine, RiskState
-from sniper_quant.setups import PERFORMANCE_SETUP_TYPES, SETUP_TYPE_TO_PRODUCT
+from sniper_quant.setups import (
+    PERFORMANCE_SETUP_TYPES,
+    PRODUCT_KEYS,
+    PRODUCT_TO_SETUP_TYPE,
+    SETUP_TYPE_TO_PRODUCT,
+)
 from sniper_quant.store.signals import InMemorySignalStore
 from tests.conftest import make_settings
 from tests.test_validate import _payload
@@ -31,6 +36,21 @@ BUCKET_FIELDS = {
     "signals_today",
     "signals_week",
 }
+FORBIDDEN_BY_SETUP = {
+    "sweep_reclaim",
+    "fvg_entry",
+    "po3_judas",
+    "sd_extension_fade",
+    "vwap_pullback_cont",
+    "avwap_ob_confluence",
+    "mss_break",
+    "order_block",
+    "sweep_mss",
+    "ob_fvg",
+    "4_pending_user_confirm",
+    "5_pending_user_confirm",
+    "6_pending_user_confirm",
+}
 
 
 def _client():
@@ -49,27 +69,29 @@ def test_empty_book_shape_and_required_keys():
     assert body["max_drawdown_pct"] == 0.0
     assert body["signals_today"] == 0
     assert body["signals_week"] == 0
-    assert set(PERFORMANCE_SETUP_TYPES) <= set(body["by_setup"])
-    assert "ob_fvg" not in body["by_setup"]
-    for name in PERFORMANCE_SETUP_TYPES:
-        bucket = body["by_setup"][name]
+    assert list(body["by_setup"]) == list(PRODUCT_KEYS)
+    assert FORBIDDEN_BY_SETUP.isdisjoint(body["by_setup"])
+    for product_key in PRODUCT_KEYS:
+        bucket = body["by_setup"][product_key]
+        setup_type = PRODUCT_TO_SETUP_TYPE[product_key]
         assert BUCKET_FIELDS <= set(bucket)
-        assert bucket["setup_type"] == name
-        assert bucket["product_key"] == SETUP_TYPE_TO_PRODUCT[name]
+        assert bucket["setup_type"] == setup_type
+        assert bucket["product_key"] == product_key
         assert bucket["win_rate"] == 0.0
         assert bucket["average_rr"] == 0.0
         assert bucket["signals_today"] == 0
         assert bucket["signals_week"] == 0
-    assert body["by_setup"]["po3_judas"]["product_key"] == "3_po3_asia_range_sweep"
-    assert body["by_setup"]["mss_break"]["product_key"] == "4_pending_user_confirm"
-    assert body["by_setup"]["order_block"]["product_key"] == "5_pending_user_confirm"
-    assert body["by_setup"]["sweep_mss"]["product_key"] == "6_pending_user_confirm"
+        assert bucket["n_signals"] == 0
+    assert body["by_setup"]["3_po3_asia_range_sweep"]["setup_type"] == "po3_judas"
+    assert body["by_setup"]["4_sd_extension_fade"]["setup_type"] == "sd_extension_fade"
+    assert body["by_setup"]["5_vwap_pullback_cont"]["setup_type"] == "vwap_pullback_cont"
+    assert body["by_setup"]["6_avwap_ob_confluence"]["setup_type"] == "avwap_ob_confluence"
 
 
 def test_summary_from_realized_r():
     empty = summarize_signals([])
     assert empty.win_rate == 0.0
-    assert set(PERFORMANCE_SETUP_TYPES) <= set(empty.by_setup)
+    assert list(empty.by_setup) == list(PRODUCT_KEYS)
 
     http = _client()
     created = http.post(
@@ -83,13 +105,14 @@ def test_summary_from_realized_r():
     body = http.get("/performance/summary").json()
     assert body["win_rate"] == 1.0
     assert body["average_rr"] == 2.0
-    sweep = body["by_setup"]["sweep_reclaim"]
+    sweep = body["by_setup"]["1_liquidity_sweep_vwap_reclaim"]
     assert sweep["setup_type"] == "sweep_reclaim"
     assert sweep["product_key"] == "1_liquidity_sweep_vwap_reclaim"
     assert sweep["win_rate"] == 1.0
     assert sweep["average_rr"] == 2.0
     assert sweep["n_signals"] == 1
-    assert body["by_setup"]["mss_break"]["win_rate"] == 0.0
+    assert body["by_setup"]["4_sd_extension_fade"]["win_rate"] == 0.0
+    assert "mss_break" not in body["by_setup"]
 
 
 def test_product_key_lock_strings():
@@ -97,14 +120,18 @@ def test_product_key_lock_strings():
         "sweep_reclaim": "1_liquidity_sweep_vwap_reclaim",
         "fvg_entry": "2_fvg_mitigation_vwap",
         "po3_judas": "3_po3_asia_range_sweep",
-        "mss_break": "4_pending_user_confirm",
-        "order_block": "5_pending_user_confirm",
-        "sweep_mss": "6_pending_user_confirm",
+        "sd_extension_fade": "4_sd_extension_fade",
+        "vwap_pullback_cont": "5_vwap_pullback_cont",
+        "avwap_ob_confluence": "6_avwap_ob_confluence",
     }
+    assert PERFORMANCE_SETUP_TYPES == tuple(SETUP_TYPE_TO_PRODUCT)
     values = set(SETUP_TYPE_TO_PRODUCT.values())
     assert "3_po3_judas" not in values
     assert "4_mss_break" not in values
-    assert "4_sd_extension_fade" not in values
+    assert "4_pending_user_confirm" not in values
+    assert "5_pending_user_confirm" not in values
+    assert "6_pending_user_confirm" not in values
+    assert "4_sd_extension_fade" in values
 
 
 def test_grafana_labels_use_product_key_lock():
@@ -117,23 +144,20 @@ def test_grafana_labels_use_product_key_lock():
     blob = json.dumps(dash)
     assert "3_po3_asia_range_sweep" in blob
     assert "3_po3_judas" not in blob
-    assert "4_pending_user_confirm" in blob
-    assert "5_pending_user_confirm" in blob
-    assert "6_pending_user_confirm" in blob
-    assert "sd_extension_fade" not in blob
-    assert "4_mss_break" not in blob
+    assert "4_sd_extension_fade" in blob
+    assert "5_vwap_pullback_cont" in blob
+    assert "6_avwap_ob_confluence" in blob
+    assert "4_pending_user_confirm" not in blob
+    assert "5_pending_user_confirm" not in blob
+    assert "6_pending_user_confirm" not in blob
+    assert "mss_break" not in blob
+    assert "order_block" not in blob
+    assert "sweep_mss" not in blob
     var = dash["templating"]["list"][0]
     assert var["name"] == "setup_type"
     texts = [opt["text"] for opt in var["options"]]
     values = [opt["value"] for opt in var["options"]]
-    assert texts == [
-        "1_liquidity_sweep_vwap_reclaim",
-        "2_fvg_mitigation_vwap",
-        "3_po3_asia_range_sweep",
-        "4_pending_user_confirm",
-        "5_pending_user_confirm",
-        "6_pending_user_confirm",
-    ]
+    assert texts == list(PRODUCT_KEYS)
     assert values == list(PERFORMANCE_SETUP_TYPES)
 
 
@@ -142,12 +166,19 @@ def test_openapi_documents_performance_summary():
     assert "/performance/summary" in spec["paths"]
     desc = spec["paths"]["/performance/summary"]["get"].get("description", "")
     assert "3_po3_asia_range_sweep" in desc
+    assert "4_sd_extension_fade" in desc
     assert "3_po3_judas" not in desc
-    assert "4_pending_user_confirm" in desc
+    assert "pending_user_confirm" not in desc
     props = spec["components"]["schemas"]["PerformanceBucket"]["properties"]
     assert "product_key" in props
     assert "setup_type" in props
     assert "sharpe_ratio" in props
     pk_desc = props["product_key"].get("description", "")
     assert "3_po3_asia_range_sweep" in pk_desc
-    assert "pending_user_confirm" in pk_desc
+    assert "4_sd_extension_fade" in pk_desc
+    assert "pending_user_confirm" not in pk_desc
+    by_desc = spec["components"]["schemas"]["PerformanceSummary"]["properties"]["by_setup"].get(
+        "description", ""
+    )
+    assert "1_liquidity_sweep_vwap_reclaim" in by_desc
+    assert "pending_user_confirm" not in by_desc

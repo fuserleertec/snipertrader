@@ -11,7 +11,7 @@ from sniper_quant.alerts import CHANNELS, MAX_ALERTS_PER_HOUR
 from sniper_quant.api import create_app
 from sniper_quant.news import TEST_NEWS_TS_MS
 from sniper_quant.risk.engine import RiskEngine, RiskState
-from sniper_quant.setups import DORMANT_SETUP_TYPES, PERFORMANCE_SETUP_TYPES, PRODUCT_KEYS, SETUP_TYPES
+from sniper_quant.setups import DORMANT_SETUP_TYPES, PRODUCT_KEYS, SETUP_TYPES
 from sniper_quant.store.signals import InMemorySignalStore
 from tests.conftest import make_settings
 from tests.test_validate import _payload
@@ -121,15 +121,20 @@ def test_publish_factors_and_performance_product_keys():
         json={"status": "TP_HIT", "exit_price": 108.0, "realized_r": 2.0, "closed_ts_ms": 99},
     )
     summary = http.get("/performance/summary").json()
-    assert set(PERFORMANCE_SETUP_TYPES) == set(summary["by_setup"])
+    assert list(summary["by_setup"]) == list(PRODUCT_KEYS)
     assert "sd_extension_fade" not in summary["by_setup"]
+    assert "mss_break" not in summary["by_setup"]
+    assert "4_pending_user_confirm" not in summary["by_setup"]
     assert summary["win_rate"] == 1.0
     assert summary["n_signals"] == 1
-    assert summary["by_setup"]["po3_judas"]["product_key"] == "3_po3_asia_range_sweep"
-    assert summary["by_setup"]["mss_break"]["product_key"] == "4_pending_user_confirm"
-    assert summary["by_setup"]["order_block"]["product_key"] == "5_pending_user_confirm"
-    assert summary["by_setup"]["sweep_mss"]["product_key"] == "6_pending_user_confirm"
-    sweep = summary["by_setup"]["sweep_reclaim"]
+    fade = summary["by_setup"]["4_sd_extension_fade"]
+    assert fade["setup_type"] == "sd_extension_fade"
+    assert fade["product_key"] == "4_sd_extension_fade"
+    assert fade["n_signals"] == 1
+    assert fade["win_rate"] == 1.0
+    assert summary["by_setup"]["3_po3_asia_range_sweep"]["setup_type"] == "po3_judas"
+    sweep = summary["by_setup"]["1_liquidity_sweep_vwap_reclaim"]
+    assert sweep["setup_type"] == "sweep_reclaim"
     assert sweep["n_signals"] == 0
     assert "sharpe_ratio" in sweep
     assert "max_drawdown_pct" in sweep

@@ -209,7 +209,7 @@ JSON Schema: [`schemas/dashboard_signal.schema.json`](../schemas/dashboard_signa
 |---|---|---|
 | `GET` | `/signals?symbol=&status=&setup_type=&from_ts=&to_ts=&limit=&cursor=` | `{ "items": Signal[], "next_cursor": string \| null }` |
 | `GET` | `/signals/history` | Same list as `GET /signals` |
-| `GET` | `/performance/summary` | Live metrics; `by_setup` keyed by `setup_type` |
+| `GET` | `/performance/summary` | Live metrics; `by_setup` keyed by `product_key` |
 | `GET` | `/signals/{id}` | `Signal` |
 | `WS` | `/ws/signals` | `{ "type": "signal.upsert" \| "signal.status", "signal": Signal }` |
 | `POST` | `/signals` | `Signal` (after pre-filter; emits `signal.upsert`) |
@@ -226,7 +226,7 @@ JSON Schema: [`schemas/dashboard_signal.schema.json`](../schemas/dashboard_signa
   "signals_today": 0,
   "signals_week": 0,
   "by_setup": {
-    "sweep_reclaim": {
+    "1_liquidity_sweep_vwap_reclaim": {
       "setup_type": "sweep_reclaim",
       "product_key": "1_liquidity_sweep_vwap_reclaim",
       "win_rate": 0.0,
@@ -240,16 +240,15 @@ JSON Schema: [`schemas/dashboard_signal.schema.json`](../schemas/dashboard_signa
 }
 ```
 
-`by_setup` is keyed by **`setup_type`**, not `product_key`. Empty books are
-zeros. Always present: `sweep_reclaim`, `fvg_entry`, `po3_judas`,
-`mss_break`, `order_block`, `sweep_mss`. `ob_fvg` is omitted (not in the
-validate enum). `product_key` map: `sweep_reclaim` →
-`1_liquidity_sweep_vwap_reclaim`, `fvg_entry` → `2_fvg_mitigation_vwap`,
-`po3_judas` → `3_po3_asia_range_sweep`, `mss_break` →
-`4_pending_user_confirm`, `order_block` → `5_pending_user_confirm`,
-`sweep_mss` → `6_pending_user_confirm`. Setup 4–6 product keys stay
-`*_pending_user_confirm` — no invented entry-rule names. Metrics come from
-signal outcomes / `realized_r`.
+`by_setup` is keyed by **`product_key`**, not `setup_type`. Empty books are
+zeros. Always present: `1_liquidity_sweep_vwap_reclaim`,
+`2_fvg_mitigation_vwap`, `3_po3_asia_range_sweep`, `4_sd_extension_fade`,
+`5_vwap_pullback_cont`, `6_avwap_ob_confluence`. Each bucket includes
+`setup_type` (`sweep_reclaim`, `fvg_entry`, `po3_judas`,
+`sd_extension_fade`, `vwap_pullback_cont`, `avwap_ob_confluence`).
+Dormant `mss_break` / `order_block` / `sweep_mss` and
+`*_pending_user_confirm` are omitted. Metrics come from signal outcomes /
+`realized_r`.
 
 History is `GET /signals` **or** `GET /signals/history` with `from_ts` /
 `to_ts` (plus `symbol` / `status` / `setup_type` / `side`). Both share the
@@ -382,13 +381,13 @@ init runs `01-init.sql` (OHLCV) then `02-signals.sql` (signals +
 consumer), `signal-monitor` (TP/SL), `grafana` on **:3002**.
 
 Grafana panels filter on `setup_type`; series / table / variable **labels**
-are the PM/DE `product_key` lock (`1_liquidity_sweep_vwap_reclaim`,
-`2_fvg_mitigation_vwap`, `3_po3_asia_range_sweep`,
-`4_pending_user_confirm`, `5_pending_user_confirm`,
-`6_pending_user_confirm`). Setups 4–6 stay `*_pending_user_confirm` —
-no invented entry-rule names. Alert rules fire when 7-day win rate <
-**0.35** or avg R < **0.50** (`ALERT_WIN_RATE` / `ALERT_AVG_RR`).
-Provisioning lives in `quant/grafana/provisioning/`.
+are the PM/FE `product_key` lock (`1_liquidity_sweep_vwap_reclaim`,
+`2_fvg_mitigation_vwap`, `3_po3_asia_range_sweep`, `4_sd_extension_fade`,
+`5_vwap_pullback_cont`, `6_avwap_ob_confluence`). Dormant
+`mss_break` / `order_block` / `sweep_mss` and `*_pending_user_confirm`
+are omitted. Alert rules fire when 7-day win rate < **0.35** or avg R <
+**0.50** (`ALERT_WIN_RATE` / `ALERT_AVG_RR`). Provisioning lives in
+`quant/grafana/provisioning/`.
 
 Phase 2 surface (done): Kafka `setup_signals` consumer (`sniper-quant consume`),
 lifecycle `realized_r` / `exit_price` / `closed_ts_ms`, Grafana on :3002,

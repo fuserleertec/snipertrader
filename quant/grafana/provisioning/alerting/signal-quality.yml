@@ -39,9 +39,9 @@ groups:
                     WHEN 'sweep_reclaim' THEN '1_liquidity_sweep_vwap_reclaim'
                     WHEN 'fvg_entry' THEN '2_fvg_mitigation_vwap'
                     WHEN 'po3_judas' THEN '3_po3_asia_range_sweep'
-                    WHEN 'mss_break' THEN '4_pending_user_confirm'
-                    WHEN 'order_block' THEN '5_pending_user_confirm'
-                    WHEN 'sweep_mss' THEN '6_pending_user_confirm'
+                    WHEN 'sd_extension_fade' THEN '4_sd_extension_fade'
+                    WHEN 'vwap_pullback_cont' THEN '5_vwap_pullback_cont'
+                    WHEN 'avwap_ob_confluence' THEN '6_avwap_ob_confluence'
                     ELSE setup_type
                   END AS product_key,
                   AVG(win_rate) AS win_rate
@@ -106,9 +106,9 @@ groups:
                     WHEN 'sweep_reclaim' THEN '1_liquidity_sweep_vwap_reclaim'
                     WHEN 'fvg_entry' THEN '2_fvg_mitigation_vwap'
                     WHEN 'po3_judas' THEN '3_po3_asia_range_sweep'
-                    WHEN 'mss_break' THEN '4_pending_user_confirm'
-                    WHEN 'order_block' THEN '5_pending_user_confirm'
-                    WHEN 'sweep_mss' THEN '6_pending_user_confirm'
+                    WHEN 'sd_extension_fade' THEN '4_sd_extension_fade'
+                    WHEN 'vwap_pullback_cont' THEN '5_vwap_pullback_cont'
+                    WHEN 'avwap_ob_confluence' THEN '6_avwap_ob_confluence'
                     ELSE setup_type
                   END AS product_key,
                   AVG(avg_rr) AS avg_rr
