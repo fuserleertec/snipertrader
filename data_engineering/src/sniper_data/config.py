@@ -45,6 +45,7 @@ class Settings(BaseSettings):
     demo_symbols: str = Field(default="BTCUSDT,AAPL,ES", alias="DEMO_SYMBOLS")
     rolling_vwap_periods: int = Field(default=20, alias="ROLLING_VWAP_PERIODS")
     fvg_ttl_seconds: int = Field(default=FVG_TTL_MAX_SECONDS, alias="FVG_TTL_SECONDS")
+    swing_lookback: int = Field(default=5, alias="SWING_LOOKBACK")
     tick_interval_ms: int = Field(default=80, alias="TICK_INTERVAL_MS")
     use_inmemory: bool = Field(default=False, alias="USE_INMEMORY")
 
