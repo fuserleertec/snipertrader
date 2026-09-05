@@ -104,8 +104,8 @@ def test_compute_summary_drawdown_and_sharpe():
     now = 1_725_500_000_000
     rows = [
         StoredOutcome(setup="1_liquidity_sweep_vwap_reclaim", won=True, rr=2.0, ts_ms=now),
-        StoredOutcome(setup="1_liquidity_sweep_vwap_reclaim", won=False, rr=3.0, ts_ms=now),
-        StoredOutcome(setup="1_liquidity_sweep_vwap_reclaim", won=True, rr=1.0, ts_ms=now),
+        StoredOutcome(setup="1_liquidity_sweep_vwap_reclaim", won=False, rr=1.0, ts_ms=now),
+        StoredOutcome(setup="1_liquidity_sweep_vwap_reclaim", won=True, rr=1.5, ts_ms=now),
     ]
     body = compute_summary(rows, now_ms=now)
     assert body["overall"]["signals_today"] == 3

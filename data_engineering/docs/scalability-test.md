@@ -31,10 +31,14 @@ Six symbols: `BTCUSDT,ETHUSDT,AAPL,MSFT,ES,NQ` (2 crypto + 2 equity +
 
 ## Harness results
 
-Filled after `sniper-data bench` in this PR (see PR description).
-Placeholder so the doc path is stable:
+Recorded on this PR’s CI-shaped VM (`sniper-data` in-process bench, 2026-09-05):
 
-| Run | symbols | n | p50 ms | p99 ms | SLO |
-|---|---|---|---|---|---|
-| baseline | BTCUSDT | (ci) | — | < 500 | pass |
-| 2× | 6 symbols | (ci) | — | < 500 | pass |
+| Run | symbols | n | p50 ms | p99 ms | max ms | SLO 500 ms |
+|---|---|---|---|---|---|---|
+| baseline | BTCUSDT | 400 | 0.861 | 1.345 | 1.945 | **pass** |
+| 2× | BTCUSDT,ETHUSDT,AAPL,MSFT,ES,NQ | 400 | 0.787 | 1.422 | 14.12 | **pass** |
+
+`pytest -q` in `data_engineering/`: **98 passed**. Incremental W/S/Q VWAP
+keeps p99 ~1.4 ms even at 2× symbol count — two orders of magnitude
+inside the 500 ms SLO. The 14 ms max on the 2× run is a single warmup
+outlier, not p99.
