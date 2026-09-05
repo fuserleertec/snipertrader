@@ -11,7 +11,7 @@ from sniper_quant.alerts import CHANNELS, MAX_ALERTS_PER_HOUR
 from sniper_quant.api import create_app
 from sniper_quant.news import TEST_NEWS_TS_MS
 from sniper_quant.risk.engine import RiskEngine, RiskState
-from sniper_quant.setups import DORMANT_SETUP_TYPES, PRODUCT_KEYS, SETUP_TYPES
+from sniper_quant.setups import DORMANT_SETUP_TYPES, PERFORMANCE_SETUP_TYPES, PRODUCT_KEYS, SETUP_TYPES
 from sniper_quant.store.signals import InMemorySignalStore
 from tests.conftest import make_settings
 from tests.test_validate import _payload
@@ -102,9 +102,10 @@ def test_publish_factors_and_performance_product_keys():
         json={"status": "TP_HIT", "exit_price": 108.0, "realized_r": 2.0, "closed_ts_ms": 99},
     )
     summary = http.get("/performance/summary").json()
-    assert set(summary["by_setup"]) == set(PRODUCT_KEYS)
-    bucket = summary["by_setup"]["4_sd_extension_fade"]
+    assert set(PERFORMANCE_SETUP_TYPES) <= set(summary["by_setup"])
+    bucket = summary["by_setup"]["sd_extension_fade"]
     assert bucket["setup_type"] == "sd_extension_fade"
+    assert bucket["product_key"] == "4_sd_extension_fade"
     assert bucket["n_signals"] == 1
     assert "sharpe_ratio" in bucket
     assert "max_drawdown_pct" in bucket

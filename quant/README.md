@@ -205,10 +205,46 @@ JSON Schema: [`schemas/dashboard_signal.schema.json`](../schemas/dashboard_signa
 | Method | Path | Response |
 |---|---|---|
 | `GET` | `/signals?symbol=&status=&setup_type=&from_ts=&to_ts=&limit=&cursor=` | `{ "items": Signal[], "next_cursor": string \| null }` |
+| `GET` | `/signals/history` | Same list as `GET /signals` |
+| `GET` | `/performance/summary` | Live metrics; `by_setup` keyed by `setup_type` |
 | `GET` | `/signals/{id}` | `Signal` |
 | `WS` | `/ws/signals` | `{ "type": "signal.upsert" \| "signal.status", "signal": Signal }` |
 | `POST` | `/signals` | `Signal` (after pre-filter; emits `signal.upsert`) |
 | `PATCH` | `/signals/{id}` body `{"status":"TP_HIT"}` | `Signal` (emits `signal.status`) |
+
+`GET /performance/summary` (OpenAPI `/docs`) returns:
+
+```json
+{
+  "win_rate": 0.0,
+  "average_rr": 0.0,
+  "sharpe_ratio": 0.0,
+  "max_drawdown_pct": 0.0,
+  "signals_today": 0,
+  "signals_week": 0,
+  "by_setup": {
+    "sweep_reclaim": {
+      "setup_type": "sweep_reclaim",
+      "product_key": "1_liquidity_sweep_vwap_reclaim",
+      "win_rate": 0.0,
+      "average_rr": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown_pct": 0.0,
+      "signals_today": 0,
+      "signals_week": 0
+    }
+  }
+}
+```
+
+`by_setup` is keyed by **`setup_type`**, not `product_key`. Empty books are
+zeros. Always present: `sweep_reclaim`, `fvg_entry`, `po3_judas`,
+`mss_break`, `order_block`, `sweep_mss`. `ob_fvg` is omitted (not in the
+validate enum). `product_key` map: `sweep_reclaim` →
+`1_liquidity_sweep_vwap_reclaim`, `fvg_entry` → `2_fvg_mitigation_vwap`,
+`po3_judas` → `3_po3_judas`, `mss_break` → `4_mss_break`, `order_block` →
+`5_order_block`, `sweep_mss` → `6_sweep_mss`. Metrics come from signal
+outcomes / `realized_r`.
 
 History is `GET /signals` **or** `GET /signals/history` with `from_ts` /
 `to_ts` (plus `symbol` / `status` / `setup_type` / `side`). Both share the

@@ -83,10 +83,12 @@ Reject reasons: `ok`, `invalid_levels`, `position_size_exceeds_limit`,
 (filters: `symbol`, `status`, `setup_type`, `side`, `from_ts`, `to_ts`,
 `limit`, `cursor`).
 
-`GET /performance/summary` → `by_setup` keyed by product strings:
-`1_liquidity_sweep_vwap_reclaim`, `2_fvg_mitigation_vwap`,
-`3_po3_asia_range_sweep`, `4_sd_extension_fade`,
-`5_vwap_pullback_cont`, `6_avwap_ob_confluence`.
+`GET /performance/summary` → top-level `win_rate`, `average_rr`,
+`sharpe_ratio`, `max_drawdown_pct`, `signals_today`, `signals_week`.
+`by_setup` is keyed by **`setup_type`** (not product_key). Always includes
+`sweep_reclaim`, `fvg_entry`, `po3_judas`, `mss_break`, `order_block`,
+`sweep_mss` (zeros when empty). Each bucket has `setup_type`, `product_key`,
+and the same metric fields. `ob_fvg` is omitted (not in the validate enum).
 
 ## Alerts / paper / auth
 
@@ -251,7 +253,7 @@ def create_app(
 
     @app.get("/performance/summary", response_model=PerformanceSummary)
     async def performance_summary() -> PerformanceSummary:
-        """Live metrics. by_setup is keyed by DE product strings, not setup_type."""
+        """Live metrics. by_setup is keyed by setup_type; each bucket has product_key."""
         from sniper_quant.performance import summarize_signals
 
         rows = await _signals().all()

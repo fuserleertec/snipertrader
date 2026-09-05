@@ -329,15 +329,16 @@ class BacktestMetrics(BaseModel):
 
 
 class PerformanceBucket(BaseModel):
-    setup_type: str = Field(description="Locked setup_type for Frontend / signal joins.")
+    setup_type: str = Field(description="setup_type key; same as the by_setup map key.")
+    product_key: str = Field(description="DE/Frontend product string for this setup.")
     win_rate: float = 0.0
     average_rr: float = 0.0
     sharpe_ratio: float = 0.0
     max_drawdown_pct: float = 0.0
-    n_signals: int = 0
-    n_closed: int = 0
     signals_today: int = 0
     signals_week: int = 0
+    n_signals: int = 0
+    n_closed: int = 0
 
 
 class PerformanceSummary(BaseModel):
@@ -351,11 +352,10 @@ class PerformanceSummary(BaseModel):
     n_closed: int = 0
     by_setup: dict[str, PerformanceBucket] = Field(
         description=(
-            "Keyed by DE product strings "
-            "(1_liquidity_sweep_vwap_reclaim, 2_fvg_mitigation_vwap, "
-            "3_po3_asia_range_sweep, 4_sd_extension_fade, "
-            "5_vwap_pullback_cont, 6_avwap_ob_confluence). "
-            "Each value includes setup_type."
+            "Keyed by setup_type (not product_key). Always includes "
+            "sweep_reclaim, fvg_entry, po3_judas, mss_break, order_block, "
+            "sweep_mss (empty buckets are zeros). Each value has setup_type "
+            "and product_key."
         )
     )
     rolling_win_rate_20: float | None = None

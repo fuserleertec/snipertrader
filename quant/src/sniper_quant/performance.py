@@ -12,7 +12,7 @@ from sniper_quant.models import (
     SignalStatus,
     StoredSignal,
 )
-from sniper_quant.setups import PRODUCT_KEYS, PRODUCT_TO_SETUP_TYPE, SETUP_TYPE_TO_PRODUCT
+from sniper_quant.setups import PERFORMANCE_BY_SETUP_KEYS, product_key_for
 
 DAY_MS = 24 * 60 * 60 * 1000
 WEEK_MS = 7 * DAY_MS
@@ -65,6 +65,7 @@ def _bucket(
     week_start = now_ms - WEEK_MS
     return PerformanceBucket(
         setup_type=setup_type,
+        product_key=product_key_for(setup_type) or setup_type,
         win_rate=win_rate,
         average_rr=average_rr,
         sharpe_ratio=sharpe_ratio(daily) if len(daily) >= 2 else 0.0,
@@ -84,19 +85,20 @@ def summarize_signals(
 ) -> PerformanceSummary:
     now = now_ms if now_ms is not None else int(time.time() * 1000)
     overall = _bucket(rows, now_ms=now, risk_fraction=risk_fraction, setup_type="all")
-    grouped: dict[str, list[StoredSignal]] = {name: [] for name in SETUP_TYPE_TO_PRODUCT}
+    grouped: dict[str, list[StoredSignal]] = {name: [] for name in PERFORMANCE_BY_SETUP_KEYS}
     for row in rows:
         name = _setup_name(row)
-        if name in grouped:
-            grouped[name].append(row)
+        if name not in grouped:
+            grouped[name] = []
+        grouped[name].append(row)
     by_setup = {
-        product: _bucket(
-            grouped.get(PRODUCT_TO_SETUP_TYPE[product], []),
+        name: _bucket(
+            grouped.get(name, []),
             now_ms=now,
             risk_fraction=risk_fraction,
-            setup_type=PRODUCT_TO_SETUP_TYPE[product],
+            setup_type=name,
         )
-        for product in PRODUCT_KEYS
+        for name in PERFORMANCE_BY_SETUP_KEYS
     }
     closed_chrono = sorted(
         [r for r in rows if _is_closed(r)],
