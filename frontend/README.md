@@ -250,30 +250,39 @@ UTC timestamp). Click → scroll the Kronos chart and apply that row’s
 ### Pattern overlays (`/schemas`, schema_version `"1.1"`)
 
 Types copy `/schemas/sweep_event.schema.json`, `fvg_zone.schema.json`,
-`mss_event.schema.json`, `order_block.schema.json` — no extra fields.
+`mss_event.schema.json`, `order_block.schema.json`, `session_levels.schema.json`
+— no extra Kafka fields. Chart draw mapping (ML Researchers Rev 1.1):
 
-| Kind | Kafka | Redis | Chart |
+| Kind | Kafka | Redis | Draw |
 |---|---|---|---|
-| Sweep | `sweep_events` | `sweep:{symbol}:{id}` | `setMarkers` arrows (`sell`=session high, `buy`=session low) |
-| FVG | `fvg_zones` | `fvg:{symbol}:{id}` | primitive shaded rect `high`/`low` |
-| MSS | `mss_events` | `mss:{symbol}:{id}` | `setMarkers` + broken-level line |
-| OB | `order_block_zones` | `ob:{symbol}:{id}` | primitive shaded rect (different color) |
+| FVG / OB | `fvg_zones` / `order_block_zones` | `fvg\|ob:{symbol}:{id}` | primitive zone: `t0=created_ts_ms`, `t1=now` or freeze when `mitigated`; `high`/`low` from payload; color by `direction`; dim if mitigated; join on `id` |
+| Sweep | `sweep_events` | `sweep:{symbol}:{id}` | `setMarkers`: `time=ts_ms`, `price=swept_level`; `sell`→high/arrowDown, `buy`→low/arrowUp; emphasize `confirmed`; optional `Δ` when `delta_divergence` |
+| MSS | `mss_events` | `mss:{symbol}:{id}` | level at `broken_level`, marker at `ts_ms`; optional swing→break segment; join highlight via `trigger_sweep_id` |
+| Setup | Quant `GET /signals` | — | Quant fields; join patterns via `trigger_event_ids[]`; click setup → highlight those overlay ids |
 
-**No pattern WS from Data Eng yet.** In-browser mock streams emit these exact
-shapes. `src/lib/overlays.ts` (`parseOverlayFrame(frame, hint?)` +
-`FUTURE_PATTERN_WS`) is the client adapter for a future
-`WS /v1/ws/fvg|ob|sweep|mss?symbol=` seed+pubsub. Do not invent `direction` /
-`sweep_level` aliases — sweep is `side` + `swept_level` only.
+**FE-only Overlay DTO** (`src/lib/types.ts` `Overlay`, normalized in
+`src/lib/draw.ts` `normalizeOverlays`) — not a Kafka shape:
+
+```ts
+type Overlay =
+  | { kind:"zone"; source:"fvg"|"ob"; id; symbol; t0; t1; high; low; direction; mitigated?:boolean }
+  | { kind:"marker"; source:"sweep"|"mss"; id; symbol; time; price; side?:string; direction?:string }
+  | { kind:"session_box"; source:"asia"; symbol; t0; t1; high; low }
+  | { kind:"setup"; id; symbol; setup_type; side; time; entry; stop; target; trigger_event_ids:string[]; confidence?:number }
+```
+
+Zones use `PatternZonesPrimitive`. Points use `setMarkers` (time-asc, one per
+timestamp). **No pattern WS from Data Eng yet.** In-browser mocks emit the
+schema shapes. `parseOverlayFrame` + `FUTURE_PATTERN_WS` stay ready for a later
+`WS /v1/ws/fvg|ob|sweep|mss?symbol=`. Sweep is `side` + `swept_level` only.
 
 ### Setup-specific views
 
-Overlay tabs (product keys) highlight:
-
 | View | setup_type | Chart |
 |---|---|---|
-| Setup 1 | `sweep_reclaim` | sweep arrow, MSS marker, VWAP reclaim |
-| Setup 2 | `fvg_entry` | FVG zone + VWAP node |
-| Setup 3 | `po3_judas` | Asia range box, sweep arrow, displacement |
+| Setup 1 | `sweep_reclaim` | sweep + MSS + horizontal `ref_vwap` (Quant `ref_vwap` or session VWAP) + entry/stop/target |
+| Setup 2 | `fvg_entry` (preset `fvg_ob`) | FVG rect + VWAP and/or HVN from `volume_profile` + confirm marker at entry |
+| Setup 3 | `po3_judas` | Asia session box (`high`/`low`/`session_start_ms`→`session_end_ms` from `session:{symbol}:asia` / `GET /v1/session/{symbol}/asia`) + Asia-extreme sweep + displacement at entry + kill-zone shade when `active` |
 
 Setups 4–6 keep the Phase 1 overlays (σ fade, pullback, AVWAP+OB).
 
@@ -293,9 +302,10 @@ payload (`—` while null). CSV uses those field names.
 
 Clients exist for PR #5: `GET/WS /v1/avwap`, `/v1/volume-profile`,
 `/v1/kill-zone`. AVWAP (`vwap_value`) maps onto the existing VWAPValues chart
-shape. Kill-zone active state is a chart note. Volume-profile is fetched-ready
-but not drawn yet. Pattern overlays stay on mock schema streams until DE
-ships `WS /v1/ws/fvg|ob|sweep|mss`.
+shape. Volume-profile HVN lines draw on the `fvg_entry` / all-overlays views.
+Kill-zone shade draws on `po3_judas` when `active`. Asia box prefers
+`GET /v1/session/{symbol}/asia` (`session:{symbol}:asia`). Pattern overlays
+stay on mock schema streams until DE ships `WS /v1/ws/fvg|ob|sweep|mss`.
 
 ## Theme
 

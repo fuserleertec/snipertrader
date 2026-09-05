@@ -20,6 +20,7 @@ import type {
   Signal,
   Timeframe,
   VWAPValues,
+  VolumeProfile,
 } from "@/lib/types";
 import { PriceChart } from "../PriceChart";
 
@@ -42,6 +43,7 @@ export function SimulationView({
   theme,
   patterns,
   anchorVwap = null,
+  volumeProfile = null,
   killZone = null,
 }: {
   signals: Signal[];
@@ -63,6 +65,7 @@ export function SimulationView({
   patterns: PatternBook;
   lastPrice: number | null;
   anchorVwap?: VWAPValues | null;
+  volumeProfile?: VolumeProfile | null;
   killZone?: KillZoneEvent | null;
 }) {
   const [bias, setBias] = useState(0);
@@ -286,9 +289,10 @@ export function SimulationView({
             ))}
           </div>
           <div className="kline-note">
-            Setup 1 <code>sweep_reclaim</code> — sweep arrow + MSS. Setup 2 <code>fvg_entry</code> — FVG +
-            VWAP. Setup 3 <code>po3_judas</code> — Asia box + Judas sweep.
-            {killZone?.active ? ` Kill zone ${killZone.kill_zone} active.` : ""}
+            Setup 1 <code>sweep_reclaim</code> — sweep + MSS + <code>ref_vwap</code> + E/S/T. Setup 2{" "}
+            <code>fvg_entry</code> — FVG + VWAP/HVN + entry confirm. Setup 3 <code>po3_judas</code> — Asia
+            box (<code>session:{"{symbol}"}:asia</code>) + extreme sweep + displacement
+            {killZone?.active ? ` + kill zone ${killZone.kill_zone} active.` : "."}
           </div>
           <PriceChart
             bars={bars}
@@ -303,6 +307,8 @@ export function SimulationView({
             overlayPreset={overlayPreset}
             selected={selected}
             anchorVwap={anchorVwap}
+            volumeProfile={volumeProfile}
+            killZone={killZone}
           />
         </div>
       </div>

@@ -242,6 +242,59 @@ export type OverlayEvent =
   | { kind: "sweep"; payload: SweepEvent }
   | { kind: "mss"; payload: MssEvent };
 
+/**
+ * FE-only draw DTO (Rev 1.1). Normalize from `/schemas` here — not a Kafka shape.
+ * t0/t1/time are UTC ms.
+ */
+export type Overlay =
+  | {
+      kind: "zone";
+      source: "fvg" | "ob";
+      id: string;
+      symbol: string;
+      t0: number;
+      t1: number;
+      high: number;
+      low: number;
+      direction: "bullish" | "bearish";
+      mitigated?: boolean;
+    }
+  | {
+      kind: "marker";
+      source: "sweep" | "mss";
+      id: string;
+      symbol: string;
+      time: number;
+      price: number;
+      side?: string;
+      direction?: string;
+      confirmed?: boolean;
+      delta_divergence?: boolean;
+      trigger_sweep_id?: string;
+    }
+  | {
+      kind: "session_box";
+      source: "asia";
+      symbol: string;
+      t0: number;
+      t1: number;
+      high: number;
+      low: number;
+    }
+  | {
+      kind: "setup";
+      id: string;
+      symbol: string;
+      setup_type: SetupType;
+      side: SignalSide;
+      time: number;
+      entry: number;
+      stop: number;
+      target: number;
+      trigger_event_ids: string[];
+      confidence?: number;
+    };
+
 /** Data Eng PR #5 — no schema_version on the wire. */
 export interface AnchoredVwap {
   anchor_id: string;
@@ -301,6 +354,8 @@ export interface Signal {
   confidence: number;
   timeframe: Timeframe;
   ref_session: SessionType;
+  /** Optional Quant / setup_signal.schema.json field — FE uses session VWAP if absent. */
+  ref_vwap?: number | null;
   trigger_event_ids: string[];
   /** Quant publish-only string[] (PR #9 locked ids + any extra tags). */
   contributing_factors?: string[];

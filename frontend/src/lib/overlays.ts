@@ -9,6 +9,7 @@ import type {
   PatternBook,
   SweepEvent,
   VWAPValues,
+  VolumeProfile,
 } from "./types";
 
 const EMPTY: PatternBook = { fvgs: [], obs: [], sweeps: [], mss: [] };
@@ -258,6 +259,15 @@ export function isAnchoredVwap(value: unknown): value is AnchoredVwap {
 export function isKillZone(value: unknown): boolean {
   if (!isObj(value)) return false;
   return typeof value.kill_zone === "string" && typeof value.active === "boolean";
+}
+
+export function isVolumeProfile(value: unknown): value is VolumeProfile {
+  if (!isObj(value)) return false;
+  return (
+    typeof value.symbol === "string" &&
+    typeof value.poc === "number" &&
+    Array.isArray(value.high_volume_nodes)
+  );
 }
 
 export { EMPTY as EMPTY_PATTERN_BOOK };

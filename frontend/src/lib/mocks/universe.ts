@@ -6,8 +6,8 @@ import type { FVGZone, MssEvent, OrderBlock, PatternBook, SetupType, Signal, Swe
 
 const cache = new Map<string, { book: PatternBook; signals: Signal[]; price: number }>();
 
-/** Stable mock clock so SSR + client hydration match. */
-const MOCK_NOW = Date.UTC(2026, 8, 5, 14, 0, 0);
+/** Stable mock clock so SSR + client hydration match. Shared with mock OHLCV. */
+export const MOCK_NOW = Date.UTC(2026, 8, 5, 14, 0, 0);
 
 function id(kind: string, symbol: string, tag: string): string {
   return `${kind}_${symbol}_${tag}`;
@@ -183,6 +183,7 @@ function signalOf(
     confidence,
     timeframe: "5m",
     ref_session: inferAssetClass(symbol) === "crypto" ? "ny_am" : "rth",
+    ref_vwap: setup_type === "sweep_reclaim" ? price : null,
     trigger_event_ids,
     realized_r: null,
     exit_price: null,

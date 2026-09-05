@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { HISTORY_LIMIT } from "@/lib/constants";
 import { isMockMode } from "@/lib/env";
-import { fetchAvwap, fetchKillZone, fetchOhlcv, fetchSessions, fetchVwap } from "@/lib/http";
-import { avwapToVwapValues, isAnchoredVwap, isKillZone } from "@/lib/overlays";
-import { buildMockHistory, startMockMarket } from "@/lib/mocks/market";
+import { fetchAvwap, fetchKillZone, fetchOhlcv, fetchSession, fetchSessions, fetchVolumeProfile, fetchVwap } from "@/lib/http";
+import { avwapToVwapValues, isAnchoredVwap, isKillZone, isVolumeProfile } from "@/lib/overlays";
+import { buildMockMarketState, startMockMarket } from "@/lib/mocks/market";
 import type {
   AnchorType,
   ConnectionStatus,
@@ -14,6 +14,7 @@ import type {
   SessionLevels,
   Timeframe,
   VWAPValues,
+  VolumeProfile,
 } from "@/lib/types";
 import { openJsonWs } from "@/lib/ws";
 
@@ -25,6 +26,7 @@ export interface MarketState {
   vwaps: Partial<Record<AnchorType, VWAPValues>>;
   sessions: Partial<Record<string, SessionLevels>>;
   status: ConnectionStatus;
+  volumeProfile: VolumeProfile | null;
   killZone: KillZoneEvent | null;
 }
 
@@ -36,6 +38,7 @@ const empty: MarketState = {
   vwaps: {},
   sessions: {},
   status: "connecting",
+  volumeProfile: null,
   killZone: null,
 };
 
@@ -56,17 +59,18 @@ function isVwap(value: unknown): value is VWAPValues {
 }
 
 function mockSeed(symbol: string, timeframe: Timeframe): MarketState {
-  const bars = buildMockHistory(symbol, timeframe);
-  const last = bars[bars.length - 1] ?? null;
+  const snap = buildMockMarketState(symbol, timeframe);
+  const last = snap.last;
   return {
-    bars,
-    historyKey: `${symbol}:${timeframe}:${bars[0]?.open_ts_ms ?? 0}`,
+    bars: snap.bars,
+    historyKey: `${symbol}:${timeframe}:${snap.bars[0]?.open_ts_ms ?? 0}`,
     lastBar: last,
     lastPrice: last?.close ?? null,
-    vwaps: {},
-    sessions: {},
+    vwaps: snap.vwaps,
+    sessions: snap.sessions,
     status: "mock",
-    killZone: null,
+    volumeProfile: snap.volumeProfile,
+    killZone: snap.killZone,
   };
 }
 
@@ -133,6 +137,12 @@ export function useMarketData(symbol: string, timeframe: Timeframe): MarketState
             sessions: { ...prev.sessions, [levels.session_type]: levels },
           }));
         },
+        onVolumeProfile: (volumeProfile) => {
+          setState((prev) => ({ ...prev, volumeProfile }));
+        },
+        onKillZone: (killZone) => {
+          setState((prev) => ({ ...prev, killZone }));
+        },
       });
       return stop;
     }
@@ -156,12 +166,14 @@ export function useMarketData(symbol: string, timeframe: Timeframe): MarketState
     };
 
     (async () => {
-      const [hist, vwapSnap, sessionList, avwapSnap, kz] = await Promise.all([
+      const [hist, vwapSnap, sessionList, asiaSnap, avwapSnap, kz, vp] = await Promise.all([
         fetchOhlcv(symbol, timeframe, HISTORY_LIMIT),
         fetchVwap(symbol, "session"),
         fetchSessions(symbol),
+        fetchSession(symbol, "asia"),
         fetchAvwap(symbol),
         fetchKillZone(symbol),
+        fetchVolumeProfile(symbol),
       ]);
       if (!alive) return;
       if (hist.length) {
@@ -180,12 +192,18 @@ export function useMarketData(symbol: string, timeframe: Timeframe): MarketState
           vwaps: { ...prev.vwaps, [vwapSnap.anchor_type]: vwapSnap },
         }));
       }
-      if (sessionList) {
+      if (sessionList || asiaSnap) {
         const map: Partial<Record<string, SessionLevels>> = {};
-        for (const row of sessionList.sessions) {
-          if (row.value?.session_type) map[row.value.session_type] = row.value;
+        if (sessionList) {
+          for (const row of sessionList.sessions) {
+            if (row.value?.session_type) map[row.value.session_type] = row.value;
+          }
         }
+        if (asiaSnap?.session_type) map.asia = asiaSnap;
         setState((prev) => ({ ...prev, sessions: { ...prev.sessions, ...map } }));
+      }
+      if (vp && isVolumeProfile(vp)) {
+        setState((prev) => ({ ...prev, volumeProfile: vp }));
       }
       if (isAnchoredVwap(avwapSnap)) {
         const mapped = avwapToVwapValues(avwapSnap);
@@ -238,6 +256,12 @@ export function useMarketData(symbol: string, timeframe: Timeframe): MarketState
       openJsonWs("/v1/ws/kill-zone", { symbol }, (data) => {
         if (!isKillZone(data)) return;
         setState((prev) => ({ ...prev, killZone: data as KillZoneEvent }));
+      }, () => undefined),
+    );
+    stops.push(
+      openJsonWs("/v1/ws/volume-profile", { symbol }, (data) => {
+        if (!isVolumeProfile(data)) return;
+        setState((prev) => ({ ...prev, volumeProfile: data }));
       }, () => undefined),
     );
 

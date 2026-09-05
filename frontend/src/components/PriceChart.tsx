@@ -12,6 +12,7 @@ import {
   type UTCTimestamp,
 } from "lightweight-charts";
 import type {
+  KillZoneEvent,
   OHLCVBar,
   OverlayPreset,
   PatternBook,
@@ -19,10 +20,12 @@ import type {
   SessionType,
   Signal,
   Timeframe,
+  VolumeProfile,
   VWAPValues,
 } from "@/lib/types";
 import type { Theme } from "@/hooks/useTheme";
-import { buildDrawModel, PatternZonesPrimitive } from "./PatternZonesPrimitive";
+import { buildDrawModelFromOverlays, highlightIds, normalizeOverlays } from "@/lib/draw";
+import { PatternZonesPrimitive } from "./PatternZonesPrimitive";
 import { VwapBandsPrimitive } from "./VwapBandsPrimitive";
 
 const SESSION_COLORS: Record<string, string> = {
@@ -97,6 +100,8 @@ export function PriceChart({
   overlayPreset,
   selected,
   anchorVwap = null,
+  volumeProfile = null,
+  killZone = null,
 }: {
   bars: OHLCVBar[];
   historyKey: string;
@@ -111,6 +116,8 @@ export function PriceChart({
   selected: Signal | null;
   /** Weekly / rolling VWAP for 6_avwap_ob_confluence. */
   anchorVwap?: VWAPValues | null;
+  volumeProfile?: VolumeProfile | null;
+  killZone?: KillZoneEvent | null;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -121,6 +128,7 @@ export function PriceChart({
   const avwapLineRef = useRef<IPriceLine | null>(null);
   const sessionLinesRef = useRef<Map<string, IPriceLine>>(new Map());
   const setupLinesRef = useRef<Map<string, IPriceLine>>(new Map());
+  const hvnLinesRef = useRef<Map<string, IPriceLine>>(new Map());
   const fittedKey = useRef<string>("");
   const barsRef = useRef(bars);
   useEffect(() => {
@@ -175,10 +183,12 @@ export function PriceChart({
 
     const sessionLines = sessionLinesRef.current;
     const setupLines = setupLinesRef.current;
+    const hvnLines = hvnLinesRef.current;
 
     return () => {
       sessionLines.clear();
       setupLines.clear();
+      hvnLines.clear();
       vwapLineRef.current = null;
       avwapLineRef.current = null;
       bandsRef.current = null;
@@ -208,15 +218,18 @@ export function PriceChart({
     if (!series) return;
     const fade = overlayPreset === "sd_extension_fade";
     bandsRef.current?.setLevels(vwap, fade ? "sigma23" : "all");
-    const vwapTitle = fade ? "VWAP tgt" : "VWAP";
-    if (!vwap) {
+    const vwapTitle =
+      overlayPreset === "sweep_reclaim" ? "ref_vwap" : fade ? "VWAP tgt" : "VWAP";
+    const refPrice =
+      overlayPreset === "sweep_reclaim" && selected?.ref_vwap != null ? selected.ref_vwap : vwap?.vwap;
+    if (refPrice == null) {
       if (vwapLineRef.current) {
         series.removePriceLine(vwapLineRef.current);
         vwapLineRef.current = null;
       }
     } else if (!vwapLineRef.current) {
       vwapLineRef.current = series.createPriceLine({
-        price: vwap.vwap,
+        price: refPrice,
         color: "#F0C040",
         lineWidth: 2,
         lineStyle: LineStyle.Solid,
@@ -224,7 +237,7 @@ export function PriceChart({
         title: vwapTitle,
       });
     } else {
-      vwapLineRef.current.applyOptions({ price: vwap.vwap, title: vwapTitle });
+      vwapLineRef.current.applyOptions({ price: refPrice, title: vwapTitle });
     }
 
     const showAvwap = overlayPreset === "avwap_ob_confluence" || overlayPreset === "all";
@@ -246,7 +259,7 @@ export function PriceChart({
     } else {
       avwapLineRef.current.applyOptions({ price: av.vwap });
     }
-  }, [vwap, anchorVwap, overlayPreset]);
+  }, [vwap, anchorVwap, overlayPreset, selected]);
 
   useEffect(() => {
     const series = seriesRef.current;
@@ -290,24 +303,34 @@ export function PriceChart({
   }, [sessions, visibleSessions]);
 
   useEffect(() => {
-    const highlight = new Set(selected?.trigger_event_ids ?? []);
-    const asia = overlayPreset === "po3_judas" || overlayPreset === "all"
-      ? sessions.find((s) => s.session_type === "asia") ?? null
-      : null;
+    const highlight = highlightIds(selected, patterns);
+    const asia = sessions.find((s) => s.session_type === "asia") ?? null;
     const snap = (ms: number) => snapMs(bars, ms);
-    const model = buildDrawModel(
-      overlayPreset,
-      patterns.fvgs.map((z) => ({ ...z, created_ts_ms: snap(z.created_ts_ms) })),
-      patterns.obs.map((z) => ({
-        ...z,
-        created_ts_ms: snap(z.created_ts_ms),
-        displacement_ts_ms: z.displacement_ts_ms != null ? snap(z.displacement_ts_ms) : undefined,
-      })),
-      patterns.mss.map((ev) => ({ ...ev, ts_ms: snap(ev.ts_ms) })),
-      patterns.sweeps.map((sw) => ({ ...sw, ts_ms: snap(sw.ts_ms) })),
+    const nowMs = bars[bars.length - 1]?.close_ts_ms ?? Date.now();
+    const overlays = normalizeOverlays({ book: patterns, asia, selected, nowMs }).map((ov) => {
+      if (ov.kind === "zone") return { ...ov, t0: snap(ov.t0), t1: snap(ov.t1) };
+      if (ov.kind === "marker") return { ...ov, time: snap(ov.time) };
+      if (ov.kind === "session_box") return { ...ov, t0: snap(ov.t0), t1: snap(ov.t1) };
+      return { ...ov, time: snap(ov.time) };
+    });
+    const model = buildDrawModelFromOverlays({
+      preset: overlayPreset,
+      overlays,
+      book: patterns,
       highlight,
       asia,
-    );
+      killZone,
+      sessions,
+    });
+    for (const z of model.zones) {
+      z.start_ms = snap(z.start_ms);
+      if (z.end_ms != null) z.end_ms = snap(z.end_ms);
+    }
+    for (const line of model.lines) {
+      line.start_ms = snap(line.start_ms);
+      if (line.end_ms != null) line.end_ms = snap(line.end_ms);
+    }
+    for (const arrow of model.arrows) arrow.ts_ms = snap(arrow.ts_ms);
     if ((overlayPreset === "vwap_pullback_cont" || overlayPreset === "all") && vwap) {
       const touch = patterns.obs[0] ?? patterns.fvgs[0];
       if (touch) {
@@ -346,8 +369,6 @@ export function PriceChart({
 
     const series = seriesRef.current;
     if (!series || !bars.length) return;
-    const showSweep = overlayPreset === "all" || overlayPreset === "sweep_reclaim" || overlayPreset === "po3_judas";
-    const showMss = overlayPreset === "all" || overlayPreset === "sweep_reclaim" || overlayPreset === "po3_judas";
     const markers: Array<{
       time: UTCTimestamp;
       position: "aboveBar" | "belowBar";
@@ -355,19 +376,30 @@ export function PriceChart({
       shape: "arrowUp" | "arrowDown" | "circle";
       text: string;
     }> = [];
-    // Sweeps + MSS → setMarkers. FVG / OB zones stay on PatternZonesPrimitive.
-    if (showSweep) {
-      for (const sw of patterns.sweeps) {
-        const hot = highlight.has(sw.id);
-        // schema: sell = session high swept; buy = session low swept
-        markers.push({
-          time: snapTime(bars, sw.ts_ms),
-          position: sw.side === "sell" ? "aboveBar" : "belowBar",
-          color: hot ? "#F0C040" : sw.side === "sell" ? "#FF4455" : "#00E5A0",
-          shape: sw.side === "sell" ? "arrowDown" : "arrowUp",
-          text: hot ? "SWEEP ★" : "SWEEP",
-        });
-      }
+    for (const arrow of model.arrows) {
+      const bits = ["SWEEP"];
+      if (arrow.confirmed) bits.push("✓");
+      if (arrow.delta) bits.push("Δ");
+      if (arrow.highlight) bits.push("★");
+      markers.push({
+        time: snapTime(bars, arrow.ts_ms),
+        position: arrow.side === "sell" ? "aboveBar" : "belowBar",
+        color: arrow.color,
+        shape: arrow.side === "sell" ? "arrowDown" : "arrowUp",
+        text: bits.join(" "),
+      });
+    }
+    for (const ov of overlays) {
+      if (ov.kind !== "marker" || ov.source !== "mss") continue;
+      if (overlayPreset !== "all" && overlayPreset !== "sweep_reclaim") continue;
+      const hot = highlight.has(ov.id);
+      markers.push({
+        time: snapTime(bars, ov.time),
+        position: ov.direction === "bearish" ? "aboveBar" : "belowBar",
+        color: hot ? "#F0C040" : ov.direction === "bullish" ? "#00D4FF" : "#FF8A3D",
+        shape: "circle",
+        text: hot ? "MSS ★" : "MSS",
+      });
     }
     if (overlayPreset === "sd_extension_fade" || overlayPreset === "all") {
       if (vwap) {
@@ -385,22 +417,54 @@ export function PriceChart({
         }
       }
     }
-    if (showMss) {
-      for (const ev of patterns.mss) {
-        const hot = highlight.has(ev.id);
-        markers.push({
-          time: snapTime(bars, ev.ts_ms),
-          position: ev.direction === "bearish" ? "aboveBar" : "belowBar",
-          color: hot ? "#F0C040" : ev.direction === "bullish" ? "#00D4FF" : "#FF8A3D",
-          shape: "circle",
-          text: hot ? "MSS ★" : "MSS",
-        });
-      }
+    if (selected && (overlayPreset === "fvg_ob" || overlayPreset === "all")) {
+      markers.push({
+        time: snapTime(bars, selected.ts_ms),
+        position: "belowBar",
+        color: "#00D4FF",
+        shape: "circle",
+        text: "ENTRY",
+      });
+    }
+    if (selected && overlayPreset === "po3_judas") {
+      markers.push({
+        time: snapTime(bars, selected.ts_ms),
+        position: selected.side === "short" ? "aboveBar" : "belowBar",
+        color: "#F0C040",
+        shape: selected.side === "short" ? "arrowDown" : "arrowUp",
+        text: "DISP",
+      });
     }
     const byTime = new Map<number, (typeof markers)[number]>();
     for (const m of markers) byTime.set(Number(m.time), m);
     series.setMarkers([...byTime.values()].sort((a, b) => Number(a.time) - Number(b.time)));
-  }, [patterns, overlayPreset, selected, sessions, bars, theme, vwap, anchorVwap]);
+
+    const hvnWanted = new Set<string>();
+    const showHvn = overlayPreset === "fvg_ob" || overlayPreset === "all";
+    if (showHvn && volumeProfile) {
+      for (const [i, node] of volumeProfile.high_volume_nodes.entries()) {
+        const id = `hvn_${i}`;
+        hvnWanted.add(id);
+        const opts = {
+          price: node.price,
+          color: "#0A7D8C",
+          lineWidth: 1 as const,
+          lineStyle: LineStyle.Dotted,
+          axisLabelVisible: true,
+          title: "HVN",
+        };
+        const existing = hvnLinesRef.current.get(id);
+        if (!existing) hvnLinesRef.current.set(id, series.createPriceLine(opts));
+        else existing.applyOptions(opts);
+      }
+    }
+    for (const [id, line] of hvnLinesRef.current) {
+      if (!hvnWanted.has(id)) {
+        series.removePriceLine(line);
+        hvnLinesRef.current.delete(id);
+      }
+    }
+  }, [patterns, overlayPreset, selected, sessions, bars, theme, vwap, anchorVwap, volumeProfile, killZone]);
 
   useEffect(() => {
     const series = seriesRef.current;

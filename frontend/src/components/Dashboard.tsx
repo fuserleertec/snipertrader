@@ -276,6 +276,7 @@ export function Dashboard() {
             theme={theme}
             patterns={patterns}
             lastPrice={market.lastPrice}
+            volumeProfile={market.volumeProfile}
             killZone={market.killZone}
           />
         </div>

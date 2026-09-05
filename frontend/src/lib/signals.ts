@@ -96,6 +96,7 @@ export function normalizeSignal(value: unknown): Signal | null {
     confidence: numOr(s.confidence, 0),
     timeframe: (typeof s.timeframe === "string" ? s.timeframe : "5m") as Timeframe,
     ref_session: (typeof s.ref_session === "string" ? s.ref_session : "ny_am") as Signal["ref_session"],
+    ref_vwap: optionalNum(s.ref_vwap),
     trigger_event_ids: Array.isArray(s.trigger_event_ids) ? s.trigger_event_ids.filter((x): x is string => typeof x === "string") : [],
     contributing_factors: factors,
     factor_breakdown: breakdown,

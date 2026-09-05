@@ -8,18 +8,141 @@ import {
 import { sessionWindows } from "../sessions";
 import type {
   AnchorType,
+  KillZoneEvent,
   OHLCVBar,
   SessionLevels,
+  SessionType,
   Timeframe,
   VWAPValues,
+  VolumeProfile,
 } from "../types";
 import { computeSessionLevels, computeVwap } from "../vwap";
+import { MOCK_NOW } from "./universe";
 
 export interface MockMarketHandlers {
   onHistory: (bars: OHLCVBar[]) => void;
   onBar: (bar: OHLCVBar) => void;
   onVwap: (vwap: VWAPValues) => void;
   onSession: (levels: SessionLevels) => void;
+  onVolumeProfile?: (profile: VolumeProfile) => void;
+  onKillZone?: (zone: KillZoneEvent) => void;
+}
+
+export function mockVolumeProfile(
+  symbol: string,
+  price: number,
+  session_type: SessionLevels["session_type"],
+): VolumeProfile {
+  return {
+    symbol,
+    session_type,
+    high_volume_nodes: [
+      { price: price * 0.9988, volume: 1200 },
+      { price: price * 1.0012, volume: 900 },
+    ],
+    low_volume_nodes: [{ price: price * 1.004, volume: 80 }],
+    poc: price,
+    timestamp: MOCK_NOW,
+  };
+}
+
+export function mockKillZone(
+  symbol: string,
+  sessions: Partial<Record<string, SessionLevels>>,
+  now: number,
+): KillZoneEvent | null {
+  const order: SessionType[] = ["asia", "london", "ny_am", "ny_pm", "rth", "eth", "globex"];
+  let active: SessionLevels | null = null;
+  let fallback: SessionLevels | null = sessions.asia ?? null;
+  for (const type of order) {
+    const row = sessions[type];
+    if (!row) continue;
+    if (!fallback) fallback = row;
+    if (now >= row.session_start_ms && now < row.session_end_ms) {
+      active = row;
+      break;
+    }
+  }
+  const src = active ?? fallback;
+  if (!src) return null;
+  return {
+    symbol,
+    kill_zone: src.session_type,
+    start_time: src.session_start_ms,
+    end_time: src.session_end_ms,
+    active: now >= src.session_start_ms && now < src.session_end_ms,
+    asset_class: src.asset_class,
+  };
+}
+
+export function collectMockOverlays(
+  bars: OHLCVBar[],
+  symbol: string,
+  now: number,
+): {
+  vwaps: Partial<Record<AnchorType, VWAPValues>>;
+  sessions: Partial<Record<string, SessionLevels>>;
+} {
+  const asset = inferAssetClass(symbol);
+  const vwaps: Partial<Record<AnchorType, VWAPValues>> = {};
+  const sessions: Partial<Record<string, SessionLevels>> = {};
+  const sessionType = sessionsForAsset(asset)[0] ?? "london";
+  const anchors: AnchorType[] = ["session", "weekly", "rolling"];
+  for (const anchor of anchors) {
+    const snap = computeVwap(bars, {
+      symbol,
+      asset_class: asset,
+      anchor_type: anchor,
+      session_type: anchor === "session" ? sessionType : null,
+      now_ms: now,
+    });
+    if (snap) vwaps[anchor] = snap;
+  }
+  const activeWin = sessionWindows(asset, now).find(
+    (w) => now >= w.start_ms && now < w.end_ms && sessionsForAsset(asset).includes(w.session_type),
+  );
+  if (activeWin) {
+    const snap = computeVwap(bars, {
+      symbol,
+      asset_class: asset,
+      anchor_type: "session",
+      session_type: activeWin.session_type,
+      now_ms: now,
+    });
+    if (snap) vwaps.session = snap;
+  }
+  const seen = new Set<string>();
+  for (const win of sessionWindows(asset, now)) {
+    if (!sessionsForAsset(asset).includes(win.session_type)) continue;
+    if (win.end_ms < now - 86_400_000 || win.start_ms > now + 3_600_000) continue;
+    const key = `${win.session_type}:${win.start_ms}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const levels = computeSessionLevels(bars, win, symbol, asset, now);
+    if (levels) sessions[levels.session_type] = levels;
+  }
+  return { vwaps, sessions };
+}
+
+export function buildMockMarketState(symbol: string, timeframe: Timeframe) {
+  const now = MOCK_NOW;
+  const bars = buildMockHistory(symbol, timeframe, now);
+  const { vwaps, sessions } = collectMockOverlays(bars, symbol, now);
+  const last = bars[bars.length - 1] ?? null;
+  const price = last?.close ?? seedPrice(symbol);
+  const sessionType =
+    sessions.asia?.session_type ??
+    (Object.values(sessions)[0]?.session_type as SessionType | undefined) ??
+    "london";
+  return {
+    bars,
+    vwaps,
+    sessions,
+    volumeProfile: mockVolumeProfile(symbol, price, sessionType),
+    killZone: mockKillZone(symbol, sessions, now),
+    last,
+    now,
+  };
 }
 
 function hash(s: string): number {
@@ -65,46 +188,25 @@ function emitState(
   handlers: MockMarketHandlers,
   now: number,
 ): void {
-  const asset = inferAssetClass(symbol);
-  const sessionType = sessionsForAsset(asset)[0] ?? "london";
-  const anchors: AnchorType[] = ["session", "weekly", "rolling"];
-  for (const anchor of anchors) {
-    const snap = computeVwap(bars, {
-      symbol,
-      asset_class: asset,
-      anchor_type: anchor,
-      session_type: anchor === "session" ? sessionType : null,
-      now_ms: now,
-    });
+  const { vwaps, sessions } = collectMockOverlays(bars, symbol, now);
+  for (const snap of Object.values(vwaps)) {
     if (snap) handlers.onVwap(snap);
   }
-  // Prefer the currently active session type for session-anchored VWAP.
-  const activeWin = sessionWindows(asset, now).find(
-    (w) => now >= w.start_ms && now < w.end_ms && sessionsForAsset(asset).includes(w.session_type),
-  );
-  if (activeWin) {
-    const snap = computeVwap(bars, {
-      symbol,
-      asset_class: asset,
-      anchor_type: "session",
-      session_type: activeWin.session_type,
-      now_ms: now,
-    });
-    if (snap) handlers.onVwap(snap);
-  }
-  const seen = new Set<string>();
-  for (const win of sessionWindows(asset, now)) {
-    if (!sessionsForAsset(asset).includes(win.session_type)) continue;
-    if (win.end_ms < now - 86_400_000 || win.start_ms > now + 3_600_000) continue;
-    const key = `${win.session_type}:${win.start_ms}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    const levels = computeSessionLevels(bars, win, symbol, asset, now);
+  for (const levels of Object.values(sessions)) {
     if (levels) handlers.onSession(levels);
   }
+  const last = bars[bars.length - 1];
+  const price = last?.close ?? seedPrice(symbol);
+  const sessionType =
+    sessions.asia?.session_type ??
+    (Object.values(sessions)[0]?.session_type as SessionType | undefined) ??
+    "london";
+  handlers.onVolumeProfile?.(mockVolumeProfile(symbol, price, sessionType));
+  const kz = mockKillZone(symbol, sessions, now);
+  if (kz) handlers.onKillZone?.(kz);
 }
 
-export function buildMockHistory(symbol: string, timeframe: Timeframe, now = Date.now()): OHLCVBar[] {
+export function buildMockHistory(symbol: string, timeframe: Timeframe, now = MOCK_NOW): OHLCVBar[] {
   const asset = inferAssetClass(symbol);
   const step = TF_MS[timeframe];
   const rand = mulberry32(hash(`${symbol}:${timeframe}`));
@@ -148,7 +250,7 @@ export function startMockMarket(
   timeframe: Timeframe,
   handlers: MockMarketHandlers,
 ): () => void {
-  const now = Date.now();
+  const now = MOCK_NOW;
   const bars = buildMockHistory(symbol, timeframe, now);
   const last = bars[bars.length - 1];
   const price = last?.close ?? seedPrice(symbol);
@@ -181,44 +283,20 @@ export function startMockMarket(
 
   const tickMs = timeframe === "1m" || timeframe === "5m" ? 280 : 450;
   const timer = setInterval(() => {
-    const t = Date.now();
-    const openTs = align(t, timeframe);
     const tick = (rand() - 0.49) * vol * 0.35;
-    if (openTs !== forming.open_ts_ms) {
-      forming = { ...forming, closed: true, close_ts_ms: forming.open_ts_ms + step };
-      pushBar(bars, forming);
-      handlers.onBar(forming);
-      const open = forming.close;
-      forming = {
-        schema_version: "1.1",
-        symbol,
-        asset_class: asset,
-        timeframe,
-        open_ts_ms: openTs,
-        close_ts_ms: openTs + step,
-        open,
-        high: open,
-        low: open,
-        close: open,
-        volume: 1 + rand() * 2,
-        n_ticks: 1,
-        closed: false,
-      };
-    } else {
-      const close = Math.max(0.01, forming.close + tick);
-      forming = {
-        ...forming,
-        close,
-        high: Math.max(forming.high, close),
-        low: Math.min(forming.low, close),
-        volume: forming.volume + 0.4 + rand() * 1.8,
-        n_ticks: forming.n_ticks + 1,
-        closed: false,
-      };
-    }
+    const close = Math.max(0.01, forming.close + tick);
+    forming = {
+      ...forming,
+      close,
+      high: Math.max(forming.high, close),
+      low: Math.min(forming.low, close),
+      volume: forming.volume + 0.4 + rand() * 1.8,
+      n_ticks: forming.n_ticks + 1,
+      closed: false,
+    };
     pushBar(bars, forming);
     handlers.onBar(forming);
-    emitState(bars, symbol, handlers, t);
+    emitState(bars, symbol, handlers, now);
   }, tickMs);
 
   return () => clearInterval(timer);
