@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snipertrader.ai/schemas/sweep_event.schema.json",
+  "title": "SweepEvent",
+  "description": "Liquidity sweep (provisional). Redis key: sweep:{symbol}:{id} with TTL ≤ 48h. side=sell means sell-side liquidity (session high swept); side=buy means buy-side liquidity (session low swept). Field names are side + swept_level only — no direction/sweep_level aliases.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "symbol",
+    "asset_class",
+    "side",
+    "swept_level",
+    "ts_ms"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.1" },
+    "id": { "type": "string" },
+    "symbol": { "type": "string", "pattern": "^[A-Z0-9]+$" },
+    "asset_class": { "type": "string", "enum": ["crypto", "equity", "futures"] },
+    "side": {
+      "type": "string",
+      "enum": ["buy", "sell"],
+      "description": "sell = sell-side liquidity / session high swept; buy = buy-side / session low swept."
+    },
+    "swept_level": { "type": "number" },
+    "reclaim": { "type": ["boolean", "null"] },
+    "ts_ms": { "type": "integer" },
+    "volume_profile": {
+      "type": "string",
+      "enum": ["aggressive", "low_volume"]
+    },
+    "delta_divergence": { "type": "boolean" },
+    "time_to_reclaim_ms": { "type": ["integer", "null"] },
+    "confirmed": { "type": "boolean" }
+  }
+}
