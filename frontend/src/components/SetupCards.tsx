@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { OVERLAY_SETUP_TYPES } from "@/lib/constants";
-import { isOverlaySetup } from "@/lib/setups";
+import { SETUP_TYPES } from "@/lib/constants";
 import { riskReward } from "@/lib/signals";
 import type { Signal } from "@/lib/types";
 
@@ -16,8 +15,8 @@ function px(n: number): string {
   return n >= 1000 ? n.toFixed(1) : n.toFixed(2);
 }
 
-function overlayRank(setup: string): number {
-  const i = (OVERLAY_SETUP_TYPES as readonly string[]).indexOf(setup);
+function setupRank(setup: string): number {
+  const i = (SETUP_TYPES as readonly string[]).indexOf(setup);
   return i === -1 ? 100 : i;
 }
 
@@ -36,15 +35,15 @@ export function SetupCards({
     const pinned: Signal[] = [];
     const rest: Signal[] = [];
     for (const s of active) {
-      if (isOverlaySetup(s.setup_type) && !seen.has(s.setup_type)) {
+      if ((SETUP_TYPES as readonly string[]).includes(s.setup_type) && !seen.has(s.setup_type)) {
         seen.add(s.setup_type);
         pinned.push(s);
       } else {
         rest.push(s);
       }
     }
-    pinned.sort((a, b) => overlayRank(a.setup_type) - overlayRank(b.setup_type));
-    return [...pinned, ...rest].slice(0, 8);
+    pinned.sort((a, b) => setupRank(a.setup_type) - setupRank(b.setup_type));
+    return [...pinned, ...rest].slice(0, 6);
   }, [signals]);
 
   return (
@@ -55,8 +54,8 @@ export function SetupCards({
         <span className="sim">setup_signals</span>
       </div>
       <div className="sec-sub">
-        Overlay-focus first ({OVERLAY_SETUP_TYPES.join(", ")}). Click a card to switch the
-        setup view and highlight overlays whose ids are in <code>trigger_event_ids</code>.
+        One newest ACTIVE per locked setup 1–6. Click a card to switch the overlay
+        view and highlight ids in <code>trigger_event_ids</code>.
       </div>
       <div className="card-strip">
         {cards.length === 0 && <div className="card-empty">Waiting for ACTIVE setups…</div>}
