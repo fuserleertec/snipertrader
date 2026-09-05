@@ -12,6 +12,12 @@ export function zoneLowHigh(signal: Signal): { zone_low: number; zone_high: numb
   };
 }
 
+export function riskReward(signal: Signal): number {
+  const risk = Math.abs(signal.entry - signal.stop);
+  const reward = Math.abs(signal.target - signal.entry);
+  return risk > 0 ? reward / risk : 0;
+}
+
 export function zoneLabel(signal: Signal): string {
   const { zone_low, zone_high } = zoneLowHigh(signal);
   return `${fmtPx(zone_low)}–${fmtPx(zone_high)}  E ${fmtPx(signal.entry)}  S ${fmtPx(signal.stop)}  T ${fmtPx(signal.target)}`;

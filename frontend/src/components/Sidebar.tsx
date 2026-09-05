@@ -1,9 +1,10 @@
 "use client";
 
-import { ANCHORS, sessionsForAsset, SETUP_TYPES, SIGNAL_STATUSES } from "@/lib/constants";
+import { ANCHORS, OVERLAY_PRESETS, sessionsForAsset, SETUP_TYPES, SIGNAL_STATUSES } from "@/lib/constants";
 import type {
   AnchorType,
   AssetClass,
+  OverlayPreset,
   SessionLevels,
   SessionType,
   SetupType,
@@ -21,6 +22,8 @@ export function Sidebar({
   onToggleSetupType,
   statuses,
   onToggleStatus,
+  overlayPreset,
+  onOverlayPreset,
   vwap,
   sessionBooks,
   open,
@@ -34,6 +37,8 @@ export function Sidebar({
   onToggleSetupType: (t: SetupType) => void;
   statuses: SignalStatus[];
   onToggleStatus: (s: SignalStatus) => void;
+  overlayPreset: OverlayPreset;
+  onOverlayPreset: (p: OverlayPreset) => void;
   vwap: VWAPValues | null;
   sessionBooks: SessionLevels[];
   open: boolean;
@@ -42,6 +47,27 @@ export function Sidebar({
 
   return (
     <aside className={`dash-sidebar ${open ? "open" : ""}`}>
+      <section>
+        <h3>Overlay view</h3>
+        <div className="choice-col">
+          {OVERLAY_PRESETS.map((p) => (
+            <label key={p.id}>
+              <input
+                type="radio"
+                name="overlay"
+                checked={overlayPreset === p.id}
+                onChange={() => onOverlayPreset(p.id)}
+              />
+              {p.label}
+            </label>
+          ))}
+        </div>
+        <p className="hint">
+          sweep_reclaim: sweeps + MSS. fvg_entry/ob_fvg: FVG + order blocks. po3_judas: Asia box +
+          sweep + displacement (MSS).
+        </p>
+      </section>
+
       <section>
         <h3>VWAP anchor</h3>
         <div className="choice-col">

@@ -77,7 +77,74 @@ export type SetupType =
   | "mss_break"
   | "order_block"
   | "sweep_mss"
-  | "ob_fvg";
+  | "ob_fvg"
+  | "po3_judas";
+
+export type OverlayPreset = "all" | "sweep_reclaim" | "fvg_ob" | "po3_judas";
+
+export interface FVGZone {
+  schema_version: "1.1";
+  id: string;
+  symbol: string;
+  asset_class: AssetClass;
+  direction: "bullish" | "bearish";
+  high: number;
+  low: number;
+  mitigated?: boolean;
+  created_ts_ms: number;
+  ttl_seconds?: number;
+}
+
+export interface SweepEvent {
+  schema_version: "1.1";
+  id: string;
+  symbol: string;
+  asset_class: AssetClass;
+  side: "buy" | "sell";
+  swept_level: number;
+  reclaim: boolean | null;
+  ts_ms: number;
+}
+
+export interface MssEvent {
+  schema_version: "1.1";
+  id: string;
+  symbol: string;
+  asset_class: AssetClass;
+  ts_ms: number;
+  direction: "bullish" | "bearish";
+  broken_level: number;
+  swing_high: number | null;
+  swing_low: number | null;
+  trigger_sweep_id: string;
+  trigger_sweep_side: "buy" | "sell";
+  timeframe?: "1m" | "5m" | "15m";
+  confirmed?: boolean;
+}
+
+export interface OrderBlock {
+  schema_version: "1.1";
+  id: string;
+  symbol: string;
+  asset_class: AssetClass;
+  direction: "bullish" | "bearish";
+  high: number;
+  low: number;
+  created_ts_ms: number;
+  mitigated?: boolean;
+  ttl_seconds?: number;
+  timeframe?: Timeframe;
+  displacement_ts_ms?: number;
+  origin_open?: number;
+  origin_close?: number;
+}
+
+export interface PatternBook {
+  fvgs: FVGZone[];
+  obs: OrderBlock[];
+  sweeps: SweepEvent[];
+  mss: MssEvent[];
+}
 
 export type SignalSide = "long" | "short";
 

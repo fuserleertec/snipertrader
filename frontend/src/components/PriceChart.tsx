@@ -11,8 +11,18 @@ import {
   type ISeriesApi,
   type UTCTimestamp,
 } from "lightweight-charts";
-import type { OHLCVBar, SessionLevels, SessionType, Timeframe, VWAPValues } from "@/lib/types";
+import type {
+  OHLCVBar,
+  OverlayPreset,
+  PatternBook,
+  SessionLevels,
+  SessionType,
+  Signal,
+  Timeframe,
+  VWAPValues,
+} from "@/lib/types";
 import type { Theme } from "@/hooks/useTheme";
+import { buildDrawModel, PatternZonesPrimitive } from "./PatternZonesPrimitive";
 import { VwapBandsPrimitive } from "./VwapBandsPrimitive";
 
 const SESSION_COLORS: Record<string, string> = {
@@ -56,6 +66,20 @@ function toCandle(bar: OHLCVBar) {
   };
 }
 
+function snapTime(bars: OHLCVBar[], ms: number): UTCTimestamp {
+  if (!bars.length) return Math.floor(ms / 1000) as UTCTimestamp;
+  let best = bars[0];
+  let bestD = Math.abs(bars[0].open_ts_ms - ms);
+  for (const bar of bars) {
+    const d = Math.abs(bar.open_ts_ms - ms);
+    if (d < bestD) {
+      bestD = d;
+      best = bar;
+    }
+  }
+  return Math.floor(best.open_ts_ms / 1000) as UTCTimestamp;
+}
+
 export function PriceChart({
   bars,
   historyKey,
@@ -65,6 +89,9 @@ export function PriceChart({
   visibleSessions,
   timeframe,
   theme,
+  patterns,
+  overlayPreset,
+  selected,
 }: {
   bars: OHLCVBar[];
   historyKey: string;
@@ -74,13 +101,18 @@ export function PriceChart({
   visibleSessions: SessionType[];
   timeframe: Timeframe;
   theme: Theme;
+  patterns: PatternBook;
+  overlayPreset: OverlayPreset;
+  selected: Signal | null;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const bandsRef = useRef<VwapBandsPrimitive | null>(null);
+  const zonesRef = useRef<PatternZonesPrimitive | null>(null);
   const vwapLineRef = useRef<IPriceLine | null>(null);
   const sessionLinesRef = useRef<Map<string, IPriceLine>>(new Map());
+  const setupLinesRef = useRef<Map<string, IPriceLine>>(new Map());
   const fittedKey = useRef<string>("");
   const barsRef = useRef(bars);
   useEffect(() => {
@@ -121,21 +153,27 @@ export function PriceChart({
       wickDownColor: colors.wickDown,
     });
     const bands = new VwapBandsPrimitive();
+    const zones = new PatternZonesPrimitive();
     series.attachPrimitive(bands);
+    series.attachPrimitive(zones);
     chartRef.current = chart;
     seriesRef.current = series;
     bandsRef.current = bands;
+    zonesRef.current = zones;
     fittedKey.current = "";
     if (barsRef.current.length) {
       series.setData(barsRef.current.map(toCandle));
     }
 
     const sessionLines = sessionLinesRef.current;
+    const setupLines = setupLinesRef.current;
 
     return () => {
       sessionLines.clear();
+      setupLines.clear();
       vwapLineRef.current = null;
       bandsRef.current = null;
+      zonesRef.current = null;
       seriesRef.current = null;
       chart.remove();
       chartRef.current = null;
@@ -221,6 +259,84 @@ export function PriceChart({
       }
     }
   }, [sessions, visibleSessions]);
+
+  useEffect(() => {
+    const highlight = new Set(selected?.trigger_event_ids ?? []);
+    const asia = overlayPreset === "po3_judas" || overlayPreset === "all"
+      ? sessions.find((s) => s.session_type === "asia") ?? null
+      : null;
+    zonesRef.current?.setModel(
+      buildDrawModel(overlayPreset, patterns.fvgs, patterns.obs, patterns.mss, highlight, asia),
+    );
+
+    const series = seriesRef.current;
+    if (!series || !bars.length) return;
+    const showSweep = overlayPreset === "all" || overlayPreset === "sweep_reclaim" || overlayPreset === "po3_judas";
+    const showMss = overlayPreset === "all" || overlayPreset === "sweep_reclaim" || overlayPreset === "po3_judas";
+    const markers: Array<{
+      time: UTCTimestamp;
+      position: "aboveBar" | "belowBar";
+      color: string;
+      shape: "arrowUp" | "arrowDown" | "circle";
+      text: string;
+    }> = [];
+    if (showSweep) {
+      for (const sw of patterns.sweeps) {
+        const hot = highlight.has(sw.id);
+        // sell = session high swept (arrow at high); buy = session low swept (arrow at low)
+        markers.push({
+          time: snapTime(bars, sw.ts_ms),
+          position: sw.side === "sell" ? "aboveBar" : "belowBar",
+          color: hot ? "#F0C040" : sw.side === "sell" ? "#FF4455" : "#00E5A0",
+          shape: sw.side === "sell" ? "arrowDown" : "arrowUp",
+          text: hot ? "SWEEP ★" : "SWEEP",
+        });
+      }
+    }
+    if (showMss) {
+      for (const ev of patterns.mss) {
+        const hot = highlight.has(ev.id);
+        markers.push({
+          time: snapTime(bars, ev.ts_ms),
+          position: ev.direction === "bearish" ? "aboveBar" : "belowBar",
+          color: hot ? "#F0C040" : ev.direction === "bullish" ? "#00D4FF" : "#FF8A3D",
+          shape: "circle",
+          text: hot ? "MSS ★" : "MSS",
+        });
+      }
+    }
+    series.setMarkers(markers);
+  }, [patterns, overlayPreset, selected, sessions, bars, theme]);
+
+  useEffect(() => {
+    const series = seriesRef.current;
+    if (!series) return;
+    const wanted = new Map<string, { price: number; color: string; title: string }>();
+    if (selected) {
+      wanted.set("E", { price: selected.entry, color: "#00D4FF", title: "E" });
+      wanted.set("S", { price: selected.stop, color: "#FF4455", title: "S" });
+      wanted.set("T", { price: selected.target, color: "#00E5A0", title: "T" });
+    }
+    for (const [id, spec] of wanted) {
+      const existing = setupLinesRef.current.get(id);
+      const opts = {
+        price: spec.price,
+        color: spec.color,
+        lineWidth: 2 as const,
+        lineStyle: LineStyle.Dashed,
+        axisLabelVisible: true,
+        title: spec.title,
+      };
+      if (!existing) setupLinesRef.current.set(id, series.createPriceLine(opts));
+      else existing.applyOptions(opts);
+    }
+    for (const [id, line] of setupLinesRef.current) {
+      if (!wanted.has(id)) {
+        series.removePriceLine(line);
+        setupLinesRef.current.delete(id);
+      }
+    }
+  }, [selected]);
 
   return (
     <div className="chart-wrap">

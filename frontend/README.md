@@ -35,7 +35,9 @@ npm run dev:dashboard
 - **Sidebar** — VWAP anchor (`session` | `weekly` | `rolling`), session-level
   filters, Quant `setup_type` / `status` filters
 - **Main chart** — TradingView Lightweight Charts v4 candlesticks
-- **Bottom table** — Quant setup/trade signals (post risk-approval)
+- **Setup cards** — ACTIVE Quant signals at the top; click joins overlays via `trigger_event_ids`
+- **Pattern overlays** — FVG / order-block zones, sweep arrows, MSS broken levels (Rev. 1.1)
+- **Bottom table** — history filters + CSV; toast when `confidence > 0.8`
 
 ## Chart (performance)
 

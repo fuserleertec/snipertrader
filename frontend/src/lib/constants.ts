@@ -1,4 +1,12 @@
-import type { AnchorType, AssetClass, SessionType, SetupType, SignalStatus, Timeframe } from "./types";
+import type {
+  AnchorType,
+  AssetClass,
+  OverlayPreset,
+  SessionType,
+  SetupType,
+  SignalStatus,
+  Timeframe,
+} from "./types";
 
 export const TIMEFRAMES: Timeframe[] = ["1m", "5m", "15m", "1h", "4h"];
 
@@ -40,6 +48,14 @@ export const SETUP_TYPES: SetupType[] = [
   "order_block",
   "sweep_mss",
   "ob_fvg",
+  "po3_judas",
+];
+
+export const OVERLAY_PRESETS: { id: OverlayPreset; label: string }[] = [
+  { id: "all", label: "all overlays" },
+  { id: "sweep_reclaim", label: "sweep_reclaim" },
+  { id: "fvg_ob", label: "fvg_entry / ob_fvg" },
+  { id: "po3_judas", label: "po3_judas" },
 ];
 
 export const SIGNAL_STATUSES: SignalStatus[] = ["ACTIVE", "TP_HIT", "SL_HIT", "CANCELLED"];
