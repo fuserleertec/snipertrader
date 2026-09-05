@@ -44,6 +44,7 @@ async def run_setup_replay(*, risk=None) -> dict[str, Any]:
     orch.on_kill_zone(ny_am_kill_zone())
 
     # Setup 1 — confirmed low sweep + bullish MSS + close above session VWAP.
+    # Do not seed an FVG here: Setup 1 bars would otherwise also trip Setup 2.
     sweep = confirmed_buy_sweep()
     orch.on_sweep(sweep)
     bars1 = setup1_long_bars()
@@ -52,17 +53,21 @@ async def run_setup_replay(*, risk=None) -> dict[str, Any]:
     orch.on_mss(bullish_mss_after_low(ts_ms=bars1[-1].close_ts_ms))
     await orch.on_bar(bars1[-1])
 
-    # Setup 2 — FVG at VWAP + retrace confirmation.
-    orch2_bus = bus
-    orch2 = SetupOrchestrator(store, orch2_bus, client, swing_lookback=2)
+    # Setup 2 — FVG at VWAP + retrace confirmation (own store so bars do not
+    # re-trigger Setup 1 / 3 against leftover armed sweeps).
+    store2 = InMemoryStateStore()
+    await seed_common(store2, fvg=True, ob=True)
+    orch2 = SetupOrchestrator(store2, bus, client, swing_lookback=2)
     orch2.on_vwap(VWAP_SESSION)
     orch2.on_fvg(bullish_fvg())
-    await store_fvg(store, bullish_fvg())
+    await store_fvg(store2, bullish_fvg())
     for b in setup2_retrace_bars():
         await orch2.on_bar(b)
 
     # Setup 3 — Asia sweep during NY AM + displacement toward VWAP.
-    orch3 = SetupOrchestrator(store, bus, client, swing_lookback=2)
+    store3 = InMemoryStateStore()
+    await seed_common(store3)
+    orch3 = SetupOrchestrator(store3, bus, client, swing_lookback=2)
     orch3.on_vwap(VWAP_SESSION)
     orch3.on_session(asia_session())
     orch3.on_kill_zone(ny_am_kill_zone())

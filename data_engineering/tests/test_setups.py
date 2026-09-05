@@ -141,9 +141,7 @@ async def test_setup1_ignores_unconfirmed_sweep():
 @pytest.mark.asyncio
 async def test_setup2_fvg_entry_at_vwap_node():
     store = InMemoryStateStore()
-    await seed_common(store)
-    # no overlapping OB in this detector's store scan if we skip store_ob — seed_common writes one.
-    # Re-seed without relying on that OB: use a fresh store key overwrite by using a non-overlapping path.
+    await seed_common(store, fvg=True)
     det = FVGEntryDetector(store)
     det.on_vwap(session_vwap())
     det.on_fvg(bullish_fvg())
@@ -152,7 +150,7 @@ async def test_setup2_fvg_entry_at_vwap_node():
         cands.extend(await det.on_bar(b))
     assert len(cands) == 1
     c = cands[0]
-    assert c.setup_type in {"fvg_entry", "ob_fvg"}
+    assert c.setup_type == "fvg_entry"
     assert c.side == "long"
     assert "fvg-bull-vwap" in c.trigger_event_ids
     assert c.target > c.entry > c.stop
@@ -161,7 +159,7 @@ async def test_setup2_fvg_entry_at_vwap_node():
 @pytest.mark.asyncio
 async def test_setup2_ob_fvg_when_order_block_overlaps():
     store = InMemoryStateStore()
-    await seed_common(store)
+    await seed_common(store, fvg=True, ob=True)
     await store_ob(store, bearish_ob_overlap())
     await store_fvg(store, bullish_fvg())
     det = FVGEntryDetector(store)

@@ -222,7 +222,14 @@ def asia_high_sweep() -> SweepEvent:
     )
 
 
-async def seed_common(store, *, vwap: VWAPValues | None = None) -> None:
+async def seed_common(
+    store,
+    *,
+    vwap: VWAPValues | None = None,
+    fvg: bool = False,
+    ob: bool = False,
+    sweep: bool = False,
+) -> None:
     from sniper_data.kill_zones import redis_kill_zone_key
     from sniper_data.sessions import redis_session_key
     from sniper_data.volume_profile import redis_volume_profile_key
@@ -234,6 +241,9 @@ async def seed_common(store, *, vwap: VWAPValues | None = None) -> None:
     await store.set(redis_session_key(SYM, "asia"), asia)
     await store.set(redis_volume_profile_key(SYM, "london"), volume_profile_at(100.0))
     await store.set(redis_kill_zone_key(SYM), ny_am_kill_zone())
-    await store_sweep(store, confirmed_buy_sweep())
-    await store_fvg(store, bullish_fvg())
-    await store_ob(store, bearish_ob_overlap())
+    if sweep:
+        await store_sweep(store, confirmed_buy_sweep())
+    if fvg:
+        await store_fvg(store, bullish_fvg())
+    if ob:
+        await store_ob(store, bearish_ob_overlap())
