@@ -296,6 +296,8 @@ sniper-data api      [--host 0.0.0.0 --port 8000]
 sniper-data evict    [--inmemory]
 sniper-data killzones [--inmemory] [--duration N]
 sniper-data bench    [--n 400 --symbols BTCUSDT]
+sniper-data load     [--n 3000 --symbols BTCUSDT,ETHUSDT,AAPL,MSFT,NVDA,ES,NQ,CL]
+sniper-data drill    # Redis RDB restart + Kafka catch-up → docs/dr-drill.md
 ```
 
 ## Phase 2 — Multi-asset, Anchored VWAP, volume profile, kill zones

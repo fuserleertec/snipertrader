@@ -6,7 +6,7 @@ from sniper_data.api import create_app
 from sniper_data.bus.redis_store import InMemoryStateStore
 from sniper_data.config import Settings
 from sniper_data.performance import PerformanceStore, SignalOutcome, compute_summary
-from sniper_data.setups import SETUP_KEYS, SETUP_3_PO3_ASIA_RANGE_SWEEP, resolve_setup_key
+from sniper_data.setups import SETUP_KEYS, SETUP_TYPE_ALIASES, resolve_setup_key
 
 FROZEN = (
     "1_liquidity_sweep_vwap_reclaim",
@@ -26,8 +26,37 @@ def _client():
 
 def test_setup_keys_are_the_pm_lock():
     assert SETUP_KEYS == FROZEN
-    assert resolve_setup_key("po3_judas") == SETUP_3_PO3_ASIA_RANGE_SWEEP
     assert resolve_setup_key("4_sd_extension_fade") == "4_sd_extension_fade"
+
+
+def test_setup_type_aliases_map_to_product_keys():
+    """Quant setup_type → by_setup product keys (no new Redis/Kafka fields)."""
+    expected = {
+        "po3_judas": "3_po3_asia_range_sweep",
+        "sd_extension_fade": "4_sd_extension_fade",
+        "vwap_pullback_cont": "5_vwap_pullback_cont",
+        "avwap_ob_confluence": "6_avwap_ob_confluence",
+    }
+    for setup_type, key in expected.items():
+        assert SETUP_TYPE_ALIASES[setup_type] == key
+        assert resolve_setup_key(setup_type) == key
+    http, _ = _client()
+    for setup_type, key in expected.items():
+        resp = http.post(
+            "/performance/outcomes",
+            json={"setup_type": setup_type, "won": True, "rr": 1.0, "ts_ms": 1},
+        )
+        assert resp.status_code == 201, setup_type
+        assert resp.json()["setups"] == [key]
+    body = http.get("/performance/summary").json()
+    assert set(body["by_setup"]) == set(FROZEN)
+    for key in (
+        "3_po3_asia_range_sweep",
+        "4_sd_extension_fade",
+        "5_vwap_pullback_cont",
+        "6_avwap_ob_confluence",
+    ):
+        assert body["by_setup"][key]["signals"] == 1
 
 
 def test_empty_summary_has_exact_envelope():

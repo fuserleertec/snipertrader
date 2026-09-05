@@ -15,7 +15,10 @@ def _setup_logging(level: str) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="sniper-data", description="Phase 1–3 market-data pipeline")
-    parser.add_argument("command", choices=["pipeline", "api", "evict", "demo", "killzones", "bench"])
+    parser.add_argument(
+        "command",
+        choices=["pipeline", "api", "evict", "demo", "killzones", "bench", "load", "drill"],
+    )
     parser.add_argument("--symbols", default=None, help="Comma symbols for bench (default BTCUSDT).")
     parser.add_argument("--n", type=int, default=400, help="Tick count for bench.")
     parser.add_argument("--inmemory", action="store_true", help="Use in-process bus/store (no Docker).")
@@ -65,6 +68,34 @@ def main(argv: list[str] | None = None) -> int:
         report = asyncio.run(bench_tick_to_vwap(n=args.n, symbols=symbols))
         print(report)
         return 0 if report["pass"] else 2
+
+    if args.command == "load":
+        from pathlib import Path
+
+        from sniper_data.loadtest import bench_under_load, write_load_report
+
+        symbols = [
+            s.strip().upper()
+            for s in (args.symbols or "BTCUSDT,ETHUSDT,AAPL,MSFT,NVDA,ES,NQ,CL").split(",")
+            if s.strip()
+        ]
+        report = asyncio.run(bench_under_load(n=args.n if args.n != 400 else 3_000, symbols=symbols))
+        dest = Path("docs/performance_under_load.md")
+        write_load_report(report, dest)
+        print(report)
+        print(f"wrote {dest}")
+        return 0 if report["pass"] else 2
+
+    if args.command == "drill":
+        from pathlib import Path
+
+        from sniper_data.dr_drill import run_drill, write_drill_report
+
+        obs = asyncio.run(run_drill())
+        dest = Path("docs/dr-drill.md")
+        write_drill_report(obs, dest)
+        print({"pass": obs["pass"], "report": str(dest)})
+        return 0 if obs["pass"] else 2
 
     if args.command == "api":
         import uvicorn
