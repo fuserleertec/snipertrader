@@ -63,7 +63,7 @@ export function Sidebar({
           ))}
         </div>
         <p className="hint">
-          sweep_reclaim: sweeps + MSS. fvg_entry/ob_fvg: FVG + order blocks. po3_judas: Asia box +
+          sweep_reclaim: sweeps + MSS. fvg_entry: FVG + order blocks. po3_judas: Asia box +
           sweep + displacement (MSS).
         </p>
       </section>

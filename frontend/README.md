@@ -155,10 +155,22 @@ REST:
 - `GET /signals/{id}` → `Signal`
 - `GET /performance/summary` → `{ overall, by_setup }` (mock until Quant confirms live; likely `:8001`)
 
-`by_setup` keys (exact; no invented labels):
-`1_liquidity_sweep_vwap_reclaim`, `2_fvg_mitigation_vwap`, `3`, `4`, `5`, `6`.
+Locked `setup_type` ↔ `by_setup` product key:
 
-Upcoming `setup_type` filter/card slots accept those same keys so cards join via `trigger_event_ids` once Quant locks 4–6.
+| setup_type | by_setup |
+|---|---|
+| `sweep_reclaim` | `1_liquidity_sweep_vwap_reclaim` |
+| `fvg_entry` | `2_fvg_mitigation_vwap` |
+| `po3_judas` | `3_po3_asia_range_sweep` |
+| `sd_extension_fade` | `4_sd_extension_fade` |
+| `vwap_pullback_cont` | `5_vwap_pullback_cont` |
+| `avwap_ob_confluence` | `6_avwap_ob_confluence` |
+
+Dropped from UI: `mss_break`, `order_block`, `sweep_mss`, `ob_fvg`, `*_pending_user_confirm`.
+
+Overlays 4–6: ±2σ/±3σ + rejection + session VWAP target; pullback shade + OB/FVG; AVWAP + OB confluence.
+
+Phase 3 pages: `/analytics`, `/alerts`, `/account`. Auth + alerts are **localStorage mocks** (Quant has no alerts/SSO API yet). Cumulative P&L on analytics is a **stub polyline**, not an API field. Web Push is stubbed (no VAPID).
 
 Planned WS: `WS /ws/signals` →
 `{ "type": "signal.upsert"|"signal.status", "signal": Signal }`
@@ -169,7 +181,7 @@ Table columns map 1:1 to Signal fields:
 |---|---|
 | Timestamp | `ts_ms` (UTC ms) |
 | Symbol | `symbol` |
-| Pattern Type | `setup_type` ∈ `sweep_reclaim` \| `fvg_entry` \| `mss_break` \| `order_block` \| `sweep_mss` \| `ob_fvg` |
+| Pattern Type | `setup_type` ∈ `sweep_reclaim` \| `fvg_entry` \| `po3_judas` \| `sd_extension_fade` \| `vwap_pullback_cont` \| `avwap_ob_confluence` |
 | Direction | `side` ∈ `long` \| `short` |
 | Zone | `{ entry, stop, target }` (UI also derives `zone_low`/`zone_high` from stop/entry) |
 | Status | `ACTIVE` \| `TP_HIT` \| `SL_HIT` \| `CANCELLED` |

@@ -14,7 +14,7 @@ import type { FVGZone, MssEvent, OrderBlock, OverlayPreset, SessionLevels, Sweep
 
 export interface ZoneDraw {
   id: string;
-  kind: "fvg" | "ob" | "asia";
+  kind: "fvg" | "ob" | "asia" | "pullback" | "confluence";
   start_ms: number;
   end_ms: number | null;
   high: number;
@@ -70,8 +70,9 @@ export function buildDrawModel(
   highlightIds: Set<string>,
   asia: SessionLevels | null,
 ): PatternDrawModel {
-  const showFvg = preset === "all" || preset === "fvg_ob";
-  const showOb = preset === "all" || preset === "fvg_ob";
+  const showFvg = preset === "all" || preset === "fvg_ob" || preset === "vwap_pullback_cont";
+  const showOb =
+    preset === "all" || preset === "fvg_ob" || preset === "vwap_pullback_cont" || preset === "avwap_ob_confluence";
   const showMss = preset === "all" || preset === "sweep_reclaim" || preset === "po3_judas";
   const showSweep = preset === "all" || preset === "sweep_reclaim" || preset === "po3_judas";
   const showAsia = preset === "all" || preset === "po3_judas";
@@ -185,7 +186,16 @@ class ZonesRenderer implements ISeriesPrimitivePaneRenderer {
         ctx.strokeRect(left, top, Math.max(right - left, 4), Math.max(h, 3));
         ctx.fillStyle = z.stroke;
         ctx.font = `${z.highlight ? 11 : 10}px monospace`;
-        const label = z.kind === "fvg" ? "FVG" : z.kind === "ob" ? "OB" : "ASIA";
+        const label =
+          z.kind === "fvg"
+            ? "FVG"
+            : z.kind === "ob"
+              ? "OB"
+              : z.kind === "pullback"
+                ? "PULLBACK"
+                : z.kind === "confluence"
+                  ? "CONF"
+                  : "ASIA";
         ctx.fillText(z.highlight ? `${label} ★` : label, left + 4, Math.max(top + 12, 12));
       }
       for (const line of this.model.lines) {

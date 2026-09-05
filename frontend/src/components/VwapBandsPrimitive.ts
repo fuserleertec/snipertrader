@@ -24,24 +24,29 @@ interface Ys {
   p3: number;
 }
 
+export type BandEmphasis = "all" | "sigma23";
+
 class BandsRenderer implements ISeriesPrimitivePaneRenderer {
-  constructor(private readonly ys: Ys | null) {}
+  constructor(
+    private readonly ys: Ys | null,
+    private readonly emphasis: BandEmphasis,
+  ) {}
 
   draw(target: CanvasRenderingTarget2D): void {
     const ys = this.ys;
     if (!ys) return;
+    const hot = this.emphasis === "sigma23";
     target.useMediaCoordinateSpace(({ context: ctx, mediaSize }) => {
       const w = mediaSize.width;
       const fill = (a: number, b: number, color: string) => {
         ctx.fillStyle = color;
         ctx.fillRect(0, Math.min(a, b), w, Math.abs(b - a));
       };
-      // Single canvas pass — not six series.
-      fill(ys.p3, ys.p2, "rgba(240,192,64,0.07)");
-      fill(ys.m3, ys.m2, "rgba(240,192,64,0.07)");
-      fill(ys.p2, ys.p1, "rgba(0,212,255,0.09)");
-      fill(ys.m2, ys.m1, "rgba(0,212,255,0.09)");
-      fill(ys.p1, ys.m1, "rgba(0,229,160,0.11)");
+      fill(ys.p3, ys.p2, hot ? "rgba(240,192,64,0.28)" : "rgba(240,192,64,0.07)");
+      fill(ys.m3, ys.m2, hot ? "rgba(240,192,64,0.28)" : "rgba(240,192,64,0.07)");
+      fill(ys.p2, ys.p1, hot ? "rgba(240,192,64,0.16)" : "rgba(0,212,255,0.09)");
+      fill(ys.m2, ys.m1, hot ? "rgba(240,192,64,0.16)" : "rgba(0,212,255,0.09)");
+      fill(ys.p1, ys.m1, hot ? "rgba(0,229,160,0.05)" : "rgba(0,229,160,0.11)");
     });
   }
 }
@@ -72,8 +77,10 @@ class BandsPaneView implements ISeriesPrimitivePaneView {
     this.ys = { m3: m3!, m2: m2!, m1: m1!, p1: p1!, p2: p2!, p3: p3! };
   }
 
+  emphasis: BandEmphasis = "all";
+
   renderer(): ISeriesPrimitivePaneRenderer | null {
-    return this.ys ? new BandsRenderer(this.ys) : null;
+    return this.ys ? new BandsRenderer(this.ys, this.emphasis) : null;
   }
 }
 
@@ -81,6 +88,7 @@ export class VwapBandsPrimitive implements ISeriesPrimitive<Time> {
   private series: ISeriesApi<SeriesType> | null = null;
   private requestUpdate: (() => void) | null = null;
   private levels: BandLevels | null = null;
+  private emphasis: BandEmphasis = "all";
   private readonly view = new BandsPaneView();
   private readonly views = [this.view];
 
@@ -103,8 +111,10 @@ export class VwapBandsPrimitive implements ISeriesPrimitive<Time> {
     this.view.update(this.series, this.levels);
   }
 
-  setLevels(levels: BandLevels | null): void {
+  setLevels(levels: BandLevels | null, emphasis: BandEmphasis = "all"): void {
     this.levels = levels;
+    this.emphasis = emphasis;
+    this.view.emphasis = emphasis;
     this.view.update(this.series, this.levels);
     this.requestUpdate?.();
   }

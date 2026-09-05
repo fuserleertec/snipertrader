@@ -45,34 +45,30 @@ export const TF_MS: Record<Timeframe, number> = {
 export const SETUP_TYPES: SetupType[] = [
   "sweep_reclaim",
   "fvg_entry",
-  "mss_break",
-  "order_block",
-  "sweep_mss",
-  "ob_fvg",
   "po3_judas",
-  "1_liquidity_sweep_vwap_reclaim",
-  "2_fvg_mitigation_vwap",
-  "3",
-  "4",
-  "5",
-  "6",
+  "sd_extension_fade",
+  "vwap_pullback_cont",
+  "avwap_ob_confluence",
 ];
 
-/** Locked GET /performance/summary keys. Display the key itself — no invented labels. */
+/** Locked GET /performance/summary keys. Display the key itself. */
 export const PERFORMANCE_SETUP_KEYS: PerformanceSetupKey[] = [
   "1_liquidity_sweep_vwap_reclaim",
   "2_fvg_mitigation_vwap",
-  "3",
-  "4",
-  "5",
-  "6",
+  "3_po3_asia_range_sweep",
+  "4_sd_extension_fade",
+  "5_vwap_pullback_cont",
+  "6_avwap_ob_confluence",
 ];
 
 export const OVERLAY_PRESETS: { id: OverlayPreset; label: string }[] = [
   { id: "all", label: "all overlays" },
-  { id: "sweep_reclaim", label: "sweep_reclaim" },
-  { id: "fvg_ob", label: "fvg_entry / ob_fvg" },
-  { id: "po3_judas", label: "po3_judas" },
+  { id: "sweep_reclaim", label: "1_liquidity_sweep_vwap_reclaim" },
+  { id: "fvg_ob", label: "2_fvg_mitigation_vwap" },
+  { id: "po3_judas", label: "3_po3_asia_range_sweep" },
+  { id: "sd_extension_fade", label: "4_sd_extension_fade" },
+  { id: "vwap_pullback_cont", label: "5_vwap_pullback_cont" },
+  { id: "avwap_ob_confluence", label: "6_avwap_ob_confluence" },
 ];
 
 export const SIGNAL_STATUSES: SignalStatus[] = ["ACTIVE", "TP_HIT", "SL_HIT", "CANCELLED"];

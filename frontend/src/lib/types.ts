@@ -70,30 +70,29 @@ export interface OHLCVBar {
   closed?: boolean;
 }
 
-/** Quant Developers — post risk-approval setup/trade signal. Not a raw sweep/FVG stream. */
+/** Quant Developers — post risk-approval setup/trade signal. Locked 6-type map. */
 export type SetupType =
   | "sweep_reclaim"
   | "fvg_entry"
-  | "mss_break"
-  | "order_block"
-  | "sweep_mss"
-  | "ob_fvg"
   | "po3_judas"
-  | "1_liquidity_sweep_vwap_reclaim"
-  | "2_fvg_mitigation_vwap"
-  | "3"
-  | "4"
-  | "5"
-  | "6";
+  | "sd_extension_fade"
+  | "vwap_pullback_cont"
+  | "avwap_ob_confluence";
 
-/** Exact `by_setup` keys from GET /performance/summary. Do not invent labels. */
+/** Exact `by_setup` keys from GET /performance/summary. Index by these strings. */
 export type PerformanceSetupKey =
   | "1_liquidity_sweep_vwap_reclaim"
   | "2_fvg_mitigation_vwap"
-  | "3"
-  | "4"
-  | "5"
-  | "6";
+  | "3_po3_asia_range_sweep"
+  | "4_sd_extension_fade"
+  | "5_vwap_pullback_cont"
+  | "6_avwap_ob_confluence";
+
+export interface ContributingFactor {
+  key: string;
+  weight: number;
+  note?: string;
+}
 
 export interface PerformanceMetrics {
   win_rate: number;
@@ -109,7 +108,14 @@ export interface PerformanceSummary {
   by_setup: Partial<Record<PerformanceSetupKey, Partial<PerformanceMetrics>>>;
 }
 
-export type OverlayPreset = "all" | "sweep_reclaim" | "fvg_ob" | "po3_judas";
+export type OverlayPreset =
+  | "all"
+  | "sweep_reclaim"
+  | "fvg_ob"
+  | "po3_judas"
+  | "sd_extension_fade"
+  | "vwap_pullback_cont"
+  | "avwap_ob_confluence";
 
 export interface FVGZone {
   schema_version: "1.1";
@@ -194,6 +200,8 @@ export interface Signal {
   timeframe: Timeframe;
   ref_session: SessionType;
   trigger_event_ids: string[];
+  /** Stub until Quant/ML publish the contributing-factor contract. */
+  contributing_factors?: ContributingFactor[];
 }
 
 export interface SignalListResponse {

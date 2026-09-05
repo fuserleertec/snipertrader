@@ -7,13 +7,16 @@ import { usePerformance } from "@/hooks/usePerformance";
 import { useSignals } from "@/hooks/useSignals";
 import { useTheme } from "@/hooks/useTheme";
 import { inferAssetClass } from "@/lib/constants";
+import { overlayForSetup } from "@/lib/setups";
 import { dropUniverse } from "@/lib/mocks/universe";
 import { convictionOf, tierOf } from "@/lib/mocks/terminal";
 import { defaultVisibleSessions } from "@/lib/sessions";
 import type { OverlayPreset, Signal, Timeframe } from "@/lib/types";
 import { playAlert, ToastHost, type ToastItem } from "./ToastHost";
+import { AppNav } from "./terminal/AppNav";
 import { EngineGlossary, ExecutionDesk, Narratives, PickGrid, ReconAudit } from "./terminal/PickAndDesk";
 import { QepTable } from "./terminal/QepTable";
+import { SignalDetail } from "./terminal/SignalDetail";
 import { SimulationView } from "./terminal/SimulationView";
 import { SiteFooter, StatusStrip, TerminalNav } from "./terminal/SiteChrome";
 
@@ -67,22 +70,7 @@ export function Dashboard() {
 
   const onSelect = (signal: Signal) => {
     setSelected((prev) => (prev?.id === signal.id ? null : signal));
-    if (
-      signal.setup_type === "sweep_reclaim" ||
-      signal.setup_type === "sweep_mss" ||
-      signal.setup_type === "1_liquidity_sweep_vwap_reclaim"
-    ) {
-      setOverlayPreset("sweep_reclaim");
-    } else if (
-      signal.setup_type === "fvg_entry" ||
-      signal.setup_type === "ob_fvg" ||
-      signal.setup_type === "order_block" ||
-      signal.setup_type === "2_fvg_mitigation_vwap"
-    ) {
-      setOverlayPreset("fvg_ob");
-    } else if (signal.setup_type === "po3_judas") {
-      setOverlayPreset("po3_judas");
-    }
+    setOverlayPreset(overlayForSetup(signal.setup_type));
     if (signal.symbol && signal.symbol !== symbol) onSymbol(signal.symbol);
   };
 
@@ -133,6 +121,7 @@ export function Dashboard() {
   return (
     <div>
       <TerminalNav theme={theme} onToggleTheme={toggle} />
+      <AppNav />
       <div className="wrap">
         <div className="hero">
           <h1>
@@ -215,6 +204,8 @@ export function Dashboard() {
           financial advice.
         </div>
 
+        {selected && <SignalDetail signal={selected} onClose={() => setSelected(null)} />}
+
         <QepTable
           signals={allSignals}
           lastPrice={market.lastPrice}
@@ -239,6 +230,7 @@ export function Dashboard() {
             historyKey={`${market.historyKey}:${tick}`}
             lastBar={market.lastBar}
             vwap={market.vwaps.session ?? null}
+            anchorVwap={market.vwaps.weekly ?? market.vwaps.rolling ?? null}
             sessions={sessionBooks}
             visibleSessions={visibleSessions}
             theme={theme}

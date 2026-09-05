@@ -165,15 +165,9 @@ export function enginesForSetup(signal: Signal): Record<EngineId, Stance> {
   const dir: Stance = signal.side === "long" ? "buy" : "sell";
   const opp: Stance = dir === "buy" ? "sell" : "buy";
   const base: Record<EngineId, Stance> = { K: dir, S: "hold", M: dir, F: "hold", Q: dir };
-  if (
-    signal.setup_type.includes("sweep") ||
-    signal.setup_type === "po3_judas" ||
-    signal.setup_type === "1_liquidity_sweep_vwap_reclaim"
-  ) {
-    base.S = dir;
-  }
-  if (signal.setup_type === "order_block") base.F = "hold";
-  if (signal.confidence < 0.7) base.M = signal.setup_type === "mss_break" ? opp : "hold";
+  if (signal.setup_type === "sweep_reclaim" || signal.setup_type === "po3_judas") base.S = dir;
+  if (signal.setup_type === "sd_extension_fade") base.S = dir;
+  if (signal.confidence < 0.7) base.M = signal.setup_type === "avwap_ob_confluence" ? opp : "hold";
   return base;
 }
 

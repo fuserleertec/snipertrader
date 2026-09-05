@@ -40,6 +40,7 @@ export function SimulationView({
   visibleSessions,
   theme,
   patterns,
+  anchorVwap = null,
 }: {
   signals: Signal[];
   selected: Signal | null;
@@ -59,6 +60,7 @@ export function SimulationView({
   theme: Theme;
   patterns: PatternBook;
   lastPrice: number | null;
+  anchorVwap?: VWAPValues | null;
 }) {
   const [bias, setBias] = useState(0);
   const ranked = scoreLeaderboard(FALLBACK_PICKS, FALLBACK_DROPPED);
@@ -291,6 +293,7 @@ export function SimulationView({
             patterns={patterns}
             overlayPreset={overlayPreset}
             selected={selected}
+            anchorVwap={anchorVwap}
           />
         </div>
       </div>

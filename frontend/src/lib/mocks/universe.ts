@@ -1,6 +1,7 @@
 import { inferAssetClass } from "../constants";
 import { sessionWindows } from "../sessions";
 import type {
+  ContributingFactor,
   FVGZone,
   MssEvent,
   OrderBlock,
@@ -150,6 +151,31 @@ export function buildPatternBook(symbol: string, price: number, now: number): Pa
   };
 }
 
+function factorsFor(setup_type: SetupType): ContributingFactor[] {
+  if (setup_type === "sd_extension_fade") {
+    return [
+      { key: "sigma_extension", weight: 0.42, note: "stub" },
+      { key: "rejection_wick", weight: 0.31, note: "stub" },
+      { key: "session_vwap_magnet", weight: 0.27, note: "stub" },
+    ];
+  }
+  if (setup_type === "vwap_pullback_cont") {
+    return [
+      { key: "trend_vwap", weight: 0.38, note: "stub" },
+      { key: "ob_touch", weight: 0.34, note: "stub" },
+      { key: "fvg_touch", weight: 0.28, note: "stub" },
+    ];
+  }
+  if (setup_type === "avwap_ob_confluence") {
+    return [
+      { key: "anchored_vwap", weight: 0.4, note: "stub" },
+      { key: "order_block", weight: 0.35, note: "stub" },
+      { key: "confluence", weight: 0.25, note: "stub" },
+    ];
+  }
+  return [{ key: "structure", weight: 0.55, note: "stub" }, { key: "session", weight: 0.45, note: "stub" }];
+}
+
 function signalOf(
   symbol: string,
   price: number,
@@ -179,33 +205,25 @@ function signalOf(
     timeframe: "5m",
     ref_session: inferAssetClass(symbol) === "crypto" ? "ny_am" : "rth",
     trigger_event_ids,
+    contributing_factors: factorsFor(setup_type),
   };
 }
 
 export function signalsFromBook(symbol: string, price: number, book: PatternBook, now: number): Signal[] {
   const fvgBull = book.fvgs.find((z) => z.id.endsWith("_bull"));
   const fvgBear = book.fvgs.find((z) => z.id.endsWith("_bear"));
-  const obBear = book.obs.find((z) => z.id.endsWith("_bear"));
   const obBull = book.obs.find((z) => z.id.endsWith("_bull"));
   const sweepBuy = book.sweeps.find((z) => z.side === "buy");
   const sweepSell = book.sweeps.find((z) => z.side === "sell");
   const mssBull = book.mss.find((z) => z.direction === "bullish");
-  const mssBear = book.mss.find((z) => z.direction === "bearish");
 
   return [
     signalOf(symbol, price, now, "sweep_reclaim", "long", 1, [sweepBuy?.id, mssBull?.id].filter(Boolean) as string[], 0.86),
     signalOf(symbol, price, now, "fvg_entry", "long", 2, [fvgBull?.id].filter(Boolean) as string[], 0.74),
-    signalOf(symbol, price, now, "ob_fvg", "short", 3, [obBear?.id, fvgBear?.id].filter(Boolean) as string[], 0.81),
-    signalOf(symbol, price, now, "po3_judas", "long", 4, [sweepSell?.id, mssBull?.id].filter(Boolean) as string[], 0.69),
-    signalOf(symbol, price, now, "mss_break", "short", 5, [mssBear?.id, sweepSell?.id].filter(Boolean) as string[], 0.72),
-    signalOf(symbol, price, now, "order_block", "long", 6, [obBull?.id].filter(Boolean) as string[], 0.64),
-    signalOf(symbol, price, now, "sweep_mss", "short", 7, [sweepSell?.id, mssBear?.id].filter(Boolean) as string[], 0.58),
-    signalOf(symbol, price, now, "1_liquidity_sweep_vwap_reclaim", "long", 8, [sweepBuy?.id, mssBull?.id].filter(Boolean) as string[], 0.77),
-    signalOf(symbol, price, now, "2_fvg_mitigation_vwap", "long", 9, [fvgBull?.id].filter(Boolean) as string[], 0.71),
-    signalOf(symbol, price, now, "3", "short", 10, [mssBear?.id].filter(Boolean) as string[], 0.48),
-    signalOf(symbol, price, now, "4", "long", 11, [obBull?.id].filter(Boolean) as string[], 0.46),
-    signalOf(symbol, price, now, "5", "short", 12, [fvgBear?.id].filter(Boolean) as string[], 0.44),
-    signalOf(symbol, price, now, "6", "long", 13, [sweepSell?.id].filter(Boolean) as string[], 0.41),
+    signalOf(symbol, price, now, "po3_judas", "long", 3, [sweepSell?.id, mssBull?.id].filter(Boolean) as string[], 0.69),
+    signalOf(symbol, price, now, "sd_extension_fade", "short", 4, [fvgBear?.id].filter(Boolean) as string[], 0.73),
+    signalOf(symbol, price, now, "vwap_pullback_cont", "long", 5, [obBull?.id, fvgBull?.id].filter(Boolean) as string[], 0.7),
+    signalOf(symbol, price, now, "avwap_ob_confluence", "long", 6, [obBull?.id].filter(Boolean) as string[], 0.68),
   ];
 }
 

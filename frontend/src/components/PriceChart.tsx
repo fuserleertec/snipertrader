@@ -96,6 +96,7 @@ export function PriceChart({
   patterns,
   overlayPreset,
   selected,
+  anchorVwap = null,
 }: {
   bars: OHLCVBar[];
   historyKey: string;
@@ -108,6 +109,8 @@ export function PriceChart({
   patterns: PatternBook;
   overlayPreset: OverlayPreset;
   selected: Signal | null;
+  /** Weekly / rolling VWAP for 6_avwap_ob_confluence. */
+  anchorVwap?: VWAPValues | null;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -115,6 +118,7 @@ export function PriceChart({
   const bandsRef = useRef<VwapBandsPrimitive | null>(null);
   const zonesRef = useRef<PatternZonesPrimitive | null>(null);
   const vwapLineRef = useRef<IPriceLine | null>(null);
+  const avwapLineRef = useRef<IPriceLine | null>(null);
   const sessionLinesRef = useRef<Map<string, IPriceLine>>(new Map());
   const setupLinesRef = useRef<Map<string, IPriceLine>>(new Map());
   const fittedKey = useRef<string>("");
@@ -176,6 +180,7 @@ export function PriceChart({
       sessionLines.clear();
       setupLines.clear();
       vwapLineRef.current = null;
+      avwapLineRef.current = null;
       bandsRef.current = null;
       zonesRef.current = null;
       seriesRef.current = null;
@@ -201,27 +206,47 @@ export function PriceChart({
   useEffect(() => {
     const series = seriesRef.current;
     if (!series) return;
-    bandsRef.current?.setLevels(vwap);
+    const fade = overlayPreset === "sd_extension_fade";
+    bandsRef.current?.setLevels(vwap, fade ? "sigma23" : "all");
+    const vwapTitle = fade ? "VWAP tgt" : "VWAP";
     if (!vwap) {
       if (vwapLineRef.current) {
         series.removePriceLine(vwapLineRef.current);
         vwapLineRef.current = null;
       }
-      return;
-    }
-    if (!vwapLineRef.current) {
+    } else if (!vwapLineRef.current) {
       vwapLineRef.current = series.createPriceLine({
         price: vwap.vwap,
         color: "#F0C040",
         lineWidth: 2,
         lineStyle: LineStyle.Solid,
         axisLabelVisible: true,
-        title: "VWAP",
+        title: vwapTitle,
       });
     } else {
-      vwapLineRef.current.applyOptions({ price: vwap.vwap });
+      vwapLineRef.current.applyOptions({ price: vwap.vwap, title: vwapTitle });
     }
-  }, [vwap]);
+
+    const showAvwap = overlayPreset === "avwap_ob_confluence" || overlayPreset === "all";
+    const av = showAvwap ? (anchorVwap ?? null) : null;
+    if (!av) {
+      if (avwapLineRef.current) {
+        series.removePriceLine(avwapLineRef.current);
+        avwapLineRef.current = null;
+      }
+    } else if (!avwapLineRef.current) {
+      avwapLineRef.current = series.createPriceLine({
+        price: av.vwap,
+        color: "#7A5FD6",
+        lineWidth: 2,
+        lineStyle: LineStyle.Dashed,
+        axisLabelVisible: true,
+        title: "AVWAP",
+      });
+    } else {
+      avwapLineRef.current.applyOptions({ price: av.vwap });
+    }
+  }, [vwap, anchorVwap, overlayPreset]);
 
   useEffect(() => {
     const series = seriesRef.current;
@@ -270,21 +295,54 @@ export function PriceChart({
       ? sessions.find((s) => s.session_type === "asia") ?? null
       : null;
     const snap = (ms: number) => snapMs(bars, ms);
-    zonesRef.current?.setModel(
-      buildDrawModel(
-        overlayPreset,
-        patterns.fvgs.map((z) => ({ ...z, created_ts_ms: snap(z.created_ts_ms) })),
-        patterns.obs.map((z) => ({
-          ...z,
-          created_ts_ms: snap(z.created_ts_ms),
-          displacement_ts_ms: z.displacement_ts_ms != null ? snap(z.displacement_ts_ms) : undefined,
-        })),
-        patterns.mss.map((ev) => ({ ...ev, ts_ms: snap(ev.ts_ms) })),
-        patterns.sweeps.map((sw) => ({ ...sw, ts_ms: snap(sw.ts_ms) })),
-        highlight,
-        asia,
-      ),
+    const model = buildDrawModel(
+      overlayPreset,
+      patterns.fvgs.map((z) => ({ ...z, created_ts_ms: snap(z.created_ts_ms) })),
+      patterns.obs.map((z) => ({
+        ...z,
+        created_ts_ms: snap(z.created_ts_ms),
+        displacement_ts_ms: z.displacement_ts_ms != null ? snap(z.displacement_ts_ms) : undefined,
+      })),
+      patterns.mss.map((ev) => ({ ...ev, ts_ms: snap(ev.ts_ms) })),
+      patterns.sweeps.map((sw) => ({ ...sw, ts_ms: snap(sw.ts_ms) })),
+      highlight,
+      asia,
     );
+    if ((overlayPreset === "vwap_pullback_cont" || overlayPreset === "all") && vwap) {
+      const touch = patterns.obs[0] ?? patterns.fvgs[0];
+      if (touch) {
+        const start = bars[0]?.open_ts_ms ?? touch.created_ts_ms;
+        model.zones.push({
+          id: "pullback_vwap",
+          kind: "pullback",
+          start_ms: snap(start),
+          end_ms: null,
+          high: Math.max(vwap.vwap, touch.high),
+          low: Math.min(vwap.vwap, touch.low),
+          fill: "rgba(10,111,176,0.14)",
+          stroke: "rgba(10,111,176,0.55)",
+          highlight: true,
+        });
+      }
+    }
+    if ((overlayPreset === "avwap_ob_confluence" || overlayPreset === "all") && patterns.obs[0]) {
+      const av = anchorVwap ?? vwap;
+      const ob = patterns.obs[0];
+      if (av) {
+        model.zones.push({
+          id: "confluence_avwap_ob",
+          kind: "confluence",
+          start_ms: snap(ob.created_ts_ms),
+          end_ms: null,
+          high: Math.max(ob.high, av.vwap + av.sigma),
+          low: Math.min(ob.low, av.vwap - av.sigma),
+          fill: "rgba(122,95,214,0.18)",
+          stroke: "rgba(122,95,214,0.7)",
+          highlight: true,
+        });
+      }
+    }
+    zonesRef.current?.setModel(model);
 
     const series = seriesRef.current;
     if (!series || !bars.length) return;
@@ -310,6 +368,22 @@ export function PriceChart({
         });
       }
     }
+    if (overlayPreset === "sd_extension_fade" || overlayPreset === "all") {
+      if (vwap) {
+        for (const bar of bars.slice(-40)) {
+          const rejectHigh = bar.high >= vwap.band_p2 && bar.close < vwap.band_p2;
+          const rejectLow = bar.low <= vwap.band_m2 && bar.close > vwap.band_m2;
+          if (!rejectHigh && !rejectLow) continue;
+          markers.push({
+            time: snapTime(bars, bar.open_ts_ms),
+            position: rejectHigh ? "aboveBar" : "belowBar",
+            color: rejectHigh ? "#C02030" : "#007A44",
+            shape: rejectHigh ? "arrowDown" : "arrowUp",
+            text: "REJ",
+          });
+        }
+      }
+    }
     if (showMss) {
       for (const ev of patterns.mss) {
         const hot = highlight.has(ev.id);
@@ -323,7 +397,7 @@ export function PriceChart({
       }
     }
     series.setMarkers(markers);
-  }, [patterns, overlayPreset, selected, sessions, bars, theme]);
+  }, [patterns, overlayPreset, selected, sessions, bars, theme, vwap, anchorVwap]);
 
   useEffect(() => {
     const series = seriesRef.current;
