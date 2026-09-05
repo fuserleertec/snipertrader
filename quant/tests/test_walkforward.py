@@ -51,11 +51,19 @@ def test_locked_defaults():
     assert p.target_mode == "prior_swing"
     assert p.max_fvg_age_hours == 24
     assert p.accumulation_session == "asia"
-    assert p.kill_zone == "asset_map"
+    assert p.kill_zone == "ny_am"
     assert p.resolved_kill_zone("crypto") == "either"
     assert p.resolved_kill_zone("equity") == "ny_am"
     assert p.displacement_min_body_atr == 1.2
     assert p.require_band_tag == "either"
+    assert p.s3_require_band_tag is True
+    assert p.target_rr_fallback == 2.0
+    assert p.min_conviction_to_validate == 60
+    ml = p.to_ml_setup_params()
+    assert ml["s1_min_rr"] == 2.0
+    assert ml["s3_kill_zone"] == "ny_am"
+    assert ml["s3_require_band_tag"] is True
+    assert ml["s2_target_rr_fallback"] == 2.0
     assert p.po3_stop_buffer_atr == 0.05
     assert p.partial_mid is False
     assert p.max_bars_sweep_to_displace == 6
@@ -116,6 +124,8 @@ def test_walkforward_setups_1_2_3():
         assert row.setup_type in md
         assert "Locked ranges" in md
         assert "**2.0**" in md
+        assert "Alignment with ML PR #7" in md
+        assert "s3_kill_zone" in md
 
 
 def test_cli_backtest_writes_report(tmp_path: Path, capsys):
@@ -152,6 +162,6 @@ def test_grafana_dashboard_json_valid():
     titles = {p["title"] for p in dash["panels"]}
     assert "Signals per day" in titles
     assert "Win rate by day" in titles
-    assert "Average R:R by day" in titles
+    assert "Average realized_r (R:R) by day" in titles
     assert "Cumulative P&L" in titles
     assert dash["uid"] == "quant-setup-performance"

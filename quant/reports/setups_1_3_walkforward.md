@@ -1,8 +1,8 @@
 # Setups 1–3 walk-forward (Quant Phase 2)
 
-Locked tunable ranges from **ML Researchers**. Bold values are the
-in-repo **defaults**. Walk-forward sweeps the listed grids; this file
-is the retune brief.
+Locked tunable ranges from **ML Researchers** ([PR #7](https://github.com/fuserleertec/snipertrader/pull/7)).
+Bold values are the in-repo **defaults** (= their `SetupParams` / `SETUP_*` env).
+Walk-forward sweeps the listed grids; this file is the retune brief.
 
 Tape: **in-memory synthetic tape** · `BTCUSDT` · `5m` · 2160 bars · 3 expanding folds · grid mode `core`.
 
@@ -12,7 +12,7 @@ Tape: **in-memory synthetic tape** · `BTCUSDT` · `5m` · 2160 bars · 3 expand
 |---|---|---|
 | Baseline defaults produce trades for all 3 setups | sweep 4 / fvg 4 / po3 4 (full tape) | **PASS** |
 | Walk-forward OOS reports win rate, avg R:R, Sharpe, max DD | see table below | **PASS** |
-| ML locked defaults seeded in this file | bold column = ML PR defaults | **PASS** |
+| ML locked defaults seeded in this file | bold column = ML PR #7 defaults | **PASS** |
 | Live-edge expectancy | patterned synthetic tape; 100% WR is **not** live | n/a (smoke) |
 
 OOS sample is thin (1–3 trades/setup) because the synthetic book has one pattern-day per cycle. Re-run on Timescale 5m `ohlcv_bars` before promoting a retune. Full cartesian: `sniper-quant backtest --setups 1,2,3 --grid-mode full`.
@@ -27,6 +27,51 @@ OOS sample is thin (1–3 trades/setup) because the synthetic book has one patte
 
 Setups 4–7 (`mss_break`, `order_block`, `sweep_mss`, `ob_fvg`) are accepted
 by `POST /risk/validate` but are **not** in this walk-forward.
+
+## Alignment with ML PR #7
+
+Baseline = PR #7 `SetupParams` defaults. Quant walk-forward keeps extra knobs
+(VWAP band, confluence, confirmation, entry mode) that PR #7 does not expose
+on `SETUP_*` env — those stay on the grid for retune only.
+
+| Quant field | PR #7 `SetupParams` | Env | Default match? |
+|---|---|---|---|
+| `stop_buffer_atr` | `stop_buffer_atr` | `SETUP_STOP_BUFFER_ATR` | **yes** (0.05) |
+| `min_rr` | `s1_min_rr` | `SETUP1_MIN_RR` | **yes** (2.0) |
+| `mss_swing_lookback` | `s1_mss_swing_lookback` | `SETUP1_MSS_SWING_LOOKBACK` | **yes** (5) |
+| `max_bars_sweep_to_mss` | `s1_max_bars_sweep_to_mss` | `SETUP1_MAX_BARS_SWEEP_TO_MSS` | **yes** (15) |
+| `require_confirmed_sweep` | `s1_require_confirmed_sweep` | `SETUP1_REQUIRE_CONFIRMED_SWEEP` | **yes** (true) |
+| `timeframe` | `s1_timeframes` | `SETUP1_TIMEFRAMES` | **yes** (5m primary; 15m allowed) |
+| `fvg_overlap_tol_atr` | `s2_overlap_tol_atr` | `SETUP2_OVERLAP_TOL_ATR` | **yes** (0.05) |
+| `pin_wick_ratio` | `s2_pin_wick_ratio` | `SETUP2_PIN_WICK_RATIO` | **yes** (2.5) |
+| `max_fvg_age_hours` | `s2_max_fvg_age_hours` | `SETUP2_MAX_FVG_AGE_HOURS` | **yes** (24) |
+| `target_rr_fallback` | `s2_target_rr_fallback` | `SETUP2_TARGET_RR_FALLBACK` | **yes** (2.0) |
+| `accumulation_session` | `s3_accum_session` | `SETUP3_ACCUM_SESSION` | **yes** (asia) |
+| `kill_zone` | `s3_kill_zone` | `SETUP3_KILL_ZONE` | **yes** (`ny_am`; crypto resolves to `either`) |
+| `displacement_min_body_atr` | `s3_displacement_min_body_atr` | `SETUP3_DISPLACEMENT_MIN_BODY_ATR` | **yes** (1.2) |
+| `require_band_tag` | `s3_require_band_tag` | `SETUP3_REQUIRE_BAND_TAG` | **yes** (bool `True` ↔ `'either'`) |
+| `max_bars_sweep_to_displace` | `s3_max_bars_sweep_to_displace` | `SETUP3_MAX_BARS_SWEEP_TO_DISPLACE` | **yes** (6) |
+| `dedupe_window_sec` | `dedupe_window_sec` | `SETUP_DEDUPE_WINDOW_SEC` | **yes** (300) |
+| `min_conviction` | `min_conviction_to_validate` | `SETUP_MIN_CONVICTION_TO_VALIDATE` | **yes** (60) |
+| `atr_period` | `atr_period` | `SETUP_ATR_PERIOD` | **yes** (14) |
+
+### Divergences (intentional)
+
+- `s3_kill_zone` default is **`ny_am`** (PR #7). On **crypto**, PR #7
+  `manipulation_zones` also allows London — Quant `resolved_kill_zone('crypto')`
+  returns `either`. Equity/futures stay `ny_am`. Behavior on this BTC tape is
+  unchanged from the older `asset_map` alias.
+- `s3_require_band_tag` is a **bool** on PR #7 (`True`). Walk-forward encodes
+  that as `require_band_tag='either'` (grid: `1s` / `2s` / `either` / `none`);
+  `none` ↔ `False`.
+- `s2_target_rr_fallback=2.0` is PR #7; Quant also has `target_mode=prior_swing`
+  (fallback uses `target_rr_fallback`).
+- Extra Quant-only knobs (not on PR #7 `SetupParams`): `vwap_target_band`,
+  `confluence_mode`, `confirmation`, `entry_mode`, `partial_mid`,
+  `stop_buffer_ticks`, `session_vwap_anchor`.
+- Detectors here replay OHLCV; PR #7 detectors consume DE Redis/Kafka zones.
+  Same `setup_type` strings (`sweep_reclaim` / `fvg_entry` / `po3_judas`) and
+  locked validate fields only (no `id`, no conviction on the wire).
 
 ## Locked ranges and defaults
 
@@ -62,7 +107,7 @@ by `POST /risk/validate` but are **not** in this walk-forward.
 | Knob | Default | Grid |
 |---|---|---|
 | `accumulation_session` | **asia** | asia, globex |
-| `kill_zone` | **asset-map** (crypto **either**, equity/futures **ny_am**) | ny_am, london, either |
+| `kill_zone` | **ny_am** (crypto resolves to **either**, equity/futures **ny_am**) | ny_am, london, either |
 | `displacement_min_body_atr` | **1.2** | {0.8, 1.2, 1.5} |
 | `require_band_tag` | **either** | 1σ, 2σ, either, none |
 | `stop_buffer` | **0.05×ATR** beyond manipulation wick | {0, 0.05}×ATR |
@@ -138,7 +183,7 @@ Defaults held up as well or better on OOS P&L — keep defaults unless live tape
 | Knob | Default | Recommended (fold majority) |
 |---|---|---|
 | `accumulation_session` | asia | **asia** |
-| `kill_zone` | asset_map | **asset_map** |
+| `kill_zone` | ny_am | **ny_am** |
 | `displacement_min_body_atr` | 1.2 | **0.8** |
 | `require_band_tag` | either | **1s** |
 | `po3_stop_buffer_atr` | 0.05 | **0.05** |
@@ -207,21 +252,21 @@ OOS pooled (defaults): n=2  win=100.0%  avgR=1.838  Sharpe=0.349  maxDD=3.6%  pn
 
 **Fold 1** — train 864 bars, test 432 bars.
 
-Chosen: `accumulation_session=asia`, `kill_zone=asset_map`, `displacement_min_body_atr=0.8`, `require_band_tag=1s`, `po3_stop_buffer_atr=0.05`, `partial_mid=False`, `max_bars_sweep_to_displace=3`
+Chosen: `accumulation_session=asia`, `kill_zone=ny_am`, `displacement_min_body_atr=0.8`, `require_band_tag=1s`, `po3_stop_buffer_atr=0.05`, `partial_mid=False`, `max_bars_sweep_to_displace=3`
 
 - Train: n=1  win=100.0%  avgR=2.284  Sharpe=7.937  maxDD=0.0%  pnl=4840.14
 - Test:  n=1  win=100.0%  avgR=2.270  Sharpe=9.165  maxDD=0.0%  pnl=4824.70
 
 **Fold 2** — train 1296 bars, test 432 bars.
 
-Chosen: `accumulation_session=asia`, `kill_zone=asset_map`, `displacement_min_body_atr=0.8`, `require_band_tag=1s`, `po3_stop_buffer_atr=0.05`, `partial_mid=False`, `max_bars_sweep_to_displace=3`
+Chosen: `accumulation_session=asia`, `kill_zone=ny_am`, `displacement_min_body_atr=0.8`, `require_band_tag=1s`, `po3_stop_buffer_atr=0.05`, `partial_mid=False`, `max_bars_sweep_to_displace=3`
 
 - Train: n=2  win=100.0%  avgR=2.277  Sharpe=9.295  maxDD=0.0%  pnl=9895.49
 - Test:  n=1  win=100.0%  avgR=2.256  Sharpe=11.225  maxDD=0.0%  pnl=4809.27
 
 **Fold 3** — train 1728 bars, test 432 bars.
 
-Chosen: `accumulation_session=asia`, `kill_zone=asset_map`, `displacement_min_body_atr=0.8`, `require_band_tag=1s`, `po3_stop_buffer_atr=0.05`, `partial_mid=False`, `max_bars_sweep_to_displace=3`
+Chosen: `accumulation_session=asia`, `kill_zone=ny_am`, `displacement_min_body_atr=0.8`, `require_band_tag=1s`, `po3_stop_buffer_atr=0.05`, `partial_mid=False`, `max_bars_sweep_to_displace=3`
 
 - Train: n=3  win=100.0%  avgR=2.270  Sharpe=10.583  maxDD=0.0%  pnl=15174.65
 - Test:  n=1  win=100.0%  avgR=2.243  Sharpe=11.225  maxDD=0.0%  pnl=4793.84

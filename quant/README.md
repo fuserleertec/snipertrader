@@ -306,10 +306,15 @@ init runs `01-init.sql` (OHLCV) then `02-signals.sql` (signals +
 `signal_performance` view). Extra services: `signal-validate` (Kafka
 consumer), `signal-monitor` (TP/SL), `grafana` on **:3002**.
 
-Grafana panels (per `setup_type` variable): signals/day, win rate, avg R:R,
+Grafana panels (per `setup_type` variable, including `po3_judas`):
+signals/day, win rate, avg **realized_r** (storage `r_multiple`),
 cumulative P&L. Alert rules fire when 7-day win rate < **0.35** or avg R
 < **0.50** (`ALERT_WIN_RATE` / `ALERT_AVG_RR`). Provisioning lives in
 `quant/grafana/provisioning/`.
+
+Phase 2 surface (done): Kafka `setup_signals` consumer (`sniper-quant consume`),
+lifecycle `realized_r` / `exit_price` / `closed_ts_ms`, Grafana on :3002,
+`po3_judas` in the locked enum. Walk-forward defaults match ML PR #7.
 
 Host-side API against compose infra:
 

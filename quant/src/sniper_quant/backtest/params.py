@@ -29,6 +29,28 @@ CONVICTION_WEIGHTS: dict[str, int] = {
 
 HARD_RR_FLOOR = 1.2
 
+# Quant field → ML PR #7 SetupParams / SETUP_* env (https://github.com/fuserleertec/snipertrader/pull/7)
+ML_PR7_FIELD_MAP: tuple[tuple[str, str, str], ...] = (
+    ("stop_buffer_atr", "stop_buffer_atr", "SETUP_STOP_BUFFER_ATR"),
+    ("min_rr", "s1_min_rr", "SETUP1_MIN_RR"),
+    ("mss_swing_lookback", "s1_mss_swing_lookback", "SETUP1_MSS_SWING_LOOKBACK"),
+    ("max_bars_sweep_to_mss", "s1_max_bars_sweep_to_mss", "SETUP1_MAX_BARS_SWEEP_TO_MSS"),
+    ("require_confirmed_sweep", "s1_require_confirmed_sweep", "SETUP1_REQUIRE_CONFIRMED_SWEEP"),
+    ("timeframe", "s1_timeframes", "SETUP1_TIMEFRAMES"),
+    ("fvg_overlap_tol_atr", "s2_overlap_tol_atr", "SETUP2_OVERLAP_TOL_ATR"),
+    ("pin_wick_ratio", "s2_pin_wick_ratio", "SETUP2_PIN_WICK_RATIO"),
+    ("max_fvg_age_hours", "s2_max_fvg_age_hours", "SETUP2_MAX_FVG_AGE_HOURS"),
+    ("target_rr_fallback", "s2_target_rr_fallback", "SETUP2_TARGET_RR_FALLBACK"),
+    ("accumulation_session", "s3_accum_session", "SETUP3_ACCUM_SESSION"),
+    ("kill_zone", "s3_kill_zone", "SETUP3_KILL_ZONE"),
+    ("displacement_min_body_atr", "s3_displacement_min_body_atr", "SETUP3_DISPLACEMENT_MIN_BODY_ATR"),
+    ("require_band_tag", "s3_require_band_tag", "SETUP3_REQUIRE_BAND_TAG"),
+    ("max_bars_sweep_to_displace", "s3_max_bars_sweep_to_displace", "SETUP3_MAX_BARS_SWEEP_TO_DISPLACE"),
+    ("dedupe_window_sec", "dedupe_window_sec", "SETUP_DEDUPE_WINDOW_SEC"),
+    ("min_conviction", "min_conviction_to_validate", "SETUP_MIN_CONVICTION_TO_VALIDATE"),
+    ("atr_period", "atr_period", "SETUP_ATR_PERIOD"),
+)
+
 VwapBand = Literal["1", "2", "auto"]
 ConfluenceMode = Literal["vwap_touch", "hvn_overlap", "vwap_or_hvn", "vwap_and_hvn"]
 Confirmation = Literal["engulfing", "pin_bar", "either"]
@@ -65,9 +87,12 @@ class DetectorParams:
     max_fvg_age_hours: int = 24
 
     # --- Setup 3 po3_judas ---
+    # PR #7 SetupParams.s3_kill_zone default is ``ny_am``. On crypto their
+    # detector also accepts London (same as our ``either``).
     accumulation_session: str = "asia"
-    kill_zone: str = "asset_map"
+    kill_zone: str = "ny_am"
     displacement_min_body_atr: float = 1.2
+    # Walk-forward encoding of PR #7 bool ``s3_require_band_tag=True``.
     require_band_tag: str = "either"
     po3_stop_buffer_atr: float = 0.05
     partial_mid: bool = False
@@ -80,14 +105,50 @@ class DetectorParams:
     atr_period: int = 14
     std_window: int = 20
     tick_size: float = 0.25
+    # PR #7 SETUP2_TARGET_RR_FALLBACK — used when target_mode is prior_swing.
+    target_rr_fallback: float = 2.0
 
     def resolved_kill_zone(self, asset_class: AssetClass | str) -> str:
-        if self.kill_zone != "asset_map":
-            return self.kill_zone
+        """Match PR #7 ``manipulation_zones``: ``ny_am`` on crypto also allows London."""
         ac = AssetClass(asset_class)
-        if ac is AssetClass.CRYPTO:
+        if self.kill_zone in {"asset_map", "ny_am"} and ac is AssetClass.CRYPTO:
             return "either"
-        return "ny_am"
+        if self.kill_zone == "asset_map":
+            return "ny_am"
+        return self.kill_zone
+
+    @property
+    def min_conviction_to_validate(self) -> int:
+        """PR #7 alias for ``min_conviction``."""
+        return self.min_conviction
+
+    @property
+    def s3_require_band_tag(self) -> bool:
+        """PR #7 bool: True unless walk-forward set ``require_band_tag='none'``."""
+        return self.require_band_tag != "none"
+
+    def to_ml_setup_params(self) -> dict[str, Any]:
+        """Names as published on ML PR #7 ``SetupParams`` / ``SETUP_*`` env."""
+        return {
+            "atr_period": self.atr_period,
+            "stop_buffer_atr": self.stop_buffer_atr,
+            "s1_min_rr": self.min_rr,
+            "s1_mss_swing_lookback": self.mss_swing_lookback,
+            "s1_max_bars_sweep_to_mss": self.max_bars_sweep_to_mss,
+            "s1_require_confirmed_sweep": self.require_confirmed_sweep,
+            "s1_timeframes": ("5m", "15m"),
+            "s2_overlap_tol_atr": self.fvg_overlap_tol_atr,
+            "s2_pin_wick_ratio": self.pin_wick_ratio,
+            "s2_max_fvg_age_hours": float(self.max_fvg_age_hours),
+            "s2_target_rr_fallback": self.target_rr_fallback,
+            "s3_accum_session": self.accumulation_session,
+            "s3_kill_zone": "ny_am" if self.kill_zone == "asset_map" else self.kill_zone,
+            "s3_displacement_min_body_atr": self.displacement_min_body_atr,
+            "s3_require_band_tag": self.s3_require_band_tag,
+            "s3_max_bars_sweep_to_displace": self.max_bars_sweep_to_displace,
+            "dedupe_window_sec": self.dedupe_window_sec,
+            "min_conviction_to_validate": self.min_conviction,
+        }
 
 
 DEFAULT_PARAMS = DetectorParams()
