@@ -11,14 +11,12 @@ import { openJsonWsAt } from "@/lib/ws";
 
 export function useSignals(symbol: string, lastPrice: () => number): Signal[] {
   const mocks = isMockMode();
-  const [rows, setRows] = useState<Signal[]>(() =>
-    mocks ? mockListSignals({ symbol, limit: 24 }, seedPrice(symbol)).items : [],
-  );
+  const [rows, setRows] = useState<Signal[]>([]);
   const [activeSymbol, setActiveSymbol] = useState(symbol);
 
   if (symbol !== activeSymbol) {
     setActiveSymbol(symbol);
-    setRows(mocks ? mockListSignals({ symbol, limit: 24 }, seedPrice(symbol)).items : []);
+    setRows([]);
   }
 
   useEffect(() => {
@@ -32,6 +30,7 @@ export function useSignals(symbol: string, lastPrice: () => number): Signal[] {
 
     if (mocks) {
       const seed = mockListSignals({ symbol, limit: 24 }, seedPrice(symbol)).items;
+      setRows(seed);
       return startMockSignalStream(symbol, lastPrice, applyEvent, seed);
     }
 
