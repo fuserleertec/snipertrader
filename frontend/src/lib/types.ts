@@ -108,9 +108,9 @@ export type FactorId =
   | "multi_pattern"
   | "trend_align";
 
-/** PR #9 `factor_breakdown[]`. sum(score) ≈ conviction 0–100. */
+/** PR #9 / Quant `factor_breakdown[]`. `name` is a string (locked ids + extras). */
 export interface FactorBreakdown {
-  name: FactorId;
+  name: string;
   weight: number;
   score: number;
   note?: string | null;
@@ -244,10 +244,15 @@ export interface Signal {
   timeframe: Timeframe;
   ref_session: SessionType;
   trigger_event_ids: string[];
-  /** PR #9: stable factor ids. Chart join is id + trigger_event_ids. */
-  contributing_factors?: FactorId[];
-  /** PR #9: sum(score) ≈ conviction (0–100); confidence = conviction / 100. */
+  /** Quant publish-only string[] (PR #9 locked ids + any extra tags). */
+  contributing_factors?: string[];
+  /** Quant publish-only {name, weight, score, note?}[]. */
   factor_breakdown?: FactorBreakdown[];
+  /** Quant SignalView close fields (null while ACTIVE / CANCELLED). */
+  realized_r?: number | null;
+  exit_price?: number | null;
+  closed_ts_ms?: number | null;
+  outcome?: string | null;
 }
 
 export interface SignalListResponse {
@@ -255,13 +260,17 @@ export interface SignalListResponse {
   next_cursor: string | null;
 }
 
+/** Quant PR #2 GET /signals (also GET /signals/history). */
 export interface SignalListQuery {
   symbol?: string;
   status?: SignalStatus;
   setup_type?: SetupType;
+  side?: SignalSide;
   from_ts?: number;
   to_ts?: number;
   limit?: number;
+  /** Opaque page token from the previous `next_cursor`. */
+  cursor?: string;
 }
 
 export type SignalWsType = "signal.upsert" | "signal.status";

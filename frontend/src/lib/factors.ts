@@ -92,7 +92,7 @@ export function explain(names: FactorId[], conviction: number): {
     const drift = Math.round((target - rows.reduce((s, r) => s + r.score, 0)) * 100) / 100;
     rows[rows.length - 1].score = Math.round((rows[rows.length - 1].score + drift) * 100) / 100;
   }
-  return { contributing_factors: rows.map((r) => r.name), factor_breakdown: rows };
+  return { contributing_factors: [...seen], factor_breakdown: rows };
 }
 
 export function factorsForSetup(setup: SetupType): FactorId[] {

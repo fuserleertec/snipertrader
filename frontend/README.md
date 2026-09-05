@@ -25,8 +25,13 @@ From the repo root:
 npm run dev:dashboard
 ```
 
-`NEXT_PUBLIC_USE_MOCKS=false npm run dev` talks to the Data Eng API
-(`docker compose up` in `data_engineering/`).
+`NEXT_PUBLIC_USE_MOCKS=false npm run dev` talks to Data Eng (`:8000`) and
+Quant (`:8001`). Quant local:
+
+```bash
+cd quant && sniper-quant api --inmemory --port 8001
+# docs: http://localhost:8001/docs
+```
 
 ## Layout (locked to `/stock_picks.html`)
 
@@ -60,11 +65,13 @@ Card/table click joins chart overlays via `trigger_event_ids`.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `NEXT_PUBLIC_USE_MOCKS` | `true` | In-browser streams. Set `false` for live API. |
+| `NEXT_PUBLIC_USE_MOCKS` | `true` | In-browser streams. Set `false` for live Data Eng + Quant. |
 | `NEXT_PUBLIC_WS_BASE` | `ws://localhost:8000` | Data Eng WebSocket origin (`/v1/ws/*`) |
 | `NEXT_PUBLIC_HTTP_BASE` | `http://localhost:8000` | Data Eng HTTP. Same-origin `/v1/*` is rewritten here. |
-| `NEXT_PUBLIC_QUANT_HTTP_BASE` | `http://localhost:8001` | Quant REST (`/signals`, `/performance/summary`). Same-origin paths rewrite here. |
-| `NEXT_PUBLIC_QUANT_WS_BASE` | `ws://localhost:8001` | Quant planned WS (`/ws/signals`) |
+| `NEXT_PUBLIC_QUANT_API_BASE` | `http://localhost:8001` | Quant REST (`/signals`, `/performance/summary`). Same-origin paths rewrite here. |
+| `NEXT_PUBLIC_QUANT_WS_BASE` | `ws://localhost:8001` | Quant WS (`/ws/signals`) |
+
+`NEXT_PUBLIC_QUANT_HTTP_BASE` is accepted as an alias of `QUANT_API_BASE`.
 
 Mock → live is **env-only**. Market-data clients talk to Data Eng; signal
 clients talk to Quant. Bases are independently configurable.
@@ -143,18 +150,22 @@ offline. Set `NEXT_PUBLIC_USE_MOCKS=false` and
 `NEXT_PUBLIC_WS_BASE=ws://localhost:8000` only after the Quant Risk Pre-Filter
 checklist gate.
 
-### Signals — Quant Developers (provisional)
+### Signals — Quant OpenAPI (PR #2, live)
 
 Quant owns **setup/trade signals** (post risk-approval), **not** raw sweep/FVG
-pattern streams.
+pattern streams. REST base `http://localhost:8001`. Docs: `/docs`.
 
 REST:
 
-- `GET /signals?symbol=&status=&setup_type=&from_ts=&to_ts=&limit=` →
+- `GET /signals?symbol=&status=&setup_type=&side=&from_ts=&to_ts=&limit=&cursor=` →
   `{ "items": [ Signal ], "next_cursor": string|null }`
+- `GET /signals/history` — same list + filters (history alias)
 - `GET /signals/{id}` → `Signal`
 - `GET /performance/summary` → Quant PR #2 at `:8001` (flat envelope +
   `by_setup` product keys). Same-origin rewrite, then mock fallback.
+
+`cursor` is the opaque token from the previous page's `next_cursor`.
+`limit` default 50 (1–500). Auth `X-API-Key` is optional (off by default).
 
 Locked `setup_type` ↔ `by_setup` product key:
 
@@ -169,15 +180,18 @@ Locked `setup_type` ↔ `by_setup` product key:
 
 Dropped from UI: `mss_break`, `order_block`, `sweep_mss`, `ob_fvg`, `*_pending_user_confirm`.
 
-PR #9 explainability: `contributing_factors: string[]` (locked factor ids) +
-`factor_breakdown: {name, weight, score, note?}[]` with `sum(score)` ≈ conviction.
+PR #9 / Quant explainability: `contributing_factors: string[]` (publish-only;
+unknown ids are kept) + `factor_breakdown: {name, weight, score, note?}[]`
+with `sum(score)` ≈ conviction. Closed rows may include `realized_r`,
+`exit_price`, `closed_ts_ms`.
 
 Overlays 4–6: ±2σ/±3σ + rejection + session VWAP target; pullback shade + OB/FVG; AVWAP + OB confluence.
 
 Phase 3 pages: `/analytics`, `/alerts`, `/account`. Auth + alerts are **localStorage mocks** (Quant has no alerts/SSO API yet). Cumulative P&L on analytics is a **stub polyline**, not an API field. Web Push is stubbed (no VAPID).
 
-Planned WS: `WS /ws/signals` →
+Live WS: `ws://localhost:8001/ws/signals` →
 `{ "type": "signal.upsert"|"signal.status", "signal": Signal }`
+(`signal.upsert` on POST /signals; `signal.status` on PATCH / lifecycle close).
 
 Table columns map 1:1 to Signal fields:
 

@@ -1,6 +1,5 @@
-import { isFactorId } from "./factors";
 import { inferAssetClass } from "./constants";
-import type { FactorBreakdown, FactorId, Signal, SignalSide, SignalStatus, SignalWsEvent, SetupType, Timeframe } from "./types";
+import type { FactorBreakdown, Signal, SignalSide, SignalStatus, SignalWsEvent, SetupType, Timeframe } from "./types";
 
 function fmtPx(n: number): string {
   return n >= 1000 ? n.toFixed(1) : n.toFixed(2);
@@ -29,15 +28,15 @@ function numOr(value: unknown, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
-function readFactors(raw: unknown): FactorId[] {
+function readFactors(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
-  const out: FactorId[] = [];
+  const out: string[] = [];
   for (const item of raw) {
-    if (typeof item === "string" && isFactorId(item)) out.push(item);
+    if (typeof item === "string" && item) out.push(item);
     else if (item && typeof item === "object") {
       const row = item as { name?: unknown; key?: unknown };
       const name = typeof row.name === "string" ? row.name : typeof row.key === "string" ? row.key : "";
-      if (isFactorId(name)) out.push(name);
+      if (name) out.push(name);
     }
   }
   return out;
@@ -50,7 +49,7 @@ function readBreakdown(raw: unknown): FactorBreakdown[] {
     if (!item || typeof item !== "object") continue;
     const row = item as { name?: unknown; key?: unknown; weight?: unknown; score?: unknown; note?: unknown };
     const name = typeof row.name === "string" ? row.name : typeof row.key === "string" ? row.key : "";
-    if (!isFactorId(name) || typeof row.weight !== "number" || typeof row.score !== "number") continue;
+    if (!name || typeof row.weight !== "number" || typeof row.score !== "number") continue;
     out.push({
       name,
       weight: row.weight,
@@ -59,6 +58,10 @@ function readBreakdown(raw: unknown): FactorBreakdown[] {
     });
   }
   return out;
+}
+
+function optionalNum(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
 export function normalizeSignal(value: unknown): Signal | null {
@@ -86,6 +89,10 @@ export function normalizeSignal(value: unknown): Signal | null {
     trigger_event_ids: Array.isArray(s.trigger_event_ids) ? s.trigger_event_ids.filter((x): x is string => typeof x === "string") : [],
     contributing_factors: factors,
     factor_breakdown: breakdown,
+    realized_r: optionalNum(s.realized_r ?? s.r_multiple),
+    exit_price: optionalNum(s.exit_price ?? s.exit_px),
+    closed_ts_ms: optionalNum(s.closed_ts_ms),
+    outcome: typeof s.outcome === "string" ? s.outcome : null,
   };
 }
 

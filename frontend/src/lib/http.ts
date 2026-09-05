@@ -22,6 +22,17 @@ async function getJson<T>(path: string, buildUrl: (path: string) => string = htt
   }
 }
 
+/** Same-origin path so Next rewrites hit Quant even when HTTP_BASE points at Data Eng. */
+async function getSameOrigin<T>(path: string): Promise<T | null> {
+  try {
+    const res = await fetch(path, { cache: "no-store" });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
 export function fetchVwap(symbol: string, anchor: AnchorType): Promise<VWAPValues | null> {
   return getJson<VWAPValues>(`/v1/vwap/${symbol}?anchor=${anchor}`);
 }
@@ -48,25 +59,38 @@ export async function fetchOhlcv(
   return body.bars ?? [];
 }
 
-export async function fetchSignals(query: SignalListQuery = {}): Promise<SignalListResponse | null> {
+export function signalListPath(query: SignalListQuery = {}, path = "/signals"): string {
   const params = new URLSearchParams();
   if (query.symbol) params.set("symbol", query.symbol);
   if (query.status) params.set("status", query.status);
   if (query.setup_type) params.set("setup_type", query.setup_type);
+  if (query.side) params.set("side", query.side);
   if (query.from_ts != null) params.set("from_ts", String(query.from_ts));
   if (query.to_ts != null) params.set("to_ts", String(query.to_ts));
   if (query.limit != null) params.set("limit", String(query.limit));
+  if (query.cursor) params.set("cursor", query.cursor);
   const qs = params.toString();
-  return getJson<SignalListResponse>(`/signals${qs ? `?${qs}` : ""}`, quantHttpUrl);
+  return qs ? `${path}?${qs}` : path;
 }
 
-export function fetchSignal(id: string): Promise<Signal | null> {
-  return getJson<Signal>(`/signals/${id}`, quantHttpUrl);
+/** Quant PR #2 `GET /signals` (alias `GET /signals/history`). Rewrite → :8001, then direct. */
+export async function fetchSignals(query: SignalListQuery = {}): Promise<SignalListResponse | null> {
+  const path = signalListPath(query);
+  const viaRewrite = await getSameOrigin<SignalListResponse>(path);
+  if (viaRewrite) return viaRewrite;
+  return getJson<SignalListResponse>(path, quantHttpUrl);
+}
+
+export async function fetchSignal(id: string): Promise<Signal | null> {
+  const path = `/signals/${encodeURIComponent(id)}`;
+  const viaRewrite = await getSameOrigin<Signal>(path);
+  if (viaRewrite) return viaRewrite;
+  return getJson<Signal>(path, quantHttpUrl);
 }
 
 /** Quant PR #2 `GET /performance/summary` via rewrite → :8001, then direct. */
 export async function fetchPerformanceSummary(): Promise<PerformanceSummary | null> {
-  const viaRewrite = await getJson<PerformanceSummary>("/performance/summary");
+  const viaRewrite = await getSameOrigin<PerformanceSummary>("/performance/summary");
   if (viaRewrite) return viaRewrite;
   return getJson<PerformanceSummary>("/performance/summary", quantHttpUrl);
 }

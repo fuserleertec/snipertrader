@@ -1,9 +1,10 @@
 /**
  * Mock ↔ live is env-only.
  *   NEXT_PUBLIC_USE_MOCKS=true  → in-browser streams (offline; default)
- *   NEXT_PUBLIC_USE_MOCKS=false → Data Eng LIVE streams at NEXT_PUBLIC_WS_BASE
- *     (ws://localhost:8000) + HTTP history. Wire live only after the Quant
- *     Risk Pre-Filter checklist gate.
+ *   NEXT_PUBLIC_USE_MOCKS=false → Data Eng :8000 + Quant :8001
+ *
+ * Data Eng (PR #8): NEXT_PUBLIC_WS_BASE / NEXT_PUBLIC_HTTP_BASE
+ * Quant (PR #2):    NEXT_PUBLIC_QUANT_API_BASE / NEXT_PUBLIC_QUANT_WS_BASE
  */
 
 export function isMockMode(): boolean {
@@ -21,16 +22,20 @@ export function httpBase(): string {
   return raw.replace(/\/$/, "");
 }
 
-/** Quant REST (`/signals`, `/performance/summary`). Default :8001 when unset. */
+/**
+ * Quant REST (`/signals`, `/performance/summary`). Default :8001.
+ * `NEXT_PUBLIC_QUANT_API_BASE` is canonical; `QUANT_HTTP_BASE` is an alias.
+ */
 export function quantHttpBase(): string {
-  const raw = process.env.NEXT_PUBLIC_QUANT_HTTP_BASE;
+  const raw =
+    process.env.NEXT_PUBLIC_QUANT_API_BASE || process.env.NEXT_PUBLIC_QUANT_HTTP_BASE;
   if (raw === undefined || raw === "") return "http://localhost:8001";
   return raw.replace(/\/$/, "");
 }
 
-/** Quant planned WS (`/ws/signals`). Falls back to Data Eng WS host. */
+/** Quant WS (`/ws/signals`). Default ws://localhost:8001 — not Data Eng :8000. */
 export function quantWsBase(): string {
-  return (process.env.NEXT_PUBLIC_QUANT_WS_BASE || wsBase()).replace(/\/$/, "");
+  return (process.env.NEXT_PUBLIC_QUANT_WS_BASE || "ws://localhost:8001").replace(/\/$/, "");
 }
 
 export function httpUrl(path: string): string {

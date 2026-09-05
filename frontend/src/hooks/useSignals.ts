@@ -43,6 +43,7 @@ export function useSignals(symbol: string, lastPrice: () => number): Signal[] {
       setRows(list.items.map((row) => normalizeSignal(row)).filter((row): row is NonNullable<typeof row> => !!row));
     });
 
+    // Quant PR #2: WS /ws/signals → { type: "signal.upsert"|"signal.status", signal }
     const stop = openJsonWsAt(quantWsUrl("/ws/signals"), applyEvent, () => undefined);
     return () => {
       alive = false;

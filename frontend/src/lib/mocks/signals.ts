@@ -6,6 +6,7 @@ function matches(signal: Signal, query: SignalListQuery): boolean {
   if (query.symbol && signal.symbol !== query.symbol) return false;
   if (query.status && signal.status !== query.status) return false;
   if (query.setup_type && signal.setup_type !== query.setup_type) return false;
+  if (query.side && signal.side !== query.side) return false;
   if (query.from_ts != null && signal.ts_ms < query.from_ts) return false;
   if (query.to_ts != null && signal.ts_ms > query.to_ts) return false;
   return true;
@@ -14,12 +15,19 @@ function matches(signal: Signal, query: SignalListQuery): boolean {
 export function mockListSignals(query: SignalListQuery, lastPrice: number): SignalListResponse {
   const symbol = query.symbol ?? "BTCUSDT";
   const { signals } = getUniverse(symbol, lastPrice);
-  const items = signals.filter((s) => matches(s, query));
-  const limit = query.limit ?? items.length;
-  const sliced = items.slice(0, limit);
+  const items = signals.filter((s) => matches(s, query)).sort((a, b) => b.ts_ms - a.ts_ms || a.id.localeCompare(b.id));
+  let start = 0;
+  if (query.cursor) {
+    const idx = items.findIndex((s) => s.id === query.cursor);
+    start = idx >= 0 ? idx + 1 : 0;
+  }
+  const window = items.slice(start);
+  const limit = query.limit ?? window.length;
+  const sliced = window.slice(0, limit);
+  const last = sliced[sliced.length - 1];
   return {
     items: sliced,
-    next_cursor: items.length > sliced.length ? `cursor_${symbol}` : null,
+    next_cursor: window.length > sliced.length && last ? last.id : null,
   };
 }
 
