@@ -412,8 +412,11 @@ curl -sS -X POST http://127.0.0.1:8001/risk/validate \
 ```
 
 - Locked-field sample bodies for `sd_extension_fade` / `vwap_pullback_cont` /
-  `avwap_ob_confluence` **approve**.
+  `avwap_ob_confluence` **approve** (live `:8001` replay 2026-09-05:
+  S4 R:R 1.60, S5 3.62, S6 5.70; all `reason: ok`).
 - Setup-specific 409s: S4 `news_window`, S5 `invalid_levels`, S6
   `low_conviction` (0.65 < 0.70).
 - `contributing_factors` / `factor_breakdown` on validate → **422**; on
   publish → stored, not gated.
+- Paper: `POST /paper/demo-fortnight` → 14 days / 12 closed /
+  `live_trading: false`. Alerts: 4 channels, `max_per_hour: 5`.
