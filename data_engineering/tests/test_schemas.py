@@ -16,6 +16,8 @@ EXPECTED = {
     "setup_signal.schema.json",
     "risk_validate_request.schema.json",
     "risk_validate_response.schema.json",
+    "dashboard_signal.schema.json",
+    "signal_ws_event.schema.json",
 }
 
 

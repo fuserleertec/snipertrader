@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snipertrader.ai/schemas/dashboard_signal.schema.json",
+  "title": "DashboardSignal",
+  "description": "Frontend dashboard Signal row from GET /signals and GET /signals/{id}. Same setup_type / timeframe / trigger_event_ids as the ML validate candidate, plus id and status.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "ts_ms",
+    "symbol",
+    "asset_class",
+    "setup_type",
+    "side",
+    "entry",
+    "stop",
+    "target",
+    "status",
+    "confidence",
+    "timeframe",
+    "ref_session",
+    "trigger_event_ids"
+  ],
+  "properties": {
+    "id": { "type": "string" },
+    "ts_ms": { "type": "integer" },
+    "symbol": { "type": "string", "pattern": "^[A-Z0-9]+$" },
+    "asset_class": { "type": "string", "enum": ["crypto", "equity", "futures"] },
+    "setup_type": {
+      "type": "string",
+      "enum": [
+        "sweep_reclaim",
+        "fvg_entry",
+        "mss_break",
+        "order_block",
+        "sweep_mss",
+        "ob_fvg"
+      ]
+    },
+    "side": { "type": "string", "enum": ["long", "short"] },
+    "entry": { "type": ["number", "null"] },
+    "stop": { "type": ["number", "null"] },
+    "target": { "type": ["number", "null"] },
+    "status": { "type": "string", "enum": ["ACTIVE", "TP_HIT", "SL_HIT", "CANCELLED"] },
+    "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+    "timeframe": { "type": ["string", "null"], "enum": ["1m", "5m", "15m", null] },
+    "ref_session": { "type": ["string", "null"] },
+    "trigger_event_ids": { "type": "array", "items": { "type": "string" } }
+  }
+}

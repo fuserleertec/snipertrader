@@ -102,6 +102,78 @@ class CandidateSignal(BaseModel):
         return normalize_symbol(value)
 
 
+SIGNAL_VIEW_FIELDS = (
+    "id",
+    "ts_ms",
+    "symbol",
+    "asset_class",
+    "setup_type",
+    "side",
+    "entry",
+    "stop",
+    "target",
+    "status",
+    "confidence",
+    "timeframe",
+    "ref_session",
+    "trigger_event_ids",
+)
+
+
+class SignalView(BaseModel):
+    """Dashboard / Frontend Signal row. Aligned with the ML validate candidate."""
+
+    id: str
+    ts_ms: int
+    symbol: str
+    asset_class: AssetClass
+    setup_type: SetupType
+    side: Side
+    entry: float | None = None
+    stop: float | None = None
+    target: float | None = None
+    status: SignalStatus
+    confidence: float | None = None
+    timeframe: SignalTimeframe | None = None
+    ref_session: str | None = None
+    trigger_event_ids: list[str] = Field(default_factory=list)
+
+    @classmethod
+    def from_stored(cls, row: "StoredSignal") -> "SignalView":
+        setup = row.setup_type
+        if not isinstance(setup, SetupType):
+            setup = SetupType(str(setup))
+        tf = row.timeframe
+        if tf is not None and not isinstance(tf, SignalTimeframe):
+            tf = SignalTimeframe(str(tf))
+        return cls(
+            id=row.id,
+            ts_ms=row.ts_ms,
+            symbol=row.symbol,
+            asset_class=row.asset_class,
+            setup_type=setup,
+            side=row.side,
+            entry=row.entry,
+            stop=row.stop,
+            target=row.target,
+            status=row.status,
+            confidence=row.confidence,
+            timeframe=tf,
+            ref_session=row.ref_session,
+            trigger_event_ids=list(row.trigger_event_ids or []),
+        )
+
+
+class SignalListResponse(BaseModel):
+    items: list[SignalView]
+    next_cursor: str | None = None
+
+
+class SignalWsEvent(BaseModel):
+    type: Literal["signal.upsert", "signal.status"]
+    signal: SignalView
+
+
 class ValidateResponse(BaseModel):
     approved: bool
     reason: str

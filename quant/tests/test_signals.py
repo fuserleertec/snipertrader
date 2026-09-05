@@ -26,10 +26,15 @@ async def test_memory_lifecycle_and_filters():
     await store.insert(_sig("b", symbol="MSFT", ts=200))
     await store.insert(_sig("c", ts=300, status=SignalStatus.CANCELLED))
 
+    await store.insert(_sig("d", symbol="NVDA", ts=50))
+    store.rows["d"] = store.rows["d"].model_copy(update={"setup_type": "ob_fvg"})
+    by_setup = await store.list(setup_type="ob_fvg")
+    assert [r.id for r in by_setup] == ["d"]
+
     listed = await store.list(symbol="AAPL")
     assert {r.id for r in listed} == {"a", "c"}
 
-    active = await store.list(status=SignalStatus.ACTIVE, from_ms=150, to_ms=250)
+    active = await store.list(status=SignalStatus.ACTIVE, from_ts=150, to_ts=250)
     assert [r.id for r in active] == ["b"]
 
     updated = await store.update_status("a", SignalStatus.TP_HIT)
@@ -37,7 +42,7 @@ async def test_memory_lifecycle_and_filters():
     assert updated.status is SignalStatus.TP_HIT
     assert updated.closed_ts_ms is not None
     assert await store.get("missing") is None
-    assert {r.id for r in await store.active()} == {"b"}
+    assert {r.id for r in await store.active()} == {"b", "d"}
 
 
 async def test_status_transitions():

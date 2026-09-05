@@ -6,13 +6,18 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi.openapi.utils import get_openapi
 from pydantic import BaseModel
 
 from sniper_quant.config import Settings, get_settings
+from sniper_quant.live import SignalHub
 from sniper_quant.models import (
     CandidateSignal,
+    SetupType,
+    SignalListResponse,
     SignalStatus,
+    SignalView,
     StoredSignal,
     ValidateResponse,
     normalize_symbol,
@@ -20,7 +25,12 @@ from sniper_quant.models import (
 from sniper_quant.risk.engine import RiskEngine, RiskState
 from sniper_quant.setups import SETUP_TYPE_NOTES, SETUP_TYPES
 from sniper_quant.store.ohlcv import InMemoryOHLCVLoader, OHLCVLoader, TimescaleOHLCVLoader
-from sniper_quant.store.signals import InMemorySignalStore, SignalStore, TimescaleSignalStore
+from sniper_quant.store.signals import (
+    InMemorySignalStore,
+    SignalStore,
+    TimescaleSignalStore,
+    encode_cursor,
+)
 
 API_DESCRIPTION = """
 # SniperTrader Quant API — Phase 1 / Rev. 1.1
@@ -70,11 +80,23 @@ Reject reasons:
 
 Unknown `setup_type` or `timeframe` → HTTP 422.
 
-## Frontend — signal query
+## Frontend — dashboard signal table
 
-`GET /signals?symbol=&status=&from_ms=&to_ms=`
+`GET /signals?symbol=&status=&setup_type=&from_ts=&to_ts=&limit=&cursor=`
 
-Status: `ACTIVE` → `TP_HIT` | `SL_HIT` | `CANCELLED`.
+Returns `{ "items": Signal[], "next_cursor": string | null }`.
+`from_ts` / `to_ts` are UTC epoch milliseconds (same unit as `ts_ms`).
+Pass `cursor` from the previous page's `next_cursor`.
+
+`GET /signals/{id}` → `Signal`
+
+`Signal` fields: `id`, `ts_ms`, `symbol`, `asset_class`, `setup_type`
+(six locked values), `side`, `entry`, `stop`, `target`,
+`status` (`ACTIVE`|`TP_HIT`|`SL_HIT`|`CANCELLED`), `confidence`,
+`timeframe`, `ref_session`, `trigger_event_ids`.
+
+`WS /ws/signals` pushes `{ "type": "signal.upsert"|"signal.status", "signal": Signal }`
+on create (`upsert`) and status change (`status`).
 """
 
 
@@ -106,6 +128,7 @@ async def lifespan(app: FastAPI):
     app.state.signals = signals
     app.state.ohlcv = ohlcv
     app.state.engine = engine
+    app.state.hub = SignalHub()
     yield
     await signals.close()
     await ohlcv.close()
@@ -130,12 +153,19 @@ def create_app(
         app.state.signals = signals
         app.state.ohlcv = ohlcv or InMemoryOHLCVLoader()
         app.state.engine = engine or RiskEngine(settings=app.state.settings)
+        app.state.hub = SignalHub()
 
     def _engine() -> RiskEngine:
         return app.state.engine
 
     def _signals() -> SignalStore:
         return app.state.signals
+
+    def _hub() -> SignalHub:
+        return app.state.hub
+
+    def _view(row: StoredSignal) -> SignalView:
+        return SignalView.from_stored(row)
 
     @app.get("/health")
     async def health() -> dict[str, Any]:
@@ -168,31 +198,45 @@ def create_app(
         engine.state.sync_from_signals(active)
         return engine.validate(body)
 
-    @app.get("/signals")
+    @app.get("/signals", response_model=SignalListResponse)
     async def list_signals(
         symbol: str | None = None,
         status: SignalStatus | None = None,
-        from_ms: int | None = Query(default=None, ge=0),
-        to_ms: int | None = Query(default=None, ge=0),
-        limit: int = Query(default=200, ge=1, le=2000),
-    ) -> dict[str, Any]:
+        setup_type: SetupType | None = None,
+        from_ts: int | None = Query(default=None, ge=0, description="Inclusive UTC epoch ms"),
+        to_ts: int | None = Query(default=None, ge=0, description="Inclusive UTC epoch ms"),
+        limit: int = Query(default=50, ge=1, le=500),
+        cursor: str | None = Query(default=None, description="Opaque cursor from next_cursor"),
+    ) -> SignalListResponse:
+        """Dashboard table: filter + cursor page of Signal rows."""
         if symbol:
             symbol = normalize_symbol(symbol)
         rows = await _signals().list(
-            symbol=symbol, status=status, from_ms=from_ms, to_ms=to_ms, limit=limit
+            symbol=symbol,
+            status=status,
+            setup_type=setup_type,
+            from_ts=from_ts,
+            to_ts=to_ts,
+            cursor=cursor,
+            limit=limit + 1,
         )
-        return {"signals": [r.model_dump() for r in rows], "count": len(rows)}
+        next_cursor = None
+        if len(rows) > limit:
+            last = rows[limit - 1]
+            next_cursor = encode_cursor(last.ts_ms, last.id)
+            rows = rows[:limit]
+        return SignalListResponse(items=[_view(r) for r in rows], next_cursor=next_cursor)
 
-    @app.get("/signals/{signal_id}")
-    async def get_signal(signal_id: str) -> dict[str, Any]:
+    @app.get("/signals/{signal_id}", response_model=SignalView)
+    async def get_signal(signal_id: str) -> SignalView:
         row = await _signals().get(signal_id)
         if row is None:
             raise HTTPException(404, f"signal {signal_id} not found")
-        return row.model_dump()
+        return _view(row)
 
-    @app.post("/signals", status_code=201)
-    async def publish_signal(body: PublishBody) -> dict[str, Any]:
-        """Persist an approved signal (ACTIVE). Frontend / ML helper — not Kafka."""
+    @app.post("/signals", status_code=201, response_model=SignalView)
+    async def publish_signal(body: PublishBody) -> SignalView:
+        """Persist an approved signal (ACTIVE). Emits ``signal.upsert`` on the WS."""
         engine = _engine()
         active = await _signals().active()
         engine.state.sync_from_signals(active)
@@ -227,17 +271,34 @@ def create_app(
         )
         await _signals().insert(stored)
         engine.state.sync_from_signals(await _signals().active())
-        return stored.model_dump()
+        view = _view(stored)
+        await _hub().publish("signal.upsert", view)
+        return view
 
-    @app.patch("/signals/{signal_id}")
-    async def patch_signal(signal_id: str, body: StatusBody) -> dict[str, Any]:
+    @app.patch("/signals/{signal_id}", response_model=SignalView)
+    async def patch_signal(signal_id: str, body: StatusBody) -> SignalView:
         row = await _signals().update_status(
             signal_id, body.status, closed_ts_ms=body.closed_ts_ms
         )
         if row is None:
             raise HTTPException(404, f"signal {signal_id} not found")
         _engine().state.sync_from_signals(await _signals().active())
-        return row.model_dump()
+        view = _view(row)
+        await _hub().publish("signal.status", view)
+        return view
+
+    @app.websocket("/ws/signals")
+    async def ws_signals(websocket: WebSocket) -> None:
+        """Live dashboard feed: signal.upsert on create, signal.status on patch."""
+        await websocket.accept()
+        _hub().subscribe(websocket)
+        try:
+            while True:
+                await websocket.receive_text()
+        except WebSocketDisconnect:
+            pass
+        finally:
+            _hub().unsubscribe(websocket)
 
     @app.post("/backtest/demo")
     async def backtest_demo() -> dict[str, Any]:
@@ -250,6 +311,36 @@ def create_app(
             "inmemory": True,
         }
 
+    def custom_openapi() -> dict[str, Any]:
+        if app.openapi_schema:
+            return app.openapi_schema
+        schema = get_openapi(
+            title=app.title,
+            version=app.version,
+            description=app.description,
+            routes=app.routes,
+        )
+        schema.setdefault("paths", {})["/ws/signals"] = {
+            "get": {
+                "tags": ["signals"],
+                "summary": "WS /ws/signals — live Signal feed",
+                "description": (
+                    "WebSocket upgrade. Each frame is "
+                    '`{ "type": "signal.upsert" | "signal.status", "signal": Signal }`. '
+                    "Emitted on POST /signals (upsert) and PATCH /signals/{id} (status)."
+                ),
+                "operationId": "ws_signals",
+                "responses": {
+                    "101": {
+                        "description": "Switching Protocols — SignalWsEvent frames",
+                    }
+                },
+            }
+        }
+        app.openapi_schema = schema
+        return schema
+
+    app.openapi = custom_openapi  # type: ignore[method-assign]
     return app
 
 

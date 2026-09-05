@@ -152,14 +152,38 @@ Timescale table `signals` (see `data_engineering/sql/02-signals.sql`):
 
 `ACTIVE` → `TP_HIT` | `SL_HIT` | `CANCELLED`
 
-Frontend query API:
+## Frontend — dashboard signal table
 
-| Method | Path |
-|---|---|
-| `GET` | `/signals?symbol=&status=&from_ms=&to_ms=` |
-| `GET` | `/signals/{id}` |
-| `POST` | `/signals` (re-runs the pre-filter, then stores ACTIVE) |
-| `PATCH` | `/signals/{id}` body `{"status":"TP_HIT"}` |
+JSON Schema: [`schemas/dashboard_signal.schema.json`](../schemas/dashboard_signal.schema.json)
+· WS: [`schemas/signal_ws_event.schema.json`](../schemas/signal_ws_event.schema.json)
+· OpenAPI: `http://localhost:8001/docs`
+
+| Method | Path | Response |
+|---|---|---|
+| `GET` | `/signals?symbol=&status=&setup_type=&from_ts=&to_ts=&limit=&cursor=` | `{ "items": Signal[], "next_cursor": string \| null }` |
+| `GET` | `/signals/{id}` | `Signal` |
+| `WS` | `/ws/signals` | `{ "type": "signal.upsert" \| "signal.status", "signal": Signal }` |
+| `POST` | `/signals` | `Signal` (after pre-filter; emits `signal.upsert`) |
+| `PATCH` | `/signals/{id}` body `{"status":"TP_HIT"}` | `Signal` (emits `signal.status`) |
+
+`from_ts` / `to_ts` are inclusive UTC epoch milliseconds (same unit as `ts_ms`).
+Default `limit` is 50 (max 500). Pass `cursor` = previous `next_cursor` for the
+next page.
+
+`Signal` fields (dashboard row — aligned with the ML validate candidate):
+
+`id`, `ts_ms`, `symbol`, `asset_class`, `setup_type` (six locked values),
+`side`, `entry`, `stop`, `target`, `status`
+(`ACTIVE`\|`TP_HIT`\|`SL_HIT`\|`CANCELLED`), `confidence`, `timeframe`
+(`1m`\|`5m`\|`15m`), `ref_session`, `trigger_event_ids`.
+
+```js
+const ws = new WebSocket("ws://localhost:8001/ws/signals");
+ws.onmessage = (ev) => {
+  const { type, signal } = JSON.parse(ev.data);
+  // type === "signal.upsert" | "signal.status"
+};
+```
 
 ## Backtester
 

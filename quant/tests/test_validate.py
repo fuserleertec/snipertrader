@@ -89,6 +89,8 @@ def test_openapi_and_health():
     spec = http.get("/openapi.json").json()
     assert "/risk/validate" in spec["paths"]
     assert "post" in spec["paths"]["/risk/validate"]
+    assert "get" in spec["paths"]["/signals"]
+    assert "/ws/signals" in spec["paths"]
     assert http.get("/docs").status_code == 200
     params = http.get("/risk/params").json()
     assert params["risk_fraction"] == 0.02
@@ -150,7 +152,8 @@ def test_publish_assigns_id_after_approval():
     assert created["id"]
     assert created["status"] == "ACTIVE"
     listed = http.get("/signals", params={"symbol": "BTCUSDT", "status": "ACTIVE"}).json()
-    assert listed["count"] == 1
+    assert listed["items"][0]["id"] == created["id"]
+    assert listed["next_cursor"] is None
     patched = http.patch(f"/signals/{created['id']}", json={"status": "TP_HIT"}).json()
     assert patched["status"] == "TP_HIT"
-    assert http.get("/signals", params={"status": "ACTIVE"}).json()["count"] == 0
+    assert http.get("/signals", params={"status": "ACTIVE"}).json()["items"] == []

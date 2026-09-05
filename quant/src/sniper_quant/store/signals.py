@@ -6,11 +6,24 @@ import json
 import time
 from typing import Protocol
 
-from sniper_quant.models import AssetClass, Side, SignalStatus, StoredSignal
+from sniper_quant.models import AssetClass, SetupType, Side, SignalStatus, StoredSignal
 
 
 def _now_ms() -> int:
     return int(time.time() * 1000)
+
+
+def encode_cursor(ts_ms: int, signal_id: str) -> str:
+    return f"{ts_ms}:{signal_id}"
+
+
+def decode_cursor(cursor: str) -> tuple[int, str]:
+    ts_s, signal_id = cursor.split(":", 1)
+    return int(ts_s), signal_id
+
+
+def setup_type_value(setup_type: SetupType | str) -> str:
+    return SetupType(setup_type).value if not isinstance(setup_type, SetupType) else setup_type.value
 
 
 class SignalStore(Protocol):
@@ -23,9 +36,11 @@ class SignalStore(Protocol):
         *,
         symbol: str | None = None,
         status: SignalStatus | str | None = None,
-        from_ms: int | None = None,
-        to_ms: int | None = None,
-        limit: int = 200,
+        setup_type: SetupType | str | None = None,
+        from_ts: int | None = None,
+        to_ts: int | None = None,
+        cursor: str | None = None,
+        limit: int = 50,
     ) -> list[StoredSignal]: ...
 
     async def update_status(
@@ -57,9 +72,11 @@ class InMemorySignalStore:
         *,
         symbol: str | None = None,
         status: SignalStatus | str | None = None,
-        from_ms: int | None = None,
-        to_ms: int | None = None,
-        limit: int = 200,
+        setup_type: SetupType | str | None = None,
+        from_ts: int | None = None,
+        to_ts: int | None = None,
+        cursor: str | None = None,
+        limit: int = 50,
     ) -> list[StoredSignal]:
         rows = list(self.rows.values())
         if symbol:
@@ -67,11 +84,17 @@ class InMemorySignalStore:
         if status:
             st = SignalStatus(status)
             rows = [r for r in rows if r.status is st]
-        if from_ms is not None:
-            rows = [r for r in rows if r.ts_ms >= from_ms]
-        if to_ms is not None:
-            rows = [r for r in rows if r.ts_ms <= to_ms]
-        rows.sort(key=lambda r: r.ts_ms, reverse=True)
+        if setup_type:
+            want = setup_type_value(setup_type)
+            rows = [r for r in rows if setup_type_value(r.setup_type) == want]
+        if from_ts is not None:
+            rows = [r for r in rows if r.ts_ms >= from_ts]
+        if to_ts is not None:
+            rows = [r for r in rows if r.ts_ms <= to_ts]
+        rows.sort(key=lambda r: (r.ts_ms, r.id), reverse=True)
+        if cursor:
+            c_ts, c_id = decode_cursor(cursor)
+            rows = [r for r in rows if (r.ts_ms, r.id) < (c_ts, c_id)]
         return rows[:limit]
 
     async def update_status(
@@ -229,12 +252,19 @@ class TimescaleSignalStore:
         *,
         symbol: str | None = None,
         status: SignalStatus | str | None = None,
-        from_ms: int | None = None,
-        to_ms: int | None = None,
-        limit: int = 200,
+        setup_type: SetupType | str | None = None,
+        from_ts: int | None = None,
+        to_ts: int | None = None,
+        cursor: str | None = None,
+        limit: int = 50,
     ) -> list[StoredSignal]:
         pool = await self._conn()
         st = SignalStatus(status).value if status else None
+        stype = setup_type_value(setup_type) if setup_type else None
+        c_ts: int | None = None
+        c_id: str | None = None
+        if cursor:
+            c_ts, c_id = decode_cursor(cursor)
         sql = """
         SELECT EXTRACT(EPOCH FROM ts) * 1000 AS ts_ms, id, schema_version,
                symbol, asset_class, setup_type, side, confidence, ref_vwap,
@@ -243,13 +273,19 @@ class TimescaleSignalStore:
         FROM signals
         WHERE ($1::TEXT IS NULL OR symbol = $1)
           AND ($2::TEXT IS NULL OR status = $2)
-          AND ($3::BIGINT IS NULL OR EXTRACT(EPOCH FROM ts) * 1000 >= $3)
-          AND ($4::BIGINT IS NULL OR EXTRACT(EPOCH FROM ts) * 1000 <= $4)
-        ORDER BY ts DESC
-        LIMIT $5
+          AND ($3::TEXT IS NULL OR setup_type = $3)
+          AND ($4::BIGINT IS NULL OR EXTRACT(EPOCH FROM ts) * 1000 >= $4)
+          AND ($5::BIGINT IS NULL OR EXTRACT(EPOCH FROM ts) * 1000 <= $5)
+          AND (
+                $6::BIGINT IS NULL
+                OR EXTRACT(EPOCH FROM ts) * 1000 < $6
+                OR (EXTRACT(EPOCH FROM ts) * 1000 = $6 AND id < $7)
+              )
+        ORDER BY ts DESC, id DESC
+        LIMIT $8
         """
         async with pool.acquire() as conn:
-            rows = await conn.fetch(sql, symbol, st, from_ms, to_ms, limit)
+            rows = await conn.fetch(sql, symbol, st, stype, from_ts, to_ts, c_ts, c_id, limit)
         return [_row_to_signal(r) for r in rows]
 
     async def update_status(

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snipertrader.ai/schemas/signal_ws_event.schema.json",
+  "title": "SignalWsEvent",
+  "description": "Frame pushed on WS /ws/signals. type is signal.upsert on create and signal.status on lifecycle change.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["type", "signal"],
+  "properties": {
+    "type": { "type": "string", "enum": ["signal.upsert", "signal.status"] },
+    "signal": { "$ref": "https://snipertrader.ai/schemas/dashboard_signal.schema.json" }
+  }
+}
