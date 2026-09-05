@@ -1,8 +1,8 @@
-"""Phase 2 integration scenarios (setups 1–3) for the Project Manager gate.
+"""Phase 2+3 integration scenarios (setups 1–6) for the Project Manager gate.
 
 Each scenario runs an isolated in-memory orchestrator: detector →
 ``POST /risk/validate`` (httpx mock of Quant) → ``setup_signals`` publish
-only when ``approved: true``. Does not start Phase 3.
+only when ``approved: true``.
 """
 
 from __future__ import annotations
@@ -19,6 +19,7 @@ from sniper_data.pattern_detection.fixtures import SYM, T0
 from sniper_data.pattern_detection.validate import validate_topic
 from sniper_data.setup_detection.candidate import SetupCandidate
 from sniper_data.setup_detection.fixtures import (
+    VWAP_SESSION,
     asia_high_sweep,
     asia_session,
     atr_warmup,
@@ -26,17 +27,26 @@ from sniper_data.setup_detection.fixtures import (
     bullish_mss_after_low,
     confirmed_buy_sweep,
     ny_am_kill_zone,
+    pullback_ob,
+    seed_avwap,
     seed_common,
     session_vwap,
     setup1_long_bars,
     setup2_retrace_bars,
     setup3_judas_bars,
+    setup4_fade_long_bars,
+    setup4_vol_warmup,
+    setup5_pullback_bars,
+    setup5_rising_vwaps,
+    setup5_trend_bars,
+    setup6_htf_warmup,
+    setup6_rejection_bars,
 )
 from sniper_data.setup_detection.orchestrator import SetupOrchestrator, dedupe_candidates
 from sniper_data.setup_detection.params import SetupParams
 from sniper_data.setup_detection.replay import run_setup_replay
 from sniper_data.setup_detection.risk_client import DEFAULT_RISK_URL, HttpRiskClient, StaticRiskClient
-from sniper_data.zones import store_fvg
+from sniper_data.zones import store_fvg, store_ob
 
 FORBIDDEN_RISK_KEYS = {"id", "risk_reward", "setup_id", "conviction", "kill_zone", "setup_number"}
 LOCKED_TUNABLES = {
@@ -44,8 +54,25 @@ LOCKED_TUNABLES = {
     "s2_confluence": "vwap_or_hvn",
     "s3_accum_session": "asia",
     "s3_kill_zone": "ny_am",
+    "s4_vol_frac": 0.8,
+    "s4_vol_avg_period": 20,
+    "s4_min_rr": 1.5,
+    "s4_min_rr_at_3s": 2.0,
+    "s4_news_window_sec": 900,
+    "s4_min_conviction": 60,
+    "s5_trend_bars": 20,
+    "s5_min_rr": 2.0,
+    "s5_min_conviction": 60,
+    "s6_min_rr": 2.0,
+    "s6_min_conviction": 70,
+    "s6_htf_timeframes": ("1h", "4h"),
     "dedupe_window_sec": 300,
     "min_conviction_to_validate": 60,
+    "product_keys": {
+        "sd_extension_fade": "4_sd_extension_fade",
+        "vwap_pullback_cont": "5_vwap_pullback_cont",
+        "avwap_ob_confluence": "6_avwap_ob_confluence",
+    },
 }
 
 
@@ -299,6 +326,210 @@ async def run_setup3_e2e(*, approved: bool = True) -> dict[str, Any]:
     }
 
 
+async def run_setup4_e2e(*, approved: bool = True) -> dict[str, Any]:
+    trace: list[str] = []
+    captured: list[dict] = []
+    store = InMemoryStateStore()
+    bus = TracingBus(trace)
+    await seed_common(store)
+    orch = SetupOrchestrator(
+        store,
+        bus,
+        _http_risk(approved=approved, trace=trace, captured=captured),
+        params=SetupParams(),
+    )
+    orch.on_vwap(session_vwap())
+    for b in setup4_vol_warmup():
+        await orch.on_bar(b)
+    published: list[SetupCandidate] = []
+    for b in setup4_fade_long_bars():
+        published.extend(await orch.on_bar(b))
+    signals = [r["value"] for r in bus.topics.get("setup_signals", [])]
+    raw = orch.raw_log[-1] if orch.raw_log else {}
+    body = captured[0] if captured else {}
+    fade = setup4_fade_long_bars()[-1]
+    checks = [
+        _assert("setup_type", raw.get("setup_type") == "sd_extension_fade", actual=raw.get("setup_type"), expected="sd_extension_fade"),
+        _assert("side_long_lower_band", raw.get("side") == "long", actual=raw.get("side")),
+        _assert("entry_is_reject_close", raw.get("entry") == fade.close, actual=raw.get("entry"), expected=fade.close),
+        _assert("target_session_vwap", raw.get("target") == 100.0, actual=raw.get("target"), expected=100.0),
+        _assert("stop_beyond_3s", raw.get("stop") is not None and raw.get("stop") < 94.0, actual=raw.get("stop")),
+        _assert("rr_ge_1_5", (raw.get("risk_reward") or 0) >= LOCKED_TUNABLES["s4_min_rr"], actual=raw.get("risk_reward")),
+        _assert("factors_extension", "vwap_band_extension" in (raw.get("contributing_factors") or []), actual=raw.get("contributing_factors")),
+        _assert("conviction_ge_60", (raw.get("conviction") or 0) >= LOCKED_TUNABLES["s4_min_conviction"], actual=raw.get("conviction")),
+        *_order_validate_before_publish(trace, expect_publish=approved),
+        *(_locked_risk_ok(body) if body else [_assert("risk_body", False)]),
+    ]
+    if body:
+        checks.append(_assert("risk_omits_factors", "contributing_factors" not in body and "factor_breakdown" not in body, actual=list(body)))
+    if approved:
+        checks.append(_assert("published_one", len(signals) == 1, actual=len(signals)))
+        if signals:
+            validate_topic("setup_signals", signals[0])
+            checks.append(_assert("signal_schema", True))
+            checks.append(_assert("signal_has_id", bool(signals[0].get("id"))))
+            checks.append(
+                _assert(
+                    "signal_has_factors",
+                    "contributing_factors" in signals[0],
+                    actual=signals[0].get("contributing_factors"),
+                )
+            )
+            checks.append(
+                _assert(
+                    "signal_has_breakdown",
+                    isinstance(signals[0].get("factor_breakdown"), dict),
+                    actual=signals[0].get("factor_breakdown"),
+                )
+            )
+    else:
+        checks.append(_assert("no_publish_on_reject", signals == [], actual=signals))
+    return {
+        "id": "setup4_e2e" if approved else "setup4_e2e_rejected",
+        "name": "Setup 4 — session VWAP ±2σ/±3σ extension fade",
+        "status": "PASS" if all(c["pass"] for c in checks) else "FAIL",
+        "setup_type": "sd_extension_fade",
+        "product_key": LOCKED_TUNABLES["product_keys"]["sd_extension_fade"],
+        "assertions": checks,
+        "raw": raw,
+        "risk_request": body,
+        "mocked_risk_response": _mocked_risk_response(approved),
+        "published_signal": signals[0] if signals else None,
+        "publish_count": len(signals),
+        "trace": trace,
+    }
+
+
+async def run_setup5_e2e(*, approved: bool = True) -> dict[str, Any]:
+    trace: list[str] = []
+    captured: list[dict] = []
+    store = InMemoryStateStore()
+    bus = TracingBus(trace)
+    await seed_common(store)
+    await store_ob(store, pullback_ob())
+    orch = SetupOrchestrator(
+        store,
+        bus,
+        _http_risk(approved=approved, trace=trace, captured=captured),
+        params=SetupParams(),
+    )
+    trend = setup5_trend_bars()
+    vwaps = setup5_rising_vwaps(len(trend))
+    for snap, b in zip(vwaps, trend, strict=True):
+        orch.on_vwap(snap)
+        await orch.on_bar(b)
+    orch.on_vwap(VWAP_SESSION)
+    published: list[SetupCandidate] = []
+    for b in setup5_pullback_bars(start=len(trend)):
+        published.extend(await orch.on_bar(b))
+    signals = [r["value"] for r in bus.topics.get("setup_signals", [])]
+    raw = orch.raw_log[-1] if orch.raw_log else {}
+    body = captured[0] if captured else {}
+    factors = raw.get("contributing_factors") or []
+    checks = [
+        _assert("setup_type", raw.get("setup_type") == "vwap_pullback_cont", actual=raw.get("setup_type"), expected="vwap_pullback_cont"),
+        _assert("side_long_trend", raw.get("side") == "long", actual=raw.get("side")),
+        _assert("rr_ge_2", (raw.get("risk_reward") or 0) >= LOCKED_TUNABLES["s5_min_rr"], actual=raw.get("risk_reward")),
+        _assert("factor_trend", "trend_vwap" in factors, actual=factors),
+        _assert("factor_pullback", "pullback" in factors, actual=factors),
+        _assert("factor_structure", bool({"fvg", "order_block"} & set(factors)), actual=factors),
+        _assert("factor_first_touch", "first_touch" in factors, actual=factors),
+        _assert("conviction_ge_60", (raw.get("conviction") or 0) >= LOCKED_TUNABLES["s5_min_conviction"], actual=raw.get("conviction")),
+        *_order_validate_before_publish(trace, expect_publish=approved),
+        *(_locked_risk_ok(body) if body else [_assert("risk_body", False)]),
+    ]
+    if body:
+        checks.append(_assert("risk_omits_factors", "contributing_factors" not in body and "factor_breakdown" not in body))
+    if approved:
+        checks.append(_assert("published_one", len(signals) == 1, actual=len(signals)))
+        if signals:
+            validate_topic("setup_signals", signals[0])
+            checks.append(_assert("signal_schema", True))
+            checks.append(_assert("signal_has_id", bool(signals[0].get("id"))))
+            checks.append(_assert("signal_has_breakdown", isinstance(signals[0].get("factor_breakdown"), dict)))
+    else:
+        checks.append(_assert("no_publish_on_reject", signals == [], actual=signals))
+    return {
+        "id": "setup5_e2e" if approved else "setup5_e2e_rejected",
+        "name": "Setup 5 — trend VWAP pullback continuation",
+        "status": "PASS" if all(c["pass"] for c in checks) else "FAIL",
+        "setup_type": "vwap_pullback_cont",
+        "product_key": LOCKED_TUNABLES["product_keys"]["vwap_pullback_cont"],
+        "assertions": checks,
+        "raw": raw,
+        "risk_request": body,
+        "mocked_risk_response": _mocked_risk_response(approved),
+        "published_signal": signals[0] if signals else None,
+        "publish_count": len(signals),
+        "trace": trace,
+    }
+
+
+async def run_setup6_e2e(*, approved: bool = True) -> dict[str, Any]:
+    trace: list[str] = []
+    captured: list[dict] = []
+    store = InMemoryStateStore()
+    bus = TracingBus(trace)
+    await seed_common(store)
+    snap = await seed_avwap(store)
+    orch = SetupOrchestrator(
+        store,
+        bus,
+        _http_risk(approved=approved, trace=trace, captured=captured),
+        params=SetupParams(),
+    )
+    for b in setup6_htf_warmup():
+        await orch.on_bar(b)
+    published: list[SetupCandidate] = []
+    for b in setup6_rejection_bars():
+        published.extend(await orch.on_bar(b))
+    signals = [r["value"] for r in bus.topics.get("setup_signals", [])]
+    raw = orch.raw_log[-1] if orch.raw_log else {}
+    body = captured[0] if captured else {}
+    reject = setup6_rejection_bars()[-1]
+    factors = raw.get("contributing_factors") or []
+    checks = [
+        _assert("setup_type", raw.get("setup_type") == "avwap_ob_confluence", actual=raw.get("setup_type"), expected="avwap_ob_confluence"),
+        _assert("side_long_bull_ob", raw.get("side") == "long", actual=raw.get("side")),
+        _assert("entry_reject_close", raw.get("entry") == reject.close, actual=raw.get("entry"), expected=reject.close),
+        _assert("ref_vwap_is_avwap_value", raw.get("ref_vwap") == snap.vwap_value, actual=raw.get("ref_vwap"), expected=snap.vwap_value),
+        _assert("rr_ge_2", (raw.get("risk_reward") or 0) >= LOCKED_TUNABLES["s6_min_rr"], actual=raw.get("risk_reward")),
+        _assert("factor_avwap", "avwap" in factors, actual=factors),
+        _assert("factor_ob", "order_block" in factors, actual=factors),
+        _assert("factor_htf", "htf_rejection" in factors, actual=factors),
+        _assert("conviction_ge_70", (raw.get("conviction") or 0) >= LOCKED_TUNABLES["s6_min_conviction"], actual=raw.get("conviction")),
+        _assert("wire_tf_15m", raw.get("timeframe") == "15m", actual=raw.get("timeframe")),
+        _assert("avwap_nested_not_flat", "band_p1" not in snap.model_dump(), actual=list(snap.model_dump())),
+        *_order_validate_before_publish(trace, expect_publish=approved),
+        *(_locked_risk_ok(body) if body else [_assert("risk_body", False)]),
+    ]
+    if body:
+        checks.append(_assert("risk_omits_factors", "contributing_factors" not in body and "factor_breakdown" not in body))
+    if approved:
+        checks.append(_assert("published_one", len(signals) == 1, actual=len(signals)))
+        if signals:
+            validate_topic("setup_signals", signals[0])
+            checks.append(_assert("signal_schema", True))
+            checks.append(_assert("signal_has_id", bool(signals[0].get("id"))))
+            checks.append(_assert("signal_has_breakdown", isinstance(signals[0].get("factor_breakdown"), dict)))
+    else:
+        checks.append(_assert("no_publish_on_reject", signals == [], actual=signals))
+    return {
+        "id": "setup6_e2e" if approved else "setup6_e2e_rejected",
+        "name": "Setup 6 — AVWAP + HTF order-block confluence",
+        "status": "PASS" if all(c["pass"] for c in checks) else "FAIL",
+        "setup_type": "avwap_ob_confluence",
+        "product_key": LOCKED_TUNABLES["product_keys"]["avwap_ob_confluence"],
+        "assertions": checks,
+        "raw": raw,
+        "risk_request": body,
+        "mocked_risk_response": _mocked_risk_response(approved),
+        "published_signal": signals[0] if signals else None,
+        "publish_count": len(signals),
+        "trace": trace,
+    }
+
+
 def _synth(conviction: int, ts_ms: int, *, tf: str = "5m") -> SetupCandidate:
     return SetupCandidate(
         setup_number=1,
@@ -348,21 +579,31 @@ async def run_gate_reject_never_publishes() -> dict[str, Any]:
     s1 = await run_setup1_e2e(approved=False)
     s2 = await run_setup2_e2e(with_ob=False, approved=False)
     s3 = await run_setup3_e2e(approved=False)
+    s4 = await run_setup4_e2e(approved=False)
+    s5 = await run_setup5_e2e(approved=False)
+    s6 = await run_setup6_e2e(approved=False)
+    rows = (s1, s2, s3, s4, s5, s6)
     checks = [
         _assert("setup1_reject_no_publish", s1["publish_count"] == 0 and s1["status"] == "PASS", actual=s1["publish_count"]),
         _assert("setup2_reject_no_publish", s2["publish_count"] == 0 and s2["status"] == "PASS", actual=s2["publish_count"]),
         _assert("setup3_reject_no_publish", s3["publish_count"] == 0 and s3["status"] == "PASS", actual=s3["publish_count"]),
-        _assert("all_validated", all("validate" in s["trace"] for s in (s1, s2, s3))),
+        _assert("setup4_reject_no_publish", s4["publish_count"] == 0 and s4["status"] == "PASS", actual=s4["publish_count"]),
+        _assert("setup5_reject_no_publish", s5["publish_count"] == 0 and s5["status"] == "PASS", actual=s5["publish_count"]),
+        _assert("setup6_reject_no_publish", s6["publish_count"] == 0 and s6["status"] == "PASS", actual=s6["publish_count"]),
+        _assert("all_validated", all("validate" in s["trace"] for s in rows)),
     ]
     return {
         "id": "gate_reject_never_publishes",
-        "name": "Rejected validate never publishes setup_signals (setups 1–3)",
+        "name": "Rejected validate never publishes setup_signals (setups 1–6)",
         "status": "PASS" if all(c["pass"] for c in checks) else "FAIL",
         "assertions": checks,
         "per_setup": {
             "sweep_reclaim": {"risk_request": s1["risk_request"], "publish_count": s1["publish_count"], "trace": s1["trace"]},
             "fvg_entry": {"risk_request": s2["risk_request"], "publish_count": s2["publish_count"], "trace": s2["trace"]},
             "po3_judas": {"risk_request": s3["risk_request"], "publish_count": s3["publish_count"], "trace": s3["trace"]},
+            "sd_extension_fade": {"risk_request": s4["risk_request"], "publish_count": s4["publish_count"], "trace": s4["trace"]},
+            "vwap_pullback_cont": {"risk_request": s5["risk_request"], "publish_count": s5["publish_count"], "trace": s5["trace"]},
+            "avwap_ob_confluence": {"risk_request": s6["risk_request"], "publish_count": s6["publish_count"], "trace": s6["trace"]},
         },
     }
 
@@ -438,9 +679,13 @@ async def run_cli_replay_check() -> dict[str, Any]:
         _assert("sweep_reclaim", "sweep_reclaim" in types, actual=sorted(types)),
         _assert("fvg_or_ob", bool(types & {"fvg_entry", "ob_fvg"}), actual=sorted(types)),
         _assert("po3_judas", "po3_judas" in types, actual=sorted(types)),
-        _assert("three_signals", len(result["signals"]) == 3, actual=len(result["signals"])),
-        _assert("risk_called_per_signal", len(result["risk_calls"]) == 3, actual=len(result["risk_calls"])),
+        _assert("sd_extension_fade", "sd_extension_fade" in types, actual=sorted(types)),
+        _assert("vwap_pullback_cont", "vwap_pullback_cont" in types, actual=sorted(types)),
+        _assert("avwap_ob_confluence", "avwap_ob_confluence" in types, actual=sorted(types)),
+        _assert("six_signals", len(result["signals"]) == 6, actual=len(result["signals"])),
+        _assert("risk_called_per_signal", len(result["risk_calls"]) == 6, actual=len(result["risk_calls"])),
         _assert("risk_locked", risk_before),
+        _assert("risk_omits_factors", all("contributing_factors" not in b and "factor_breakdown" not in b for b in result["risk_calls"])),
     ]
     return {
         "id": "cli_replay",
@@ -497,7 +742,76 @@ async def build_phase2_e2e_report() -> dict[str, Any]:
             ),
             "per_setup": handshake,
         },
-        "note": "Risk validate is mocked via httpx POST to the Quant URL. Phase 3 not started.",
+        "note": "Risk validate is mocked via httpx POST to the Quant URL. Setups 1–3 handshake.",
+        "scenarios": scenarios,
+        "summary": {
+            "passed": sum(1 for s in scenarios if s["status"] == "PASS"),
+            "failed": len(failed),
+            "failed_ids": failed,
+            "overall": "PASS" if not failed else "FAIL",
+        },
+    }
+
+
+async def build_phase3_e2e_report() -> dict[str, Any]:
+    s1_ok = await run_setup1_e2e(approved=True)
+    s1_no = await run_setup1_e2e(approved=False)
+    s2_ok = await run_setup2_e2e(with_ob=False, approved=True)
+    s2_no = await run_setup2_e2e(with_ob=False, approved=False)
+    s2_ob = await run_setup2_e2e(with_ob=True, approved=True)
+    s3_ok = await run_setup3_e2e(approved=True)
+    s3_no = await run_setup3_e2e(approved=False)
+    s4_ok = await run_setup4_e2e(approved=True)
+    s4_no = await run_setup4_e2e(approved=False)
+    s5_ok = await run_setup5_e2e(approved=True)
+    s5_no = await run_setup5_e2e(approved=False)
+    s6_ok = await run_setup6_e2e(approved=True)
+    s6_no = await run_setup6_e2e(approved=False)
+    scenarios = [
+        s1_ok,
+        s1_no,
+        s2_ok,
+        s2_no,
+        s2_ob,
+        s3_ok,
+        s3_no,
+        s4_ok,
+        s4_no,
+        s5_ok,
+        s5_no,
+        s6_ok,
+        s6_no,
+        await run_gate_conviction_skips_validate(),
+        await run_gate_reject_never_publishes(),
+        await run_gate_dedupe_300s(),
+        await run_cli_replay_check(),
+    ]
+    failed = [s["id"] for s in scenarios if s["status"] != "PASS"]
+    handshake = [
+        _handshake_row(setup_type="sweep_reclaim", approve=s1_ok, reject=s1_no),
+        _handshake_row(setup_type="fvg_entry", approve=s2_ok, reject=s2_no),
+        _handshake_row(setup_type="po3_judas", approve=s3_ok, reject=s3_no),
+        _handshake_row(setup_type="sd_extension_fade", approve=s4_ok, reject=s4_no),
+        _handshake_row(setup_type="vwap_pullback_cont", approve=s5_ok, reject=s5_no),
+        _handshake_row(setup_type="avwap_ob_confluence", approve=s6_ok, reject=s6_no),
+    ]
+    return {
+        "phase": 3,
+        "branch": "cursor/ml-research-setups-4-6-d098",
+        "locked_tunables": LOCKED_TUNABLES,
+        "product_keys": LOCKED_TUNABLES["product_keys"],
+        "risk_validate_url": DEFAULT_RISK_URL,
+        "quant_replay": {
+            "start": "sniper-quant api --inmemory --port 8001",
+            "endpoint": DEFAULT_RISK_URL,
+            "note": (
+                "POST each validate_request (no id, no contributing_factors) at the Quant "
+                "in-memory API. Approve → setup_signals with id + contributing_factors; "
+                "reject → zero publish."
+            ),
+            "per_setup": handshake,
+        },
+        "note": "Risk validate is mocked via httpx POST. contributing_factors are publish-only.",
         "scenarios": scenarios,
         "summary": {
             "passed": sum(1 for s in scenarios if s["status"] == "PASS"),

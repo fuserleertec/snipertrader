@@ -82,6 +82,42 @@ class Settings(BaseSettings):
     setup3_max_bars_sweep_to_displace: int = Field(default=6, alias="SETUP3_MAX_BARS_SWEEP_TO_DISPLACE")
     setup_dedupe_window_sec: int = Field(default=300, alias="SETUP_DEDUPE_WINDOW_SEC")
     setup_min_conviction_to_validate: int = Field(default=60, alias="SETUP_MIN_CONVICTION_TO_VALIDATE")
+    setup_atr_regime_high_frac: float = Field(default=0.02, alias="SETUP_ATR_REGIME_HIGH_FRAC")
+    setup_conv_kill_zone_bonus: int = Field(default=10, alias="SETUP_CONV_KILL_ZONE_BONUS")
+    setup_conv_volume_bonus: int = Field(default=10, alias="SETUP_CONV_VOLUME_BONUS")
+    setup_conv_multi_pattern_bonus: int = Field(default=10, alias="SETUP_CONV_MULTI_PATTERN_BONUS")
+
+    # Setup 4 — sd_extension_fade
+    setup4_vol_avg_period: int = Field(default=20, alias="SETUP4_VOL_AVG_PERIOD")
+    setup4_vol_frac: float = Field(default=0.8, alias="SETUP4_VOL_FRAC")
+    setup4_min_rr: float = Field(default=1.5, alias="SETUP4_MIN_RR")
+    setup4_min_rr_at_3s: float = Field(default=2.0, alias="SETUP4_MIN_RR_AT_3S")
+    setup4_news_window_sec: int = Field(default=900, alias="SETUP4_NEWS_WINDOW_SEC")
+    setup4_min_conviction: int = Field(default=60, alias="SETUP4_MIN_CONVICTION")
+    setup4_timeframes: str = Field(default="1m,5m", alias="SETUP4_TIMEFRAMES")
+    setup4_pin_wick_ratio: float = Field(default=2.5, alias="SETUP4_PIN_WICK_RATIO")
+    setup4_band_tag_frac: float = Field(default=0.25, alias="SETUP4_BAND_TAG_FRAC")
+
+    # Setup 5 — vwap_pullback_cont
+    setup5_trend_bars: int = Field(default=20, alias="SETUP5_TREND_BARS")
+    setup5_timeframes: str = Field(default="5m", alias="SETUP5_TIMEFRAMES")
+    setup5_first_touch_lookback_bars: int = Field(default=8, alias="SETUP5_FIRST_TOUCH_LOOKBACK_BARS")
+    setup5_min_rr: float = Field(default=2.0, alias="SETUP5_MIN_RR")
+    setup5_min_conviction: int = Field(default=60, alias="SETUP5_MIN_CONVICTION")
+    setup5_pullback_tol_atr: float = Field(default=0.15, alias="SETUP5_PULLBACK_TOL_ATR")
+    setup5_strong_body_frac: float = Field(default=0.5, alias="SETUP5_STRONG_BODY_FRAC")
+    setup5_pin_wick_ratio: float = Field(default=2.5, alias="SETUP5_PIN_WICK_RATIO")
+    setup5_liquidity_lookback_bars: int = Field(default=24, alias="SETUP5_LIQUIDITY_LOOKBACK_BARS")
+
+    # Setup 6 — avwap_ob_confluence
+    setup6_min_rr: float = Field(default=2.0, alias="SETUP6_MIN_RR")
+    setup6_min_conviction: int = Field(default=70, alias="SETUP6_MIN_CONVICTION")
+    setup6_htf_timeframes: str = Field(default="1h,4h", alias="SETUP6_HTF_TIMEFRAMES")
+    setup6_wire_timeframe: str = Field(default="15m", alias="SETUP6_WIRE_TIMEFRAME")
+    setup6_swing_lookback: int = Field(default=2, alias="SETUP6_SWING_LOOKBACK")
+    setup6_daily_swing_lookback: int = Field(default=6, alias="SETUP6_DAILY_SWING_LOOKBACK")
+    setup6_approach_tol_atr: float = Field(default=0.15, alias="SETUP6_APPROACH_TOL_ATR")
+    setup6_pin_wick_ratio: float = Field(default=2.5, alias="SETUP6_PIN_WICK_RATIO")
 
     binance_api_key: str = Field(default="", alias="BINANCE_API_KEY")
     binance_api_secret: str = Field(default="", alias="BINANCE_API_SECRET")

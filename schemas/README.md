@@ -78,13 +78,18 @@ and [`risk_validate_response.schema.json`](risk_validate_response.schema.json).
 ML **omits `id`** on the request. Publish to `setup_signals` only when
 `approved: true`, then assign `id`.
 
-`setup_type` enum (Quant-locked + Setup 3 provisional):
+`setup_type` enum (Quant-locked + provisional slugs for Quant to add):
 
-| Setup | `setup_type` |
-|---|---|
-| 1 Liquidity sweep + VWAP reclaim | `sweep_reclaim` |
-| 2 FVG at VWAP / HVN | `fvg_entry` (`ob_fvg` when an order block overlaps) |
-| 3 PO3 / Judas | `po3_judas` — **Quant: please add this value** to the locked enum |
+| Setup | `setup_type` | Performance key |
+|---|---|---|
+| 1 Liquidity sweep + VWAP reclaim | `sweep_reclaim` | |
+| 2 FVG at VWAP / HVN | `fvg_entry` (`ob_fvg` when an order block overlaps) | |
+| 3 PO3 / Judas | `po3_judas` | |
+| 4 SD extension fade | `sd_extension_fade` | `4_sd_extension_fade` |
+| 5 VWAP pullback continuation | `vwap_pullback_cont` | `5_vwap_pullback_cont` |
+| 6 AVWAP + HTF OB confluence | `avwap_ob_confluence` | `6_avwap_ob_confluence` |
+
+Publish-only on `setup_signals` (never on validate): `contributing_factors` (string[]) and `factor_breakdown` (object of points).
 
 Validate body allow-list only: `schema_version`, `symbol`, `asset_class`,
 `setup_type`, `side`, `confidence` (conviction/100), `ref_vwap`,

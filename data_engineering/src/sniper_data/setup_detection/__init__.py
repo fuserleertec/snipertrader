@@ -1,4 +1,4 @@
-"""USME setup detection (Phase 2) — setups 1–3.
+"""USME setup detection (Phase 3) — setups 1–6.
 
 Consumes landed DE Kafka topics and Redis keys only. Candidates go to
 Quant ``POST /risk/validate`` (no ``id``) and, if ``approved: true``,

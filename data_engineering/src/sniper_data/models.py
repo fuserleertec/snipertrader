@@ -188,6 +188,9 @@ SETUP_TYPES = (
     "sweep_mss",
     "ob_fvg",
     "po3_judas",
+    "sd_extension_fade",
+    "vwap_pullback_cont",
+    "avwap_ob_confluence",
 )
 
 SetupType = Literal[
@@ -198,7 +201,17 @@ SetupType = Literal[
     "sweep_mss",
     "ob_fvg",
     "po3_judas",
+    "sd_extension_fade",
+    "vwap_pullback_cont",
+    "avwap_ob_confluence",
 ]
+
+# Quant GET /performance/summary product keys (docs / metadata alignment).
+SETUP_PRODUCT_KEYS = {
+    "sd_extension_fade": "4_sd_extension_fade",
+    "vwap_pullback_cont": "5_vwap_pullback_cont",
+    "avwap_ob_confluence": "6_avwap_ob_confluence",
+}
 
 RISK_TIMEFRAMES = ("1m", "5m", "15m")
 RiskTimeframe = Literal["1m", "5m", "15m"]
@@ -245,6 +258,8 @@ class SetupSignal(BaseModel):
     session_type: SessionType | None = None
     position_size: float | None = None
     status: Literal["ACTIVE", "TP_HIT", "SL_HIT", "CANCELLED"] | None = None
+    contributing_factors: list[str] | None = None
+    factor_breakdown: dict[str, float] | None = None
 
 
 class RiskValidateRequest(BaseModel):

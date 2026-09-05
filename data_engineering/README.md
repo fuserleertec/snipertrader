@@ -1,4 +1,4 @@
-# SniperTrader data-engineering — Phase 1 (Rev. 1.1) + Phase 2
+# SniperTrader data-engineering — Phase 1 (Rev. 1.1) + Phase 2 + Phase 3
 
 Streaming market-data pipeline and **correct VWAP** (volume-weighted variance)
 for SniperTrader.ai. This package lives beside the static site; it does not
@@ -174,7 +174,15 @@ All secrets are environment variables. See [`.env.example`](.env.example).
 | `SETUP3_REQUIRE_BAND_TAG` | `true` | Sweep must tag ±1σ or ±2σ |
 | `SETUP3_MAX_BARS_SWEEP_TO_DISPLACE` | `6` | Expire Judas if no displacement |
 | `SETUP_DEDUPE_WINDOW_SEC` | `300` | Orchestrator dedupe window |
-| `SETUP_MIN_CONVICTION_TO_VALIDATE` | `60` | Skip risk if conviction below this |
+| `SETUP_MIN_CONVICTION_TO_VALIDATE` | `60` | Skip risk if conviction below this (S6 uses 70) |
+| `SETUP_ATR_REGIME_HIGH_FRAC` | `0.02` | ATR/price ≥ this → high-vol regime (S4 requires ±3σ) |
+| `SETUP4_VOL_FRAC` / `SETUP4_VOL_AVG_PERIOD` | `0.8` / `20` | Low-volume confirm |
+| `SETUP4_MIN_RR` / `SETUP4_MIN_RR_AT_3S` | `1.5` / `2.0` | Fade R:R (prefer 2.0 at 3σ) |
+| `SETUP4_NEWS_WINDOW_SEC` | `900` | News skip window (stub allows if no feed) |
+| `SETUP5_TREND_BARS` | `20` | 5m bars above/below rising/falling VWAP |
+| `SETUP5_MIN_RR` | `2.0` | Pullback continuation R:R |
+| `SETUP6_MIN_RR` / `SETUP6_MIN_CONVICTION` | `2.0` / `70` | AVWAP+OB confluence |
+| `SETUP6_HTF_TIMEFRAMES` | `1h,4h` | HTF rejection / OB book |
 | `BINANCE_*` / `ALPACA_*` | empty | Live stubs only |
 
 ## Exchange adapters
@@ -297,7 +305,7 @@ sniper-data pipeline [--inmemory] [--duration N]
 sniper-data demo     [--inmemory] [--duration N]   # alias of pipeline
 sniper-data patterns [--inmemory] [--duration N]
 sniper-data patterns --inmemory --replay           # ICT fixtures + swing→anchor wiring
-sniper-data setups   --inmemory                    # USME setups 1–3 fixtures + mock risk
+sniper-data setups   --inmemory                    # USME setups 1–6 fixtures + mock risk
 sniper-data setups   --inmemory --replay           # same
 sniper-data api      [--host 0.0.0.0 --port 8000]
 sniper-data evict    [--inmemory]
@@ -460,11 +468,46 @@ sniper-data setups --inmemory
 sniper-data setups --e2e-report --e2e-out /tmp/phase2_e2e_report.json
 ```
 
-`--e2e-report` is the Phase 2 PM integration pack (setups 1–3 through
+`--e2e-report` is the Phase 3 PM integration pack (setups 1–6 through
 mocked `POST /risk/validate`, plus conviction / reject / dedupe gates).
 It writes `quant_replay/` next to `--e2e-out` so Quant can replay locked
 validate JSON against `sniper-quant api --inmemory --port 8001`.
-It does not start Phase 3.
+
+## Phase 3 — Setups 4–6 + full orchestrator
+
+Detectors 4–6 run **in parallel** with 1–3. Same risk gate: `POST /risk/validate`
+with the locked field allow-list (**omit `id`**, omit `contributing_factors` /
+`factor_breakdown`). Publish to `setup_signals` only when `approved: true`.
+
+| Setup | `setup_type` | Quant `GET /performance/summary` key | Rule |
+|---|---|---|---|
+| 4 | `sd_extension_fade` | `4_sd_extension_fade` | Session VWAP `vwap:{symbol}:session` flat `band_m2`/`band_p2`/`band_m3`/`band_p3`. Trigger ±2σ or ±3σ. Volume &lt; 80% of 20-bar avg. Rejection: engulfing / pin (hammer / shooting star) / 1m–5m MSS. Long lower band, short upper. SL beyond ±3σ, TP = session VWAP. min_rr 1.5 (prefer 2.0 at 3σ). Conviction ≥ 60. |
+| 5 | `vwap_pullback_cont` | `5_vwap_pullback_cont` | Rising session VWAP + price above for N=20 5m bars (falling / below → short). Pullback to VWAP or ±1σ with OB or FVG. First clean VWAP touch (tunable lookback). Confirm engulfing or strong trend candle. SL behind swing, TP structure liquidity. min_rr 2.0, conviction ≥ 60. |
+| 6 | `avwap_ob_confluence` | `6_avwap_ob_confluence` | Phase 2 AVWAP **nested bands only** on `avwap:{symbol}:{anchor_id}` (`vwap_value` + `bands.plus_1_sigma`…`minus_3_sigma`, no `schema_version`, **not** Phase 1 `band_p1`). HTF OB 1h/4h. Confluence: AVWAP line inside OB `[low, high]`. Rejection or MSS on 1h/4h. SL past opposite OB side, TP HTF swing liquidity. min_rr 2.0, conviction ≥ 70. Wire `timeframe` is `15m` (Quant validate enum). Daily HTF = wide 4h swing proxy. |
+
+**AVWAP vs session VWAP (do not mix):**
+
+* Setups 4–5 read Phase 1 `vwap:{symbol}:session` (`VWAPValues` with flat `band_m1`…`band_p3`).
+* Setup 6 reads Phase 2 `avwap:{symbol}:{anchor_id}` (`AnchoredVWAP` nested `bands`).
+
+**News filter (Setup 4):** no calendar feed ships in-repo. `AllowAllNewsFilter` is the
+default stub (always allow). Plug in `SkipWindowNewsFilter({symbol: [ts_ms, …]})` or
+any `NewsFilter.should_skip(symbol, ts_ms, *, window_ms)` implementation. Window =
+`SETUP4_NEWS_WINDOW_SEC` (900s / 15m).
+
+**Orchestrator:** all six detectors via `asyncio.gather`. Pre-filter and post-filter
+candidates are logged. Dedupe same symbol + direction within `SETUP_DEDUPE_WINDOW_SEC`
+(300s) keeps highest conviction, else earliest `ts_ms`. Conviction is refined with
+kill-zone, volume-confirm, and multi-pattern bonuses (env-tunable). High ATR regime
+(`SETUP_ATR_REGIME_HIGH_FRAC`) forces Setup 4 to require a ±3σ tag.
+
+Publish-only fields on `setup_signals`: `contributing_factors` (string[]) and
+`factor_breakdown` (points). Validate must not include them.
+
+```bash
+sniper-data setups --inmemory
+sniper-data setups --e2e-report --e2e-out /tmp/phase3_e2e_report.json
+```
 
 Pattern-detector in-memory demo (sweeps / FVG / MSS / anchors, not setups):
 

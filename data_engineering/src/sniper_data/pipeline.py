@@ -394,7 +394,7 @@ async def run_setup_replay() -> dict[str, Any]:
 
 
 async def run_setup_loop(*, inmemory: bool = False, duration_s: float | None = None) -> dict[str, Any]:
-    """Live consumer: DE topics → setups 1–3 → risk → ``setup_signals``."""
+    """Live consumer: DE topics → setups 1–6 → risk → ``setup_signals``."""
     from sniper_data.setup_detection.orchestrator import SetupOrchestrator, subscribe_inmemory
     from sniper_data.setup_detection.risk_client import HttpRiskClient
 
@@ -426,17 +426,27 @@ async def run_setup_loop(*, inmemory: bool = False, duration_s: float | None = N
         except Exception as exc:  # noqa: BLE001
             log.warning("setup consumer %s: %s", topic, exc)
 
-    from sniper_data.models import FVGZone, KillZoneEvent, MssEvent, OHLCVBar, SessionLevels, SweepEvent, VWAPValues
+    from sniper_data.models import (
+        FVGZone,
+        KillZoneEvent,
+        MssEvent,
+        OHLCVBar,
+        OrderBlock,
+        SessionLevels,
+        SweepEvent,
+        VWAPValues,
+    )
 
     tasks = [
         asyncio.create_task(_consume("sweep_events", lambda p: _sync(orch.on_sweep, SweepEvent.model_validate(p)))),
         asyncio.create_task(_consume("mss_events", lambda p: _sync(orch.on_mss, MssEvent.model_validate(p)))),
         asyncio.create_task(_consume("fvg_zones", lambda p: _sync(orch.on_fvg, FVGZone.model_validate(p)))),
+        asyncio.create_task(_consume("order_block_zones", lambda p: _sync(orch.on_ob, OrderBlock.model_validate(p)))),
         asyncio.create_task(_consume("ohlcv_bars", lambda p: orch.on_bar(OHLCVBar.model_validate(p)))),
         asyncio.create_task(_consume("session_levels", lambda p: _sync(orch.on_session, SessionLevels.model_validate(p)))),
         asyncio.create_task(_consume("vwap_values", lambda p: _sync(orch.on_vwap, VWAPValues.model_validate(p)))),
         asyncio.create_task(_consume("kill_zone_events", lambda p: _sync(orch.on_kill_zone, KillZoneEvent.model_validate(p)))),
-        asyncio.create_task(_consume("anchor_events", lambda _p: asyncio.sleep(0))),
+        asyncio.create_task(_consume("anchor_events", lambda p: _sync(orch.setup6.on_anchor, p))),
     ]
     try:
         if duration_s is not None:

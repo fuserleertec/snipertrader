@@ -29,7 +29,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--e2e-report",
         action="store_true",
-        help="(setups) Phase 2 PM integration report (in-memory; no Phase 3).",
+        help="(setups) Phase 3 PM integration report (setups 1–6, in-memory).",
     )
     parser.add_argument(
         "--e2e-out",
@@ -49,9 +49,9 @@ def main(argv: list[str] | None = None) -> int:
         from sniper_data.pipeline import run_setup_loop, run_setup_replay
 
         if args.e2e_report or args.e2e_out:
-            from sniper_data.setup_detection.e2e import build_phase2_e2e_report, write_quant_replay_pack
+            from sniper_data.setup_detection.e2e import build_phase3_e2e_report, write_quant_replay_pack
 
-            report = asyncio.run(build_phase2_e2e_report())
+            report = asyncio.run(build_phase3_e2e_report())
             text = json.dumps(report, indent=2, default=str)
             print(text)
             if args.e2e_out:

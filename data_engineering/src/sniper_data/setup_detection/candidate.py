@@ -42,6 +42,10 @@ class SetupCandidate:
     proposed_position_size: float | None = None
     risk_reward: float = 0.0
     kill_zone: str | None = None
+    contributing_factors: list[str] = field(default_factory=list)
+    factor_breakdown: dict[str, float] = field(default_factory=dict)
+    volume_confirmed: bool = False
+    kill_zone_aligned: bool = False
     notes: dict[str, Any] = field(default_factory=dict)
 
     @property
@@ -63,6 +67,9 @@ class SetupCandidate:
             "stop": self.stop,
             "target": self.target,
             "trigger_event_ids": list(self.trigger_event_ids),
+            "contributing_factors": list(self.contributing_factors),
+            "factor_breakdown": dict(self.factor_breakdown),
+            "ref_vwap": self.ref_vwap,
         }
 
 
@@ -126,6 +133,8 @@ def to_setup_signal(
         session_type=session,
         position_size=position_size,
         status="ACTIVE",
+        contributing_factors=list(candidate.contributing_factors) or None,
+        factor_breakdown=dict(candidate.factor_breakdown) or None,
     )
 
 
@@ -155,3 +164,19 @@ def score_conviction(
     if confirmed_reclaim:
         score += 10
     return max(0, min(100, score))
+
+
+def breakdown_from_factors(
+    factors: list[str],
+    *,
+    base: int = 40,
+    extras: dict[str, float] | None = None,
+) -> dict[str, float]:
+    """Publish-only per-factor points. Not sent to /risk/validate."""
+    out: dict[str, float] = {"base": float(base)}
+    for name in factors:
+        out[name] = out.get(name, 0.0) + 10.0
+    if extras:
+        for key, val in extras.items():
+            out[key] = float(val)
+    return out

@@ -10,6 +10,7 @@ from sniper_data.models import RISK_VALIDATE_FIELDS
 from sniper_data.setup_detection.e2e import (
     LOCKED_TUNABLES,
     build_phase2_e2e_report,
+    build_phase3_e2e_report,
     run_cli_replay_check,
     run_gate_conviction_skips_validate,
     run_gate_dedupe_300s,
@@ -17,6 +18,9 @@ from sniper_data.setup_detection.e2e import (
     run_setup1_e2e,
     run_setup2_e2e,
     run_setup3_e2e,
+    run_setup4_e2e,
+    run_setup5_e2e,
+    run_setup6_e2e,
     write_quant_replay_pack,
 )
 from sniper_data.setup_detection.params import SetupParams
@@ -91,8 +95,77 @@ async def test_e2e_dedupe_300s_keeps_highest_conviction():
 
 
 @pytest.mark.asyncio
-async def test_e2e_cli_inmemory_replay_all_three():
+async def test_e2e_cli_inmemory_replay_all_six():
     _require_pass(await run_cli_replay_check())
+
+
+@pytest.mark.asyncio
+async def test_e2e_setup4_sd_extension_fade_approve_and_reject():
+    ok = await run_setup4_e2e(approved=True)
+    no = await run_setup4_e2e(approved=False)
+    _require_pass(ok)
+    _require_pass(no)
+    assert ok["setup_type"] == "sd_extension_fade"
+    assert ok["product_key"] == "4_sd_extension_fade"
+    assert ok["trace"][0] == "validate"
+    assert ok["trace"][1] == "publish:setup_signals"
+    assert "contributing_factors" in ok["published_signal"]
+    assert ok["published_signal"]["factor_breakdown"]
+    assert "id" not in ok["risk_request"]
+    assert "contributing_factors" not in ok["risk_request"]
+    assert no["publish_count"] == 0
+    assert no["published_signal"] is None
+
+
+@pytest.mark.asyncio
+async def test_e2e_setup5_vwap_pullback_cont_approve_and_reject():
+    ok = await run_setup5_e2e(approved=True)
+    no = await run_setup5_e2e(approved=False)
+    _require_pass(ok)
+    _require_pass(no)
+    assert ok["setup_type"] == "vwap_pullback_cont"
+    assert ok["product_key"] == "5_vwap_pullback_cont"
+    assert ok["trace"][0] == "validate"
+    assert ok["published_signal"]["factor_breakdown"]
+    assert "factor_breakdown" not in ok["risk_request"]
+    assert no["publish_count"] == 0
+
+
+@pytest.mark.asyncio
+async def test_e2e_setup6_avwap_ob_confluence_approve_and_reject():
+    ok = await run_setup6_e2e(approved=True)
+    no = await run_setup6_e2e(approved=False)
+    _require_pass(ok)
+    _require_pass(no)
+    assert ok["setup_type"] == "avwap_ob_confluence"
+    assert ok["product_key"] == "6_avwap_ob_confluence"
+    assert ok["trace"][0] == "validate"
+    assert ok["published_signal"]["ref_vwap"] == 100.0
+    assert ok["published_signal"]["factor_breakdown"]
+    assert no["publish_count"] == 0
+
+
+@pytest.mark.asyncio
+async def test_e2e_phase3_report_overall_pass():
+    report = await build_phase3_e2e_report()
+    assert report["summary"]["overall"] == "PASS", report["summary"]
+    assert report["phase"] == 3
+    rows = report["quant_replay"]["per_setup"]
+    assert {r["setup_type"] for r in rows} >= {
+        "sd_extension_fade",
+        "vwap_pullback_cont",
+        "avwap_ob_confluence",
+    }
+    for row in rows:
+        req = row["validate_request"]
+        assert "id" not in req
+        assert "contributing_factors" not in req
+        assert "factor_breakdown" not in req
+        assert set(req) <= set(RISK_VALIDATE_FIELDS)
+        sig = row["mocked_approve"]["published_setup_signal"]
+        assert sig["id"]
+        assert row["mocked_approve"]["publish_count"] == 1
+        assert row["mocked_reject"]["publish_count"] == 0
 
 
 @pytest.mark.asyncio
