@@ -47,13 +47,14 @@ JSON Schema: [`schemas/risk_validate_request.schema.json`](../schemas/risk_valid
 | `setup_type` | Intent |
 |---|---|
 | `sweep_reclaim` | Setup 1 — Liquidity sweep + VWAP reclaim |
-| `fvg_entry` | Setup 2 — Fair-value gap at VWAP / HVN |
+| `fvg_entry` | Setup 2 — Fair-value gap at VWAP / HVN (overlaps publish as this name only; `ob_fvg` → 422) |
 | `po3_judas` | Setup 3 — Power of Three / Judas swing |
 | `sd_extension_fade` | Setup 4 — SD extension fade (2σ/3σ → VWAP) |
 | `vwap_pullback_cont` | Setup 5 — VWAP / 1σ pullback continuation |
 | `avwap_ob_confluence` | Setup 6 — AVWAP + HTF order-block confluence |
 
-Unknown values → HTTP **422**.
+Unknown values → HTTP **422**. `ob_fvg` is dormant (PR #9 E2E alias is
+**not** accepted here). Setup 2 overlaps must publish as `fvg_entry`.
 
 ### Request (omit `id`)
 

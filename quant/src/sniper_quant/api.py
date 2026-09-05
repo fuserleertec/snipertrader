@@ -54,7 +54,9 @@ gate, lifecycle TP/SL, performance, alerts (stubs), paper book.
 `vwap_pullback_cont` · `avwap_ob_confluence`
 
 Dormant (`mss_break`, `order_block`, `sweep_mss`, `ob_fvg`) → HTTP **422**.
-Do not walk-forward dormant types.
+Do not walk-forward dormant types. Setup 2 overlaps publish as
+`fvg_entry` only — there is **no** `ob_fvg` accept path or alias on
+`POST /risk/validate`.
 
 `POST /risk/validate` is required before Kafka `setup_signals` or
 `POST /signals`. **Omit `id`.** `contributing_factors` and

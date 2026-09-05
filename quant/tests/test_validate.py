@@ -153,6 +153,20 @@ def test_openapi_and_health():
     }
 
 
+def test_ob_fvg_never_accepted_on_validate_or_publish():
+    """PM: Setup 2 overlaps publish as fvg_entry only. No validate alias."""
+    from sniper_quant.models import SetupType
+
+    assert "ob_fvg" not in {m.value for m in SetupType}
+    http, _ = _client()
+    body = _payload(setup_type="ob_fvg")
+    assert http.post("/risk/validate", json=body).status_code == 422
+    assert http.post("/signals", json=body).status_code == 422
+    assert http.get("/signals").json()["items"] == []
+    ok = http.post("/risk/validate", json=_payload(setup_type="fvg_entry")).json()
+    assert ok["approved"] is True
+
+
 def test_validate_session_and_proposed_size():
     http, _ = _client()
     ok = http.post(

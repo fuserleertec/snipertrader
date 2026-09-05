@@ -65,6 +65,8 @@ HTF for S6 is synthesized from 5m (12≈1h, 48≈4h, calendar day≈1d). Validat
 ## 2) Risk API
 
 Locked enum (422 on dormant): `sweep_reclaim`, `fvg_entry`, `po3_judas`, `sd_extension_fade`, `vwap_pullback_cont`, `avwap_ob_confluence`.
+`ob_fvg` is **not** accepted on `POST /risk/validate` or `POST /signals` (422, no alias).
+Setup 2 overlaps publish as `fvg_entry` only.
 
 | setup | min RR | min conviction | extra |
 |---|---|---|---|

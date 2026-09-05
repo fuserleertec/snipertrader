@@ -3,6 +3,8 @@
 Six live values on ``POST /risk/validate``. Dormant names
 (``mss_break``, ``order_block``, ``sweep_mss``, ``ob_fvg``) are **not**
 in the enum — 422 if sent. Do not walk-forward dormant types.
+Setup 2 overlaps publish as ``fvg_entry`` only — no ``ob_fvg`` alias
+on validate.
 
 ``contributing_factors`` is publish-only (Kafka / ingest). It is **not**
 on the validate candidate.
