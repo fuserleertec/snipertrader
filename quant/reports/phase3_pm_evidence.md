@@ -12,11 +12,11 @@ PR https://github.com/fuserleertec/snipertrader/pull/2
 | 1 | Backtest Setups 4–6 | **PASS** | [`quant/reports/setups_4_6_walkforward.md`](setups_4_6_walkforward.md). Enum excludes `mss_break` / `order_block` / `sweep_mss`. FE `product_key` for 4–6 is `*_pending_user_confirm` — no invented entry-rule names. |
 | 2 | Risk API (S4–S6 rules + validate-before-publish) | **PASS** | `tests/test_phase3.py` + `tests/test_validate.py` + `tests/test_pr9_replay.py`. Reasons: `invalid_levels`, `news_window`, `low_conviction`, plus existing size/daily/corr/conflict. |
 | 3 | Alerts (Telegram/Discord/Email/webhook) + 5/hour throttle | **PASS** | `test_alerts_four_channels_and_throttle`: 4 stubs, max 5/hour/user, extras throttled. |
-| 4 | Public API auth + history + performance + load 100 | **PASS** | `GET /signals/history`, `GET /performance/summary` `by_setup` product keys, `X-API-Key` optional. Load: **p95 = 50.52 ms** (target &lt; 200 ms). |
+| 4 | Public API auth + history + performance + load 100 | **PASS** | `GET /signals/history`, `GET /performance/summary` `by_setup` product keys, `X-API-Key` optional. Load: **p95 = 56.37 ms** (target &lt; 200 ms). |
 | 5 | Paper 2-week gate | **PASS** | `POST /paper/demo-fortnight` → 14 days, 12 closed trades, `live_trading: false`. |
 | 6 | ML PR #9 sample replay | **PASS** | `tests/fixtures/pr9_quant_replay/*.validate.json` approve on `/risk/validate`. Factors 422 on validate, stored on publish. |
 
-**pytest:** `cd quant && PYTHONPATH=src python3 -m pytest -q -k "not test_walkforward_setups and not test_cli_backtest"` → **95 passed** (re-measured this revision).
+**pytest:** `cd quant && PYTHONPATH=src python3 -m pytest -q -k "not test_walkforward_setups and not test_cli_backtest"` → **95 passed**, 3 deselected (2026-09-05).
 
 ## PR #9 tunable alignment
 
@@ -85,7 +85,7 @@ Stubs only (no network). Channels: `telegram`, `discord`, `email`, `webhook`. Im
 - History: `GET /signals` **and** `GET /signals/history` (same list; `side` filter added).
 - Performance: `GET /performance/summary` → `by_setup` keyed by `setup_type` (`sweep_reclaim`, `fvg_entry`, `po3_judas`, `mss_break`, `order_block`, `sweep_mss`). `product_key` lock: `1_liquidity_sweep_vwap_reclaim`, `2_fvg_mitigation_vwap`, `3_po3_asia_range_sweep` (not `3_po3_judas`), `4_pending_user_confirm`, `5_pending_user_confirm`, `6_pending_user_confirm`. Do not invent Setup 4–6 entry-rule names. Drift: rolling 20-trade WR &lt; 45% → `drift_warning`.
 - Auth: `SNIPER_API_KEY` → require `X-API-Key` (default **off**). Optional `RATE_LIMIT_PER_MIN`.
-- Load methodology: **100 concurrent** in-process `TestClient` threads (`GET /signals?limit=20`), not 100 real sockets. Measured: min 8.08 ms · p50 30.37 ms · **p95 50.52 ms** · p99 61.19 ms · max 62.30 ms. Target p95 &lt; 200 ms → **PASS**.
+- Load methodology: **100 concurrent** in-process `TestClient` threads (`GET /signals?limit=20`), not 100 real sockets. Measured (2026-09-05): min 8.35 ms · p50 32.48 ms · **p95 56.37 ms** · p99 65.44 ms · max 71.42 ms. Target p95 &lt; 200 ms → **PASS**.
 
 ## 5) Paper (2-week gate, no broker)
 
@@ -110,6 +110,12 @@ fixture world (`BTCUSDT`, session VWAP 100):
 | `vwap_pullback_cont.validate.json` | long 101.3 / 99.45 / 108, conf 0.70, 5m | **approve** |
 | `avwap_ob_confluence.validate.json` | long 100.3 / 98.95 / 108, conf 0.75, 15m | **approve** |
 
+Live in-memory API replay (2026-09-05, `:8001`): S4/S5/S6 all
+`approved: true` / `reason: ok` (S4 R:R 1.60 ≥ 1.5; S5 3.62 ≥ 2.0;
+S6 5.70 ≥ 2.0, conviction 75 ≥ 70). Factors on validate → **422**.
+`POST /paper/demo-fortnight` → 14 days, 12 closed, `live_trading: false`.
+`POST /alerts/subscribe` → 4 channels, `max_per_hour: 5`.
+
 Rejects (never persist): S4 `ts_ms` in stub news window → `news_window`;
 S5 flattened R:R → `invalid_levels`; S6 `confidence=0.65` → `low_conviction`
-+ `POST /signals` **409**. Factors on validate → **422**.
++ `POST /signals` **409**.

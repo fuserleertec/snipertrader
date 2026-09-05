@@ -389,7 +389,7 @@ PYTHONPATH=src python3 -m pytest -q tests/test_phase3.py -k load
 
 - Target: `GET /signals` p95 **< 200 ms** under 100 concurrent in-process
   clients (`USE_INMEMORY=1`).
-- Last measured p95: **50.52 ms** (2026-04-07).
+- Last measured p95: **56.37 ms** (2026-09-05).
 
 ### Paper
 
