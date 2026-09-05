@@ -29,10 +29,18 @@ npm run dev:dashboard
 
 Full notes: [`DEPLOY.md`](./DEPLOY.md) (short copy in [`PREVIEW.md`](./PREVIEW.md)).
 
+**Paper preview (P0 #2, closed pass):**
+[https://snipertrader-dashboard-36y96ypn3-sniper-8ee72a26.vercel.app](https://snipertrader-dashboard-36y96ypn3-sniper-8ee72a26.vercel.app)
+
+Separate Vercel project, **Root Directory = `frontend`**,
+`NEXT_PUBLIC_USE_MOCKS=true`. That project reads
+[`frontend/vercel.json`](./vercel.json) (`"framework": "nextjs"`) so root
+`vercel.json` (`"framework": null` + marketing crons) never applies.
+
 | Project | Root Directory (Vercel setting) | Serves |
 |---|---|---|
 | **Marketing (live)** | `null` / `.` — **do not change** | static `*.html` + `api/*` + recon **crons**. Config: repo-root `vercel.json` |
-| **Dashboard (FE)** | **`frontend`** — FE must set this | Next.js Conviction Terminal. Config: [`frontend/vercel.json`](./vercel.json) (`"framework": "nextjs"`) |
+| **Dashboard (FE)** | **`frontend`** — required | Next.js Conviction Terminal. Config: [`frontend/vercel.json`](./vercel.json) |
 
 `rootDirectory` is a dashboard setting, not a `vercel.json` key. The marketing
 Git project (`snipertrader`, Root Directory = null) will keep previewing

@@ -203,7 +203,7 @@ export function buildDrawModelFromOverlays(input: {
   const showSweep = viewAllows(preset, "sweep");
   const showMss = viewAllows(preset, "mss");
   const showAsia = viewAllows(preset, "asia");
-  const restrictToTriggers = preset !== "all" && highlight.size > 0 && (preset === "fvg_ob" || preset === "sweep_reclaim");
+  const restrictToTriggers = preset !== "all" && highlight.size > 0;
 
   const zones: ZoneDraw[] = [];
   const lines: PatternDrawModel["lines"] = [];
@@ -211,7 +211,7 @@ export function buildDrawModelFromOverlays(input: {
 
   for (const ov of overlays) {
     if (ov.kind === "zone" && ov.source === "fvg" && showFvg) {
-      if (restrictToTriggers && preset === "fvg_ob" && !highlight.has(ov.id)) continue;
+      if (restrictToTriggers && !highlight.has(ov.id)) continue;
       const colors = fvgColors(ov.direction, !!ov.mitigated, highlight.has(ov.id));
       zones.push({
         id: ov.id,
@@ -226,7 +226,7 @@ export function buildDrawModelFromOverlays(input: {
       });
     }
     if (ov.kind === "zone" && ov.source === "ob" && showOb) {
-      if (restrictToTriggers && preset === "fvg_ob" && !highlight.has(ov.id)) continue;
+      if (restrictToTriggers && !highlight.has(ov.id)) continue;
       const colors = obColors(ov.direction, !!ov.mitigated, highlight.has(ov.id));
       zones.push({
         id: ov.id,
@@ -254,9 +254,9 @@ export function buildDrawModelFromOverlays(input: {
       });
     }
     if (ov.kind === "marker" && ov.source === "sweep" && showSweep) {
-      if (preset === "sweep_reclaim" && highlight.size > 0 && !highlight.has(ov.id)) continue;
+      if (restrictToTriggers && !highlight.has(ov.id)) continue;
       const sw = book.sweeps.find((s) => s.id === ov.id);
-      if (preset === "po3_judas" && sw) {
+      if (preset === "po3_judas" && !restrictToTriggers && sw) {
         const extreme = book.sweeps.filter((row) => asiaExtremeSweep(row, asia));
         if (extreme.length && !extreme.some((row) => row.id === ov.id) && !highlight.has(ov.id)) {
           continue;
@@ -274,7 +274,7 @@ export function buildDrawModelFromOverlays(input: {
       });
     }
     if (ov.kind === "marker" && ov.source === "mss" && showMss) {
-      if (preset === "sweep_reclaim" && highlight.size > 0 && !highlight.has(ov.id)) continue;
+      if (restrictToTriggers && !highlight.has(ov.id)) continue;
       const ev = book.mss.find((m) => m.id === ov.id);
       lines.push({
         id: ov.id,

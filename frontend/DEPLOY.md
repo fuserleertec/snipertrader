@@ -30,11 +30,20 @@ PR previews on **this** Git connection are marketing HTML. `/` is
 
 ## Project B — Conviction Terminal (FE must create / link)
 
+**Live paper preview (P0 #2 closed pass):**
+https://snipertrader-dashboard-36y96ypn3-sniper-8ee72a26.vercel.app
+
+Separate Vercel project. Root Directory = `frontend`.
+`NEXT_PUBLIC_USE_MOCKS=true`. Confirmed Next HTML (`Conviction Terminal`),
+not marketing `index.html`.
+
 Frontend confirmed: the Next app **must** use
 
 **Root Directory = `frontend`.**
 
-Create a **second** Vercel project (do not edit Project A):
+[`frontend/vercel.json`](./vercel.json) sets `"framework": "nextjs"` so a
+deploy whose cwd / Root Directory is `frontend/` does not inherit repo-root
+`"framework": null`. Create a **second** Vercel project (do not edit Project A):
 
 | Setting | Value |
 |---|---|

@@ -9,7 +9,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { inferAssetClass } from "@/lib/constants";
 import { isLivePatternWs, wsBase } from "@/lib/env";
 import { overlayForSetup, parseOverlayParam } from "@/lib/setups";
-import { overlayForFilter } from "@/lib/setupView";
+import { overlayForFilter, resolveSelected } from "@/lib/setupView";
 import { useSearchParams } from "next/navigation";
 import type { QepMode } from "@/lib/mocks/terminal";
 import { dropUniverse } from "@/lib/mocks/universe";
@@ -34,6 +34,7 @@ export function Dashboard() {
     () => parseOverlayParam(params.get("overlay")) ?? "all",
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedSnap, setSelectedSnap] = useState<Signal | null>(null);
   const [soundOn, setSoundOn] = useState(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [tick, setTick] = useState(0);
@@ -48,9 +49,17 @@ export function Dashboard() {
     if (market.lastPrice != null) priceRef.current = market.lastPrice;
   }, [market.lastPrice]);
   const allSignals = useSignals(symbol, () => priceRef.current);
-  const selected = selectedId ? allSignals.find((row) => row.id === selectedId) ?? null : null;
+  const selected = resolveSelected(allSignals, selectedId, selectedSnap);
   const patterns = usePatterns(symbol);
   const performance = usePerformance(tick);
+
+  useEffect(() => {
+    if (!selectedId) {
+      setSelectedSnap(null);
+      return;
+    }
+    if (selected) setSelectedSnap(selected);
+  }, [selectedId, selected]);
 
   useEffect(() => {
     if (!primedHigh.current) {

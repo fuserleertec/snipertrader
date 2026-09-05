@@ -2,6 +2,14 @@
 
 Canonical deploy notes: [`DEPLOY.md`](./DEPLOY.md).
 
+## Paper preview (P0 #2 closed pass)
+
+https://snipertrader-dashboard-36y96ypn3-sniper-8ee72a26.vercel.app
+
+Separate Vercel project · Root Directory = `frontend` ·
+`NEXT_PUBLIC_USE_MOCKS=true` · [`frontend/vercel.json`](./vercel.json)
+(`"framework": "nextjs"`).
+
 ## Confirmed facts
 
 - sniperteam: the Git-connected Vercel project **`snipertrader`** has
