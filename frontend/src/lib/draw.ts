@@ -1,3 +1,4 @@
+import { viewAllows } from "./setupView";
 import type {
   KillZoneEvent,
   Overlay,
@@ -197,15 +198,12 @@ export function buildDrawModelFromOverlays(input: {
   sessions?: SessionLevels[];
 }): PatternDrawModel {
   const { preset, overlays, book, highlight, asia, killZone, sessions = [] } = input;
-  const setup1 = preset === "sweep_reclaim";
-  const setup2 = preset === "fvg_ob";
-  const setup3 = preset === "po3_judas";
-  const all = preset === "all";
-  const showFvg = all || setup2 || preset === "vwap_pullback_cont";
-  const showOb = all || setup2 || preset === "vwap_pullback_cont" || preset === "avwap_ob_confluence";
-  const showSweep = all || setup1 || setup3;
-  const showMss = all || setup1;
-  const showAsia = all || setup3;
+  const showFvg = viewAllows(preset, "fvg");
+  const showOb = viewAllows(preset, "ob");
+  const showSweep = viewAllows(preset, "sweep");
+  const showMss = viewAllows(preset, "mss");
+  const showAsia = viewAllows(preset, "asia");
+  const restrictToTriggers = preset !== "all" && highlight.size > 0;
 
   const zones: ZoneDraw[] = [];
   const lines: PatternDrawModel["lines"] = [];
@@ -213,6 +211,7 @@ export function buildDrawModelFromOverlays(input: {
 
   for (const ov of overlays) {
     if (ov.kind === "zone" && ov.source === "fvg" && showFvg) {
+      if (restrictToTriggers && !highlight.has(ov.id)) continue;
       const colors = fvgColors(ov.direction, !!ov.mitigated, highlight.has(ov.id));
       zones.push({
         id: ov.id,
@@ -227,6 +226,7 @@ export function buildDrawModelFromOverlays(input: {
       });
     }
     if (ov.kind === "zone" && ov.source === "ob" && showOb) {
+      if (restrictToTriggers && !highlight.has(ov.id)) continue;
       const colors = obColors(ov.direction, !!ov.mitigated, highlight.has(ov.id));
       zones.push({
         id: ov.id,
@@ -254,8 +254,9 @@ export function buildDrawModelFromOverlays(input: {
       });
     }
     if (ov.kind === "marker" && ov.source === "sweep" && showSweep) {
+      if (restrictToTriggers && !highlight.has(ov.id)) continue;
       const sw = book.sweeps.find((s) => s.id === ov.id);
-      if (setup3 && sw) {
+      if (preset === "po3_judas" && !restrictToTriggers && sw) {
         const extreme = book.sweeps.filter((row) => asiaExtremeSweep(row, asia));
         if (extreme.length && !extreme.some((row) => row.id === ov.id) && !highlight.has(ov.id)) {
           continue;
@@ -273,6 +274,7 @@ export function buildDrawModelFromOverlays(input: {
       });
     }
     if (ov.kind === "marker" && ov.source === "mss" && showMss) {
+      if (restrictToTriggers && !highlight.has(ov.id)) continue;
       const ev = book.mss.find((m) => m.id === ov.id);
       lines.push({
         id: ov.id,
@@ -301,7 +303,7 @@ export function buildDrawModelFromOverlays(input: {
     }
   }
 
-  if (setup3 && killZone?.active) {
+  if (viewAllows(preset, "kill_zone") && killZone?.active) {
     const band =
       sessions.find((row) => row.session_type === killZone.kill_zone) ??
       asia ??

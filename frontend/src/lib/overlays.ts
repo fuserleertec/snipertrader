@@ -2,6 +2,7 @@ import { inferAssetClass } from "./constants";
 import type {
   AnchoredVwap,
   FVGZone,
+  KillZoneEvent,
   MssEvent,
   OrderBlock,
   OverlayEvent,
@@ -62,7 +63,13 @@ export function emptyPatternBook(): PatternBook {
 }
 
 function isObj(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === "object";
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+/** DE list/WS sometimes wraps the frame as `{ value: { ... } }`. */
+function unwrapValue(value: unknown): unknown {
+  if (isObj(value) && isObj(value.value)) return value.value;
+  return value;
 }
 
 function str(value: unknown): string | null {
@@ -231,7 +238,7 @@ export function parseOverlayFrame(value: unknown, hint?: OverlayKind): OverlayEv
   return null;
 }
 
-/** Map DE PR #5 AVWAP (`vwap_value`) onto the Phase 1 VWAPValues chart shape. */
+/** DE Phase 2 AVWAP → Phase 1 VWAPValues chart shape. Copies only contract fields. */
 export function avwapToVwapValues(raw: AnchoredVwap): VWAPValues {
   const sigma = Math.abs(raw.bands.plus_1_sigma - raw.vwap_value);
   return {
@@ -256,23 +263,143 @@ export function avwapToVwapValues(raw: AnchoredVwap): VWAPValues {
   };
 }
 
+function readBands(value: unknown): AnchoredVwap["bands"] | null {
+  if (!isObj(value)) return null;
+  const plus_1_sigma = num(value.plus_1_sigma);
+  const plus_2_sigma = num(value.plus_2_sigma);
+  const plus_3_sigma = num(value.plus_3_sigma);
+  const minus_1_sigma = num(value.minus_1_sigma);
+  const minus_2_sigma = num(value.minus_2_sigma);
+  const minus_3_sigma = num(value.minus_3_sigma);
+  if (
+    plus_1_sigma == null ||
+    plus_2_sigma == null ||
+    plus_3_sigma == null ||
+    minus_1_sigma == null ||
+    minus_2_sigma == null ||
+    minus_3_sigma == null
+  ) {
+    return null;
+  }
+  return { plus_1_sigma, plus_2_sigma, plus_3_sigma, minus_1_sigma, minus_2_sigma, minus_3_sigma };
+}
+
+/** DE Phase 2: `anchor_id`, `symbol`, `anchor_time`, `anchor_price`, `vwap_value`, `bands`, `asset_class`. */
+export function normalizeAvwap(value: unknown): AnchoredVwap | null {
+  value = unwrapValue(value);
+  if (!isObj(value)) return null;
+  const anchor_id = str(value.anchor_id);
+  const symbol = str(value.symbol);
+  const anchor_time = num(value.anchor_time);
+  const anchor_price = num(value.anchor_price);
+  const vwap_value = num(value.vwap_value);
+  const bands = readBands(value.bands);
+  if (!anchor_id || !symbol || anchor_time == null || anchor_price == null || vwap_value == null || !bands) {
+    return null;
+  }
+  return {
+    anchor_id,
+    symbol,
+    anchor_time,
+    anchor_price,
+    vwap_value,
+    bands,
+    asset_class: asset(value.asset_class, symbol),
+  };
+}
+
 export function isAnchoredVwap(value: unknown): value is AnchoredVwap {
-  if (!isObj(value)) return false;
-  return typeof value.vwap_value === "number" && typeof value.anchor_id === "string" && isObj(value.bands);
+  return normalizeAvwap(value) != null;
+}
+
+/** DE Phase 2: `symbol`, `kill_zone`, `start_time`, `end_time`, `active`, `asset_class`. */
+export function normalizeKillZone(value: unknown): KillZoneEvent | null {
+  value = unwrapValue(value);
+  if (!isObj(value)) return null;
+  const symbol = str(value.symbol);
+  const kill_zone = str(value.kill_zone);
+  const start_time = num(value.start_time);
+  const end_time = num(value.end_time);
+  if (!symbol || !kill_zone || start_time == null || end_time == null || typeof value.active !== "boolean") {
+    return null;
+  }
+  if (
+    kill_zone !== "asia" &&
+    kill_zone !== "london" &&
+    kill_zone !== "ny_am" &&
+    kill_zone !== "ny_pm" &&
+    kill_zone !== "rth" &&
+    kill_zone !== "eth" &&
+    kill_zone !== "globex"
+  ) {
+    return null;
+  }
+  return {
+    symbol,
+    kill_zone,
+    start_time,
+    end_time,
+    active: value.active,
+    asset_class: asset(value.asset_class, symbol),
+  };
 }
 
 export function isKillZone(value: unknown): boolean {
-  if (!isObj(value)) return false;
-  return typeof value.kill_zone === "string" && typeof value.active === "boolean";
+  return normalizeKillZone(value) != null;
+}
+
+function readNodes(value: unknown): VolumeProfile["high_volume_nodes"] {
+  if (!Array.isArray(value)) return [];
+  const out: VolumeProfile["high_volume_nodes"] = [];
+  for (const item of value) {
+    if (!isObj(item)) continue;
+    const price = num(item.price);
+    const volume = num(item.volume);
+    if (price == null || volume == null) continue;
+    out.push({ price, volume });
+  }
+  return out;
+}
+
+/** DE Phase 2: `symbol`, `session_type`, `high_volume_nodes`, `low_volume_nodes`, `poc`, `timestamp`. */
+export function normalizeVolumeProfile(value: unknown): VolumeProfile | null {
+  value = unwrapValue(value);
+  if (!isObj(value)) return null;
+  if (Array.isArray(value.profiles)) {
+    for (const row of value.profiles) {
+      const inner = isObj(row) ? normalizeVolumeProfile(row.value ?? row) : null;
+      if (inner) return inner;
+    }
+    return null;
+  }
+  const symbol = str(value.symbol);
+  const poc = num(value.poc);
+  const timestamp = num(value.timestamp);
+  const session_type = str(value.session_type);
+  if (!symbol || poc == null || timestamp == null || !session_type) return null;
+  if (
+    session_type !== "asia" &&
+    session_type !== "london" &&
+    session_type !== "ny_am" &&
+    session_type !== "ny_pm" &&
+    session_type !== "rth" &&
+    session_type !== "eth" &&
+    session_type !== "globex"
+  ) {
+    return null;
+  }
+  return {
+    symbol,
+    session_type,
+    high_volume_nodes: readNodes(value.high_volume_nodes),
+    low_volume_nodes: readNodes(value.low_volume_nodes),
+    poc,
+    timestamp,
+  };
 }
 
 export function isVolumeProfile(value: unknown): value is VolumeProfile {
-  if (!isObj(value)) return false;
-  return (
-    typeof value.symbol === "string" &&
-    typeof value.poc === "number" &&
-    Array.isArray(value.high_volume_nodes)
-  );
+  return normalizeVolumeProfile(value) != null;
 }
 
 export { EMPTY as EMPTY_PATTERN_BOOK };

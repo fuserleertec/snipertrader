@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   ENGINE_META,
   ENGINE_ORDER,
@@ -32,6 +32,9 @@ export function QepTable({
   soundOn,
   onToggleSound,
   initialMode,
+  cards,
+  history,
+  onSetupFilter,
 }: {
   signals: Signal[];
   lastPrice: number | null;
@@ -40,6 +43,9 @@ export function QepTable({
   soundOn: boolean;
   onToggleSound: () => void;
   initialMode?: QepMode;
+  cards?: ReactNode;
+  history?: ReactNode;
+  onSetupFilter?: (setup: SetupType | "all") => void;
 }) {
   const startMode: QepMode = initialMode === "setups" || initialMode === "activity" ? initialMode : "market";
   const [mode, setMode] = useState<QepMode>(startMode);
@@ -95,41 +101,73 @@ export function QepTable({
       </div>
       <div className="sec-sub">
         Five engines — Kronos (temporal), SNN (spike/regime), MiroFish (pattern), Fundamental
-        (filings), Quantum (weighted resolver) — vote into a single 0–100 conviction. Setup rows
-        are Quant <code>setup_signals</code>; click joins FVG / OB / sweep / MSS via{" "}
-        <code>trigger_event_ids</code>.
+        (filings), Quantum (weighted resolver) — vote into a single 0–100 conviction, then rank
+        into a provenance-tagged table. All prices, signals and filings below are{" "}
+        <b>synthetic demo data</b> (not live market data or advice); conviction pulses ±2 every 3s
+        to simulate the heartbeat.
       </div>
 
       <div className="qep-bar">
-        <div className="qep-toggle">
-          {(
-            [
-              ["market", "Market Signals"],
-              ["activity", "Smart Money Activity"],
-              ["setups", "Setup Signals"],
-            ] as const
-          ).map(([id, label]) => (
+        {mode === "setups" ? (
+          <div className="qep-toggle">
             <button
-              key={id}
               type="button"
-              className={mode === id ? "active" : ""}
-              data-qep={id}
               onClick={() => {
-                setMode(id);
-                setCat(id === "setups" ? "Setups" : QEP_CATS[id][0]);
+                setMode("market");
+                setCat(QEP_CATS.market[0]);
                 setSub("All");
               }}
             >
-              {label}
+              ← Market Signals
             </button>
-          ))}
-        </div>
+            <button type="button" className="active" data-qep="setups">
+              Setup Signals
+            </button>
+          </div>
+        ) : (
+          <div className="qep-toggle">
+            {(
+              [
+                ["market", "Market Signals"],
+                ["activity", "Smart Money Activity"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                className={mode === id ? "active" : ""}
+                data-qep={id}
+                onClick={() => {
+                  setMode(id);
+                  setCat(QEP_CATS[id][0]);
+                  setSub("All");
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="qep-legend">
           {ENGINE_ORDER.map((k) => (
             <span key={k}>
               <b style={{ color: ENGINE_META[k].color }}>{k}</b> {ENGINE_META[k].label}
             </span>
           ))}
+          {mode !== "setups" ? (
+            <button
+              type="button"
+              className="qep-desk"
+              data-qep="setups"
+              onClick={() => {
+                setMode("setups");
+                setCat("Setups");
+                setSub("All");
+              }}
+            >
+              Setup desk
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -166,7 +204,14 @@ export function QepTable({
               </option>
             ))}
           </select>
-          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as SetupType | "all")}>
+          <select
+            value={typeFilter}
+            onChange={(e) => {
+              const next = e.target.value as SetupType | "all";
+              setTypeFilter(next);
+              onSetupFilter?.(next);
+            }}
+          >
             <option value="all">all setup_type</option>
             {SETUP_TYPES.map((t) => (
               <option key={t} value={t}>
@@ -229,6 +274,15 @@ export function QepTable({
           </tbody>
         </table>
       </div>
+      {mode === "setups" && cards}
+      {mode === "setups" && history ? (
+        <details className="hist-fold" open>
+          <summary>
+            Signal History — <code>GET /signals</code>
+          </summary>
+          {history}
+        </details>
+      ) : null}
     </section>
   );
 }

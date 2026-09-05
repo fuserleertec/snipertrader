@@ -9,16 +9,16 @@ import { useTheme } from "@/hooks/useTheme";
 import { inferAssetClass } from "@/lib/constants";
 import { isLivePatternWs, wsBase } from "@/lib/env";
 import { overlayForSetup, parseOverlayParam } from "@/lib/setups";
+import { overlayForFilter, resolveSelected } from "@/lib/setupView";
 import { useSearchParams } from "next/navigation";
 import type { QepMode } from "@/lib/mocks/terminal";
 import { dropUniverse } from "@/lib/mocks/universe";
 import { convictionOf, tierOf } from "@/lib/mocks/terminal";
 import { defaultVisibleSessions } from "@/lib/sessions";
-import type { OverlayPreset, Signal, Timeframe } from "@/lib/types";
+import type { OverlayPreset, SetupType, Signal, Timeframe } from "@/lib/types";
 import { SignalTable } from "./SignalTable";
 import { SetupCards } from "./SetupCards";
 import { playAlert, ToastHost, type ToastItem } from "./ToastHost";
-import { AppNav } from "./terminal/AppNav";
 import { EngineGlossary, ExecutionDesk, Narratives, PickGrid, ReconAudit } from "./terminal/PickAndDesk";
 import { QepTable } from "./terminal/QepTable";
 import { SignalDetail } from "./terminal/SignalDetail";
@@ -33,13 +33,15 @@ export function Dashboard() {
   const [overlayPreset, setOverlayPreset] = useState<OverlayPreset>(
     () => parseOverlayParam(params.get("overlay")) ?? "all",
   );
-  const [selected, setSelected] = useState<Signal | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedSnap, setSelectedSnap] = useState<Signal | null>(null);
   const [soundOn, setSoundOn] = useState(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [tick, setTick] = useState(0);
   const seenHigh = useRef(new Set<string>());
   const primedHigh = useRef(false);
   const chartRef = useRef<HTMLDivElement>(null);
+  const scrollTimer = useRef<number | null>(null);
 
   const market = useMarketData(symbol, timeframe);
   const priceRef = useRef(100);
@@ -47,8 +49,17 @@ export function Dashboard() {
     if (market.lastPrice != null) priceRef.current = market.lastPrice;
   }, [market.lastPrice]);
   const allSignals = useSignals(symbol, () => priceRef.current);
+  const selected = resolveSelected(allSignals, selectedId, selectedSnap);
   const patterns = usePatterns(symbol);
   const performance = usePerformance(tick);
+
+  useEffect(() => {
+    if (!selectedId) {
+      setSelectedSnap(null);
+      return;
+    }
+    if (selected) setSelectedSnap(selected);
+  }, [selectedId, selected]);
 
   useEffect(() => {
     if (!primedHigh.current) {
@@ -81,18 +92,42 @@ export function Dashboard() {
   const onSymbol = (next: string) => {
     dropUniverse(symbol);
     setSymbol(next);
-    setSelected(null);
+    if (selected?.symbol !== next) {
+      setSelectedId(null);
+    }
   };
 
   const onSelect = (signal: Signal) => {
-    setSelected((prev) => (prev?.id === signal.id ? null : signal));
+    const nextId = selectedId === signal.id ? null : signal.id;
+    setSelectedId(nextId);
+    if (!nextId) return;
     setOverlayPreset(overlayForSetup(signal.setup_type));
-    if (signal.symbol && signal.symbol !== symbol) onSymbol(signal.symbol);
+    if (signal.symbol && signal.symbol !== symbol) {
+      dropUniverse(symbol);
+      setSymbol(signal.symbol);
+    }
+  };
+
+  const scrollToChart = () => {
+    if (scrollTimer.current) window.clearTimeout(scrollTimer.current);
+    scrollTimer.current = window.setTimeout(() => {
+      const node = chartRef.current;
+      if (!node) return;
+      const nav = document.querySelector(".kf-nav");
+      const navH = nav instanceof HTMLElement ? nav.offsetHeight + 8 : 72;
+      const top = node.getBoundingClientRect().top + window.scrollY - navH;
+      window.scrollTo({ top: Math.max(0, top), behavior: "auto" });
+    }, 80);
   };
 
   const onOpenChart = (signal: Signal) => {
     onSelect(signal);
-    chartRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    scrollToChart();
+  };
+
+  const onSetupFilter = (setup: SetupType | "all") => {
+    const next = overlayForFilter(setup);
+    if (next) setOverlayPreset(next);
   };
 
   const visibleSessions = defaultVisibleSessions(inferAssetClass(symbol), market.lastBar?.close_ts_ms ?? 0);
@@ -137,7 +172,6 @@ export function Dashboard() {
   return (
     <div>
       <TerminalNav theme={theme} onToggleTheme={toggle} />
-      <AppNav />
       <div className="wrap">
         <div className="hero">
           <h1>
@@ -185,46 +219,6 @@ export function Dashboard() {
           </div>
         </div>
 
-        <div className="qstats" aria-label="GET /performance/summary">
-          <div className="qstat" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div>
-              <div className="ql">GET /performance/summary</div>
-              <div className="qv" style={{ fontSize: 14 }}>
-                {performance.source === "live" ? (
-                  <span className="sim" style={{ background: "rgba(0,150,80,0.12)", color: "var(--emerald)" }}>
-                    LIVE :8001
-                  </span>
-                ) : (
-                  <span className="sim">MOCK FALLBACK</span>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="qstat">
-            <div className="ql">Win Rate</div>
-            <div className="qv pos">{fmtWin(performance.overall.win_rate)}</div>
-          </div>
-          <div className="qstat">
-            <div className="ql">Avg R:R</div>
-            <div className="qv cy">{performance.overall.average_rr.toFixed(2)}</div>
-          </div>
-          <div className="qstat">
-            <div className="ql">Sharpe</div>
-            <div className="qv gold">{performance.overall.sharpe_ratio.toFixed(2)}</div>
-          </div>
-          <div className="qstat">
-            <div className="ql">Max Drawdown</div>
-            <div className="qv">{performance.overall.max_drawdown_pct.toFixed(1)}%</div>
-          </div>
-          <div className="qstat">
-            <div className="ql">Signals Today / Week</div>
-            <div className="qv">
-              {performance.overall.signals_today}
-              <span style={{ color: "var(--dim2)", fontSize: 13 }}> / {performance.overall.signals_week}</span>
-            </div>
-          </div>
-        </div>
-
         <div className="disclaimer">
           <b>SIMULATION &amp; EDUCATION NOTICE.</b> Kronos structural patterns and the Conviction
           Engine derive from <b>real market data</b> (Yahoo k-lines, SEC Form 4). The MiroFish agent
@@ -234,53 +228,55 @@ export function Dashboard() {
           financial advice.
         </div>
 
-        {selected && <SignalDetail signal={selected} onClose={() => setSelected(null)} />}
-
-        <SetupCards signals={allSignals} selectedId={selected?.id ?? null} onSelect={onOpenChart} />
-
         <QepTable
           signals={allSignals}
           lastPrice={market.lastPrice}
-          selectedId={selected?.id ?? null}
+          selectedId={selectedId}
           onSelectSignal={onOpenChart}
           soundOn={soundOn}
           onToggleSound={() => setSoundOn((v) => !v)}
           initialMode={(params.get("tab") as QepMode | null) ?? undefined}
+          onSetupFilter={onSetupFilter}
+          cards={
+            <SetupCards signals={allSignals} selectedId={selectedId} onSelect={onOpenChart} />
+          }
+          history={
+            <SignalTable
+              rows={allSignals}
+              selectedId={selectedId}
+              onSelect={onOpenChart}
+              soundOn={soundOn}
+              onToggleSound={() => setSoundOn((v) => !v)}
+              embedded
+            />
+          }
         />
 
-        <SignalTable
-          rows={allSignals}
-          selectedId={selected?.id ?? null}
-          onSelect={onOpenChart}
-          soundOn={soundOn}
-          onToggleSound={() => setSoundOn((v) => !v)}
+        <SimulationView
+          chartRef={chartRef}
+          signals={allSignals}
+          selected={selected}
+          onSelect={onSelect}
+          symbol={symbol}
+          onSymbol={onSymbol}
+          timeframe={timeframe}
+          onTimeframe={setTimeframe}
+          overlayPreset={overlayPreset}
+          onOverlayPreset={setOverlayPreset}
+          bars={market.bars}
+          historyKey={`${market.historyKey}:${tick}`}
+          lastBar={market.lastBar}
+          vwap={market.vwaps.session ?? null}
+          anchorVwap={market.vwaps.weekly ?? market.vwaps.rolling ?? null}
+          sessions={sessionBooks}
+          visibleSessions={visibleSessions}
+          theme={theme}
+          patterns={patterns}
+          lastPrice={market.lastPrice}
+          volumeProfile={market.volumeProfile}
+          killZone={market.killZone}
         />
-
-        <div ref={chartRef}>
-          <SimulationView
-            signals={allSignals}
-            selected={selected}
-            onSelect={onSelect}
-            symbol={symbol}
-            onSymbol={onSymbol}
-            timeframe={timeframe}
-            onTimeframe={setTimeframe}
-            overlayPreset={overlayPreset}
-            onOverlayPreset={setOverlayPreset}
-            bars={market.bars}
-            historyKey={`${market.historyKey}:${tick}`}
-            lastBar={market.lastBar}
-            vwap={market.vwaps.session ?? null}
-            anchorVwap={market.vwaps.weekly ?? market.vwaps.rolling ?? null}
-            sessions={sessionBooks}
-            visibleSessions={visibleSessions}
-            theme={theme}
-            patterns={patterns}
-            lastPrice={market.lastPrice}
-            volumeProfile={market.volumeProfile}
-            killZone={market.killZone}
-          />
-        </div>
+        {selected && <SignalDetail signal={selected} onClose={() => setSelectedId(null)} />}
 
         <PickGrid
           signals={allSignals}
@@ -303,6 +299,8 @@ export function Dashboard() {
                 trigger_event_ids: selected?.trigger_event_ids ?? [],
                 pattern_ws: isLivePatternWs() ? wsBase() : "mock",
                 pattern_ws_paths: ["/v1/ws/sweep", "/v1/ws/fvg", "/v1/ws/mss", "/v1/ws/ob"],
+                phase2_ws_paths: ["/v1/ws/avwap", "/v1/ws/volume-profile", "/v1/ws/kill-zone"],
+                overlay_preset: overlayPreset,
               },
               null,
               2,
@@ -321,7 +319,3 @@ function vwapSigma(sigma?: number): string {
   return sigma.toFixed(1);
 }
 
-function fmtWin(n: number): string {
-  const v = n > 1 ? n : n * 100;
-  return `${v.toFixed(0)}%`;
-}

@@ -67,12 +67,14 @@ export function SignalTable({
   onSelect,
   soundOn,
   onToggleSound,
+  embedded = false,
 }: {
   rows: Signal[];
   selectedId: string | null;
   onSelect: (signal: Signal) => void;
   soundOn: boolean;
   onToggleSound: () => void;
+  embedded?: boolean;
 }) {
   const mocks = isMockMode();
   const [typeFilter, setTypeFilter] = useState<SetupType | "all">("all");
@@ -126,19 +128,22 @@ export function SignalTable({
     URL.revokeObjectURL(url);
   };
 
-  return (
-    <section className="sec" aria-label="Signal history">
-      <div className="sec-head">
-        <span className="ix">P2</span>
-        <h2>Signal History</h2>
-        <span className="sim">GET /signals</span>
-      </div>
-      <div className="sec-sub">
-        Same <code>GET /signals</code> as the live table (<code>from_ts</code>/<code>to_ts</code>,{" "}
-        <code>status</code>, <code>setup_type</code>, <code>symbol</code>). Close fields{" "}
-        <code>realized_r</code>, <code>exit_price</code>, <code>closed_ts_ms</code> come from Quant
-        PR #2 (null on ACTIVE/CANCELLED; set on TP_HIT/SL_HIT). Not computed here.
-      </div>
+  const body = (
+    <>
+      {!embedded && (
+        <>
+          <div className="sec-head">
+            <h2>Signal History</h2>
+            <span className="sim">GET /signals</span>
+          </div>
+          <div className="sec-sub">
+            Same <code>GET /signals</code> as the live table (<code>from_ts</code>/<code>to_ts</code>,{" "}
+            <code>status</code>, <code>setup_type</code>, <code>symbol</code>). Close fields{" "}
+            <code>realized_r</code>, <code>exit_price</code>, <code>closed_ts_ms</code> come from Quant
+            PR #2 (null on ACTIVE/CANCELLED; set on TP_HIT/SL_HIT). Not computed here.
+          </div>
+        </>
+      )}
       <div className="table-tools" style={{ marginBottom: 10 }}>
         <select value={symbolFilter} onChange={(e) => setSymbolFilter(e.target.value)}>
           <option value="all">all symbol</option>
@@ -241,6 +246,13 @@ export function SignalTable({
           </tbody>
         </table>
       </div>
+    </>
+  );
+
+  if (embedded) return <div aria-label="Signal history">{body}</div>;
+  return (
+    <section className="sec" aria-label="Signal history">
+      {body}
     </section>
   );
 }

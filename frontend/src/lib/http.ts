@@ -1,4 +1,5 @@
 import { httpUrl, quantHttpUrl } from "./env";
+import { normalizeAvwap, normalizeKillZone, normalizeVolumeProfile } from "./overlays";
 import { normalizeSignal } from "./signals";
 import type {
   AnchorType,
@@ -101,21 +102,27 @@ export async function fetchSignal(id: string): Promise<Signal | null> {
   return normalizeSignal(await getJson<unknown>(path, quantHttpUrl));
 }
 
-/** Data Eng PR #5 — optional overlay helpers. Same-origin `/v1/*` rewrite. */
-export function fetchAvwap(symbol: string, anchorId?: string): Promise<AnchoredVwap | null> {
+/** DE Phase 2 — `GET /v1/avwap/{symbol}` or `/{anchor_id}`. Same-origin `/v1/*` rewrite. */
+export async function fetchAvwap(symbol: string, anchorId?: string): Promise<AnchoredVwap | null> {
   const path = anchorId
     ? `/v1/avwap/${symbol}/${encodeURIComponent(anchorId)}`
     : `/v1/avwap/${symbol}`;
-  return getJson<AnchoredVwap>(path);
+  return normalizeAvwap(await getJson<unknown>(path));
 }
 
-export function fetchVolumeProfile(symbol: string, sessionType?: SessionType): Promise<VolumeProfile | null> {
-  const path = sessionType ? `/v1/volume-profile/${symbol}/${sessionType}` : `/v1/volume-profile/${symbol}`;
-  return getJson<VolumeProfile>(path);
+/** DE Phase 2 — one session book, or unwrap `{ profiles: [{ value }] }`. */
+export async function fetchVolumeProfile(symbol: string, sessionType?: SessionType): Promise<VolumeProfile | null> {
+  if (sessionType) {
+    return normalizeVolumeProfile(await getJson<unknown>(`/v1/volume-profile/${symbol}/${sessionType}`));
+  }
+  const listed = await getJson<unknown>(`/v1/volume-profile/${symbol}`);
+  const fromList = normalizeVolumeProfile(listed);
+  if (fromList) return fromList;
+  return normalizeVolumeProfile(await getJson<unknown>(`/v1/volume-profile/${symbol}/asia`));
 }
 
-export function fetchKillZone(symbol: string): Promise<KillZoneEvent | null> {
-  return getJson<KillZoneEvent>(`/v1/kill-zone/${symbol}`);
+export async function fetchKillZone(symbol: string): Promise<KillZoneEvent | null> {
+  return normalizeKillZone(await getJson<unknown>(`/v1/kill-zone/${symbol}`));
 }
 
 /** Quant PR #2 `GET /performance/summary` via rewrite → :8001, then direct. */

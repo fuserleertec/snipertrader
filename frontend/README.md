@@ -8,7 +8,7 @@ The UI runs **offline by default** on in-browser mock streams that emit the
 exact JSON shapes in `/schemas`. Flip one env var to point at live
 `ws://localhost:8000` **after** the Quant Risk Pre-Filter checklist gate.
 
-## Setup
+## Setup (local paper preview)
 
 ```bash
 cd frontend
@@ -25,6 +25,28 @@ From the repo root:
 npm run dev:dashboard
 ```
 
+### Deploy (two Vercel projects)
+
+Full notes: [`DEPLOY.md`](./DEPLOY.md) (short copy in [`PREVIEW.md`](./PREVIEW.md)).
+
+**Paper preview (P0 #2, closed pass):**
+[https://snipertrader-dashboard-36y96ypn3-sniper-8ee72a26.vercel.app](https://snipertrader-dashboard-36y96ypn3-sniper-8ee72a26.vercel.app)
+
+Separate Vercel project, **Root Directory = `frontend`**,
+`NEXT_PUBLIC_USE_MOCKS=true`. That project reads
+[`frontend/vercel.json`](./vercel.json) (`"framework": "nextjs"`) so root
+`vercel.json` (`"framework": null` + marketing crons) never applies.
+
+| Project | Root Directory (Vercel setting) | Serves |
+|---|---|---|
+| **Marketing (live)** | `null` / `.` — **do not change** | static `*.html` + `api/*` + recon **crons**. Config: repo-root `vercel.json` |
+| **Dashboard (FE)** | **`frontend`** — required | Next.js Conviction Terminal. Config: [`frontend/vercel.json`](./vercel.json) |
+
+`rootDirectory` is a dashboard setting, not a `vercel.json` key. The marketing
+Git project (`snipertrader`, Root Directory = null) will keep previewing
+marketing HTML — that is expected. Do **not** rewrite root `vercel.json` to
+build this app; that drops marketing functions and `/api/recon/refresh` crons.
+
 `NEXT_PUBLIC_USE_MOCKS=false npm run dev` talks to Data Eng (`:8000`) and
 Quant (`:8001`). Quant local:
 
@@ -38,11 +60,13 @@ cd quant && sniper-quant api --inmemory --port 8001
 - **01 Header** — “Quantitative Market Intelligence Conviction Terminal” + LIVE
   strip (Next Refresh ET, Data Age, Heartbeat, Health, REFRESH / SHARE / DOWNLOAD)
 - **02 Quantum Ensemble Picks** — provenance table (#, Asset, Signal, Last/Chg,
-  Target, Conviction, Engines K/S/M/F/Q, Why). Setup Signals tab is Quant
-  `setup_signals` (filters + CSV; sound off by default)
+  Target, Conviction, Engines K/S/M/F/Q, Why). Two tabs (Market Signals /
+  Smart Money Activity). Quant `setup_signals` live under the small **Setup
+  desk** control (`?tab=setups`; filters + CSV; sound off by default)
 - **03 Live Market Simulation View** — Conviction & Velocity Leaderboard,
-  MiroFish swarm heatmap, Kronos Structural K-Line (FVG / OB / sweep / MSS),
-  Scenario Probability Matrix
+  MiroFish swarm heatmap, Kronos Structural K-Line (metrics + swarm bias),
+  Scenario Probability Matrix. Paper overlay chart is the **Paper desk**
+  panel after the matrix (not inside the Kronos card)
 - **04 Categorized Stock Picks** — All / Ultra-High / High / Watchlist cards
 - **05 Narrative & Volatility Injectors**
 - **06 Execution & Position Management**
@@ -309,6 +333,10 @@ live client is `openPatternSockets` (`src/lib/patternWs.ts`). Sweep is
 | Setup 3 | `po3_judas` | Asia session box (`high`/`low`/`session_start_ms`→`session_end_ms` from `session:{symbol}:asia` / `GET /v1/session/{symbol}/asia`) + Asia-extreme sweep + displacement at entry + kill-zone shade when `active`. Highlight the sweep id only |
 
 Setups 4–6 keep the Phase 1 overlays (σ fade, pullback, AVWAP+OB).
+
+Active setup tab / card filter is an **allow-list**. `sweep_reclaim` never
+draws FVG, OB, or DISP. `fvg_entry` never draws sweep / MSS / Asia / kill-zone.
+`ob_fvg` is not a `setup_type`.
 
 ### Signal history
 

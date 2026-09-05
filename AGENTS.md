@@ -22,9 +22,15 @@ trading-education and tools business. This repository **is** the live website.
   - `api/_server.js` is the **local dev** server (long-lived; `node api/_server.js`,
     port 8787). Files prefixed with `_` (`_core.js`, `_ai_providers.js`, `_server.js`)
     are shared helpers, not deployed as endpoints.
-  - Secrets (ALPACA_API_KEY, ALPACA_SECRET_KEY, DEEPSEEK_API_KEY, KIMI_API_KEY)
-    are set in **Vercel project env vars** (and `api/.env` locally, gitignored).
+- Secrets (ALPACA_API_KEY, ALPACA_SECRET_KEY, DEEPSEEK_API_KEY, KIMI_API_KEY)
+  are set in **Vercel project env vars** (and `api/.env` locally, gitignored).
   See the `kronos-foundation` skill.
+- **Dashboard is a second Vercel project.** The live Git project has
+  Root Directory = `null` (repo root) and must keep root `vercel.json`
+  (`framework: null` + `api/**` functions + `/api/recon/refresh` crons).
+  The Next app in `frontend/` deploys only when a **separate** project sets
+  Root Directory = `frontend` (see `frontend/DEPLOY.md`). Do not rewrite
+  root `vercel.json` to build `frontend/` — that drops marketing crons.
 
 ## Critical operating rules
 - 🚫 **NEVER push to `main` without explicit user confirmation.** A push = a

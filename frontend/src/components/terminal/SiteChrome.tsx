@@ -114,6 +114,10 @@ export function SiteFooter() {
             <a href="https://www.snipertrader.ai/traderedge_preflight.html">Preflight Protocol</a>
             <a href="https://www.snipertrader.ai/stock_picks.html">AI Stock Picks</a>
             <a href="https://www.snipertrader.ai/traderedge_chartai.html">AI Chart Analyzer</a>
+            <a href="/">Terminal</a>
+            <a href="/analytics">Analytics</a>
+            <a href="/alerts">Alerts</a>
+            <a href="/account">Account</a>
           </div>
           <div className="footer-col">
             <h4>Proprietary Algos</h4>
