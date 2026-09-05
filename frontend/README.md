@@ -31,21 +31,16 @@ npm run dev:dashboard
 
 ### Dual deploy path (do not flip production marketing)
 
+See [`PREVIEW.md`](./PREVIEW.md). On **this PR branch**, root `vercel.json`
+builds a paper Next export (`frontend/out`) so the existing Git preview
+serves the dashboard at `/` (not marketing `index.html`). `main` stays
+the marketing site.
+
 | Path | What it serves | How |
 |---|---|---|
-| **Marketing (existing)** | Static HTML at repo root (`stock_picks.html`, …) | Root `vercel.json` · Root Directory = `.` · **leave this on the live snipertrader.ai project** |
-| **Dashboard (this app)** | Next.js Conviction Terminal | New Vercel project · Root Directory = `frontend` · uses `frontend/vercel.json` |
-
-```bash
-# Preview this app without touching the marketing project:
-cd frontend
-npx vercel            # preview URL for the Next dashboard
-# or: Vercel Dashboard → Project Settings → Root Directory = frontend
-```
-
-`frontend/vercel.json` is scoped to that project only. Do **not** change the
-marketing project's Root Directory to `frontend` — that would unpublish the
-static site.
+| **This PR preview** | Next dashboard (static export, mocks) | Root `vercel.json` → `frontend/out` |
+| **Marketing (main)** | Static HTML + `api/*` | [`vercel.marketing.json`](../vercel.marketing.json) · Root Directory = `.` |
+| **Optional 2nd project** | Full Next.js runtime | Root Directory = `frontend` · `frontend/vercel.json` |
 
 `NEXT_PUBLIC_USE_MOCKS=false npm run dev` talks to Data Eng (`:8000`) and
 Quant (`:8001`). Quant local:
