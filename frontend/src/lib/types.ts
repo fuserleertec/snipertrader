@@ -70,14 +70,24 @@ export interface OHLCVBar {
   closed?: boolean;
 }
 
-/** Quant Developers — post risk-approval setup/trade signal. Locked 6-type map. */
+/**
+ * ML PR #7 `setup_signals.setup_type` (post risk-approve) plus Quant product types 4–6.
+ * Overlay-focus views: `sweep_reclaim`, `fvg_entry` / `ob_fvg`, `po3_judas`.
+ */
 export type SetupType =
   | "sweep_reclaim"
   | "fvg_entry"
+  | "ob_fvg"
   | "po3_judas"
   | "sd_extension_fade"
   | "vwap_pullback_cont"
-  | "avwap_ob_confluence";
+  | "avwap_ob_confluence"
+  | "mss_break"
+  | "order_block"
+  | "sweep_mss";
+
+/** ML setups 1–3 that ship overlay joins via `trigger_event_ids`. */
+export type OverlaySetupType = "sweep_reclaim" | "fvg_entry" | "ob_fvg" | "po3_judas";
 
 /** Exact `by_setup` keys from GET /performance/summary. Index by these strings. */
 export type PerformanceSetupKey =
@@ -356,7 +366,10 @@ export interface Signal {
   ref_session: SessionType;
   /** Optional Quant / setup_signal.schema.json field — FE uses session VWAP if absent. */
   ref_vwap?: number | null;
+  /** ML PR #7 additive. Null on the wire → `[]`. Chart join is these ids only. */
   trigger_event_ids: string[];
+  session_type?: SessionType | null;
+  position_size?: number | null;
   /** Quant publish-only string[] (PR #9 locked ids + any extra tags). */
   contributing_factors?: string[];
   /** Quant publish-only {name, weight, score, note?}[]. */

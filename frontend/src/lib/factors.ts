@@ -98,7 +98,8 @@ export function explain(names: FactorId[], conviction: number): {
 export function factorsForSetup(setup: SetupType): FactorId[] {
   if (setup === "sweep_reclaim") return ["liquidity_sweep", "mss", "vwap_reclaim"];
   if (setup === "fvg_entry") return ["fvg", "vwap_reclaim"];
-  if (setup === "po3_judas") return ["liquidity_sweep", "mss", "kill_zone"];
+  if (setup === "ob_fvg") return ["fvg", "order_block", "vwap_reclaim"];
+  if (setup === "po3_judas") return ["liquidity_sweep", "kill_zone"];
   if (setup === "sd_extension_fade") return ["vwap_band_extension", "low_volume", "rejection_candle"];
   if (setup === "vwap_pullback_cont") {
     return ["trend_align", "vwap_pullback", "order_block", "first_touch", "engulfing"];

@@ -2,7 +2,7 @@ import { inferAssetClass } from "../constants";
 import { sessionWindows } from "../sessions";
 import { explain, factorsForSetup } from "../factors";
 import { overlayEventsFromBook } from "../overlays";
-import type { FVGZone, MssEvent, OrderBlock, PatternBook, SetupType, Signal, SweepEvent } from "../types";
+import type { FVGZone, MssEvent, OrderBlock, PatternBook, SessionType, SetupType, Signal, SweepEvent, Timeframe } from "../types";
 
 const cache = new Map<string, { book: PatternBook; signals: Signal[]; price: number }>();
 
@@ -155,6 +155,10 @@ export function buildPatternBook(symbol: string, price: number, now: number): Pa
   };
 }
 
+function ids(...rows: Array<string | undefined | null>): string[] {
+  return rows.filter((id): id is string => typeof id === "string" && id.length > 0);
+}
+
 function signalOf(
   symbol: string,
   price: number,
@@ -164,11 +168,18 @@ function signalOf(
   seq: number,
   trigger_event_ids: string[],
   confidence: number,
+  extras: {
+    timeframe?: Timeframe;
+    session_type?: SessionType;
+    position_size?: number;
+    ref_vwap?: number | null;
+  } = {},
 ): Signal {
   const width = Math.max(price * 0.0024, 0.04);
   const entry = price;
   const stop = side === "long" ? entry - width : entry + width;
   const target = side === "long" ? entry + width * 2.15 : entry - width * 2.15;
+  const session = extras.session_type ?? (inferAssetClass(symbol) === "crypto" ? "ny_am" : "rth");
   return {
     id: `sig_${symbol}_${setup_type}_${seq}`,
     ts_ms: now - seq * 4000,
@@ -181,9 +192,11 @@ function signalOf(
     target,
     status: "ACTIVE",
     confidence,
-    timeframe: "5m",
-    ref_session: inferAssetClass(symbol) === "crypto" ? "ny_am" : "rth",
-    ref_vwap: setup_type === "sweep_reclaim" ? price : null,
+    timeframe: extras.timeframe ?? "5m",
+    ref_session: session,
+    session_type: session,
+    position_size: extras.position_size ?? 1,
+    ref_vwap: extras.ref_vwap !== undefined ? extras.ref_vwap : setup_type === "sweep_reclaim" ? price : null,
     trigger_event_ids,
     realized_r: null,
     exit_price: null,
@@ -199,26 +212,46 @@ export function signalsFromBook(symbol: string, price: number, book: PatternBook
   const sweepBuy = book.sweeps.find((z) => z.side === "buy");
   const sweepSell = book.sweeps.find((z) => z.side === "sell");
   const mssBull = book.mss.find((z) => z.direction === "bullish");
+  const session = inferAssetClass(symbol) === "crypto" ? "ny_am" : "rth";
 
   return [
-    signalOf(symbol, price, now, "sweep_reclaim", "long", 1, [sweepBuy?.id, mssBull?.id].filter(Boolean) as string[], 0.86),
-    signalOf(symbol, price, now, "fvg_entry", "long", 2, [fvgBull?.id].filter(Boolean) as string[], 0.74),
-    signalOf(symbol, price, now, "po3_judas", "long", 3, [sweepSell?.id, mssBull?.id].filter(Boolean) as string[], 0.69),
-    signalOf(symbol, price, now, "sd_extension_fade", "short", 4, [fvgBear?.id].filter(Boolean) as string[], 0.73),
-    signalOf(symbol, price, now, "vwap_pullback_cont", "long", 5, [obBull?.id, fvgBull?.id].filter(Boolean) as string[], 0.7),
-    signalOf(symbol, price, now, "avwap_ob_confluence", "long", 6, [obBull?.id].filter(Boolean) as string[], 0.68),
+    // PR #7: sweep_reclaim → [sweep.id, mss.id]
+    signalOf(symbol, price, now, "sweep_reclaim", "long", 1, ids(sweepBuy?.id, mssBull?.id), 0.86, {
+      session_type: session,
+      ref_vwap: price,
+    }),
+    // PR #7: fvg_entry → [fvg.id]
+    signalOf(symbol, price, now, "fvg_entry", "long", 2, ids(fvgBull?.id), 0.74, { session_type: session }),
+    // PR #7 Setup 2 overlap: ob_fvg → [fvg.id, ...ob.ids]
+    signalOf(symbol, price, now, "ob_fvg", "long", 3, ids(fvgBull?.id, obBull?.id), 0.78, { session_type: session }),
+    // PR #7: po3_judas → [sweep.id] only (sell sweep → short)
+    signalOf(symbol, price, now, "po3_judas", "short", 4, ids(sweepSell?.id), 0.69, {
+      timeframe: "15m",
+      session_type: inferAssetClass(symbol) === "crypto" ? "london" : session,
+    }),
+    signalOf(symbol, price, now, "sd_extension_fade", "short", 5, ids(fvgBear?.id), 0.73),
+    signalOf(symbol, price, now, "vwap_pullback_cont", "long", 6, ids(obBull?.id, fvgBull?.id), 0.7),
+    signalOf(symbol, price, now, "avwap_ob_confluence", "long", 7, ids(obBull?.id), 0.68),
     closeOf(
-      signalOf(symbol, price, now, "sweep_reclaim", "long", 11, [sweepBuy?.id].filter(Boolean) as string[], 0.81),
+      signalOf(symbol, price, now, "sweep_reclaim", "long", 11, ids(sweepBuy?.id, mssBull?.id), 0.81),
       "TP_HIT",
       2.1,
     ),
     closeOf(
-      signalOf(symbol, price, now, "fvg_entry", "short", 12, [fvgBear?.id].filter(Boolean) as string[], 0.66),
+      signalOf(symbol, price, now, "fvg_entry", "short", 12, ids(fvgBear?.id), 0.66),
       "SL_HIT",
       -1.0,
     ),
     closeOf(
-      signalOf(symbol, price, now, "po3_judas", "long", 13, [sweepSell?.id].filter(Boolean) as string[], 0.71),
+      signalOf(symbol, price, now, "ob_fvg", "long", 13, ids(fvgBull?.id, obBull?.id), 0.72),
+      "TP_HIT",
+      1.6,
+    ),
+    closeOf(
+      signalOf(symbol, price, now, "po3_judas", "short", 14, ids(sweepSell?.id), 0.71, {
+        timeframe: "15m",
+        session_type: inferAssetClass(symbol) === "crypto" ? "london" : session,
+      }),
       "TP_HIT",
       1.75,
     ),

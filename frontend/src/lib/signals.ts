@@ -1,5 +1,5 @@
-import { inferAssetClass } from "./constants";
-import type { FactorBreakdown, Signal, SignalSide, SignalStatus, SignalWsEvent, SetupType, Timeframe } from "./types";
+import { inferAssetClass, SESSION_TYPES } from "./constants";
+import type { FactorBreakdown, SessionType, Signal, SignalSide, SignalStatus, SignalWsEvent, SetupType, Timeframe } from "./types";
 
 function fmtPx(n: number): string {
   return n >= 1000 ? n.toFixed(1) : n.toFixed(2);
@@ -97,13 +97,25 @@ export function normalizeSignal(value: unknown): Signal | null {
     timeframe: (typeof s.timeframe === "string" ? s.timeframe : "5m") as Timeframe,
     ref_session: (typeof s.ref_session === "string" ? s.ref_session : "ny_am") as Signal["ref_session"],
     ref_vwap: optionalNum(s.ref_vwap),
-    trigger_event_ids: Array.isArray(s.trigger_event_ids) ? s.trigger_event_ids.filter((x): x is string => typeof x === "string") : [],
+    trigger_event_ids: Array.isArray(s.trigger_event_ids)
+      ? s.trigger_event_ids.filter((x): x is string => typeof x === "string")
+      : [],
+    session_type: readSessionType(s.session_type),
+    position_size: optionalNum(s.position_size),
     contributing_factors: factors,
     factor_breakdown: breakdown,
     realized_r: statusClosed(s.status) ? optionalNum(s.realized_r) : null,
     exit_price: optionalNum(s.exit_price),
     closed_ts_ms: optionalNum(s.closed_ts_ms),
   };
+}
+
+function readSessionType(value: unknown): SessionType | null | undefined {
+  if (value == null) return value === null ? null : undefined;
+  if (typeof value === "string" && (SESSION_TYPES as string[]).includes(value)) {
+    return value as SessionType;
+  }
+  return undefined;
 }
 
 function statusClosed(status: unknown): boolean {

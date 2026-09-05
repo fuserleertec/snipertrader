@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
+import { OVERLAY_SETUP_TYPES } from "@/lib/constants";
 import { riskReward } from "@/lib/signals";
 import type { Signal } from "@/lib/types";
 
@@ -13,6 +15,11 @@ function px(n: number): string {
   return n >= 1000 ? n.toFixed(1) : n.toFixed(2);
 }
 
+function overlayRank(setup: string): number {
+  const i = (OVERLAY_SETUP_TYPES as readonly string[]).indexOf(setup);
+  return i === -1 ? 100 : i;
+}
+
 export function SetupCards({
   signals,
   selectedId,
@@ -22,7 +29,17 @@ export function SetupCards({
   selectedId: string | null;
   onSelect: (signal: Signal) => void;
 }) {
-  const cards = signals.filter((s) => s.status === "ACTIVE").slice(0, 6);
+  const cards = useMemo(() => {
+    return [...signals]
+      .filter((s) => s.status === "ACTIVE")
+      .sort((a, b) => {
+        const d = overlayRank(a.setup_type) - overlayRank(b.setup_type);
+        if (d !== 0) return d;
+        return b.ts_ms - a.ts_ms;
+      })
+      .slice(0, 8);
+  }, [signals]);
+
   return (
     <section className="sec" aria-label="Setup signal cards">
       <div className="sec-head">
@@ -31,8 +48,8 @@ export function SetupCards({
         <span className="sim">setup_signals</span>
       </div>
       <div className="sec-sub">
-        Newest Quant <code>signal.upsert</code> rows. Click a card to scroll the Kronos chart and
-        apply that signal’s annotations via <code>trigger_event_ids</code>.
+        Overlay-focus first ({OVERLAY_SETUP_TYPES.join(", ")}). Click a card to switch the
+        setup view and highlight overlays whose ids are in <code>trigger_event_ids</code>.
       </div>
       <div className="card-strip">
         {cards.length === 0 && <div className="card-empty">Waiting for ACTIVE setups…</div>}
@@ -43,6 +60,8 @@ export function SetupCards({
             className={`setup-card ${s.side} ${selectedId === s.id ? "selected" : ""}`}
             onClick={() => onSelect(s)}
             data-setup={s.setup_type}
+            data-symbol={s.symbol}
+            data-triggers={s.trigger_event_ids.join(",")}
           >
             <div className="card-top">
               <span className="card-symbol">{s.symbol}</span>
@@ -68,9 +87,18 @@ export function SetupCards({
               </div>
             </dl>
             <div className="card-meta">
-              <span>{Math.round(s.confidence * 100)}%</span>
+              <span>
+                {s.timeframe}
+                {s.session_type ? ` · ${s.session_type}` : ""} · {Math.round(s.confidence * 100)}%
+              </span>
               <span className="mono">{utcStamp(s.ts_ms)}</span>
             </div>
+            {s.trigger_event_ids.length > 0 ? (
+              <div className="card-meta" style={{ marginTop: 4, fontSize: 10 }}>
+                <span>triggers {s.trigger_event_ids.length}</span>
+                <span className="mono">{s.trigger_event_ids.join(" · ")}</span>
+              </div>
+            ) : null}
           </button>
         ))}
       </div>

@@ -290,9 +290,11 @@ export function SimulationView({
           </div>
           <div className="kline-note">
             Setup 1 <code>sweep_reclaim</code> — sweep + MSS + <code>ref_vwap</code> + E/S/T. Setup 2{" "}
-            <code>fvg_entry</code> — FVG + VWAP/HVN + entry confirm. Setup 3 <code>po3_judas</code> — Asia
-            box (<code>session:{"{symbol}"}:asia</code>) + extreme sweep + displacement
-            {killZone?.active ? ` + kill zone ${killZone.kill_zone} active.` : "."}
+            <code>fvg_entry</code> / <code>ob_fvg</code> — FVG (+ overlapping OB) + VWAP/HVN + entry
+            confirm. Setup 3 <code>po3_judas</code> — Asia box (<code>session:{"{symbol}"}:asia</code>) +
+            extreme sweep + displacement
+            {killZone?.active ? ` + kill zone ${killZone.kill_zone} active.` : "."} Card click
+            highlights only <code>trigger_event_ids</code>.
           </div>
           <PriceChart
             bars={bars}

@@ -52,14 +52,12 @@ function zoneT1(created_ts_ms: number, mitigated: boolean | undefined, ttl_secon
   return nowMs;
 }
 
-export function highlightIds(selected: Signal | null, book: PatternBook): Set<string> {
+/** Chart join: highlight overlays whose `id` is in `setup_signals.trigger_event_ids`. */
+export function highlightIds(selected: Signal | null): Set<string> {
   const ids = new Set<string>();
   if (!selected) return ids;
-  ids.add(selected.id);
-  for (const id of selected.trigger_event_ids) ids.add(id);
-  for (const ev of book.mss) {
-    if (ids.has(ev.id) && ev.trigger_sweep_id) ids.add(ev.trigger_sweep_id);
-    if (ev.trigger_sweep_id && ids.has(ev.trigger_sweep_id)) ids.add(ev.id);
+  for (const id of selected.trigger_event_ids ?? []) {
+    if (id) ids.add(id);
   }
   return ids;
 }

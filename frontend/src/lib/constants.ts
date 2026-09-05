@@ -2,6 +2,7 @@ import type {
   AnchorType,
   AssetClass,
   OverlayPreset,
+  OverlaySetupType,
   SessionType,
   PerformanceSetupKey,
   SetupType,
@@ -45,10 +46,19 @@ export const TF_MS: Record<Timeframe, number> = {
 export const SETUP_TYPES: SetupType[] = [
   "sweep_reclaim",
   "fvg_entry",
+  "ob_fvg",
   "po3_judas",
   "sd_extension_fade",
   "vwap_pullback_cont",
   "avwap_ob_confluence",
+];
+
+/** ML PR #7 overlay-focus setups (chart views 1–3). */
+export const OVERLAY_SETUP_TYPES: OverlaySetupType[] = [
+  "sweep_reclaim",
+  "fvg_entry",
+  "ob_fvg",
+  "po3_judas",
 ];
 
 /** Locked GET /performance/summary keys. Display the key itself. */

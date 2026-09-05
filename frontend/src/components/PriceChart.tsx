@@ -303,7 +303,7 @@ export function PriceChart({
   }, [sessions, visibleSessions]);
 
   useEffect(() => {
-    const highlight = highlightIds(selected, patterns);
+    const highlight = highlightIds(selected);
     const asia = sessions.find((s) => s.session_type === "asia") ?? null;
     const snap = (ms: number) => snapMs(bars, ms);
     const nowMs = bars[bars.length - 1]?.close_ts_ms ?? Date.now();

@@ -166,6 +166,7 @@ export function enginesForSetup(signal: Signal): Record<EngineId, Stance> {
   const opp: Stance = dir === "buy" ? "sell" : "buy";
   const base: Record<EngineId, Stance> = { K: dir, S: "hold", M: dir, F: "hold", Q: dir };
   if (signal.setup_type === "sweep_reclaim" || signal.setup_type === "po3_judas") base.S = dir;
+  if (signal.setup_type === "fvg_entry" || signal.setup_type === "ob_fvg") base.S = dir;
   if (signal.setup_type === "sd_extension_fade") base.S = dir;
   if (signal.confidence < 0.7) base.M = signal.setup_type === "avwap_ob_confluence" ? opp : "hold";
   return base;

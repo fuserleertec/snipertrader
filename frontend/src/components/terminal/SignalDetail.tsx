@@ -71,7 +71,8 @@ export function SignalDetail({
       <div className="sec-sub" style={{ marginTop: 12 }}>
         PR #9 explainability — <code>contributing_factors[]</code> are factor ids.{" "}
         <code>sum(factor_breakdown.score)</code> ≈ conviction ({conviction.toFixed(0)}). Chart join is{" "}
-        <code>id</code> + <code>trigger_event_ids</code>.
+        <code>trigger_event_ids</code> only
+        {signal.trigger_event_ids.length ? `: ${signal.trigger_event_ids.join(", ")}` : " (none)"}.
       </div>
       <div className="pick-tags" style={{ marginTop: 10 }}>
         {ids.map((id) => (
