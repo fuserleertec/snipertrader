@@ -14,7 +14,6 @@ export const PRODUCT_KEYS: PerformanceSetupKey[] = [
 export const SETUP_TO_PRODUCT: Partial<Record<SetupType, PerformanceSetupKey>> = {
   sweep_reclaim: "1_liquidity_sweep_vwap_reclaim",
   fvg_entry: "2_fvg_mitigation_vwap",
-  ob_fvg: "2_fvg_mitigation_vwap",
   po3_judas: "3_po3_asia_range_sweep",
   sd_extension_fade: "4_sd_extension_fade",
   vwap_pullback_cont: "5_vwap_pullback_cont",
@@ -30,7 +29,7 @@ export function isOverlaySetup(setup: string): setup is OverlaySetupType {
 }
 
 export function overlayForSetup(setup: SetupType): OverlayPreset {
-  if (setup === "fvg_entry" || setup === "ob_fvg") return "fvg_ob";
+  if (setup === "fvg_entry") return "fvg_ob";
   if (setup === "sweep_reclaim") return "sweep_reclaim";
   if (setup === "po3_judas") return "po3_judas";
   if (setup === "sd_extension_fade") return "sd_extension_fade";
@@ -41,7 +40,7 @@ export function overlayForSetup(setup: SetupType): OverlayPreset {
 
 export function parseOverlayParam(raw: string | null | undefined): OverlayPreset | null {
   if (!raw) return null;
-  if (raw === "ob_fvg" || raw === "fvg_entry") return "fvg_ob";
+  if (raw === "fvg_entry") return "fvg_ob";
   const hit = OVERLAY_PRESETS.find((p) => p.id === raw || p.label === raw);
   return hit?.id ?? null;
 }

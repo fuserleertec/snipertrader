@@ -72,12 +72,11 @@ export interface OHLCVBar {
 
 /**
  * ML PR #7 `setup_signals.setup_type` (post risk-approve) plus Quant product types 4–6.
- * Overlay-focus views: `sweep_reclaim`, `fvg_entry` / `ob_fvg`, `po3_judas`.
+ * Overlay-focus views: `sweep_reclaim`, `fvg_entry`, `po3_judas`.
  */
 export type SetupType =
   | "sweep_reclaim"
   | "fvg_entry"
-  | "ob_fvg"
   | "po3_judas"
   | "sd_extension_fade"
   | "vwap_pullback_cont"
@@ -87,7 +86,7 @@ export type SetupType =
   | "sweep_mss";
 
 /** ML setups 1–3 that ship overlay joins via `trigger_event_ids`. */
-export type OverlaySetupType = "sweep_reclaim" | "fvg_entry" | "ob_fvg" | "po3_judas";
+export type OverlaySetupType = "sweep_reclaim" | "fvg_entry" | "po3_judas";
 
 /** Exact `by_setup` keys from GET /performance/summary. Index by these strings. */
 export type PerformanceSetupKey =

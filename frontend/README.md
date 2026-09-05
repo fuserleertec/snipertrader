@@ -173,7 +173,6 @@ Locked `setup_type` ↔ `by_setup` product key:
 |---|---|
 | `sweep_reclaim` | `1_liquidity_sweep_vwap_reclaim` |
 | `fvg_entry` | `2_fvg_mitigation_vwap` |
-| `ob_fvg` | `2_fvg_mitigation_vwap` |
 | `po3_judas` | `3_po3_asia_range_sweep` |
 | `sd_extension_fade` | `4_sd_extension_fade` |
 | `vwap_pullback_cont` | `5_vwap_pullback_cont` |
@@ -184,8 +183,7 @@ ML PR #7 overlay-focus views (card click → highlight `trigger_event_ids` only)
 | setup_type | trigger_event_ids |
 |---|---|
 | `sweep_reclaim` | `[sweep.id, mss.id]` |
-| `fvg_entry` | `[fvg.id]` |
-| `ob_fvg` | `[fvg.id, ...overlapping ob.ids]` |
+| `fvg_entry` | `[fvg.id, ...overlapping ob.ids]` — OB is never its own `setup_type` |
 | `po3_judas` | `[sweep.id]` (no MSS) |
 
 Parse-only (no overlay-focus view): `mss_break`, `order_block`, `sweep_mss`. Dropped: `*_pending_user_confirm`.
@@ -215,7 +213,7 @@ Table columns map 1:1 to Signal fields:
 |---|---|
 | Timestamp | `ts_ms` (UTC ms) |
 | Symbol | `symbol` |
-| Pattern Type | `setup_type` ∈ `sweep_reclaim` \| `fvg_entry` \| `ob_fvg` \| `po3_judas` \| `sd_extension_fade` \| `vwap_pullback_cont` \| `avwap_ob_confluence` |
+| Pattern Type | `setup_type` ∈ `sweep_reclaim` \| `fvg_entry` \| `po3_judas` \| `sd_extension_fade` \| `vwap_pullback_cont` \| `avwap_ob_confluence` |
 | Direction | `side` ∈ `long` \| `short` |
 | Zone | `{ entry, stop, target }` (UI also derives `zone_low`/`zone_high` from stop/entry) |
 | Status | `ACTIVE` \| `TP_HIT` \| `SL_HIT` \| `CANCELLED` |
@@ -300,7 +298,7 @@ live client is `openPatternSockets` (`src/lib/patternWs.ts`). Sweep is
 | View | setup_type | Chart |
 |---|---|---|
 | Setup 1 | `sweep_reclaim` | sweep + MSS + horizontal `ref_vwap` (Quant `ref_vwap` or session VWAP) + entry/stop/target. Highlight `sweep` + `mss` in `trigger_event_ids` |
-| Setup 2 | `fvg_entry` / `ob_fvg` (preset `fvg_ob`) | FVG rect (+ overlapping OB when `ob_fvg`) + VWAP and/or HVN from `volume_profile` + confirm marker at entry. Highlight FVG / OB ids in `trigger_event_ids` |
+| Setup 2 | `fvg_entry` (preset `fvg_ob`) | FVG rect + overlapping OB via `trigger_event_ids` / `order_block` factor + VWAP and/or HVN from `volume_profile` + confirm marker at entry |
 | Setup 3 | `po3_judas` | Asia session box (`high`/`low`/`session_start_ms`→`session_end_ms` from `session:{symbol}:asia` / `GET /v1/session/{symbol}/asia`) + Asia-extreme sweep + displacement at entry + kill-zone shade when `active`. Highlight the sweep id only |
 
 Setups 4–6 keep the Phase 1 overlays (σ fade, pullback, AVWAP+OB).

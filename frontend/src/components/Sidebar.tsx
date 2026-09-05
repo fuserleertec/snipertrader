@@ -63,8 +63,8 @@ export function Sidebar({
           ))}
         </div>
         <p className="hint">
-          sweep_reclaim: sweep + MSS. fvg_entry / ob_fvg: FVG (+ overlapping OBs). po3_judas:
-          Asia box + extreme sweep (no MSS). Card click highlights trigger_event_ids only.
+          sweep_reclaim: sweep + MSS. fvg_entry: FVG (+ overlapping OB via trigger_event_ids).
+          po3_judas: Asia box + extreme sweep (no MSS). Card click highlights trigger_event_ids only.
         </p>
       </section>
 

@@ -220,18 +220,16 @@ export function signalsFromBook(symbol: string, price: number, book: PatternBook
       session_type: session,
       ref_vwap: price,
     }),
-    // PR #7: fvg_entry → [fvg.id]
-    signalOf(symbol, price, now, "fvg_entry", "long", 2, ids(fvgBull?.id), 0.74, { session_type: session }),
-    // PR #7 Setup 2 overlap: ob_fvg → [fvg.id, ...ob.ids]
-    signalOf(symbol, price, now, "ob_fvg", "long", 3, ids(fvgBull?.id, obBull?.id), 0.78, { session_type: session }),
+    // Setup 2: fvg_entry. Overlapping OB is joined via trigger_event_ids only.
+    signalOf(symbol, price, now, "fvg_entry", "long", 2, ids(fvgBull?.id, obBull?.id), 0.74, { session_type: session }),
     // PR #7: po3_judas → [sweep.id] only (sell sweep → short)
-    signalOf(symbol, price, now, "po3_judas", "short", 4, ids(sweepSell?.id), 0.69, {
+    signalOf(symbol, price, now, "po3_judas", "short", 3, ids(sweepSell?.id), 0.69, {
       timeframe: "15m",
       session_type: inferAssetClass(symbol) === "crypto" ? "london" : session,
     }),
-    signalOf(symbol, price, now, "sd_extension_fade", "short", 5, ids(fvgBear?.id), 0.73),
-    signalOf(symbol, price, now, "vwap_pullback_cont", "long", 6, ids(obBull?.id, fvgBull?.id), 0.7),
-    signalOf(symbol, price, now, "avwap_ob_confluence", "long", 7, ids(obBull?.id), 0.68),
+    signalOf(symbol, price, now, "sd_extension_fade", "short", 4, ids(fvgBear?.id), 0.73),
+    signalOf(symbol, price, now, "vwap_pullback_cont", "long", 5, ids(obBull?.id, fvgBull?.id), 0.7),
+    signalOf(symbol, price, now, "avwap_ob_confluence", "long", 6, ids(obBull?.id), 0.68),
     closeOf(
       signalOf(symbol, price, now, "sweep_reclaim", "long", 11, ids(sweepBuy?.id, mssBull?.id), 0.81),
       "TP_HIT",
@@ -241,11 +239,6 @@ export function signalsFromBook(symbol: string, price: number, book: PatternBook
       signalOf(symbol, price, now, "fvg_entry", "short", 12, ids(fvgBear?.id), 0.66),
       "SL_HIT",
       -1.0,
-    ),
-    closeOf(
-      signalOf(symbol, price, now, "ob_fvg", "long", 13, ids(fvgBull?.id, obBull?.id), 0.72),
-      "TP_HIT",
-      1.6,
     ),
     closeOf(
       signalOf(symbol, price, now, "po3_judas", "short", 14, ids(sweepSell?.id), 0.71, {
