@@ -130,14 +130,9 @@ export function PriceChart({
       series.setData(barsRef.current.map(toCandle));
     }
 
-    const ro = new ResizeObserver(() => {
-      chart.applyOptions({ width: host.clientWidth, height: host.clientHeight });
-    });
-    ro.observe(host);
     const sessionLines = sessionLinesRef.current;
 
     return () => {
-      ro.disconnect();
       sessionLines.clear();
       vwapLineRef.current = null;
       bandsRef.current = null;
