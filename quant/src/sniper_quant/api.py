@@ -11,9 +11,11 @@ from fastapi.openapi.utils import get_openapi
 from pydantic import BaseModel
 
 from sniper_quant.config import Settings, get_settings
+from sniper_quant.lifecycle import LifecycleMonitor
 from sniper_quant.live import SignalHub
 from sniper_quant.models import (
     CandidateSignal,
+    OHLCVBar,
     SetupType,
     SignalListResponse,
     SignalStatus,
@@ -33,9 +35,10 @@ from sniper_quant.store.signals import (
 )
 
 API_DESCRIPTION = """
-# SniperTrader Quant API — Phase 1 / Rev. 1.1
+# SniperTrader Quant API — Phase 2 / Rev. 1.1
 
-Risk management and signal lifecycle. Lives beside `data_engineering/`.
+Risk pre-filter, `setup_signals` second gate, lifecycle TP/SL, and
+Setups 1–3 backtests. Lives beside `data_engineering/`.
 Shares TimescaleDB (`ohlcv_bars`, `signals`) when `USE_INMEMORY` is false.
 
 ## ML Researchers — Risk Pre-Filter (required before Phase 2 `setup_signals`)
@@ -75,8 +78,15 @@ Reject reasons:
 - `position_size_exceeds_limit` — proposed size > 2% equity risk
 - `daily_loss_limit` — 3% daily loss already hit or this trade would breach
 - `correlation_threshold` — 60-day |ρ| vs an open symbol > 0.70
-- `same_symbol_conflict` — an ACTIVE position already exists on the symbol
+- `same_symbol_conflict` — an ACTIVE position on the same symbol in the **opposite** direction (same-direction pyramid is allowed)
 - `ok` — approved
+
+`adjusted_position_size` is in **asset units** (coins / shares / contracts), not USD.
+`size_unit` is always `"asset"`.
+
+Phase 2 second gate: Kafka `setup_signals` (or `POST /v1/signals/ingest`)
+re-checks geometry + 1.5R and persists ACTIVE. `POST /v1/lifecycle/bar`
+moves ACTIVE → TP_HIT / SL_HIT and records `outcome` + `r_multiple`.
 
 Unknown `setup_type` or `timeframe` → HTTP 422.
 
@@ -103,6 +113,9 @@ on create (`upsert`) and status change (`status`).
 class StatusBody(BaseModel):
     status: SignalStatus
     closed_ts_ms: int | None = None
+    exit_px: float | None = None
+    r_multiple: float | None = None
+    outcome: str | None = None
 
 
 class PublishBody(CandidateSignal):
@@ -129,6 +142,12 @@ async def lifespan(app: FastAPI):
     app.state.ohlcv = ohlcv
     app.state.engine = engine
     app.state.hub = SignalHub()
+    from sniper_quant.validate_service import SignalValidationService
+
+    app.state.validator = SignalValidationService(
+        signals, app.state.hub, min_rr=settings.min_rr
+    )
+    app.state.monitor = LifecycleMonitor(signals, app.state.hub, ohlcv)
     yield
     await signals.close()
     await ohlcv.close()
@@ -144,7 +163,7 @@ def create_app(
     injected = signals is not None
     app = FastAPI(
         title="SniperTrader Quant API",
-        version="1.1.0",
+        version="1.2.0",
         description=API_DESCRIPTION,
         lifespan=None if injected else lifespan,
     )
@@ -154,6 +173,12 @@ def create_app(
         app.state.ohlcv = ohlcv or InMemoryOHLCVLoader()
         app.state.engine = engine or RiskEngine(settings=app.state.settings)
         app.state.hub = SignalHub()
+        from sniper_quant.validate_service import SignalValidationService
+
+        app.state.validator = SignalValidationService(
+            app.state.signals, app.state.hub, min_rr=app.state.settings.min_rr
+        )
+        app.state.monitor = LifecycleMonitor(app.state.signals, app.state.hub, app.state.ohlcv)
 
     def _engine() -> RiskEngine:
         return app.state.engine
@@ -278,7 +303,12 @@ def create_app(
     @app.patch("/signals/{signal_id}", response_model=SignalView)
     async def patch_signal(signal_id: str, body: StatusBody) -> SignalView:
         row = await _signals().update_status(
-            signal_id, body.status, closed_ts_ms=body.closed_ts_ms
+            signal_id,
+            body.status,
+            closed_ts_ms=body.closed_ts_ms,
+            exit_px=body.exit_px,
+            r_multiple=body.r_multiple,
+            outcome=body.outcome,
         )
         if row is None:
             raise HTTPException(404, f"signal {signal_id} not found")
@@ -286,6 +316,35 @@ def create_app(
         view = _view(row)
         await _hub().publish("signal.status", view)
         return view
+
+    @app.post("/v1/signals/ingest", response_model=SignalView)
+    async def ingest_setup_signal(body: dict[str, Any]) -> SignalView:
+        """Second gate (same as the Kafka ``setup_signals`` consumer). Sanity only."""
+        from sniper_quant.validate_service import SignalValidationService
+
+        validator: SignalValidationService = app.state.validator
+        stored = await validator.handle(body)
+        if stored is None:
+            raise HTTPException(
+                422,
+                {
+                    "detail": "sanity_rejected",
+                    "reason": "invalid_levels_or_parse",
+                },
+            )
+        _engine().state.sync_from_signals(await _signals().active())
+        return _view(stored)
+
+    @app.post("/v1/lifecycle/bar")
+    async def lifecycle_bar(body: OHLCVBar) -> dict[str, Any]:
+        """Apply one OHLCV bar to ACTIVE signals (TP/SL + outcome)."""
+        monitor: LifecycleMonitor = app.state.monitor
+        closed = await monitor.apply_bar(body)
+        _engine().state.sync_from_signals(await _signals().active())
+        return {
+            "closed": len(closed),
+            "signals": [_view(row).model_dump() for row in closed],
+        }
 
     @app.websocket("/ws/signals")
     async def ws_signals(websocket: WebSocket) -> None:

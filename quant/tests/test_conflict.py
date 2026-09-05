@@ -5,7 +5,7 @@ from sniper_quant.risk.engine import RiskEngine, RiskState
 from tests.conftest import candidate, make_settings
 
 
-def test_same_symbol_open_position_rejected():
+def test_same_symbol_opposite_direction_rejected():
     state = RiskState(
         equity=100_000,
         positions=[OpenPosition(symbol="BTCUSDT", side=Side.LONG, size=1, entry=100)],
@@ -15,6 +15,18 @@ def test_same_symbol_open_position_rejected():
     assert decision.approved is False
     assert decision.reason == "same_symbol_conflict"
     assert decision.adjusted_position_size == 0.0
+    assert decision.checks["same_symbol_conflict"]["rule"] == "opposite_direction"
+
+
+def test_same_symbol_same_direction_allowed():
+    state = RiskState(
+        equity=100_000,
+        positions=[OpenPosition(symbol="BTCUSDT", side=Side.LONG, size=1, entry=100)],
+    )
+    engine = RiskEngine(settings=make_settings(), state=state)
+    decision = engine.validate(candidate(side=Side.LONG))
+    assert decision.approved is True
+    assert decision.reason == "ok"
 
 
 def test_other_symbol_allowed():
@@ -44,6 +56,6 @@ def test_active_signal_sync_conflicts():
             )
         ]
     )
-    decision = engine.validate(candidate())
+    decision = engine.validate(candidate(side=Side.SHORT, stop=104.0, target=92.0))
     assert decision.approved is False
     assert decision.reason == "same_symbol_conflict"

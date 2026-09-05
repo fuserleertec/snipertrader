@@ -1,3 +1,3 @@
-"""SniperTrader Phase 1 quant — risk pre-filter, backtester, signal lifecycle (Rev. 1.1)."""
+"""SniperTrader Phase 2 quant — risk pre-filter, setup_signals gate, backtester, lifecycle."""
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"

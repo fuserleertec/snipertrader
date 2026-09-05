@@ -1,7 +1,7 @@
-# SniperTrader quant — Phase 1 (Rev. 1.1)
+# SniperTrader quant — Phase 2 (Rev. 1.1)
 
-Risk pre-filter, USME stop/target engine, event-driven backtester, and
-signal lifecycle. This package sits next to
+Risk pre-filter, `setup_signals` second gate, Setups 1–3 walk-forward
+backtests, live TP/SL lifecycle, and Grafana. This package sits next to
 [`data_engineering/`](../data_engineering/README.md) and shares its
 TimescaleDB / Redis / Compose world. It does **not** replace the static
 site or Vercel functions.
@@ -95,7 +95,9 @@ JSON Schema: [`schemas/risk_validate_response.schema.json`](../schemas/risk_vali
 }
 ```
 
-The API also echoes `entry`, `stop`, `target`, `risk_per_unit`, and `checks`.
+The API also echoes `entry`, `stop`, `target`, `risk_per_unit`, `checks`,
+and `size_unit: "asset"`. **`adjusted_position_size` is asset units**
+(coins / shares / contracts), not USD notional.
 ML's prices are **not rewritten**; only size may be adjusted.
 
 | `reason` | Meaning |
@@ -105,7 +107,7 @@ ML's prices are **not rewritten**; only size may be adjusted.
 | `position_size_exceeds_limit` | Proposed size > 2% equity risk. `adjusted_position_size` is the max. |
 | `daily_loss_limit` | 3% daily loss hit, or this trade would breach the remainder. |
 | `correlation_threshold` | 60-day \|ρ\| vs an open symbol > 0.70. |
-| `same_symbol_conflict` | An ACTIVE position/signal already exists on this symbol. |
+| `same_symbol_conflict` | An ACTIVE position/signal exists on this symbol in the **opposite** direction. Same-direction pyramid is allowed. |
 
 After approval, Phase 2 publish to `setup_signals` **requires** `id` plus
 additive fields `entry`, `stop`, `target`, `timeframe`, `trigger_event_ids`,
@@ -144,14 +146,40 @@ levels from ATR.
 | Slippage | 2 bp (each side) | `SLIPPAGE_BPS` |
 | Default equity | 100_000 | `DEFAULT_EQUITY` |
 
-Same-symbol: any open / ACTIVE position on that symbol is a hard reject
-(including opposite side).
+Same-symbol conflict is **opposite direction only**. An open long does not
+block another long on that symbol; it does block a short.
+
+## Signal validation service (Kafka second gate)
+
+ML calls `/risk/validate` first. After approval, ML assigns `id` and
+publishes to Kafka `setup_signals`. `sniper-quant consume` is the second
+gate:
+
+- Long: `stop < entry` and `target > entry`
+- Short: `stop > entry` and `target < entry`
+- Take-profit at least **1.5R**
+- Pass → unique `id` (kept if present), Timescale `ACTIVE`, WS `signal.upsert`
+- Fail → log and discard (never stored as ACTIVE)
+
+In-memory / test path: `InMemoryBus` on topic `setup_signals`, or
+`POST /v1/signals/ingest` (same handler, no Kafka).
+
+```bash
+sniper-quant consume            # Kafka at KAFKA_BOOTSTRAP
+sniper-quant consume --inmemory # bus only (tests / local)
+```
 
 ## Signal lifecycle
 
 Timescale table `signals` (see `data_engineering/sql/02-signals.sql`):
 
 `ACTIVE` → `TP_HIT` | `SL_HIT` | `CANCELLED`
+
+`sniper-quant monitor` (or `POST /v1/lifecycle/bar`) watches OHLCV and
+auto-closes ACTIVE rows when price tags TP or SL. Same-bar SL+TP → **SL
+wins**. Closed rows store `exit_px`, `r_multiple`, and `outcome`
+(`win` / `loss`). Frontend `GET /signals` and `WS /ws/signals` keep the
+Phase 1 shape; outcome fields are additive.
 
 ## Frontend — dashboard signal table
 
@@ -186,13 +214,32 @@ ws.onmessage = (ev) => {
 };
 ```
 
-## Backtester
+## Backtester — Setups 1–3 + walk-forward
 
-Event-driven replay of OHLCV + setup signals (all seven locked types). Same-bar
-SL+TP → **SL wins**. Transaction costs = commission + slippage.
+Event-driven replay of OHLCV + setup signals. Same-bar SL+TP → **SL wins**.
+Transaction costs = commission + slippage.
 Metrics: **win rate**, **avg R:R**, **Sharpe** (√252), **max drawdown**.
 
-Loader: `TimescaleOHLCVLoader` (DE hypertable) or `InMemoryOHLCVLoader`.
+Loader: `TimescaleOHLCVLoader` (DE hypertable) or in-memory
+`synthetic_setup_tape`.
+
+| # | Product | `setup_type` |
+|---|---|---|
+| 1 | Liquidity Sweep + VWAP Reclaim | `sweep_reclaim` |
+| 2 | FVG @ VWAP / HVN | `fvg_entry` |
+| 3 | PO3 / Judas Swing | `po3_judas` |
+
+```bash
+sniper-quant backtest --setups 1,2,3 --inmemory
+# writes quant/reports/setups_1_3_walkforward.md  (share with ML)
+```
+
+Walk-forward uses an expanding window (first 40% train, remaining 60% in
+`--folds` OOS slices). Grid: `stop_atr_mult` ∈ {1.5, 2.0, 2.5},
+`vwap_band_sigma` ∈ {1, 2, 3}, `confirm_bars` ∈ {1, 2}. Defaults are
+documented in the report until ML publishes detector params.
+
+`sniper-quant demo` still runs the scripted 7-setup smoke book.
 
 ## How to run
 
@@ -230,11 +277,19 @@ cd quant
 docker compose up --build
 # DE API     http://localhost:8000/docs
 # Risk API   http://localhost:8001/docs
+# Grafana    http://localhost:3002   admin / admin
 ```
 
 `quant/docker-compose.yml` **includes** `data_engineering/docker-compose.yml`
 so Redpanda, Redis, Timescale, and the DE pipeline come up together. Timescale
-init runs `01-init.sql` (OHLCV) then `02-signals.sql` (signals).
+init runs `01-init.sql` (OHLCV) then `02-signals.sql` (signals +
+`signal_performance` view). Extra services: `signal-validate` (Kafka
+consumer), `signal-monitor` (TP/SL), `grafana` on **:3002**.
+
+Grafana panels (per `setup_type` variable): signals/day, win rate, avg R:R,
+cumulative P&L. Alert rules fire when 7-day win rate < **0.35** or avg R
+< **0.50** (`ALERT_WIN_RATE` / `ALERT_AVG_RR`). Provisioning lives in
+`quant/grafana/provisioning/`.
 
 Host-side API against compose infra:
 
@@ -248,9 +303,11 @@ sniper-quant api --port 8001
 ```
 quant/
   src/sniper_quant/     library + CLI
-  tests/                sizing, daily loss, correlation, conflict, validate shape
+  tests/
+  grafana/provisioning  Timescale datasource + setup-performance dashboard + alerts
+  reports/              walk-forward markdown for ML
   Dockerfile
-  docker-compose.yml    include DE stack + risk-api :8001
+  docker-compose.yml    DE stack + risk-api :8001 + grafana :3002
 data_engineering/sql/02-signals.sql
 schemas/risk_validate_*.schema.json
 ```
@@ -259,6 +316,8 @@ schemas/risk_validate_*.schema.json
 
 ```
 sniper-quant api      [--inmemory] [--host 0.0.0.0 --port 8001]
-sniper-quant demo     [--inmemory]   # synthetic backtest → metrics JSON
-sniper-quant backtest [--inmemory]   # alias of demo
+sniper-quant demo     [--inmemory]   # scripted 7-setup smoke book
+sniper-quant backtest --setups 1,2,3 [--inmemory] [--report PATH] [--folds 3]
+sniper-quant consume  [--inmemory]   # setup_signals second gate
+sniper-quant monitor  [--inmemory] [--symbols BTCUSDT,...] [--timeframe 1m]
 ```

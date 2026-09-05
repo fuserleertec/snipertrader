@@ -138,6 +138,9 @@ class SignalView(BaseModel):
     timeframe: SignalTimeframe | None = None
     ref_session: str | None = None
     trigger_event_ids: list[str] = Field(default_factory=list)
+    exit_px: float | None = None
+    r_multiple: float | None = None
+    outcome: str | None = None
 
     @classmethod
     def from_stored(cls, row: "StoredSignal") -> "SignalView":
@@ -162,6 +165,9 @@ class SignalView(BaseModel):
             timeframe=tf,
             ref_session=row.ref_session,
             trigger_event_ids=list(row.trigger_event_ids or []),
+            exit_px=row.exit_px,
+            r_multiple=row.r_multiple,
+            outcome=row.outcome,
         )
 
 
@@ -178,7 +184,10 @@ class SignalWsEvent(BaseModel):
 class ValidateResponse(BaseModel):
     approved: bool
     reason: str
-    adjusted_position_size: float | None
+    adjusted_position_size: float | None = Field(
+        description="Position size in **asset units** (contracts/coins/shares), not USD notional."
+    )
+    size_unit: Literal["asset"] = "asset"
     entry: float | None = None
     stop: float | None = None
     target: float | None = None
@@ -224,6 +233,9 @@ class StoredSignal(BaseModel):
     session_type: SessionType | str | None = None
     status: SignalStatus = SignalStatus.ACTIVE
     closed_ts_ms: int | None = None
+    exit_px: float | None = None
+    r_multiple: float | None = None
+    outcome: str | None = None
 
     @field_validator("symbol", mode="before")
     @classmethod

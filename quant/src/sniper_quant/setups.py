@@ -18,13 +18,13 @@ SETUP_TYPES: tuple[str, ...] = (
 )
 
 SETUP_TYPE_NOTES: dict[str, str] = {
-    "sweep_reclaim": "Liquidity sweep + reclaim.",
-    "fvg_entry": "Fair-value gap entry.",
+    "sweep_reclaim": "Setup 1 — Liquidity sweep + VWAP reclaim.",
+    "fvg_entry": "Setup 2 — Fair-value gap at VWAP / HVN.",
     "mss_break": "Market-structure shift / break.",
     "order_block": "Order-block reaction.",
     "sweep_mss": "Sweep followed by market-structure shift.",
     "ob_fvg": "Order block + fair-value gap confluence.",
-    "po3_judas": "Power of Three / Judas swing.",
+    "po3_judas": "Setup 3 — Power of Three / Judas swing.",
 }
 
 SIGNAL_TIMEFRAMES: tuple[str, ...] = ("1m", "5m", "15m")

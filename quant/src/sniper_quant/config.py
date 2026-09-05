@@ -37,6 +37,10 @@ class Settings(BaseSettings):
     commission_bps: float = Field(default=1.0, alias="COMMISSION_BPS")
     slippage_bps: float = Field(default=2.0, alias="SLIPPAGE_BPS")
     account_id: str = Field(default="default", alias="ACCOUNT_ID")
+    kafka_bootstrap: str = Field(default="localhost:19092", alias="KAFKA_BOOTSTRAP")
+    kafka_group: str = Field(default="sniper-quant-validate", alias="KAFKA_GROUP")
+    alert_win_rate: float = Field(default=0.35, alias="ALERT_WIN_RATE")
+    alert_avg_rr: float = Field(default=0.50, alias="ALERT_AVG_RR")
 
 
 @lru_cache(maxsize=1)

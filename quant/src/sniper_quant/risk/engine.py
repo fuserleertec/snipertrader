@@ -134,8 +134,14 @@ class RiskEngine:
         if extra_positions:
             positions.extend(extra_positions)
         symbol = candidate.symbol
-        conflict = any(p.symbol == symbol for p in positions)
-        checks["same_symbol_conflict"] = {"ok": not conflict, "open": [p.symbol for p in positions]}
+        # Same-symbol same-direction pyramiding is allowed; opposite side is a conflict.
+        opp = [p for p in positions if p.symbol == symbol and p.side != candidate.side]
+        conflict = bool(opp)
+        checks["same_symbol_conflict"] = {
+            "ok": not conflict,
+            "rule": "opposite_direction",
+            "open": [f"{p.symbol}:{p.side.value}" for p in positions],
+        }
 
         new_risk = planned * levels.risk_per_unit
         daily = daily_loss_check(

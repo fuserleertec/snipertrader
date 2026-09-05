@@ -49,6 +49,9 @@ class SignalStore(Protocol):
         status: SignalStatus,
         *,
         closed_ts_ms: int | None = None,
+        exit_px: float | None = None,
+        r_multiple: float | None = None,
+        outcome: str | None = None,
     ) -> StoredSignal | None: ...
 
     async def active(self) -> list[StoredSignal]: ...
@@ -103,17 +106,25 @@ class InMemorySignalStore:
         status: SignalStatus,
         *,
         closed_ts_ms: int | None = None,
+        exit_px: float | None = None,
+        r_multiple: float | None = None,
+        outcome: str | None = None,
     ) -> StoredSignal | None:
         row = self.rows.get(signal_id)
         if row is None:
             return None
         terminal = status in {SignalStatus.TP_HIT, SignalStatus.SL_HIT, SignalStatus.CANCELLED}
-        updated = row.model_copy(
-            update={
-                "status": status,
-                "closed_ts_ms": closed_ts_ms or (_now_ms() if terminal else row.closed_ts_ms),
-            }
-        )
+        patch = {
+            "status": status,
+            "closed_ts_ms": closed_ts_ms or (_now_ms() if terminal else row.closed_ts_ms),
+        }
+        if exit_px is not None:
+            patch["exit_px"] = exit_px
+        if r_multiple is not None:
+            patch["r_multiple"] = r_multiple
+        if outcome is not None:
+            patch["outcome"] = outcome
+        updated = row.model_copy(update=patch)
         self.rows[signal_id] = updated
         return updated
 
@@ -129,13 +140,14 @@ INSERT INTO signals (
   ts, id, schema_version, symbol, asset_class, setup_type, side,
   confidence, ref_vwap, ref_session, entry, stop_px, target,
   timeframe, trigger_event_ids, session_type,
-  position_size, status, closed_ts
+  position_size, status, closed_ts, exit_px, r_multiple, outcome
 ) VALUES (
   to_timestamp($1 / 1000.0), $2, $3, $4, $5, $6, $7,
   $8, $9, $10, $11, $12, $13,
   $14, $15, $16,
   $17, $18,
-  CASE WHEN $19::BIGINT IS NULL THEN NULL ELSE to_timestamp($19 / 1000.0) END
+  CASE WHEN $19::BIGINT IS NULL THEN NULL ELSE to_timestamp($19 / 1000.0) END,
+  $20, $21, $22
 )
 ON CONFLICT (id, ts) DO UPDATE SET
   status = EXCLUDED.status,
@@ -147,7 +159,10 @@ ON CONFLICT (id, ts) DO UPDATE SET
   session_type = EXCLUDED.session_type,
   position_size = EXCLUDED.position_size,
   updated_at = NOW(),
-  closed_ts = EXCLUDED.closed_ts
+  closed_ts = EXCLUDED.closed_ts,
+  exit_px = EXCLUDED.exit_px,
+  r_multiple = EXCLUDED.r_multiple,
+  outcome = EXCLUDED.outcome
 """
 
 
@@ -173,7 +188,26 @@ def _row_to_signal(r) -> StoredSignal:
         position_size=r["position_size"],
         status=SignalStatus(r["status"]),
         closed_ts_ms=int(closed.timestamp() * 1000) if closed is not None else None,
+        exit_px=_optional_float(r, "exit_px"),
+        r_multiple=_optional_float(r, "r_multiple"),
+        outcome=_optional_str(r, "outcome"),
     )
+
+
+def _optional_float(row, key: str) -> float | None:
+    try:
+        value = row[key]
+    except (KeyError, IndexError):
+        return None
+    return None if value is None else float(value)
+
+
+def _optional_str(row, key: str) -> str | None:
+    try:
+        value = row[key]
+    except (KeyError, IndexError):
+        return None
+    return None if value is None else str(value)
 
 
 def _decode_ids(raw) -> list[str]:
@@ -230,6 +264,9 @@ class TimescaleSignalStore:
                 signal.position_size,
                 signal.status.value,
                 signal.closed_ts_ms,
+                signal.exit_px,
+                signal.r_multiple,
+                signal.outcome,
             )
         return signal
 
@@ -239,7 +276,8 @@ class TimescaleSignalStore:
         SELECT EXTRACT(EPOCH FROM ts) * 1000 AS ts_ms, id, schema_version,
                symbol, asset_class, setup_type, side, confidence, ref_vwap,
                ref_session, entry, stop_px, target, timeframe, trigger_event_ids,
-               session_type, position_size, status, closed_ts
+               session_type, position_size, status, closed_ts,
+               exit_px, r_multiple, outcome
         FROM signals WHERE id = $1
         ORDER BY ts DESC LIMIT 1
         """
@@ -269,7 +307,8 @@ class TimescaleSignalStore:
         SELECT EXTRACT(EPOCH FROM ts) * 1000 AS ts_ms, id, schema_version,
                symbol, asset_class, setup_type, side, confidence, ref_vwap,
                ref_session, entry, stop_px, target, timeframe, trigger_event_ids,
-               session_type, position_size, status, closed_ts
+               session_type, position_size, status, closed_ts,
+               exit_px, r_multiple, outcome
         FROM signals
         WHERE ($1::TEXT IS NULL OR symbol = $1)
           AND ($2::TEXT IS NULL OR status = $2)
@@ -294,6 +333,9 @@ class TimescaleSignalStore:
         status: SignalStatus,
         *,
         closed_ts_ms: int | None = None,
+        exit_px: float | None = None,
+        r_multiple: float | None = None,
+        outcome: str | None = None,
     ) -> StoredSignal | None:
         current = await self.get(signal_id)
         if current is None:
@@ -306,11 +348,14 @@ class TimescaleSignalStore:
         SET status = $2,
             closed_ts = CASE WHEN $3::BIGINT IS NULL THEN closed_ts
                              ELSE to_timestamp($3 / 1000.0) END,
+            exit_px = COALESCE($4, exit_px),
+            r_multiple = COALESCE($5, r_multiple),
+            outcome = COALESCE($6, outcome),
             updated_at = NOW()
         WHERE id = $1
         """
         async with pool.acquire() as conn:
-            await conn.execute(sql, signal_id, status.value, closed)
+            await conn.execute(sql, signal_id, status.value, closed, exit_px, r_multiple, outcome)
         return await self.get(signal_id)
 
     async def active(self) -> list[StoredSignal]:

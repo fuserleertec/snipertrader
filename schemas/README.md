@@ -12,7 +12,7 @@ listed below. JSON Schema is draft 2020-12.
 | `vwap_values` | [`vwap_values.schema.json`](vwap_values.schema.json) | VWAP engine | Redis, WebSocket, Quant API |
 | `sweep_events` | [`sweep_event.schema.json`](sweep_event.schema.json) | Pattern detectors (Phase 2 stub) | Redis `sweep:{symbol}:{id}` |
 | `fvg_zones` | [`fvg_zone.schema.json`](fvg_zone.schema.json) | Pattern detectors (Phase 2 stub) | Redis `fvg:{symbol}:{id}` |
-| `setup_signals` | [`setup_signal.schema.json`](setup_signal.schema.json) | Signal engine (after Risk Pre-Filter) | Downstream ML / UI / `quant/` lifecycle |
+| `setup_signals` | [`setup_signal.schema.json`](setup_signal.schema.json) | ML (only after `POST /risk/validate` approved) | `quant/` SignalValidationService (second gate) → Timescale `signals` + WS |
 
 HTTP contracts used by Quant (`POST /risk/validate`) — not Kafka topics:
 

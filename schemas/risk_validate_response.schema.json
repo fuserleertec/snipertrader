@@ -11,7 +11,12 @@
     "reason": { "type": "string" },
     "adjusted_position_size": {
       "type": ["number", "null"],
-      "description": "Compliant size in units. 0 when rejected for a hard block; suggested max when size was the only issue."
+      "description": "Compliant size in **asset units** (coins/shares/contracts), not USD notional. 0 when rejected for a hard block; suggested max when size was the only issue."
+    },
+    "size_unit": {
+      "type": "string",
+      "const": "asset",
+      "description": "Always asset units. Additive."
     }
   }
 }

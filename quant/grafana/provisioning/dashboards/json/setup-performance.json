@@ -1,0 +1,220 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": { "type": "postgres", "uid": "timescale" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 0.35 },
+              { "color": "green", "value": 0.5 }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Win rate (7d, $setup_type)",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "timescale" },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT AVG(win_rate) AS win_rate FROM signal_performance WHERE setup_type IN (${setup_type:sqlstring}) AND day >= NOW() - INTERVAL '7 days' AND n_closed > 0",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "timescale" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 0.5 },
+              { "color": "green", "value": 1.0 }
+            ]
+          },
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "id": 2,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Avg R:R (7d, $setup_type)",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "timescale" },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT AVG(avg_rr) AS avg_rr FROM signal_performance WHERE setup_type IN (${setup_type:sqlstring}) AND day >= NOW() - INTERVAL '7 days' AND n_closed > 0",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "timescale" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "id": 3,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Signals (7d, $setup_type)",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "timescale" },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT SUM(n_signals) AS n FROM signal_performance WHERE setup_type IN (${setup_type:sqlstring}) AND day >= NOW() - INTERVAL '7 days'",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "timescale" },
+      "fieldConfig": { "defaults": { "unit": "currencyUSD" }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "id": 4,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "P&L (7d, $setup_type)",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "timescale" },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT SUM(pnl) AS pnl FROM signal_performance WHERE setup_type IN (${setup_type:sqlstring}) AND day >= NOW() - INTERVAL '7 days'",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "timescale" },
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars" }, "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "id": 5,
+      "title": "Signals per day",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "timescale" },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT day AS time, setup_type AS metric, n_signals AS value FROM signal_performance WHERE setup_type IN (${setup_type:sqlstring}) AND day >= NOW() - INTERVAL '30 days' ORDER BY 1",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "timescale" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 0.35 },
+              { "color": "green", "value": 0.5 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "id": 6,
+      "title": "Win rate by day",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "timescale" },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT day AS time, setup_type AS metric, win_rate AS value FROM signal_performance WHERE setup_type IN (${setup_type:sqlstring}) AND day >= NOW() - INTERVAL '30 days' ORDER BY 1",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "timescale" },
+      "fieldConfig": { "defaults": { "decimals": 2 }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "id": 7,
+      "title": "Average R:R by day",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "timescale" },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT day AS time, setup_type AS metric, avg_rr AS value FROM signal_performance WHERE setup_type IN (${setup_type:sqlstring}) AND day >= NOW() - INTERVAL '30 days' ORDER BY 1",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "timescale" },
+      "fieldConfig": { "defaults": { "unit": "currencyUSD", "custom": { "fillOpacity": 20 } }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "id": 8,
+      "title": "Cumulative P&L",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "timescale" },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT day AS time, setup_type AS metric, SUM(SUM(pnl)) OVER (PARTITION BY setup_type ORDER BY day) AS value FROM signal_performance WHERE setup_type IN (${setup_type:sqlstring}) GROUP BY day, setup_type ORDER BY 1",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "tags": ["quant", "signals", "snipertrader"],
+  "templating": {
+    "list": [
+      {
+        "allValue": null,
+        "current": { "text": "All", "value": ["$__all"] },
+        "datasource": { "type": "postgres", "uid": "timescale" },
+        "definition": "SELECT DISTINCT setup_type FROM signals ORDER BY 1",
+        "includeAll": true,
+        "label": "setup_type",
+        "multi": true,
+        "name": "setup_type",
+        "options": [],
+        "query": "SELECT DISTINCT setup_type FROM signals ORDER BY 1",
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": { "from": "now-30d", "to": "now" },
+  "timezone": "utc",
+  "title": "Quant — setup performance",
+  "uid": "quant-setup-performance",
+  "version": 1
+}

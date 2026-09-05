@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from sniper_quant.config import Settings, get_settings
 from sniper_quant.backtest.metrics import compute_metrics
+from sniper_quant.config import Settings, get_settings
+from sniper_quant.exits import bar_exit
 from sniper_quant.models import BacktestMetrics, OHLCVBar, Side, SignalStatus, TradeRecord
 from sniper_quant.risk.sizing import fixed_fractional_size
 from sniper_quant.usme import compute_usme_levels
@@ -81,7 +82,12 @@ class EventBacktester:
                 last_close[bar.symbol] = bar.close
                 pos = live.get(bar.symbol)
                 if pos is not None:
-                    exit_px, status = _intrabar_exit(pos.trade, bar)
+                    exit_px, status = bar_exit(
+                        side=pos.trade.side,
+                        stop=pos.trade.stop,
+                        target=pos.trade.target,
+                        bar=bar,
+                    )
                     if exit_px is not None and status is not None:
                         pnl = _close_trade(pos.trade, exit_px, bar.close_ts_ms, status, pos.remaining, settings)
                         cash += pnl
@@ -174,28 +180,6 @@ def _apply_slippage(price: float, side: Side, bps: float, *, entering: bool) -> 
     if entering:
         return price * (1 + frac) if side is Side.LONG else price * (1 - frac)
     return price * (1 - frac) if side is Side.LONG else price * (1 + frac)
-
-
-def _intrabar_exit(trade: TradeRecord, bar: OHLCVBar) -> tuple[float | None, SignalStatus | None]:
-    if trade.side is Side.LONG:
-        hit_sl = bar.low <= trade.stop
-        hit_tp = bar.high >= trade.target
-        if hit_sl and hit_tp:
-            return trade.stop, SignalStatus.SL_HIT
-        if hit_sl:
-            return trade.stop, SignalStatus.SL_HIT
-        if hit_tp:
-            return trade.target, SignalStatus.TP_HIT
-        return None, None
-    hit_sl = bar.high >= trade.stop
-    hit_tp = bar.low <= trade.target
-    if hit_sl and hit_tp:
-        return trade.stop, SignalStatus.SL_HIT
-    if hit_sl:
-        return trade.stop, SignalStatus.SL_HIT
-    if hit_tp:
-        return trade.target, SignalStatus.TP_HIT
-    return None, None
 
 
 def _close_trade(

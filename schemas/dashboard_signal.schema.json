@@ -46,6 +46,13 @@
     "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
     "timeframe": { "type": ["string", "null"], "enum": ["1m", "5m", "15m", null] },
     "ref_session": { "type": ["string", "null"] },
-    "trigger_event_ids": { "type": "array", "items": { "type": "string" } }
+    "trigger_event_ids": { "type": "array", "items": { "type": "string" } },
+    "exit_px": { "type": ["number", "null"], "description": "Fill when TP/SL hits. Additive (Phase 2)." },
+    "r_multiple": { "type": ["number", "null"], "description": "R multiple achieved. Additive (Phase 2)." },
+    "outcome": {
+      "type": ["string", "null"],
+      "enum": ["win", "loss", "cancelled", null],
+      "description": "win | loss | cancelled. Additive (Phase 2)."
+    }
   }
 }

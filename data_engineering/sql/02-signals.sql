@@ -24,8 +24,28 @@ CREATE TABLE IF NOT EXISTS signals (
     created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     closed_ts      TIMESTAMPTZ,
+    exit_px        DOUBLE PRECISION,
+    r_multiple     DOUBLE PRECISION,
+    outcome        TEXT,
     PRIMARY KEY (id, ts)
 );
+
+ALTER TABLE signals ADD COLUMN IF NOT EXISTS exit_px DOUBLE PRECISION;
+ALTER TABLE signals ADD COLUMN IF NOT EXISTS r_multiple DOUBLE PRECISION;
+ALTER TABLE signals ADD COLUMN IF NOT EXISTS outcome TEXT;
+
+CREATE OR REPLACE VIEW signal_performance AS
+SELECT
+    date_trunc('day', ts) AS day,
+    setup_type,
+    COUNT(*) AS n_signals,
+    COUNT(*) FILTER (WHERE status IN ('TP_HIT', 'SL_HIT')) AS n_closed,
+    AVG(CASE WHEN outcome = 'win' THEN 1.0 WHEN outcome = 'loss' THEN 0.0 END) AS win_rate,
+    AVG(r_multiple) AS avg_rr,
+    SUM(COALESCE(r_multiple, 0) * ABS(COALESCE(entry, 0) - COALESCE(stop_px, 0))
+        * COALESCE(position_size, 1)) AS pnl
+FROM signals
+GROUP BY 1, 2;
 
 SELECT create_hypertable('signals', 'ts', if_not_exists => TRUE);
 

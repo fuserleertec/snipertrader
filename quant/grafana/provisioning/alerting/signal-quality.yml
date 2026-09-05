@@ -1,0 +1,124 @@
+# Signal-quality alerts. Thresholds match Settings ALERT_WIN_RATE / ALERT_AVG_RR
+# (defaults 0.35 / 0.50). Edit the evaluator params if you change those env vars.
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: quant-signal-quality
+    folder: Quant
+    interval: 5m
+    rules:
+      - uid: quant-winrate-low
+        title: Setup win rate below 35%
+        condition: C
+        for: 15m
+        noDataState: OK
+        execErrState: OK
+        annotations:
+          summary: "7-day win rate on a setup_type is below ALERT_WIN_RATE (0.35)."
+          description: "Check signal_performance. Re-tune ML params or pause that setup."
+        labels:
+          severity: warning
+          team: quant
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 604800
+              to: 0
+            datasourceUid: timescale
+            model:
+              editorMode: code
+              format: table
+              intervalMs: 60000
+              maxDataPoints: 43200
+              rawQuery: true
+              rawSql: |
+                SELECT
+                  EXTRACT(EPOCH FROM date_trunc('day', NOW())) AS time,
+                  setup_type,
+                  AVG(win_rate) AS win_rate
+                FROM signal_performance
+                WHERE day >= NOW() - INTERVAL '7 days'
+                  AND n_closed >= 3
+                GROUP BY setup_type
+          - refId: B
+            relativeTimeRange:
+              from: 604800
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              settings:
+                mode: dropNN
+          - refId: C
+            relativeTimeRange:
+              from: 604800
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params: [0.35]
+                    type: lt
+                  type: query
+
+      - uid: quant-avgrr-low
+        title: Setup average R below 0.50
+        condition: C
+        for: 15m
+        noDataState: OK
+        execErrState: OK
+        annotations:
+          summary: "7-day average R-multiple is below ALERT_AVG_RR (0.50)."
+          description: "Targets may be too tight vs stops, or fills are stopping out."
+        labels:
+          severity: warning
+          team: quant
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 604800
+              to: 0
+            datasourceUid: timescale
+            model:
+              editorMode: code
+              format: table
+              intervalMs: 60000
+              maxDataPoints: 43200
+              rawQuery: true
+              rawSql: |
+                SELECT
+                  EXTRACT(EPOCH FROM date_trunc('day', NOW())) AS time,
+                  setup_type,
+                  AVG(avg_rr) AS avg_rr
+                FROM signal_performance
+                WHERE day >= NOW() - INTERVAL '7 days'
+                  AND n_closed >= 3
+                GROUP BY setup_type
+          - refId: B
+            relativeTimeRange:
+              from: 604800
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              settings:
+                mode: dropNN
+          - refId: C
+            relativeTimeRange:
+              from: 604800
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params: [0.50]
+                    type: lt
+                  type: query

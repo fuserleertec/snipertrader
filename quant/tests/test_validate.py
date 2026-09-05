@@ -47,6 +47,7 @@ def test_validate_response_shape_approved():
     assert isinstance(body["reason"], str)
     assert isinstance(body["adjusted_position_size"], (int, float))
     assert body["reason"] == "ok"
+    assert body.get("size_unit") == "asset"
     assert "id" not in _payload()
 
 
@@ -85,7 +86,10 @@ def test_validate_reject_shape_conflict():
     http, _ = _client()
     created = http.post("/signals", json=_payload())
     assert created.status_code == 201
-    body = http.post("/risk/validate", json=_payload()).json()
+    body = http.post(
+        "/risk/validate",
+        json=_payload(side="short", stop=104.0, target=92.0),
+    ).json()
     assert REQUIRED <= set(body)
     assert body["approved"] is False
     assert body["reason"] == "same_symbol_conflict"

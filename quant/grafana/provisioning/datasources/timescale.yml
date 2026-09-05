@@ -1,0 +1,17 @@
+apiVersion: 1
+datasources:
+  - name: Timescale
+    uid: timescale
+    type: postgres
+    access: proxy
+    url: timescaledb:5432
+    user: sniper
+    isDefault: true
+    editable: false
+    secureJsonData:
+      password: sniper
+    jsonData:
+      database: market
+      sslmode: disable
+      postgresVersion: 1600
+      timescaledb: true

@@ -1,13 +1,14 @@
-# Extends the Phase 1 data-engineering stack with the risk API.
+# Extends the Phase 1 data-engineering stack with the risk API + Grafana.
 #
 #   cd quant
 #   docker compose up --build
 #
 # Reuses Redpanda / Redis / TimescaleDB from ../data_engineering.
-# Risk Pre-Filter: http://localhost:8001/docs
+# Risk Pre-Filter:  http://localhost:8001/docs
+# Grafana:          http://localhost:3002  (admin / admin)
 #
 # Timescale init already mounts data_engineering/sql/02-signals.sql
-# (signals + account_daily) when the DE compose file is included.
+# (signals + account_daily + signal_performance) when the DE compose is included.
 
 include:
   - path: ../data_engineering/docker-compose.yml
@@ -21,9 +22,56 @@ services:
     environment:
       SNIPER_ENV: demo
       DATABASE_URL: postgresql://sniper:sniper@timescaledb:5432/market
+      KAFKA_BOOTSTRAP: redpanda:9092
       USE_INMEMORY: "false"
       API_HOST: 0.0.0.0
       API_PORT: "8001"
     ports:
       - "8001:8001"
     command: ["sniper-quant", "api", "--host", "0.0.0.0", "--port", "8001"]
+
+  signal-validate:
+    build: .
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    environment:
+      SNIPER_ENV: demo
+      DATABASE_URL: postgresql://sniper:sniper@timescaledb:5432/market
+      KAFKA_BOOTSTRAP: redpanda:9092
+      KAFKA_GROUP: sniper-quant-validate
+      USE_INMEMORY: "false"
+    command: ["sniper-quant", "consume"]
+    restart: unless-stopped
+
+  signal-monitor:
+    build: .
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    environment:
+      SNIPER_ENV: demo
+      DATABASE_URL: postgresql://sniper:sniper@timescaledb:5432/market
+      USE_INMEMORY: "false"
+    command: ["sniper-quant", "monitor", "--timeframe", "1m", "--interval", "5"]
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      ALERT_WIN_RATE: "0.35"
+      ALERT_AVG_RR: "0.50"
+    ports:
+      - "3002:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+
