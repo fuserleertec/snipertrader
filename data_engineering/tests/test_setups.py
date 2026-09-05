@@ -347,6 +347,15 @@ def test_cli_setups_inmemory():
     assert rc == 0
 
 
+def test_cli_setups_e2e_report(tmp_path):
+    dest = tmp_path / "phase2_e2e_report.json"
+    rc = main(["setups", "--e2e-report", "--e2e-out", str(dest)])
+    assert rc == 0
+    report = json.loads(dest.read_text())
+    assert report["summary"]["overall"] == "PASS"
+    assert report["phase"] == 2
+
+
 @pytest.mark.asyncio
 async def test_setup1_rejects_1m_timeframe():
     from sniper_data.pattern_detection.fixtures import bar as m1_bar

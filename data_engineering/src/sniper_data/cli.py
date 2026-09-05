@@ -26,6 +26,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--host", default=None)
     parser.add_argument("--port", type=int, default=None)
+    parser.add_argument(
+        "--e2e-report",
+        action="store_true",
+        help="(setups) Phase 2 PM integration report (in-memory; no Phase 3).",
+    )
+    parser.add_argument(
+        "--e2e-out",
+        default=None,
+        help="Write the Phase 2 E2E report JSON to this path.",
+    )
     args = parser.parse_args(argv)
 
     from sniper_data.config import get_settings
@@ -34,8 +44,21 @@ def main(argv: list[str] | None = None) -> int:
     _setup_logging(settings.log_level)
 
     if args.command == "setups":
+        from pathlib import Path
+
         from sniper_data.pipeline import run_setup_loop, run_setup_replay
 
+        if args.e2e_report or args.e2e_out:
+            from sniper_data.setup_detection.e2e import build_phase2_e2e_report
+
+            report = asyncio.run(build_phase2_e2e_report())
+            text = json.dumps(report, indent=2, default=str)
+            print(text)
+            if args.e2e_out:
+                dest = Path(args.e2e_out)
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                dest.write_text(text)
+            return 0 if report["summary"]["overall"] == "PASS" else 1
         if args.replay or args.inmemory:
             result = asyncio.run(run_setup_replay())
             print(json.dumps(result, indent=2, default=str))

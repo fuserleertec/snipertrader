@@ -457,7 +457,12 @@ the false-positive proxy).
 
 ```bash
 sniper-data setups --inmemory
+sniper-data setups --e2e-report --e2e-out /tmp/phase2_e2e_report.json
 ```
+
+`--e2e-report` is the Phase 2 PM integration pack (setups 1–3 through
+mocked `POST /risk/validate`, plus conviction / reject / dedupe gates).
+It does not start Phase 3.
 
 Pattern-detector in-memory demo (sweeps / FVG / MSS / anchors, not setups):
 
