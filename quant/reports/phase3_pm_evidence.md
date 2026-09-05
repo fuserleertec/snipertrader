@@ -16,7 +16,7 @@ PR https://github.com/fuserleertec/snipertrader/pull/2
 | 5 | Paper 2-week gate | **PASS** | `POST /paper/demo-fortnight` → 14 days, 12 closed trades, `live_trading: false`. |
 | 6 | ML PR #9 sample replay | **PASS** | `tests/fixtures/pr9_quant_replay/*.validate.json` approve on `/risk/validate`. Factors 422 on validate, stored on publish. |
 
-**pytest:** `cd quant && PYTHONPATH=src python3 -m pytest -q -k "not test_walkforward_setups and not test_cli_backtest"` → **95 passed**, 3 deselected (2026-09-05).
+**pytest:** `cd quant && PYTHONPATH=src python3 -m pytest -q -k "not test_walkforward_setups and not test_cli_backtest"` → **96 passed**, 3 deselected (2026-09-05).
 
 ## PR #9 tunable alignment
 
