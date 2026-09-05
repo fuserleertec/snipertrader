@@ -63,7 +63,7 @@ export interface OHLCVBar {
   close: number;
   volume: number;
   n_ticks: number;
-  /** Planned on the draft WS frame; omitted by the current JSON Schema. */
+  /** Optional on LIVE WS/HTTP frames (PR #1). Not required by ohlcv_bar.schema.json. */
   buy_volume?: number;
   sell_volume?: number;
   /** Assume closed unless this is explicitly false. */

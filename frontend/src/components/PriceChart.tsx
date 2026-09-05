@@ -45,7 +45,7 @@ const SESSION_ABBR: Record<SessionType, string> = {
 function palette(theme: Theme) {
   const light = theme === "light";
   return {
-    bg: light ? "#F0F4F8" : "#020408",
+    bg: light ? "#eef2f7" : "#04070c",
     text: light ? "#2A4460" : "#9BB5C8",
     grid: light ? "rgba(0,150,110,0.12)" : "rgba(0,229,160,0.08)",
     border: light ? "rgba(0,150,110,0.25)" : "rgba(0,229,160,0.18)",

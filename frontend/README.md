@@ -1,12 +1,12 @@
-# SniperTrader Dashboard — Frontend Phase 1 (Rev. 1.1)
+# SniperTrader Dashboard — Conviction Terminal (Rev. 1.1)
 
-Next.js (App Router) + TypeScript + Tailwind dashboard for the Data Engineering
-Phase 1 contracts. Lives in `frontend/` beside the static site and
-`data_engineering/` Python pipeline.
+Next.js (App Router) port of the live **stock_picks.html** layout language
+(sections 01–08) with Phase 2 Kronos overlays inside that chrome — not a
+separate greenfield shell.
 
 The UI runs **offline by default** on in-browser mock streams that emit the
 exact JSON shapes in `/schemas`. Flip one env var to point at live
-`ws://localhost:8000`.
+`ws://localhost:8000` **after** the Quant Risk Pre-Filter checklist gate.
 
 ## Setup
 
@@ -28,16 +28,23 @@ npm run dev:dashboard
 `NEXT_PUBLIC_USE_MOCKS=false npm run dev` talks to the Data Eng API
 (`docker compose up` in `data_engineering/`).
 
-## Layout
+## Layout (locked to `/stock_picks.html`)
 
-- **Header** — symbol selector (uppercase, no hyphens, e.g. `BTCUSDT`), timeframe
-  pills (`1m` `5m` `15m` `1h` `4h`), last price, mock/live status, theme toggle
-- **Sidebar** — VWAP anchor (`session` | `weekly` | `rolling`), session-level
-  filters, Quant `setup_type` / `status` filters
-- **Main chart** — TradingView Lightweight Charts v4 candlesticks
-- **Setup cards** — ACTIVE Quant signals at the top; click joins overlays via `trigger_event_ids`
-- **Pattern overlays** — FVG / order-block zones, sweep arrows, MSS broken levels (Rev. 1.1)
-- **Bottom table** — history filters + CSV; toast when `confidence > 0.8`
+- **01 Header** — “Quantitative Market Intelligence Conviction Terminal” + LIVE
+  strip (Next Refresh ET, Data Age, Heartbeat, Health, REFRESH / SHARE / DOWNLOAD)
+- **02 Quantum Ensemble Picks** — provenance table (#, Asset, Signal, Last/Chg,
+  Target, Conviction, Engines K/S/M/F/Q, Why). Setup Signals tab is Quant
+  `setup_signals` (filters + CSV; sound off by default)
+- **03 Live Market Simulation View** — Conviction & Velocity Leaderboard,
+  MiroFish swarm heatmap, Kronos Structural K-Line (FVG / OB / sweep / MSS),
+  Scenario Probability Matrix
+- **04 Categorized Stock Picks** — All / Ultra-High / High / Watchlist cards
+- **05 Narrative & Volatility Injectors**
+- **06 Execution & Position Management**
+- **07 Recon Audit**
+- **08 Understanding the Engine**
+
+Card/table click joins chart overlays via `trigger_event_ids`.
 
 ## Chart (performance)
 
@@ -104,31 +111,37 @@ Frame (`vwap_values`):
 Mean = `vwap`. Bands: `band_p1`/`band_m1` (±1σ), `p2`/`m2` (±2σ), `p3`/`m3` (±3σ).
 σ is volume-weighted: `sqrt(Σ vᵢ (pᵢ − VWAP)² / Σ vᵢ)`.
 
-### Session levels — HTTP live; WS draft
+### Session levels — LIVE (PR #1)
 
 HTTP: `GET /v1/session/{symbol}/{session_type}`, `GET /v1/session/{symbol}`
 
-Draft WS: `WS /v1/ws/session?symbol=BTCUSDT`
+`WS /v1/ws/session?symbol=BTCUSDT` — seeds `session:{symbol}:*` snapshots, then
+pub/sub on `session:{symbol}`. Query-param subscribe only.
 
 Frame (`session_levels`): `schema_version`, `symbol`, `asset_class`,
 `session_type` ∈ `asia|london|ny_am|ny_pm|rth|eth|globex`,
 `session_start_ms`, `session_end_ms`, `open`, `high`, `low`, `close`,
 `volume`, `updated_ts_ms`.
 
-Plotted as price lines (O/H/L/C) for checked sessions.
+### OHLCV — LIVE (PR #1)
 
-### OHLC — WS draft
+`WS /v1/ws/ohlcv?symbol=BTCUSDT&timeframe=1m` — **`timeframe` is required**
+(`1m|5m|15m|1h|4h`). Seeds last N closed bars, then pub/sub
+`ohlcv:{symbol}:{timeframe}`. Frames may include `buy_volume` / `sell_volume`.
 
-Draft WS: `WS /v1/ws/ohlcv?symbol=BTCUSDT&timeframe=1m`
-
-`timeframe` ∈ `1m|5m|15m|1h|4h`
+`GET /v1/ohlcv/{symbol}?timeframe=1m&limit=200` — history bootstrap
+`{ symbol, timeframe, bars }`.
 
 Frame (`ohlcv_bar`): `schema_version`, `symbol`, `asset_class`, `timeframe`,
-`open_ts_ms`, `close_ts_ms`, `open`, `high`, `low`, `close`, `volume`, `n_ticks`.
+`open_ts_ms`, `close_ts_ms`, `open`, `high`, `low`, `close`, `volume`, `n_ticks`,
+optional `buy_volume` / `sell_volume`.
 
-Every frame is treated as a **closed** bar unless `closed: false` is present
-(optional, not in the current schema). Planned history:
-`GET /v1/ohlcv/{symbol}?timeframe=1m&limit=200` — mocks use this shape.
+Every frame is treated as a **closed** bar unless `closed: false` is present.
+
+These endpoints are **production-ready** on Data Eng `:8000`. Keep mocks for
+offline. Set `NEXT_PUBLIC_USE_MOCKS=false` and
+`NEXT_PUBLIC_WS_BASE=ws://localhost:8000` only after the Quant Risk Pre-Filter
+checklist gate.
 
 ### Signals — Quant Developers (provisional)
 

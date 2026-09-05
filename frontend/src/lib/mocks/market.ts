@@ -139,6 +139,8 @@ export function startMockMarket(
       close,
       volume,
       n_ticks: 20 + Math.floor(rand() * 80),
+      buy_volume: volume * (0.45 + rand() * 0.2),
+      sell_volume: volume * (0.35 + rand() * 0.2),
       closed: true,
     });
     price = close;

@@ -30,7 +30,7 @@ export function useSignals(symbol: string, lastPrice: () => number): Signal[] {
 
     if (mocks) {
       const seed = mockListSignals({ symbol, limit: 24 }, seedPrice(symbol)).items;
-      setRows(seed);
+      queueMicrotask(() => setRows(seed));
       return startMockSignalStream(symbol, lastPrice, applyEvent, seed);
     }
 

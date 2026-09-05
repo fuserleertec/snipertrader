@@ -33,7 +33,7 @@ export function fetchSessions(symbol: string): Promise<SessionListResponse | nul
   return getJson<SessionListResponse>(`/v1/session/${symbol}`);
 }
 
-/** Planned: GET /v1/ohlcv/{symbol}?timeframe=1m&limit=200 */
+/** LIVE (PR #1): GET /v1/ohlcv/{symbol}?timeframe=1m&limit=200 → { symbol, timeframe, bars } */
 export async function fetchOhlcv(
   symbol: string,
   timeframe: string,

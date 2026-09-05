@@ -19,8 +19,9 @@ const syne = Syne({
 });
 
 export const metadata: Metadata = {
-  title: "SniperTrader Dashboard",
-  description: "Phase 1 chart + VWAP bands + session levels + live signal table",
+  title: "Market Simulation & Conviction Terminal | SniperTrader.ai",
+  description:
+    "Quantitative Market Intelligence Conviction Terminal — Kronos overlays, Quantum Ensemble picks, and setup_signals.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

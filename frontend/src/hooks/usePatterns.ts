@@ -18,7 +18,8 @@ export function usePatterns(symbol: string): PatternBook {
   }
 
   useEffect(() => {
-    setBook(getUniverse(symbol, seedPrice(symbol)).book);
+    const book = getUniverse(symbol, seedPrice(symbol)).book;
+    queueMicrotask(() => setBook(book));
   }, [symbol]);
 
   return book;

@@ -1,7 +1,9 @@
 /**
  * Mock ↔ live is env-only.
- *   NEXT_PUBLIC_USE_MOCKS=true  → in-browser streams (offline)
- *   NEXT_PUBLIC_USE_MOCKS=false → Data Eng /v1/* + Quant /signals and /ws/signals
+ *   NEXT_PUBLIC_USE_MOCKS=true  → in-browser streams (offline; default)
+ *   NEXT_PUBLIC_USE_MOCKS=false → Data Eng LIVE streams at NEXT_PUBLIC_WS_BASE
+ *     (ws://localhost:8000) + HTTP history. Wire live only after the Quant
+ *     Risk Pre-Filter checklist gate.
  */
 
 export function isMockMode(): boolean {
