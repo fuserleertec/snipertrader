@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import logging
 import sys
 
@@ -14,10 +15,15 @@ def _setup_logging(level: str) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="sniper-data", description="Phase 1 market-data pipeline")
-    parser.add_argument("command", choices=["pipeline", "api", "evict", "demo"])
+    parser = argparse.ArgumentParser(prog="sniper-data", description="Phase 1 market-data + pattern pipeline")
+    parser.add_argument("command", choices=["pipeline", "api", "evict", "demo", "patterns"])
     parser.add_argument("--inmemory", action="store_true", help="Use in-process bus/store (no Docker).")
     parser.add_argument("--duration", type=float, default=None, help="Seconds to run the demo/pipeline.")
+    parser.add_argument(
+        "--replay",
+        action="store_true",
+        help="(patterns) Replay ICT fixtures instead of the live mock feed.",
+    )
     parser.add_argument("--host", default=None)
     parser.add_argument("--port", type=int, default=None)
     args = parser.parse_args(argv)
@@ -27,7 +33,14 @@ def main(argv: list[str] | None = None) -> int:
     settings = get_settings()
     _setup_logging(settings.log_level)
 
-    if args.command in {"pipeline", "demo"}:
+    if args.command == "patterns" and args.replay:
+        from sniper_data.pipeline import run_pattern_replay
+
+        result = asyncio.run(run_pattern_replay())
+        print(json.dumps(result, indent=2, default=str))
+        return 0
+
+    if args.command in {"pipeline", "demo", "patterns"}:
         from sniper_data.pipeline import run_pipeline
 
         asyncio.run(run_pipeline(inmemory=args.inmemory, duration_s=args.duration))

@@ -18,7 +18,7 @@ US equity stub──┘                 │                   TimescaleDB hypert
                                   └─► vwap_values    ─► Redis vwap:{symbol}:{anchor}
                                                          └─► FastAPI + WebSocket
 
-Pattern topics (contracts only in Phase 1; Redis+Kafka, no Timescale hypertables):
+Pattern topics (Redis+Kafka only; no Timescale hypertables):
   sweep_events      → Redis sweep:{symbol}:{id}   TTL ≤ 48h
   fvg_zones         → Redis fvg:{symbol}:{id}     TTL ≤ 48h
   mss_events        → Redis mss:{symbol}:{id}     TTL ≤ 48h
@@ -130,6 +130,7 @@ All secrets are environment variables. See [`.env.example`](.env.example).
 | `DEMO_SYMBOLS` | `BTCUSDT,AAPL,ES` | Mock feed universe |
 | `ROLLING_VWAP_PERIODS` | `20` | Rolling VWAP window |
 | `FVG_TTL_SECONDS` | `172800` | Clamped to ≤ 48h |
+| `SWING_LOOKBACK` | `5` | MSS swing confirmation bars each side |
 | `TICK_INTERVAL_MS` | `80` | Mock print interval |
 | `USE_INMEMORY` | `false` | Skip brokers |
 | `BINANCE_*` / `ALPACA_*` | empty | Live stubs only |
@@ -221,7 +222,8 @@ Created on pipeline startup (Redpanda also auto-creates):
 ```
 data_engineering/
   src/sniper_data/          library + CLI
-  tests/                    VWAP fixtures, DST sessions, TTL, pipeline
+  src/sniper_data/pattern_detection/  sweep / FVG / MSS / order-block
+  tests/                    VWAP fixtures, DST sessions, TTL, pattern detectors
   sql/init.sql              Timescale hypertable + indexes
   docker-compose.yml
   Dockerfile
@@ -233,6 +235,25 @@ schemas/                    JSON Schema (repo root, as specified)
 ```
 sniper-data pipeline [--inmemory] [--duration N]
 sniper-data demo     [--inmemory] [--duration N]   # alias of pipeline
+sniper-data patterns [--inmemory] [--duration N]
+sniper-data patterns --inmemory --replay           # ICT fixtures, no brokers
 sniper-data api      [--host 0.0.0.0 --port 8000]
 sniper-data evict    [--inmemory]
 ```
+
+## Pattern detectors (ML Researchers)
+
+`sniper_data.pattern_detection` consumes DE-normalized `raw_ticks`,
+`ohlcv_bars`, `session_levels`, and `vwap_values`. It publishes the
+landed pattern topics and writes zones through `store_fvg` / `store_sweep`
+/ `store_mss` / `store_ob` (TTL ≤ 48h). Zones are **Redis + Kafka only**.
+
+| Detector | Rule | Notes |
+|---|---|---|
+| Sweep (corrected) | Break of established session high/low **plus** in-process delta divergence | `side=sell` = high swept; `side=buy` = low swept. `volume_profile` is scored, **never a gate**. Reclaim/`confirmed` after high-volume opposite close back inside the range. |
+| FVG | 3-candle imbalance on `1m` / `5m` / `15m` | `mitigated` = filled on retrace into `[low, high]`. |
+| MSS | Swing lookback default **5** (`SWING_LOOKBACK`) | Bullish = break of last lower-high after a **real** sell-side sweep. Bearish = break of last higher-low after a buy-side sweep. |
+| Order block | Last opposite candle before displacement | Zone = origin candle high/low. |
+
+Delta is computed as `buy_volume − sell_volume` (no `delta` field). Tick
+`aggressor` / `is_buyer_maker` are classified by the DE aggregator.

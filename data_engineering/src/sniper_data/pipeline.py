@@ -14,6 +14,7 @@ from sniper_data.config import Settings, get_settings
 from sniper_data.connectors.mock import MockConnector
 from sniper_data.models import RawTick
 from sniper_data.ohlcv import OHLCVAggregator, redis_ohlcv_channel
+from sniper_data.pattern_detection.engine import PatternEngine
 from sniper_data.sessions import SessionTracker, redis_session_channel, redis_session_key
 from sniper_data.vwap import VWAPEngine, redis_vwap_key
 from sniper_data.zones import evict_expired_zones
@@ -43,6 +44,12 @@ class Runtime:
         self.aggregator = OHLCVAggregator()
         self.sessions = SessionTracker()
         self.vwap = VWAPEngine(rolling_periods=self.settings.rolling_vwap_periods)
+        self.patterns = PatternEngine(
+            self.store,
+            self.bus,
+            ttl_seconds=self.settings.fvg_ttl_clamped,
+            swing_lookback=self.settings.swing_lookback,
+        )
         self.ticks_processed = 0
         self.bars_closed = 0
         self._stop = asyncio.Event()
@@ -86,12 +93,22 @@ class Runtime:
             await self.store.publish(f"vwap:{snap.symbol}", snap)
             await self.bus.publish("vwap_values", snap, key=tick.symbol)
 
+        await self.patterns.on_tick(tick)
+        if levels is not None:
+            await self.patterns.on_session(levels)
+        for snap in snapshots:
+            await self.patterns.on_vwap(snap)
+        pattern_batches = []
+        for bar in closed:
+            pattern_batches.append(await self.patterns.on_bar(bar))
+
         self.ticks_processed += 1
         return {
             "tick": tick,
             "bars": closed,
             "session": levels,
             "vwap": snapshots,
+            "patterns": pattern_batches,
         }
 
     async def run_demo(self, duration_s: float | None = None) -> None:
@@ -131,14 +148,73 @@ class Runtime:
                     break
                 if self.ticks_processed % 50 == 0:
                     log.info(
-                        "processed %s ticks, closed %s bars",
+                        "processed %s ticks, closed %s bars, patterns %s",
                         self.ticks_processed,
                         self.bars_closed,
+                        self.patterns.snapshot(),
                     )
         finally:
             self._stop.set()
             evict_task.cancel()
             await connector.close()
+
+
+async def run_pattern_replay() -> dict[str, Any]:
+    """Feed locked ICT fixtures through in-memory stores (no Docker / brokers)."""
+    from sniper_data.bus.kafka import InMemoryBus
+    from sniper_data.bus.redis_store import InMemoryStateStore
+    from sniper_data.pattern_detection.engine import PatternEngine
+    from sniper_data.pattern_detection.fixtures import (
+        buy_side_sweep_sequence,
+        fvg_create_and_fill,
+        london_session,
+        mss_after_sell_sweep_bars,
+        order_block_displacement,
+        sell_side_sweep_sequence,
+    )
+
+    bus = InMemoryBus()
+    store = InMemoryStateStore()
+    stats: dict[str, int] = {}
+
+    async def _run(name: str, setup) -> None:
+        engine = PatternEngine(store, bus, swing_lookback=2)
+        await setup(engine)
+        for key, value in engine.snapshot().items():
+            stats[key] = stats.get(key, 0) + value
+        log.info("replay %s → %s", name, engine.snapshot())
+
+    async def _sweeps(engine: PatternEngine) -> None:
+        engine.sweep.on_session(london_session())
+        for b in sell_side_sweep_sequence(sweep_volume=0.01):
+            await engine.on_bar(b)
+        engine.sweep.on_session(london_session())
+        for b in buy_side_sweep_sequence(sweep_volume=0.01):
+            await engine.on_bar(b)
+
+    async def _fvg(engine: PatternEngine) -> None:
+        for b in fvg_create_and_fill():
+            await engine.on_bar(b)
+
+    async def _ob(engine: PatternEngine) -> None:
+        for b in order_block_displacement():
+            await engine.on_bar(b)
+
+    async def _mss(engine: PatternEngine) -> None:
+        sweep, bars = mss_after_sell_sweep_bars()
+        engine.mss.on_sweep(sweep)
+        for b in bars:
+            await engine.on_bar(b)
+
+    await _run("sweep", _sweeps)
+    await _run("fvg", _fvg)
+    await _run("order_block", _ob)
+    await _run("mss", _mss)
+    return {
+        "stats": stats,
+        "topics": {t: [r["value"] for r in bus.topics[t]] for t in bus.topics},
+        "redis_keys": sorted(store.data),
+    }
 
 
 async def run_pipeline(*, inmemory: bool = False, duration_s: float | None = None) -> Runtime:
