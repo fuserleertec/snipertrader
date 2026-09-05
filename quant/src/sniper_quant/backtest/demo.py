@@ -51,31 +51,138 @@ def synthetic_daily_bars(
     return bars
 
 
+def _scripted_trade(
+    *,
+    symbol: str,
+    setup_type: str,
+    side: Side,
+    start_ms: int,
+    entry: float,
+    atr: float,
+    win: bool,
+    asset_class: AssetClass = AssetClass.CRYPTO,
+) -> tuple[list[OHLCVBar], BacktestSignal]:
+    """Three hourly bars: setup, then a bar that tags TP or SL (not both)."""
+    stop = entry - 2 * atr if side is Side.LONG else entry + 2 * atr
+    target = entry + 4 * atr if side is Side.LONG else entry - 4 * atr  # 2R
+    bars = [
+        OHLCVBar(
+            symbol=symbol,
+            asset_class=asset_class,
+            timeframe="1h",
+            open_ts_ms=start_ms,
+            close_ts_ms=start_ms + HOUR_MS - 1,
+            open=entry,
+            high=entry * 1.001,
+            low=entry * 0.999,
+            close=entry,
+            volume=100,
+            n_ticks=5,
+        )
+    ]
+    ts2 = start_ms + HOUR_MS
+    if side is Side.LONG:
+        if win:
+            bars.append(
+                OHLCVBar(
+                    symbol=symbol,
+                    asset_class=asset_class,
+                    timeframe="1h",
+                    open_ts_ms=ts2,
+                    close_ts_ms=ts2 + HOUR_MS - 1,
+                    open=entry,
+                    high=target + 0.01,
+                    low=entry - atr * 0.1,
+                    close=target,
+                    volume=100,
+                    n_ticks=5,
+                )
+            )
+        else:
+            bars.append(
+                OHLCVBar(
+                    symbol=symbol,
+                    asset_class=asset_class,
+                    timeframe="1h",
+                    open_ts_ms=ts2,
+                    close_ts_ms=ts2 + HOUR_MS - 1,
+                    open=entry,
+                    high=entry + atr * 0.1,
+                    low=stop - 0.01,
+                    close=stop,
+                    volume=100,
+                    n_ticks=5,
+                )
+            )
+    else:
+        if win:
+            bars.append(
+                OHLCVBar(
+                    symbol=symbol,
+                    asset_class=asset_class,
+                    timeframe="1h",
+                    open_ts_ms=ts2,
+                    close_ts_ms=ts2 + HOUR_MS - 1,
+                    open=entry,
+                    high=entry + atr * 0.1,
+                    low=target - 0.01,
+                    close=target,
+                    volume=100,
+                    n_ticks=5,
+                )
+            )
+        else:
+            bars.append(
+                OHLCVBar(
+                    symbol=symbol,
+                    asset_class=asset_class,
+                    timeframe="1h",
+                    open_ts_ms=ts2,
+                    close_ts_ms=ts2 + HOUR_MS - 1,
+                    open=entry,
+                    high=stop + 0.01,
+                    low=entry - atr * 0.1,
+                    close=stop,
+                    volume=100,
+                    n_ticks=5,
+                )
+            )
+    sig = BacktestSignal(
+        ts_ms=start_ms + 1,
+        symbol=symbol,
+        setup_type=setup_type,
+        side=side,
+        entry=entry,
+        atr=atr,
+        signal_id=f"demo-{setup_type}-{start_ms}",
+    )
+    return bars, sig
+
+
 def demo_universe() -> tuple[list[OHLCVBar], list[BacktestSignal]]:
-    """BTC + ETH with overlapping drift so correlation is meaningful, plus six setups."""
-    btc = synthetic_daily_bars("BTCUSDT", start_price=60_000, seed_phase=0.0)
-    eth = synthetic_daily_bars("ETHUSDT", start_price=3_000, seed_phase=0.15)
-    bars = btc + eth
+    """Scripted wins/losses for all six placeholder setups + correlated ETH tape."""
+    bars: list[OHLCVBar] = []
     signals: list[BacktestSignal] = []
-    # Place a signal every ~12 days, cycling the six placeholder setups, alternating side.
-    for i, setup in enumerate(SETUP_TYPES * 3):
-        idx = 8 + i * 12
-        if idx >= len(btc) - 3:
-            break
-        bar = btc[idx]
-        side = Side.LONG if i % 2 == 0 else Side.SHORT
-        atr = (bar.high - bar.low) * 2.0
-        signals.append(
-            BacktestSignal(
-                ts_ms=bar.open_ts_ms + HOUR_MS,
+    start = 1_700_000_000_000
+    entry = 100.0
+    atr = 1.0
+    for i, setup in enumerate(SETUP_TYPES):
+        for j, win in enumerate((True, False)):
+            side = Side.LONG if j == 0 else Side.SHORT
+            ts = start + (i * 2 + j) * 10 * HOUR_MS
+            chunk, sig = _scripted_trade(
                 symbol="BTCUSDT",
                 setup_type=setup,
                 side=side,
-                entry=bar.open,
+                start_ms=ts,
+                entry=entry,
                 atr=atr,
-                signal_id=f"demo-{setup}-{i}",
+                win=win,
             )
-        )
+            bars.extend(chunk)
+            signals.append(sig)
+    # ETH daily tape (for correlation-filter demos / docs); not traded here.
+    bars.extend(synthetic_daily_bars("ETHUSDT", start_price=3_000, seed_phase=0.15))
     return bars, signals
 
 

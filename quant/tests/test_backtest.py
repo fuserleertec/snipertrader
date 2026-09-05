@@ -16,10 +16,10 @@ def test_metrics_helpers():
 def test_inmemory_demo_runs_all_six_setups():
     result = run_inmemory_demo()
     used = {t.setup_type for t in result.trades}
-    assert used <= set(SETUP_TYPES)
-    assert result.metrics.n_trades >= 1
+    assert used == set(SETUP_TYPES)
+    assert result.metrics.n_trades == 12
     m = result.metrics
-    assert 0.0 <= m.win_rate <= 1.0
+    assert abs(m.win_rate - 0.5) < 1e-9
     assert m.max_drawdown >= 0.0
     assert m.starting_equity == 100_000.0
     assert isinstance(m.sharpe, float)
@@ -72,5 +72,5 @@ def test_event_sl_before_tp_same_bar():
 def test_demo_universe_has_six_setup_types():
     _bars, signals = demo_universe()
     types = {s.setup_type for s in signals}
-    assert set(SETUP_TYPES) <= types or types <= set(SETUP_TYPES)
-    assert len(signals) >= 6
+    assert types == set(SETUP_TYPES)
+    assert len(signals) == 12

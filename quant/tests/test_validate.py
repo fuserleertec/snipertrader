@@ -3,7 +3,6 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from sniper_quant.api import create_app
-from sniper_quant.models import OpenPosition, Side
 from sniper_quant.risk.engine import RiskEngine, RiskState
 from sniper_quant.store.signals import InMemorySignalStore
 from tests.conftest import make_settings
@@ -57,11 +56,9 @@ def test_validate_id_optional():
 
 
 def test_validate_reject_shape_conflict():
-    state = RiskState(
-        equity=100_000,
-        positions=[OpenPosition(symbol="BTCUSDT", side=Side.LONG, size=1, entry=100)],
-    )
-    http, _ = _client(state)
+    http, _ = _client()
+    created = http.post("/signals", json=_payload())
+    assert created.status_code == 201
     body = http.post("/risk/validate", json=_payload()).json()
     assert REQUIRED <= set(body)
     assert body["approved"] is False
