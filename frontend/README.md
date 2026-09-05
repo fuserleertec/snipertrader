@@ -272,9 +272,11 @@ type Overlay =
 ```
 
 Zones use `PatternZonesPrimitive`. Points use `setMarkers` (time-asc, one per
-timestamp). **No pattern WS from Data Eng yet.** In-browser mocks emit the
-schema shapes. `parseOverlayFrame` + `FUTURE_PATTERN_WS` stay ready for a later
-`WS /v1/ws/fvg|ob|sweep|mss?symbol=`. Sweep is `side` + `swept_level` only.
+timestamp). Overlay sockets match VWAP: on connect seed Redis
+`{prefix}:{symbol}:*`, then follow `{prefix}:{symbol}`. Frames are exact
+`/schemas` 1.1 JSON. `parseOverlayFrame(frame, hint)` + `PATTERN_WS` in
+`src/lib/overlays.ts`; live client is `openPatternSockets` (`src/lib/patternWs.ts`).
+Sweep is `side` + `swept_level` only.
 
 ### Setup-specific views
 
@@ -295,17 +297,23 @@ payload (`—` while null). CSV uses those field names.
 ### Real-time
 
 - Quant `WS /ws/signals` → card strip + tables (`signal.upsert` / `signal.status`)
+- Data Eng `WS /v1/ws/sweep|fvg|mss|ob?symbol=` → pattern book (seed then pub/sub)
 - Toast when `confidence > 0.8`
 - Sound toggle **off** by default
+
+Set `NEXT_PUBLIC_USE_MOCKS=false` to open the four DE sockets on
+`ws://localhost:8000`. Default stays in-browser mocks that emit the same
+schema frames (seed immediately, then interval updates).
 
 ### Data Eng Phase 2 (optional, non-blocking)
 
 Clients exist for PR #5: `GET/WS /v1/avwap`, `/v1/volume-profile`,
-`/v1/kill-zone`. AVWAP (`vwap_value`) maps onto the existing VWAPValues chart
-shape. Volume-profile HVN lines draw on the `fvg_entry` / all-overlays views.
-Kill-zone shade draws on `po3_judas` when `active`. Asia box prefers
-`GET /v1/session/{symbol}/asia` (`session:{symbol}:asia`). Pattern overlays
-stay on mock schema streams until DE ships `WS /v1/ws/fvg|ob|sweep|mss`.
+`/v1/kill-zone`, and pattern overlay sockets
+`WS /v1/ws/sweep|fvg|mss|ob?symbol=`. AVWAP (`vwap_value`) maps onto the
+existing VWAPValues chart shape. Volume-profile HVN lines draw on the
+`fvg_entry` / all-overlays views. Kill-zone shade draws on `po3_judas` when
+`active`. Asia box prefers `GET /v1/session/{symbol}/asia`
+(`session:{symbol}:asia`).
 
 ## Theme
 

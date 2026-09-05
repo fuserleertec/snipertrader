@@ -2,37 +2,53 @@
 
 import { useEffect, useState } from "react";
 import { seedPrice } from "@/lib/constants";
-import { startMockPatternStream } from "@/lib/mocks/patterns";
+import { isMockMode } from "@/lib/env";
+import { startMockPatternSockets } from "@/lib/mocks/patterns";
 import { dropUniverse, getUniverse } from "@/lib/mocks/universe";
-import { applyOverlayEvent } from "@/lib/overlays";
-import type { PatternBook } from "@/lib/types";
+import { applyOverlayEvent, emptyPatternBook, parseOverlayFrame } from "@/lib/overlays";
+import { openPatternSockets } from "@/lib/patternWs";
+import type { OverlayEvent, OverlayKind, PatternBook } from "@/lib/types";
 
 function seedBook(symbol: string): PatternBook {
   return getUniverse(symbol, seedPrice(symbol)).book;
 }
 
+function ingest(book: PatternBook, event: OverlayEvent): PatternBook {
+  return applyOverlayEvent({ ...book }, event);
+}
+
 /**
- * Pattern overlays. Data Eng has **no** pattern WS yet — mock schema 1.1
- * streams only. `parseOverlayFrame` + `FUTURE_PATTERN_WS` are ready for a
- * later `WS /v1/ws/fvg|ob|sweep|mss?symbol=` seed+pubsub.
+ * Pattern overlays. `NEXT_PUBLIC_USE_MOCKS=true` (default) uses in-browser
+ * schema 1.1 seed+pubsub. `false` opens DE PR #5 sockets:
+ * `WS /v1/ws/sweep|fvg|mss|ob?symbol=` on `NEXT_PUBLIC_WS_BASE`
+ * (default `ws://localhost:8000`).
  */
 export function usePatterns(symbol: string): PatternBook {
-  const [book, setBook] = useState<PatternBook>(() => seedBook(symbol));
+  const mocks = isMockMode();
+  const [book, setBook] = useState<PatternBook>(() => (mocks ? seedBook(symbol) : emptyPatternBook()));
   const [active, setActive] = useState(symbol);
 
   if (symbol !== active) {
-    dropUniverse(active);
+    if (mocks) dropUniverse(active);
     setActive(symbol);
-    setBook(seedBook(symbol));
+    setBook(mocks ? seedBook(symbol) : emptyPatternBook());
   }
 
   useEffect(() => {
-    const seeded = seedBook(symbol);
-    queueMicrotask(() => setBook(seeded));
-    return startMockPatternStream(symbol, () => seedPrice(symbol), (event) => {
-      setBook((prev) => applyOverlayEvent({ ...prev }, event));
+    const applyFrame = (hint: OverlayKind, data: unknown) => {
+      const event = parseOverlayFrame(data, hint);
+      if (!event) return;
+      setBook((prev) => ingest(prev, event));
+    };
+
+    if (mocks) {
+      return startMockPatternSockets(symbol, () => seedPrice(symbol), applyFrame);
+    }
+
+    return openPatternSockets(symbol, (event) => {
+      setBook((prev) => ingest(prev, event));
     });
-  }, [symbol]);
+  }, [symbol, mocks]);
 
   return book;
 }

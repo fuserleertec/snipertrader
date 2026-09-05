@@ -3,7 +3,8 @@
  *   NEXT_PUBLIC_USE_MOCKS=true  → in-browser streams (offline; default)
  *   NEXT_PUBLIC_USE_MOCKS=false → Data Eng :8000 + Quant :8001
  *
- * Data Eng (PR #8): NEXT_PUBLIC_WS_BASE / NEXT_PUBLIC_HTTP_BASE
+ * Data Eng (PR #8 / #5): NEXT_PUBLIC_WS_BASE / NEXT_PUBLIC_HTTP_BASE
+ *   includes /v1/ws/vwap and /v1/ws/sweep|fvg|mss|ob
  * Quant (PR #2):    NEXT_PUBLIC_QUANT_API_BASE / NEXT_PUBLIC_QUANT_WS_BASE
  */
 

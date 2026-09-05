@@ -15,16 +15,20 @@ import type {
 const EMPTY: PatternBook = { fvgs: [], obs: [], sweeps: [], mss: [] };
 
 /**
- * Future Data Eng seed+pubsub (not live yet).
- * Kafka: sweep_events, fvg_zones, mss_events, order_block_zones.
- * Redis: sweep|fvg|mss|ob:{symbol}:{id}
+ * Data Eng PR #5 overlay sockets. On connect: SCAN `{prefix}:{symbol}:*`
+ * seed frames, then pub/sub `{prefix}:{symbol}`. Frames are exact
+ * `/schemas` 1.1 JSON (not wrapped). Kafka: sweep_events, fvg_zones,
+ * mss_events, order_block_zones. Redis: sweep|fvg|mss|ob:{symbol}:{id}
  */
-export const FUTURE_PATTERN_WS: Record<OverlayKind, string> = {
+export const PATTERN_WS: Record<OverlayKind, string> = {
   fvg: "/v1/ws/fvg",
   order_block: "/v1/ws/ob",
   sweep: "/v1/ws/sweep",
   mss: "/v1/ws/mss",
 };
+
+/** @deprecated Use PATTERN_WS — same paths. */
+export const FUTURE_PATTERN_WS = PATTERN_WS;
 
 function upsertById<T extends { id: string }>(rows: T[], next: T): T[] {
   return [next, ...rows.filter((row) => row.id !== next.id)];
@@ -190,7 +194,7 @@ export function normalizeMss(value: unknown): MssEvent | null {
 }
 
 /**
- * Adapter for a future `WS /v1/ws/{fvg|ob|sweep|mss}?symbol=` frame.
+ * Adapter for `WS /v1/ws/{fvg|ob|sweep|mss}?symbol=` frames.
  * `hint` is the socket path kind so FVG vs OB (same high/low keys) stay exact.
  */
 export function parseOverlayFrame(value: unknown, hint?: OverlayKind): OverlayEvent | null {
