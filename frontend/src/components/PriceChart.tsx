@@ -396,7 +396,9 @@ export function PriceChart({
         });
       }
     }
-    series.setMarkers(markers);
+    const byTime = new Map<number, (typeof markers)[number]>();
+    for (const m of markers) byTime.set(Number(m.time), m);
+    series.setMarkers([...byTime.values()].sort((a, b) => Number(a.time) - Number(b.time)));
   }, [patterns, overlayPreset, selected, sessions, bars, theme, vwap, anchorVwap]);
 
   useEffect(() => {
