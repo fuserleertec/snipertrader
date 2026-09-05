@@ -5,11 +5,28 @@ Quant = step 3 after ML [PR #9](https://github.com/fuserleertec/snipertrader/pul
 Repo: `fuserleertec/snipertrader` · branch `cursor/quant-risk-backtest-1981` ·
 PR https://github.com/fuserleertec/snipertrader/pull/2
 
+## BLOCKER CLEARED — `GET /performance/summary` `by_setup`
+
+`by_setup` object keys are the locked **product strings**. They are **not**
+`setup_type` names and **not** `mss_break` / `order_block` / `sweep_mss`.
+
+| `by_setup` key (locked) | bucket `setup_type` |
+|---|---|
+| `1_liquidity_sweep_vwap_reclaim` | `sweep_reclaim` |
+| `2_fvg_mitigation_vwap` | `fvg_entry` |
+| `3_po3_asia_range_sweep` | `po3_judas` |
+| `4_sd_extension_fade` | `sd_extension_fade` |
+| `5_vwap_pullback_cont` | `vwap_pullback_cont` |
+| `6_avwap_ob_confluence` | `avwap_ob_confluence` |
+
+Empty books still return all six keys (zeros). Confirmed sample JSON is in
+§4 below.
+
 ## PASS / FAIL
 
 | # | Item | Result | Evidence |
 |---|---|---|---|
-| 1 | Backtest Setups 4–6 | **PASS** | [`quant/reports/setups_4_6_walkforward.md`](setups_4_6_walkforward.md). Enum excludes `mss_break` / `order_block` / `sweep_mss`. FE `by_setup` keys are the six product strings (S4–S6 = `4_sd_extension_fade` / `5_vwap_pullback_cont` / `6_avwap_ob_confluence`). |
+| 1 | Backtest Setups 4–6 | **PASS** | [`quant/reports/setups_4_6_walkforward.md`](setups_4_6_walkforward.md). Live enum + WF: `sd_extension_fade` / `vwap_pullback_cont` / `avwap_ob_confluence`. FE `by_setup` keys are the six product strings (`4_sd_extension_fade` / `5_vwap_pullback_cont` / `6_avwap_ob_confluence`). |
 | 2 | Risk API (S4–S6 rules + validate-before-publish) | **PASS** | `tests/test_phase3.py` + `tests/test_validate.py` + `tests/test_pr9_replay.py`. Reasons: `invalid_levels`, `news_window`, `low_conviction`, plus existing size/daily/corr/conflict. |
 | 3 | Alerts (Telegram/Discord/Email/webhook) + 5/hour throttle | **PASS** | `test_alerts_four_channels_and_throttle`: 4 stubs, max 5/hour/user, extras throttled. |
 | 4 | Public API auth + history + performance + load 100 | **PASS** | `GET /signals/history`, `GET /performance/summary` `by_setup` product keys, `X-API-Key` optional. Load: **p95 = 56.37 ms** (target &lt; 200 ms). |
@@ -47,16 +64,8 @@ Intentional: Quant reporting weights stay **40/30/30**. PR #9 uses additive
 | 5 | `vwap_pullback_cont` | 1 | 100% | 2 |
 | 6 | `avwap_ob_confluence` | 14 | 7.1% | 56 |
 
-Frontend `GET /performance/summary` `by_setup` is keyed by **product_key**. Each bucket includes `setup_type`. Dormant names and `*_pending_user_confirm` are omitted:
-
-| `by_setup` key (`product_key`) | `setup_type` |
-|---|---|
-| `1_liquidity_sweep_vwap_reclaim` | `sweep_reclaim` |
-| `2_fvg_mitigation_vwap` | `fvg_entry` |
-| `3_po3_asia_range_sweep` | `po3_judas` |
-| `4_sd_extension_fade` | `sd_extension_fade` |
-| `5_vwap_pullback_cont` | `vwap_pullback_cont` |
-| `6_avwap_ob_confluence` | `avwap_ob_confluence` |
+Frontend `GET /performance/summary` `by_setup` uses the locked product-string
+keys above. Each bucket includes `setup_type`. **Blocker cleared.**
 
 Tape is **patterned synthetic** — OOS win rate is **not** a live edge. Re-run on Timescale `ohlcv_bars` before promoting a retune.
 
@@ -85,7 +94,7 @@ Stubs only (no network). Channels: `telegram`, `discord`, `email`, `webhook`. Im
 ## 4) Public API + load
 
 - History: `GET /signals` **and** `GET /signals/history` (same list; `side` filter added).
-- Performance: `GET /performance/summary` → `by_setup` keyed by **product_key** (`1_liquidity_sweep_vwap_reclaim`, `2_fvg_mitigation_vwap`, `3_po3_asia_range_sweep`, `4_sd_extension_fade`, `5_vwap_pullback_cont`, `6_avwap_ob_confluence`). Each bucket includes `setup_type`. Dormant `mss_break` / `order_block` / `sweep_mss` and `*_pending_user_confirm` are omitted. Drift: rolling 20-trade WR &lt; 45% → `drift_warning`.
+- Performance: `GET /performance/summary` → `by_setup` keyed by the six locked product strings (`1_liquidity_sweep_vwap_reclaim` … `4_sd_extension_fade` / `5_vwap_pullback_cont` / `6_avwap_ob_confluence`). Each bucket includes `setup_type`. **Blocker cleared.** Drift: rolling 20-trade WR &lt; 45% → `drift_warning`.
 
 Empty-book response (in-memory, 2026-09-05):
 
