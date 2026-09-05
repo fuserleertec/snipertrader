@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { OVERLAY_SETUP_TYPES } from "@/lib/constants";
+import { isOverlaySetup } from "@/lib/setups";
 import { riskReward } from "@/lib/signals";
 import type { Signal } from "@/lib/types";
 
@@ -30,14 +31,20 @@ export function SetupCards({
   onSelect: (signal: Signal) => void;
 }) {
   const cards = useMemo(() => {
-    return [...signals]
-      .filter((s) => s.status === "ACTIVE")
-      .sort((a, b) => {
-        const d = overlayRank(a.setup_type) - overlayRank(b.setup_type);
-        if (d !== 0) return d;
-        return b.ts_ms - a.ts_ms;
-      })
-      .slice(0, 8);
+    const active = [...signals].filter((s) => s.status === "ACTIVE").sort((a, b) => b.ts_ms - a.ts_ms);
+    const seen = new Set<string>();
+    const pinned: Signal[] = [];
+    const rest: Signal[] = [];
+    for (const s of active) {
+      if (isOverlaySetup(s.setup_type) && !seen.has(s.setup_type)) {
+        seen.add(s.setup_type);
+        pinned.push(s);
+      } else {
+        rest.push(s);
+      }
+    }
+    pinned.sort((a, b) => overlayRank(a.setup_type) - overlayRank(b.setup_type));
+    return [...pinned, ...rest].slice(0, 8);
   }, [signals]);
 
   return (
