@@ -48,6 +48,15 @@ Redis key map (real-time state, not Kafka):
 | `mss:{symbol}:{id}` | **≤ 48h (required)** | Market-structure shift |
 | `ob:{symbol}:{id}` | **≤ 48h (required)** | Order-block zone |
 
+Pub/sub channels (Frontend overlay WebSockets; published by `store_*` after SET+EX):
+
+| Channel | WS route | Frame |
+|---|---|---|
+| `sweep:{symbol}` | `WS /v1/ws/sweep?symbol=` | `SweepEvent` |
+| `fvg:{symbol}` | `WS /v1/ws/fvg?symbol=` | `FVGZone` |
+| `mss:{symbol}` | `WS /v1/ws/mss?symbol=` | `MssEvent` |
+| `ob:{symbol}` | `WS /v1/ws/ob?symbol=` | `OrderBlock` |
+
 `anchor_type` ∈ `session` · `weekly` · `rolling`.
 `session_type` ∈ `asia` · `london` · `ny_am` · `ny_pm` · `rth` · `eth` · `globex`.
 

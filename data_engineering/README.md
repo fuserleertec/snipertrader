@@ -124,6 +124,10 @@ curl -s http://localhost:8000/metrics
 # ws://localhost:8000/v1/ws/avwap?symbol=BTCUSDT
 # ws://localhost:8000/v1/ws/volume-profile?symbol=BTCUSDT
 # ws://localhost:8000/v1/ws/kill-zone?symbol=BTCUSDT
+# ws://localhost:8000/v1/ws/sweep?symbol=BTCUSDT
+# ws://localhost:8000/v1/ws/fvg?symbol=BTCUSDT
+# ws://localhost:8000/v1/ws/mss?symbol=BTCUSDT
+# ws://localhost:8000/v1/ws/ob?symbol=BTCUSDT
 ```
 
 Host-side pipeline against compose infra:
@@ -202,10 +206,12 @@ Phase 2 keys (no TTL; live books):
 | `kill_zone:active:{asset_class}` | Class-level view: `kill_zone`, `start_time`, `end_time`, `active`, `asset_class` |
 
 Zone writes go through `store_fvg` / `store_sweep` / `store_mss` / `store_ob`,
-which always `SET … EX`. A missing TTL raises. TTL > 48h is clamped. The
-`sniper-data evict` job (and the `evict` compose service) SCANs `fvg:*` /
-`sweep:*` / `mss:*` / `ob:*`, deletes rows older than 48h, and re-`EXPIRE`s
-keys with TTL `-1` or > 48h.
+which always `SET … EX` and then `PUBLISH` the same JSON to
+`fvg:{symbol}` / `sweep:{symbol}` / `mss:{symbol}` / `ob:{symbol}` so the
+overlay WebSockets see live creates and mitigation updates. A missing TTL
+raises. TTL > 48h is clamped. The `sniper-data evict` job (and the `evict`
+compose service) SCANs `fvg:*` / `sweep:*` / `mss:*` / `ob:*`, deletes rows
+older than 48h, and re-`EXPIRE`s keys with TTL `-1` or > 48h.
 
 ## HTTP API (Quant Developers / frontend)
 
@@ -219,6 +225,10 @@ keys with TTL `-1` or > 48h.
 | `WS` | `/v1/ws/vwap?symbol=BTCUSDT` | Seed + Redis `vwap:{symbol}` |
 | `WS` | `/v1/ws/session?symbol=BTCUSDT` | Seed `session:{symbol}:*` + Redis `session:{symbol}` |
 | `WS` | `/v1/ws/ohlcv?symbol=BTCUSDT&timeframe=1m` | Seed last N bars + Redis `ohlcv:{symbol}:{timeframe}` |
+| `WS` | `/v1/ws/sweep?symbol=BTCUSDT` | Seed `sweep:{symbol}:*` + channel `sweep:{symbol}` |
+| `WS` | `/v1/ws/fvg?symbol=BTCUSDT` | Seed `fvg:{symbol}:*` + channel `fvg:{symbol}` |
+| `WS` | `/v1/ws/mss?symbol=BTCUSDT` | Seed `mss:{symbol}:*` + channel `mss:{symbol}` |
+| `WS` | `/v1/ws/ob?symbol=BTCUSDT` | Seed `ob:{symbol}:*` + channel `ob:{symbol}` |
 
 `timeframe` is required on OHLCV routes: `1m` · `5m` · `15m` · `1h` · `4h`.
 
@@ -247,6 +257,10 @@ curl -s "http://localhost:8000/v1/ohlcv/BTCUSDT?timeframe=1m&limit=200"
 # ws://localhost:8000/v1/ws/session?symbol=BTCUSDT
 # ws://localhost:8000/v1/ws/ohlcv?symbol=BTCUSDT&timeframe=1m
 # ws://localhost:8000/v1/ws/vwap?symbol=BTCUSDT
+# ws://localhost:8000/v1/ws/sweep?symbol=BTCUSDT
+# ws://localhost:8000/v1/ws/fvg?symbol=BTCUSDT
+# ws://localhost:8000/v1/ws/mss?symbol=BTCUSDT
+# ws://localhost:8000/v1/ws/ob?symbol=BTCUSDT
 ```
 
 ## Kafka topics
@@ -339,6 +353,10 @@ the anchor and begins accumulating. Idempotent on `anchor_id`.
 | `GET` | `/v1/kill-zone/{symbol}` | `kill_zone:{symbol}` |
 | `GET` | `/v1/kill-zone/active/{asset_class}` | `kill_zone:active:{asset_class}` |
 | `WS` | `/v1/ws/kill-zone?symbol=BTCUSDT` | channel `kill_zone:{symbol}` |
+| `WS` | `/v1/ws/sweep?symbol=BTCUSDT` | seed `sweep:{symbol}:*` + channel `sweep:{symbol}` |
+| `WS` | `/v1/ws/fvg?symbol=BTCUSDT` | seed `fvg:{symbol}:*` + channel `fvg:{symbol}` |
+| `WS` | `/v1/ws/mss?symbol=BTCUSDT` | seed `mss:{symbol}:*` + channel `mss:{symbol}` |
+| `WS` | `/v1/ws/ob?symbol=BTCUSDT` | seed `ob:{symbol}:*` + channel `ob:{symbol}` |
 | `GET` | `/metrics` | Prometheus (API process) |
 
 AVWAP wire JSON (no `schema_version`):

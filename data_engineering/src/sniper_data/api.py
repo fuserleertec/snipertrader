@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+from collections.abc import Callable
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -30,6 +31,13 @@ from sniper_data.sessions import redis_session_channel, redis_session_key
 from sniper_data.symbols import infer_asset_class, normalize_symbol
 from sniper_data.volume_profile import redis_volume_profile_channel, redis_volume_profile_key
 from sniper_data.vwap import redis_vwap_key
+from sniper_data.zones import (
+    fvg_channel,
+    mss_channel,
+    ob_channel,
+    sweep_channel,
+    zone_scan_pattern,
+)
 
 log = logging.getLogger(__name__)
 
@@ -76,6 +84,21 @@ then Redis channel `session:{symbol}`. Frames are `SessionLevels` JSON.
 `WS /v1/ws/ohlcv?symbol=BTCUSDT&timeframe=1m` — optionally seed last `limit`
 closed bars, then Redis channel `ohlcv:{symbol}:{timeframe}`. Frames are
 `OHLCVBar` JSON (including optional `buy_volume` / `sell_volume`).
+
+`WS /v1/ws/sweep?symbol=BTCUSDT` — seed `sweep:{symbol}:*`, then channel `sweep:{symbol}`.
+Frames are `SweepEvent` (`schema_version` `"1.1"`).
+
+`WS /v1/ws/fvg?symbol=BTCUSDT` — seed `fvg:{symbol}:*`, then channel `fvg:{symbol}`.
+Frames are `FVGZone` (`schema_version` `"1.1"`).
+
+`WS /v1/ws/mss?symbol=BTCUSDT` — seed `mss:{symbol}:*`, then channel `mss:{symbol}`.
+Frames are `MssEvent` (`schema_version` `"1.1"`).
+
+`WS /v1/ws/ob?symbol=BTCUSDT` — seed `ob:{symbol}:*`, then channel `ob:{symbol}`.
+Frames are `OrderBlock` (`schema_version` `"1.1"`).
+
+`store_sweep` / `store_fvg` / `store_mss` / `store_ob` PUBLISH the same
+payload to `prefix:{symbol}` after SET+EX (including mitigation updates).
 
 ## Phase 2 — Anchored VWAP (ML + Frontend)
 
@@ -488,7 +511,44 @@ def create_app(
             websocket, store, app.state.settings, redis_kill_zone_channel(symbol)
         )
 
+    @app.websocket("/v1/ws/sweep")
+    async def ws_sweep(websocket: WebSocket, symbol: str = Query(...)) -> None:
+        await _ws_zone_overlay(websocket, app, symbol, "sweep", sweep_channel)
+
+    @app.websocket("/v1/ws/fvg")
+    async def ws_fvg(websocket: WebSocket, symbol: str = Query(...)) -> None:
+        await _ws_zone_overlay(websocket, app, symbol, "fvg", fvg_channel)
+
+    @app.websocket("/v1/ws/mss")
+    async def ws_mss(websocket: WebSocket, symbol: str = Query(...)) -> None:
+        await _ws_zone_overlay(websocket, app, symbol, "mss", mss_channel)
+
+    @app.websocket("/v1/ws/ob")
+    async def ws_ob(websocket: WebSocket, symbol: str = Query(...)) -> None:
+        await _ws_zone_overlay(websocket, app, symbol, "ob", ob_channel)
+
     return app
+
+
+async def _ws_zone_overlay(
+    websocket: WebSocket,
+    app: FastAPI,
+    symbol: str,
+    prefix: str,
+    channel_fn: Callable[[str], str],
+) -> None:
+    """Seed SCAN ``{prefix}:{symbol}:*`` then follow ``{prefix}:{symbol}``."""
+    symbol = normalize_symbol(symbol)
+    await websocket.accept()
+    store = app.state.store
+    keys = await store.scan(zone_scan_pattern(prefix, symbol))
+    for key in sorted(keys):
+        payload = await store.get(key)
+        if payload is not None:
+            await websocket.send_json(payload)
+    await _ws_follow_channel(
+        websocket, store, app.state.settings, channel_fn(symbol)
+    )
 
 
 def _metric_route(path: str) -> str:
