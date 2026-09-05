@@ -175,6 +175,15 @@ Created on pipeline startup (Redpanda also auto-creates):
 `raw_ticks` · `ohlcv_bars` · `session_levels` · `vwap_values` ·
 `sweep_events` · `fvg_zones` · `setup_signals`
 
+## Related: Quant risk / backtest
+
+Phase 1 Quant (`../quant/`) adds `POST /risk/validate`, USME SL/TP, an
+event-driven backtester, and the `signals` lifecycle table. It reads the
+`ohlcv_bars` hypertable created here and mounts
+[`sql/02-signals.sql`](sql/02-signals.sql) into the same Timescale
+container. ML must call the risk API **before** publishing to
+`setup_signals`. See [`quant/README.md`](../quant/README.md).
+
 ## Layout
 
 ```
@@ -182,6 +191,7 @@ data_engineering/
   src/sniper_data/          library + CLI
   tests/                    VWAP fixtures, DST sessions, TTL, pipeline
   sql/init.sql              Timescale hypertable + indexes
+  sql/02-signals.sql        Quant signal lifecycle (shared Timescale)
   docker-compose.yml
   Dockerfile
 schemas/                    JSON Schema (repo root, as specified)

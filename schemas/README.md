@@ -12,7 +12,16 @@ listed below. JSON Schema is draft 2020-12.
 | `vwap_values` | [`vwap_values.schema.json`](vwap_values.schema.json) | VWAP engine | Redis, WebSocket, Quant API |
 | `sweep_events` | [`sweep_event.schema.json`](sweep_event.schema.json) | Pattern detectors (Phase 2 stub) | Redis `sweep:{symbol}:{id}` |
 | `fvg_zones` | [`fvg_zone.schema.json`](fvg_zone.schema.json) | Pattern detectors (Phase 2 stub) | Redis `fvg:{symbol}:{id}` |
-| `setup_signals` | [`setup_signal.schema.json`](setup_signal.schema.json) | Signal engine (Phase 2 stub) | Downstream ML / UI |
+| `setup_signals` | [`setup_signal.schema.json`](setup_signal.schema.json) | Signal engine (after Risk Pre-Filter) | Downstream ML / UI / `quant/` lifecycle |
+
+HTTP contracts used by Quant (`POST /risk/validate`) — not Kafka topics:
+
+| HTTP | Schema file | Notes |
+|---|---|---|
+| `POST /risk/validate` body | [`risk_validate_request.schema.json`](risk_validate_request.schema.json) | Candidate SetupSignal; **`id` optional** |
+| `POST /risk/validate` response | [`risk_validate_response.schema.json`](risk_validate_response.schema.json) | `{approved, reason, adjusted_position_size}` |
+
+`setup_signal.schema.json` is additive in Rev. 1.1: optional `entry`, `stop`, `target`, `position_size`, `status`. Kafka publish still **requires** `id`. ML assigns `id` only after the Risk Pre-Filter approves. See [`quant/README.md`](../quant/README.md).
 
 Redis key map (real-time state, not Kafka):
 

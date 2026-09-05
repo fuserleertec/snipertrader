@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snipertrader.ai/schemas/risk_validate_request.schema.json",
+  "title": "RiskValidateRequest",
+  "description": "Candidate setup signal for POST /risk/validate. Same shape as SetupSignal except id is optional — ML assigns id only after approval when publishing to setup_signals.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "symbol",
+    "asset_class",
+    "setup_type",
+    "side",
+    "ts_ms"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.1" },
+    "id": { "type": ["string", "null"], "description": "Optional on validate. Required on setup_signals publish." },
+    "symbol": { "type": "string", "pattern": "^[A-Z0-9]+$" },
+    "asset_class": { "type": "string", "enum": ["crypto", "equity", "futures"] },
+    "setup_type": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Pluggable. Placeholder enum in quant/README (six USME/ICT names) until ML Researchers lock the list."
+    },
+    "side": { "type": "string", "enum": ["long", "short"] },
+    "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+    "ref_vwap": { "type": ["number", "null"] },
+    "ref_session": { "type": ["string", "null"] },
+    "ts_ms": { "type": "integer" },
+    "entry": { "type": ["number", "null"] },
+    "stop": { "type": ["number", "null"] },
+    "target": { "type": ["number", "null"] },
+    "position_size": { "type": ["number", "null"], "minimum": 0 },
+    "invalidation": { "type": ["number", "null"], "description": "Structure / invalidation level. Stop is placed beyond this." },
+    "atr": { "type": ["number", "null"], "minimum": 0, "description": "ATR(14) in price units. Used when stop is omitted." },
+    "equity": { "type": ["number", "null"], "minimum": 0, "description": "Override account equity for this call." },
+    "account_id": { "type": ["string", "null"], "default": "default" }
+  }
+}

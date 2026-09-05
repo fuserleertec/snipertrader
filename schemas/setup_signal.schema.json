@@ -24,6 +24,15 @@
     "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
     "ref_vwap": { "type": ["number", "null"] },
     "ref_session": { "type": ["string", "null"] },
-    "ts_ms": { "type": "integer" }
+    "ts_ms": { "type": "integer" },
+    "entry": { "type": ["number", "null"], "description": "Fill / intended entry. Additive (Rev. 1.1 lifecycle)." },
+    "stop": { "type": ["number", "null"], "description": "Stop-loss price (USME). Additive." },
+    "target": { "type": ["number", "null"], "description": "Take-profit price. Additive." },
+    "position_size": { "type": ["number", "null"], "minimum": 0, "description": "Units after risk sizing. Additive." },
+    "status": {
+      "type": ["string", "null"],
+      "enum": ["ACTIVE", "TP_HIT", "SL_HIT", "CANCELLED", null],
+      "description": "Lifecycle status. Kafka publish is typically ACTIVE. Additive."
+    }
   }
 }

@@ -1,0 +1,29 @@
+# Extends the Phase 1 data-engineering stack with the risk API.
+#
+#   cd quant
+#   docker compose up --build
+#
+# Reuses Redpanda / Redis / TimescaleDB from ../data_engineering.
+# Risk Pre-Filter: http://localhost:8001/docs
+#
+# Timescale init already mounts data_engineering/sql/02-signals.sql
+# (signals + account_daily) when the DE compose file is included.
+
+include:
+  - path: ../data_engineering/docker-compose.yml
+
+services:
+  risk-api:
+    build: .
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    environment:
+      SNIPER_ENV: demo
+      DATABASE_URL: postgresql://sniper:sniper@timescaledb:5432/market
+      USE_INMEMORY: "false"
+      API_HOST: 0.0.0.0
+      API_PORT: "8001"
+    ports:
+      - "8001:8001"
+    command: ["sniper-quant", "api", "--host", "0.0.0.0", "--port", "8001"]

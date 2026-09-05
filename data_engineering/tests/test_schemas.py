@@ -14,6 +14,8 @@ EXPECTED = {
     "sweep_event.schema.json",
     "fvg_zone.schema.json",
     "setup_signal.schema.json",
+    "risk_validate_request.schema.json",
+    "risk_validate_response.schema.json",
 }
 
 

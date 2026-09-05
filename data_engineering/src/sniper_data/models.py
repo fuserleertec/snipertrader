@@ -150,3 +150,9 @@ class SetupSignal(BaseModel):
     ref_vwap: float | None = None
     ref_session: str | None = None
     ts_ms: int
+    # Additive Rev. 1.1 lifecycle fields (optional on the Kafka contract).
+    entry: float | None = None
+    stop: float | None = None
+    target: float | None = None
+    position_size: float | None = None
+    status: str | None = None
