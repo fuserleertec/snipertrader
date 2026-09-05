@@ -125,6 +125,11 @@ def test_openapi_and_health():
         assert http.post("/risk/validate", json=_payload(setup_type=dead)).status_code == 422
     schema = spec["components"]["schemas"]["CandidateSignal"]
     assert "id" not in schema.get("properties", {})
+    assert "contributing_factors" not in schema.get("properties", {})
+    assert "factor_breakdown" not in schema.get("properties", {})
+    pub = spec["components"]["schemas"]["PublishBody"]["properties"]
+    assert pub["contributing_factors"]["type"] == "array"
+    assert pub["contributing_factors"]["items"]["type"] == "string"
     assert set(schema["required"]) >= {
         "symbol",
         "asset_class",

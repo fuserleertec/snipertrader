@@ -20,6 +20,12 @@ SETUP_TYPES: tuple[str, ...] = (
 )
 
 WALKFORWARD_SETUP_TYPES: tuple[str, ...] = SETUP_TYPES
+# S4–S6 walk-forward / detectors only. Never mss_break / order_block / sweep_mss.
+WALKFORWARD_S4_S6: tuple[str, ...] = (
+    "sd_extension_fade",
+    "vwap_pullback_cont",
+    "avwap_ob_confluence",
+)
 
 # Removed from validate. Do not replay / walk-forward.
 DORMANT_SETUP_TYPES: tuple[str, ...] = (

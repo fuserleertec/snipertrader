@@ -25,9 +25,14 @@ calendar day ≈ 1d). Validate `timeframe` stays {1m, 5m, 15m}.
 ## Alignment with ML [PR #9](https://github.com/fuserleertec/snipertrader/pull/9)
 
 Setups 4–6 `setup_type` and product keys match PR #9. Validate omits `id`,
-`contributing_factors`, and `factor_breakdown`. Those two fields are
+`contributing_factors` (`string[]`), and `factor_breakdown`. Those two fields are
 **publish-only** on Kafka `setup_signals` (`factor_breakdown` =
 `{name, weight, score, note?}[]`, `sum(score)` ≈ conviction).
+
+PM extras on top of the ML tunables: S4–S6 kill-zone conviction bonus;
+S6 AVWAP anchors `swing_high` / `swing_low` plus earnings/news stubs;
+orchestrator `dedupe_window_sec` default **300**. Walk-forward S4–S6 is
+`sd_extension_fade` / `vwap_pullback_cont` / `avwap_ob_confluence` only.
 
 Dormant `mss_break` / `order_block` / `sweep_mss` are **not** in the
 validate enum (PR #9 E2E still has a Setup 2 `ob_fvg` alias — Quant does

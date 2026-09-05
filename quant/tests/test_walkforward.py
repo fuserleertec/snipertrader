@@ -90,6 +90,15 @@ def test_locked_defaults():
     assert p.s6_confirm == "rejection"
     assert p.s6_min_rr == 2.0
     assert p.s6_min_conviction == 70
+    assert p.s6_anchor == "either"
+    assert p.s6_swing_lookback == 20
+    assert p.resolved_s6_anchors() == (
+        "ob",
+        "swing_high",
+        "swing_low",
+        "earnings",
+        "news",
+    )
 
 
 def test_grids_cover_locked_values():

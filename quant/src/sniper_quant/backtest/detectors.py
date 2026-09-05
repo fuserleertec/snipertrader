@@ -24,7 +24,7 @@ from sniper_quant.backtest.sessions import (
     utc_dt,
 )
 from sniper_quant.models import AssetClass, OHLCVBar, Side
-from sniper_quant.news import in_news_window
+from sniper_quant.news import calendar_anchor_events, in_news_window
 from sniper_quant.usme import atr_from_bars
 
 __all__ = [
@@ -43,6 +43,12 @@ __all__ = [
     "parse_setup_ids",
     "resample_htf",
     "with_params",
+    "_apply_orchestrator",
+    "_conviction",
+    "_kz_aligned",
+    "_s456_conviction",
+    "_s6_avwap",
+    "_swing_anchor_index",
 ]
 
 
@@ -134,6 +140,26 @@ def _conviction(
         + CONVICTION_WEIGHTS["kill_zone_align"] * (1.0 if kill_ok else 0.0)
     )
     return score  # 0–100
+
+
+def _kz_aligned(bar: OHLCVBar, params: DetectorParams) -> bool:
+    """True when the bar sits in the resolved kill zone (S4–S6 bonus)."""
+    return in_kill_zone(bar, params.resolved_kill_zone(bar.asset_class))
+
+
+def _s456_conviction(
+    *,
+    confluence: float,
+    volume_ok: bool,
+    bar: OHLCVBar,
+    params: DetectorParams,
+) -> float:
+    """S4–S6 conviction including the kill-zone bonus (not a hard gate here)."""
+    return _conviction(
+        confluence=confluence,
+        volume_ok=volume_ok,
+        kill_ok=_kz_aligned(bar, params),
+    )
 
 
 def _apply_orchestrator(
@@ -574,8 +600,7 @@ def detect_sd_extension_fade(bars: list[OHLCVBar], params: DetectorParams | None
             i += 1
             continue
         vol_ok = confirm.volume >= 1.1 * _avg_volume(bars, i + 1)
-        kill = params.resolved_kill_zone(confirm.asset_class)
-        conv = _conviction(confluence=1.0, volume_ok=vol_ok, kill_ok=in_kill_zone(confirm, kill))
+        conv = _s456_conviction(confluence=1.0, volume_ok=vol_ok, bar=confirm, params=params)
         out.append(
             BacktestSignal(
                 ts_ms=confirm.close_ts_ms,
@@ -691,8 +716,7 @@ def detect_vwap_pullback_cont(bars: list[OHLCVBar], params: DetectorParams | Non
             i += 1
             continue
         vol_ok = confirm.volume >= 1.1 * _avg_volume(bars, i)
-        kill = params.resolved_kill_zone(confirm.asset_class)
-        conv = _conviction(confluence=1.0, volume_ok=vol_ok, kill_ok=in_kill_zone(confirm, kill))
+        conv = _s456_conviction(confluence=1.0, volume_ok=vol_ok, bar=confirm, params=params)
         out.append(
             BacktestSignal(
                 ts_ms=confirm.close_ts_ms,
@@ -752,6 +776,58 @@ def _merge_bars(chunk: list[OHLCVBar], timeframe: str) -> OHLCVBar:
     )
 
 
+def _bar_index_at_or_after(bars: list[OHLCVBar], ts_ms: int) -> int:
+    return next((k for k, bar in enumerate(bars) if bar.open_ts_ms >= ts_ms), 0)
+
+
+def _swing_anchor_index(
+    bars: list[OHLCVBar],
+    i: int,
+    lookback: int,
+    *,
+    kind: str,
+) -> int | None:
+    start = max(0, i - lookback)
+    window = bars[start:i]
+    if len(window) < 3:
+        return None
+    if kind == "swing_high":
+        return start + max(range(len(window)), key=lambda k: window[k].high)
+    return start + min(range(len(window)), key=lambda k: window[k].low)
+
+
+def _s6_avwap(
+    bars: list[OHLCVBar],
+    i: int,
+    origin_ts: int,
+    params: DetectorParams,
+) -> float:
+    """AVWAP from OB origin and/or swing_high/low / earnings/news stubs."""
+    allowed = params.resolved_s6_anchors()
+    starts: list[int] = []
+    if "ob" in allowed:
+        starts.append(_bar_index_at_or_after(bars, origin_ts))
+    look = params.s6_swing_lookback
+    if "swing_high" in allowed:
+        idx = _swing_anchor_index(bars, i, look, kind="swing_high")
+        if idx is not None:
+            starts.append(idx)
+    if "swing_low" in allowed:
+        idx = _swing_anchor_index(bars, i, look, kind="swing_low")
+        if idx is not None:
+            starts.append(idx)
+    kinds = tuple(k for k in ("earnings", "news") if k in allowed)
+    if kinds:
+        for event in calendar_anchor_events(bars[i].open_ts_ms, kinds=kinds):
+            starts.append(_bar_index_at_or_after(bars, event.ts_ms))
+    starts = [s for s in dict.fromkeys(starts) if 0 <= s < i]
+    if not starts:
+        starts = [_bar_index_at_or_after(bars, origin_ts)]
+    price = bars[i].close
+    vwaps = [_anchored_vwap(bars, s, i) for s in starts]
+    return min(vwaps, key=lambda v: abs(v - price))
+
+
 def _anchored_vwap(bars: list[OHLCVBar], start: int, end: int) -> float:
     num = 0.0
     den = 0.0
@@ -803,8 +879,7 @@ def detect_avwap_ob_confluence(bars: list[OHLCVBar], params: DetectorParams | No
             near = (lo - tol) <= bar.close <= (hi + tol) or (lo - tol) <= typical_price(bar) <= (hi + tol)
             if not near:
                 continue
-            start = next((k for k, b in enumerate(bars) if b.open_ts_ms >= origin_ts), 0)
-            avwap = _anchored_vwap(bars, start, i)
+            avwap = _s6_avwap(bars, i, origin_ts, params)
             if abs(bar.close - avwap) > 1.5 * atr and not ((lo - tol) <= avwap <= (hi + tol)):
                 continue
             hit = (side, lo, hi, avwap)
@@ -837,7 +912,7 @@ def detect_avwap_ob_confluence(bars: list[OHLCVBar], params: DetectorParams | No
         if i - last_i < 8:
             continue
         vol_ok = bar.volume >= 1.1 * _avg_volume(bars, i)
-        conv = _conviction(confluence=1.0, volume_ok=vol_ok, kill_ok=True)
+        conv = _s456_conviction(confluence=1.0, volume_ok=vol_ok, bar=bar, params=params)
         conf = max(conv / 100.0, params.s6_min_conviction / 100.0)
         out.append(
             BacktestSignal(

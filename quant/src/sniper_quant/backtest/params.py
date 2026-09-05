@@ -1,7 +1,11 @@
-"""Locked ML tunable ranges for Setups 1–3 (Phase 2 walk-forward).
+"""Locked ML tunable ranges for Setups 1–6.
 
 Defaults are the bold values from ML Researchers. Grids list every allowed
 value. ``session_vwap_anchor`` is **session** only (not weekly/rolling).
+
+PM extras on S4–S6 (on top of those tunables): kill-zone conviction bonus
+on all three; S6 AVWAP anchors ``swing_high`` / ``swing_low`` plus
+earnings/news stubs; orchestrator ``dedupe_window_sec=300``.
 """
 
 from __future__ import annotations
@@ -29,6 +33,9 @@ CONVICTION_WEIGHTS: dict[str, int] = {
     "volume_confirm": 30,
     "kill_zone_align": 30,
 }
+# PM extra: S4–S6 apply this when the confirm bar is in the resolved kill zone.
+KZ_CONVICTION_BONUS: int = CONVICTION_WEIGHTS["kill_zone_align"]
+S6_ANCHOR_TYPES: tuple[str, ...] = ("ob", "swing_high", "swing_low", "earnings", "news")
 
 HARD_RR_FLOOR = 1.2
 
@@ -137,6 +144,9 @@ class DetectorParams:
     s6_stop_buffer_atr: float = 0.05
     s6_min_rr: float = 2.0
     s6_min_conviction: int = 70
+    # either = OB origin + swing_high/low + earnings/news stubs (closest AVWAP).
+    s6_anchor: str = "either"
+    s6_swing_lookback: int = 20
 
     def resolved_kill_zone(self, asset_class: AssetClass | str) -> str:
         """Match PR #7 ``manipulation_zones``: ``ny_am`` on crypto also allows London."""
@@ -146,6 +156,13 @@ class DetectorParams:
         if self.kill_zone == "asset_map":
             return "ny_am"
         return self.kill_zone
+
+    def resolved_s6_anchors(self) -> tuple[str, ...]:
+        if self.s6_anchor == "either":
+            return S6_ANCHOR_TYPES
+        if self.s6_anchor in S6_ANCHOR_TYPES:
+            return (self.s6_anchor,)
+        return ("ob",)
 
     @property
     def min_conviction_to_validate(self) -> int:
@@ -298,6 +315,8 @@ def setup_fields(setup_type: str) -> tuple[str, ...]:
             "s6_confirm_tf",
             "s6_stop_buffer_atr",
             "s6_min_rr",
+            "s6_anchor",
+            "s6_swing_lookback",
         )
     return ()
 

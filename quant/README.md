@@ -68,8 +68,9 @@ Stub fields (same as the DE `SetupSignal` core):
 **Optional:** `session_type` (DE enum:
 `asia` · `london` · `ny_am` · `ny_pm` · `rth` · `eth` · `globex`),
 `proposed_position_size` (engine may overwrite via `adjusted_position_size`).
-`contributing_factors` / `factor_breakdown` are **publish-only** — do not
-send them on `/risk/validate`.
+`contributing_factors` (`string[]`) and `factor_breakdown` are
+**publish / signal-store only** — do not send them on `/risk/validate`
+(`CandidateSignal` rejects extra fields → 422).
 
 ```json
 {
@@ -304,6 +305,15 @@ in the report): Setup 1 stop buffer / VWAP band / min_rr / MSS lookback;
 Setup 2 confluence / confirmation / entry / target; Setup 3 accum session /
 displacement / band tag. Orchestrator: `dedupe_window_sec=300`,
 `min_conviction=60`. Primary timeframe is **5m**.
+
+S4–S6 extras (on top of the ML tunables; walk-forward those three live
+types only — never `mss_break` / `order_block` / `sweep_mss`):
+
+- Kill-zone conviction bonus on **all** of S4–S6 (`kill_zone_align` +30
+  when the confirm bar is in the resolved KZ).
+- S6 AVWAP anchors: `swing_high` / `swing_low` plus stub `earnings` /
+  `news` (default `s6_anchor=either` still includes the HTF OB origin).
+- Orchestrator `dedupe_window_sec` default **300**.
 
 `sniper-quant demo` runs the scripted 6-setup smoke book (no live trading).
 

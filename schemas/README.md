@@ -23,7 +23,7 @@ HTTP contracts used by Quant (`POST /risk/validate`) — not Kafka topics:
 | `GET /signals`, `GET /signals/history`, `GET /signals/{id}` | [`dashboard_signal.schema.json`](dashboard_signal.schema.json) | Frontend table + history (`from_ts`/`to_ts`, same list). Close fields: `realized_r`, `exit_price`, `closed_ts_ms` |
 | `WS /ws/signals` | [`signal_ws_event.schema.json`](signal_ws_event.schema.json) | `{type: signal.upsert\|signal.status, signal}` |
 
-`setup_type` (locked, six values): `sweep_reclaim` · `fvg_entry` · `po3_judas` · `sd_extension_fade` · `vwap_pullback_cont` · `avwap_ob_confluence`. Dormant (`mss_break`, `order_block`, `sweep_mss`, `ob_fvg`) → 422. `contributing_factors` is publish-only — not on `/risk/validate`.
+`setup_type` (locked, six values): `sweep_reclaim` · `fvg_entry` · `po3_judas` · `sd_extension_fade` · `vwap_pullback_cont` · `avwap_ob_confluence`. Dormant (`mss_break`, `order_block`, `sweep_mss`, `ob_fvg`) → 422. Walk-forward S4–S6 uses those three live names only. `contributing_factors` is `string[]` on publish / store — not on `/risk/validate`.
 
 `setup_signal.schema.json` is additive in Rev. 1.1: optional `entry`, `stop`, `target`, `timeframe`, `trigger_event_ids`, `session_type`, `position_size`, `status`. Kafka publish still **requires** `id`. ML assigns `id` only after the Risk Pre-Filter approves. See [`quant/README.md`](../quant/README.md).
 

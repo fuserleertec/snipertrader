@@ -77,7 +77,11 @@ class FactorBreakdownRow(BaseModel):
 
 
 class CandidateSignal(BaseModel):
-    """ML candidate for ``POST /risk/validate``. Omit ``id`` — assigned after approval."""
+    """ML candidate for ``POST /risk/validate``. Omit ``id`` — assigned after approval.
+
+    ``contributing_factors`` (string[]) and ``factor_breakdown`` are publish /
+    store only. Extra fields are forbidden, so sending them here is 422.
+    """
 
     model_config = ConfigDict(extra="forbid")
 

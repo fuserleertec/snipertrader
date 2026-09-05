@@ -71,6 +71,15 @@ Do not walk-forward dormant types.
 | vwap_pullback_cont | 2.0 | 60 | |
 | avwap_ob_confluence | 2.0 | 70 | |
 
+PM extras on S4–S6 (walk-forward / detectors only; live types
+`sd_extension_fade` · `vwap_pullback_cont` · `avwap_ob_confluence`):
+kill-zone conviction bonus (+30 when the confirm bar is in KZ);
+S6 AVWAP anchors `swing_high` / `swing_low` plus earnings/news stubs;
+orchestrator `dedupe_window_sec` default **300**.
+
+`contributing_factors` is `string[]` on publish / signal store only —
+**not** on `POST /risk/validate` (`CandidateSignal` `extra=forbid`).
+
 Reject reasons: `ok`, `invalid_levels`, `position_size_exceeds_limit`,
 `daily_loss_limit`, `correlation_threshold`, `same_symbol_conflict`,
 `news_window`, `low_conviction`.
@@ -120,7 +129,10 @@ class StatusBody(BaseModel):
 class PublishBody(CandidateSignal):
     """Validate candidate plus publish-only factor fields. Server assigns ``id``."""
 
-    contributing_factors: list[str] = Field(default_factory=list)
+    contributing_factors: list[str] = Field(
+        default_factory=list,
+        description="string[]. Publish / signal store only. Not on POST /risk/validate.",
+    )
     factor_breakdown: list[FactorBreakdownRow] = Field(default_factory=list)
 
 
@@ -243,7 +255,13 @@ def create_app(
 
     @app.get("/v1/setups")
     async def list_setups() -> dict[str, Any]:
-        from sniper_quant.setups import PRODUCT_KEYS, SETUP_TYPE_TO_PRODUCT
+        from sniper_quant.backtest.params import DEFAULT_PARAMS, KZ_CONVICTION_BONUS, S6_ANCHOR_TYPES
+        from sniper_quant.setups import (
+            DORMANT_SETUP_TYPES,
+            PRODUCT_KEYS,
+            SETUP_TYPE_TO_PRODUCT,
+            WALKFORWARD_S4_S6,
+        )
 
         return {
             "schema_version": "1.1",
@@ -252,6 +270,12 @@ def create_app(
             "setup_type_to_product": dict(SETUP_TYPE_TO_PRODUCT),
             "notes": SETUP_TYPE_NOTES,
             "locked": True,
+            "walkforward_s4_s6": list(WALKFORWARD_S4_S6),
+            "dormant_setup_types": list(DORMANT_SETUP_TYPES),
+            "dedupe_window_sec": DEFAULT_PARAMS.dedupe_window_sec,
+            "kz_conviction_bonus": KZ_CONVICTION_BONUS,
+            "s6_anchors": list(S6_ANCHOR_TYPES),
+            "contributing_factors": "publish_only",
         }
 
     @app.get("/performance/summary", response_model=PerformanceSummary)

@@ -50,7 +50,9 @@ Locked enum (422 on dormant): `sweep_reclaim`, `fvg_entry`, `po3_judas`, `sd_ext
 | S5 | 2.0 | 60 | |
 | S6 | 2.0 | 70 | |
 
-Validate **omits** `id`, `contributing_factors`, `factor_breakdown`. Publish/ingest accept factors (PR #9: `factor_breakdown` = `{name,weight,score,note?}[]`). Rejected candidates never persist (`409` on `POST /signals`).
+Validate **omits** `id`, `contributing_factors` (`string[]`), `factor_breakdown`. Publish/ingest accept factors (PR #9: `factor_breakdown` = `{name,weight,score,note?}[]`). Rejected candidates never persist (`409` on `POST /signals`).
+
+S4–S6 extras (live types only — `sd_extension_fade` / `vwap_pullback_cont` / `avwap_ob_confluence`): KZ conviction bonus on all three; S6 AVWAP anchors `swing_high`/`swing_low` + earnings/news stubs; orchestrator `dedupe_window_sec=300`. Dormant `mss_break` / `order_block` / `sweep_mss` stay off validate and walk-forward.
 
 ## 3) Alerts
 

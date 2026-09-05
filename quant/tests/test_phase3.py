@@ -38,6 +38,22 @@ def test_enum_is_six_live_types_only():
     listed = http.get("/v1/setups").json()
     assert listed["setup_types"] == list(SETUP_TYPES)
     assert listed["product_keys"] == list(PRODUCT_KEYS)
+    assert listed["walkforward_s4_s6"] == [
+        "sd_extension_fade",
+        "vwap_pullback_cont",
+        "avwap_ob_confluence",
+    ]
+    assert listed["dedupe_window_sec"] == 300
+    assert listed["kz_conviction_bonus"] == 30
+    assert listed["s6_anchors"] == [
+        "ob",
+        "swing_high",
+        "swing_low",
+        "earnings",
+        "news",
+    ]
+    assert listed["contributing_factors"] == "publish_only"
+    assert "mss_break" not in listed["walkforward_s4_s6"]
     for dead in DORMANT_SETUP_TYPES:
         assert http.post("/risk/validate", json=_payload(setup_type=dead)).status_code == 422
 
