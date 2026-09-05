@@ -20,22 +20,12 @@ export default function AnalyticsPage() {
     key,
     m: summary.by_setup[key],
   }));
-  const maxSignals = Math.max(1, ...rows.map((r) => (window === "daily" ? r.m?.signals_today : r.m?.signals_week) ?? 0));
+  const maxSignals = Math.max(1, ...rows.map((r) => r.m?.signals ?? 0));
   const pnl = useMemo(() => stubPnl(window), [window]);
 
   const exportCsv = () => {
-    const header = "setup,win_rate,average_rr,sharpe_ratio,max_drawdown_pct,signals_today,signals_week";
-    const lines = rows.map((r) =>
-      [
-        r.key,
-        r.m?.win_rate ?? "",
-        r.m?.average_rr ?? "",
-        r.m?.sharpe_ratio ?? "",
-        r.m?.max_drawdown_pct ?? "",
-        r.m?.signals_today ?? "",
-        r.m?.signals_week ?? "",
-      ].join(","),
-    );
+    const header = "setup,win_rate,average_rr,signals";
+    const lines = rows.map((r) => [r.key, r.m?.win_rate ?? "", r.m?.average_rr ?? "", r.m?.signals ?? ""].join(","));
     const blob = new Blob([[header, ...lines].join("\n")], { type: "text/csv" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -64,8 +54,8 @@ export default function AnalyticsPage() {
           Performance <span className="tag">Analytics</span>
         </h1>
         <p className="hero-sub">
-          GET /performance/summary — indexed by product keys. Time window filters scale the mock P&amp;L
-          stub only; the API has no equity-curve field.
+          DE PR #8 GET /performance/summary — <code>by_setup</code> product keys. Time window
+          filters scale the stub P&amp;L only; per-setup counts use <code>signals</code>.
         </p>
       </div>
       <div className="filters">
@@ -104,7 +94,7 @@ export default function AnalyticsPage() {
           <b>signals per setup</b>
           <div className="bar-list">
             {rows.map((r) => {
-              const n = (window === "daily" ? r.m?.signals_today : r.m?.signals_week) ?? 0;
+              const n = r.m?.signals ?? 0;
               return (
                 <div key={r.key} className="bar-row">
                   <span className="bar-lab">{r.key}</span>

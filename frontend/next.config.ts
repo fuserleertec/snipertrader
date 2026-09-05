@@ -22,7 +22,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/performance/summary",
-        destination: `${quantHttp}/performance/summary`,
+        destination: `${httpBase}/performance/summary`,
       },
     ];
   },

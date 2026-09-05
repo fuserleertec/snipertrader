@@ -64,7 +64,9 @@ export function fetchSignal(id: string): Promise<Signal | null> {
   return getJson<Signal>(`/signals/${id}`, quantHttpUrl);
 }
 
-/** Quant: GET /performance/summary — mock until live path is confirmed. */
-export function fetchPerformanceSummary(): Promise<PerformanceSummary | null> {
+/** DE PR #8 first (`:8000`), then Quant (`:8001`). Caller falls back to mock. */
+export async function fetchPerformanceSummary(): Promise<PerformanceSummary | null> {
+  const de = await getJson<PerformanceSummary>("/performance/summary", httpUrl);
+  if (de) return de;
   return getJson<PerformanceSummary>("/performance/summary", quantHttpUrl);
 }

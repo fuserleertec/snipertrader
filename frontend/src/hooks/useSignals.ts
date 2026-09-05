@@ -5,7 +5,7 @@ import { seedPrice } from "@/lib/constants";
 import { isMockMode, quantWsUrl } from "@/lib/env";
 import { fetchSignals } from "@/lib/http";
 import { mockListSignals, startMockSignalStream } from "@/lib/mocks/signals";
-import { isSignalWsEvent, upsertSignal } from "@/lib/signals";
+import { isSignalWsEvent, normalizeSignal, upsertSignal } from "@/lib/signals";
 import type { Signal } from "@/lib/types";
 import { openJsonWsAt } from "@/lib/ws";
 
@@ -28,19 +28,19 @@ export function useSignals(symbol: string, lastPrice: () => number): Signal[] {
 
     const applyEvent = (data: unknown) => {
       if (!isSignalWsEvent(data)) return;
-      if (data.signal.symbol !== symbol) return;
-      setRows((prev) => upsertSignal(prev, data.signal));
+      const signal = normalizeSignal(data.signal);
+      if (!signal || signal.symbol !== symbol) return;
+      setRows((prev) => upsertSignal(prev, signal));
     };
 
     if (mocks) {
       const seed = seedSignals(symbol);
-      setRows(seed);
       return startMockSignalStream(symbol, lastPrice, applyEvent, seed);
     }
 
     fetchSignals({ symbol, limit: 40 }).then((list) => {
       if (!alive || !list) return;
-      setRows(list.items);
+      setRows(list.items.map((row) => normalizeSignal(row)).filter((row): row is NonNullable<typeof row> => !!row));
     });
 
     const stop = openJsonWsAt(quantWsUrl("/ws/signals"), applyEvent, () => undefined);

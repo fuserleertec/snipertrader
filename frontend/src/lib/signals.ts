@@ -1,4 +1,6 @@
-import type { Signal, SignalWsEvent } from "./types";
+import { isFactorId } from "./factors";
+import { inferAssetClass } from "./constants";
+import type { FactorBreakdown, FactorId, Signal, SignalSide, SignalStatus, SignalWsEvent, SetupType, Timeframe } from "./types";
 
 function fmtPx(n: number): string {
   return n >= 1000 ? n.toFixed(1) : n.toFixed(2);
@@ -23,26 +25,78 @@ export function zoneLabel(signal: Signal): string {
   return `${fmtPx(zone_low)}–${fmtPx(zone_high)}  E ${fmtPx(signal.entry)}  S ${fmtPx(signal.stop)}  T ${fmtPx(signal.target)}`;
 }
 
+function numOr(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function readFactors(raw: unknown): FactorId[] {
+  if (!Array.isArray(raw)) return [];
+  const out: FactorId[] = [];
+  for (const item of raw) {
+    if (typeof item === "string" && isFactorId(item)) out.push(item);
+    else if (item && typeof item === "object") {
+      const row = item as { name?: unknown; key?: unknown };
+      const name = typeof row.name === "string" ? row.name : typeof row.key === "string" ? row.key : "";
+      if (isFactorId(name)) out.push(name);
+    }
+  }
+  return out;
+}
+
+function readBreakdown(raw: unknown): FactorBreakdown[] {
+  if (!Array.isArray(raw)) return [];
+  const out: FactorBreakdown[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const row = item as { name?: unknown; key?: unknown; weight?: unknown; score?: unknown; note?: unknown };
+    const name = typeof row.name === "string" ? row.name : typeof row.key === "string" ? row.key : "";
+    if (!isFactorId(name) || typeof row.weight !== "number" || typeof row.score !== "number") continue;
+    out.push({
+      name,
+      weight: row.weight,
+      score: row.score,
+      note: typeof row.note === "string" ? row.note : null,
+    });
+  }
+  return out;
+}
+
+export function normalizeSignal(value: unknown): Signal | null {
+  if (!value || typeof value !== "object") return null;
+  const s = value as Record<string, unknown>;
+  if (typeof s.id !== "string" || typeof s.symbol !== "string" || typeof s.setup_type !== "string") return null;
+  if (s.side !== "long" && s.side !== "short") return null;
+  const ts = typeof s.ts_ms === "number" ? s.ts_ms : Date.now();
+  const factors = readFactors(s.contributing_factors);
+  const breakdown = readBreakdown(s.factor_breakdown);
+  return {
+    id: s.id,
+    ts_ms: ts,
+    symbol: s.symbol,
+    asset_class: typeof s.asset_class === "string" ? (s.asset_class as Signal["asset_class"]) : inferAssetClass(s.symbol),
+    setup_type: s.setup_type as SetupType,
+    side: s.side as SignalSide,
+    entry: numOr(s.entry, 0),
+    stop: numOr(s.stop, 0),
+    target: numOr(s.target, 0),
+    status: (typeof s.status === "string" ? s.status : "ACTIVE") as SignalStatus,
+    confidence: numOr(s.confidence, 0),
+    timeframe: (typeof s.timeframe === "string" ? s.timeframe : "5m") as Timeframe,
+    ref_session: (typeof s.ref_session === "string" ? s.ref_session : "ny_am") as Signal["ref_session"],
+    trigger_event_ids: Array.isArray(s.trigger_event_ids) ? s.trigger_event_ids.filter((x): x is string => typeof x === "string") : [],
+    contributing_factors: factors,
+    factor_breakdown: breakdown,
+  };
+}
+
 export function isSignal(value: unknown): value is Signal {
-  if (!value || typeof value !== "object") return false;
-  const s = value as Signal;
-  return (
-    typeof s.id === "string" &&
-    typeof s.ts_ms === "number" &&
-    typeof s.symbol === "string" &&
-    typeof s.setup_type === "string" &&
-    typeof s.side === "string" &&
-    typeof s.entry === "number" &&
-    typeof s.stop === "number" &&
-    typeof s.target === "number" &&
-    typeof s.status === "string"
-  );
+  return normalizeSignal(value) != null;
 }
 
 export function isSignalWsEvent(value: unknown): value is SignalWsEvent {
   if (!value || typeof value !== "object") return false;
   const ev = value as SignalWsEvent;
-  return (ev.type === "signal.upsert" || ev.type === "signal.status") && isSignal(ev.signal);
+  return (ev.type === "signal.upsert" || ev.type === "signal.status") && normalizeSignal(ev.signal) != null;
 }
 
 export function upsertSignal(prev: Signal[], signal: Signal): Signal[] {

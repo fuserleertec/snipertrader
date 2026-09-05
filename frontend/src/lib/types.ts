@@ -88,12 +88,35 @@ export type PerformanceSetupKey =
   | "5_vwap_pullback_cont"
   | "6_avwap_ob_confluence";
 
-export interface ContributingFactor {
-  key: string;
+/** PR #9 publish-only factor ids. Not chart ids. */
+export type FactorId =
+  | "liquidity_sweep"
+  | "mss"
+  | "fvg"
+  | "order_block"
+  | "vwap_reclaim"
+  | "vwap_band_extension"
+  | "vwap_pullback"
+  | "first_touch"
+  | "low_volume"
+  | "volume_confirm"
+  | "rejection_candle"
+  | "engulfing"
+  | "avwap"
+  | "htf_ob"
+  | "kill_zone"
+  | "multi_pattern"
+  | "trend_align";
+
+/** PR #9 `factor_breakdown[]`. sum(score) ≈ conviction 0–100. */
+export interface FactorBreakdown {
+  name: FactorId;
   weight: number;
-  note?: string;
+  score: number;
+  note?: string | null;
 }
 
+/** DE PR #8 `overall` block on GET /performance/summary. */
 export interface PerformanceMetrics {
   win_rate: number;
   average_rr: number;
@@ -103,9 +126,17 @@ export interface PerformanceMetrics {
   signals_week: number;
 }
 
+/** DE PR #8 `by_setup` value — only these three fields. */
+export interface PerformanceSetupStats {
+  win_rate: number;
+  average_rr: number;
+  signals: number;
+}
+
 export interface PerformanceSummary {
+  timestamp: number;
   overall: PerformanceMetrics;
-  by_setup: Partial<Record<PerformanceSetupKey, Partial<PerformanceMetrics>>>;
+  by_setup: Record<PerformanceSetupKey, PerformanceSetupStats>;
 }
 
 export type OverlayPreset =
@@ -200,8 +231,10 @@ export interface Signal {
   timeframe: Timeframe;
   ref_session: SessionType;
   trigger_event_ids: string[];
-  /** Stub until Quant/ML publish the contributing-factor contract. */
-  contributing_factors?: ContributingFactor[];
+  /** PR #9: stable factor ids. Chart join is id + trigger_event_ids. */
+  contributing_factors?: FactorId[];
+  /** PR #9: sum(score) ≈ conviction (0–100); confidence = conviction / 100. */
+  factor_breakdown?: FactorBreakdown[];
 }
 
 export interface SignalListResponse {

@@ -153,7 +153,9 @@ REST:
 - `GET /signals?symbol=&status=&setup_type=&from_ts=&to_ts=&limit=` →
   `{ "items": [ Signal ], "next_cursor": string|null }`
 - `GET /signals/{id}` → `Signal`
-- `GET /performance/summary` → `{ overall, by_setup }` (mock until Quant confirms live; likely `:8001`)
+- `GET /performance/summary` → DE PR #8 `{ timestamp, overall, by_setup }`
+  (`by_setup[key] = { win_rate, average_rr, signals }`). Falls back to mock
+  if DE `:8000` / Quant `:8001` are down.
 
 Locked `setup_type` ↔ `by_setup` product key:
 
@@ -167,6 +169,9 @@ Locked `setup_type` ↔ `by_setup` product key:
 | `avwap_ob_confluence` | `6_avwap_ob_confluence` |
 
 Dropped from UI: `mss_break`, `order_block`, `sweep_mss`, `ob_fvg`, `*_pending_user_confirm`.
+
+PR #9 explainability: `contributing_factors: string[]` (locked factor ids) +
+`factor_breakdown: {name, weight, score, note?}[]` with `sum(score)` ≈ conviction.
 
 Overlays 4–6: ±2σ/±3σ + rejection + session VWAP target; pullback shade + OB/FVG; AVWAP + OB confluence.
 
@@ -201,7 +206,11 @@ Table columns map 1:1 to Signal fields:
   "confidence": 0.8,
   "timeframe": "5m",
   "ref_session": "ny_am",
-  "trigger_event_ids": ["..."]
+  "trigger_event_ids": ["..."],
+  "contributing_factors": ["liquidity_sweep", "mss", "vwap_reclaim"],
+  "factor_breakdown": [
+    { "name": "liquidity_sweep", "weight": 15, "score": 30, "note": "..." }
+  ]
 }
 ```
 

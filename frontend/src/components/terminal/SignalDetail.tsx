@@ -11,7 +11,9 @@ export function SignalDetail({
   signal: Signal;
   onClose: () => void;
 }) {
-  const factors = signal.contributing_factors ?? [];
+  const ids = signal.contributing_factors ?? [];
+  const rows = signal.factor_breakdown ?? [];
+  const conviction = rows.reduce((s, r) => s + r.score, 0);
   const copy = async () => {
     const payload = {
       id: signal.id,
@@ -23,6 +25,8 @@ export function SignalDetail({
       stop: signal.stop,
       target: signal.target,
       trigger_event_ids: signal.trigger_event_ids,
+      contributing_factors: ids,
+      factor_breakdown: rows,
     };
     try {
       await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
@@ -65,23 +69,31 @@ export function SignalDetail({
         </div>
       </div>
       <div className="sec-sub" style={{ marginTop: 12 }}>
-        contributing_factors[] — stub until Quant/ML publish the contract. Chart overlays join via{" "}
-        <code>trigger_event_ids</code>.
+        PR #9 explainability — <code>contributing_factors[]</code> are factor ids.{" "}
+        <code>sum(factor_breakdown.score)</code> ≈ conviction ({conviction.toFixed(0)}). Chart join is{" "}
+        <code>id</code> + <code>trigger_event_ids</code>.
       </div>
-      <div className="recon-grid">
-        {factors.length === 0 && <div className="note">No contributing_factors on this row.</div>}
-        {factors.map((f) => (
-          <div key={f.key} className="drop" style={{ borderLeftColor: "var(--cyan)" }}>
-            <div className="dt">
-              <div className="dsym">{f.key}</div>
-              <div className="dbull">{f.weight.toFixed(2)}</div>
-            </div>
-            <div className="dreason">{f.note ?? "stub"}</div>
-          </div>
+      <div className="pick-tags" style={{ marginTop: 10 }}>
+        {ids.map((id) => (
+          <span key={id} className="ptag">
+            {id}
+          </span>
         ))}
       </div>
-      <div className="sec-sub" style={{ marginTop: 12 }}>
-        Similar historical signals — stub (no Quant similarity API).
+      <div className="recon-grid">
+        {rows.length === 0 && <div className="note">No factor_breakdown on this row.</div>}
+        {rows.map((f) => (
+          <div key={f.name} className="drop" style={{ borderLeftColor: "var(--cyan)" }}>
+            <div className="dt">
+              <div className="dsym">{f.name}</div>
+              <div className="dbull">{f.score.toFixed(1)}</div>
+            </div>
+            <div className="dreason">
+              weight {f.weight}
+              {f.note ? ` · ${f.note}` : ""}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

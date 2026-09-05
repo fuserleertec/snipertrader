@@ -84,7 +84,6 @@ export function useMarketData(symbol: string, timeframe: Timeframe): MarketState
     const next = mocks ? mockSeed(symbol, timeframe) : { ...empty, status: "connecting" as const };
     setActiveKey(streamKey);
     setState(next);
-    barsRef.current = next.bars;
   }
 
   useEffect(() => {

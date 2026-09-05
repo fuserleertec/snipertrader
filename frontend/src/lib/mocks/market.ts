@@ -151,7 +151,7 @@ export function startMockMarket(
   const now = Date.now();
   const bars = buildMockHistory(symbol, timeframe, now);
   const last = bars[bars.length - 1];
-  let price = last?.close ?? seedPrice(symbol);
+  const price = last?.close ?? seedPrice(symbol);
   const step = TF_MS[timeframe];
   const lastOpen = align(now, timeframe);
   const rand = mulberry32(hash(`${symbol}:${timeframe}:live`));

@@ -1,15 +1,7 @@
 import { inferAssetClass } from "../constants";
 import { sessionWindows } from "../sessions";
-import type {
-  ContributingFactor,
-  FVGZone,
-  MssEvent,
-  OrderBlock,
-  PatternBook,
-  SetupType,
-  Signal,
-  SweepEvent,
-} from "../types";
+import { explain, factorsForSetup } from "../factors";
+import type { FVGZone, MssEvent, OrderBlock, PatternBook, SetupType, Signal, SweepEvent } from "../types";
 
 const cache = new Map<string, { book: PatternBook; signals: Signal[]; price: number }>();
 
@@ -151,31 +143,6 @@ export function buildPatternBook(symbol: string, price: number, now: number): Pa
   };
 }
 
-function factorsFor(setup_type: SetupType): ContributingFactor[] {
-  if (setup_type === "sd_extension_fade") {
-    return [
-      { key: "sigma_extension", weight: 0.42, note: "stub" },
-      { key: "rejection_wick", weight: 0.31, note: "stub" },
-      { key: "session_vwap_magnet", weight: 0.27, note: "stub" },
-    ];
-  }
-  if (setup_type === "vwap_pullback_cont") {
-    return [
-      { key: "trend_vwap", weight: 0.38, note: "stub" },
-      { key: "ob_touch", weight: 0.34, note: "stub" },
-      { key: "fvg_touch", weight: 0.28, note: "stub" },
-    ];
-  }
-  if (setup_type === "avwap_ob_confluence") {
-    return [
-      { key: "anchored_vwap", weight: 0.4, note: "stub" },
-      { key: "order_block", weight: 0.35, note: "stub" },
-      { key: "confluence", weight: 0.25, note: "stub" },
-    ];
-  }
-  return [{ key: "structure", weight: 0.55, note: "stub" }, { key: "session", weight: 0.45, note: "stub" }];
-}
-
 function signalOf(
   symbol: string,
   price: number,
@@ -205,7 +172,7 @@ function signalOf(
     timeframe: "5m",
     ref_session: inferAssetClass(symbol) === "crypto" ? "ny_am" : "rth",
     trigger_event_ids,
-    contributing_factors: factorsFor(setup_type),
+    ...explain(factorsForSetup(setup_type), Math.round(confidence * 100)),
   };
 }
 
