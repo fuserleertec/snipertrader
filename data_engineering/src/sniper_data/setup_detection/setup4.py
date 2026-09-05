@@ -17,7 +17,7 @@ from sniper_data.bus.redis_store import StateStore
 from sniper_data.models import AssetClass, KillZoneEvent, MssEvent, OHLCVBar, VWAPValues
 from sniper_data.pattern_detection.context import get_kill_zone
 from sniper_data.setup_detection.atr import atr, stop_beyond
-from sniper_data.setup_detection.candidate import SetupCandidate, breakdown_from_factors, risk_reward, score_conviction
+from sniper_data.setup_detection.candidate import SetupCandidate, attach_explainability, risk_reward, score_conviction
 from sniper_data.setup_detection.candles import rejection_reverse
 from sniper_data.setup_detection.context import (
     atr_regime,
@@ -188,11 +188,11 @@ class SdExtensionFadeDetector:
             log.info("setup4 discard rr<%s tag=%s symbol=%s rr=%s", need, tagged, bar.symbol, rr)
             return None
         kz = kill_zone_active(zone, ts_ms=bar.close_ts_ms)
-        factors = ["vwap_band_extension", "low_volume", "rejection_candle"]
+        names = ["vwap_band_extension", "low_volume", "rejection_candle"]
         if mss is not None:
-            factors.append("mss")
-        if tagged.endswith("3_sigma"):
-            factors.append("three_sigma")
+            names.append("mss")
+        if kz:
+            names.append("kill_zone")
         conviction = score_conviction(
             confluence=2 if tagged.endswith("3_sigma") else 1,
             volume_confirmed=True,
@@ -204,7 +204,7 @@ class SdExtensionFadeDetector:
         if mss is not None and mss.id:
             ids.append(mss.id)
         session = _session_name(vwap)
-        return SetupCandidate(
+        cand = SetupCandidate(
             setup_number=SETUP_NUMBER,
             setup_type=SETUP_TYPE,
             symbol=bar.symbol,
@@ -222,9 +222,8 @@ class SdExtensionFadeDetector:
             session_type=session,
             risk_reward=rr,
             kill_zone=zone.kill_zone.value if zone is not None else None,
-            contributing_factors=factors,
-            factor_breakdown=breakdown_from_factors(factors, base=50),
             volume_confirmed=True,
             kill_zone_aligned=kz,
             notes={"band_tag": tagged, "atr": atr_val, "atr_regime": regime},
         )
+        return attach_explainability(cand, names)

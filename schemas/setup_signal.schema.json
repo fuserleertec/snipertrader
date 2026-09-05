@@ -69,13 +69,65 @@
     },
     "contributing_factors": {
       "type": ["array", "null"],
-      "items": { "type": "string" },
-      "description": "Publish-only conviction factor names. Omit on POST /risk/validate."
+      "items": {
+        "type": "string",
+        "enum": [
+          "liquidity_sweep",
+          "mss",
+          "fvg",
+          "order_block",
+          "vwap_reclaim",
+          "vwap_band_extension",
+          "vwap_pullback",
+          "first_touch",
+          "low_volume",
+          "volume_confirm",
+          "rejection_candle",
+          "engulfing",
+          "avwap",
+          "htf_ob",
+          "kill_zone",
+          "multi_pattern",
+          "trend_align"
+        ]
+      },
+      "description": "Publish-only factor ids that fired. Labels only — join the chart via id + trigger_event_ids. Omit on POST /risk/validate."
     },
     "factor_breakdown": {
-      "type": ["object", "null"],
-      "additionalProperties": { "type": "number" },
-      "description": "Publish-only per-factor conviction points. Omit on POST /risk/validate."
+      "type": ["array", "null"],
+      "description": "Publish-only detail rows. sum(score) ≈ conviction (0–100); confidence = conviction/100. Omit on POST /risk/validate.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "weight", "score"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "enum": [
+              "liquidity_sweep",
+              "mss",
+              "fvg",
+              "order_block",
+              "vwap_reclaim",
+              "vwap_band_extension",
+              "vwap_pullback",
+              "first_touch",
+              "low_volume",
+              "volume_confirm",
+              "rejection_candle",
+              "engulfing",
+              "avwap",
+              "htf_ob",
+              "kill_zone",
+              "multi_pattern",
+              "trend_align"
+            ]
+          },
+          "weight": { "type": "number" },
+          "score": { "type": "number" },
+          "note": { "type": ["string", "null"] }
+        }
+      }
     }
   }
 }

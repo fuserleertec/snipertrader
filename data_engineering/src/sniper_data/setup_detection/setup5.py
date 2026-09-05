@@ -18,7 +18,7 @@ from sniper_data.bus.redis_store import StateStore
 from sniper_data.models import AssetClass, FVGZone, KillZoneEvent, OHLCVBar, OrderBlock, SessionType, VWAPValues
 from sniper_data.pattern_detection.context import get_kill_zone
 from sniper_data.setup_detection.atr import atr, stop_beyond
-from sniper_data.setup_detection.candidate import SetupCandidate, breakdown_from_factors, risk_reward, score_conviction
+from sniper_data.setup_detection.candidate import SetupCandidate, attach_explainability, risk_reward, score_conviction
 from sniper_data.setup_detection.candles import (
     bearish_engulfing,
     bullish_engulfing,
@@ -240,8 +240,13 @@ class VwapPullbackContDetector:
             log.info("setup5 discard rr<%s symbol=%s rr=%s", self.params.s5_min_rr, bar.symbol, rr)
             return None
         kind, zone_id = zone_hit
-        factors = ["trend_vwap", "pullback", kind, "first_touch"]
+        structure = "fvg" if kind == "fvg" else "order_block"
+        names = ["trend_align", "vwap_pullback", structure, "first_touch", "engulfing"]
         kz = kill_zone_active(zone, ts_ms=bar.close_ts_ms)
+        if bar.volume > 0:
+            names.append("volume_confirm")
+        if kz:
+            names.append("kill_zone")
         conviction = score_conviction(
             confluence=2,
             volume_confirmed=bar.volume > 0,
@@ -254,7 +259,7 @@ class VwapPullbackContDetector:
                 SessionType(session)
             except ValueError:
                 session = session
-        return SetupCandidate(
+        cand = SetupCandidate(
             setup_number=SETUP_NUMBER,
             setup_type=SETUP_TYPE,
             symbol=bar.symbol,
@@ -272,9 +277,8 @@ class VwapPullbackContDetector:
             session_type=session,
             risk_reward=rr,
             kill_zone=zone.kill_zone.value if zone is not None else None,
-            contributing_factors=factors,
-            factor_breakdown=breakdown_from_factors(factors, base=50),
             volume_confirmed=bar.volume > 0,
             kill_zone_aligned=kz,
             notes={"structure": kind, "atr": atr_val},
         )
+        return attach_explainability(cand, names)

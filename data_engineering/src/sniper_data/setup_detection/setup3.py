@@ -23,7 +23,7 @@ from sniper_data.models import (
 )
 from sniper_data.pattern_detection.context import get_kill_zone
 from sniper_data.setup_detection.atr import atr, stop_beyond
-from sniper_data.setup_detection.candidate import SetupCandidate, risk_reward, score_conviction
+from sniper_data.setup_detection.candidate import SetupCandidate, attach_explainability, risk_reward, score_conviction
 from sniper_data.setup_detection.candles import displacement
 from sniper_data.setup_detection.context import band_tagged, get_session, get_session_vwap, kill_zone_active
 from sniper_data.setup_detection.params import SetupParams, load_setup_params
@@ -245,7 +245,14 @@ class JudasDetector:
         ids = [sweep.id]
         if sweep.id:
             ids = [sweep.id]
-        return SetupCandidate(
+        names = ["liquidity_sweep", "rejection_candle"]
+        if tagged:
+            names.append("vwap_band_extension")
+        if sweep.volume_profile == "aggressive" or bar.volume > 0:
+            names.append("volume_confirm")
+        if kz:
+            names.append("kill_zone")
+        cand = SetupCandidate(
             setup_number=SETUP_NUMBER,
             setup_type=SETUP_TYPE,
             symbol=bar.symbol,
@@ -263,5 +270,8 @@ class JudasDetector:
             session_type=session,
             risk_reward=rr,
             kill_zone=session,
+            volume_confirmed=sweep.volume_profile == "aggressive" or bar.volume > 0,
+            kill_zone_aligned=kz,
             notes={"band_tag": tagged, "accum_session": pending.accum.session_type.value},
         )
+        return attach_explainability(cand, names)

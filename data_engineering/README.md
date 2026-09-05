@@ -501,8 +501,17 @@ candidates are logged. Dedupe same symbol + direction within `SETUP_DEDUPE_WINDO
 kill-zone, volume-confirm, and multi-pattern bonuses (env-tunable). High ATR regime
 (`SETUP_ATR_REGIME_HIGH_FRAC`) forces Setup 4 to require a ±3σ tag.
 
-Publish-only fields on `setup_signals`: `contributing_factors` (string[]) and
-`factor_breakdown` (points). Validate must not include them.
+Publish-only fields on `setup_signals` (never on validate):
+
+* `contributing_factors` — stable factor ids that fired (labels, not chart ids).
+* `factor_breakdown` — `{name, weight, score, note?}[]`. `sum(score)` ≈ conviction
+  (0–100); `confidence = conviction / 100`.
+
+Join the chart via signal `id` + `trigger_event_ids`. Factor names are not
+substitute event ids. Stable names: `liquidity_sweep`, `mss`, `fvg`,
+`order_block`, `vwap_reclaim`, `vwap_band_extension`, `vwap_pullback`,
+`first_touch`, `low_volume`, `volume_confirm`, `rejection_candle`, `engulfing`,
+`avwap`, `htf_ob`, `kill_zone`, `multi_pattern`, `trend_align`.
 
 ```bash
 sniper-data setups --inmemory

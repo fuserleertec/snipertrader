@@ -237,6 +237,36 @@ RISK_VALIDATE_FIELDS = (
 )
 
 
+ContributingFactor = Literal[
+    "liquidity_sweep",
+    "mss",
+    "fvg",
+    "order_block",
+    "vwap_reclaim",
+    "vwap_band_extension",
+    "vwap_pullback",
+    "first_touch",
+    "low_volume",
+    "volume_confirm",
+    "rejection_candle",
+    "engulfing",
+    "avwap",
+    "htf_ob",
+    "kill_zone",
+    "multi_pattern",
+    "trend_align",
+]
+
+
+class FactorBreakdownRow(BaseModel):
+    """Publish-only explainability row. ``sum(score)`` ≈ conviction (0–100)."""
+
+    name: ContributingFactor
+    weight: float
+    score: float
+    note: str | None = None
+
+
 class SetupSignal(BaseModel):
     """Kafka ``setup_signals`` — Quant-locked Phase 2 payload (id only after approval)."""
 
@@ -258,8 +288,8 @@ class SetupSignal(BaseModel):
     session_type: SessionType | None = None
     position_size: float | None = None
     status: Literal["ACTIVE", "TP_HIT", "SL_HIT", "CANCELLED"] | None = None
-    contributing_factors: list[str] | None = None
-    factor_breakdown: dict[str, float] | None = None
+    contributing_factors: list[ContributingFactor] | None = None
+    factor_breakdown: list[FactorBreakdownRow] | None = None
 
 
 class RiskValidateRequest(BaseModel):

@@ -13,11 +13,13 @@ from sniper_data.models import (
     RISK_VALIDATE_FIELDS,
     SCHEMA_VERSION,
     AssetClass,
+    FactorBreakdownRow,
     RiskValidateRequest,
     SessionType,
     SetupSignal,
     SetupType,
 )
+from sniper_data.setup_detection.factors import breakdown_payload, explain
 
 Side = Literal["long", "short"]
 
@@ -43,7 +45,7 @@ class SetupCandidate:
     risk_reward: float = 0.0
     kill_zone: str | None = None
     contributing_factors: list[str] = field(default_factory=list)
-    factor_breakdown: dict[str, float] = field(default_factory=dict)
+    factor_breakdown: list[dict[str, Any]] = field(default_factory=list)
     volume_confirmed: bool = False
     kill_zone_aligned: bool = False
     notes: dict[str, Any] = field(default_factory=dict)
@@ -68,7 +70,7 @@ class SetupCandidate:
             "target": self.target,
             "trigger_event_ids": list(self.trigger_event_ids),
             "contributing_factors": list(self.contributing_factors),
-            "factor_breakdown": dict(self.factor_breakdown),
+            "factor_breakdown": [dict(r) for r in self.factor_breakdown],
             "ref_vwap": self.ref_vwap,
         }
 
@@ -134,7 +136,11 @@ def to_setup_signal(
         position_size=position_size,
         status="ACTIVE",
         contributing_factors=list(candidate.contributing_factors) or None,
-        factor_breakdown=dict(candidate.factor_breakdown) or None,
+        factor_breakdown=(
+            [FactorBreakdownRow.model_validate(row) for row in candidate.factor_breakdown]
+            if candidate.factor_breakdown
+            else None
+        ),
     )
 
 
@@ -166,17 +172,19 @@ def score_conviction(
     return max(0, min(100, score))
 
 
-def breakdown_from_factors(
-    factors: list[str],
-    *,
-    base: int = 40,
-    extras: dict[str, float] | None = None,
-) -> dict[str, float]:
-    """Publish-only per-factor points. Not sent to /risk/validate."""
-    out: dict[str, float] = {"base": float(base)}
-    for name in factors:
-        out[name] = out.get(name, 0.0) + 10.0
-    if extras:
-        for key, val in extras.items():
-            out[key] = float(val)
-    return out
+def attach_explainability(candidate: SetupCandidate, names: list[str], **kwargs: Any) -> SetupCandidate:
+    """Set contributing_factors + factor_breakdown scaled to conviction."""
+    factors, rows = explain(names, conviction=candidate.conviction, **kwargs)
+    candidate.contributing_factors = factors
+    candidate.factor_breakdown = list(rows)
+    return candidate
+
+
+# Back-compat alias used by older detector drafts.
+def breakdown_from_factors(factors: list[str], *, conviction: int = 60, **_: Any) -> list[dict[str, Any]]:
+    _ids, rows = explain(factors, conviction=conviction)
+    return list(rows)
+
+
+def published_breakdown(rows: list[dict[str, Any]] | None) -> list[dict[str, Any]] | None:
+    return breakdown_payload(rows)

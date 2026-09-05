@@ -24,7 +24,7 @@ from sniper_data.models import (
 from sniper_data.pattern_detection.context import get_kill_zone
 from sniper_data.pattern_detection.mss import SwingPoint
 from sniper_data.setup_detection.atr import atr, stop_beyond
-from sniper_data.setup_detection.candidate import SetupCandidate, risk_reward, score_conviction
+from sniper_data.setup_detection.candidate import SetupCandidate, attach_explainability, risk_reward, score_conviction
 from sniper_data.setup_detection.context import band_tagged, get_session_vwap, kill_zone_active
 from sniper_data.setup_detection.params import SetupParams, load_setup_params
 
@@ -285,7 +285,12 @@ class SweepReclaimDetector:
         session = None
         if vwap.session_type is not None:
             session = vwap.session_type.value if hasattr(vwap.session_type, "value") else str(vwap.session_type)
-        return SetupCandidate(
+        names = ["liquidity_sweep", "mss", "vwap_reclaim"]
+        if armed.sweep.volume_profile == "aggressive":
+            names.append("volume_confirm")
+        if kz:
+            names.append("kill_zone")
+        cand = SetupCandidate(
             setup_number=SETUP_NUMBER,
             setup_type=SETUP_TYPE,
             symbol=bar.symbol,
@@ -303,5 +308,8 @@ class SweepReclaimDetector:
             session_type=session,
             risk_reward=rr,
             kill_zone=zone.kill_zone.value if zone is not None else None,
+            volume_confirmed=armed.sweep.volume_profile == "aggressive",
+            kill_zone_aligned=kz,
             notes={"band_tag": tagged, "mss_direction": mss.direction, "atr": atr_val},
         )
+        return attach_explainability(cand, names)

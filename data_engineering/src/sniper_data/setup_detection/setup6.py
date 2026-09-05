@@ -35,7 +35,7 @@ from sniper_data.models import (
 from sniper_data.pattern_detection.context import get_kill_zone
 from sniper_data.pattern_detection.mss import SwingPoint
 from sniper_data.setup_detection.atr import atr, stop_beyond
-from sniper_data.setup_detection.candidate import SetupCandidate, breakdown_from_factors, risk_reward, score_conviction
+from sniper_data.setup_detection.candidate import SetupCandidate, attach_explainability, risk_reward, score_conviction
 from sniper_data.setup_detection.candles import rejection_reverse
 from sniper_data.setup_detection.context import get_htf_obs, kill_zone_active, list_avwaps, price_in_range
 from sniper_data.setup_detection.params import SetupParams, load_setup_params
@@ -248,10 +248,14 @@ class AvwapObConfluenceDetector:
             log.info("setup6 discard rr<%s symbol=%s rr=%s", self.params.s6_min_rr, bar.symbol, rr)
             return None
         wire_tf = self.params.s6_wire_timeframe if self.params.s6_wire_timeframe in WIRE_TFS else "15m"
-        factors = ["avwap", "order_block", "htf_rejection"]
+        names = ["avwap", "htf_ob", "rejection_candle"]
         if mss is not None:
-            factors.append("mss")
+            names.append("mss")
         kz = kill_zone_active(zone, ts_ms=bar.close_ts_ms)
+        if bar.volume > 0:
+            names.append("volume_confirm")
+        if kz:
+            names.append("kill_zone")
         conviction = score_conviction(
             confluence=3,
             volume_confirmed=bar.volume > 0,
@@ -263,7 +267,7 @@ class AvwapObConfluenceDetector:
         ids = [snap.anchor_id, ob.id]
         if mss is not None and mss.id:
             ids.append(mss.id)
-        return SetupCandidate(
+        cand = SetupCandidate(
             setup_number=SETUP_NUMBER,
             setup_type=SETUP_TYPE,
             symbol=bar.symbol,
@@ -281,8 +285,6 @@ class AvwapObConfluenceDetector:
             session_type=None,
             risk_reward=rr,
             kill_zone=zone.kill_zone.value if zone is not None else None,
-            contributing_factors=factors,
-            factor_breakdown=breakdown_from_factors(factors, base=55),
             volume_confirmed=bar.volume > 0,
             kill_zone_aligned=kz,
             notes={
@@ -293,3 +295,4 @@ class AvwapObConfluenceDetector:
                 "atr": atr_val,
             },
         )
+        return attach_explainability(cand, names)

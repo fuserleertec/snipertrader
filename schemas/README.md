@@ -89,7 +89,11 @@ ML **omits `id`** on the request. Publish to `setup_signals` only when
 | 5 VWAP pullback continuation | `vwap_pullback_cont` | `5_vwap_pullback_cont` |
 | 6 AVWAP + HTF OB confluence | `avwap_ob_confluence` | `6_avwap_ob_confluence` |
 
-Publish-only on `setup_signals` (never on validate): `contributing_factors` (string[]) and `factor_breakdown` (object of points).
+Publish-only on `setup_signals` (never on validate): `contributing_factors`
+(stable factor-id enum) and `factor_breakdown` (array of
+`{name, weight, score, note?}`). `sum(score)` ≈ conviction (0–100);
+`confidence = conviction / 100`. Chart join is `id` + `trigger_event_ids` —
+factors are labels, not substitute ids.
 
 Validate body allow-list only: `schema_version`, `symbol`, `asset_class`,
 `setup_type`, `side`, `confidence` (conviction/100), `ref_vwap`,

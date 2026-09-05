@@ -51,6 +51,8 @@ async def test_e2e_setup1_sweep_mss_vwap_reclaim_then_risk_then_publish():
     assert result["raw"]["risk_reward"] >= 2.0
     assert "swp-buy-low" in result["raw"]["trigger_event_ids"]
     assert any(i.startswith("mss") for i in result["raw"]["trigger_event_ids"])
+    assert {"liquidity_sweep", "mss", "vwap_reclaim"} <= set(result["published_signal"]["contributing_factors"])
+    assert isinstance(result["published_signal"]["factor_breakdown"], list)
 
 
 @pytest.mark.asyncio
@@ -110,7 +112,7 @@ async def test_e2e_setup4_sd_extension_fade_approve_and_reject():
     assert ok["trace"][0] == "validate"
     assert ok["trace"][1] == "publish:setup_signals"
     assert "contributing_factors" in ok["published_signal"]
-    assert ok["published_signal"]["factor_breakdown"]
+    assert isinstance(ok["published_signal"]["factor_breakdown"], list)
     assert "id" not in ok["risk_request"]
     assert "contributing_factors" not in ok["risk_request"]
     assert no["publish_count"] == 0
@@ -126,7 +128,7 @@ async def test_e2e_setup5_vwap_pullback_cont_approve_and_reject():
     assert ok["setup_type"] == "vwap_pullback_cont"
     assert ok["product_key"] == "5_vwap_pullback_cont"
     assert ok["trace"][0] == "validate"
-    assert ok["published_signal"]["factor_breakdown"]
+    assert isinstance(ok["published_signal"]["factor_breakdown"], list)
     assert "factor_breakdown" not in ok["risk_request"]
     assert no["publish_count"] == 0
 
@@ -141,7 +143,8 @@ async def test_e2e_setup6_avwap_ob_confluence_approve_and_reject():
     assert ok["product_key"] == "6_avwap_ob_confluence"
     assert ok["trace"][0] == "validate"
     assert ok["published_signal"]["ref_vwap"] == 100.0
-    assert ok["published_signal"]["factor_breakdown"]
+    assert isinstance(ok["published_signal"]["factor_breakdown"], list)
+    assert {"avwap", "htf_ob"} <= set(ok["published_signal"]["contributing_factors"])
     assert no["publish_count"] == 0
 
 
@@ -164,6 +167,10 @@ async def test_e2e_phase3_report_overall_pass():
         assert set(req) <= set(RISK_VALIDATE_FIELDS)
         sig = row["mocked_approve"]["published_setup_signal"]
         assert sig["id"]
+        assert sig["trigger_event_ids"]
+        assert sig["contributing_factors"]
+        assert isinstance(sig["factor_breakdown"], list)
+        assert abs(sum(r["score"] for r in sig["factor_breakdown"]) - 100 * float(sig["confidence"])) <= 0.05
         assert row["mocked_approve"]["publish_count"] == 1
         assert row["mocked_reject"]["publish_count"] == 0
 

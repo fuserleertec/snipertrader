@@ -42,6 +42,7 @@ from sniper_data.setup_detection.fixtures import (
     setup6_htf_warmup,
     setup6_rejection_bars,
 )
+from sniper_data.setup_detection.factors import STABLE_FACTOR_SET
 from sniper_data.setup_detection.orchestrator import SetupOrchestrator, dedupe_candidates
 from sniper_data.setup_detection.params import SetupParams
 from sniper_data.setup_detection.replay import run_setup_replay
@@ -128,6 +129,85 @@ def _locked_risk_ok(body: dict[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
+def _score_sum(rows: Any) -> float:
+    if not isinstance(rows, list):
+        return float("nan")
+    return sum(float(r.get("score", 0)) for r in rows if isinstance(r, dict))
+
+
+def _explainability_checks(
+    raw: dict[str, Any],
+    body: dict[str, Any] | None,
+    signals: list[dict[str, Any]],
+    *,
+    approved: bool,
+    required_factors: tuple[str, ...] | list[str] = (),
+) -> list[dict[str, Any]]:
+    """Publish-only factors: labels, not chart ids. sum(score) ≈ conviction."""
+    checks: list[dict[str, Any]] = []
+    factors = raw.get("contributing_factors") or []
+    rows = raw.get("factor_breakdown") or []
+    conviction = raw.get("conviction") or 0
+    for name in required_factors:
+        checks.append(_assert(f"factor_{name}", name in factors, actual=factors))
+    checks.append(_assert("factors_are_stable", set(factors) <= STABLE_FACTOR_SET, actual=factors))
+    checks.append(_assert("breakdown_is_list", isinstance(rows, list) and bool(rows), actual=rows))
+    names_match = isinstance(rows, list) and {r.get("name") for r in rows if isinstance(r, dict)} == set(factors)
+    checks.append(_assert("breakdown_names_match_factors", names_match, actual=rows))
+    total = _score_sum(rows)
+    checks.append(
+        _assert(
+            "breakdown_sum_eq_conviction",
+            isinstance(rows, list) and abs(total - float(conviction)) <= 0.05,
+            actual={"sum": total, "conviction": conviction},
+        )
+    )
+    if body:
+        checks.append(
+            _assert(
+                "risk_omits_factors",
+                "contributing_factors" not in body and "factor_breakdown" not in body,
+                actual=list(body),
+            )
+        )
+    if approved and signals:
+        sig = signals[0]
+        sig_rows = sig.get("factor_breakdown")
+        checks.append(
+            _assert(
+                "signal_has_factors",
+                "contributing_factors" in sig,
+                actual=sig.get("contributing_factors"),
+            )
+        )
+        checks.append(
+            _assert(
+                "signal_breakdown_is_list",
+                isinstance(sig_rows, list) and bool(sig_rows),
+                actual=sig_rows,
+            )
+        )
+        expected_conf = float(conviction) / 100.0
+        conf = sig.get("confidence")
+        checks.append(
+            _assert(
+                "confidence_eq_conviction_over_100",
+                conf is not None and abs(float(conf) - expected_conf) < 1e-9,
+                actual=conf,
+                expected=expected_conf,
+            )
+        )
+        checks.append(_assert("signal_join_id", bool(sig.get("id"))))
+        checks.append(
+            _assert(
+                "signal_join_trigger_ids",
+                bool(sig.get("trigger_event_ids")),
+                actual=sig.get("trigger_event_ids"),
+            )
+        )
+    return checks
+
+
 def _order_validate_before_publish(trace: list[str], *, expect_publish: bool) -> list[dict[str, Any]]:
     has_v = "validate" in trace
     has_p = any(e.startswith("publish:") for e in trace)
@@ -180,6 +260,13 @@ async def run_setup1_e2e(*, approved: bool = True) -> dict[str, Any]:
         _assert("conviction_ge_60", (raw.get("conviction") or 0) >= LOCKED_TUNABLES["min_conviction_to_validate"], actual=raw.get("conviction")),
         *_order_validate_before_publish(trace, expect_publish=approved),
         *(_locked_risk_ok(body) if body else [_assert("risk_body", False)]),
+        *_explainability_checks(
+            raw,
+            body,
+            signals,
+            approved=approved,
+            required_factors=("liquidity_sweep", "mss", "vwap_reclaim"),
+        ),
     ]
     if approved:
         checks.append(_assert("published_one", len(signals) == 1, actual=len(signals)))
@@ -239,6 +326,13 @@ async def run_setup2_e2e(*, with_ob: bool = False, approved: bool = True) -> dic
         _assert("conviction_ge_60", (raw.get("conviction") or 0) >= 60, actual=raw.get("conviction")),
         *_order_validate_before_publish(trace, expect_publish=approved),
         *(_locked_risk_ok(body) if body else [_assert("risk_body", False)]),
+        *_explainability_checks(
+            raw,
+            body,
+            signals,
+            approved=approved,
+            required_factors=("fvg", "engulfing", "order_block") if with_ob else ("fvg", "engulfing"),
+        ),
     ]
     if approved:
         checks.append(_assert("published_one", len(signals) == 1, actual=len(signals)))
@@ -302,6 +396,13 @@ async def run_setup3_e2e(*, approved: bool = True) -> dict[str, Any]:
         _assert("conviction_ge_60", (raw.get("conviction") or 0) >= 60, actual=raw.get("conviction")),
         *_order_validate_before_publish(trace, expect_publish=approved),
         *(_locked_risk_ok(body) if body else [_assert("risk_body", False)]),
+        *_explainability_checks(
+            raw,
+            body,
+            signals,
+            approved=approved,
+            required_factors=("liquidity_sweep", "rejection_candle"),
+        ),
     ]
     if approved:
         checks.append(_assert("published_one", len(signals) == 1, actual=len(signals)))
@@ -355,33 +456,23 @@ async def run_setup4_e2e(*, approved: bool = True) -> dict[str, Any]:
         _assert("target_session_vwap", raw.get("target") == 100.0, actual=raw.get("target"), expected=100.0),
         _assert("stop_beyond_3s", raw.get("stop") is not None and raw.get("stop") < 94.0, actual=raw.get("stop")),
         _assert("rr_ge_1_5", (raw.get("risk_reward") or 0) >= LOCKED_TUNABLES["s4_min_rr"], actual=raw.get("risk_reward")),
-        _assert("factors_extension", "vwap_band_extension" in (raw.get("contributing_factors") or []), actual=raw.get("contributing_factors")),
         _assert("conviction_ge_60", (raw.get("conviction") or 0) >= LOCKED_TUNABLES["s4_min_conviction"], actual=raw.get("conviction")),
         *_order_validate_before_publish(trace, expect_publish=approved),
         *(_locked_risk_ok(body) if body else [_assert("risk_body", False)]),
+        *_explainability_checks(
+            raw,
+            body,
+            signals,
+            approved=approved,
+            required_factors=("vwap_band_extension", "low_volume", "rejection_candle"),
+        ),
     ]
-    if body:
-        checks.append(_assert("risk_omits_factors", "contributing_factors" not in body and "factor_breakdown" not in body, actual=list(body)))
     if approved:
         checks.append(_assert("published_one", len(signals) == 1, actual=len(signals)))
         if signals:
             validate_topic("setup_signals", signals[0])
             checks.append(_assert("signal_schema", True))
             checks.append(_assert("signal_has_id", bool(signals[0].get("id"))))
-            checks.append(
-                _assert(
-                    "signal_has_factors",
-                    "contributing_factors" in signals[0],
-                    actual=signals[0].get("contributing_factors"),
-                )
-            )
-            checks.append(
-                _assert(
-                    "signal_has_breakdown",
-                    isinstance(signals[0].get("factor_breakdown"), dict),
-                    actual=signals[0].get("factor_breakdown"),
-                )
-            )
     else:
         checks.append(_assert("no_publish_on_reject", signals == [], actual=signals))
     return {
@@ -430,23 +521,24 @@ async def run_setup5_e2e(*, approved: bool = True) -> dict[str, Any]:
         _assert("setup_type", raw.get("setup_type") == "vwap_pullback_cont", actual=raw.get("setup_type"), expected="vwap_pullback_cont"),
         _assert("side_long_trend", raw.get("side") == "long", actual=raw.get("side")),
         _assert("rr_ge_2", (raw.get("risk_reward") or 0) >= LOCKED_TUNABLES["s5_min_rr"], actual=raw.get("risk_reward")),
-        _assert("factor_trend", "trend_vwap" in factors, actual=factors),
-        _assert("factor_pullback", "pullback" in factors, actual=factors),
         _assert("factor_structure", bool({"fvg", "order_block"} & set(factors)), actual=factors),
-        _assert("factor_first_touch", "first_touch" in factors, actual=factors),
         _assert("conviction_ge_60", (raw.get("conviction") or 0) >= LOCKED_TUNABLES["s5_min_conviction"], actual=raw.get("conviction")),
         *_order_validate_before_publish(trace, expect_publish=approved),
         *(_locked_risk_ok(body) if body else [_assert("risk_body", False)]),
+        *_explainability_checks(
+            raw,
+            body,
+            signals,
+            approved=approved,
+            required_factors=("trend_align", "vwap_pullback", "first_touch"),
+        ),
     ]
-    if body:
-        checks.append(_assert("risk_omits_factors", "contributing_factors" not in body and "factor_breakdown" not in body))
     if approved:
         checks.append(_assert("published_one", len(signals) == 1, actual=len(signals)))
         if signals:
             validate_topic("setup_signals", signals[0])
             checks.append(_assert("signal_schema", True))
             checks.append(_assert("signal_has_id", bool(signals[0].get("id"))))
-            checks.append(_assert("signal_has_breakdown", isinstance(signals[0].get("factor_breakdown"), dict)))
     else:
         checks.append(_assert("no_publish_on_reject", signals == [], actual=signals))
     return {
@@ -487,31 +579,31 @@ async def run_setup6_e2e(*, approved: bool = True) -> dict[str, Any]:
     raw = orch.raw_log[-1] if orch.raw_log else {}
     body = captured[0] if captured else {}
     reject = setup6_rejection_bars()[-1]
-    factors = raw.get("contributing_factors") or []
     checks = [
         _assert("setup_type", raw.get("setup_type") == "avwap_ob_confluence", actual=raw.get("setup_type"), expected="avwap_ob_confluence"),
         _assert("side_long_bull_ob", raw.get("side") == "long", actual=raw.get("side")),
         _assert("entry_reject_close", raw.get("entry") == reject.close, actual=raw.get("entry"), expected=reject.close),
         _assert("ref_vwap_is_avwap_value", raw.get("ref_vwap") == snap.vwap_value, actual=raw.get("ref_vwap"), expected=snap.vwap_value),
         _assert("rr_ge_2", (raw.get("risk_reward") or 0) >= LOCKED_TUNABLES["s6_min_rr"], actual=raw.get("risk_reward")),
-        _assert("factor_avwap", "avwap" in factors, actual=factors),
-        _assert("factor_ob", "order_block" in factors, actual=factors),
-        _assert("factor_htf", "htf_rejection" in factors, actual=factors),
         _assert("conviction_ge_70", (raw.get("conviction") or 0) >= LOCKED_TUNABLES["s6_min_conviction"], actual=raw.get("conviction")),
         _assert("wire_tf_15m", raw.get("timeframe") == "15m", actual=raw.get("timeframe")),
         _assert("avwap_nested_not_flat", "band_p1" not in snap.model_dump(), actual=list(snap.model_dump())),
         *_order_validate_before_publish(trace, expect_publish=approved),
         *(_locked_risk_ok(body) if body else [_assert("risk_body", False)]),
+        *_explainability_checks(
+            raw,
+            body,
+            signals,
+            approved=approved,
+            required_factors=("avwap", "htf_ob", "rejection_candle"),
+        ),
     ]
-    if body:
-        checks.append(_assert("risk_omits_factors", "contributing_factors" not in body and "factor_breakdown" not in body))
     if approved:
         checks.append(_assert("published_one", len(signals) == 1, actual=len(signals)))
         if signals:
             validate_topic("setup_signals", signals[0])
             checks.append(_assert("signal_schema", True))
             checks.append(_assert("signal_has_id", bool(signals[0].get("id"))))
-            checks.append(_assert("signal_has_breakdown", isinstance(signals[0].get("factor_breakdown"), dict)))
     else:
         checks.append(_assert("no_publish_on_reject", signals == [], actual=signals))
     return {
@@ -620,6 +712,8 @@ def _handshake_row(*, setup_type: str, approve: dict[str, Any], reject: dict[str
             "risk_response": _mocked_risk_response(True),
             "published_setup_signal": signal,
             "signal_has_id": bool(signal and signal.get("id")),
+            "signal_has_factors": bool(signal and signal.get("contributing_factors")),
+            "signal_breakdown_is_list": isinstance((signal or {}).get("factor_breakdown"), list),
             "publish_count": approve.get("publish_count", 1 if signal else 0),
             "trace": approve.get("trace"),
         },
@@ -686,6 +780,22 @@ async def run_cli_replay_check() -> dict[str, Any]:
         _assert("risk_called_per_signal", len(result["risk_calls"]) == 6, actual=len(result["risk_calls"])),
         _assert("risk_locked", risk_before),
         _assert("risk_omits_factors", all("contributing_factors" not in b and "factor_breakdown" not in b for b in result["risk_calls"])),
+        *[
+            _assert(
+                f"{s.get('setup_type')}_breakdown_list",
+                isinstance(s.get("factor_breakdown"), list) and bool(s.get("factor_breakdown")),
+                actual=s.get("factor_breakdown"),
+            )
+            for s in result["signals"]
+        ],
+        *[
+            _assert(
+                f"{s.get('setup_type')}_factors_present",
+                bool(s.get("contributing_factors")),
+                actual=s.get("contributing_factors"),
+            )
+            for s in result["signals"]
+        ],
     ]
     return {
         "id": "cli_replay",
@@ -805,13 +915,16 @@ async def build_phase3_e2e_report() -> dict[str, Any]:
             "start": "sniper-quant api --inmemory --port 8001",
             "endpoint": DEFAULT_RISK_URL,
             "note": (
-                "POST each validate_request (no id, no contributing_factors) at the Quant "
-                "in-memory API. Approve → setup_signals with id + contributing_factors; "
-                "reject → zero publish."
+                "POST each validate_request (no id, no contributing_factors / factor_breakdown) "
+                "at the Quant in-memory API. Approve → setup_signals with id + trigger_event_ids "
+                "+ contributing_factors + factor_breakdown rows; reject → zero publish."
             ),
             "per_setup": handshake,
         },
-        "note": "Risk validate is mocked via httpx POST. contributing_factors are publish-only.",
+        "note": (
+            "Risk validate is mocked via httpx POST. contributing_factors and "
+            "factor_breakdown are publish-only. Chart join is id + trigger_event_ids."
+        ),
         "scenarios": scenarios,
         "summary": {
             "passed": sum(1 for s in scenarios if s["status"] == "PASS"),

@@ -29,6 +29,7 @@ from sniper_data.models import (
 from sniper_data.pattern_detection.ids import make_id
 from sniper_data.pattern_detection.validate import validate_topic
 from sniper_data.setup_detection.candidate import SetupCandidate, to_risk_request, to_setup_signal
+from sniper_data.setup_detection.factors import add_factor, scale_breakdown
 from sniper_data.setup_detection.context import get_kill_zone, kill_zone_active
 from sniper_data.setup_detection.news import AllowAllNewsFilter, NewsFilter
 from sniper_data.setup_detection.params import SetupParams, load_setup_params
@@ -166,31 +167,20 @@ class SetupOrchestrator:
         p = self.params or load_setup_params()
         for cand in incoming:
             extra = 0
-            factors = list(cand.contributing_factors)
+            rows = list(cand.factor_breakdown)
             if kz or cand.kill_zone_aligned:
                 cand.kill_zone_aligned = True
                 extra += p.conv_kill_zone_bonus
-                if "kill_zone" not in factors:
-                    factors.append("kill_zone")
+                add_factor(rows, "kill_zone", float(p.conv_kill_zone_bonus))
             if cand.volume_confirmed:
                 extra += p.conv_volume_bonus
-                if "volume_confirm" not in factors:
-                    factors.append("volume_confirm")
+                add_factor(rows, "volume_confirm", float(p.conv_volume_bonus))
             if len(by_key.get((cand.symbol, cand.side), ())) >= 2:
                 extra += p.conv_multi_pattern_bonus
-                if "multi_pattern" not in factors:
-                    factors.append("multi_pattern")
+                add_factor(rows, "multi_pattern", float(p.conv_multi_pattern_bonus))
             cand.conviction = max(0, min(100, cand.conviction + extra))
-            cand.contributing_factors = factors
-            breakdown = dict(cand.factor_breakdown)
-            if kz or cand.kill_zone_aligned:
-                breakdown["kill_zone"] = float(p.conv_kill_zone_bonus)
-            if cand.volume_confirmed:
-                breakdown["volume_confirm"] = float(p.conv_volume_bonus)
-            if len(by_key.get((cand.symbol, cand.side), ())) >= 2:
-                breakdown["multi_pattern"] = float(p.conv_multi_pattern_bonus)
-            breakdown["conviction"] = float(cand.conviction)
-            cand.factor_breakdown = breakdown
+            cand.factor_breakdown = scale_breakdown(rows, cand.conviction)
+            cand.contributing_factors = [r["name"] for r in cand.factor_breakdown]
 
     async def submit(self, incoming: list[SetupCandidate]) -> list[SetupCandidate]:
         if not incoming:

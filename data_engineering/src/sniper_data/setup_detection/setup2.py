@@ -13,7 +13,7 @@ from sniper_data.bus.redis_store import StateStore
 from sniper_data.models import AssetClass, FVGZone, KillZoneEvent, OHLCVBar, OrderBlock, SessionType, VWAPValues
 from sniper_data.pattern_detection.context import get_kill_zone, get_volume_profile, list_volume_profiles
 from sniper_data.setup_detection.atr import atr, stop_beyond
-from sniper_data.setup_detection.candidate import SetupCandidate, risk_reward, score_conviction
+from sniper_data.setup_detection.candidate import SetupCandidate, attach_explainability, risk_reward, score_conviction
 from sniper_data.setup_detection.candles import is_confirmation, recent_swing_high, recent_swing_low
 from sniper_data.setup_detection.context import (
     get_active_fvgs,
@@ -198,7 +198,16 @@ class FVGEntryDetector:
                 SessionType(session)
             except ValueError:
                 ref_session = session
-        return SetupCandidate(
+        names = ["fvg", "engulfing"]
+        if vwap is not None and price_in_range(vwap.vwap, fvg.low, fvg.high, pad=pad):
+            names.append("vwap_reclaim")
+        if overlapping:
+            names.append("order_block")
+        if bar.volume > 0:
+            names.append("volume_confirm")
+        if kz:
+            names.append("kill_zone")
+        cand = SetupCandidate(
             setup_number=SETUP_NUMBER,
             setup_type=setup_type,  # type: ignore[arg-type]
             symbol=bar.symbol,
@@ -216,4 +225,7 @@ class FVGEntryDetector:
             session_type=session,
             risk_reward=rr,
             kill_zone=zone.kill_zone.value if zone is not None else None,
+            volume_confirmed=bar.volume > 0,
+            kill_zone_aligned=kz,
         )
+        return attach_explainability(cand, names)

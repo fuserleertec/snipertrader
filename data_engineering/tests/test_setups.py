@@ -12,7 +12,8 @@ from sniper_data.cli import main
 from sniper_data.models import RISK_VALIDATE_FIELDS, Timeframe
 from sniper_data.pattern_detection.fixtures import SYM, T0
 from sniper_data.pattern_detection.validate import validate_topic
-from sniper_data.setup_detection.candidate import to_risk_request
+from sniper_data.setup_detection.candidate import attach_explainability, to_risk_request
+from sniper_data.setup_detection.factors import STABLE_FACTORS, STABLE_FACTOR_SET
 from sniper_data.setup_detection.fixtures import (
     asia_high_sweep,
     asia_session,
@@ -43,6 +44,19 @@ ROOT = Path(__file__).resolve().parents[2]
 SCHEMAS = ROOT / "schemas"
 
 FORBIDDEN_RISK_KEYS = {"id", "risk_reward", "setup_id", "conviction", "kill_zone", "setup_number"}
+
+
+def _assert_explain(c, *required: str) -> None:
+    assert set(c.contributing_factors) <= STABLE_FACTOR_SET
+    for name in required:
+        assert name in c.contributing_factors
+    assert isinstance(c.factor_breakdown, list) and c.factor_breakdown
+    assert {row["name"] for row in c.factor_breakdown} == set(c.contributing_factors)
+    total = sum(float(row["score"]) for row in c.factor_breakdown)
+    assert abs(total - c.conviction) <= 0.05
+    assert abs(c.confidence - c.conviction / 100.0) < 1e-9
+    for row in c.factor_breakdown:
+        assert {"name", "weight", "score"} <= set(row)
 
 
 def _orch(store=None, bus=None, risk=None, lookback: int = 2) -> SetupOrchestrator:
@@ -91,6 +105,7 @@ async def test_setup1_long_after_buy_side_low_sweep():
     assert c.risk_reward >= 2.0
     assert c.ref_vwap == 100.0
     assert 0 <= c.confidence <= 1
+    _assert_explain(c, "liquidity_sweep", "mss", "vwap_reclaim")
 
 
 @pytest.mark.asyncio
@@ -115,6 +130,7 @@ async def test_setup1_short_after_sell_side_high_sweep():
     assert cands[0].side == "short"
     assert cands[0].target < cands[0].entry < cands[0].stop
     assert cands[0].risk_reward >= 2.0
+    _assert_explain(cands[0], "liquidity_sweep", "mss", "vwap_reclaim")
 
 
 @pytest.mark.asyncio
@@ -164,6 +180,7 @@ async def test_setup2_fvg_entry_at_vwap_node():
     assert c.side == "long"
     assert "fvg-bull-vwap" in c.trigger_event_ids
     assert c.target > c.entry > c.stop
+    _assert_explain(c, "fvg", "engulfing")
 
 
 @pytest.mark.asyncio
@@ -181,6 +198,7 @@ async def test_setup2_ob_fvg_when_order_block_overlaps():
     assert cands
     assert cands[0].setup_type == "ob_fvg"
     assert "ob-bull-overlap" in cands[0].trigger_event_ids
+    _assert_explain(cands[0], "fvg", "engulfing", "order_block")
 
 
 @pytest.mark.asyncio
@@ -203,6 +221,7 @@ async def test_setup3_po3_judas_asia_sweep_in_ny_am():
     assert c.trigger_event_ids == ["swp-asia-high"]
     assert c.target < c.entry < c.stop
     assert c.kill_zone == "ny_am"
+    _assert_explain(c, "liquidity_sweep", "rejection_candle")
 
 
 @pytest.mark.asyncio
@@ -512,6 +531,11 @@ def test_quant_schemas_include_po3_judas():
     assert Timeframe.M1.value in req["properties"]["timeframe"]["enum"]
     assert "factor_breakdown" in setup["properties"]
     assert "factor_breakdown" not in req["properties"]
+    fb = setup["properties"]["factor_breakdown"]
+    assert fb["type"] == ["array", "null"]
+    assert fb["items"]["required"] == ["name", "weight", "score"]
+    assert setup["properties"]["contributing_factors"]["items"]["enum"] == list(STABLE_FACTORS)
+    assert fb["items"]["properties"]["name"]["enum"] == list(STABLE_FACTORS)
 
 
 @pytest.mark.asyncio
@@ -535,9 +559,7 @@ async def test_setup4_sd_extension_fade_long():
     assert c.target == 100.0
     assert c.stop < 94.0
     assert c.risk_reward >= 1.5
-    assert "vwap_band_extension" in c.contributing_factors
-    assert "low_volume" in c.contributing_factors
-    assert c.factor_breakdown
+    _assert_explain(c, "vwap_band_extension", "low_volume", "rejection_candle")
 
 
 @pytest.mark.asyncio
@@ -602,8 +624,7 @@ async def test_setup5_vwap_pullback_cont():
     assert c.setup_type == "vwap_pullback_cont"
     assert c.side == "long"
     assert c.risk_reward >= 2.0
-    assert "trend_vwap" in c.contributing_factors
-    assert "first_touch" in c.contributing_factors
+    _assert_explain(c, "trend_align", "vwap_pullback", "first_touch")
     assert {"fvg", "order_block"} & set(c.contributing_factors)
 
 
@@ -647,7 +668,7 @@ async def test_setup6_avwap_ob_confluence_uses_nested_bands():
     assert c.timeframe == "15m"
     assert c.conviction >= 70
     assert c.risk_reward >= 2.0
-    assert {"avwap", "order_block", "htf_rejection"} <= set(c.contributing_factors)
+    _assert_explain(c, "avwap", "htf_ob", "rejection_candle")
     body = to_risk_request(c)
     assert "contributing_factors" not in body
     assert "factor_breakdown" not in body
@@ -671,15 +692,17 @@ def test_approved_signal_carries_factors_not_on_validate():
         timeframe="5m",
         trigger_event_ids=["vwap-session-BTCUSDT"],
         ts_ms=T0,
-        contributing_factors=["vwap_band_extension", "low_volume"],
-        factor_breakdown={"base": 50, "vwap_band_extension": 10},
         ref_vwap=100.0,
         session_type="london",
     )
+    attach_explainability(cand, ["vwap_band_extension", "low_volume"])
     req = to_risk_request(cand)
     assert "contributing_factors" not in req
     assert "factor_breakdown" not in req
     sig = to_setup_signal(cand, "sig-test", position_size=1.0)
     dumped = sig.model_dump(mode="json", exclude_none=True)
     assert dumped["contributing_factors"] == ["vwap_band_extension", "low_volume"]
-    assert dumped["factor_breakdown"]["base"] == 50
+    assert isinstance(dumped["factor_breakdown"], list)
+    assert {row["name"] for row in dumped["factor_breakdown"]} == {"vwap_band_extension", "low_volume"}
+    assert abs(sum(row["score"] for row in dumped["factor_breakdown"]) - 70) <= 0.05
+    assert dumped["confidence"] == 0.7
