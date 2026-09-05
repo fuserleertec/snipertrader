@@ -5,6 +5,7 @@ const quantHttp =
   process.env.NEXT_PUBLIC_QUANT_HTTP_BASE || "http://localhost:8001";
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ["127.0.0.1", "localhost"],
   async rewrites() {
     return [
       {

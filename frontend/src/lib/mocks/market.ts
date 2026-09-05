@@ -104,15 +104,10 @@ function emitState(
   }
 }
 
-export function startMockMarket(
-  symbol: string,
-  timeframe: Timeframe,
-  handlers: MockMarketHandlers,
-): () => void {
+export function buildMockHistory(symbol: string, timeframe: Timeframe, now = Date.now()): OHLCVBar[] {
   const asset = inferAssetClass(symbol);
   const step = TF_MS[timeframe];
   const rand = mulberry32(hash(`${symbol}:${timeframe}`));
-  const now = Date.now();
   const lastOpen = align(now, timeframe);
   let price = seedPrice(symbol);
   const vol = price * 0.0012;
@@ -145,6 +140,23 @@ export function startMockMarket(
     });
     price = close;
   }
+  return bars;
+}
+
+export function startMockMarket(
+  symbol: string,
+  timeframe: Timeframe,
+  handlers: MockMarketHandlers,
+): () => void {
+  const now = Date.now();
+  const bars = buildMockHistory(symbol, timeframe, now);
+  const last = bars[bars.length - 1];
+  let price = last?.close ?? seedPrice(symbol);
+  const step = TF_MS[timeframe];
+  const lastOpen = align(now, timeframe);
+  const rand = mulberry32(hash(`${symbol}:${timeframe}:live`));
+  const vol = price * 0.0012;
+  const asset = inferAssetClass(symbol);
 
   handlers.onHistory(bars.slice());
   emitState(bars, symbol, handlers, now);

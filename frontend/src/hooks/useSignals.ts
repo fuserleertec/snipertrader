@@ -9,14 +9,18 @@ import { isSignalWsEvent, upsertSignal } from "@/lib/signals";
 import type { Signal } from "@/lib/types";
 import { openJsonWsAt } from "@/lib/ws";
 
+function seedSignals(symbol: string): Signal[] {
+  return mockListSignals({ symbol, limit: 24 }, seedPrice(symbol)).items;
+}
+
 export function useSignals(symbol: string, lastPrice: () => number): Signal[] {
   const mocks = isMockMode();
-  const [rows, setRows] = useState<Signal[]>([]);
+  const [rows, setRows] = useState<Signal[]>(() => (mocks ? seedSignals(symbol) : []));
   const [activeSymbol, setActiveSymbol] = useState(symbol);
 
   if (symbol !== activeSymbol) {
     setActiveSymbol(symbol);
-    setRows([]);
+    setRows(mocks ? seedSignals(symbol) : []);
   }
 
   useEffect(() => {
@@ -29,8 +33,8 @@ export function useSignals(symbol: string, lastPrice: () => number): Signal[] {
     };
 
     if (mocks) {
-      const seed = mockListSignals({ symbol, limit: 24 }, seedPrice(symbol)).items;
-      queueMicrotask(() => setRows(seed));
+      const seed = seedSignals(symbol);
+      setRows(seed);
       return startMockSignalStream(symbol, lastPrice, applyEvent, seed);
     }
 

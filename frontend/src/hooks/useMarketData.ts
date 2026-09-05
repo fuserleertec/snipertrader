@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { HISTORY_LIMIT } from "@/lib/constants";
 import { isMockMode } from "@/lib/env";
 import { fetchOhlcv, fetchSessions, fetchVwap } from "@/lib/http";
-import { startMockMarket } from "@/lib/mocks/market";
+import { buildMockHistory, startMockMarket } from "@/lib/mocks/market";
 import type {
   AnchorType,
   ConnectionStatus,
@@ -51,6 +51,20 @@ function isVwap(value: unknown): value is VWAPValues {
   return typeof v.vwap === "number" && typeof v.band_p1 === "number";
 }
 
+function mockSeed(symbol: string, timeframe: Timeframe): MarketState {
+  const bars = buildMockHistory(symbol, timeframe);
+  const last = bars[bars.length - 1] ?? null;
+  return {
+    bars,
+    historyKey: `${symbol}:${timeframe}:${bars[0]?.open_ts_ms ?? 0}`,
+    lastBar: last,
+    lastPrice: last?.close ?? null,
+    vwaps: {},
+    sessions: {},
+    status: "mock",
+  };
+}
+
 function isSession(value: unknown): value is SessionLevels {
   if (!value || typeof value !== "object") return false;
   const v = value as SessionLevels;
@@ -60,16 +74,17 @@ function isSession(value: unknown): value is SessionLevels {
 export function useMarketData(symbol: string, timeframe: Timeframe): MarketState {
   const mocks = isMockMode();
   const streamKey = `${symbol}:${timeframe}`;
-  const [state, setState] = useState<MarketState>({
-    ...empty,
-    status: mocks ? "mock" : "connecting",
-  });
+  const [state, setState] = useState<MarketState>(() =>
+    mocks ? mockSeed(symbol, timeframe) : { ...empty, status: "connecting" },
+  );
   const [activeKey, setActiveKey] = useState(streamKey);
-  const barsRef = useRef<OHLCVBar[]>([]);
+  const barsRef = useRef<OHLCVBar[]>(state.bars);
 
   if (streamKey !== activeKey) {
+    const next = mocks ? mockSeed(symbol, timeframe) : { ...empty, status: "connecting" as const };
     setActiveKey(streamKey);
-    setState({ ...empty, status: mocks ? "mock" : "connecting" });
+    setState(next);
+    barsRef.current = next.bars;
   }
 
   useEffect(() => {
