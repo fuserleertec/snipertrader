@@ -10,7 +10,7 @@ import type {
   Time,
   UTCTimestamp,
 } from "lightweight-charts";
-import type { FVGZone, MssEvent, OrderBlock, OverlayPreset, SessionLevels } from "@/lib/types";
+import type { FVGZone, MssEvent, OrderBlock, OverlayPreset, SessionLevels, SweepEvent } from "@/lib/types";
 
 export interface ZoneDraw {
   id: string;
@@ -32,9 +32,19 @@ interface LineDraw {
   highlight: boolean;
 }
 
+interface ArrowDraw {
+  id: string;
+  ts_ms: number;
+  price: number;
+  side: "buy" | "sell";
+  color: string;
+  highlight: boolean;
+}
+
 export interface PatternDrawModel {
   zones: ZoneDraw[];
   lines: LineDraw[];
+  arrows: ArrowDraw[];
 }
 
 function fvgFill(z: FVGZone, highlight: boolean): { fill: string; stroke: string } {
@@ -56,12 +66,14 @@ export function buildDrawModel(
   fvgs: FVGZone[],
   obs: OrderBlock[],
   mss: MssEvent[],
+  sweeps: SweepEvent[],
   highlightIds: Set<string>,
   asia: SessionLevels | null,
 ): PatternDrawModel {
   const showFvg = preset === "all" || preset === "fvg_ob";
   const showOb = preset === "all" || preset === "fvg_ob";
   const showMss = preset === "all" || preset === "sweep_reclaim" || preset === "po3_judas";
+  const showSweep = preset === "all" || preset === "sweep_reclaim" || preset === "po3_judas";
   const showAsia = preset === "all" || preset === "po3_judas";
 
   const zones: ZoneDraw[] = [];
@@ -88,11 +100,12 @@ export function buildDrawModel(
         id: z.id,
         kind: "ob",
         start_ms: z.created_ts_ms,
-        end_ms: z.displacement_ts_ms ?? null,
+        // Displacement timestamps the impulse, not zone expiry — extend forward like FVGs.
+        end_ms: null,
         high: z.high,
         low: z.low,
-        fill: hi ? "rgba(168,85,247,0.40)" : z.mitigated ? "rgba(168,85,247,0.08)" : "rgba(168,85,247,0.24)",
-        stroke: hi ? "#F0C040" : "rgba(196,140,255,0.9)",
+        fill: hi ? "rgba(168,85,247,0.48)" : z.mitigated ? "rgba(168,85,247,0.10)" : "rgba(168,85,247,0.32)",
+        stroke: hi ? "#F0C040" : "#C084FC",
         highlight: hi,
       });
     }
@@ -123,7 +136,20 @@ export function buildDrawModel(
       });
     }
   }
-  return { zones, lines };
+  const arrows: ArrowDraw[] = [];
+  if (showSweep) {
+    for (const sw of sweeps) {
+      arrows.push({
+        id: sw.id,
+        ts_ms: sw.ts_ms,
+        price: sw.swept_level,
+        side: sw.side,
+        color: highlightIds.has(sw.id) ? "#F0C040" : sw.side === "sell" ? "#FF4455" : "#00E5A0",
+        highlight: highlightIds.has(sw.id),
+      });
+    }
+  }
+  return { zones, lines, arrows };
 }
 
 class ZonesRenderer implements ISeriesPrimitivePaneRenderer {
@@ -157,6 +183,10 @@ class ZonesRenderer implements ISeriesPrimitivePaneRenderer {
         ctx.strokeStyle = z.stroke;
         ctx.lineWidth = z.highlight ? 2.5 : 1;
         ctx.strokeRect(left, top, Math.max(right - left, 4), Math.max(h, 3));
+        ctx.fillStyle = z.stroke;
+        ctx.font = `${z.highlight ? 11 : 10}px monospace`;
+        const label = z.kind === "fvg" ? "FVG" : z.kind === "ob" ? "OB" : "ASIA";
+        ctx.fillText(z.highlight ? `${label} ★` : label, left + 4, Math.max(top + 12, 12));
       }
       for (const line of this.model.lines) {
         const x = ts.timeToCoordinate(Math.floor(line.start_ms / 1000) as UTCTimestamp);
@@ -170,13 +200,48 @@ class ZonesRenderer implements ISeriesPrimitivePaneRenderer {
         ctx.lineTo(mediaSize.width, y);
         ctx.stroke();
         ctx.setLineDash([]);
+        ctx.fillStyle = line.color;
+        ctx.font = `${line.highlight ? 11 : 10}px monospace`;
+        ctx.fillText(line.highlight ? "MSS ★" : "MSS", (x ?? 8) + 8, y - 6);
+      }
+    });
+  }
+}
+
+class ArrowsRenderer implements ISeriesPrimitivePaneRenderer {
+  constructor(
+    private readonly chart: IChartApi | null,
+    private readonly series: ISeriesApi<SeriesType> | null,
+    private readonly model: PatternDrawModel,
+  ) {}
+
+  draw(target: CanvasRenderingTarget2D): void {
+    const chart = this.chart;
+    const series = this.series;
+    if (!chart || !series) return;
+    target.useMediaCoordinateSpace(({ context: ctx }) => {
+      const ts = chart.timeScale();
+      for (const arrow of this.model.arrows) {
+        const x = ts.timeToCoordinate(Math.floor(arrow.ts_ms / 1000) as UTCTimestamp);
+        const y = series.priceToCoordinate(arrow.price);
+        if (x == null || y == null) continue;
+        const dir = arrow.side === "sell" ? 1 : -1;
+        ctx.fillStyle = arrow.color;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - 8, y + dir * 18);
+        ctx.lineTo(x + 8, y + dir * 18);
+        ctx.closePath();
+        ctx.fill();
+        ctx.font = `${arrow.highlight ? 11 : 10}px monospace`;
+        ctx.fillText(arrow.highlight ? "SWEEP ★" : "SWEEP", x + 10, y + 4);
       }
     });
   }
 }
 
 class ZonesPaneView implements ISeriesPrimitivePaneView {
-  model: PatternDrawModel = { zones: [], lines: [] };
+  model: PatternDrawModel = { zones: [], lines: [], arrows: [] };
   chart: IChartApi | null = null;
   series: ISeriesApi<SeriesType> | null = null;
 
@@ -189,20 +254,39 @@ class ZonesPaneView implements ISeriesPrimitivePaneView {
   }
 }
 
+class ArrowsPaneView implements ISeriesPrimitivePaneView {
+  model: PatternDrawModel = { zones: [], lines: [], arrows: [] };
+  chart: IChartApi | null = null;
+  series: ISeriesApi<SeriesType> | null = null;
+
+  zOrder(): "top" {
+    return "top";
+  }
+
+  renderer(): ISeriesPrimitivePaneRenderer {
+    return new ArrowsRenderer(this.chart, this.series, this.model);
+  }
+}
+
 export class PatternZonesPrimitive implements ISeriesPrimitive<Time> {
   private requestUpdate: (() => void) | null = null;
-  private readonly view = new ZonesPaneView();
-  private readonly views = [this.view];
+  private readonly zonesView = new ZonesPaneView();
+  private readonly arrowsView = new ArrowsPaneView();
+  private readonly views = [this.zonesView, this.arrowsView];
 
   attached(param: SeriesAttachedParameter<Time>): void {
-    this.view.chart = param.chart as IChartApi;
-    this.view.series = param.series;
+    this.zonesView.chart = param.chart as IChartApi;
+    this.zonesView.series = param.series;
+    this.arrowsView.chart = param.chart as IChartApi;
+    this.arrowsView.series = param.series;
     this.requestUpdate = param.requestUpdate;
   }
 
   detached(): void {
-    this.view.chart = null;
-    this.view.series = null;
+    this.zonesView.chart = null;
+    this.zonesView.series = null;
+    this.arrowsView.chart = null;
+    this.arrowsView.series = null;
     this.requestUpdate = null;
   }
 
@@ -215,7 +299,8 @@ export class PatternZonesPrimitive implements ISeriesPrimitive<Time> {
   }
 
   setModel(model: PatternDrawModel): void {
-    this.view.model = model;
+    this.zonesView.model = model;
+    this.arrowsView.model = model;
     this.requestUpdate?.();
   }
 }

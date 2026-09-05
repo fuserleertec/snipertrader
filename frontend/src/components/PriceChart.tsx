@@ -66,18 +66,22 @@ function toCandle(bar: OHLCVBar) {
   };
 }
 
-function snapTime(bars: OHLCVBar[], ms: number): UTCTimestamp {
-  if (!bars.length) return Math.floor(ms / 1000) as UTCTimestamp;
-  let best = bars[0];
-  let bestD = Math.abs(bars[0].open_ts_ms - ms);
+function snapMs(bars: OHLCVBar[], ms: number): number {
+  if (!bars.length) return ms;
+  let best = bars[0].open_ts_ms;
+  let bestD = Math.abs(best - ms);
   for (const bar of bars) {
     const d = Math.abs(bar.open_ts_ms - ms);
     if (d < bestD) {
       bestD = d;
-      best = bar;
+      best = bar.open_ts_ms;
     }
   }
-  return Math.floor(best.open_ts_ms / 1000) as UTCTimestamp;
+  return best;
+}
+
+function snapTime(bars: OHLCVBar[], ms: number): UTCTimestamp {
+  return Math.floor(snapMs(bars, ms) / 1000) as UTCTimestamp;
 }
 
 export function PriceChart({
@@ -265,8 +269,21 @@ export function PriceChart({
     const asia = overlayPreset === "po3_judas" || overlayPreset === "all"
       ? sessions.find((s) => s.session_type === "asia") ?? null
       : null;
+    const snap = (ms: number) => snapMs(bars, ms);
     zonesRef.current?.setModel(
-      buildDrawModel(overlayPreset, patterns.fvgs, patterns.obs, patterns.mss, highlight, asia),
+      buildDrawModel(
+        overlayPreset,
+        patterns.fvgs.map((z) => ({ ...z, created_ts_ms: snap(z.created_ts_ms) })),
+        patterns.obs.map((z) => ({
+          ...z,
+          created_ts_ms: snap(z.created_ts_ms),
+          displacement_ts_ms: z.displacement_ts_ms != null ? snap(z.displacement_ts_ms) : undefined,
+        })),
+        patterns.mss.map((ev) => ({ ...ev, ts_ms: snap(ev.ts_ms) })),
+        patterns.sweeps.map((sw) => ({ ...sw, ts_ms: snap(sw.ts_ms) })),
+        highlight,
+        asia,
+      ),
     );
 
     const series = seriesRef.current;
