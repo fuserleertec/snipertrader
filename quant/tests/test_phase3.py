@@ -177,9 +177,16 @@ def test_paper_fortnight_and_account():
     assert demo["days_simulated"] == 14
     assert demo["closed_trades"] == 12
     assert demo["live_trading"] is False
+    assert demo["gate_started_at_utc"]
+    assert demo["gate_ends_at_ms"] > demo["gate_started_at_ms"]
+    assert demo["win_rate"] == 0.5
     acct = http.get("/paper/account").json()
     assert acct["closed_trades"] == 12
+    assert acct["live_trading"] is False
     assert "2-week" in acct["gate"]
+    started = http.post("/paper/gate/start").json()
+    assert started["live_trading"] is False
+    assert started["gate_started_at_utc"]
 
 
 def test_api_key_auth_default_off_and_on():

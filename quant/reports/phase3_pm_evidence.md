@@ -30,7 +30,7 @@ Empty books still return all six keys (zeros). Confirmed sample JSON is in
 | 2 | Risk API (S4–S6 rules + validate-before-publish) | **PASS** | `tests/test_phase3.py` + `tests/test_validate.py` + `tests/test_pr9_replay.py`. Reasons: `invalid_levels`, `news_window`, `low_conviction`, plus existing size/daily/corr/conflict. |
 | 3 | Alerts (Telegram/Discord/Email/webhook) + 5/hour throttle | **PASS** | `test_alerts_four_channels_and_throttle`: 4 stubs, max 5/hour/user, extras throttled. |
 | 4 | Public API auth + history + performance + load 100 | **PASS** | `GET /signals/history`, `GET /performance/summary` `by_setup` product keys, `X-API-Key` optional. Load: **p95 = 56.37 ms** (target &lt; 200 ms). |
-| 5 | Paper 2-week gate | **PASS** | `POST /paper/demo-fortnight` → 14 days, 12 closed trades, `live_trading: false`. |
+| 5 | Paper 2-week gate | **STARTED** | [`paper_gate_2week.md`](paper_gate_2week.md). Kickoff 2026-09-05 07:33Z. Smoke: 12 trades, WR 50%, avg R +0.47, PnL +11,538, `live_trading: false`. Continuous path is the real 14-day loop. |
 | 6 | ML PR #9 sample replay | **PASS** | `tests/fixtures/pr9_quant_replay/*.validate.json` approve on `/risk/validate`. Factors 422 on validate, stored on publish. |
 
 **pytest:** `cd quant && PYTHONPATH=src python3 -m pytest -q -k "not test_walkforward_setups and not test_cli_backtest"` → **96 passed**, 3 deselected (2026-09-05).
@@ -200,7 +200,7 @@ USE_INMEMORY=1 PYTHONPATH=src python3 -m sniper_quant.cli api --inmemory --port 
 # GET /paper/account
 ```
 
-`POST /paper/demo-fortnight` simulates 14 days / 12 scripted trades. `live_trading` is always `false`.
+`POST /paper/demo-fortnight` is a **scripted** 14-day / 12-trade smoke book (`live_trading` always `false`). The real 14-calendar-day gate and daily/weekly poll loop: [`paper_gate_2week.md`](paper_gate_2week.md).
 
 ## 6) ML PR #9 → Quant replay
 

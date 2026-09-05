@@ -1,15 +1,26 @@
 """In-memory paper book for the 2-week no-live-trading gate.
 
 Opens a virtual position when a signal is published after risk approval.
-Closes on lifecycle TP/SL. No broker, no live orders.
+Closes on lifecycle TP/SL. No broker, no live orders. ``live_trading`` is
+always ``False``.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any
 
 from sniper_quant.models import Side, SignalStatus, StoredSignal
+
+DAY_MS = 86_400_000
+GATE_DAYS = 14
+
+
+def _iso(ts_ms: int | None) -> str | None:
+    if ts_ms is None:
+        return None
+    return datetime.fromtimestamp(ts_ms / 1000.0, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 @dataclass
@@ -36,13 +47,23 @@ class PaperEngine:
     cash: float = 100_000.0
     positions: dict[str, PaperPosition] = field(default_factory=dict)
     closed: list[PaperPosition] = field(default_factory=list)
+    gate_started_at_ms: int | None = None
+    gate_ends_at_ms: int | None = None
 
-    def reset(self, equity: float | None = None) -> None:
+    def reset(self, equity: float | None = None, *, clear_gate: bool = False) -> None:
         if equity is not None:
             self.starting_equity = equity
         self.cash = self.starting_equity
         self.positions.clear()
         self.closed.clear()
+        if clear_gate:
+            self.gate_started_at_ms = None
+            self.gate_ends_at_ms = None
+
+    def start_gate(self, *, now_ms: int | None = None, days: int = GATE_DAYS) -> None:
+        now = now_ms if now_ms is not None else int(datetime.now(timezone.utc).timestamp() * 1000)
+        self.gate_started_at_ms = now
+        self.gate_ends_at_ms = now + days * DAY_MS
 
     def open_from_signal(self, row: StoredSignal) -> PaperPosition | None:
         if row.id in self.positions:
@@ -104,15 +125,34 @@ class PaperEngine:
         return self.cash + open_mtm
 
     def snapshot(self) -> dict[str, Any]:
+        closed = self.closed
+        n = len(closed)
+        wins = [
+            p
+            for p in closed
+            if p.status == "TP_HIT" or (p.realized_r is not None and p.realized_r > 0)
+        ]
+        rs = [p.realized_r for p in closed if p.realized_r is not None]
+        now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+        remaining = None
+        if self.gate_ends_at_ms is not None:
+            remaining = max(0.0, (self.gate_ends_at_ms - now_ms) / DAY_MS)
         return {
             "starting_equity": self.starting_equity,
             "equity": round(self.equity, 6),
             "cash": round(self.cash, 6),
             "realized_pnl": round(self.realized_pnl, 6),
             "open_positions": len(self.positions),
-            "closed_trades": len(self.closed),
+            "closed_trades": n,
+            "win_rate": (len(wins) / n) if n else 0.0,
+            "average_rr": (sum(rs) / len(rs)) if rs else 0.0,
             "positions": [p.__dict__.copy() for p in self.positions.values()],
             "closed": [p.__dict__.copy() for p in self.closed],
             "live_trading": False,
             "gate": "2-week paper only",
+            "gate_started_at_ms": self.gate_started_at_ms,
+            "gate_ends_at_ms": self.gate_ends_at_ms,
+            "gate_started_at_utc": _iso(self.gate_started_at_ms),
+            "gate_ends_at_utc": _iso(self.gate_ends_at_ms),
+            "gate_days_remaining": remaining,
         }

@@ -113,8 +113,9 @@ Each bucket includes `setup_type` (`sweep_reclaim`, `fvg_entry`,
 Alert stubs: Telegram, Discord, Email, webhook. Throttle **5/hour/user**.
 Immediate when `confidence ≥ 0.80`.
 
-Paper book: `GET /paper/account`, `POST /paper/reset`, `POST /paper/demo-fortnight`.
-2-week gate, in-memory, no broker.
+Paper book: `GET /paper/account`, `GET /paper/positions`, `POST /paper/reset`,
+`POST /paper/gate/start`, `POST /paper/demo-fortnight`.
+2-week gate, in-memory, no broker. `live_trading` is always **false**.
 
 Auth: set `SNIPER_API_KEY` to require `X-API-Key`. Default **off** so
 tests stay open. Optional `RATE_LIMIT_PER_MIN`.
@@ -517,13 +518,24 @@ def create_app(
         _paper().reset(_engine().state.equity)
         return _paper().snapshot()
 
+    @app.post("/paper/gate/start")
+    async def paper_gate_start() -> dict[str, Any]:
+        """Start the 14-calendar-day paper gate clock. Never enables live trading."""
+        book = _paper()
+        book.start_gate()
+        snap = book.snapshot()
+        assert snap["live_trading"] is False
+        return snap
+
     @app.post("/paper/demo-fortnight")
     async def paper_demo_fortnight() -> dict[str, Any]:
-        """Scripted 14-day paper book (no live broker). For the FE/PM 2-week gate."""
+        """Scripted 14-day paper book (no live broker). Smoke only — not a live sim."""
         from sniper_quant.backtest.demo import run_inmemory_demo
 
         book = _paper()
         book.reset(_engine().state.equity)
+        if book.gate_started_at_ms is None:
+            book.start_gate()
         result = run_inmemory_demo(book.starting_equity)
         day_ms = 86_400_000
         start = 1_700_000_000_000

@@ -327,13 +327,15 @@ types only — never `mss_break` / `order_block` / `sweep_mss`):
 
 `sniper-quant demo` runs the scripted 6-setup smoke book (no live trading).
 
-Paper 2-week gate (in-memory, no broker):
+Paper 2-week gate (in-memory, no broker). `live_trading` is always
+**false**. Kickoff + monitoring: [`reports/paper_gate_2week.md`](reports/paper_gate_2week.md).
 
 ```bash
 USE_INMEMORY=1 PYTHONPATH=src python3 -m sniper_quant.cli api --inmemory --port 8001
-# POST /paper/reset
-# POST /risk/validate → POST /signals (or POST /paper/demo-fortnight)
-# GET /paper/account
+# POST /paper/gate/start          # 14-calendar-day clock
+# POST /paper/demo-fortnight      # scripted smoke (not a live sim)
+# GET  /paper/account             # PnL, WR, avg R, live_trading
+# continuous: POST /risk/validate → POST /signals → POST /v1/lifecycle/bar
 ```
 
 ## How to run
@@ -408,7 +410,7 @@ quant/
   src/sniper_quant/     library + CLI
   tests/
   grafana/provisioning  Timescale datasource + setup-performance dashboard + alerts
-  reports/              walk-forward markdown for ML
+  reports/              walk-forward + paper_gate_2week.md
   tests/fixtures/pr9_quant_replay/  PR #9 locked-field validate samples
   Dockerfile
   docker-compose.yml    DE stack + risk-api :8001 + grafana :3002
