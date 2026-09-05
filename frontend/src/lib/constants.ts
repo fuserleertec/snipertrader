@@ -3,6 +3,7 @@ import type {
   AssetClass,
   OverlayPreset,
   SessionType,
+  PerformanceSetupKey,
   SetupType,
   SignalStatus,
   Timeframe,
@@ -49,6 +50,22 @@ export const SETUP_TYPES: SetupType[] = [
   "sweep_mss",
   "ob_fvg",
   "po3_judas",
+  "1_liquidity_sweep_vwap_reclaim",
+  "2_fvg_mitigation_vwap",
+  "3",
+  "4",
+  "5",
+  "6",
+];
+
+/** Locked GET /performance/summary keys. Display the key itself — no invented labels. */
+export const PERFORMANCE_SETUP_KEYS: PerformanceSetupKey[] = [
+  "1_liquidity_sweep_vwap_reclaim",
+  "2_fvg_mitigation_vwap",
+  "3",
+  "4",
+  "5",
+  "6",
 ];
 
 export const OVERLAY_PRESETS: { id: OverlayPreset; label: string }[] = [

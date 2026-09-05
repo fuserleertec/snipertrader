@@ -2,6 +2,7 @@ import { httpUrl, quantHttpUrl } from "./env";
 import type {
   AnchorType,
   OHLCVBar,
+  PerformanceSummary,
   SessionLevels,
   SessionListResponse,
   SessionType,
@@ -61,4 +62,9 @@ export async function fetchSignals(query: SignalListQuery = {}): Promise<SignalL
 
 export function fetchSignal(id: string): Promise<Signal | null> {
   return getJson<Signal>(`/signals/${id}`, quantHttpUrl);
+}
+
+/** Quant: GET /performance/summary — mock until live path is confirmed. */
+export function fetchPerformanceSummary(): Promise<PerformanceSummary | null> {
+  return getJson<PerformanceSummary>("/performance/summary", quantHttpUrl);
 }

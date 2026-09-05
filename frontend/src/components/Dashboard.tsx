@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMarketData } from "@/hooks/useMarketData";
 import { usePatterns } from "@/hooks/usePatterns";
+import { usePerformance } from "@/hooks/usePerformance";
 import { useSignals } from "@/hooks/useSignals";
 import { useTheme } from "@/hooks/useTheme";
 import { inferAssetClass } from "@/lib/constants";
@@ -35,6 +36,7 @@ export function Dashboard() {
   }, [market.lastPrice]);
   const allSignals = useSignals(symbol, () => priceRef.current);
   const patterns = usePatterns(symbol);
+  const performance = usePerformance(tick);
 
   useEffect(() => {
     for (const row of allSignals) {
@@ -65,9 +67,18 @@ export function Dashboard() {
 
   const onSelect = (signal: Signal) => {
     setSelected((prev) => (prev?.id === signal.id ? null : signal));
-    if (signal.setup_type === "sweep_reclaim" || signal.setup_type === "sweep_mss") {
+    if (
+      signal.setup_type === "sweep_reclaim" ||
+      signal.setup_type === "sweep_mss" ||
+      signal.setup_type === "1_liquidity_sweep_vwap_reclaim"
+    ) {
       setOverlayPreset("sweep_reclaim");
-    } else if (signal.setup_type === "fvg_entry" || signal.setup_type === "ob_fvg" || signal.setup_type === "order_block") {
+    } else if (
+      signal.setup_type === "fvg_entry" ||
+      signal.setup_type === "ob_fvg" ||
+      signal.setup_type === "order_block" ||
+      signal.setup_type === "2_fvg_mitigation_vwap"
+    ) {
       setOverlayPreset("fvg_ob");
     } else if (signal.setup_type === "po3_judas") {
       setOverlayPreset("po3_judas");
@@ -169,6 +180,32 @@ export function Dashboard() {
           </div>
         </div>
 
+        <div className="qstats" aria-label="GET /performance/summary">
+          <div className="qstat">
+            <div className="ql">Win Rate</div>
+            <div className="qv pos">{fmtWin(performance.overall.win_rate)}</div>
+          </div>
+          <div className="qstat">
+            <div className="ql">Avg R:R</div>
+            <div className="qv cy">{performance.overall.average_rr.toFixed(2)}</div>
+          </div>
+          <div className="qstat">
+            <div className="ql">Sharpe</div>
+            <div className="qv gold">{performance.overall.sharpe_ratio.toFixed(2)}</div>
+          </div>
+          <div className="qstat">
+            <div className="ql">Max Drawdown</div>
+            <div className="qv">{performance.overall.max_drawdown_pct.toFixed(1)}%</div>
+          </div>
+          <div className="qstat">
+            <div className="ql">Signals Today / Week</div>
+            <div className="qv">
+              {performance.overall.signals_today}
+              <span style={{ color: "var(--dim2)", fontSize: 13 }}> / {performance.overall.signals_week}</span>
+            </div>
+          </div>
+        </div>
+
         <div className="disclaimer">
           <b>SIMULATION &amp; EDUCATION NOTICE.</b> Kronos structural patterns and the Conviction
           Engine derive from <b>real market data</b> (Yahoo k-lines, SEC Form 4). The MiroFish agent
@@ -219,7 +256,7 @@ export function Dashboard() {
         <Narratives />
         <ExecutionDesk selected={selected} />
         <ReconAudit dropped={dropped.slice(0, 8)} />
-        <EngineGlossary />
+        <EngineGlossary performance={performance} />
         <details className="raw">
           <summary>Raw recon payload (debug)</summary>
           <pre>
@@ -240,4 +277,9 @@ export function Dashboard() {
 function vwapSigma(sigma?: number): string {
   if (sigma == null) return "24.0";
   return sigma.toFixed(1);
+}
+
+function fmtWin(n: number): string {
+  const v = n > 1 ? n : n * 100;
+  return `${v.toFixed(0)}%`;
 }

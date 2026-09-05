@@ -200,6 +200,12 @@ export function signalsFromBook(symbol: string, price: number, book: PatternBook
     signalOf(symbol, price, now, "mss_break", "short", 5, [mssBear?.id, sweepSell?.id].filter(Boolean) as string[], 0.72),
     signalOf(symbol, price, now, "order_block", "long", 6, [obBull?.id].filter(Boolean) as string[], 0.64),
     signalOf(symbol, price, now, "sweep_mss", "short", 7, [sweepSell?.id, mssBear?.id].filter(Boolean) as string[], 0.58),
+    signalOf(symbol, price, now, "1_liquidity_sweep_vwap_reclaim", "long", 8, [sweepBuy?.id, mssBull?.id].filter(Boolean) as string[], 0.77),
+    signalOf(symbol, price, now, "2_fvg_mitigation_vwap", "long", 9, [fvgBull?.id].filter(Boolean) as string[], 0.71),
+    signalOf(symbol, price, now, "3", "short", 10, [mssBear?.id].filter(Boolean) as string[], 0.48),
+    signalOf(symbol, price, now, "4", "long", 11, [obBull?.id].filter(Boolean) as string[], 0.46),
+    signalOf(symbol, price, now, "5", "short", 12, [fvgBear?.id].filter(Boolean) as string[], 0.44),
+    signalOf(symbol, price, now, "6", "long", 13, [sweepSell?.id].filter(Boolean) as string[], 0.41),
   ];
 }
 

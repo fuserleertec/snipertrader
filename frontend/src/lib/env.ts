@@ -21,10 +21,10 @@ export function httpBase(): string {
   return raw.replace(/\/$/, "");
 }
 
-/** Quant REST (`/signals`). Falls back to Data Eng HTTP host. */
+/** Quant REST (`/signals`, `/performance/summary`). Default :8001 when unset. */
 export function quantHttpBase(): string {
   const raw = process.env.NEXT_PUBLIC_QUANT_HTTP_BASE;
-  if (raw === undefined || raw === "") return httpBase();
+  if (raw === undefined || raw === "") return "http://localhost:8001";
   return raw.replace(/\/$/, "");
 }
 

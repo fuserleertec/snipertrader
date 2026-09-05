@@ -13,7 +13,8 @@ import {
   type ReconPick,
 } from "@/lib/mocks/terminal";
 import { riskReward } from "@/lib/signals";
-import type { Signal } from "@/lib/types";
+import type { PerformanceSummary, Signal } from "@/lib/types";
+import { PerformanceTracker } from "./PerformanceTracker";
 
 const CAT = {
   ultra: { label: "Ultra-High", accent: "var(--emerald)" },
@@ -508,7 +509,7 @@ export function ReconAudit({ dropped }: { dropped: Signal[] }) {
   );
 }
 
-export function EngineGlossary() {
+export function EngineGlossary({ performance }: { performance: PerformanceSummary }) {
   return (
     <section className="sec">
       <div className="sec-head">
@@ -516,10 +517,12 @@ export function EngineGlossary() {
         <h2>Understanding the Engine</h2>
       </div>
       <div className="sec-sub">
-        Built-in glossary and an illustrative performance tracker. Tracker figures are
-        example/backtest-style placeholders, not verified live results.
+        Built-in glossary and a performance tracker wired to{" "}
+        <code>GET /performance/summary</code>. Tracker figures are mock until Quant confirms the
+        live path.
       </div>
-      <div className="edu-grid">
+      <PerformanceTracker summary={performance} />
+      <div className="edu-grid" style={{ marginTop: 14 }}>
         {GLOSSARY.map((g) => (
           <div key={g.title} className="edu">
             <h4>{g.title}</h4>

@@ -63,8 +63,8 @@ Card/table click joins chart overlays via `trigger_event_ids`.
 | `NEXT_PUBLIC_USE_MOCKS` | `true` | In-browser streams. Set `false` for live API. |
 | `NEXT_PUBLIC_WS_BASE` | `ws://localhost:8000` | Data Eng WebSocket origin (`/v1/ws/*`) |
 | `NEXT_PUBLIC_HTTP_BASE` | `http://localhost:8000` | Data Eng HTTP. Same-origin `/v1/*` is rewritten here. |
-| `NEXT_PUBLIC_QUANT_HTTP_BASE` | `http://localhost:8000` | Quant REST (`/signals`). Same-origin `/signals` is rewritten here. |
-| `NEXT_PUBLIC_QUANT_WS_BASE` | `ws://localhost:8000` | Quant planned WS (`/ws/signals`) |
+| `NEXT_PUBLIC_QUANT_HTTP_BASE` | `http://localhost:8001` | Quant REST (`/signals`, `/performance/summary`). Same-origin paths rewrite here. |
+| `NEXT_PUBLIC_QUANT_WS_BASE` | `ws://localhost:8001` | Quant planned WS (`/ws/signals`) |
 
 Mock → live is **env-only**. Market-data clients talk to Data Eng; signal
 clients talk to Quant. Bases are independently configurable.
@@ -153,6 +153,12 @@ REST:
 - `GET /signals?symbol=&status=&setup_type=&from_ts=&to_ts=&limit=` →
   `{ "items": [ Signal ], "next_cursor": string|null }`
 - `GET /signals/{id}` → `Signal`
+- `GET /performance/summary` → `{ overall, by_setup }` (mock until Quant confirms live; likely `:8001`)
+
+`by_setup` keys (exact; no invented labels):
+`1_liquidity_sweep_vwap_reclaim`, `2_fvg_mitigation_vwap`, `3`, `4`, `5`, `6`.
+
+Upcoming `setup_type` filter/card slots accept those same keys so cards join via `trigger_event_ids` once Quant locks 4–6.
 
 Planned WS: `WS /ws/signals` →
 `{ "type": "signal.upsert"|"signal.status", "signal": Signal }`

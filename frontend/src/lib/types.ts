@@ -78,7 +78,36 @@ export type SetupType =
   | "order_block"
   | "sweep_mss"
   | "ob_fvg"
-  | "po3_judas";
+  | "po3_judas"
+  | "1_liquidity_sweep_vwap_reclaim"
+  | "2_fvg_mitigation_vwap"
+  | "3"
+  | "4"
+  | "5"
+  | "6";
+
+/** Exact `by_setup` keys from GET /performance/summary. Do not invent labels. */
+export type PerformanceSetupKey =
+  | "1_liquidity_sweep_vwap_reclaim"
+  | "2_fvg_mitigation_vwap"
+  | "3"
+  | "4"
+  | "5"
+  | "6";
+
+export interface PerformanceMetrics {
+  win_rate: number;
+  average_rr: number;
+  sharpe_ratio: number;
+  max_drawdown_pct: number;
+  signals_today: number;
+  signals_week: number;
+}
+
+export interface PerformanceSummary {
+  overall: PerformanceMetrics;
+  by_setup: Partial<Record<PerformanceSetupKey, Partial<PerformanceMetrics>>>;
+}
 
 export type OverlayPreset = "all" | "sweep_reclaim" | "fvg_ob" | "po3_judas";
 
