@@ -1,0 +1,61 @@
+# Example HPA — not deployed in this repo. Thresholds from the Phase 3
+# scalability harness (2× symbol count, in-process). Tune against live
+# Prometheus before production.
+#
+# Pipeline replicas MUST be partitioned by symbol (one writer per
+# avwap/vwap accumulator). Do not scale pipeline on CPU alone without
+# a symbol-assignment strategy.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: sniper-data-api
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: sniper-data-api
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 65
+    - type: Pods
+      pods:
+        metric:
+          name: sniper_ws_connections
+        target:
+          type: AverageValue
+          averageValue: "200"
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: sniper-data-pipeline
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: sniper-data-pipeline
+  minReplicas: 1
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: External
+      external:
+        metric:
+          name: sniper_kafka_consumer_lag
+          selector:
+            matchLabels:
+              topic: raw_ticks
+        target:
+          type: AverageValue
+          averageValue: "5000"

@@ -10,7 +10,9 @@ from sniper_data.models import (
     KillZoneEvent,
     MssEvent,
     OHLCVBar,
+    OptionsChain,
     OrderBlock,
+    OrderFlow,
     RawTick,
     SessionType,
     SweepEvent,
@@ -18,6 +20,7 @@ from sniper_data.models import (
     VolumeNode,
     VolumeProfile,
 )
+from sniper_data.setups import SETUP_KEYS
 
 ROOT = Path(__file__).resolve().parents[2]
 SCHEMAS = ROOT / "schemas"
@@ -243,6 +246,54 @@ def test_phase2_schemas_match_exact_wire_payload():
         asset_class=AssetClass.CRYPTO,
     )
     assert set(event.model_dump(mode="json")) == set(kz["required"])
+
+
+PHASE3 = {
+    "performance_summary.schema.json",
+    "options_chain.schema.json",
+    "order_flow.schema.json",
+}
+
+
+def test_phase3_performance_and_us_equity_schemas():
+    names = {p.name for p in SCHEMAS.glob("*.schema.json")}
+    assert PHASE3 <= names
+    summary = _load("performance_summary.schema.json")
+    assert "schema_version" not in summary["properties"]
+    assert summary["required"] == ["timestamp", "overall", "by_setup"]
+    assert list(summary["properties"]["by_setup"]["required"]) == list(SETUP_KEYS)
+    assert summary["properties"]["by_setup"]["additionalProperties"] is False
+
+    chain = _load("options_chain.schema.json")
+    assert chain["properties"]["schema_version"]["const"] == "1.1"
+    for alias in ("iv", "oi", "right"):
+        assert alias not in chain["properties"]
+    flow = _load("order_flow.schema.json")
+    assert "side" not in flow["properties"]
+    assert "taker_side" not in flow["properties"]
+    assert flow["properties"]["aggressor"]["enum"] == ["buy", "sell"]
+
+    opt = OptionsChain(
+        symbol="AAPL",
+        asset_class=AssetClass.EQUITY,
+        exchange="opra",
+        ts_ms=1,
+        expiry_ms=2,
+        strike=230.0,
+        option_type="call",
+        contract_symbol="AAPL250912C00230000",
+    )
+    assert opt.schema_version == "1.1"
+    of = OrderFlow(
+        symbol="AAPL",
+        asset_class=AssetClass.EQUITY,
+        exchange="nasdaq",
+        ts_ms=1,
+        price=228.0,
+        volume=100.0,
+        aggressor="buy",
+    )
+    assert "side" not in of.model_dump()
 
 
 def test_order_block_required_and_optional():

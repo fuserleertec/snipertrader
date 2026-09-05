@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snipertrader.ai/schemas/order_flow.schema.json",
+  "title": "OrderFlow",
+  "description": "US-equities order-flow print (aggressor side + large-trade flag). Topic: order_flow. aggressor uses the same buy|sell vocabulary as raw_tick — no side / taker_side aliases. symbol is uppercase, no hyphens. ts_ms is UTC epoch milliseconds.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "symbol",
+    "asset_class",
+    "exchange",
+    "ts_ms",
+    "price",
+    "volume",
+    "aggressor"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.1" },
+    "symbol": {
+      "type": "string",
+      "pattern": "^[A-Z0-9]+$",
+      "description": "Global schema: uppercase, no hyphens (e.g. AAPL)."
+    },
+    "asset_class": { "type": "string", "enum": ["crypto", "equity", "futures"] },
+    "exchange": { "type": "string" },
+    "ts_ms": { "type": "integer", "minimum": 0, "description": "Print time, UTC milliseconds." },
+    "price": { "type": "number" },
+    "volume": { "type": "number", "minimum": 0 },
+    "aggressor": {
+      "type": "string",
+      "enum": ["buy", "sell"],
+      "description": "Taker side. Same vocabulary as raw_tick.aggressor. Signed volume = +volume if buy, -volume if sell."
+    },
+    "is_large": {
+      "type": ["boolean", "null"],
+      "description": "True when notional (or volume) exceeds the connector large-trade threshold."
+    },
+    "notional": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "description": "price * volume when the producer computed it."
+    },
+    "trade_id": { "type": ["string", "null"] }
+  }
+}

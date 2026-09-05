@@ -1,0 +1,105 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Ticks processed",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum(rate(sniper_ticks_processed_total[1m])) by (asset_class)", "legendFormat": "{{asset_class}}" }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Tick → VWAP p99 (SLO 500ms)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "histogram_quantile(0.99, sum(rate(sniper_tick_to_vwap_seconds_bucket[5m])) by (le))", "legendFormat": "p99" },
+        { "expr": "histogram_quantile(0.50, sum(rate(sniper_tick_to_vwap_seconds_bucket[5m])) by (le))", "legendFormat": "p50" }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "VWAP compute seconds",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "histogram_quantile(0.99, sum(rate(sniper_vwap_compute_seconds_bucket[5m])) by (le))", "legendFormat": "p99" }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Kafka consumer lag",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sniper_kafka_consumer_lag", "legendFormat": "{{topic}} {{group}}" }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Redis memory bytes",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sniper_redis_memory_bytes", "legendFormat": "used_memory" }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "WS connections + publish latency",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sniper_ws_connections", "legendFormat": "conn {{route}}" },
+        { "expr": "histogram_quantile(0.99, sum(rate(sniper_ws_publish_seconds_bucket[5m])) by (le, route))", "legendFormat": "p99 {{route}}" }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Redis / Kafka errors",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum(rate(sniper_redis_errors_total[1m])) by (op)", "legendFormat": "redis {{op}}" },
+        { "expr": "sum(rate(sniper_kafka_errors_total[1m])) by (op)", "legendFormat": "kafka {{op}}" }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Data quality (missing / outliers)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum(rate(sniper_missing_ticks_total[1m])) by (symbol)", "legendFormat": "gap {{symbol}}" },
+        { "expr": "sum(rate(sniper_outlier_ticks_total[1m])) by (symbol)", "legendFormat": "outlier {{symbol}}" }
+      ]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["snipertrader", "phase3"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timezone": "utc",
+  "title": "SniperTrader data-engineering",
+  "uid": "sniper-data-phase3",
+  "version": 1
+}

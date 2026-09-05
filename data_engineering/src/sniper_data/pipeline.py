@@ -19,14 +19,21 @@ from sniper_data.bus.redis_store import InMemoryStateStore, RedisStateStore, Sta
 from sniper_data.bus.timescaledb import InMemoryOHLCVStore, OHLCVStore, TimescaleStore
 from sniper_data.config import Settings, get_settings
 from sniper_data.connectors.mock import MockConnector
+from sniper_data.connectors.order_flow import MockOptionsFlow
 from sniper_data.kill_zones import KillZoneScheduler, apply_killzone_tick
 from sniper_data.metrics import (
     record_avwap,
+    record_missing_tick,
+    record_outlier_tick,
     record_tick,
+    record_tick_to_vwap,
     record_volume_profile,
+    record_vwap_calc,
     start_metrics_server,
 )
 from sniper_data.models import AnchorRegistration, RawTick
+from sniper_data.performance import PerformanceStore, SignalOutcome
+from sniper_data.symbols import infer_asset_class
 from sniper_data.ohlcv import OHLCVAggregator, redis_ohlcv_channel
 from sniper_data.sessions import SessionTracker, redis_session_channel, redis_session_key
 from sniper_data.swings import SwingDetector
@@ -51,8 +58,15 @@ class Runtime:
         use_mem = self.settings.use_inmemory if inmemory is None else inmemory
         self.bus: EventBus = bus or (InMemoryBus() if use_mem else KafkaBus(self.settings.kafka_bootstrap))
         self.store: StateStore = store or (
-            InMemoryStateStore() if use_mem else RedisStateStore(self.settings.redis_url)
+            InMemoryStateStore()
+            if use_mem
+            else RedisStateStore(
+                self.settings.redis_url,
+                max_connections=self.settings.redis_max_connections,
+                retries=self.settings.redis_retries,
+            )
         )
+        self.performance = PerformanceStore(self.store)
         self.bars: OHLCVStore = bars or (
             InMemoryOHLCVStore() if use_mem else TimescaleStore(self.settings.database_url)
         )
@@ -71,6 +85,8 @@ class Runtime:
         self.ticks_by_class: dict[str, int] = {}
         self._stop = asyncio.Event()
         self._anchor_sync_seen: set[str] = set()
+        self._anchor_sync_at: dict[str, float] = {}
+        self._last_tick: dict[str, tuple[int, float]] = {}
 
     async def start(self) -> None:
         if isinstance(self.bus, KafkaBus):
@@ -81,6 +97,7 @@ class Runtime:
         start_metrics_server(self.settings.metrics_port)
         if isinstance(self.bus, InMemoryBus):
             self.bus.subscribe("anchor_events", self._on_anchor_event)
+            self.bus.subscribe("performance_outcomes", self._on_performance_outcome)
         log.info("runtime ready (inmemory=%s)", isinstance(self.bus, InMemoryBus))
 
     async def _on_anchor_event(self, payload: dict) -> None:
@@ -91,13 +108,31 @@ class Runtime:
             return
         await register_anchor(self.avwap, self.store, req)
 
+    async def _on_performance_outcome(self, payload: dict) -> None:
+        try:
+            await self.performance.record(SignalOutcome.model_validate(payload))
+        except Exception as exc:  # noqa: BLE001
+            log.warning("performance_outcomes rejected: %s", exc)
+
     async def stop(self) -> None:
         self._stop.set()
         await self.bus.stop()
         await self.store.close()
         await self.bars.close()
 
+    def _quality(self, tick: RawTick) -> None:
+        prev = self._last_tick.get(tick.symbol)
+        if prev is not None:
+            last_ts, last_px = prev
+            if tick.ts_ms - last_ts > self.settings.missing_tick_gap_ms:
+                record_missing_tick(tick.symbol)
+            if last_px > 0 and abs(tick.price / last_px - 1.0) > self.settings.outlier_move_pct:
+                record_outlier_tick(tick.symbol)
+        self._last_tick[tick.symbol] = (tick.ts_ms, tick.price)
+
     async def handle_tick(self, tick: RawTick) -> dict[str, Any]:
+        t_all = time.perf_counter()
+        self._quality(tick)
         await self.bus.publish("raw_ticks", tick, key=tick.symbol)
         closed = self.aggregator.on_tick(tick)
         for bar in closed:
@@ -114,20 +149,26 @@ class Runtime:
             await self.store.publish(redis_session_channel(levels.symbol), levels)
             await self.bus.publish("session_levels", levels, key=tick.symbol)
 
+        t_vwap = time.perf_counter()
         snapshots = self.vwap.on_tick(
             tick.symbol, tick.price, tick.volume, tick.ts_ms, tick.asset_class
         )
+        record_vwap_calc(time.perf_counter() - t_vwap)
         for snap in snapshots:
             await self.store.set(redis_vwap_key(snap.symbol, snap.anchor_type), snap)
             await self.store.publish(f"vwap:{snap.symbol}", snap)
             await self.bus.publish("vwap_values", snap, key=tick.symbol)
+        if snapshots:
+            record_tick_to_vwap(time.perf_counter() - t_all)
 
-        if tick.symbol not in self._anchor_sync_seen:
+        now_mono = time.monotonic()
+        last_sync = self._anchor_sync_at.get(tick.symbol, 0.0)
+        if tick.symbol not in self._anchor_sync_seen or (
+            now_mono - last_sync
+        ) >= self.settings.anchor_sync_interval_s:
             await sync_anchors_from_store(self.avwap, self.store, tick.symbol)
             self._anchor_sync_seen.add(tick.symbol)
-        else:
-            # Cheap refresh so HTTP-registered anchors appear without restart.
-            await sync_anchors_from_store(self.avwap, self.store, tick.symbol)
+            self._anchor_sync_at[tick.symbol] = now_mono
 
         if self.settings.swing_detect:
             for req in self.swings.on_tick(
@@ -200,9 +241,13 @@ class Runtime:
         kz_task = None
         if self.settings.killzone_inprocess:
             kz_task = asyncio.create_task(self._killzone_loop())
-        kafka_anchor_task = None
+        kafka_tasks: list[asyncio.Task] = []
         if isinstance(self.bus, KafkaBus):
-            kafka_anchor_task = asyncio.create_task(self._consume_anchor_events())
+            kafka_tasks.append(asyncio.create_task(self._consume_anchor_events()))
+            kafka_tasks.append(asyncio.create_task(self._consume_performance_outcomes()))
+        flow_task = None
+        if self.settings.demo_options_flow:
+            flow_task = asyncio.create_task(self._options_flow_loop())
         started = loop.time()
         try:
             async for tick in connector.stream():
@@ -226,8 +271,10 @@ class Runtime:
             evict_task.cancel()
             if kz_task is not None:
                 kz_task.cancel()
-            if kafka_anchor_task is not None:
-                kafka_anchor_task.cancel()
+            if flow_task is not None:
+                flow_task.cancel()
+            for task in kafka_tasks:
+                task.cancel()
             await connector.close()
 
     async def _killzone_loop(self) -> None:
@@ -247,6 +294,7 @@ class Runtime:
                 self.settings.kafka_bootstrap,
                 "anchor_events",
                 group_id="sniper-avwap-anchors",
+                stop=self._stop,
             ):
                 if self._stop.is_set():
                     break
@@ -255,6 +303,45 @@ class Runtime:
             raise
         except Exception as exc:  # noqa: BLE001
             log.warning("anchor_events consumer: %s", exc)
+
+    async def _consume_performance_outcomes(self) -> None:
+        try:
+            async for payload in consume_topic(
+                self.settings.kafka_bootstrap,
+                "performance_outcomes",
+                group_id="sniper-performance",
+                stop=self._stop,
+            ):
+                if self._stop.is_set():
+                    break
+                await self._on_performance_outcome(payload)
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:  # noqa: BLE001
+            log.warning("performance_outcomes consumer: %s", exc)
+
+    async def _options_flow_loop(self) -> None:
+        """Mock options_chain + order_flow for equity symbols. No live keys."""
+        equities = [s for s in self.settings.symbols if infer_asset_class(s).value == "equity"]
+        if not equities:
+            return
+        mock = MockOptionsFlow(equities, large_notional=self.settings.large_trade_notional)
+        i = 0
+        while not self._stop.is_set():
+            symbol = equities[i % len(equities)]
+            try:
+                flow = mock.next_order_flow(symbol)
+                await self.bus.publish("order_flow", flow, key=symbol)
+                if i % 4 == 0:
+                    chain = mock.next_chain(symbol)
+                    await self.bus.publish("options_chain", chain, key=symbol)
+            except Exception as exc:  # noqa: BLE001
+                log.warning("options/order_flow mock: %s", exc)
+            i += 1
+            try:
+                await asyncio.wait_for(self._stop.wait(), timeout=0.25)
+            except asyncio.TimeoutError:
+                continue
 
 
 async def run_pipeline(*, inmemory: bool = False, duration_s: float | None = None) -> Runtime:

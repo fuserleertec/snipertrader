@@ -9,7 +9,7 @@ from collections.abc import Callable
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
+from fastapi import Body, FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse, Response
 
 from sniper_data.avwap import (
@@ -21,11 +21,21 @@ from sniper_data.avwap import (
     redis_avwap_meta_key,
 )
 from sniper_data.bus.redis_store import InMemoryStateStore, RedisStateStore, StateStore, decode
+from sniper_data.bus.resilience import Backoff
 from sniper_data.bus.timescaledb import InMemoryOHLCVStore, OHLCVStore, TimescaleStore
 from sniper_data.config import KAFKA_TOPICS, Settings, get_settings
 from sniper_data.kill_zones import redis_kill_zone_active_key, redis_kill_zone_channel, redis_kill_zone_key
-from sniper_data.metrics import metrics_response, record_http
+from sniper_data.metrics import (
+    metrics_response,
+    record_http,
+    record_ws_connect,
+    record_ws_disconnect,
+    record_ws_drop,
+    record_ws_message,
+)
 from sniper_data.models import AnchorRegistration
+from sniper_data.performance import PerformanceStore, SignalOutcome
+from sniper_data.setups import SETUP_KEYS, UnknownSetupError, resolve_setup_key
 from sniper_data.ohlcv import redis_ohlcv_channel
 from sniper_data.sessions import redis_session_channel, redis_session_key
 from sniper_data.symbols import infer_asset_class, normalize_symbol
@@ -44,7 +54,7 @@ log = logging.getLogger(__name__)
 TIMEFRAME_RE = r"^(1m|5m|15m|1h|4h)$"
 
 API_DESCRIPTION = """
-# SniperTrader market-data API (Phase 1 / Rev. 1.1)
+# SniperTrader market-data API (Phase 1 / Rev. 1.1 + Phase 2 + Phase 3)
 
 Real-time state is served from Redis. Kafka is the durable stream;
 TimescaleDB holds historical OHLCV.
@@ -139,13 +149,37 @@ Payload fields (exact): `anchor_id`, `symbol`, `anchor_time`, `anchor_price`,
 ## Metrics
 
 `GET /metrics` — Prometheus scrape (API process).
+
+## Phase 3 — Performance Snapshot (Frontend + Quant)
+
+`GET /performance/summary` — exact envelope (`timestamp`, `overall`, `by_setup`).
+Always includes the six Project Manager keys (zeros OK):
+
+    1_liquidity_sweep_vwap_reclaim
+    2_fvg_mitigation_vwap
+    3_po3_asia_range_sweep      (setup_type `po3_judas`)
+    4_sd_extension_fade
+    5_vwap_pullback_cont
+    6_avwap_ob_confluence
+
+`GET /performance/summary?setup=1_liquidity_sweep_vwap_reclaim` — optional filter
+on `overall` only; `by_setup` still returns all six keys.
+
+`POST /performance/outcomes` — Quant / ML write a resolved signal:
+`{setup|setup_type, won, rr, ts_ms?, signal_id?, symbol?}`.
+Also accepted on Kafka topic `performance_outcomes`. **No Kafka-side risk
+filter** — Quant `POST /risk/validate` stays at the publisher boundary.
 """
 
 
 def _store_from_settings(settings: Settings) -> StateStore:
     if settings.use_inmemory:
         return InMemoryStateStore()
-    return RedisStateStore(settings.redis_url)
+    return RedisStateStore(
+        settings.redis_url,
+        max_connections=settings.redis_max_connections,
+        retries=settings.redis_retries,
+    )
 
 
 def _bars_from_settings(settings: Settings) -> OHLCVStore:
@@ -158,12 +192,52 @@ def _clamp_limit(limit: int) -> int:
     return max(1, min(int(limit), 2000))
 
 
+async def _ws_send(websocket: WebSocket, payload: Any, route: str, pending: list[int]) -> None:
+    """Send one JSON frame; drop when the client backlog exceeds ``WS_BACKLOG``."""
+    cap = pending[1] if len(pending) > 1 else 64
+    if pending[0] >= cap:
+        record_ws_drop(route)
+        return
+    pending[0] += 1
+    start = time.perf_counter()
+    try:
+        await websocket.send_json(payload)
+        record_ws_message(route, time.perf_counter() - start)
+    finally:
+        pending[0] -= 1
+
+
+async def _ws_heartbeat(websocket: WebSocket, last: float, interval_s: float) -> float:
+    if interval_s <= 0:
+        return last
+    now = time.monotonic()
+    if now - last < interval_s:
+        return last
+    try:
+        await websocket.send({"type": "websocket.ping"})
+    except Exception:  # noqa: BLE001
+        pass
+    return now
+
+
 async def _ws_follow_channel(
     websocket: WebSocket,
     store: StateStore,
     settings: Settings,
     channel: str,
+    *,
+    route: str = "channel",
+    match: Callable[[Any], bool] | None = None,
 ) -> None:
+    pending = [0, int(getattr(settings, "ws_backlog", 64) or 64)]
+    hb_s = float(getattr(settings, "ws_heartbeat_s", 15.0) or 15.0)
+    last_hb = time.monotonic()
+
+    async def _emit(item: Any) -> None:
+        if match is not None and not match(item):
+            return
+        await _ws_send(websocket, item, route, pending)
+
     if isinstance(store, InMemoryStateStore):
         last = 0
         try:
@@ -171,8 +245,9 @@ async def _ws_follow_channel(
                 msgs = store.channels.get(channel, [])
                 if last < len(msgs):
                     for item in msgs[last:]:
-                        await websocket.send_json(item)
+                        await _emit(item)
                     last = len(msgs)
+                last_hb = await _ws_heartbeat(websocket, last_hb, hb_s)
                 await asyncio.sleep(0.05)
         except WebSocketDisconnect:
             return
@@ -180,22 +255,33 @@ async def _ws_follow_channel(
 
     import redis.asyncio as redis
 
-    client = redis.from_url(settings.redis_url, decode_responses=True)
-    pubsub = client.pubsub()
-    await pubsub.subscribe(channel)
-    try:
-        while True:
-            msg = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
-            if msg and msg.get("data"):
-                await websocket.send_json(decode(msg["data"]))
-            else:
-                await asyncio.sleep(0.05)
-    except WebSocketDisconnect:
-        pass
-    finally:
-        await pubsub.unsubscribe(channel)
-        await pubsub.aclose()
-        await client.aclose()
+    backoff = Backoff(base_s=0.2, max_s=4.0)
+    while True:
+        client = redis.from_url(settings.redis_url, decode_responses=True)
+        pubsub = client.pubsub()
+        try:
+            await pubsub.subscribe(channel)
+            backoff.reset()
+            while True:
+                msg = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
+                if msg and msg.get("data"):
+                    await _emit(decode(msg["data"]))
+                else:
+                    last_hb = await _ws_heartbeat(websocket, last_hb, hb_s)
+                    await asyncio.sleep(0.05)
+        except WebSocketDisconnect:
+            return
+        except Exception as exc:  # noqa: BLE001
+            delay = backoff.next()
+            log.warning("ws redis %s: %s; reconnect in %.2fs", channel, exc, delay)
+            await asyncio.sleep(delay)
+        finally:
+            try:
+                await pubsub.unsubscribe(channel)
+            except Exception:  # noqa: BLE001
+                pass
+            await pubsub.aclose()
+            await client.aclose()
 
 
 @asynccontextmanager
@@ -210,6 +296,7 @@ async def lifespan(app: FastAPI):
         except Exception as exc:  # noqa: BLE001
             log.warning("ohlcv store unavailable: %s", exc)
     app.state.bars = bars
+    app.state.performance = PerformanceStore(app.state.store)
     yield
     await app.state.store.close()
     await app.state.bars.close()
@@ -222,7 +309,7 @@ def create_app(
 ) -> FastAPI:
     app = FastAPI(
         title="SniperTrader Data API",
-        version="2.0.0",
+        version="3.0.0",
         description=API_DESCRIPTION,
         lifespan=None if store is not None else lifespan,
     )
@@ -230,6 +317,7 @@ def create_app(
         app.state.store = store
         app.state.settings = settings or get_settings()
         app.state.bars = bars if bars is not None else InMemoryOHLCVStore()
+        app.state.performance = PerformanceStore(store)
 
     @app.middleware("http")
     async def _prometheus_http(request: Request, call_next):
@@ -248,8 +336,38 @@ def create_app(
             "inmemory": isinstance(app.state.store, InMemoryStateStore),
             "topics": list(KAFKA_TOPICS),
             "bars": app.state.bars is not None,
-            "phase": 2,
+            "phase": 3,
+            "setups": list(SETUP_KEYS),
         }
+
+    @app.get("/performance/summary")
+    async def performance_summary(
+        setup: str | None = Query(default=None),
+    ) -> JSONResponse:
+        filt = None
+        if setup:
+            try:
+                filt = resolve_setup_key(setup)
+            except UnknownSetupError as exc:
+                raise HTTPException(400, str(exc)) from exc
+        body = await app.state.performance.summary(setup=filt)
+        return JSONResponse(body)
+
+    @app.post("/performance/outcomes", status_code=201)
+    async def performance_outcomes(body: dict[str, Any] | list[dict[str, Any]] = Body(...)) -> JSONResponse:
+        store: PerformanceStore = app.state.performance
+        items = body if isinstance(body, list) else [body]
+        try:
+            outcomes = [SignalOutcome.model_validate(item) for item in items]
+            stored = await store.record_many(outcomes)
+        except UnknownSetupError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(400, str(exc)) from exc
+        return JSONResponse(
+            {"ok": True, "n": len(stored), "setups": [s.setup for s in stored]},
+            status_code=201,
+        )
 
     @app.get("/v1/vwap/{symbol}")
     async def get_vwap(
@@ -315,8 +433,8 @@ def create_app(
             snap = await store.get(redis_vwap_key(symbol, anchor))
             if snap is not None:
                 await websocket.send_json(snap)
-        await _ws_follow_channel(
-            websocket, store, app.state.settings, f"vwap:{symbol}"
+        await _ws_session(
+            websocket, "vwap", store, app.state.settings, f"vwap:{symbol}"
         )
 
     @app.websocket("/v1/ws/session")
@@ -329,8 +447,8 @@ def create_app(
             book = await store.get(key)
             if book is not None:
                 await websocket.send_json(book)
-        await _ws_follow_channel(
-            websocket, store, app.state.settings, redis_session_channel(symbol)
+        await _ws_session(
+            websocket, "session", store, app.state.settings, redis_session_channel(symbol)
         )
 
     @app.websocket("/v1/ws/ohlcv")
@@ -351,8 +469,9 @@ def create_app(
                 history = []
             for bar in history:
                 await websocket.send_json(bar.model_dump(mode="json"))
-        await _ws_follow_channel(
+        await _ws_session(
             websocket,
+            "ohlcv",
             app.state.store,
             app.state.settings,
             redis_ohlcv_channel(symbol, timeframe),
@@ -475,12 +594,17 @@ def create_app(
                 if snap is not None and (latest is None or snap.get("anchor_id") != latest.get("anchor_id")):
                     await websocket.send_json(snap)
         if anchor_id:
-            await _ws_follow_filtered(
-                websocket, store, app.state.settings, redis_avwap_channel(symbol), anchor_id
+            await _ws_session(
+                websocket,
+                "avwap",
+                store,
+                app.state.settings,
+                redis_avwap_channel(symbol),
+                match=lambda item, aid=anchor_id: isinstance(item, dict) and item.get("anchor_id") == aid,
             )
         else:
-            await _ws_follow_channel(
-                websocket, store, app.state.settings, redis_avwap_channel(symbol)
+            await _ws_session(
+                websocket, "avwap", store, app.state.settings, redis_avwap_channel(symbol)
             )
 
     @app.websocket("/v1/ws/volume-profile")
@@ -495,8 +619,8 @@ def create_app(
             book = await store.get(key)
             if book is not None:
                 await websocket.send_json(book)
-        await _ws_follow_channel(
-            websocket, store, app.state.settings, redis_volume_profile_channel(symbol)
+        await _ws_session(
+            websocket, "volume-profile", store, app.state.settings, redis_volume_profile_channel(symbol)
         )
 
     @app.websocket("/v1/ws/kill-zone")
@@ -507,8 +631,8 @@ def create_app(
         current = await store.get(redis_kill_zone_key(symbol))
         if current is not None:
             await websocket.send_json(current)
-        await _ws_follow_channel(
-            websocket, store, app.state.settings, redis_kill_zone_channel(symbol)
+        await _ws_session(
+            websocket, "kill-zone", store, app.state.settings, redis_kill_zone_channel(symbol)
         )
 
     @app.websocket("/v1/ws/sweep")
@@ -546,13 +670,14 @@ async def _ws_zone_overlay(
         payload = await store.get(key)
         if payload is not None:
             await websocket.send_json(payload)
-    await _ws_follow_channel(
-        websocket, store, app.state.settings, channel_fn(symbol)
+    await _ws_session(
+        websocket, prefix, store, app.state.settings, channel_fn(symbol)
     )
 
 
 def _metric_route(path: str) -> str:
     for prefix in (
+        "/performance",
         "/v1/vwap",
         "/v1/avwap",
         "/v1/session",
@@ -569,53 +694,21 @@ def _metric_route(path: str) -> str:
     return "other"
 
 
-async def _ws_follow_filtered(
+async def _ws_session(
     websocket: WebSocket,
+    route: str,
     store: StateStore,
     settings: Settings,
     channel: str,
-    anchor_id: str,
+    match: Callable[[Any], bool] | None = None,
 ) -> None:
-    """Like ``_ws_follow_channel`` but only forward frames for one anchor."""
-
-    def _match(item: Any) -> bool:
-        return isinstance(item, dict) and item.get("anchor_id") == anchor_id
-
-    if isinstance(store, InMemoryStateStore):
-        last = 0
-        try:
-            while True:
-                msgs = store.channels.get(channel, [])
-                if last < len(msgs):
-                    for item in msgs[last:]:
-                        if _match(item):
-                            await websocket.send_json(item)
-                    last = len(msgs)
-                await asyncio.sleep(0.05)
-        except WebSocketDisconnect:
-            return
-        return
-
-    import redis.asyncio as redis
-
-    client = redis.from_url(settings.redis_url, decode_responses=True)
-    pubsub = client.pubsub()
-    await pubsub.subscribe(channel)
+    record_ws_connect(route)
     try:
-        while True:
-            msg = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
-            if msg and msg.get("data"):
-                item = decode(msg["data"])
-                if _match(item):
-                    await websocket.send_json(item)
-            else:
-                await asyncio.sleep(0.05)
-    except WebSocketDisconnect:
-        pass
+        await _ws_follow_channel(
+            websocket, store, settings, channel, route=route, match=match
+        )
     finally:
-        await pubsub.unsubscribe(channel)
-        await pubsub.aclose()
-        await client.aclose()
+        record_ws_disconnect(route)
 
 
 app = create_app()

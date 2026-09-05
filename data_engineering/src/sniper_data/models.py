@@ -273,3 +273,47 @@ class AnchorRegistration(BaseModel):
     source: AnchorSource = AnchorSource.MANUAL
     asset_class: AssetClass | None = None
     anchor_id: str | None = None
+
+
+# ── Phase 3 wire models ──────────────────────────────────────────────────────
+
+
+class OptionsChain(BaseModel):
+    """Kafka ``options_chain`` — one US-equities option contract quote."""
+
+    schema_version: Literal["1.1"] = SCHEMA_VERSION
+    symbol: str
+    asset_class: AssetClass
+    exchange: str
+    ts_ms: int
+    expiry_ms: int
+    strike: float
+    option_type: Literal["call", "put"]
+    contract_symbol: str
+    bid: float | None = None
+    ask: float | None = None
+    last: float | None = None
+    volume: float | None = None
+    open_interest: float | None = None
+    implied_volatility: float | None = None
+    delta: float | None = None
+    gamma: float | None = None
+    theta: float | None = None
+    vega: float | None = None
+    rho: float | None = None
+
+
+class OrderFlow(BaseModel):
+    """Kafka ``order_flow`` — aggressor print + optional large-trade flag."""
+
+    schema_version: Literal["1.1"] = SCHEMA_VERSION
+    symbol: str
+    asset_class: AssetClass
+    exchange: str
+    ts_ms: int
+    price: float
+    volume: float
+    aggressor: Literal["buy", "sell"]
+    is_large: bool | None = None
+    notional: float | None = None
+    trade_id: str | None = None
