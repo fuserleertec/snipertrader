@@ -7,6 +7,9 @@ import type { FVGZone, MssEvent, OrderBlock, PatternBook, SetupType, Signal, Swe
 
 const cache = new Map<string, { book: PatternBook; signals: Signal[]; price: number }>();
 
+/** Stable mock clock so SSR + client hydration match. */
+const MOCK_NOW = Date.UTC(2026, 8, 5, 14, 0, 0);
+
 function id(kind: string, symbol: string, tag: string): string {
   return `${kind}_${symbol}_${tag}`;
 }
@@ -228,7 +231,7 @@ function closeOf(signal: Signal, status: "TP_HIT" | "SL_HIT", seq: number): Sign
 export function getUniverse(symbol: string, price: number): { book: PatternBook; signals: Signal[] } {
   const hit = cache.get(symbol);
   if (hit) return hit;
-  const now = Date.now();
+  const now = MOCK_NOW;
   const book = buildPatternBook(symbol, price, now);
   const signals = signalsFromBook(symbol, price, book, now);
   const next = { book, signals, price };

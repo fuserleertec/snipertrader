@@ -37,6 +37,7 @@ export function Dashboard() {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [tick, setTick] = useState(0);
   const seenHigh = useRef(new Set<string>());
+  const primedHigh = useRef(false);
   const chartRef = useRef<HTMLDivElement>(null);
 
   const market = useMarketData(symbol, timeframe);
@@ -49,8 +50,15 @@ export function Dashboard() {
   const performance = usePerformance(tick);
 
   useEffect(() => {
+    if (!primedHigh.current) {
+      for (const row of allSignals) {
+        if (row.confidence > 0.8) seenHigh.current.add(row.id);
+      }
+      primedHigh.current = true;
+      return;
+    }
     for (const row of allSignals) {
-      if (row.confidence <= 0.8 || seenHigh.current.has(row.id)) continue;
+      if (row.status !== "ACTIVE" || row.confidence <= 0.8 || seenHigh.current.has(row.id)) continue;
       seenHigh.current.add(row.id);
       const id = `toast_${row.id}`;
       setToasts((prev) => [
