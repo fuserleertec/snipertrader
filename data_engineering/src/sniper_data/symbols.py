@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from typing import Literal
 
 from sniper_data.models import AssetClass, RawTick
 
@@ -74,6 +75,8 @@ def normalize_tick(
     bid_size: float | None = None,
     ask_size: float | None = None,
     book: dict | None = None,
+    aggressor: Literal["buy", "sell"] | None = None,
+    is_buyer_maker: bool | None = None,
 ) -> RawTick:
     from sniper_data.models import OrderBook
 
@@ -94,4 +97,6 @@ def normalize_tick(
         bid_size=bid_size,
         ask_size=ask_size,
         book=payload,
+        aggressor=aggressor,
+        is_buyer_maker=is_buyer_maker,
     )

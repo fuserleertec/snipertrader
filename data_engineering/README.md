@@ -18,9 +18,11 @@ US equity stub──┘                 │                   TimescaleDB hypert
                                   └─► vwap_values    ─► Redis vwap:{symbol}:{anchor}
                                                          └─► FastAPI + WebSocket
 
-Pattern topics (contracts only in Phase 1):
-  sweep_events → Redis sweep:{symbol}:{id}   TTL ≤ 48h
-  fvg_zones    → Redis fvg:{symbol}:{id}     TTL ≤ 48h
+Pattern topics (contracts only in Phase 1; Redis+Kafka, no Timescale hypertables):
+  sweep_events      → Redis sweep:{symbol}:{id}   TTL ≤ 48h
+  fvg_zones         → Redis fvg:{symbol}:{id}     TTL ≤ 48h
+  mss_events        → Redis mss:{symbol}:{id}     TTL ≤ 48h
+  order_block_zones → Redis ob:{symbol}:{id}      TTL ≤ 48h
   setup_signals
 ```
 
@@ -37,6 +39,10 @@ Weekly VWAP resets Monday **00:00 UTC** for crypto and Monday **RTH open
 (09:30 NY)** for equities/futures.
 
 JSON contracts: [`/schemas`](../schemas/README.md).
+
+Ticks may carry optional `aggressor` (`buy`/`sell`) and `is_buyer_maker`.
+Bars may carry optional `buy_volume` / `sell_volume`; consumers compute
+`delta = buy_volume - sell_volume` (no `delta` field on the wire).
 
 ## VWAP math (corrected)
 
@@ -145,15 +151,17 @@ field (`crypto` · `equity` · `futures`). All event times are **UTC millisecond
 | `session:{symbol}:{session_type}` | none (live book) | OHLC + window bounds |
 | `vwap:{symbol}:{anchor_type}` | none (live book) | VWAP + ±1/2/3σ |
 | `fvg:{symbol}:{id}` | **required, ≤ 48h** | FVG zone (`schemas/fvg_zone.schema.json`) |
-| `sweep:{symbol}:{id}` | **required, ≤ 48h** | Sweep event |
+| `sweep:{symbol}:{id}` | **required, ≤ 48h** | Sweep event (`side` + `swept_level`) |
+| `mss:{symbol}:{id}` | **required, ≤ 48h** | MSS event (`schemas/mss_event.schema.json`) |
+| `ob:{symbol}:{id}` | **required, ≤ 48h** | Order block (`schemas/order_block.schema.json`) |
 
 `session_type` ∈ `asia` · `london` · `ny_am` · `ny_pm` · `rth` · `eth` · `globex`.
 
-Zone writes go through `sniper_data.zones.store_fvg` / `store_sweep`, which
-always `SET … EX`. A missing TTL raises. TTL > 48h is clamped. The
+Zone writes go through `store_fvg` / `store_sweep` / `store_mss` / `store_ob`,
+which always `SET … EX`. A missing TTL raises. TTL > 48h is clamped. The
 `sniper-data evict` job (and the `evict` compose service) SCANs `fvg:*` /
-`sweep:*`, deletes rows older than 48h, and re-`EXPIRE`s keys with TTL `-1`
-or > 48h.
+`sweep:*` / `mss:*` / `ob:*`, deletes rows older than 48h, and re-`EXPIRE`s
+keys with TTL `-1` or > 48h.
 
 ## HTTP API (Quant Developers)
 
@@ -173,7 +181,8 @@ Interactive docs at `/docs`. Hyphenated symbols are accepted and normalized
 Created on pipeline startup (Redpanda also auto-creates):
 
 `raw_ticks` · `ohlcv_bars` · `session_levels` · `vwap_values` ·
-`sweep_events` · `fvg_zones` · `setup_signals`
+`sweep_events` · `fvg_zones` · `mss_events` · `order_block_zones` ·
+`setup_signals`
 
 ## Layout
 

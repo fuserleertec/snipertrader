@@ -1,14 +1,16 @@
-"""FVG / sweep Redis writes with mandatory TTL (max 48h) + eviction job.
+"""Pattern-zone Redis writes with mandatory TTL (max 48h) + eviction job.
 
 Provisional key map for ML Researchers
 --------------------------------------
   fvg:{symbol}:{id}     Fair-value gap zone payload (JSON)
   sweep:{symbol}:{id}   Liquidity sweep event payload (JSON)
+  mss:{symbol}:{id}     Market-structure shift event (JSON)
+  ob:{symbol}:{id}      Order-block zone payload (JSON)
 
 Every write uses SET with EX (SETEX semantics). TTL is clamped to
 ``FVG_TTL_MAX_SECONDS`` (172800). The background eviction job:
 
-  * SCAN ``fvg:*`` and ``sweep:*``
+  * SCAN ``fvg:*`` ``sweep:*`` ``mss:*`` ``ob:*``
   * DELETE keys whose TTL is already gone (-2) — no-op
   * EXPIRE keys that have no TTL (-1) or a TTL > 48h
   * DELETE keys whose ``created_ts_ms`` / ``ts_ms`` is older than 48h
@@ -22,9 +24,11 @@ from typing import Any
 
 from sniper_data.bus.redis_store import StateStore
 from sniper_data.config import FVG_TTL_MAX_SECONDS
-from sniper_data.models import FVGZone, SweepEvent
+from sniper_data.models import FVGZone, MssEvent, OrderBlock, SweepEvent
 
 log = logging.getLogger(__name__)
+
+ZONE_SCAN_PATTERNS = ("fvg:*", "sweep:*", "mss:*", "ob:*")
 
 
 def fvg_key(symbol: str, zone_id: str) -> str:
@@ -33,6 +37,14 @@ def fvg_key(symbol: str, zone_id: str) -> str:
 
 def sweep_key(symbol: str, event_id: str) -> str:
     return f"sweep:{symbol}:{event_id}"
+
+
+def mss_key(symbol: str, event_id: str) -> str:
+    return f"mss:{symbol}:{event_id}"
+
+
+def ob_key(symbol: str, zone_id: str) -> str:
+    return f"ob:{symbol}:{zone_id}"
 
 
 def clamp_ttl(ttl_seconds: int | None) -> int:
@@ -63,6 +75,28 @@ async def store_sweep(
     return key
 
 
+async def store_mss(
+    store: StateStore,
+    event: MssEvent,
+    ttl_seconds: int | None = None,
+) -> str:
+    key = mss_key(event.symbol, event.id)
+    await store.set(key, event, ttl=clamp_ttl(ttl_seconds))
+    return key
+
+
+async def store_ob(
+    store: StateStore,
+    zone: OrderBlock,
+    ttl_seconds: int | None = None,
+) -> str:
+    key = ob_key(zone.symbol, zone.id)
+    ttl = clamp_ttl(ttl_seconds if ttl_seconds is not None else zone.ttl_seconds)
+    payload = zone.model_copy(update={"ttl_seconds": ttl})
+    await store.set(key, payload, ttl=ttl)
+    return key
+
+
 def _created_ms(payload: Any) -> int | None:
     if not isinstance(payload, dict):
         return None
@@ -85,7 +119,7 @@ async def evict_expired_zones(
     now_ms = now_ms if now_ms is not None else int(time.time() * 1000)
     cutoff = now_ms - max_age_seconds * 1000
     stats = {"scanned": 0, "expired_deleted": 0, "ttl_repaired": 0}
-    for match in ("fvg:*", "sweep:*"):
+    for match in ZONE_SCAN_PATTERNS:
         keys = await store.scan(match)
         for key in keys:
             stats["scanned"] += 1

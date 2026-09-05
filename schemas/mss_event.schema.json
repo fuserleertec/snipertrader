@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snipertrader.ai/schemas/mss_event.schema.json",
+  "title": "MssEvent",
+  "description": "Market-structure shift. Kafka topic mss_events. Redis key: mss:{symbol}:{id} with TTL ≤ 48h.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "symbol",
+    "asset_class",
+    "ts_ms",
+    "direction",
+    "broken_level",
+    "swing_high",
+    "swing_low",
+    "trigger_sweep_id",
+    "trigger_sweep_side"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.1" },
+    "id": { "type": "string" },
+    "symbol": { "type": "string", "pattern": "^[A-Z0-9]+$" },
+    "asset_class": { "type": "string", "enum": ["crypto", "equity", "futures"] },
+    "ts_ms": { "type": "integer" },
+    "direction": { "type": "string", "enum": ["bullish", "bearish"] },
+    "broken_level": { "type": "number" },
+    "swing_high": { "type": ["number", "null"] },
+    "swing_low": { "type": ["number", "null"] },
+    "trigger_sweep_id": { "type": "string" },
+    "trigger_sweep_side": { "type": "string", "enum": ["buy", "sell"] },
+    "timeframe": { "type": "string", "enum": ["1m", "5m", "15m"] },
+    "confirmed": { "type": "boolean" }
+  }
+}

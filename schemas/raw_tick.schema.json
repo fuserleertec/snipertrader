@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://snipertrader.ai/schemas/raw_tick.schema.json",
   "title": "RawTick",
-  "description": "Normalized trade/quote tick. All timestamps are UTC epoch milliseconds.",
+  "description": "Normalized trade/quote tick. All timestamps are UTC epoch milliseconds. Optional aggressor: 'buy' | 'sell'. Signed trade volume for ML = +volume if aggressor=buy, -volume if aggressor=sell. If aggressor is missing, classify vs mid ((bid+ask)/2): price >= mid → buy, price < mid → sell.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -30,6 +30,15 @@
     "ask": { "type": ["number", "null"] },
     "bid_size": { "type": ["number", "null"] },
     "ask_size": { "type": ["number", "null"] },
+    "aggressor": {
+      "type": ["string", "null"],
+      "enum": ["buy", "sell", null],
+      "description": "Optional taker side. Signed volume = +volume if buy, -volume if sell."
+    },
+    "is_buyer_maker": {
+      "type": ["boolean", "null"],
+      "description": "Exchange maker flag when provided (e.g. Binance m). true ⇒ buyer was maker ⇒ aggressor is sell."
+    },
     "book": {
       "type": ["object", "null"],
       "additionalProperties": false,

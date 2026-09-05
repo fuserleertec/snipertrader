@@ -49,6 +49,13 @@ class BinanceConnector(ExchangeConnector):
         price = float(payload.get("p") or payload["price"])
         volume = float(payload.get("q") or payload.get("qty") or payload["volume"])
         ts = payload.get("T") or payload.get("E") or payload.get("ts_ms")
+        maker = payload.get("m") if "m" in payload else payload.get("isBuyerMaker")
+        is_buyer_maker = None if maker is None else bool(maker)
+        aggressor = None
+        if is_buyer_maker is True:
+            aggressor = "sell"
+        elif is_buyer_maker is False:
+            aggressor = "buy"
         return RawTick(
             symbol=symbol,
             asset_class=AssetClass.CRYPTO,
@@ -58,6 +65,8 @@ class BinanceConnector(ExchangeConnector):
             volume=volume,
             bid=float(payload["b"]) if payload.get("b") else None,
             ask=float(payload["a"]) if payload.get("a") else None,
+            is_buyer_maker=is_buyer_maker,
+            aggressor=aggressor,
         )
 
     async def stream(self) -> AsyncIterator[RawTick]:

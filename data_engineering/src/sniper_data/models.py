@@ -62,6 +62,8 @@ class RawTick(BaseModel):
     bid_size: float | None = None
     ask_size: float | None = None
     book: OrderBook | None = None
+    aggressor: Literal["buy", "sell"] | None = None
+    is_buyer_maker: bool | None = None
 
 
 class OHLCVBar(BaseModel):
@@ -77,6 +79,8 @@ class OHLCVBar(BaseModel):
     close: float
     volume: float
     n_ticks: int
+    buy_volume: float | None = None
+    sell_volume: float | None = None
 
 
 class SessionLevels(BaseModel):
@@ -137,6 +141,43 @@ class SweepEvent(BaseModel):
     swept_level: float
     reclaim: bool | None = None
     ts_ms: int
+    volume_profile: Literal["aggressive", "low_volume"] | None = None
+    delta_divergence: bool | None = None
+    time_to_reclaim_ms: int | None = None
+    confirmed: bool | None = None
+
+
+class MssEvent(BaseModel):
+    schema_version: Literal["1.1"] = SCHEMA_VERSION
+    id: str
+    symbol: str
+    asset_class: AssetClass
+    ts_ms: int
+    direction: Literal["bullish", "bearish"]
+    broken_level: float
+    swing_high: float | None
+    swing_low: float | None
+    trigger_sweep_id: str
+    trigger_sweep_side: Literal["buy", "sell"]
+    timeframe: Literal["1m", "5m", "15m"] | None = None
+    confirmed: bool | None = None
+
+
+class OrderBlock(BaseModel):
+    schema_version: Literal["1.1"] = SCHEMA_VERSION
+    id: str
+    symbol: str
+    asset_class: AssetClass
+    direction: Literal["bullish", "bearish"]
+    high: float
+    low: float
+    created_ts_ms: int
+    mitigated: bool = False
+    ttl_seconds: int | None = None
+    timeframe: Timeframe | None = None
+    displacement_ts_ms: int | None = None
+    origin_open: float | None = None
+    origin_close: float | None = None
 
 
 class SetupSignal(BaseModel):

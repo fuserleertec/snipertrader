@@ -60,6 +60,7 @@ class MockConnector:
         bid = price - spread / 2
         ask = price + spread / 2
         now_ms = int(time.time() * 1000)
+        aggressor = "buy" if shock >= 0 else "sell"
         return RawTick(
             symbol=symbol,
             asset_class=klass,
@@ -71,6 +72,8 @@ class MockConnector:
             ask=round(ask, 6),
             bid_size=round(abs(self._rng.gauss(8, 2)), 4),
             ask_size=round(abs(self._rng.gauss(8, 2)), 4),
+            aggressor=aggressor,
+            is_buyer_maker=aggressor == "sell",
             book=OrderBook(
                 bids=[[round(bid - n * spread, 6), round(abs(self._rng.gauss(5, 1)), 4)] for n in range(5)],
                 asks=[[round(ask + n * spread, 6), round(abs(self._rng.gauss(5, 1)), 4)] for n in range(5)],

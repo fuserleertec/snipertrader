@@ -14,6 +14,8 @@ KAFKA_TOPICS = (
     "sweep_events",
     "fvg_zones",
     "setup_signals",
+    "mss_events",
+    "order_block_zones",
 )
 
 FVG_TTL_MAX_SECONDS = 48 * 60 * 60  # 48 hours

@@ -10,7 +10,7 @@ from sniper_data.config import FVG_TTL_MAX_SECONDS
 
 log = logging.getLogger(__name__)
 
-ZONE_KEY_PREFIXES = ("fvg:", "sweep:")
+ZONE_KEY_PREFIXES = ("fvg:", "sweep:", "mss:", "ob:")
 
 
 def encode(value: Any) -> str:

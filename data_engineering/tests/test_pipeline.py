@@ -55,6 +55,7 @@ async def test_mock_connector_emits_normalized_book():
     assert tick.asset_class is AssetClass.CRYPTO
     assert tick.book is not None
     assert len(tick.book.bids) == 5
+    assert tick.aggressor in {"buy", "sell"}
     assert tick.ts_ms > 1_000_000_000_000
     await conn.close()
 
@@ -64,9 +65,11 @@ async def test_binance_and_equity_stubs():
     bn = BinanceConnector()
     with pytest.raises(ConnectorNotConfigured):
         await anext(bn.stream())
-    parsed = bn.parse_trade({"s": "btc-usdt", "p": "100", "q": "2", "T": 1_717_500_000_000})
+    parsed = bn.parse_trade({"s": "btc-usdt", "p": "100", "q": "2", "T": 1_717_500_000_000, "m": True})
     assert parsed.symbol == "BTCUSDT"
     assert parsed.ts_ms == 1_717_500_000_000
+    assert parsed.is_buyer_maker is True
+    assert parsed.aggressor == "sell"
 
     eq = USEquitiesConnector()
     with pytest.raises(ConnectorNotConfigured):
