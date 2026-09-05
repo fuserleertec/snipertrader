@@ -374,12 +374,13 @@ export interface Signal {
   /** Quant publish-only {name, weight, score, note?}[]. */
   factor_breakdown?: FactorBreakdown[];
   /**
-   * Quant close fields (PR #2). Do not compute on FE.
-   * `realized_r` is null on ACTIVE/CANCELLED; signed R on TP_HIT/SL_HIT.
+   * Quant PR #2 close fields — live on GET /signals, GET /signals/{id},
+   * and WS `signal.upsert` / `signal.status`. Do not compute on FE.
+   * All three are null on ACTIVE/CANCELLED; set on TP_HIT/SL_HIT.
    */
-  realized_r?: number | null;
-  exit_price?: number | null;
-  closed_ts_ms?: number | null;
+  realized_r: number | null;
+  exit_price: number | null;
+  closed_ts_ms: number | null;
 }
 
 export interface SignalListResponse {

@@ -1,4 +1,5 @@
 import { httpUrl, quantHttpUrl } from "./env";
+import { normalizeSignal } from "./signals";
 import type {
   AnchorType,
   AnchoredVwap,
@@ -76,19 +77,28 @@ export function signalListPath(query: SignalListQuery = {}, path = "/signals"): 
   return qs ? `${path}?${qs}` : path;
 }
 
+function normalizeList(raw: SignalListResponse | null): SignalListResponse | null {
+  if (!raw) return null;
+  return {
+    items: raw.items.map((row) => normalizeSignal(row)).filter((row): row is Signal => !!row),
+    next_cursor: raw.next_cursor ?? null,
+  };
+}
+
 /** Quant PR #2 `GET /signals` — history is this same list (`from_ts`/`to_ts` + filters). */
 export async function fetchSignals(query: SignalListQuery = {}): Promise<SignalListResponse | null> {
   const path = signalListPath(query);
   const viaRewrite = await getSameOrigin<SignalListResponse>(path);
-  if (viaRewrite) return viaRewrite;
-  return getJson<SignalListResponse>(path, quantHttpUrl);
+  if (viaRewrite) return normalizeList(viaRewrite);
+  return normalizeList(await getJson<SignalListResponse>(path, quantHttpUrl));
 }
 
+/** Quant PR #2 `GET /signals/{id}` — same close fields as the list + WS. */
 export async function fetchSignal(id: string): Promise<Signal | null> {
   const path = `/signals/${encodeURIComponent(id)}`;
-  const viaRewrite = await getSameOrigin<Signal>(path);
-  if (viaRewrite) return viaRewrite;
-  return getJson<Signal>(path, quantHttpUrl);
+  const viaRewrite = await getSameOrigin<unknown>(path);
+  if (viaRewrite) return normalizeSignal(viaRewrite);
+  return normalizeSignal(await getJson<unknown>(path, quantHttpUrl));
 }
 
 /** Data Eng PR #5 — optional overlay helpers. Same-origin `/v1/*` rewrite. */

@@ -251,7 +251,7 @@ export function signalsFromBook(symbol: string, price: number, book: PatternBook
   ];
 }
 
-/** Mock Quant close fields — literals, not FE-computed from entry/stop/target. */
+/** Quant PR #2 close-field literals — not FE-computed from entry/stop/target. */
 function closeOf(signal: Signal, status: "TP_HIT" | "SL_HIT", realized_r: number): Signal {
   return {
     ...signal,

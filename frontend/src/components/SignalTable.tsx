@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { SETUP_TYPES, SIGNAL_STATUSES, SYMBOLS } from "@/lib/constants";
 import { isMockMode } from "@/lib/env";
 import { fetchSignals } from "@/lib/http";
-import { normalizeSignal, outcomeLabel, realizedMultiple, zoneLabel } from "@/lib/signals";
+import { outcomeLabel, realizedMultiple, zoneLabel } from "@/lib/signals";
 import type { SetupType, Signal, SignalStatus } from "@/lib/types";
 
 function utcStamp(ms: number): string {
@@ -94,7 +94,7 @@ export function SignalTable({
       limit: 80,
     }).then((list) => {
       if (!alive || !list) return;
-      setLiveRows(list.items.map((row) => normalizeSignal(row)).filter((row): row is Signal => !!row));
+      setLiveRows(list.items);
     });
     return () => {
       alive = false;
@@ -135,9 +135,9 @@ export function SignalTable({
       </div>
       <div className="sec-sub">
         Same <code>GET /signals</code> as the live table (<code>from_ts</code>/<code>to_ts</code>,{" "}
-        <code>status</code>, <code>setup_type</code>, <code>symbol</code>). Outcome is{" "}
-        <code>status</code>. <code>realized_r</code> is a Quant field (null while ACTIVE/CANCELLED) —
-        not computed here.
+        <code>status</code>, <code>setup_type</code>, <code>symbol</code>). Close fields{" "}
+        <code>realized_r</code>, <code>exit_price</code>, <code>closed_ts_ms</code> come from Quant
+        PR #2 (null on ACTIVE/CANCELLED; set on TP_HIT/SL_HIT). Not computed here.
       </div>
       <div className="table-tools" style={{ marginBottom: 10 }}>
         <select value={symbolFilter} onChange={(e) => setSymbolFilter(e.target.value)}>
@@ -194,12 +194,14 @@ export function SignalTable({
               <th>Zone</th>
               <th>Outcome</th>
               <th>realized_r</th>
+              <th>exit_price</th>
+              <th>closed_ts_ms</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={7} className="note">
+                <td colSpan={9} className="note">
                   Waiting for Signal frames…
                 </td>
               </tr>
@@ -224,7 +226,15 @@ export function SignalTable({
                   <td>
                     <span className={`badge badge-${row.status}`}>{outcomeLabel(row)}</span>
                   </td>
-                  <td className="mono">{rMult != null ? rMult.toFixed(2) : "—"}</td>
+                  <td className="mono" data-field="realized_r">
+                    {rMult != null ? rMult.toFixed(2) : "—"}
+                  </td>
+                  <td className="mono" data-field="exit_price">
+                    {row.exit_price != null ? row.exit_price.toFixed(2) : "—"}
+                  </td>
+                  <td className="mono" data-field="closed_ts_ms">
+                    {row.closed_ts_ms != null ? utcStamp(row.closed_ts_ms) : "—"}
+                  </td>
                 </tr>
               );
             })}

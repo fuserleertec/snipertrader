@@ -192,12 +192,13 @@ PR #9 / Quant explainability: `contributing_factors: string[]` (publish-only;
 unknown ids are kept) + `factor_breakdown: {name, weight, score, note?}[]`
 with `sum(score)` ≈ conviction.
 
-Close fields (do **not** compute on FE; mock until Quant lands them on PR #2):
+Close fields are **live on Quant PR #2** (`GET /signals`, `GET /signals/{id}`,
+WS `signal.upsert` / `signal.status`). Do **not** compute on FE — display the
+payload:
 
 - `realized_r`: `number | null` — null on ACTIVE/CANCELLED; signed R on TP_HIT/SL_HIT
-- optional `exit_price`, `closed_ts_ms`
-
-WS `signal.upsert` / `signal.status` include `realized_r` when the row is closed.
+- `exit_price`: `number | null` — same lifecycle
+- `closed_ts_ms`: `number | null` — UTC ms, same lifecycle
 
 Overlays 4–6: ±2σ/±3σ + rejection + session VWAP target; pullback shade + OB/FVG; AVWAP + OB confluence.
 
@@ -217,6 +218,9 @@ Table columns map 1:1 to Signal fields:
 | Direction | `side` ∈ `long` \| `short` |
 | Zone | `{ entry, stop, target }` (UI also derives `zone_low`/`zone_high` from stop/entry) |
 | Status | `ACTIVE` \| `TP_HIT` \| `SL_HIT` \| `CANCELLED` |
+| realized_r | Quant payload (`—` while null) |
+| exit_price | Quant payload (`—` while null) |
+| closed_ts_ms | Quant payload UTC ms (`—` while null) |
 
 ```json
 {
@@ -234,6 +238,9 @@ Table columns map 1:1 to Signal fields:
   "timeframe": "5m",
   "ref_session": "ny_am",
   "trigger_event_ids": ["..."],
+  "realized_r": null,
+  "exit_price": null,
+  "closed_ts_ms": null,
   "contributing_factors": ["liquidity_sweep", "mss", "vwap_reclaim"],
   "factor_breakdown": [
     { "name": "liquidity_sweep", "weight": 15, "score": 30, "note": "..." }
@@ -306,8 +313,10 @@ Setups 4–6 keep the Phase 1 overlays (σ fade, pullback, AVWAP+OB).
 ### Signal history
 
 History is **`GET /signals`** with `from_ts`/`to_ts` + `status`/`setup_type`/`symbol`.
-No `/signals/history`. Columns: outcome (`status`) and `realized_r` from the
-payload (`—` while null). CSV uses those field names.
+No `/signals/history`. Columns: outcome (`status`), `realized_r`, `exit_price`,
+`closed_ts_ms` from the Quant payload (`—` while null). Same fields on
+`GET /signals/{id}` and WS `signal.status` / `signal.upsert`. CSV uses those
+field names.
 
 ### Real-time
 

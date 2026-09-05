@@ -44,7 +44,7 @@ export function useSignals(symbol: string, lastPrice: () => number): Signal[] {
 
     fetchSignals({ symbol, limit: 40 }).then((list) => {
       if (!alive || !list) return;
-      setRows(list.items.map((row) => normalizeSignal(row)).filter((row): row is NonNullable<typeof row> => !!row));
+      setRows(list.items);
     });
 
     // Quant PR #2: WS /ws/signals → { type: "signal.upsert"|"signal.status", signal }

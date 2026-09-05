@@ -12,6 +12,12 @@ function matches(signal: Signal, query: SignalListQuery): boolean {
   return true;
 }
 
+export function mockGetSignal(id: string, lastPrice: number): Signal | null {
+  const { signals } = getUniverse("BTCUSDT", lastPrice);
+  const hit = signals.find((s) => s.id === id);
+  return hit ?? null;
+}
+
 export function mockListSignals(query: SignalListQuery, lastPrice: number): SignalListResponse {
   const symbol = query.symbol ?? "BTCUSDT";
   const { signals } = getUniverse(symbol, lastPrice);

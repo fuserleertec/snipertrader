@@ -117,8 +117,8 @@ export function normalizeSignal(value: unknown): Signal | null {
     contributing_factors: factors,
     factor_breakdown: breakdown,
     realized_r: statusClosed(s.status) ? optionalNum(s.realized_r) : null,
-    exit_price: optionalNum(s.exit_price),
-    closed_ts_ms: optionalNum(s.closed_ts_ms),
+    exit_price: statusClosed(s.status) ? optionalNum(s.exit_price) : null,
+    closed_ts_ms: statusClosed(s.status) ? optionalNum(s.closed_ts_ms) : null,
   };
 }
 
