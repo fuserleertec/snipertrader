@@ -63,6 +63,26 @@ class Settings(BaseSettings):
         alias="RISK_VALIDATE_URL",
     )
 
+    # Quant walk-forward setup defaults (tunable; not magic numbers in detectors)
+    setup_atr_period: int = Field(default=14, alias="SETUP_ATR_PERIOD")
+    setup_stop_buffer_atr: float = Field(default=0.05, alias="SETUP_STOP_BUFFER_ATR")
+    setup1_min_rr: float = Field(default=2.0, alias="SETUP1_MIN_RR")
+    setup1_mss_swing_lookback: int = Field(default=5, alias="SETUP1_MSS_SWING_LOOKBACK")
+    setup1_max_bars_sweep_to_mss: int = Field(default=15, alias="SETUP1_MAX_BARS_SWEEP_TO_MSS")
+    setup1_require_confirmed_sweep: bool = Field(default=True, alias="SETUP1_REQUIRE_CONFIRMED_SWEEP")
+    setup1_timeframes: str = Field(default="5m,15m", alias="SETUP1_TIMEFRAMES")
+    setup2_overlap_tol_atr: float = Field(default=0.05, alias="SETUP2_OVERLAP_TOL_ATR")
+    setup2_pin_wick_ratio: float = Field(default=2.5, alias="SETUP2_PIN_WICK_RATIO")
+    setup2_max_fvg_age_hours: float = Field(default=24.0, alias="SETUP2_MAX_FVG_AGE_HOURS")
+    setup2_target_rr_fallback: float = Field(default=2.0, alias="SETUP2_TARGET_RR_FALLBACK")
+    setup3_accum_session: str = Field(default="asia", alias="SETUP3_ACCUM_SESSION")
+    setup3_kill_zone: str = Field(default="ny_am", alias="SETUP3_KILL_ZONE")
+    setup3_displacement_min_body_atr: float = Field(default=1.2, alias="SETUP3_DISPLACEMENT_MIN_BODY_ATR")
+    setup3_require_band_tag: bool = Field(default=True, alias="SETUP3_REQUIRE_BAND_TAG")
+    setup3_max_bars_sweep_to_displace: int = Field(default=6, alias="SETUP3_MAX_BARS_SWEEP_TO_DISPLACE")
+    setup_dedupe_window_sec: int = Field(default=300, alias="SETUP_DEDUPE_WINDOW_SEC")
+    setup_min_conviction_to_validate: int = Field(default=60, alias="SETUP_MIN_CONVICTION_TO_VALIDATE")
+
     binance_api_key: str = Field(default="", alias="BINANCE_API_KEY")
     binance_api_secret: str = Field(default="", alias="BINANCE_API_SECRET")
     binance_ws_url: str = Field(

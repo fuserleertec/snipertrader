@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from sniper_data.bus.redis_store import StateStore
 from sniper_data.models import AssetClass, FVGZone, KillZoneEvent, OHLCVBar, OrderBlock, SessionType, VWAPValues
 from sniper_data.pattern_detection.context import get_kill_zone, get_volume_profile, list_volume_profiles
+from sniper_data.setup_detection.atr import atr, stop_beyond
 from sniper_data.setup_detection.candidate import SetupCandidate, risk_reward, score_conviction
 from sniper_data.setup_detection.candles import is_confirmation, recent_swing_high, recent_swing_low
 from sniper_data.setup_detection.context import (
@@ -23,6 +24,7 @@ from sniper_data.setup_detection.context import (
     profile_overlaps_zone,
     ranges_overlap,
 )
+from sniper_data.setup_detection.params import SetupParams, load_setup_params
 
 SETUP_NUMBER = 2
 
@@ -53,8 +55,9 @@ def _session_name(vwap: VWAPValues | None) -> str | None:
 
 
 class FVGEntryDetector:
-    def __init__(self, store: StateStore) -> None:
+    def __init__(self, store: StateStore, *, params: SetupParams | None = None) -> None:
         self.store = store
+        self.params = params or load_setup_params()
         self._state: dict[str, _Sym] = defaultdict(_Sym)
 
     def on_vwap(self, snap: VWAPValues) -> None:
@@ -102,25 +105,38 @@ class FVGEntryDetector:
             if tracked.fired or tracked.zone.mitigated:
                 continue
             fvg = tracked.zone
-            if not self._confluent(fvg, vwap, profiles):
+            age_h = (bar.close_ts_ms - fvg.created_ts_ms) / 3_600_000
+            if age_h > self.params.s2_max_fvg_age_hours:
                 continue
-            if bar.low <= fvg.high and bar.high >= fvg.low:
+            atr_val = atr(st.bars, self.params.atr_period) or 0.0
+            pad = self.params.s2_overlap_tol_atr * atr_val
+            if not self._confluent(fvg, vwap, profiles, pad=pad):
+                continue
+            if bar.low <= fvg.high + pad and bar.high >= fvg.low - pad:
                 tracked.touched = True
             if not tracked.touched:
                 continue
             side = "long" if fvg.direction == "bullish" else "short"
-            if not is_confirmation(prev, bar, side, fvg.low, fvg.high):
+            if not is_confirmation(
+                prev,
+                bar,
+                side,
+                fvg.low,
+                fvg.high,
+                pin_wick_ratio=self.params.s2_pin_wick_ratio,
+                allow_reversal=False,
+            ):
                 continue
-            cand = self._complete(bar, tf, fvg, side, vwap, obs, session, zone_evt, profiles)
+            cand = self._complete(bar, tf, fvg, side, vwap, obs, session, zone_evt, profiles, atr_val)
             if cand is not None:
                 tracked.fired = True
                 out.append(cand)
         return out
 
-    def _confluent(self, fvg: FVGZone, vwap: VWAPValues | None, profiles) -> bool:
-        if vwap is not None and price_in_range(vwap.vwap, fvg.low, fvg.high):
+    def _confluent(self, fvg: FVGZone, vwap: VWAPValues | None, profiles, *, pad: float = 0.0) -> bool:
+        if vwap is not None and price_in_range(vwap.vwap, fvg.low, fvg.high, pad=pad):
             return True
-        return any(profile_overlaps_zone(p, fvg.low, fvg.high) for p in profiles)
+        return any(profile_overlaps_zone(p, fvg.low - pad, fvg.high + pad) for p in profiles)
 
     def _complete(
         self,
@@ -133,19 +149,22 @@ class FVGEntryDetector:
         session: str | None,
         zone: KillZoneEvent | None,
         profiles,
+        atr_val: float,
     ) -> SetupCandidate | None:
+        buffer = self.params.stop_buffer_atr * atr_val
+        entry = bar.close  # Quant: confirm_close
         if side == "long":
-            entry = bar.close if bar.close >= fvg.low else fvg.high
-            stop = fvg.low
+            stop = stop_beyond("long", fvg.low, buffer)
             target = recent_swing_high(self._state[bar.symbol].bars)
             if target is None or target <= entry:
-                return None
+                risk = abs(entry - stop)
+                target = entry + self.params.s2_target_rr_fallback * risk
         else:
-            entry = bar.close if bar.close <= fvg.high else fvg.low
-            stop = fvg.high
+            stop = stop_beyond("short", fvg.high, buffer)
             target = recent_swing_low(self._state[bar.symbol].bars)
             if target is None or target >= entry:
-                return None
+                risk = abs(entry - stop)
+                target = entry - self.params.s2_target_rr_fallback * risk
         rr = risk_reward(side, entry, stop, target)
         if rr <= 0:
             return None
@@ -158,10 +177,11 @@ class FVGEntryDetector:
         ]
         setup_type = "ob_fvg" if overlapping else "fvg_entry"
         ids = [fvg.id] + [ob.id for ob in overlapping]
+        pad = self.params.s2_overlap_tol_atr * atr_val
         confluence = 1
-        if vwap is not None and price_in_range(vwap.vwap, fvg.low, fvg.high):
+        if vwap is not None and price_in_range(vwap.vwap, fvg.low, fvg.high, pad=pad):
             confluence += 1
-        if any(profile_overlaps_zone(p, fvg.low, fvg.high) for p in profiles):
+        if any(profile_overlaps_zone(p, fvg.low - pad, fvg.high + pad) for p in profiles):
             confluence += 1
         if overlapping:
             confluence += 1

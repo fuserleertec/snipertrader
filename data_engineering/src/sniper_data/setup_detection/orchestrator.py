@@ -28,14 +28,14 @@ from sniper_data.models import (
 from sniper_data.pattern_detection.ids import make_id
 from sniper_data.pattern_detection.validate import validate_topic
 from sniper_data.setup_detection.candidate import SetupCandidate, to_risk_request, to_setup_signal
-from sniper_data.setup_detection.risk_client import RiskClient, RiskDecision
+from sniper_data.setup_detection.params import SetupParams, load_setup_params
+from sniper_data.setup_detection.risk_client import RiskClient
 from sniper_data.setup_detection.setup1 import SweepReclaimDetector
 from sniper_data.setup_detection.setup2 import FVGEntryDetector
 from sniper_data.setup_detection.setup3 import JudasDetector
 
 log = logging.getLogger(__name__)
 
-DEDUPE_WINDOW_MS = 5 * 60 * 1000
 OVERLAPPING_TFS = frozenset({"1m", "5m", "15m"})
 SETUP_SIGNALS_TOPIC = "setup_signals"
 
@@ -47,6 +47,7 @@ class OrchestratorStats:
     rejected: int = 0
     deduped: int = 0
     published: int = 0
+    skipped_conviction: int = 0
 
     def as_dict(self) -> dict[str, Any]:
         decided = self.approved + self.rejected
@@ -57,6 +58,7 @@ class OrchestratorStats:
             "rejected": self.rejected,
             "deduped": self.deduped,
             "published": self.published,
+            "skipped_conviction": self.skipped_conviction,
             "false_positive_rate": fp_rate,
         }
 
@@ -66,7 +68,8 @@ class SetupOrchestrator:
     store: StateStore
     bus: EventBus
     risk: RiskClient
-    swing_lookback: int = 5
+    swing_lookback: int | None = None
+    params: SetupParams | None = None
     setup1: SweepReclaimDetector = field(init=False)
     setup2: FVGEntryDetector = field(init=False)
     setup3: JudasDetector = field(init=False)
@@ -76,9 +79,11 @@ class SetupOrchestrator:
     _recent: list[SetupCandidate] = field(default_factory=list)
 
     def __post_init__(self) -> None:
-        self.setup1 = SweepReclaimDetector(self.store, swing_lookback=self.swing_lookback)
-        self.setup2 = FVGEntryDetector(self.store)
-        self.setup3 = JudasDetector(self.store)
+        self.params = self.params or load_setup_params()
+        lookback = self.swing_lookback if self.swing_lookback is not None else self.params.s1_mss_swing_lookback
+        self.setup1 = SweepReclaimDetector(self.store, swing_lookback=lookback, params=self.params)
+        self.setup2 = FVGEntryDetector(self.store, params=self.params)
+        self.setup3 = JudasDetector(self.store, params=self.params)
 
     def on_vwap(self, snap: VWAPValues) -> None:
         self.setup1.on_vwap(snap)
@@ -123,7 +128,12 @@ class SetupOrchestrator:
 
         winners = self._dedupe_against_recent(incoming)
         published: list[SetupCandidate] = []
+        min_conv = self.params.min_conviction_to_validate if self.params else 60
         for cand in winners:
+            if cand.conviction < min_conv:
+                self.stats.skipped_conviction += 1
+                log.info("setup skip conviction<%s %s", min_conv, cand.log_fields())
+                continue
             payload = to_risk_request(cand)
             decision = await self.risk.validate(payload)
             if not decision.approved:
@@ -151,7 +161,8 @@ class SetupOrchestrator:
 
     def _dedupe_against_recent(self, incoming: list[SetupCandidate]) -> list[SetupCandidate]:
         pool = [c for c in self._recent] + list(incoming)
-        winners = dedupe_candidates(pool)
+        window = self.params.dedupe_window_ms if self.params else 300_000
+        winners = dedupe_candidates(pool, window_ms=window)
         winner_ids = {id(c) for c in winners}
         kept = [c for c in incoming if id(c) in winner_ids]
         dropped = len(incoming) - len(kept)
@@ -159,17 +170,23 @@ class SetupOrchestrator:
         return kept
 
     def _prune_recent(self, now_ms: int) -> None:
-        self._recent = [c for c in self._recent if now_ms - c.ts_ms <= DEDUPE_WINDOW_MS]
+        window = self.params.dedupe_window_ms if self.params else 300_000
+        self._recent = [c for c in self._recent if now_ms - c.ts_ms <= window]
 
 
-def dedupe_candidates(candidates: list[SetupCandidate]) -> list[SetupCandidate]:
-    """Same symbol + direction + overlapping TF within 5 minutes → highest conviction."""
+def dedupe_candidates(
+    candidates: list[SetupCandidate],
+    *,
+    window_ms: int | None = None,
+) -> list[SetupCandidate]:
+    """Same symbol + direction + overlapping TF within window → highest conviction."""
+    window = window_ms if window_ms is not None else 300_000
     ordered = sorted(candidates, key=lambda c: (c.ts_ms, -c.conviction))
     kept: list[SetupCandidate] = []
     for cand in ordered:
         rival_idx = None
         for i, existing in enumerate(kept):
-            if _conflicts(existing, cand):
+            if _conflicts(existing, cand, window_ms=window):
                 rival_idx = i
                 break
         if rival_idx is None:
@@ -181,12 +198,12 @@ def dedupe_candidates(candidates: list[SetupCandidate]) -> list[SetupCandidate]:
     return kept
 
 
-def _conflicts(a: SetupCandidate, b: SetupCandidate) -> bool:
+def _conflicts(a: SetupCandidate, b: SetupCandidate, *, window_ms: int) -> bool:
     if a.symbol != b.symbol or a.side != b.side:
         return False
     if a.timeframe not in OVERLAPPING_TFS or b.timeframe not in OVERLAPPING_TFS:
         return False
-    return abs(a.ts_ms - b.ts_ms) <= DEDUPE_WINDOW_MS
+    return abs(a.ts_ms - b.ts_ms) <= window_ms
 
 
 async def _gather_setups(*aws: Awaitable[list[SetupCandidate]]) -> list[list[SetupCandidate]]:

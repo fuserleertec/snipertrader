@@ -1,14 +1,9 @@
 """Setup 1 — Liquidity Sweep + VWAP Reclaim → ``sweep_reclaim``.
 
-DE mapping (locked)
--------------------
-* ``side=buy``  = session **low** swept (ICT sell-side liquidity / stops below)
-  → wait for **bullish** MSS (break last LH) → long if close **above** session VWAP
-* ``side=sell`` = session **high** swept (ICT buy-side liquidity)
-  → wait for **bearish** MSS (break last HL) → short if close **below** session VWAP
-
-Prefer ``confirmed=true`` / ``reclaim``. Entry = MSS candle close. Stop beyond
-the sweep extreme. TP = opposite VWAP ±1σ or ±2σ by proximity. Discard if R:R < 2.
+Quant walk-forward defaults (see ``SetupParams``):
+stop_buffer=0.05×ATR(14), nearer of ±1σ/±2σ with min_rr=2.0,
+mss_swing_lookback=5, max_bars_sweep_to_mss=15, require_confirmed_sweep,
+session VWAP only, timeframes 5m/15m.
 """
 
 from __future__ import annotations
@@ -27,13 +22,14 @@ from sniper_data.models import (
     VWAPValues,
 )
 from sniper_data.pattern_detection.context import get_kill_zone
-from sniper_data.pattern_detection.mss import DEFAULT_SWING_LOOKBACK, SwingPoint
+from sniper_data.pattern_detection.mss import SwingPoint
+from sniper_data.setup_detection.atr import atr, stop_beyond
 from sniper_data.setup_detection.candidate import SetupCandidate, risk_reward, score_conviction
 from sniper_data.setup_detection.context import band_tagged, get_session_vwap, kill_zone_active
+from sniper_data.setup_detection.params import SetupParams, load_setup_params
 
 log = logging.getLogger(__name__)
 
-MIN_RR = 2.0
 SETUP_NUMBER = 1
 SETUP_TYPE = "sweep_reclaim"
 
@@ -46,6 +42,7 @@ class _Armed:
     last_hl: float | None = None
     prior_high: float | None = None
     prior_low: float | None = None
+    bars_since: int = 0
     fired: bool = False
 
 
@@ -59,31 +56,37 @@ class _Sym:
     last_vwap: VWAPValues | None = None
 
 
-def _tf(bar: OHLCVBar) -> str | None:
-    tf = bar.timeframe.value if hasattr(bar.timeframe, "value") else str(bar.timeframe)
-    return tf if tf in {"1m", "5m", "15m"} else None
-
-
-def _choose_target(side: str, entry: float, stop: float, vwap: VWAPValues) -> float | None:
+def _choose_target(side: str, entry: float, stop: float, vwap: VWAPValues, min_rr: float) -> float | None:
     risk = abs(entry - stop)
     if risk <= 0:
         return None
     if side == "long":
         options = [vwap.band_p1, vwap.band_p2]
-        valid = [t for t in options if t > entry and (t - entry) / risk >= MIN_RR]
+        valid = [t for t in options if t > entry and (t - entry) / risk >= min_rr]
     else:
         options = [vwap.band_m1, vwap.band_m2]
-        valid = [t for t in options if t < entry and (entry - t) / risk >= MIN_RR]
+        valid = [t for t in options if t < entry and (entry - t) / risk >= min_rr]
     if not valid:
         return None
     return min(valid, key=lambda t: abs(t - entry))
 
 
 class SweepReclaimDetector:
-    def __init__(self, store: StateStore, *, swing_lookback: int = DEFAULT_SWING_LOOKBACK) -> None:
+    def __init__(
+        self,
+        store: StateStore,
+        *,
+        swing_lookback: int | None = None,
+        params: SetupParams | None = None,
+    ) -> None:
         self.store = store
-        self.lookback = max(1, swing_lookback)
+        self.params = params or load_setup_params()
+        self.lookback = max(1, swing_lookback if swing_lookback is not None else self.params.s1_mss_swing_lookback)
         self._state: dict[str, _Sym] = defaultdict(_Sym)
+
+    def _tf(self, bar: OHLCVBar) -> str | None:
+        tf = bar.timeframe.value if hasattr(bar.timeframe, "value") else str(bar.timeframe)
+        return tf if tf in self.params.s1_timeframes else None
 
     def on_vwap(self, snap: VWAPValues) -> None:
         anchor = snap.anchor_type.value if hasattr(snap.anchor_type, "value") else str(snap.anchor_type)
@@ -93,23 +96,25 @@ class SweepReclaimDetector:
     def on_sweep(self, event: SweepEvent) -> None:
         if not event.id:
             return
-        if event.confirmed is False and event.reclaim is False:
-            return
-        prefer = bool(event.confirmed) or bool(event.reclaim)
-        if not prefer and event.confirmed is not True:
-            # Unconfirmed first print — wait for the reclaim update.
-            return
+        if self.params.s1_require_confirmed_sweep:
+            if not (event.confirmed is True or event.reclaim is True):
+                return
         st = self._state[event.symbol]
         if any(a.sweep.id == event.id for a in st.armed):
             for a in st.armed:
                 if a.sweep.id == event.id:
                     a.sweep = event
             return
-        extreme = event.swept_level
-        st.armed.append(_Armed(sweep=event, extreme=extreme, prior_high=event.swept_level, prior_low=event.swept_level))
+        st.armed.append(
+            _Armed(
+                sweep=event,
+                extreme=event.swept_level,
+                prior_high=event.swept_level,
+                prior_low=event.swept_level,
+            )
+        )
 
     def on_mss(self, event: MssEvent) -> None:
-        # Pair on the next bar so we have the MSS candle close.
         self._state[event.symbol].pending_mss.append(event)
 
     async def on_bar(self, bar: OHLCVBar) -> list[SetupCandidate]:
@@ -130,6 +135,10 @@ class SweepReclaimDetector:
         out: list[SetupCandidate] = []
         for armed in st.armed:
             if armed.fired:
+                continue
+            armed.bars_since += 1
+            if armed.bars_since > self.params.s1_max_bars_sweep_to_mss:
+                armed.fired = True
                 continue
             mss = self._match_mss(armed, pending_mss) or self._detect_reclaim_mss(armed, bar)
             if mss is None:
@@ -191,10 +200,9 @@ class SweepReclaimDetector:
         return None
 
     def _detect_reclaim_mss(self, armed: _Armed, bar: OHLCVBar) -> MssEvent | None:
-        """USME reclaim MSS (not the Phase 1 continuation pairing)."""
         sweep = armed.sweep
         klass = sweep.asset_class if isinstance(sweep.asset_class, AssetClass) else AssetClass(sweep.asset_class)
-        tf = _tf(bar)
+        tf = self._tf(bar)
         if sweep.side == "buy" and armed.last_lh is not None and bar.high > armed.last_lh:
             return MssEvent(
                 id=f"mss-reclaim-{sweep.id}",
@@ -235,7 +243,7 @@ class SweepReclaimDetector:
         vwap: VWAPValues | None,
         zone: KillZoneEvent | None,
     ) -> SetupCandidate | None:
-        tf = _tf(bar)
+        tf = self._tf(bar)
         if tf is None or vwap is None:
             return None
         side = "long" if armed.sweep.side == "buy" else "short"
@@ -243,16 +251,19 @@ class SweepReclaimDetector:
             return None
         if side == "short" and not (bar.close < vwap.vwap):
             return None
+        atr_val = atr(self._state[bar.symbol].bars, self.params.atr_period) or 0.0
+        buffer = self.params.stop_buffer_atr * atr_val
         entry = bar.close
-        stop = armed.extreme if side == "short" else armed.extreme
+        stop = stop_beyond(side, armed.extreme, buffer)
         if side == "long" and stop >= entry:
-            stop = min(armed.sweep.swept_level, bar.low, armed.extreme)
+            stop = stop_beyond(side, min(armed.sweep.swept_level, bar.low, armed.extreme), buffer)
         if side == "short" and stop <= entry:
-            stop = max(armed.sweep.swept_level, bar.high, armed.extreme)
-        target = _choose_target(side, entry, stop, vwap)
+            stop = stop_beyond(side, max(armed.sweep.swept_level, bar.high, armed.extreme), buffer)
+        target = _choose_target(side, entry, stop, vwap, self.params.s1_min_rr)
         if target is None:
             log.info(
-                "setup1 discard rr<2 symbol=%s side=%s entry=%s stop=%s vwap=%s",
+                "setup1 discard rr<%s symbol=%s side=%s entry=%s stop=%s vwap=%s",
+                self.params.s1_min_rr,
                 bar.symbol,
                 side,
                 entry,
@@ -261,7 +272,7 @@ class SweepReclaimDetector:
             )
             return None
         rr = risk_reward(side, entry, stop, target)
-        if rr < MIN_RR:
+        if rr < self.params.s1_min_rr:
             return None
         tagged = band_tagged(armed.extreme, vwap) or band_tagged(armed.sweep.swept_level, vwap)
         kz = kill_zone_active(zone, ts_ms=bar.close_ts_ms)
@@ -292,5 +303,5 @@ class SweepReclaimDetector:
             session_type=session,
             risk_reward=rr,
             kill_zone=zone.kill_zone.value if zone is not None else None,
-            notes={"band_tag": tagged, "mss_direction": mss.direction},
+            notes={"band_tag": tagged, "mss_direction": mss.direction, "atr": atr_val},
         )

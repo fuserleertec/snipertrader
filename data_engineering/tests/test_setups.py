@@ -10,12 +10,13 @@ from sniper_data.bus.kafka import InMemoryBus
 from sniper_data.bus.redis_store import InMemoryStateStore
 from sniper_data.cli import main
 from sniper_data.models import RISK_VALIDATE_FIELDS, Timeframe
-from sniper_data.pattern_detection.fixtures import SYM
+from sniper_data.pattern_detection.fixtures import SYM, T0
 from sniper_data.pattern_detection.validate import validate_topic
 from sniper_data.setup_detection.candidate import to_risk_request
 from sniper_data.setup_detection.fixtures import (
     asia_high_sweep,
     asia_session,
+    atr_warmup,
     bearish_ob_overlap,
     bullish_fvg,
     bullish_mss_after_low,
@@ -53,10 +54,16 @@ def _orch(store=None, bus=None, risk=None, lookback: int = 2) -> SetupOrchestrat
     )
 
 
+async def _warm(det, n: int = 14) -> None:
+    for b in atr_warmup(n):
+        await det.on_bar(b)
+
+
 async def _setup1_long(store, det: SweepReclaimDetector, *, inject_mss: bool = True):
     det.on_vwap(session_vwap())
+    await _warm(det)
     det.on_sweep(confirmed_buy_sweep())
-    bars = setup1_long_bars()
+    bars = setup1_long_bars(start=14)
     out = []
     for b in bars[:-1]:
         out.extend(await det.on_bar(b))
@@ -92,8 +99,9 @@ async def test_setup1_short_after_sell_side_high_sweep():
     await seed_common(store)
     det = SweepReclaimDetector(store, swing_lookback=2)
     det.on_vwap(session_vwap())
+    await _warm(det)
     det.on_sweep(confirmed_sell_sweep())
-    bars = setup1_short_bars()
+    bars = setup1_short_bars(start=14)
     for b in bars[:-1]:
         assert await det.on_bar(b) == []
     det.on_mss(
@@ -115,8 +123,9 @@ async def test_setup1_discards_rr_below_two():
     await seed_common(store, vwap=setup1_tight_rr_vwap())
     det = SweepReclaimDetector(store, swing_lookback=2)
     det.on_vwap(setup1_tight_rr_vwap())
+    await _warm(det)
     det.on_sweep(confirmed_buy_sweep())
-    bars = setup1_long_bars()
+    bars = setup1_long_bars(start=14)
     for b in bars[:-1]:
         await det.on_bar(b)
     det.on_mss(bullish_mss_after_low(ts_ms=bars[-1].close_ts_ms))
@@ -129,9 +138,10 @@ async def test_setup1_ignores_unconfirmed_sweep():
     await seed_common(store)
     det = SweepReclaimDetector(store, swing_lookback=2)
     det.on_vwap(session_vwap())
+    await _warm(det)
     raw = confirmed_buy_sweep().model_copy(update={"confirmed": False, "reclaim": False})
     det.on_sweep(raw)
-    bars = setup1_long_bars()
+    bars = setup1_long_bars(start=14)
     for b in bars[:-1]:
         await det.on_bar(b)
     det.on_mss(bullish_mss_after_low(ts_ms=bars[-1].close_ts_ms))
@@ -181,9 +191,10 @@ async def test_setup3_po3_judas_asia_sweep_in_ny_am():
     det.on_vwap(session_vwap())
     det.on_session(asia_session())
     det.on_kill_zone(ny_am_kill_zone())
+    await _warm(det)
     det.on_sweep(asia_high_sweep())
     cands = []
-    for b in setup3_judas_bars():
+    for b in setup3_judas_bars(start=14):
         cands.extend(await det.on_bar(b))
     assert len(cands) == 1
     c = cands[0]
@@ -202,9 +213,10 @@ async def test_setup3_requires_active_kill_zone():
     det.on_vwap(session_vwap())
     det.on_session(asia_session())
     det.on_kill_zone(ny_am_kill_zone(active=False))
+    await _warm(det)
     det.on_sweep(asia_high_sweep())
     cands = []
-    for b in setup3_judas_bars():
+    for b in setup3_judas_bars(start=14):
         cands.extend(await det.on_bar(b))
     assert cands == []
 
@@ -243,8 +255,9 @@ async def test_risk_reject_does_not_publish():
     await seed_common(store)
     orch = _orch(store, bus, risk)
     orch.on_vwap(session_vwap())
+    await _warm(orch)
     orch.on_sweep(confirmed_buy_sweep())
-    bars = setup1_long_bars()
+    bars = setup1_long_bars(start=14)
     for b in bars[:-1]:
         await orch.on_bar(b)
     orch.on_mss(bullish_mss_after_low(ts_ms=bars[-1].close_ts_ms))
@@ -293,8 +306,9 @@ async def test_approved_publish_matches_setup_signal_schema():
     await seed_common(store)
     orch = _orch(store, bus, risk)
     orch.on_vwap(session_vwap())
+    await _warm(orch)
     orch.on_sweep(confirmed_buy_sweep())
-    bars = setup1_long_bars()
+    bars = setup1_long_bars(start=14)
     for b in bars[:-1]:
         await orch.on_bar(b)
     orch.on_mss(bullish_mss_after_low(ts_ms=bars[-1].close_ts_ms))
@@ -331,6 +345,119 @@ async def test_replay_emits_all_three_setup_types():
 def test_cli_setups_inmemory():
     rc = main(["setups", "--inmemory"])
     assert rc == 0
+
+
+@pytest.mark.asyncio
+async def test_setup1_rejects_1m_timeframe():
+    from sniper_data.pattern_detection.fixtures import bar as m1_bar
+
+    store = InMemoryStateStore()
+    await seed_common(store)
+    det = SweepReclaimDetector(store)
+    det.on_vwap(session_vwap())
+    await _warm(det)
+    det.on_sweep(confirmed_buy_sweep())
+    seq = setup1_long_bars(start=14)
+    last = None
+    for i, b in enumerate(seq):
+        last = m1_bar(30 + i, b.open, b.high, b.low, b.close, b.volume)
+        if i == len(seq) - 1:
+            det.on_mss(bullish_mss_after_low(ts_ms=last.close_ts_ms))
+        assert await det.on_bar(last) == []
+
+
+@pytest.mark.asyncio
+async def test_setup2_skips_fvg_older_than_max_age():
+    store = InMemoryStateStore()
+    await seed_common(store, fvg=True)
+    stale = bullish_fvg().model_copy(update={"created_ts_ms": T0 - 48 * 3_600_000})
+    det = FVGEntryDetector(store)
+    det.on_vwap(session_vwap())
+    det.on_fvg(stale)
+    cands = []
+    for b in setup2_retrace_bars():
+        cands.extend(await det.on_bar(b))
+    assert cands == []
+
+
+@pytest.mark.asyncio
+async def test_setup3_requires_sigma_band_tag():
+    store = InMemoryStateStore()
+    await seed_common(store)
+    det = JudasDetector(store)
+    det.on_vwap(session_vwap())
+    det.on_session(asia_session(high=110.0))
+    det.on_kill_zone(ny_am_kill_zone())
+    await _warm(det)
+    far = asia_high_sweep().model_copy(update={"swept_level": 110.0})
+    det.on_sweep(far)
+    from sniper_data.pattern_detection.fixtures import bar as m1_bar
+    from sniper_data.setup_detection.fixtures import S1_TF
+
+    bars = [
+        m1_bar(14, 108.0, 109.0, 107.5, 108.5, 40.0, timeframe=S1_TF),
+        m1_bar(15, 108.5, 111.4, 108.2, 110.8, 90.0, timeframe=S1_TF),
+        m1_bar(16, 110.6, 110.8, 101.2, 101.8, 120.0, timeframe=S1_TF),
+    ]
+    cands = []
+    for b in bars:
+        cands.extend(await det.on_bar(b))
+    assert cands == []
+
+
+@pytest.mark.asyncio
+async def test_min_conviction_skips_validate():
+    from sniper_data.models import AssetClass
+    from sniper_data.setup_detection.candidate import SetupCandidate
+    from sniper_data.setup_detection.params import SetupParams
+
+    risk = StaticRiskClient(approved=True)
+    orch = SetupOrchestrator(
+        InMemoryStateStore(),
+        InMemoryBus(),
+        risk,
+        params=SetupParams(min_conviction_to_validate=60),
+    )
+    weak = SetupCandidate(
+        setup_number=1,
+        setup_type="sweep_reclaim",
+        symbol=SYM,
+        asset_class=AssetClass.CRYPTO,
+        side="long",
+        conviction=45,
+        entry=100,
+        stop=99,
+        target=104,
+        timeframe="5m",
+        trigger_event_ids=["a"],
+        ts_ms=1_000,
+        risk_reward=4.0,
+    )
+    published = await orch.submit([weak])
+    assert published == []
+    assert risk.calls == []
+    assert orch.stats.skipped_conviction == 1
+    assert orch.raw_log
+
+
+def test_quant_walkforward_defaults():
+    from sniper_data.setup_detection.params import SetupParams
+
+    p = SetupParams()
+    assert p.stop_buffer_atr == 0.05
+    assert p.atr_period == 14
+    assert p.s1_min_rr == 2.0
+    assert p.s1_mss_swing_lookback == 5
+    assert p.s1_max_bars_sweep_to_mss == 15
+    assert p.s1_require_confirmed_sweep is True
+    assert p.s1_timeframes == ("5m", "15m")
+    assert p.s2_pin_wick_ratio == 2.5
+    assert p.s2_max_fvg_age_hours == 24.0
+    assert p.s3_displacement_min_body_atr == 1.2
+    assert p.s3_require_band_tag is True
+    assert p.s3_max_bars_sweep_to_displace == 6
+    assert p.dedupe_window_sec == 300
+    assert p.min_conviction_to_validate == 60
 
 
 def test_quant_schemas_include_po3_judas():

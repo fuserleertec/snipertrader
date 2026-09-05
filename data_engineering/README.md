@@ -157,6 +157,24 @@ All secrets are environment variables. See [`.env.example`](.env.example).
 | `SWING_DETECT` | `true` | In-process fractal swing → anchors |
 | `SWING_LOOKBACK` | `5` | MSS / ICT swing confirmation bars each side |
 | `RISK_VALIDATE_URL` | `http://localhost:8001/risk/validate` | Quant Risk Pre-Filter |
+| `SETUP_ATR_PERIOD` | `14` | ATR lookback for stop / overlap / displacement |
+| `SETUP_STOP_BUFFER_ATR` | `0.05` | Stop buffer as a multiple of ATR |
+| `SETUP1_MIN_RR` | `2.0` | Setup 1 minimum R:R (nearer of ±1σ/±2σ) |
+| `SETUP1_MSS_SWING_LOOKBACK` | `5` | Setup 1 MSS swing lookback |
+| `SETUP1_MAX_BARS_SWEEP_TO_MSS` | `15` | Expire armed sweep if no MSS |
+| `SETUP1_REQUIRE_CONFIRMED_SWEEP` | `true` | Require `confirmed` / `reclaim` |
+| `SETUP1_TIMEFRAMES` | `5m,15m` | Setup 1 only |
+| `SETUP2_OVERLAP_TOL_ATR` | `0.05` | VWAP / HVN overlap pad |
+| `SETUP2_PIN_WICK_RATIO` | `2.5` | Pin confirmation wick/body |
+| `SETUP2_MAX_FVG_AGE_HOURS` | `24` | Ignore older FVGs |
+| `SETUP2_TARGET_RR_FALLBACK` | `2.0` | If no prior swing |
+| `SETUP3_ACCUM_SESSION` | `asia` | Globex optional for futures |
+| `SETUP3_KILL_ZONE` | `ny_am` | Crypto also accepts London |
+| `SETUP3_DISPLACEMENT_MIN_BODY_ATR` | `1.2` | Displacement body ≥ this × ATR |
+| `SETUP3_REQUIRE_BAND_TAG` | `true` | Sweep must tag ±1σ or ±2σ |
+| `SETUP3_MAX_BARS_SWEEP_TO_DISPLACE` | `6` | Expire Judas if no displacement |
+| `SETUP_DEDUPE_WINDOW_SEC` | `300` | Orchestrator dedupe window |
+| `SETUP_MIN_CONVICTION_TO_VALIDATE` | `60` | Skip risk if conviction below this |
 | `BINANCE_*` / `ALPACA_*` | empty | Live stubs only |
 
 ## Exchange adapters
@@ -417,13 +435,15 @@ otherwise the detector measures the LH/HL break from `ohlcv_bars`.
 
 | Setup | `setup_type` | Rule |
 |---|---|---|
-| 1 | `sweep_reclaim` | Confirmed/reclaim sweep + MSS + VWAP close. Entry = MSS close. Stop beyond sweep extreme. TP = opposite ±1σ/±2σ by proximity. Discard if R:R < 1:2. `trigger_event_ids` = sweep + MSS ids. |
-| 2 | `fvg_entry` or `ob_fvg` | Active `fvg:{symbol}:*` overlapping session VWAP **or** `volume_profile` HVN/POC. Retrace + engulfing/pin/reversal. `ob_fvg` only when an `ob:` zone overlaps. |
-| 3 | `po3_judas` | Accumulation `session:{symbol}:asia` (ETH / Globex for equity/futures). During active `kill_zone:{symbol}` (NY AM / London for crypto, RTH otherwise): sweep of that range, displacement back toward VWAP. Entry = displacement close; stop beyond the manipulation wick; TP = opposite side of the range. **Quant: add `po3_judas` to the locked enum.** |
+| 1 | `sweep_reclaim` | Confirmed sweep + MSS + session-VWAP close on **5m/15m**. Stop = extreme ± `0.05×ATR(14)`. TP = nearer of ±1σ/±2σ with `min_rr=2.0`. Max 15 bars sweep→MSS. |
+| 2 | `fvg_entry` or `ob_fvg` | FVG age ≤ 24h overlapping session VWAP **or** HVN/POC (`overlap_tol=0.05×ATR`). Confirm engulfing **or** pin (`wick_ratio=2.5`). Entry = confirmation close. Stop beyond FVG + ATR buffer. Target = prior swing, else 2R. |
+| 3 | `po3_judas` | Accum `session:{symbol}:asia` (Globex optional for futures). Kill zone `ny_am` (crypto: NY AM or London). Displacement body ≥ `1.2×ATR` within 6 bars. **Require** ±1σ/±2σ tag. Stop = wick ± ATR buffer. TP = opposite accum extreme. |
 
-Orchestrator: setups 1–3 run in parallel. Dedupe keeps the highest conviction
-when symbol + side + overlapping `1m`/`5m`/`15m` fire within 5 minutes.
-Conviction (0–100) is logged only; Kafka / validate get `confidence = conviction/100`.
+Orchestrator: setups 1–3 run in parallel. Dedupe (`SETUP_DEDUPE_WINDOW_SEC=300`)
+keeps the highest conviction when symbol + side + overlapping TFs fire.
+Candidates with conviction &lt; `SETUP_MIN_CONVICTION_TO_VALIDATE` (60) are
+logged and **not** sent to risk. Conviction stays in logs only;
+validate / Kafka get `confidence = conviction/100`.
 
 **Risk gate (locked):** before `setup_signals`, `POST {RISK_VALIDATE_URL}` with
 **only** `schema_version`, `symbol`, `asset_class`, `setup_type`, `side`,

@@ -14,6 +14,7 @@ from sniper_data.setup_detection.fixtures import (
     VWAP_SESSION,
     asia_high_sweep,
     asia_session,
+    atr_warmup,
     bullish_fvg,
     bullish_mss_after_low,
     confirmed_buy_sweep,
@@ -45,9 +46,11 @@ async def run_setup_replay(*, risk=None) -> dict[str, Any]:
 
     # Setup 1 — confirmed low sweep + bullish MSS + close above session VWAP.
     # Do not seed an FVG here: Setup 1 bars would otherwise also trip Setup 2.
+    for b in atr_warmup():
+        await orch.on_bar(b)
     sweep = confirmed_buy_sweep()
     orch.on_sweep(sweep)
-    bars1 = setup1_long_bars()
+    bars1 = setup1_long_bars(start=14)
     for b in bars1[:-1]:
         await orch.on_bar(b)
     orch.on_mss(bullish_mss_after_low(ts_ms=bars1[-1].close_ts_ms))
@@ -71,8 +74,10 @@ async def run_setup_replay(*, risk=None) -> dict[str, Any]:
     orch3.on_vwap(VWAP_SESSION)
     orch3.on_session(asia_session())
     orch3.on_kill_zone(ny_am_kill_zone())
+    for b in atr_warmup():
+        await orch3.on_bar(b)
     orch3.on_sweep(asia_high_sweep())
-    for b in setup3_judas_bars():
+    for b in setup3_judas_bars(start=14):
         await orch3.on_bar(b)
 
     merged_stats = {

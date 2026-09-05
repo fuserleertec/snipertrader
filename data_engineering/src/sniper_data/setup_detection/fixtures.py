@@ -7,6 +7,7 @@ from sniper_data.models import (
     FVGZone,
     KillZoneEvent,
     MssEvent,
+    OHLCVBar,
     OrderBlock,
     SessionLevels,
     SessionType,
@@ -16,7 +17,9 @@ from sniper_data.models import (
     VolumeProfile,
     VWAPValues,
 )
-from sniper_data.pattern_detection.fixtures import SYM, T0, BAR_MS, KLASS, TF, bar
+from sniper_data.pattern_detection.fixtures import SYM, T0, BAR_MS, KLASS, bar
+
+S1_TF = Timeframe.M5
 from sniper_data.zones import store_fvg, store_ob, store_sweep
 
 VWAP_SESSION = VWAPValues(
@@ -43,7 +46,12 @@ def session_vwap(**overrides) -> VWAPValues:
     return VWAP_SESSION.model_copy(update=overrides)
 
 
-def asia_session(*, high: float = 110.0, low: float = 90.0) -> SessionLevels:
+def atr_warmup(n: int = 14, *, start: int = 0, timeframe: Timeframe = S1_TF) -> list[OHLCVBar]:
+    """Quiet range so ATR(14) is defined before the setup sequence."""
+    return [bar(start + i, 100.0, 100.8, 99.2, 100.1, 50.0, timeframe=timeframe) for i in range(n)]
+
+
+def asia_session(*, high: float = 104.0, low: float = 90.0) -> SessionLevels:
     return SessionLevels(
         symbol=SYM,
         asset_class=KLASS,
@@ -125,12 +133,12 @@ def bullish_mss_after_low(*, ts_ms: int | None = None) -> MssEvent:
         swing_low=99.1,
         trigger_sweep_id="swp-buy-low",
         trigger_sweep_side="buy",
-        timeframe="1m",
+        timeframe="5m",
         confirmed=True,
     )
 
 
-def setup1_long_bars() -> list[OHLCVBar]:
+def setup1_long_bars(*, start: int = 0) -> list[OHLCVBar]:
     """Establish a LH near 99.8, then break it with a close above session VWAP."""
     seq = [
         (100.0, 100.2, 99.6, 99.7),
@@ -140,10 +148,10 @@ def setup1_long_bars() -> list[OHLCVBar]:
         (99.35, 99.6, 99.15, 99.4),
         (99.4, 100.7, 99.3, 100.5),  # break LH, close above VWAP 100
     ]
-    return [bar(i, o, h, l, c, 80.0) for i, (o, h, l, c) in enumerate(seq)]
+    return [bar(start + i, o, h, l, c, 80.0, timeframe=S1_TF) for i, (o, h, l, c) in enumerate(seq)]
 
 
-def setup1_short_bars() -> list[OHLCVBar]:
+def setup1_short_bars(*, start: int = 0) -> list[OHLCVBar]:
     seq = [
         (100.0, 100.4, 99.8, 100.3),
         (100.3, 100.7, 100.15, 100.6),
@@ -152,7 +160,7 @@ def setup1_short_bars() -> list[OHLCVBar]:
         (100.5, 100.7, 100.3, 100.55),
         (100.55, 100.7, 99.3, 99.5),  # break HL, close below VWAP
     ]
-    return [bar(i, o, h, l, c, 80.0) for i, (o, h, l, c) in enumerate(seq)]
+    return [bar(start + i, o, h, l, c, 80.0, timeframe=S1_TF) for i, (o, h, l, c) in enumerate(seq)]
 
 
 def setup1_tight_rr_vwap() -> VWAPValues:
@@ -199,12 +207,12 @@ def setup2_retrace_bars() -> list[OHLCVBar]:
     ]
 
 
-def setup3_judas_bars() -> list[OHLCVBar]:
-    """Sweep Asia high, then displace back toward VWAP 100."""
+def setup3_judas_bars(*, start: int = 0) -> list[OHLCVBar]:
+    """Sweep Asia high at +2σ (104), then displace back toward VWAP 100."""
     return [
-        bar(0, 108.0, 109.0, 107.5, 108.5, 40.0),
-        bar(1, 108.5, 111.4, 108.2, 110.8, 90.0),  # sweep 110
-        bar(2, 110.6, 110.8, 101.2, 101.8, 120.0),  # displacement toward VWAP
+        bar(start + 0, 102.4, 103.2, 102.0, 102.8, 40.0, timeframe=S1_TF),
+        bar(start + 1, 102.8, 104.4, 102.6, 104.1, 90.0, timeframe=S1_TF),  # tags +2σ
+        bar(start + 2, 104.0, 104.1, 100.4, 100.8, 120.0, timeframe=S1_TF),  # displacement
     ]
 
 
@@ -214,7 +222,7 @@ def asia_high_sweep() -> SweepEvent:
         symbol=SYM,
         asset_class=KLASS,
         side="sell",
-        swept_level=110.0,
+        swept_level=104.0,
         reclaim=True,
         ts_ms=T0 + BAR_MS,
         volume_profile="aggressive",

@@ -22,28 +22,34 @@ from sniper_data.models import (
     VWAPValues,
 )
 from sniper_data.pattern_detection.context import get_kill_zone
+from sniper_data.setup_detection.atr import atr, stop_beyond
 from sniper_data.setup_detection.candidate import SetupCandidate, risk_reward, score_conviction
 from sniper_data.setup_detection.candles import displacement
 from sniper_data.setup_detection.context import band_tagged, get_session, get_session_vwap, kill_zone_active
+from sniper_data.setup_detection.params import SetupParams, load_setup_params
 
 SETUP_NUMBER = 3
 SETUP_TYPE = "po3_judas"
 
 
-def accumulation_session(asset_class: AssetClass | str) -> SessionType:
+def accumulation_session(asset_class: AssetClass | str, *, preferred: str = "asia") -> SessionType:
+    """Asia by default; Globex is optional for futures when Asia is absent."""
     name = asset_class.value if isinstance(asset_class, AssetClass) else str(asset_class)
-    if name == "equity":
-        return SessionType.ETH
-    if name == "futures":
+    if preferred == "globex":
         return SessionType.GLOBEX
-    return SessionType.ASIA
+    if name == "futures" and preferred == "asia":
+        return SessionType.ASIA
+    return SessionType(preferred) if preferred in {e.value for e in SessionType} else SessionType.ASIA
 
 
-def manipulation_zones(asset_class: AssetClass | str) -> set[str]:
+def manipulation_zones(asset_class: AssetClass | str, *, default_kz: str = "ny_am") -> set[str]:
+    """NY AM by default. Crypto may use either NY AM or London."""
     name = asset_class.value if isinstance(asset_class, AssetClass) else str(asset_class)
+    allowed = {default_kz}
     if name == "crypto":
-        return {SessionType.NY_AM.value, SessionType.LONDON.value}
-    return {SessionType.RTH.value}
+        allowed.add(SessionType.LONDON.value)
+        allowed.add(SessionType.NY_AM.value)
+    return allowed
 
 
 @dataclass
@@ -51,6 +57,7 @@ class _Pending:
     sweep: SweepEvent
     accum: SessionLevels
     wick: float
+    bars_since: int = 0
     fired: bool = False
 
 
@@ -73,8 +80,9 @@ def _klass(value) -> AssetClass:
 
 
 class JudasDetector:
-    def __init__(self, store: StateStore) -> None:
+    def __init__(self, store: StateStore, *, params: SetupParams | None = None) -> None:
         self.store = store
+        self.params = params or load_setup_params()
         self._state: dict[str, _Sym] = defaultdict(_Sym)
 
     def on_vwap(self, snap: VWAPValues) -> None:
@@ -83,9 +91,12 @@ class JudasDetector:
             self._state[snap.symbol].last_vwap = snap
 
     def on_session(self, levels: SessionLevels) -> None:
-        want = accumulation_session(levels.asset_class)
-        if levels.session_type == want:
-            self._state[levels.symbol].accum = levels
+        want = accumulation_session(levels.asset_class, preferred=self.params.s3_accum_session)
+        if levels.session_type == want or (
+            _klass(levels.asset_class) == AssetClass.FUTURES and levels.session_type == SessionType.GLOBEX
+        ):
+            if self._state[levels.symbol].accum is None or levels.session_type == want:
+                self._state[levels.symbol].accum = levels
 
     def on_kill_zone(self, event: KillZoneEvent) -> None:
         self._state[event.symbol].last_kz = event
@@ -113,7 +124,10 @@ class JudasDetector:
         if zone is not None:
             st.last_kz = zone
         if st.accum is None:
-            st.accum = await get_session(self.store, bar.symbol, accumulation_session(bar.asset_class))
+            preferred = accumulation_session(bar.asset_class, preferred=self.params.s3_accum_session)
+            st.accum = await get_session(self.store, bar.symbol, preferred)
+            if st.accum is None and _klass(bar.asset_class) == AssetClass.FUTURES:
+                st.accum = await get_session(self.store, bar.symbol, SessionType.GLOBEX)
 
         if st.accum is not None:
             self._maybe_arm_from_bar(st, bar, st.accum)
@@ -123,9 +137,16 @@ class JudasDetector:
         if vwap is None or st.accum is None:
             return []
 
+        atr_val = atr(st.bars, self.params.atr_period) or 0.0
+        min_body = self.params.s3_displacement_min_body_atr * atr_val
+
         out: list[SetupCandidate] = []
         for pending in st.pending:
             if pending.fired:
+                continue
+            pending.bars_since += 1
+            if pending.bars_since > self.params.s3_max_bars_sweep_to_displace:
+                pending.fired = True
                 continue
             if pending.sweep.side == "sell":
                 pending.wick = max(pending.wick, bar.high)
@@ -133,21 +154,17 @@ class JudasDetector:
             else:
                 pending.wick = min(pending.wick, bar.low)
                 toward_up = True
-            if not displacement(bar, toward_up=toward_up):
+            if not displacement(bar, toward_up=toward_up, min_body=min_body):
                 continue
-            if toward_up and not (bar.close > pending.accum.low and bar.close > vwap.vwap * 0.0):
-                if bar.close <= pending.sweep.swept_level:
-                    continue
             if not toward_up and bar.close >= pending.sweep.swept_level:
                 continue
-            # Displacement must move back toward session VWAP.
-            if toward_up and bar.close <= pending.wick:
-                pass
+            if toward_up and bar.close <= pending.sweep.swept_level:
+                continue
             dist_now = abs(bar.close - vwap.vwap)
             dist_wick = abs(pending.wick - vwap.vwap)
             if dist_now >= dist_wick:
                 continue
-            cand = self._complete(bar, tf, pending, vwap, zone)
+            cand = self._complete(bar, tf, pending, vwap, zone, atr_val)
             if cand is not None:
                 pending.fired = True
                 out.append(cand)
@@ -187,7 +204,7 @@ class JudasDetector:
                 st.pending.append(_Pending(sweep=fake, accum=accum, wick=bar.low))
 
     def _in_manipulation(self, bar: OHLCVBar, zone: KillZoneEvent | None) -> bool:
-        allowed = manipulation_zones(bar.asset_class)
+        allowed = manipulation_zones(bar.asset_class, default_kz=self.params.s3_kill_zone)
         if zone is not None and kill_zone_active(zone, ts_ms=bar.close_ts_ms):
             name = zone.kill_zone.value if hasattr(zone.kill_zone, "value") else str(zone.kill_zone)
             return name in allowed
@@ -200,20 +217,20 @@ class JudasDetector:
         pending: _Pending,
         vwap: VWAPValues,
         zone: KillZoneEvent | None,
+        atr_val: float,
     ) -> SetupCandidate | None:
         sweep = pending.sweep
         side = "short" if sweep.side == "sell" else "long"
         entry = bar.close
-        if side == "short":
-            stop = pending.wick
-            target = pending.accum.low
-        else:
-            stop = pending.wick
-            target = pending.accum.high
+        buffer = self.params.stop_buffer_atr * atr_val
+        stop = stop_beyond(side, pending.wick, buffer)
+        target = pending.accum.low if side == "short" else pending.accum.high
         rr = risk_reward(side, entry, stop, target)
         if rr <= 0:
             return None
         tagged = band_tagged(pending.wick, vwap) or band_tagged(sweep.swept_level, vwap)
+        if self.params.s3_require_band_tag and tagged is None:
+            return None
         kz = kill_zone_active(zone, ts_ms=bar.close_ts_ms)
         conviction = score_conviction(
             confluence=1 + (2 if tagged else 0),
