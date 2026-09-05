@@ -6,7 +6,7 @@ const quantHttp =
   process.env.NEXT_PUBLIC_QUANT_HTTP_BASE ||
   "http://localhost:8001";
 
-/** PR/staging Git preview on the marketing Vercel project (static export). */
+/** Optional local static export only. Vercel dashboard deploys use Root Directory = frontend (not this flag). */
 const staticExport = process.env.SNIPER_STATIC_EXPORT === "1";
 
 const nextConfig: NextConfig = {

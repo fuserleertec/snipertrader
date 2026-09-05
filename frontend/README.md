@@ -10,10 +10,6 @@ exact JSON shapes in `/schemas`. Flip one env var to point at live
 
 ## Setup (local paper preview)
 
-The **repo-root Vercel project is the static marketing site**. It does **not**
-serve this Next.js app. PR previews of the marketing project will 404 `/` as
-the Conviction Terminal. Use one of the paths below.
-
 ```bash
 cd frontend
 cp .env.example .env.local   # optional; mocks are the default
@@ -29,18 +25,19 @@ From the repo root:
 npm run dev:dashboard
 ```
 
-### Dual deploy path (do not flip production marketing)
+### Deploy (two Vercel projects)
 
-See [`PREVIEW.md`](./PREVIEW.md). On **this PR branch**, root `vercel.json`
-builds a paper Next export (`frontend/out`) so the existing Git preview
-serves the dashboard at `/` (not marketing `index.html`). `main` stays
-the marketing site.
+Full notes: [`DEPLOY.md`](./DEPLOY.md) (short copy in [`PREVIEW.md`](./PREVIEW.md)).
 
-| Path | What it serves | How |
+| Project | Root Directory (Vercel setting) | Serves |
 |---|---|---|
-| **This PR preview** | Next dashboard (static export, mocks) | Root `vercel.json` → `frontend/out` |
-| **Marketing (main)** | Static HTML + `api/*` | [`vercel.marketing.json`](../vercel.marketing.json) · Root Directory = `.` |
-| **Optional 2nd project** | Full Next.js runtime | Root Directory = `frontend` · `frontend/vercel.json` |
+| **Marketing (live)** | `null` / `.` — **do not change** | static `*.html` + `api/*` + recon **crons**. Config: repo-root `vercel.json` |
+| **Dashboard (FE)** | **`frontend`** — FE must set this | Next.js Conviction Terminal. Config: [`frontend/vercel.json`](./vercel.json) (`"framework": "nextjs"`) |
+
+`rootDirectory` is a dashboard setting, not a `vercel.json` key. The marketing
+Git project (`snipertrader`, Root Directory = null) will keep previewing
+marketing HTML — that is expected. Do **not** rewrite root `vercel.json` to
+build this app; that drops marketing functions and `/api/recon/refresh` crons.
 
 `NEXT_PUBLIC_USE_MOCKS=false npm run dev` talks to Data Eng (`:8000`) and
 Quant (`:8001`). Quant local:
@@ -55,11 +52,13 @@ cd quant && sniper-quant api --inmemory --port 8001
 - **01 Header** — “Quantitative Market Intelligence Conviction Terminal” + LIVE
   strip (Next Refresh ET, Data Age, Heartbeat, Health, REFRESH / SHARE / DOWNLOAD)
 - **02 Quantum Ensemble Picks** — provenance table (#, Asset, Signal, Last/Chg,
-  Target, Conviction, Engines K/S/M/F/Q, Why). Setup Signals tab is Quant
-  `setup_signals` (filters + CSV; sound off by default)
+  Target, Conviction, Engines K/S/M/F/Q, Why). Two tabs (Market Signals /
+  Smart Money Activity). Quant `setup_signals` live under the small **Setup
+  desk** control (`?tab=setups`; filters + CSV; sound off by default)
 - **03 Live Market Simulation View** — Conviction & Velocity Leaderboard,
-  MiroFish swarm heatmap, Kronos Structural K-Line (FVG / OB / sweep / MSS),
-  Scenario Probability Matrix
+  MiroFish swarm heatmap, Kronos Structural K-Line (metrics + swarm bias),
+  Scenario Probability Matrix. Paper overlay chart is the **Paper desk**
+  panel after the matrix (not inside the Kronos card)
 - **04 Categorized Stock Picks** — All / Ultra-High / High / Watchlist cards
 - **05 Narrative & Volatility Injectors**
 - **06 Execution & Position Management**
