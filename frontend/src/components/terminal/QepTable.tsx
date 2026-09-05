@@ -39,8 +39,8 @@ export function QepTable({
   soundOn: boolean;
   onToggleSound: () => void;
 }) {
-  const [mode, setMode] = useState<QepMode>("setups");
-  const [cat, setCat] = useState("Setups");
+  const [mode, setMode] = useState<QepMode>("market");
+  const [cat, setCat] = useState("Futures");
   const [sub, setSub] = useState<"All" | "Buy" | "Sell" | "Hold">("All");
   const [typeFilter, setTypeFilter] = useState<SetupType | "all">("all");
   const [statusFilter, setStatusFilter] = useState<SignalStatus | "all">("all");
@@ -99,9 +99,9 @@ export function QepTable({
         <div className="qep-toggle">
           {(
             [
-              ["setups", "Setup Signals"],
               ["market", "Market Signals"],
               ["activity", "Smart Money Activity"],
+              ["setups", "Setup Signals"],
             ] as const
           ).map(([id, label]) => (
             <button

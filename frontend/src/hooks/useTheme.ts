@@ -5,13 +5,13 @@ import { useCallback, useEffect, useState } from "react";
 export type Theme = "dark" | "light";
 
 export function useTheme(): { theme: Theme; toggle: () => void } {
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
     const stored = window.localStorage.getItem("st-theme");
-    const next: Theme = stored === "light" ? "light" : "dark";
+    const next: Theme = stored === "dark" ? "dark" : "light";
     apply(next);
-    if (next !== "dark") {
+    if (next !== "light") {
       queueMicrotask(() => setTheme(next));
     }
   }, []);

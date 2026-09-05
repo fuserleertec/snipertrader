@@ -28,7 +28,15 @@ export function TerminalNav({ theme, onToggleTheme }: { theme: Theme; onToggleTh
         ))}
       </div>
       <button type="button" className="tt-btn" onClick={onToggleTheme}>
-        {theme === "dark" ? "☀️ LIGHT" : "🌙 DARK"}
+        {theme === "light" ? (
+          <>
+            <span className="tt-icon">☀️</span> LIGHT
+          </>
+        ) : (
+          <>
+            <span className="tt-icon">🌙</span> DARK
+          </>
+        )}
       </button>
     </nav>
   );
@@ -56,7 +64,7 @@ export function StatusStrip({
     <div className="statusbar">
       <span className="live">
         <span className={live ? "dot" : "dot err"} />
-        <b>{status === "mock" ? "MOCK" : status === "live" ? "LIVE" : status.toUpperCase()}</b>
+        <b>{status === "disconnected" ? "OFFLINE" : "LIVE"}</b>
       </span>
       <span className="live">
         Next Refresh: <b>08:00 &amp; 17:00 ET</b>

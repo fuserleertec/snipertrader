@@ -49,10 +49,10 @@ function palette(theme: Theme) {
     text: light ? "#2A4460" : "#9BB5C8",
     grid: light ? "rgba(0,150,110,0.12)" : "rgba(0,229,160,0.08)",
     border: light ? "rgba(0,150,110,0.25)" : "rgba(0,229,160,0.18)",
-    up: "#00E5A0",
-    down: "#FF4455",
-    wickUp: "#00E5A0",
-    wickDown: "#FF4455",
+    up: light ? "#007A44" : "#00E5A0",
+    down: light ? "#C02030" : "#FF4455",
+    wickUp: light ? "#007A44" : "#00E5A0",
+    wickDown: light ? "#C02030" : "#FF4455",
   };
 }
 

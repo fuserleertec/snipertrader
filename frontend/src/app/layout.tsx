@@ -28,9 +28,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${orbitron.variable} ${spaceMono.variable} ${syne.variable}`}
+      className={`light-mode ${orbitron.variable} ${spaceMono.variable} ${syne.variable}`}
     >
-      <body>{children}</body>
+      <body className="light-mode">{children}</body>
     </html>
   );
 }
