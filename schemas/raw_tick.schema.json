@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snipertrader.ai/schemas/raw_tick.schema.json",
+  "title": "RawTick",
+  "description": "Normalized trade/quote tick. All timestamps are UTC epoch milliseconds.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "symbol",
+    "asset_class",
+    "exchange",
+    "ts_ms",
+    "price",
+    "volume"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.1" },
+    "symbol": {
+      "type": "string",
+      "description": "Global schema: uppercase, no hyphens (e.g. BTCUSDT, AAPL, ES).",
+      "pattern": "^[A-Z0-9]+$"
+    },
+    "asset_class": { "type": "string", "enum": ["crypto", "equity", "futures"] },
+    "exchange": { "type": "string" },
+    "ts_ms": { "type": "integer", "minimum": 0, "description": "Event time, UTC milliseconds." },
+    "price": { "type": "number" },
+    "volume": { "type": "number", "minimum": 0 },
+    "bid": { "type": ["number", "null"] },
+    "ask": { "type": ["number", "null"] },
+    "bid_size": { "type": ["number", "null"] },
+    "ask_size": { "type": ["number", "null"] },
+    "book": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "bids": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": { "type": "number" }
+          }
+        },
+        "asks": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": { "type": "number" }
+          }
+        }
+      }
+    }
+  }
+}

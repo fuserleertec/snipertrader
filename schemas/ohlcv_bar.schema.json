@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snipertrader.ai/schemas/ohlcv_bar.schema.json",
+  "title": "OHLCVBar",
+  "description": "Closed OHLCV candle. Bar open time is UTC-aligned for the timeframe.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "symbol",
+    "asset_class",
+    "timeframe",
+    "open_ts_ms",
+    "close_ts_ms",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume",
+    "n_ticks"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.1" },
+    "symbol": { "type": "string", "pattern": "^[A-Z0-9]+$" },
+    "asset_class": { "type": "string", "enum": ["crypto", "equity", "futures"] },
+    "timeframe": { "type": "string", "enum": ["1m", "5m", "15m", "1h", "4h"] },
+    "open_ts_ms": { "type": "integer", "minimum": 0 },
+    "close_ts_ms": { "type": "integer", "minimum": 0 },
+    "open": { "type": "number" },
+    "high": { "type": "number" },
+    "low": { "type": "number" },
+    "close": { "type": "number" },
+    "volume": { "type": "number", "minimum": 0 },
+    "n_ticks": { "type": "integer", "minimum": 0 }
+  }
+}

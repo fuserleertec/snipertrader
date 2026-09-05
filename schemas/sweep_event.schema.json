@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snipertrader.ai/schemas/sweep_event.schema.json",
+  "title": "SweepEvent",
+  "description": "Liquidity sweep (provisional). Redis key: sweep:{symbol}:{id} with TTL ≤ 48h.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "symbol",
+    "asset_class",
+    "side",
+    "swept_level",
+    "ts_ms"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.1" },
+    "id": { "type": "string" },
+    "symbol": { "type": "string", "pattern": "^[A-Z0-9]+$" },
+    "asset_class": { "type": "string", "enum": ["crypto", "equity", "futures"] },
+    "side": { "type": "string", "enum": ["buy", "sell"] },
+    "swept_level": { "type": "number" },
+    "reclaim": { "type": ["boolean", "null"] },
+    "ts_ms": { "type": "integer" }
+  }
+}

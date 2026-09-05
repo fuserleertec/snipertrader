@@ -1,0 +1,27 @@
+# Kafka / JSON schemas (Rev. 1.1)
+
+Canonical message contracts for the Phase 1 streaming pipeline.
+The Python package `sniper_data` serializes these shapes onto the topics
+listed below. JSON Schema is draft 2020-12.
+
+| Topic | Schema file | Producer | Consumers |
+|---|---|---|---|
+| `raw_ticks` | [`raw_tick.schema.json`](raw_tick.schema.json) | Exchange adapters / mock feed | OHLCV, session tracker, VWAP |
+| `ohlcv_bars` | [`ohlcv_bar.schema.json`](ohlcv_bar.schema.json) | OHLCV aggregator | Timescale writer, research |
+| `session_levels` | [`session_levels.schema.json`](session_levels.schema.json) | Session tracker | Redis, Quant API |
+| `vwap_values` | [`vwap_values.schema.json`](vwap_values.schema.json) | VWAP engine | Redis, WebSocket, Quant API |
+| `sweep_events` | [`sweep_event.schema.json`](sweep_event.schema.json) | Pattern detectors (Phase 2 stub) | Redis `sweep:{symbol}:{id}` |
+| `fvg_zones` | [`fvg_zone.schema.json`](fvg_zone.schema.json) | Pattern detectors (Phase 2 stub) | Redis `fvg:{symbol}:{id}` |
+| `setup_signals` | [`setup_signal.schema.json`](setup_signal.schema.json) | Signal engine (Phase 2 stub) | Downstream ML / UI |
+
+Redis key map (real-time state, not Kafka):
+
+| Key | TTL | Notes |
+|---|---|---|
+| `session:{symbol}:{session_type}` | none (live book) | OHLC for the current window |
+| `vwap:{symbol}:{anchor_type}` | none (live book) | VWAP + σ bands |
+| `fvg:{symbol}:{id}` | **≤ 48h (required)** | Fair-value gap zone |
+| `sweep:{symbol}:{id}` | **≤ 48h (required)** | Liquidity sweep zone |
+
+`anchor_type` ∈ `session` · `weekly` · `rolling`.
+`session_type` ∈ `asia` · `london` · `ny_am` · `ny_pm` · `rth` · `eth` · `globex`.
