@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import time
 from typing import Protocol
 
@@ -104,18 +105,23 @@ _INSERT_SQL = """
 INSERT INTO signals (
   ts, id, schema_version, symbol, asset_class, setup_type, side,
   confidence, ref_vwap, ref_session, entry, stop_px, target,
+  timeframe, trigger_event_ids, session_type,
   position_size, status, closed_ts
 ) VALUES (
   to_timestamp($1 / 1000.0), $2, $3, $4, $5, $6, $7,
   $8, $9, $10, $11, $12, $13,
-  $14, $15,
-  CASE WHEN $16::BIGINT IS NULL THEN NULL ELSE to_timestamp($16 / 1000.0) END
+  $14, $15, $16,
+  $17, $18,
+  CASE WHEN $19::BIGINT IS NULL THEN NULL ELSE to_timestamp($19 / 1000.0) END
 )
 ON CONFLICT (id, ts) DO UPDATE SET
   status = EXCLUDED.status,
   entry = EXCLUDED.entry,
   stop_px = EXCLUDED.stop_px,
   target = EXCLUDED.target,
+  timeframe = EXCLUDED.timeframe,
+  trigger_event_ids = EXCLUDED.trigger_event_ids,
+  session_type = EXCLUDED.session_type,
   position_size = EXCLUDED.position_size,
   updated_at = NOW(),
   closed_ts = EXCLUDED.closed_ts
@@ -138,10 +144,27 @@ def _row_to_signal(r) -> StoredSignal:
         entry=r["entry"],
         stop=r["stop_px"],
         target=r["target"],
+        timeframe=r["timeframe"],
+        trigger_event_ids=_decode_ids(r["trigger_event_ids"]),
+        session_type=r["session_type"],
         position_size=r["position_size"],
         status=SignalStatus(r["status"]),
         closed_ts_ms=int(closed.timestamp() * 1000) if closed is not None else None,
     )
+
+
+def _decode_ids(raw) -> list[str]:
+    if raw is None or raw == "":
+        return []
+    if isinstance(raw, list):
+        return [str(x) for x in raw]
+    try:
+        parsed = json.loads(raw)
+    except (TypeError, ValueError):
+        return [str(raw)]
+    if isinstance(parsed, list):
+        return [str(x) for x in parsed]
+    return [str(parsed)]
 
 
 class TimescaleSignalStore:
@@ -178,6 +201,9 @@ class TimescaleSignalStore:
                 signal.entry,
                 signal.stop,
                 signal.target,
+                str(signal.timeframe) if signal.timeframe is not None else None,
+                json.dumps(list(signal.trigger_event_ids or [])),
+                str(signal.session_type) if signal.session_type is not None else None,
                 signal.position_size,
                 signal.status.value,
                 signal.closed_ts_ms,
@@ -189,7 +215,8 @@ class TimescaleSignalStore:
         sql = """
         SELECT EXTRACT(EPOCH FROM ts) * 1000 AS ts_ms, id, schema_version,
                symbol, asset_class, setup_type, side, confidence, ref_vwap,
-               ref_session, entry, stop_px, target, position_size, status, closed_ts
+               ref_session, entry, stop_px, target, timeframe, trigger_event_ids,
+               session_type, position_size, status, closed_ts
         FROM signals WHERE id = $1
         ORDER BY ts DESC LIMIT 1
         """
@@ -211,7 +238,8 @@ class TimescaleSignalStore:
         sql = """
         SELECT EXTRACT(EPOCH FROM ts) * 1000 AS ts_ms, id, schema_version,
                symbol, asset_class, setup_type, side, confidence, ref_vwap,
-               ref_session, entry, stop_px, target, position_size, status, closed_ts
+               ref_session, entry, stop_px, target, timeframe, trigger_event_ids,
+               session_type, position_size, status, closed_ts
         FROM signals
         WHERE ($1::TEXT IS NULL OR symbol = $1)
           AND ($2::TEXT IS NULL OR status = $2)

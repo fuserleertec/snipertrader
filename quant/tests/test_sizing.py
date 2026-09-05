@@ -29,14 +29,20 @@ def test_validate_computes_size_when_omitted(engine):
 
 
 def test_requested_size_within_limit_kept(engine):
-    decision = engine.validate(candidate(position_size=100.0))
+    decision = engine.validate(candidate(proposed_position_size=100.0))
     assert decision.approved is True
     assert decision.adjusted_position_size == 100.0
 
 
+def test_invalid_provided_levels_rejected(engine):
+    decision = engine.validate(candidate(stop=101.0, target=108.0))
+    assert decision.approved is False
+    assert decision.reason == "invalid_levels"
+
+
 def test_requested_size_over_limit_rejected():
     eng = RiskEngine(settings=make_settings(), state=RiskState(equity=100_000))
-    decision = eng.validate(candidate(position_size=10_000.0))
+    decision = eng.validate(candidate(proposed_position_size=10_000.0))
     assert decision.approved is False
     assert decision.reason == "position_size_exceeds_limit"
     assert decision.adjusted_position_size == 500.0

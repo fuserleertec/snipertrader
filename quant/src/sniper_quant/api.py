@@ -28,26 +28,47 @@ API_DESCRIPTION = """
 Risk management and signal lifecycle. Lives beside `data_engineering/`.
 Shares TimescaleDB (`ohlcv_bars`, `signals`) when `USE_INMEMORY` is false.
 
-## ML Researchers — Risk Pre-Filter (required before `setup_signals`)
+## ML Researchers — Risk Pre-Filter (required before Phase 2 `setup_signals`)
 
 `POST /risk/validate`
 
-Send a **candidate** setup signal (`schemas/risk_validate_request.schema.json`).
-`id` is **optional**. Do **not** publish to Kafka topic `setup_signals` unless
-`approved` is `true`. After approval, assign `id` and include the returned
-`adjusted_position_size`, `stop`, and `target`.
+Send a **candidate** (`schemas/risk_validate_request.schema.json`).
+**Omit `id`.** Do **not** publish to Kafka `setup_signals` unless `approved`
+is `true`. After approval, assign `id` and persist `adjusted_position_size`.
+
+### Locked `setup_type` enum
+
+`sweep_reclaim` · `fvg_entry` · `mss_break` · `order_block` · `sweep_mss` · `ob_fvg`
+
+### Required stub fields
+
+`schema_version` (`"1.1"`), `symbol`, `asset_class`, `setup_type`, `side`,
+`ts_ms`. Optional stubs: `confidence`, `ref_vwap`, `ref_session`.
+
+### Required for risk
+
+`entry`, `stop`, `target` (numbers), `timeframe` ∈ {`1m`,`5m`,`15m`},
+`trigger_event_ids` (string[]).
+
+### Optional
+
+`session_type` — same enum as Data Engineers
+(`asia`/`london`/`ny_am`/`ny_pm`/`rth`/`eth`/`globex`).
+
+`proposed_position_size` — engine may overwrite via `adjusted_position_size`.
 
 Required response keys: `approved`, `reason`, `adjusted_position_size`.
 
 Reject reasons:
 
-- `missing_entry` — need `entry` or `ref_vwap`
-- `invalid_levels` — stop/target on the wrong side of entry
-- `position_size_exceeds_limit` — requested size > 2% equity risk
+- `invalid_levels` — stop/target on the wrong side of entry, or R:R below 1.5
+- `position_size_exceeds_limit` — proposed size > 2% equity risk
 - `daily_loss_limit` — 3% daily loss already hit or this trade would breach
 - `correlation_threshold` — 60-day |ρ| vs an open symbol > 0.70
 - `same_symbol_conflict` — an ACTIVE position already exists on the symbol
 - `ok` — approved
+
+Unknown `setup_type` or `timeframe` → HTTP 422.
 
 ## Frontend — signal query
 
@@ -63,7 +84,7 @@ class StatusBody(BaseModel):
 
 
 class PublishBody(CandidateSignal):
-    id: str | None = None
+    """Same locked candidate as validate. Server assigns ``id`` after approval."""
 
 
 def _build_stores(settings: Settings) -> tuple[SignalStore, OHLCVLoader, RiskEngine]:
@@ -136,12 +157,12 @@ def create_app(
             "schema_version": "1.1",
             "setup_types": list(SETUP_TYPES),
             "notes": SETUP_TYPE_NOTES,
-            "pluggable": True,
+            "locked": True,
         }
 
     @app.post("/risk/validate", response_model=ValidateResponse)
     async def risk_validate(body: CandidateSignal) -> ValidateResponse:
-        """ML must call this before publishing a high-conviction signal."""
+        """Candidate setup (no id). Call before Phase 2 publish to setup_signals."""
         engine = _engine()
         active = await _signals().active()
         engine.state.sync_from_signals(active)
@@ -184,7 +205,7 @@ def create_app(
                     "validate": decision.model_dump(),
                 },
             )
-        signal_id = body.id or str(uuid.uuid4())
+        signal_id = str(uuid.uuid4())
         stored = StoredSignal(
             id=signal_id,
             symbol=body.symbol,
@@ -198,6 +219,9 @@ def create_app(
             entry=decision.entry,
             stop=decision.stop,
             target=decision.target,
+            timeframe=body.timeframe,
+            trigger_event_ids=list(body.trigger_event_ids),
+            session_type=body.session_type,
             position_size=decision.adjusted_position_size,
             status=SignalStatus.ACTIVE,
         )

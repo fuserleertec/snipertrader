@@ -11,7 +11,7 @@ def test_same_symbol_open_position_rejected():
         positions=[OpenPosition(symbol="BTCUSDT", side=Side.LONG, size=1, entry=100)],
     )
     engine = RiskEngine(settings=make_settings(), state=state)
-    decision = engine.validate(candidate(side=Side.SHORT))
+    decision = engine.validate(candidate(side=Side.SHORT, stop=104.0, target=92.0))
     assert decision.approved is False
     assert decision.reason == "same_symbol_conflict"
     assert decision.adjusted_position_size == 0.0
@@ -36,7 +36,7 @@ def test_active_signal_sync_conflicts():
                 id="sig-1",
                 symbol="BTCUSDT",
                 asset_class=AssetClass.CRYPTO,
-                setup_type="ote",
+                setup_type="fvg_entry",
                 side=Side.LONG,
                 ts_ms=1,
                 entry=100,

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://snipertrader.ai/schemas/setup_signal.schema.json",
   "title": "SetupSignal",
-  "description": "Downstream setup signal topic (Phase 2 stub contract). Topic: setup_signals.",
+  "description": "Kafka topic setup_signals. Phase 2 publish only after POST /risk/validate returns approved:true. id is required here; omit id on the validate candidate.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -16,19 +16,48 @@
   ],
   "properties": {
     "schema_version": { "type": "string", "const": "1.1" },
-    "id": { "type": "string" },
+    "id": { "type": "string", "description": "Assigned by ML only after risk approval." },
     "symbol": { "type": "string", "pattern": "^[A-Z0-9]+$" },
     "asset_class": { "type": "string", "enum": ["crypto", "equity", "futures"] },
-    "setup_type": { "type": "string" },
+    "setup_type": {
+      "type": "string",
+      "enum": [
+        "sweep_reclaim",
+        "fvg_entry",
+        "mss_break",
+        "order_block",
+        "sweep_mss",
+        "ob_fvg"
+      ]
+    },
     "side": { "type": "string", "enum": ["long", "short"] },
     "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
     "ref_vwap": { "type": ["number", "null"] },
     "ref_session": { "type": ["string", "null"] },
     "ts_ms": { "type": "integer" },
-    "entry": { "type": ["number", "null"], "description": "Fill / intended entry. Additive (Rev. 1.1 lifecycle)." },
-    "stop": { "type": ["number", "null"], "description": "Stop-loss price (USME). Additive." },
-    "target": { "type": ["number", "null"], "description": "Take-profit price. Additive." },
-    "position_size": { "type": ["number", "null"], "minimum": 0, "description": "Units after risk sizing. Additive." },
+    "entry": { "type": ["number", "null"], "description": "Approved entry. Additive (Rev. 1.1)." },
+    "stop": { "type": ["number", "null"], "description": "Approved stop. Additive." },
+    "target": { "type": ["number", "null"], "description": "Approved target. Additive." },
+    "timeframe": {
+      "type": ["string", "null"],
+      "enum": ["1m", "5m", "15m", null],
+      "description": "Pattern timeframe. Additive."
+    },
+    "trigger_event_ids": {
+      "type": ["array", "null"],
+      "items": { "type": "string" },
+      "description": "Triggering sweep/FVG/MSS ids. Additive."
+    },
+    "session_type": {
+      "type": ["string", "null"],
+      "enum": ["asia", "london", "ny_am", "ny_pm", "rth", "eth", "globex", null],
+      "description": "DE session window. Additive."
+    },
+    "position_size": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "description": "Units after risk sizing (adjusted_position_size). Additive."
+    },
     "status": {
       "type": ["string", "null"],
       "enum": ["ACTIVE", "TP_HIT", "SL_HIT", "CANCELLED", null],

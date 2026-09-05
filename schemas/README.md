@@ -18,10 +18,12 @@ HTTP contracts used by Quant (`POST /risk/validate`) — not Kafka topics:
 
 | HTTP | Schema file | Notes |
 |---|---|---|
-| `POST /risk/validate` body | [`risk_validate_request.schema.json`](risk_validate_request.schema.json) | Candidate SetupSignal; **`id` optional** |
+| `POST /risk/validate` body | [`risk_validate_request.schema.json`](risk_validate_request.schema.json) | Candidate — **omit `id`**. Required risk fields: `entry`, `stop`, `target`, `timeframe` ∈ {1m,5m,15m}, `trigger_event_ids` |
 | `POST /risk/validate` response | [`risk_validate_response.schema.json`](risk_validate_response.schema.json) | `{approved, reason, adjusted_position_size}` |
 
-`setup_signal.schema.json` is additive in Rev. 1.1: optional `entry`, `stop`, `target`, `position_size`, `status`. Kafka publish still **requires** `id`. ML assigns `id` only after the Risk Pre-Filter approves. See [`quant/README.md`](../quant/README.md).
+`setup_type` (locked, Phase 1): `sweep_reclaim` · `fvg_entry` · `mss_break` · `order_block` · `sweep_mss` · `ob_fvg`.
+
+`setup_signal.schema.json` is additive in Rev. 1.1: optional `entry`, `stop`, `target`, `timeframe`, `trigger_event_ids`, `session_type`, `position_size`, `status`. Kafka publish still **requires** `id`. ML assigns `id` only after the Risk Pre-Filter approves. See [`quant/README.md`](../quant/README.md).
 
 Redis key map (real-time state, not Kafka):
 

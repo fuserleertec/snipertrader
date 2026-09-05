@@ -36,6 +36,43 @@ def fallback_atr(entry: float) -> float:
     return max(abs(entry) * 0.01, 1e-9)
 
 
+def check_provided_levels(
+    *,
+    side: Side | str,
+    entry: float,
+    stop: float,
+    target: float,
+    min_rr: float = 1.5,
+) -> USMELevels:
+    """Validate ML-supplied entry/stop/target. Does not rewrite prices."""
+    side = Side(side)
+    if entry <= 0:
+        raise ValueError("entry must be positive")
+    if side is Side.LONG and stop >= entry:
+        raise ValueError("stop must be strictly below entry for a long")
+    if side is Side.SHORT and stop <= entry:
+        raise ValueError("stop must be strictly above entry for a short")
+    if side is Side.LONG and target <= entry:
+        raise ValueError("target must be above entry for a long")
+    if side is Side.SHORT and target >= entry:
+        raise ValueError("target must be below entry for a short")
+    risk = abs(entry - stop)
+    if risk <= 0:
+        raise ValueError("risk_per_unit must be positive")
+    rr = abs(target - entry) / risk
+    if rr + 1e-12 < min_rr:
+        raise ValueError(f"reward:risk {rr:.4f} is below USME minimum {min_rr}")
+    return USMELevels(
+        entry=entry,
+        stop=stop,
+        target=target,
+        risk_per_unit=risk,
+        r_multiple=rr,
+        atr_used=0.0,
+        source="provided",
+    )
+
+
 def compute_usme_levels(
     *,
     side: Side | str,

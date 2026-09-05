@@ -154,5 +154,8 @@ class SetupSignal(BaseModel):
     entry: float | None = None
     stop: float | None = None
     target: float | None = None
+    timeframe: str | None = None
+    trigger_event_ids: list[str] | None = None
+    session_type: str | None = None
     position_size: float | None = None
     status: str | None = None

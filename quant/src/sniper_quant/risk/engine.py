@@ -17,7 +17,7 @@ from sniper_quant.models import (
 from sniper_quant.risk.correlation import correlation_check
 from sniper_quant.risk.daily_loss import daily_loss_check
 from sniper_quant.risk.sizing import fixed_fractional_size, requested_risk
-from sniper_quant.usme import compute_usme_levels
+from sniper_quant.usme import check_provided_levels
 
 
 @dataclass
@@ -85,28 +85,16 @@ class RiskEngine:
         extra_positions: list[OpenPosition] | None = None,
     ) -> ValidateResponse:
         settings = self.settings
-        equity = candidate.equity if candidate.equity is not None else self.state.equity
-        entry = candidate.entry if candidate.entry is not None else candidate.ref_vwap
+        equity = self.state.equity
+        entry = candidate.entry
         checks: dict = {}
 
-        if entry is None or entry <= 0:
-            return ValidateResponse(
-                approved=False,
-                reason="missing_entry",
-                adjusted_position_size=0.0,
-                checks={"entry": "entry or ref_vwap is required"},
-            )
-
         try:
-            levels = compute_usme_levels(
+            levels = check_provided_levels(
                 side=candidate.side,
                 entry=entry,
-                atr=candidate.atr,
-                invalidation=candidate.invalidation,
                 stop=candidate.stop,
                 target=candidate.target,
-                sl_atr_multiple=settings.sl_atr_multiple,
-                tp_r_multiple=settings.tp_r_multiple,
                 min_rr=settings.min_rr,
             )
         except ValueError as exc:
@@ -115,17 +103,24 @@ class RiskEngine:
                 reason="invalid_levels",
                 adjusted_position_size=0.0,
                 entry=entry,
+                stop=candidate.stop,
+                target=candidate.target,
                 checks={"levels": str(exc)},
             )
 
         checks["levels"] = {
             "source": levels.source,
-            "atr_used": levels.atr_used,
             "r_multiple": levels.r_multiple,
+            "setup_type": candidate.setup_type.value
+            if hasattr(candidate.setup_type, "value")
+            else str(candidate.setup_type),
+            "timeframe": candidate.timeframe.value
+            if hasattr(candidate.timeframe, "value")
+            else str(candidate.timeframe),
         }
 
         max_size = fixed_fractional_size(equity, settings.risk_fraction, levels.risk_per_unit)
-        requested = candidate.position_size
+        requested = candidate.proposed_position_size
         size_ok = requested is None or requested <= max_size + 1e-9
         planned = requested if (requested is not None and size_ok) else max_size
         checks["position_sizing"] = {

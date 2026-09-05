@@ -35,12 +35,15 @@ def candidate(**kwargs) -> CandidateSignal:
         schema_version="1.1",
         symbol="BTCUSDT",
         asset_class=AssetClass.CRYPTO,
-        setup_type="liquidity_sweep",
+        setup_type="sweep_reclaim",
         side=Side.LONG,
         confidence=0.9,
         ts_ms=1_700_000_000_000,
         entry=100.0,
-        atr=2.0,
+        stop=96.0,
+        target=108.0,
+        timeframe="15m",
+        trigger_event_ids=["sweep-demo-1"],
     )
     payload.update(kwargs)
     return CandidateSignal.model_validate(payload)

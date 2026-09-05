@@ -9,7 +9,7 @@ def _sig(i: str, symbol: str = "AAPL", status: SignalStatus = SignalStatus.ACTIV
         id=i,
         symbol=symbol,
         asset_class=AssetClass.EQUITY,
-        setup_type="silver_bullet",
+        setup_type="sweep_mss",
         side=Side.LONG,
         ts_ms=ts,
         entry=190.0,

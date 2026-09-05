@@ -25,36 +25,62 @@ use an in-memory loader — no live Timescale required.
 
 ## ML Researchers — `POST /risk/validate`
 
-**Do not publish to Kafka `setup_signals` until this endpoint returns
-`approved: true`.** Assign `id` only after approval.
-
-### Request
+Phase 1: detectors only. **Do not publish to Kafka `setup_signals` until
+this endpoint returns `approved: true`.** Assign `id` only after approval
+(Phase 2).
 
 JSON Schema: [`schemas/risk_validate_request.schema.json`](../schemas/risk_validate_request.schema.json)
+· OpenAPI: `http://localhost:8001/docs`
 
-Candidate **SetupSignal** (`schema_version: "1.1"`). `id` is **optional**.
-`entry` may be omitted if `ref_vwap` is set (used as the entry proxy).
+### Locked `setup_type` enum
+
+| `setup_type` | Intent |
+|---|---|
+| `sweep_reclaim` | Liquidity sweep + reclaim |
+| `fvg_entry` | Fair-value gap entry |
+| `mss_break` | Market-structure shift / break |
+| `order_block` | Order-block reaction |
+| `sweep_mss` | Sweep followed by MSS |
+| `ob_fvg` | Order block + FVG confluence |
+
+Unknown values → HTTP **422**.
+
+### Request (omit `id`)
+
+Stub fields (same as the DE `SetupSignal` core):
+
+`schema_version` (`"1.1"`), `symbol`, `asset_class`, `setup_type`, `side`,
+`confidence`, `ref_vwap`, `ref_session`, `ts_ms`.
+
+**Required for risk:** `entry`, `stop`, `target` (numbers),
+`timeframe` ∈ {`1m`,`5m`,`15m`}, `trigger_event_ids` (string[]).
+
+**Optional:** `session_type` (DE enum:
+`asia` · `london` · `ny_am` · `ny_pm` · `rth` · `eth` · `globex`),
+`proposed_position_size` (engine may overwrite via `adjusted_position_size`).
 
 ```json
 {
   "schema_version": "1.1",
   "symbol": "BTCUSDT",
   "asset_class": "crypto",
-  "setup_type": "liquidity_sweep",
+  "setup_type": "sweep_reclaim",
   "side": "long",
   "confidence": 0.87,
   "ref_vwap": 65010.5,
   "ref_session": "ny_am",
   "ts_ms": 1700000000000,
   "entry": 65000,
-  "atr": 220,
-  "invalidation": 64600
+  "stop": 64600,
+  "target": 65800,
+  "timeframe": "5m",
+  "trigger_event_ids": ["sweep:BTCUSDT:abc", "fvg:BTCUSDT:def"],
+  "session_type": "ny_am",
+  "proposed_position_size": 1.25
 }
 ```
 
-Optional extras (all additive): `stop`, `target`, `position_size`,
-`invalidation`, `atr`, `equity`, `account_id`. Hyphenated symbols are
-normalized (`btc-usdt` → `BTCUSDT`).
+Hyphenated symbols are normalized (`btc-usdt` → `BTCUSDT`).
 
 ### Response (required keys)
 
@@ -68,41 +94,24 @@ JSON Schema: [`schemas/risk_validate_response.schema.json`](../schemas/risk_vali
 }
 ```
 
-The API also returns `entry`, `stop`, `target`, `risk_per_unit`, and
-`checks` so you can persist a complete ACTIVE signal.
+The API also echoes `entry`, `stop`, `target`, `risk_per_unit`, and `checks`.
+ML's prices are **not rewritten**; only size may be adjusted.
 
 | `reason` | Meaning |
 |---|---|
-| `ok` | Pass. Publish with returned size / SL / TP. |
-| `missing_entry` | Need `entry` or `ref_vwap`. |
-| `invalid_levels` | Stop/target on the wrong side of entry. |
-| `position_size_exceeds_limit` | Requested size > 2% equity risk. `adjusted_position_size` is the max. |
+| `ok` | Pass. Assign `id` and publish with `adjusted_position_size`. |
+| `invalid_levels` | Stop/target on the wrong side of entry, or R:R below 1.5. |
+| `position_size_exceeds_limit` | Proposed size > 2% equity risk. `adjusted_position_size` is the max. |
 | `daily_loss_limit` | 3% daily loss hit, or this trade would breach the remainder. |
 | `correlation_threshold` | 60-day \|ρ\| vs an open symbol > 0.70. |
 | `same_symbol_conflict` | An ACTIVE position/signal already exists on this symbol. |
 
-After approval, publish to `setup_signals` with **required** `id` plus the
-additive fields `entry`, `stop`, `target`, `position_size`, `status: "ACTIVE"`
+After approval, Phase 2 publish to `setup_signals` **requires** `id` plus
+additive fields `entry`, `stop`, `target`, `timeframe`, `trigger_event_ids`,
+`position_size`, `status: "ACTIVE"`
 ([`setup_signal.schema.json`](../schemas/setup_signal.schema.json)).
 
-`GET /risk/params` exposes the live limits. `GET /v1/setups` lists the
-placeholder setup enum.
-
-## Setup types (placeholder enum)
-
-ML pattern names are still in flight. The engine is **setup-agnostic**
-(`setup_type` is a free string). Until the official list lands, use:
-
-| `setup_type` | Intent |
-|---|---|
-| `liquidity_sweep` | Sweep + reclaim |
-| `fvg_entry` | Fair-value gap |
-| `order_block` | Order-block reaction |
-| `choch_bos` | CHoCH / BOS |
-| `silver_bullet` | ICT Silver Bullet window |
-| `ote` | Optimal trade entry |
-
-Unknown strings are still accepted and backtested.
+`GET /risk/params` and `GET /v1/setups` expose the locked enum and limits.
 
 ## USME stop / take-profit
 
@@ -117,8 +126,10 @@ are documented so ML can override per-signal:
 | TP at **2R** (min 1:2; never below 1:1.5) | Prop Firm MasterPlan, 30-Day Funded Challenge | `tp_r_multiple=2.0`, `min_rr=1.5` |
 | Fallback ATR | none in-repo | `1%` of \|entry\| when `atr` is omitted |
 
-Callers may pass an explicit `stop` / `target`. A target below `min_rr` is
-replaced with the engineered 2R level.
+On `POST /risk/validate`, ML **must** send `entry` / `stop` / `target`. The
+pre-filter checks geometry and the 1.5 R floor; it does not rewrite prices.
+`compute_usme_levels` remains for the backtester when a demo constructs
+levels from ATR.
 
 ## Risk parameters
 
@@ -184,7 +195,7 @@ curl -s http://localhost:8001/health
 curl -s http://localhost:8001/risk/params
 curl -s -X POST http://localhost:8001/risk/validate \
   -H 'content-type: application/json' \
-  -d '{"schema_version":"1.1","symbol":"BTCUSDT","asset_class":"crypto","setup_type":"ote","side":"long","ts_ms":1700000000000,"entry":100,"atr":2}'
+  -d '{"schema_version":"1.1","symbol":"BTCUSDT","asset_class":"crypto","setup_type":"sweep_reclaim","side":"long","ts_ms":1700000000000,"entry":100,"stop":96,"target":108,"timeframe":"15m","trigger_event_ids":["evt-1"]}'
 ```
 
 ### Full stack (shared with DE)

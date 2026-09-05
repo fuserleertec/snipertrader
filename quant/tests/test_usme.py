@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from sniper_quant.usme import atr_from_bars, compute_usme_levels
+from sniper_quant.usme import atr_from_bars, check_provided_levels, compute_usme_levels
 
 
 def test_short_2x_atr():
@@ -28,6 +28,18 @@ def test_invalidation_wider_than_atr():
 def test_provided_target_below_min_rr_replaced():
     levels = compute_usme_levels(side="long", entry=100.0, atr=2.0, target=101.0, min_rr=1.5)
     assert levels.target == 108.0
+
+
+def test_provided_levels_accepted():
+    levels = check_provided_levels(side="long", entry=100.0, stop=96.0, target=108.0)
+    assert levels.source == "provided"
+    assert levels.risk_per_unit == 4.0
+    assert abs(levels.r_multiple - 2.0) < 1e-9
+
+
+def test_provided_levels_low_rr_rejected():
+    with pytest.raises(ValueError, match="below USME minimum"):
+        check_provided_levels(side="long", entry=100.0, stop=96.0, target=101.0)
 
 
 def test_inverted_stop_raises():
