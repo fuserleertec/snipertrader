@@ -42,12 +42,14 @@ def test_lifecycle_close_fields_on_openapi():
     spec = http.get("/openapi.json").json()
     assert "/signals/history" in spec["paths"]
     props = spec["components"]["schemas"]["SignalView"]["properties"]
-    for key in ("realized_r", "exit_price", "closed_ts_ms"):
+    for key in ("realized_r", "exit_price", "closed_ts_ms", "contributing_factors", "factor_breakdown"):
         assert key in props
     assert set(SIGNAL_VIEW_FIELDS) >= {
         "realized_r",
         "exit_price",
         "closed_ts_ms",
+        "contributing_factors",
+        "factor_breakdown",
     }
 
 

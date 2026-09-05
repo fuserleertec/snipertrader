@@ -154,6 +154,29 @@ def test_contributing_factors_publish_only_string_array():
     assert "contributing_factors" not in cand
     items = spec["components"]["schemas"]["PublishBody"]["properties"]["contributing_factors"]["items"]
     assert items["type"] == "string"
+    view = spec["components"]["schemas"]["SignalView"]["properties"]
+    assert view["contributing_factors"]["items"]["type"] == "string"
+    row = spec["components"]["schemas"]["FactorBreakdownRow"]
+    assert set(row["required"]) >= {"name", "weight", "score"}
+
+    import json
+    from pathlib import Path
+
+    schemas = Path(__file__).resolve().parents[2] / "schemas"
+    setup = json.loads((schemas / "setup_signal.schema.json").read_text())
+    dash = json.loads((schemas / "dashboard_signal.schema.json").read_text())
+    validate = json.loads((schemas / "risk_validate_request.schema.json").read_text())
+    assert "contributing_factors" in setup["properties"]
+    assert "factor_breakdown" in setup["properties"]
+    assert set(setup["properties"]["factor_breakdown"]["items"]["required"]) >= {
+        "name",
+        "weight",
+        "score",
+    }
+    assert "contributing_factors" in dash["properties"]
+    assert "factor_breakdown" in dash["properties"]
+    assert "contributing_factors" not in validate["properties"]
+    assert "factor_breakdown" not in validate["properties"]
 
 
 def test_s4_s6_enum_and_detectors_exclude_dormant():

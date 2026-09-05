@@ -109,6 +109,15 @@ def test_openapi_and_health():
     assert "realized_r" in props
     assert "exit_price" in props
     assert "closed_ts_ms" in props
+    assert props["contributing_factors"]["type"] == "array"
+    assert props["contributing_factors"]["items"]["type"] == "string"
+    fb = props["factor_breakdown"]["items"]
+    fb_ref = fb.get("$ref") or (fb.get("anyOf") or [{}])[0].get("$ref")
+    row = spec["components"]["schemas"]["FactorBreakdownRow"]
+    assert set(row["required"]) >= {"name", "weight", "score"}
+    assert "note" not in row.get("required", [])
+    assert "contributing_factors" not in spec["components"]["schemas"]["CandidateSignal"]["properties"]
+    assert fb_ref is None or fb_ref.endswith("FactorBreakdownRow")
     assert http.get("/docs").status_code == 200
     params = http.get("/risk/params").json()
     assert params["risk_fraction"] == 0.02

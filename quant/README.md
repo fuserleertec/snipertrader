@@ -68,9 +68,11 @@ Stub fields (same as the DE `SetupSignal` core):
 **Optional:** `session_type` (DE enum:
 `asia` · `london` · `ny_am` · `ny_pm` · `rth` · `eth` · `globex`),
 `proposed_position_size` (engine may overwrite via `adjusted_position_size`).
-`contributing_factors` (`string[]`) and `factor_breakdown` are
-**publish / signal-store only** — do not send them on `/risk/validate`
-(`CandidateSignal` rejects extra fields → 422).
+`contributing_factors` (`string[]`, optional) and `factor_breakdown`
+(`{name, weight, score, note?}[]`, optional) are **publish / store /
+Signal API response** fields — do not send them on `/risk/validate`
+(`CandidateSignal` rejects extra fields → 422). They echo on `GET /signals`,
+`GET /signals/{id}`, `GET /signals/history`, `POST /signals`, and WS.
 
 ```json
 {
@@ -264,7 +266,10 @@ next page.
 (`ACTIVE`\|`TP_HIT`\|`SL_HIT`\|`CANCELLED`), `confidence`, `timeframe`
 (`1m`\|`5m`\|`15m`), `ref_session`, `trigger_event_ids`,
 `realized_r` (signed R on TP/SL; null for ACTIVE/CANCELLED),
-`exit_price` (optional), `closed_ts_ms` (optional).
+`exit_price` (optional), `closed_ts_ms` (optional),
+`contributing_factors` (optional `string[]`), `factor_breakdown`
+(optional `{name, weight, score, note?}[]`). The last two are
+publish-only — not on `POST /risk/validate`.
 
 ```js
 const ws = new WebSocket("ws://localhost:8001/ws/signals");

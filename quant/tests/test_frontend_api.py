@@ -29,6 +29,8 @@ def test_list_items_and_signal_shape():
     assert created["timeframe"] == "15m"
     assert created["trigger_event_ids"] == ["evt-1"]
     assert created["ref_session"] == "ny_am"
+    assert created["contributing_factors"] == []
+    assert created["factor_breakdown"] == []
 
     listed = http.get("/signals").json()
     assert set(listed) == {"items", "next_cursor"}
@@ -99,6 +101,35 @@ def test_ws_upsert_and_status():
         assert patched["realized_r"] == -1.0
         assert patched["exit_price"] == 96.0
         assert patched["closed_ts_ms"] == 9
+
+
+def test_publish_only_factors_echo_on_signal_responses():
+    http = _client()
+    body = _payload(
+        contributing_factors=["kz_align", "2s_tag"],
+        factor_breakdown=[
+            {"name": "confluence_count", "weight": 40, "score": 40, "note": "2s"},
+            {"name": "kill_zone_align", "weight": 30, "score": 30},
+        ],
+    )
+    created = http.post("/signals", json=body).json()
+    assert created["contributing_factors"] == ["kz_align", "2s_tag"]
+    assert created["factor_breakdown"][0]["name"] == "confluence_count"
+    assert created["factor_breakdown"][0]["note"] == "2s"
+    assert created["factor_breakdown"][1] == {
+        "name": "kill_zone_align",
+        "weight": 30.0,
+        "score": 30.0,
+        "note": None,
+    }
+    listed = http.get("/signals").json()["items"][0]
+    assert listed["contributing_factors"] == created["contributing_factors"]
+    assert listed["factor_breakdown"] == created["factor_breakdown"]
+    one = http.get(f"/signals/{created['id']}").json()
+    assert one["factor_breakdown"] == created["factor_breakdown"]
+    hist = http.get("/signals/history").json()["items"][0]
+    assert hist["contributing_factors"] == ["kz_align", "2s_tag"]
+    assert http.post("/risk/validate", json=body).status_code == 422
 
 
 def test_history_route_matches_list():

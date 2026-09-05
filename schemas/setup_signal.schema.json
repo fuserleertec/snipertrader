@@ -72,7 +72,8 @@
       "type": ["array", "null"],
       "items": {
         "type": "object",
-        "required": ["name"],
+        "additionalProperties": false,
+        "required": ["name", "weight", "score"],
         "properties": {
           "name": { "type": "string" },
           "weight": { "type": "number" },
@@ -80,7 +81,7 @@
           "note": { "type": ["string", "null"] }
         }
       },
-      "description": "Publish-only {name, weight, score, note?}[]. sum(score) ≈ conviction. Not on POST /risk/validate."
+      "description": "Publish-only {name, weight, score, note?}[]. Optional. Not on POST /risk/validate."
     }
   }
 }

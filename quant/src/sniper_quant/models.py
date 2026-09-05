@@ -71,8 +71,8 @@ class FactorBreakdownRow(BaseModel):
     """Publish-only explainability row (ML PR #9). Not on ``POST /risk/validate``."""
 
     name: str
-    weight: float = 0.0
-    score: float = 0.0
+    weight: float
+    score: float
     note: str | None = None
 
 
@@ -135,11 +135,18 @@ SIGNAL_VIEW_FIELDS = (
     "realized_r",
     "exit_price",
     "closed_ts_ms",
+    "contributing_factors",
+    "factor_breakdown",
 )
 
 
 class SignalView(BaseModel):
-    """Dashboard / Frontend Signal row. Aligned with the ML validate candidate."""
+    """Dashboard / Frontend Signal row.
+
+    Locked validate fields plus close fields and optional publish-only
+    ``contributing_factors`` / ``factor_breakdown``. Those two are **not**
+    on ``POST /risk/validate``.
+    """
 
     id: str
     ts_ms: int
@@ -171,6 +178,14 @@ class SignalView(BaseModel):
     exit_px: float | None = None
     r_multiple: float | None = None
     outcome: str | None = None
+    contributing_factors: list[str] = Field(
+        default_factory=list,
+        description="Optional publish-only string[]. Not on POST /risk/validate.",
+    )
+    factor_breakdown: list[FactorBreakdownRow] = Field(
+        default_factory=list,
+        description="Optional publish-only {name, weight, score, note?}[]. Not on POST /risk/validate.",
+    )
 
     @classmethod
     def from_stored(cls, row: "StoredSignal") -> "SignalView":
@@ -204,6 +219,8 @@ class SignalView(BaseModel):
             exit_px=exit_price,
             r_multiple=realized,
             outcome=row.outcome,
+            contributing_factors=list(row.contributing_factors or []),
+            factor_breakdown=list(row.factor_breakdown or []),
         )
 
 

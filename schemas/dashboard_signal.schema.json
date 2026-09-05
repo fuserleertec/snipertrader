@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://snipertrader.ai/schemas/dashboard_signal.schema.json",
   "title": "DashboardSignal",
-  "description": "Frontend dashboard Signal row from GET /signals (history = this list with from_ts/to_ts; there is no /signals/history), GET /signals/{id}, and WS /ws/signals. Same setup_type / timeframe / trigger_event_ids as the ML validate candidate, plus id, status, realized_r, exit_price, closed_ts_ms.",
+  "description": "Frontend dashboard Signal row from GET /signals, GET /signals/history, GET /signals/{id}, and WS /ws/signals. Same locked fields as the ML validate candidate, plus id, status, close fields, and optional publish-only contributing_factors / factor_breakdown (never on POST /risk/validate).",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -64,6 +64,26 @@
       "type": ["string", "null"],
       "enum": ["win", "loss", "cancelled", null],
       "description": "win | loss | cancelled. Additive (Phase 2)."
+    },
+    "contributing_factors": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Optional publish-only string[]. Not on POST /risk/validate."
+    },
+    "factor_breakdown": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "weight", "score"],
+        "properties": {
+          "name": { "type": "string" },
+          "weight": { "type": "number" },
+          "score": { "type": "number" },
+          "note": { "type": ["string", "null"] }
+        }
+      },
+      "description": "Optional publish-only {name, weight, score, note?}[]. Not on POST /risk/validate."
     }
   }
 }

@@ -113,6 +113,9 @@ def test_publish_factors_and_performance_product_keys():
         ),
     )
     assert created.status_code == 201
+    published = created.json()
+    assert published["contributing_factors"] == ["2s_tag", "pin"]
+    assert published["factor_breakdown"][0]["name"] == "confluence_count"
     http.patch(
         f"/signals/{created.json()['id']}",
         json={"status": "TP_HIT", "exit_price": 108.0, "realized_r": 2.0, "closed_ts_ms": 99},

@@ -77,8 +77,11 @@ kill-zone conviction bonus (+30 when the confirm bar is in KZ);
 S6 AVWAP anchors `swing_high` / `swing_low` plus earnings/news stubs;
 orchestrator `dedupe_window_sec` default **300**.
 
-`contributing_factors` is `string[]` on publish / signal store only —
-**not** on `POST /risk/validate` (`CandidateSignal` `extra=forbid`).
+`contributing_factors` (`string[]`, optional) and `factor_breakdown`
+(`{name, weight, score, note?}[]`, optional) appear on publish, Kafka
+`setup_signals`, signal store, and **Signal API responses** (`GET/POST/PATCH
+/signals`, history, WS). They are **not** on `POST /risk/validate`
+(`CandidateSignal` `extra=forbid`).
 
 Reject reasons: `ok`, `invalid_levels`, `position_size_exceeds_limit`,
 `daily_loss_limit`, `correlation_threshold`, `same_symbol_conflict`,
@@ -343,7 +346,9 @@ def create_app(
         limit: int = Query(default=50, ge=1, le=500),
         cursor: str | None = Query(default=None, description="Opaque cursor from next_cursor"),
     ) -> SignalListResponse:
-        """Live table + history window."""
+        """Live table + history window. Items include optional publish-only
+        ``contributing_factors`` / ``factor_breakdown`` (not on validate).
+        """
         return await _list_signals_impl(
             symbol, status, setup_type, side, from_ts, to_ts, limit, cursor
         )
