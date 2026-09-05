@@ -88,9 +88,8 @@ def summarize_signals(
     grouped: dict[str, list[StoredSignal]] = {name: [] for name in PERFORMANCE_BY_SETUP_KEYS}
     for row in rows:
         name = _setup_name(row)
-        if name not in grouped:
-            grouped[name] = []
-        grouped[name].append(row)
+        if name in grouped:
+            grouped[name].append(row)
     by_setup = {
         name: _bucket(
             grouped.get(name, []),

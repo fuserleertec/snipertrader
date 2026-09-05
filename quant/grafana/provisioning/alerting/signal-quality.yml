@@ -14,8 +14,8 @@ groups:
         noDataState: OK
         execErrState: OK
         annotations:
-          summary: "7-day win rate on a setup_type is below ALERT_WIN_RATE (0.35)."
-          description: "Check signal_performance. Re-tune ML params or pause that setup."
+          summary: "7-day win rate on a setup_type / product_key is below ALERT_WIN_RATE (0.35)."
+          description: "Check signal_performance (labels: PM/DE product_key lock). Re-tune ML params or pause that setup."
         labels:
           severity: warning
           team: quant
@@ -35,11 +35,20 @@ groups:
                 SELECT
                   EXTRACT(EPOCH FROM date_trunc('day', NOW())) AS time,
                   setup_type,
+                  CASE setup_type
+                    WHEN 'sweep_reclaim' THEN '1_liquidity_sweep_vwap_reclaim'
+                    WHEN 'fvg_entry' THEN '2_fvg_mitigation_vwap'
+                    WHEN 'po3_judas' THEN '3_po3_asia_range_sweep'
+                    WHEN 'mss_break' THEN '4_pending_user_confirm'
+                    WHEN 'order_block' THEN '5_pending_user_confirm'
+                    WHEN 'sweep_mss' THEN '6_pending_user_confirm'
+                    ELSE setup_type
+                  END AS product_key,
                   AVG(win_rate) AS win_rate
                 FROM signal_performance
                 WHERE day >= NOW() - INTERVAL '7 days'
                   AND n_closed >= 3
-                GROUP BY setup_type
+                GROUP BY 2, 3
           - refId: B
             relativeTimeRange:
               from: 604800
@@ -93,11 +102,20 @@ groups:
                 SELECT
                   EXTRACT(EPOCH FROM date_trunc('day', NOW())) AS time,
                   setup_type,
+                  CASE setup_type
+                    WHEN 'sweep_reclaim' THEN '1_liquidity_sweep_vwap_reclaim'
+                    WHEN 'fvg_entry' THEN '2_fvg_mitigation_vwap'
+                    WHEN 'po3_judas' THEN '3_po3_asia_range_sweep'
+                    WHEN 'mss_break' THEN '4_pending_user_confirm'
+                    WHEN 'order_block' THEN '5_pending_user_confirm'
+                    WHEN 'sweep_mss' THEN '6_pending_user_confirm'
+                    ELSE setup_type
+                  END AS product_key,
                   AVG(avg_rr) AS avg_rr
                 FROM signal_performance
                 WHERE day >= NOW() - INTERVAL '7 days'
                   AND n_closed >= 3
-                GROUP BY setup_type
+                GROUP BY 2, 3
           - refId: B
             relativeTimeRange:
               from: 604800

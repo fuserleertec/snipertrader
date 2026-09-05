@@ -31,6 +31,7 @@ DORMANT_SETUP_TYPES: tuple[str, ...] = (
 
 # Frontend GET /performance/summary — by_setup is keyed by setup_type.
 # These six always appear (zeros when empty). ob_fvg is omitted (not in enum).
+# product_key strings are the PM/DE lock (do not invent Setup 4–6 names).
 PERFORMANCE_SETUP_TYPES: tuple[str, ...] = (
     "sweep_reclaim",
     "fvg_entry",
@@ -39,21 +40,15 @@ PERFORMANCE_SETUP_TYPES: tuple[str, ...] = (
     "order_block",
     "sweep_mss",
 )
-# Live validate types that are not in the Frontend minimum set.
-_LIVE_EXTRA: tuple[str, ...] = tuple(t for t in SETUP_TYPES if t not in PERFORMANCE_SETUP_TYPES)
-PERFORMANCE_BY_SETUP_KEYS: tuple[str, ...] = PERFORMANCE_SETUP_TYPES + _LIVE_EXTRA
+PERFORMANCE_BY_SETUP_KEYS: tuple[str, ...] = PERFORMANCE_SETUP_TYPES
 
-# product_key on each bucket (Frontend contract + live S4–S6).
 SETUP_TYPE_TO_PRODUCT: dict[str, str] = {
     "sweep_reclaim": "1_liquidity_sweep_vwap_reclaim",
     "fvg_entry": "2_fvg_mitigation_vwap",
-    "po3_judas": "3_po3_judas",
-    "mss_break": "4_mss_break",
-    "order_block": "5_order_block",
-    "sweep_mss": "6_sweep_mss",
-    "sd_extension_fade": "4_sd_extension_fade",
-    "vwap_pullback_cont": "5_vwap_pullback_cont",
-    "avwap_ob_confluence": "6_avwap_ob_confluence",
+    "po3_judas": "3_po3_asia_range_sweep",
+    "mss_break": "4_pending_user_confirm",
+    "order_block": "5_pending_user_confirm",
+    "sweep_mss": "6_pending_user_confirm",
 }
 PRODUCT_KEYS: tuple[str, ...] = tuple(SETUP_TYPE_TO_PRODUCT[k] for k in PERFORMANCE_BY_SETUP_KEYS)
 PRODUCT_TO_SETUP_TYPE: dict[str, str] = {v: k for k, v in SETUP_TYPE_TO_PRODUCT.items()}

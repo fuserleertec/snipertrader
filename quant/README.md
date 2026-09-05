@@ -242,9 +242,11 @@ zeros. Always present: `sweep_reclaim`, `fvg_entry`, `po3_judas`,
 `mss_break`, `order_block`, `sweep_mss`. `ob_fvg` is omitted (not in the
 validate enum). `product_key` map: `sweep_reclaim` →
 `1_liquidity_sweep_vwap_reclaim`, `fvg_entry` → `2_fvg_mitigation_vwap`,
-`po3_judas` → `3_po3_judas`, `mss_break` → `4_mss_break`, `order_block` →
-`5_order_block`, `sweep_mss` → `6_sweep_mss`. Metrics come from signal
-outcomes / `realized_r`.
+`po3_judas` → `3_po3_asia_range_sweep`, `mss_break` →
+`4_pending_user_confirm`, `order_block` → `5_pending_user_confirm`,
+`sweep_mss` → `6_pending_user_confirm`. Setup 4–6 product keys stay
+`*_pending_user_confirm` — no invented entry-rule names. Metrics come from
+signal outcomes / `realized_r`.
 
 History is `GET /signals` **or** `GET /signals/history` with `from_ts` /
 `to_ts` (plus `symbol` / `status` / `setup_type` / `side`). Both share the
@@ -359,11 +361,14 @@ init runs `01-init.sql` (OHLCV) then `02-signals.sql` (signals +
 `signal_performance` view). Extra services: `signal-validate` (Kafka
 consumer), `signal-monitor` (TP/SL), `grafana` on **:3002**.
 
-Grafana panels (per `setup_type` variable, including `po3_judas`):
-signals/day, win rate, avg **realized_r** (storage `r_multiple`),
-cumulative P&L. Alert rules fire when 7-day win rate < **0.35** or avg R
-< **0.50** (`ALERT_WIN_RATE` / `ALERT_AVG_RR`). Provisioning lives in
-`quant/grafana/provisioning/`.
+Grafana panels filter on `setup_type`; series / table / variable **labels**
+are the PM/DE `product_key` lock (`1_liquidity_sweep_vwap_reclaim`,
+`2_fvg_mitigation_vwap`, `3_po3_asia_range_sweep`,
+`4_pending_user_confirm`, `5_pending_user_confirm`,
+`6_pending_user_confirm`). Setups 4–6 stay `*_pending_user_confirm` —
+no invented entry-rule names. Alert rules fire when 7-day win rate <
+**0.35** or avg R < **0.50** (`ALERT_WIN_RATE` / `ALERT_AVG_RR`).
+Provisioning lives in `quant/grafana/provisioning/`.
 
 Phase 2 surface (done): Kafka `setup_signals` consumer (`sniper-quant consume`),
 lifecycle `realized_r` / `exit_price` / `closed_ts_ms`, Grafana on :3002,

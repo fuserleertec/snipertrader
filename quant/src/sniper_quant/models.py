@@ -330,7 +330,14 @@ class BacktestMetrics(BaseModel):
 
 class PerformanceBucket(BaseModel):
     setup_type: str = Field(description="setup_type key; same as the by_setup map key.")
-    product_key: str = Field(description="DE/Frontend product string for this setup.")
+    product_key: str = Field(
+        description=(
+            "PM/DE lock: 1_liquidity_sweep_vwap_reclaim, 2_fvg_mitigation_vwap, "
+            "3_po3_asia_range_sweep, 4_pending_user_confirm, "
+            "5_pending_user_confirm, 6_pending_user_confirm. "
+            "Setups 4–6 are placeholders — do not invent entry-rule names."
+        )
+    )
     win_rate: float = 0.0
     average_rr: float = 0.0
     sharpe_ratio: float = 0.0
@@ -354,8 +361,8 @@ class PerformanceSummary(BaseModel):
         description=(
             "Keyed by setup_type (not product_key). Always includes "
             "sweep_reclaim, fvg_entry, po3_judas, mss_break, order_block, "
-            "sweep_mss (empty buckets are zeros). Each value has setup_type "
-            "and product_key."
+            "sweep_mss (empty buckets are zeros). product_key is the PM/DE "
+            "lock (3_po3_asia_range_sweep; 4/5/6_pending_user_confirm)."
         )
     )
     rolling_win_rate_20: float | None = None

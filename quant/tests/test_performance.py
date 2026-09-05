@@ -60,10 +60,10 @@ def test_empty_book_shape_and_required_keys():
         assert bucket["average_rr"] == 0.0
         assert bucket["signals_today"] == 0
         assert bucket["signals_week"] == 0
-    assert body["by_setup"]["po3_judas"]["product_key"] == "3_po3_judas"
-    assert body["by_setup"]["mss_break"]["product_key"] == "4_mss_break"
-    assert body["by_setup"]["order_block"]["product_key"] == "5_order_block"
-    assert body["by_setup"]["sweep_mss"]["product_key"] == "6_sweep_mss"
+    assert body["by_setup"]["po3_judas"]["product_key"] == "3_po3_asia_range_sweep"
+    assert body["by_setup"]["mss_break"]["product_key"] == "4_pending_user_confirm"
+    assert body["by_setup"]["order_block"]["product_key"] == "5_pending_user_confirm"
+    assert body["by_setup"]["sweep_mss"]["product_key"] == "6_pending_user_confirm"
 
 
 def test_summary_from_realized_r():
@@ -92,10 +92,62 @@ def test_summary_from_realized_r():
     assert body["by_setup"]["mss_break"]["win_rate"] == 0.0
 
 
+def test_product_key_lock_strings():
+    assert SETUP_TYPE_TO_PRODUCT == {
+        "sweep_reclaim": "1_liquidity_sweep_vwap_reclaim",
+        "fvg_entry": "2_fvg_mitigation_vwap",
+        "po3_judas": "3_po3_asia_range_sweep",
+        "mss_break": "4_pending_user_confirm",
+        "order_block": "5_pending_user_confirm",
+        "sweep_mss": "6_pending_user_confirm",
+    }
+    values = set(SETUP_TYPE_TO_PRODUCT.values())
+    assert "3_po3_judas" not in values
+    assert "4_mss_break" not in values
+    assert "4_sd_extension_fade" not in values
+
+
+def test_grafana_labels_use_product_key_lock():
+    import json
+    from pathlib import Path
+
+    dash = json.loads(
+        (Path(__file__).resolve().parents[1] / "grafana/provisioning/dashboards/json/setup-performance.json").read_text()
+    )
+    blob = json.dumps(dash)
+    assert "3_po3_asia_range_sweep" in blob
+    assert "3_po3_judas" not in blob
+    assert "4_pending_user_confirm" in blob
+    assert "5_pending_user_confirm" in blob
+    assert "6_pending_user_confirm" in blob
+    assert "sd_extension_fade" not in blob
+    assert "4_mss_break" not in blob
+    var = dash["templating"]["list"][0]
+    assert var["name"] == "setup_type"
+    texts = [opt["text"] for opt in var["options"]]
+    values = [opt["value"] for opt in var["options"]]
+    assert texts == [
+        "1_liquidity_sweep_vwap_reclaim",
+        "2_fvg_mitigation_vwap",
+        "3_po3_asia_range_sweep",
+        "4_pending_user_confirm",
+        "5_pending_user_confirm",
+        "6_pending_user_confirm",
+    ]
+    assert values == list(PERFORMANCE_SETUP_TYPES)
+
+
 def test_openapi_documents_performance_summary():
     spec = _client().get("/openapi.json").json()
     assert "/performance/summary" in spec["paths"]
+    desc = spec["paths"]["/performance/summary"]["get"].get("description", "")
+    assert "3_po3_asia_range_sweep" in desc
+    assert "3_po3_judas" not in desc
+    assert "4_pending_user_confirm" in desc
     props = spec["components"]["schemas"]["PerformanceBucket"]["properties"]
     assert "product_key" in props
     assert "setup_type" in props
     assert "sharpe_ratio" in props
+    pk_desc = props["product_key"].get("description", "")
+    assert "3_po3_asia_range_sweep" in pk_desc
+    assert "pending_user_confirm" in pk_desc

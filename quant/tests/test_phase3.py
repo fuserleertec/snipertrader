@@ -102,13 +102,18 @@ def test_publish_factors_and_performance_product_keys():
         json={"status": "TP_HIT", "exit_price": 108.0, "realized_r": 2.0, "closed_ts_ms": 99},
     )
     summary = http.get("/performance/summary").json()
-    assert set(PERFORMANCE_SETUP_TYPES) <= set(summary["by_setup"])
-    bucket = summary["by_setup"]["sd_extension_fade"]
-    assert bucket["setup_type"] == "sd_extension_fade"
-    assert bucket["product_key"] == "4_sd_extension_fade"
-    assert bucket["n_signals"] == 1
-    assert "sharpe_ratio" in bucket
-    assert "max_drawdown_pct" in bucket
+    assert set(PERFORMANCE_SETUP_TYPES) == set(summary["by_setup"])
+    assert "sd_extension_fade" not in summary["by_setup"]
+    assert summary["win_rate"] == 1.0
+    assert summary["n_signals"] == 1
+    assert summary["by_setup"]["po3_judas"]["product_key"] == "3_po3_asia_range_sweep"
+    assert summary["by_setup"]["mss_break"]["product_key"] == "4_pending_user_confirm"
+    assert summary["by_setup"]["order_block"]["product_key"] == "5_pending_user_confirm"
+    assert summary["by_setup"]["sweep_mss"]["product_key"] == "6_pending_user_confirm"
+    sweep = summary["by_setup"]["sweep_reclaim"]
+    assert sweep["n_signals"] == 0
+    assert "sharpe_ratio" in sweep
+    assert "max_drawdown_pct" in sweep
     hist = http.get("/signals/history", params={"setup_type": "sd_extension_fade"}).json()
     assert len(hist["items"]) == 1
 

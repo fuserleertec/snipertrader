@@ -1,5 +1,6 @@
 {
   "annotations": { "list": [] },
+  "description": "Quant setup performance. Panels filter on setup_type; Grafana labels use the PM/DE product_key lock: sweep_reclaim→1_liquidity_sweep_vwap_reclaim, fvg_entry→2_fvg_mitigation_vwap, po3_judas→3_po3_asia_range_sweep, mss_break→4_pending_user_confirm, order_block→5_pending_user_confirm, sweep_mss→6_pending_user_confirm. Setups 4–6 entry rules are pending user confirm — do not invent them. No live trading.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -117,7 +118,7 @@
           "datasource": { "type": "postgres", "uid": "timescale" },
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT day AS time, setup_type AS metric, n_signals AS value FROM signal_performance WHERE setup_type IN (${setup_type:sqlstring}) AND day >= NOW() - INTERVAL '30 days' ORDER BY 1",
+          "rawSql": "SELECT day AS time, CASE setup_type WHEN 'sweep_reclaim' THEN '1_liquidity_sweep_vwap_reclaim' WHEN 'fvg_entry' THEN '2_fvg_mitigation_vwap' WHEN 'po3_judas' THEN '3_po3_asia_range_sweep' WHEN 'mss_break' THEN '4_pending_user_confirm' WHEN 'order_block' THEN '5_pending_user_confirm' WHEN 'sweep_mss' THEN '6_pending_user_confirm' ELSE setup_type END AS metric, n_signals AS value FROM signal_performance WHERE setup_type IN (${setup_type:sqlstring}) AND day >= NOW() - INTERVAL '30 days' ORDER BY 1",
           "refId": "A"
         }
       ]
@@ -149,7 +150,7 @@
           "datasource": { "type": "postgres", "uid": "timescale" },
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT day AS time, setup_type AS metric, win_rate AS value FROM signal_performance WHERE setup_type IN (${setup_type:sqlstring}) AND day >= NOW() - INTERVAL '30 days' ORDER BY 1",
+          "rawSql": "SELECT day AS time, CASE setup_type WHEN 'sweep_reclaim' THEN '1_liquidity_sweep_vwap_reclaim' WHEN 'fvg_entry' THEN '2_fvg_mitigation_vwap' WHEN 'po3_judas' THEN '3_po3_asia_range_sweep' WHEN 'mss_break' THEN '4_pending_user_confirm' WHEN 'order_block' THEN '5_pending_user_confirm' WHEN 'sweep_mss' THEN '6_pending_user_confirm' ELSE setup_type END AS metric, win_rate AS value FROM signal_performance WHERE setup_type IN (${setup_type:sqlstring}) AND day >= NOW() - INTERVAL '30 days' ORDER BY 1",
           "refId": "A"
         }
       ]
@@ -166,7 +167,7 @@
           "datasource": { "type": "postgres", "uid": "timescale" },
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT day AS time, setup_type AS metric, avg_rr AS value FROM signal_performance WHERE setup_type IN (${setup_type:sqlstring}) AND day >= NOW() - INTERVAL '30 days' ORDER BY 1",
+          "rawSql": "SELECT day AS time, CASE setup_type WHEN 'sweep_reclaim' THEN '1_liquidity_sweep_vwap_reclaim' WHEN 'fvg_entry' THEN '2_fvg_mitigation_vwap' WHEN 'po3_judas' THEN '3_po3_asia_range_sweep' WHEN 'mss_break' THEN '4_pending_user_confirm' WHEN 'order_block' THEN '5_pending_user_confirm' WHEN 'sweep_mss' THEN '6_pending_user_confirm' ELSE setup_type END AS metric, avg_rr AS value FROM signal_performance WHERE setup_type IN (${setup_type:sqlstring}) AND day >= NOW() - INTERVAL '30 days' ORDER BY 1",
           "refId": "A"
         }
       ]
@@ -183,7 +184,7 @@
           "datasource": { "type": "postgres", "uid": "timescale" },
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT day AS time, setup_type AS metric, SUM(SUM(pnl)) OVER (PARTITION BY setup_type ORDER BY day) AS value FROM signal_performance WHERE setup_type IN (${setup_type:sqlstring}) GROUP BY day, setup_type ORDER BY 1",
+          "rawSql": "SELECT day AS time, CASE setup_type WHEN 'sweep_reclaim' THEN '1_liquidity_sweep_vwap_reclaim' WHEN 'fvg_entry' THEN '2_fvg_mitigation_vwap' WHEN 'po3_judas' THEN '3_po3_asia_range_sweep' WHEN 'mss_break' THEN '4_pending_user_confirm' WHEN 'order_block' THEN '5_pending_user_confirm' WHEN 'sweep_mss' THEN '6_pending_user_confirm' ELSE setup_type END AS metric, SUM(SUM(pnl)) OVER (PARTITION BY setup_type ORDER BY day) AS value FROM signal_performance WHERE setup_type IN (${setup_type:sqlstring}) GROUP BY day, setup_type ORDER BY 1",
           "refId": "A"
         }
       ]
@@ -193,14 +194,14 @@
       "fieldConfig": { "defaults": { "decimals": 2 }, "overrides": [] },
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 20 },
       "id": 9,
-      "title": "All locked setup_types (1–6)",
+      "title": "Performance buckets (setup_type + product_key)",
       "type": "table",
       "targets": [
         {
           "datasource": { "type": "postgres", "uid": "timescale" },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH locked(setup_type) AS (VALUES ('sweep_reclaim'),('fvg_entry'),('po3_judas'),('sd_extension_fade'),('vwap_pullback_cont'),('avwap_ob_confluence')) SELECT l.setup_type, COALESCE(SUM(p.n_signals), 0) AS n_signals, COALESCE(AVG(p.win_rate), 0) AS win_rate, COALESCE(AVG(p.avg_rr), 0) AS avg_realized_r FROM locked l LEFT JOIN signal_performance p ON p.setup_type = l.setup_type AND p.day >= NOW() - INTERVAL '30 days' WHERE l.setup_type IN (${setup_type:sqlstring}) GROUP BY 1 ORDER BY 1",
+          "rawSql": "WITH locked(setup_type, product_key) AS (VALUES ('sweep_reclaim','1_liquidity_sweep_vwap_reclaim'),('fvg_entry','2_fvg_mitigation_vwap'),('po3_judas','3_po3_asia_range_sweep'),('mss_break','4_pending_user_confirm'),('order_block','5_pending_user_confirm'),('sweep_mss','6_pending_user_confirm')) SELECT l.setup_type, l.product_key, COALESCE(SUM(p.n_signals), 0) AS n_signals, COALESCE(AVG(p.win_rate), 0) AS win_rate, COALESCE(AVG(p.avg_rr), 0) AS avg_realized_r FROM locked l LEFT JOIN signal_performance p ON p.setup_type = l.setup_type AND p.day >= NOW() - INTERVAL '30 days' WHERE l.setup_type IN (${setup_type:sqlstring}) GROUP BY 1, 2 ORDER BY 1",
           "refId": "A"
         }
       ]
@@ -212,28 +213,28 @@
   "templating": {
     "list": [
       {
-        "allValue": "sweep_reclaim,fvg_entry,po3_judas,sd_extension_fade,vwap_pullback_cont,avwap_ob_confluence",
+        "allValue": "sweep_reclaim,fvg_entry,po3_judas,mss_break,order_block,sweep_mss",
         "current": { "text": "All", "value": ["$__all"] },
         "includeAll": true,
-        "label": "setup_type",
+        "label": "product_key",
         "multi": true,
         "name": "setup_type",
         "options": [
-          { "selected": false, "text": "sweep_reclaim", "value": "sweep_reclaim" },
-          { "selected": false, "text": "fvg_entry", "value": "fvg_entry" },
-          { "selected": false, "text": "po3_judas", "value": "po3_judas" },
-          { "selected": false, "text": "sd_extension_fade", "value": "sd_extension_fade" },
-          { "selected": false, "text": "vwap_pullback_cont", "value": "vwap_pullback_cont" },
-          { "selected": false, "text": "avwap_ob_confluence", "value": "avwap_ob_confluence" }
+          { "selected": false, "text": "1_liquidity_sweep_vwap_reclaim", "value": "sweep_reclaim" },
+          { "selected": false, "text": "2_fvg_mitigation_vwap", "value": "fvg_entry" },
+          { "selected": false, "text": "3_po3_asia_range_sweep", "value": "po3_judas" },
+          { "selected": false, "text": "4_pending_user_confirm", "value": "mss_break" },
+          { "selected": false, "text": "5_pending_user_confirm", "value": "order_block" },
+          { "selected": false, "text": "6_pending_user_confirm", "value": "sweep_mss" }
         ],
-        "query": "sweep_reclaim,fvg_entry,po3_judas,sd_extension_fade,vwap_pullback_cont,avwap_ob_confluence",
+        "query": "1_liquidity_sweep_vwap_reclaim : sweep_reclaim, 2_fvg_mitigation_vwap : fvg_entry, 3_po3_asia_range_sweep : po3_judas, 4_pending_user_confirm : mss_break, 5_pending_user_confirm : order_block, 6_pending_user_confirm : sweep_mss",
         "type": "custom"
       }
     ]
   },
   "time": { "from": "now-30d", "to": "now" },
   "timezone": "utc",
-  "title": "Quant — setup performance (all locked setup_types)",
+  "title": "Quant — setup performance (product_key labels)",
   "uid": "quant-setup-performance",
-  "version": 2
+  "version": 3
 }
