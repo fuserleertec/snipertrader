@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type RefObject } from "react";
 import { OVERLAY_PRESETS, TIMEFRAMES } from "@/lib/constants";
 import type { Theme } from "@/hooks/useTheme";
 import {
@@ -25,6 +25,7 @@ import type {
 import { PriceChart } from "../PriceChart";
 
 export function SimulationView({
+  chartRef,
   signals,
   selected,
   onSelect,
@@ -46,6 +47,7 @@ export function SimulationView({
   volumeProfile = null,
   killZone = null,
 }: {
+  chartRef?: RefObject<HTMLDivElement | null>;
   signals: Signal[];
   selected: Signal | null;
   onSelect: (signal: Signal) => void;
@@ -184,23 +186,25 @@ export function SimulationView({
               Bearish
             </span>
           </div>
-          {segs.map((s, i) => {
-            const slice = cells.filter((_, j) => j % segs.length === i);
-            const pct = Math.round((slice.filter((c) => c === "bull").length / slice.length) * 100);
-            return (
-              <div key={s} className="ssig">
-                <span className="ic">⚡</span>
-                <span className="nm">{s} Sector</span>
-                <span className="vl">
-                  {pct}% Bullish ({slice.length} agents)
-                </span>
-              </div>
-            );
-          })}
-          <div className="ssig">
-            <span className="ic">📊</span>
-            <span className="nm">Volume Imbalance</span>
-            <span className="vl">1.7M @ ask</span>
+          <div className="swarm-signals">
+            {segs.map((s, i) => {
+              const slice = cells.filter((_, j) => j % segs.length === i);
+              const pct = Math.round((slice.filter((c) => c === "bull").length / slice.length) * 100);
+              return (
+                <div key={s} className="ssig">
+                  <span className="ic">⚡</span>
+                  <span className="nm">{s} Sector</span>
+                  <span className="vl">
+                    {pct}% Bullish ({slice.length} agents)
+                  </span>
+                </div>
+              );
+            })}
+            <div className="ssig">
+              <span className="ic">📊</span>
+              <span className="nm">Volume Imbalance</span>
+              <span className="vl">1.7M @ ask</span>
+            </div>
           </div>
         </div>
         <div className="panel">
@@ -227,8 +231,7 @@ export function SimulationView({
                 })}
               </div>
               <div className="kline-note">
-                Next key level ≈ ${focus ? focus.target.toFixed(2) : "—"} (target zone, ATR-anchored). Scenario
-                cone probabilities (simulated Monte-Carlo, 1,000 passes).
+                Next key level ≈ ${focus ? focus.target.toFixed(2) : "—"} (target zone, ATR-anchored).
               </div>
             </div>
             <div>
@@ -253,6 +256,9 @@ export function SimulationView({
                 </div>
                 <span className="pv">{sc.bear.p}%</span>
               </div>
+              <div className="kline-note" style={{ color: "var(--dim)" }}>
+                Scenario cone probabilities (simulated Monte-Carlo, 1,000 passes).
+              </div>
             </div>
           </div>
           <div className="slider" style={{ marginTop: 10 }}>
@@ -262,56 +268,6 @@ export function SimulationView({
             </div>
             <input type="range" min={-1} max={1} step={0.05} value={bias} onChange={(e) => setBias(Number(e.target.value))} />
           </div>
-          <div className="symbol-row">
-            <select value={["BTCUSDT", "ETHUSDT", "AAPL", "ES"].includes(symbol) ? symbol : "BTCUSDT"} onChange={(e) => onSymbol(e.target.value)}>
-              <option>BTCUSDT</option>
-              <option>ETHUSDT</option>
-              <option>AAPL</option>
-              <option>ES</option>
-            </select>
-            {TIMEFRAMES.map((tf) => (
-              <button key={tf} type="button" className={`ftab${tf === timeframe ? " active" : ""}`} onClick={() => onTimeframe(tf)}>
-                {tf}
-              </button>
-            ))}
-          </div>
-          <div className="filters" style={{ marginTop: 10 }}>
-            {OVERLAY_PRESETS.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                className={`ftab${overlayPreset === p.id ? " active" : ""}`}
-                data-overlay={p.id}
-                onClick={() => onOverlayPreset(p.id)}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-          <div className="kline-note">
-            Setup 1 <code>sweep_reclaim</code> — sweep + MSS + <code>ref_vwap</code> + E/S/T. Setup 2{" "}
-            <code>fvg_entry</code> — FVG + overlapping OB via <code>trigger_event_ids</code> /{" "}
-            <code>order_block</code> factor + VWAP/HVN + entry confirm. Setup 3 <code>po3_judas</code> —
-            Asia box (<code>session:{"{symbol}"}:asia</code>) + extreme sweep + displacement
-            {killZone?.active ? ` + kill zone ${killZone.kill_zone} active.` : "."} Card click
-            highlights only <code>trigger_event_ids</code>.
-          </div>
-          <PriceChart
-            bars={bars}
-            historyKey={historyKey}
-            lastBar={lastBar}
-            vwap={vwap}
-            sessions={sessions}
-            visibleSessions={visibleSessions}
-            timeframe={timeframe}
-            theme={theme}
-            patterns={patterns}
-            overlayPreset={overlayPreset}
-            selected={selected}
-            anchorVwap={anchorVwap}
-            volumeProfile={volumeProfile}
-            killZone={killZone}
-          />
         </div>
       </div>
 
@@ -358,6 +314,64 @@ export function SimulationView({
             <span className="dl">{Math.round(sc.bear.p * 0.6)}%</span>
           </div>
         </div>
+      </div>
+
+      <div className="panel paper-desk" id="kronos-chart" ref={chartRef} style={{ marginTop: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 18 }}>📐</span>
+          <b>Paper desk — structural chart</b>
+          <span className="sim">Paper</span>
+        </div>
+        <div className="symbol-row">
+          <select value={["BTCUSDT", "ETHUSDT", "AAPL", "ES"].includes(symbol) ? symbol : "BTCUSDT"} onChange={(e) => onSymbol(e.target.value)}>
+            <option>BTCUSDT</option>
+            <option>ETHUSDT</option>
+            <option>AAPL</option>
+            <option>ES</option>
+          </select>
+          {TIMEFRAMES.map((tf) => (
+            <button key={tf} type="button" className={`ftab${tf === timeframe ? " active" : ""}`} onClick={() => onTimeframe(tf)}>
+              {tf}
+            </button>
+          ))}
+        </div>
+        <div className="filters" style={{ marginTop: 10 }}>
+          {OVERLAY_PRESETS.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className={`ftab${overlayPreset === p.id ? " active" : ""}`}
+              data-overlay={p.id}
+              onClick={() => onOverlayPreset(p.id)}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+        <div className="kline-note">
+          Setup 1 <code>sweep_reclaim</code> — sweep + MSS + <code>ref_vwap</code> + E/S/T. Setup 2{" "}
+          <code>fvg_entry</code> — FVG + overlapping OB via <code>trigger_event_ids</code> /{" "}
+          <code>order_block</code> factor + VWAP/HVN + entry confirm. Setup 3 <code>po3_judas</code> —
+          Asia box (<code>session:{"{symbol}"}:asia</code>) + extreme sweep + displacement
+          {killZone?.active ? ` + kill zone ${killZone.kill_zone} active.` : "."} Card click
+          highlights only <code>trigger_event_ids</code>.
+        </div>
+        <PriceChart
+          bars={bars}
+          historyKey={historyKey}
+          lastBar={lastBar}
+          vwap={vwap}
+          sessions={sessions}
+          visibleSessions={visibleSessions}
+          timeframe={timeframe}
+          theme={theme}
+          patterns={patterns}
+          overlayPreset={overlayPreset}
+          selected={selected}
+          anchorVwap={anchorVwap}
+          volumeProfile={volumeProfile}
+          killZone={killZone}
+        />
       </div>
     </section>
   );

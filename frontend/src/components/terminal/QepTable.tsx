@@ -33,6 +33,7 @@ export function QepTable({
   onToggleSound,
   initialMode,
   cards,
+  history,
   onSetupFilter,
 }: {
   signals: Signal[];
@@ -43,6 +44,7 @@ export function QepTable({
   onToggleSound: () => void;
   initialMode?: QepMode;
   cards?: ReactNode;
+  history?: ReactNode;
   onSetupFilter?: (setup: SetupType | "all") => void;
 }) {
   const startMode: QepMode = initialMode === "setups" || initialMode === "activity" ? initialMode : "market";
@@ -100,41 +102,72 @@ export function QepTable({
       <div className="sec-sub">
         Five engines — Kronos (temporal), SNN (spike/regime), MiroFish (pattern), Fundamental
         (filings), Quantum (weighted resolver) — vote into a single 0–100 conviction, then rank
-        into a provenance-tagged table. Setup cards pin by <code>signal.id</code> (one ACTIVE per
-        locked setup 1–6). Click joins overlays via <code>trigger_event_ids</code>.
+        into a provenance-tagged table. All prices, signals and filings below are{" "}
+        <b>synthetic demo data</b> (not live market data or advice); conviction pulses ±2 every 3s
+        to simulate the heartbeat.
       </div>
-      {cards}
 
       <div className="qep-bar">
-        <div className="qep-toggle">
-          {(
-            [
-              ["market", "Market Signals"],
-              ["activity", "Smart Money Activity"],
-              ["setups", "Setup Signals"],
-            ] as const
-          ).map(([id, label]) => (
+        {mode === "setups" ? (
+          <div className="qep-toggle">
             <button
-              key={id}
               type="button"
-              className={mode === id ? "active" : ""}
-              data-qep={id}
               onClick={() => {
-                setMode(id);
-                setCat(id === "setups" ? "Setups" : QEP_CATS[id][0]);
+                setMode("market");
+                setCat(QEP_CATS.market[0]);
                 setSub("All");
               }}
             >
-              {label}
+              ← Market Signals
             </button>
-          ))}
-        </div>
+            <button type="button" className="active" data-qep="setups">
+              Setup Signals
+            </button>
+          </div>
+        ) : (
+          <div className="qep-toggle">
+            {(
+              [
+                ["market", "Market Signals"],
+                ["activity", "Smart Money Activity"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                className={mode === id ? "active" : ""}
+                data-qep={id}
+                onClick={() => {
+                  setMode(id);
+                  setCat(QEP_CATS[id][0]);
+                  setSub("All");
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="qep-legend">
           {ENGINE_ORDER.map((k) => (
             <span key={k}>
               <b style={{ color: ENGINE_META[k].color }}>{k}</b> {ENGINE_META[k].label}
             </span>
           ))}
+          {mode !== "setups" ? (
+            <button
+              type="button"
+              className="qep-desk"
+              data-qep="setups"
+              onClick={() => {
+                setMode("setups");
+                setCat("Setups");
+                setSub("All");
+              }}
+            >
+              Setup desk
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -241,6 +274,15 @@ export function QepTable({
           </tbody>
         </table>
       </div>
+      {mode === "setups" && cards}
+      {mode === "setups" && history ? (
+        <details className="hist-fold" open>
+          <summary>
+            Signal History — <code>GET /signals</code>
+          </summary>
+          {history}
+        </details>
+      ) : null}
     </section>
   );
 }

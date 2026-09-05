@@ -19,7 +19,6 @@ import type { OverlayPreset, SetupType, Signal, Timeframe } from "@/lib/types";
 import { SignalTable } from "./SignalTable";
 import { SetupCards } from "./SetupCards";
 import { playAlert, ToastHost, type ToastItem } from "./ToastHost";
-import { AppNav } from "./terminal/AppNav";
 import { EngineGlossary, ExecutionDesk, Narratives, PickGrid, ReconAudit } from "./terminal/PickAndDesk";
 import { QepTable } from "./terminal/QepTable";
 import { SignalDetail } from "./terminal/SignalDetail";
@@ -164,7 +163,6 @@ export function Dashboard() {
   return (
     <div>
       <TerminalNav theme={theme} onToggleTheme={toggle} />
-      <AppNav />
       <div className="wrap">
         <div className="hero">
           <h1>
@@ -212,46 +210,6 @@ export function Dashboard() {
           </div>
         </div>
 
-        <div className="qstats" aria-label="GET /performance/summary">
-          <div className="qstat" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div>
-              <div className="ql">GET /performance/summary</div>
-              <div className="qv" style={{ fontSize: 14 }}>
-                {performance.source === "live" ? (
-                  <span className="sim" style={{ background: "rgba(0,150,80,0.12)", color: "var(--emerald)" }}>
-                    LIVE :8001
-                  </span>
-                ) : (
-                  <span className="sim">MOCK FALLBACK</span>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="qstat">
-            <div className="ql">Win Rate</div>
-            <div className="qv pos">{fmtWin(performance.overall.win_rate)}</div>
-          </div>
-          <div className="qstat">
-            <div className="ql">Avg R:R</div>
-            <div className="qv cy">{performance.overall.average_rr.toFixed(2)}</div>
-          </div>
-          <div className="qstat">
-            <div className="ql">Sharpe</div>
-            <div className="qv gold">{performance.overall.sharpe_ratio.toFixed(2)}</div>
-          </div>
-          <div className="qstat">
-            <div className="ql">Max Drawdown</div>
-            <div className="qv">{performance.overall.max_drawdown_pct.toFixed(1)}%</div>
-          </div>
-          <div className="qstat">
-            <div className="ql">Signals Today / Week</div>
-            <div className="qv">
-              {performance.overall.signals_today}
-              <span style={{ color: "var(--dim2)", fontSize: 13 }}> / {performance.overall.signals_week}</span>
-            </div>
-          </div>
-        </div>
-
         <div className="disclaimer">
           <b>SIMULATION &amp; EDUCATION NOTICE.</b> Kronos structural patterns and the Conviction
           Engine derive from <b>real market data</b> (Yahoo k-lines, SEC Form 4). The MiroFish agent
@@ -260,8 +218,6 @@ export function Dashboard() {
           <i>might</i> resolve, not live order flow, dark-pool, or options data. Nothing here is
           financial advice.
         </div>
-
-        {selected && <SignalDetail signal={selected} onClose={() => setSelectedId(null)} />}
 
         <QepTable
           signals={allSignals}
@@ -275,47 +231,43 @@ export function Dashboard() {
           cards={
             <SetupCards signals={allSignals} selectedId={selectedId} onSelect={onOpenChart} />
           }
+          history={
+            <SignalTable
+              rows={allSignals}
+              selectedId={selectedId}
+              onSelect={onOpenChart}
+              soundOn={soundOn}
+              onToggleSound={() => setSoundOn((v) => !v)}
+              embedded
+            />
+          }
         />
 
-        <details className="hist-fold">
-          <summary>
-            Signal History — <code>GET /signals</code>
-          </summary>
-          <SignalTable
-            rows={allSignals}
-            selectedId={selectedId}
-            onSelect={onOpenChart}
-            soundOn={soundOn}
-            onToggleSound={() => setSoundOn((v) => !v)}
-            embedded
-          />
-        </details>
-
-        <div id="kronos-chart" ref={chartRef}>
-          <SimulationView
-            signals={allSignals}
-            selected={selected}
-            onSelect={onSelect}
-            symbol={symbol}
-            onSymbol={onSymbol}
-            timeframe={timeframe}
-            onTimeframe={setTimeframe}
-            overlayPreset={overlayPreset}
-            onOverlayPreset={setOverlayPreset}
-            bars={market.bars}
-            historyKey={`${market.historyKey}:${tick}`}
-            lastBar={market.lastBar}
-            vwap={market.vwaps.session ?? null}
-            anchorVwap={market.vwaps.weekly ?? market.vwaps.rolling ?? null}
-            sessions={sessionBooks}
-            visibleSessions={visibleSessions}
-            theme={theme}
-            patterns={patterns}
-            lastPrice={market.lastPrice}
-            volumeProfile={market.volumeProfile}
-            killZone={market.killZone}
-          />
-        </div>
+        <SimulationView
+          chartRef={chartRef}
+          signals={allSignals}
+          selected={selected}
+          onSelect={onSelect}
+          symbol={symbol}
+          onSymbol={onSymbol}
+          timeframe={timeframe}
+          onTimeframe={setTimeframe}
+          overlayPreset={overlayPreset}
+          onOverlayPreset={setOverlayPreset}
+          bars={market.bars}
+          historyKey={`${market.historyKey}:${tick}`}
+          lastBar={market.lastBar}
+          vwap={market.vwaps.session ?? null}
+          anchorVwap={market.vwaps.weekly ?? market.vwaps.rolling ?? null}
+          sessions={sessionBooks}
+          visibleSessions={visibleSessions}
+          theme={theme}
+          patterns={patterns}
+          lastPrice={market.lastPrice}
+          volumeProfile={market.volumeProfile}
+          killZone={market.killZone}
+        />
+        {selected && <SignalDetail signal={selected} onClose={() => setSelectedId(null)} />}
 
         <PickGrid
           signals={allSignals}
@@ -358,7 +310,3 @@ function vwapSigma(sigma?: number): string {
   return sigma.toFixed(1);
 }
 
-function fmtWin(n: number): string {
-  const v = n > 1 ? n : n * 100;
-  return `${v.toFixed(0)}%`;
-}
