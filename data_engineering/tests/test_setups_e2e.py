@@ -227,3 +227,29 @@ async def test_quant_replay_pack_files(tmp_path):
         assert "id" not in req
         assert sig["id"]
         assert written[f"{kind}.validate.json"]
+
+
+@pytest.mark.asyncio
+async def test_quant_replay_pack_files_phase3(tmp_path):
+    report = await build_phase3_e2e_report()
+    dest = tmp_path / "quant_replay"
+    written = write_quant_replay_pack(report, dest)
+    assert (dest / "curl_replay.sh").exists()
+    for kind in (
+        "sweep_reclaim",
+        "fvg_entry",
+        "po3_judas",
+        "sd_extension_fade",
+        "vwap_pullback_cont",
+        "avwap_ob_confluence",
+    ):
+        req = json.loads((dest / f"{kind}.validate.json").read_text())
+        sig = json.loads((dest / f"{kind}.setup_signal.json").read_text())
+        assert "id" not in req
+        assert "contributing_factors" not in req
+        assert "factor_breakdown" not in req
+        assert sig["id"]
+        assert sig["trigger_event_ids"]
+        assert sig["contributing_factors"]
+        assert isinstance(sig["factor_breakdown"], list)
+        assert written[f"{kind}.validate.json"]

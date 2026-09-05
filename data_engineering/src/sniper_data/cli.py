@@ -34,7 +34,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--e2e-out",
         default=None,
-        help="Write the Phase 2 E2E report JSON to this path.",
+        help="Write the Phase 3 E2E report JSON to this path.",
     )
     args = parser.parse_args(argv)
 
