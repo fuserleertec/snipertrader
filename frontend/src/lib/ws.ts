@@ -7,9 +7,8 @@ export type JsonHandler = (data: unknown) => void;
  * One socket per URL (query-param subscribe only — no multiplex JSON).
  * Reconnect with a new URL to change symbol.
  */
-export function openJsonWs(
-  path: string,
-  params: Record<string, string>,
+export function openJsonWsAt(
+  url: string,
   onMessage: JsonHandler,
   onStatus: (status: ConnectionStatus) => void,
 ): () => void {
@@ -17,7 +16,6 @@ export function openJsonWs(
   let closed = false;
   let attempt = 0;
   let timer: ReturnType<typeof setTimeout> | null = null;
-  const url = wsUrl(path, params);
 
   const connect = () => {
     if (closed) return;
@@ -65,4 +63,13 @@ export function openJsonWs(
     if (timer) clearTimeout(timer);
     socket?.close();
   };
+}
+
+export function openJsonWs(
+  path: string,
+  params: Record<string, string>,
+  onMessage: JsonHandler,
+  onStatus: (status: ConnectionStatus) => void,
+): () => void {
+  return openJsonWsAt(wsUrl(path, params), onMessage, onStatus);
 }

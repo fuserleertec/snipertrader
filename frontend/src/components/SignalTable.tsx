@@ -1,6 +1,7 @@
 "use client";
 
-import type { SignalRow } from "@/lib/types";
+import { zoneLabel } from "@/lib/signals";
+import type { Signal } from "@/lib/types";
 
 function utcStamp(ms: number): string {
   const d = new Date(ms);
@@ -8,13 +9,7 @@ function utcStamp(ms: number): string {
   return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
 }
 
-function dirClass(direction: string): string {
-  if (direction === "long" || direction === "bullish" || direction === "buy") return "dir-up";
-  if (direction === "short" || direction === "bearish" || direction === "sell") return "dir-down";
-  return "";
-}
-
-export function SignalTable({ rows }: { rows: SignalRow[] }) {
+export function SignalTable({ rows }: { rows: Signal[] }) {
   return (
     <section className="signal-panel">
       <header>
@@ -37,7 +32,7 @@ export function SignalTable({ rows }: { rows: SignalRow[] }) {
             {rows.length === 0 && (
               <tr>
                 <td colSpan={6} className="empty">
-                  Waiting for signal frames…
+                  Waiting for Signal frames…
                 </td>
               </tr>
             )}
@@ -45,9 +40,9 @@ export function SignalTable({ rows }: { rows: SignalRow[] }) {
               <tr key={row.id}>
                 <td className="mono">{utcStamp(row.ts_ms)}</td>
                 <td className="mono">{row.symbol}</td>
-                <td>{row.pattern_type}</td>
-                <td className={dirClass(row.direction)}>{row.direction}</td>
-                <td className="mono">{row.zone}</td>
+                <td className="mono">{row.setup_type}</td>
+                <td className={row.side === "long" ? "dir-up" : "dir-down"}>{row.side}</td>
+                <td className="mono zone-cell">{zoneLabel(row)}</td>
                 <td>
                   <span className={`badge badge-${row.status}`}>{row.status}</span>
                 </td>

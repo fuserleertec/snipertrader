@@ -1,9 +1,19 @@
-import { httpUrl } from "./env";
-import type { AnchorType, OHLCVBar, SessionLevels, SessionListResponse, SessionType, VWAPValues } from "./types";
+import { httpUrl, quantHttpUrl } from "./env";
+import type {
+  AnchorType,
+  OHLCVBar,
+  SessionLevels,
+  SessionListResponse,
+  SessionType,
+  Signal,
+  SignalListQuery,
+  SignalListResponse,
+  VWAPValues,
+} from "./types";
 
-async function getJson<T>(path: string): Promise<T | null> {
+async function getJson<T>(path: string, buildUrl: (path: string) => string = httpUrl): Promise<T | null> {
   try {
-    const res = await fetch(httpUrl(path), { cache: "no-store" });
+    const res = await fetch(buildUrl(path), { cache: "no-store" });
     if (!res.ok) return null;
     return (await res.json()) as T;
   } catch {
@@ -35,4 +45,20 @@ export async function fetchOhlcv(
   if (!body) return [];
   if (Array.isArray(body)) return body;
   return body.bars ?? [];
+}
+
+export async function fetchSignals(query: SignalListQuery = {}): Promise<SignalListResponse | null> {
+  const params = new URLSearchParams();
+  if (query.symbol) params.set("symbol", query.symbol);
+  if (query.status) params.set("status", query.status);
+  if (query.setup_type) params.set("setup_type", query.setup_type);
+  if (query.from_ts != null) params.set("from_ts", String(query.from_ts));
+  if (query.to_ts != null) params.set("to_ts", String(query.to_ts));
+  if (query.limit != null) params.set("limit", String(query.limit));
+  const qs = params.toString();
+  return getJson<SignalListResponse>(`/signals${qs ? `?${qs}` : ""}`, quantHttpUrl);
+}
+
+export function fetchSignal(id: string): Promise<Signal | null> {
+  return getJson<Signal>(`/signals/${id}`, quantHttpUrl);
 }

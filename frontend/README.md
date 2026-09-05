@@ -33,9 +33,9 @@ npm run dev:dashboard
 - **Header** — symbol selector (uppercase, no hyphens, e.g. `BTCUSDT`), timeframe
   pills (`1m` `5m` `15m` `1h` `4h`), last price, mock/live status, theme toggle
 - **Sidebar** — VWAP anchor (`session` | `weekly` | `rolling`), session-level
-  filters, signal-kind filters
+  filters, Quant `setup_type` / `status` filters
 - **Main chart** — TradingView Lightweight Charts v4 candlesticks
-- **Bottom table** — real-time signals (setups, FVGs, sweeps)
+- **Bottom table** — Quant setup/trade signals (post risk-approval)
 
 ## Chart (performance)
 
@@ -52,12 +52,13 @@ npm run dev:dashboard
 | Variable | Default | Purpose |
 |---|---|---|
 | `NEXT_PUBLIC_USE_MOCKS` | `true` | In-browser streams. Set `false` for live API. |
-| `NEXT_PUBLIC_WS_BASE` | `ws://localhost:8000` | WebSocket origin |
-| `NEXT_PUBLIC_HTTP_BASE` | `http://localhost:8000` | HTTP origin. Same-origin `/v1/*` is rewritten here in `next.config.ts`. |
+| `NEXT_PUBLIC_WS_BASE` | `ws://localhost:8000` | Data Eng WebSocket origin (`/v1/ws/*`) |
+| `NEXT_PUBLIC_HTTP_BASE` | `http://localhost:8000` | Data Eng HTTP. Same-origin `/v1/*` is rewritten here. |
+| `NEXT_PUBLIC_QUANT_HTTP_BASE` | `http://localhost:8000` | Quant REST (`/signals`). Same-origin `/signals` is rewritten here. |
+| `NEXT_PUBLIC_QUANT_WS_BASE` | `ws://localhost:8000` | Quant planned WS (`/ws/signals`) |
 
-Mock → live is **env-only**. Clients already target the paths below; no code
-change is required once the Quant Risk Pre-Filter API is up (swap the signals
-path in `useSignals.ts` if Quant publishes a different URL).
+Mock → live is **env-only**. Market-data clients talk to Data Eng; signal
+clients talk to Quant. Bases are independently configurable.
 
 ## Data contracts — `schema_version` `"1.1"`
 
@@ -127,14 +128,52 @@ Every frame is treated as a **closed** bar unless `closed: false` is present
 (optional, not in the current schema). Planned history:
 `GET /v1/ohlcv/{symbol}?timeframe=1m&limit=200` — mocks use this shape.
 
-### Signals (Quant Developers — mock until contract lands)
+### Signals — Quant Developers (provisional)
 
-Table columns: Timestamp, Symbol, Pattern Type, Direction, Zone, Status.
+Quant owns **setup/trade signals** (post risk-approval), **not** raw sweep/FVG
+pattern streams.
 
-Mock WS emits the Phase 1 stub schemas (`setup_signal`, `fvg_zone`,
-`sweep_event`) on a timer. Live mode opens
-`WS /v1/ws/signals?symbol=BTCUSDT` — **TODO** swap that path to the Quant
-Risk Pre-Filter API when it ships.
+REST:
+
+- `GET /signals?symbol=&status=&setup_type=&from_ts=&to_ts=&limit=` →
+  `{ "items": [ Signal ], "next_cursor": string|null }`
+- `GET /signals/{id}` → `Signal`
+
+Planned WS: `WS /ws/signals` →
+`{ "type": "signal.upsert"|"signal.status", "signal": Signal }`
+
+Table columns map 1:1 to Signal fields:
+
+| Column | Field |
+|---|---|
+| Timestamp | `ts_ms` (UTC ms) |
+| Symbol | `symbol` |
+| Pattern Type | `setup_type` ∈ `sweep_reclaim` \| `fvg_entry` \| `mss_break` \| `order_block` \| `sweep_mss` \| `ob_fvg` |
+| Direction | `side` ∈ `long` \| `short` |
+| Zone | `{ entry, stop, target }` (UI also derives `zone_low`/`zone_high` from stop/entry) |
+| Status | `ACTIVE` \| `TP_HIT` \| `SL_HIT` \| `CANCELLED` |
+
+```json
+{
+  "id": "string",
+  "ts_ms": 0,
+  "symbol": "BTCUSDT",
+  "asset_class": "crypto",
+  "setup_type": "sweep_reclaim",
+  "side": "long",
+  "entry": 0,
+  "stop": 0,
+  "target": 0,
+  "status": "ACTIVE",
+  "confidence": 0.8,
+  "timeframe": "5m",
+  "ref_session": "ny_am",
+  "trigger_event_ids": ["..."]
+}
+```
+
+Mocks emit this exact REST list and WS envelope. Raw `fvg_zone` / `sweep_event`
+Kafka stubs stay with Data Engineering — they are not table rows.
 
 ## Theme
 

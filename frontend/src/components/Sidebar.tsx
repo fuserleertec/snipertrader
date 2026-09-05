@@ -1,14 +1,15 @@
 "use client";
 
-import { ANCHORS, sessionsForAsset } from "@/lib/constants";
-import type { AnchorType, AssetClass, SessionType, SignalKind, VWAPValues } from "@/lib/types";
-import type { SessionLevels } from "@/lib/types";
-
-const KIND_LABEL: Record<SignalKind, string> = {
-  setup: "Setups",
-  fvg: "FVGs",
-  sweep: "Sweeps",
-};
+import { ANCHORS, sessionsForAsset, SETUP_TYPES, SIGNAL_STATUSES } from "@/lib/constants";
+import type {
+  AnchorType,
+  AssetClass,
+  SessionLevels,
+  SessionType,
+  SetupType,
+  SignalStatus,
+  VWAPValues,
+} from "@/lib/types";
 
 export function Sidebar({
   assetClass,
@@ -16,8 +17,10 @@ export function Sidebar({
   onAnchor,
   visibleSessions,
   onToggleSession,
-  signalKinds,
-  onToggleKind,
+  setupTypes,
+  onToggleSetupType,
+  statuses,
+  onToggleStatus,
   vwap,
   sessionBooks,
   open,
@@ -27,8 +30,10 @@ export function Sidebar({
   onAnchor: (a: AnchorType) => void;
   visibleSessions: SessionType[];
   onToggleSession: (s: SessionType) => void;
-  signalKinds: SignalKind[];
-  onToggleKind: (k: SignalKind) => void;
+  setupTypes: SetupType[];
+  onToggleSetupType: (t: SetupType) => void;
+  statuses: SignalStatus[];
+  onToggleStatus: (s: SignalStatus) => void;
   vwap: VWAPValues | null;
   sessionBooks: SessionLevels[];
   open: boolean;
@@ -113,22 +118,37 @@ export function Sidebar({
       </section>
 
       <section>
-        <h3>Signals</h3>
+        <h3>setup_type</h3>
         <div className="choice-col">
-          {(Object.keys(KIND_LABEL) as SignalKind[]).map((k) => (
-            <label key={k}>
+          {SETUP_TYPES.map((t) => (
+            <label key={t}>
               <input
                 type="checkbox"
-                checked={signalKinds.includes(k)}
-                onChange={() => onToggleKind(k)}
+                checked={setupTypes.includes(t)}
+                onChange={() => onToggleSetupType(t)}
               />
-              {KIND_LABEL[k]}
+              {t}
+            </label>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h3>status</h3>
+        <div className="choice-col">
+          {SIGNAL_STATUSES.map((s) => (
+            <label key={s}>
+              <input
+                type="checkbox"
+                checked={statuses.includes(s)}
+                onChange={() => onToggleStatus(s)}
+              />
+              {s}
             </label>
           ))}
         </div>
         <p className="hint">
-          Mock feed until Quant Risk Pre-Filter lands. Frames are setup_signal / fvg_zone /
-          sweep_event.
+          Quant setup/trade signals (post risk-approval). Not raw sweep/FVG streams.
         </p>
       </section>
     </aside>

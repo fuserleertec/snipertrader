@@ -70,57 +70,55 @@ export interface OHLCVBar {
   closed?: boolean;
 }
 
-export interface SetupSignal {
-  schema_version: "1.1";
-  id: string;
-  symbol: string;
-  asset_class: AssetClass;
-  setup_type: string;
-  side: "long" | "short";
-  confidence: number | null;
-  ref_vwap: number | null;
-  ref_session: string | null;
-  ts_ms: number;
-}
+/** Quant Developers — post risk-approval setup/trade signal. Not a raw sweep/FVG stream. */
+export type SetupType =
+  | "sweep_reclaim"
+  | "fvg_entry"
+  | "mss_break"
+  | "order_block"
+  | "sweep_mss"
+  | "ob_fvg";
 
-export interface FVGZone {
-  schema_version: "1.1";
-  id: string;
-  symbol: string;
-  asset_class: AssetClass;
-  direction: "bullish" | "bearish";
-  high: number;
-  low: number;
-  mitigated?: boolean;
-  created_ts_ms: number;
-  ttl_seconds?: number;
-}
+export type SignalSide = "long" | "short";
 
-export interface SweepEvent {
-  schema_version: "1.1";
-  id: string;
-  symbol: string;
-  asset_class: AssetClass;
-  side: "buy" | "sell";
-  swept_level: number;
-  reclaim: boolean | null;
-  ts_ms: number;
-}
+export type SignalStatus = "ACTIVE" | "TP_HIT" | "SL_HIT" | "CANCELLED";
 
-export type SignalFrame = SetupSignal | FVGZone | SweepEvent;
-
-export type SignalKind = "setup" | "fvg" | "sweep";
-
-/** UI row mapped from setup_signal / fvg_zone / sweep_event — not a wire contract. */
-export interface SignalRow {
+export interface Signal {
   id: string;
   ts_ms: number;
   symbol: string;
-  pattern_type: string;
-  direction: string;
-  zone: string;
-  status: string;
-  kind: SignalKind;
+  asset_class: AssetClass;
+  setup_type: SetupType;
+  side: SignalSide;
+  entry: number;
+  stop: number;
+  target: number;
+  status: SignalStatus;
+  confidence: number;
+  timeframe: Timeframe;
+  ref_session: SessionType;
+  trigger_event_ids: string[];
+}
+
+export interface SignalListResponse {
+  items: Signal[];
+  next_cursor: string | null;
+}
+
+export interface SignalListQuery {
+  symbol?: string;
+  status?: SignalStatus;
+  setup_type?: SetupType;
+  from_ts?: number;
+  to_ts?: number;
+  limit?: number;
+}
+
+export type SignalWsType = "signal.upsert" | "signal.status";
+
+export interface SignalWsEvent {
+  type: SignalWsType;
+  signal: Signal;
 }
 
 export interface SessionListResponse {

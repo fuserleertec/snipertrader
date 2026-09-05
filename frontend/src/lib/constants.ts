@@ -1,4 +1,4 @@
-import type { AnchorType, AssetClass, SessionType, Timeframe } from "./types";
+import type { AnchorType, AssetClass, SessionType, SetupType, SignalStatus, Timeframe } from "./types";
 
 export const TIMEFRAMES: Timeframe[] = ["1m", "5m", "15m", "1h", "4h"];
 
@@ -32,6 +32,17 @@ export const TF_MS: Record<Timeframe, number> = {
   "1h": 60 * 60_000,
   "4h": 4 * 60 * 60_000,
 };
+
+export const SETUP_TYPES: SetupType[] = [
+  "sweep_reclaim",
+  "fvg_entry",
+  "mss_break",
+  "order_block",
+  "sweep_mss",
+  "ob_fvg",
+];
+
+export const SIGNAL_STATUSES: SignalStatus[] = ["ACTIVE", "TP_HIT", "SL_HIT", "CANCELLED"];
 
 export const ROLLING_VWAP_PERIODS = 20;
 
