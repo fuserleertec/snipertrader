@@ -539,3 +539,18 @@ New series: `sniper_ws_connections`, `sniper_ws_publish_seconds`,
 Grafana dashboard: [observability/grafana/dashboards/sniper-data.json](observability/grafana/dashboards/sniper-data.json).
 Prometheus scrape + alerts (lag > 10k, Redis memory > 80% of 512 MiB,
 VWAP p99 SLO): [observability/prometheus/](observability/prometheus/).
+
+PM gate evidence: [docs/performance_under_load.md](docs/performance_under_load.md),
+[docs/dr-drill.md](docs/dr-drill.md).
+
+## Phase 4 prep (documentation only)
+
+**`live_trading=false`.** These notes do not enable live brokers, live
+order routing, or change paper Alpaca paths. Paper gate ~19 Sep 2026.
+
+| Doc | Purpose |
+|---|---|
+| [docs/phase4-monitoring-plan.md](docs/phase4-monitoring-plan.md) | Prod data-quality map → existing Prometheus/Grafana + TODOs |
+| [docs/phase4-infra-optimization.md](docs/phase4-infra-optimization.md) | Knobs from Phase 3 evidence; what not to change in paper |
+| [docs/phase4-data-source-candidates.md](docs/phase4-data-source-candidates.md) | Optional future feeds (news, greeks, L2/L3, dark pool) — no impl |
+| [docs/phase4-uptime-runbook.md](docs/phase4-uptime-runbook.md) | Uptime >99.5%, p99 <500 ms, triage + failover |
