@@ -1,4 +1,4 @@
-"""Run setups 1–3 in parallel, dedupe, risk-filter, then publish."""
+"""Run setups 1–6 in parallel, refine conviction, dedupe, risk-filter, publish."""
 
 from __future__ import annotations
 
@@ -21,6 +21,7 @@ from sniper_data.models import (
     KillZoneEvent,
     MssEvent,
     OHLCVBar,
+    OrderBlock,
     SessionLevels,
     SweepEvent,
     VWAPValues,
@@ -28,15 +29,20 @@ from sniper_data.models import (
 from sniper_data.pattern_detection.ids import make_id
 from sniper_data.pattern_detection.validate import validate_topic
 from sniper_data.setup_detection.candidate import SetupCandidate, to_risk_request, to_setup_signal
+from sniper_data.setup_detection.factors import add_factor, scale_breakdown
+from sniper_data.setup_detection.context import get_kill_zone, kill_zone_active
+from sniper_data.setup_detection.news import AllowAllNewsFilter, NewsFilter
 from sniper_data.setup_detection.params import SetupParams, load_setup_params
 from sniper_data.setup_detection.risk_client import RiskClient
 from sniper_data.setup_detection.setup1 import SweepReclaimDetector
 from sniper_data.setup_detection.setup2 import FVGEntryDetector
 from sniper_data.setup_detection.setup3 import JudasDetector
+from sniper_data.setup_detection.setup4 import SdExtensionFadeDetector
+from sniper_data.setup_detection.setup5 import VwapPullbackContDetector
+from sniper_data.setup_detection.setup6 import AvwapObConfluenceDetector
 
 log = logging.getLogger(__name__)
 
-OVERLAPPING_TFS = frozenset({"1m", "5m", "15m"})
 SETUP_SIGNALS_TOPIC = "setup_signals"
 
 
@@ -48,6 +54,8 @@ class OrchestratorStats:
     deduped: int = 0
     published: int = 0
     skipped_conviction: int = 0
+    pre_filter: int = 0
+    post_filter: int = 0
 
     def as_dict(self) -> dict[str, Any]:
         decided = self.approved + self.rejected
@@ -59,6 +67,8 @@ class OrchestratorStats:
             "deduped": self.deduped,
             "published": self.published,
             "skipped_conviction": self.skipped_conviction,
+            "pre_filter": self.pre_filter,
+            "post_filter": self.post_filter,
             "false_positive_rate": fp_rate,
         }
 
@@ -70,25 +80,38 @@ class SetupOrchestrator:
     risk: RiskClient
     swing_lookback: int | None = None
     params: SetupParams | None = None
+    news: NewsFilter | None = None
     setup1: SweepReclaimDetector = field(init=False)
     setup2: FVGEntryDetector = field(init=False)
     setup3: JudasDetector = field(init=False)
+    setup4: SdExtensionFadeDetector = field(init=False)
+    setup5: VwapPullbackContDetector = field(init=False)
+    setup6: AvwapObConfluenceDetector = field(init=False)
     stats: OrchestratorStats = field(default_factory=OrchestratorStats)
     raw_log: list[dict[str, Any]] = field(default_factory=list)
     approved_log: list[dict[str, Any]] = field(default_factory=list)
+    pre_filter_log: list[dict[str, Any]] = field(default_factory=list)
+    post_filter_log: list[dict[str, Any]] = field(default_factory=list)
     _recent: list[SetupCandidate] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         self.params = self.params or load_setup_params()
+        news = self.news if self.news is not None else AllowAllNewsFilter()
         lookback = self.swing_lookback if self.swing_lookback is not None else self.params.s1_mss_swing_lookback
         self.setup1 = SweepReclaimDetector(self.store, swing_lookback=lookback, params=self.params)
         self.setup2 = FVGEntryDetector(self.store, params=self.params)
         self.setup3 = JudasDetector(self.store, params=self.params)
+        self.setup4 = SdExtensionFadeDetector(self.store, params=self.params, news=news)
+        self.setup5 = VwapPullbackContDetector(self.store, params=self.params)
+        self.setup6 = AvwapObConfluenceDetector(self.store, params=self.params)
 
     def on_vwap(self, snap: VWAPValues) -> None:
         self.setup1.on_vwap(snap)
         self.setup2.on_vwap(snap)
         self.setup3.on_vwap(snap)
+        self.setup4.on_vwap(snap)
+        self.setup5.on_vwap(snap)
+        self.setup6.on_vwap(snap)
 
     def on_session(self, levels: SessionLevels) -> None:
         self.setup3.on_session(levels)
@@ -102,9 +125,16 @@ class SetupOrchestrator:
 
     def on_mss(self, event: MssEvent) -> None:
         self.setup1.on_mss(event)
+        self.setup4.on_mss(event)
+        self.setup6.on_mss(event)
 
     def on_fvg(self, zone: FVGZone) -> None:
         self.setup2.on_fvg(zone)
+        self.setup5.on_fvg(zone)
+
+    def on_ob(self, zone: OrderBlock) -> None:
+        self.setup5.on_ob(zone)
+        self.setup6.on_ob(zone)
 
     async def on_bar(self, bar: OHLCVBar) -> list[SetupCandidate]:
         t0 = time.perf_counter()
@@ -112,24 +142,67 @@ class SetupOrchestrator:
             self.setup1.on_bar(bar),
             self.setup2.on_bar(bar),
             self.setup3.on_bar(bar),
+            self.setup4.on_bar(bar),
+            self.setup5.on_bar(bar),
+            self.setup6.on_bar(bar),
         )
         record_setup_latency("all", time.perf_counter() - t0)
         incoming = [c for batch in batches for c in batch]
+        await self._refine(incoming, bar)
         return await self.submit(incoming)
+
+    async def _refine(self, incoming: list[SetupCandidate], bar: OHLCVBar) -> None:
+        """Adaptive conviction: kill zone, volume confirm, multi-pattern confluence.
+
+        ATR-regime threshold adjustment is applied inside Setup 4 (high ATR/price
+        requires a ±3σ tag). Hooks here only add documented bonuses.
+        """
+        if not incoming:
+            return
+        zone = await get_kill_zone(self.store, bar.symbol)
+        kz = kill_zone_active(zone, ts_ms=bar.close_ts_ms)
+        by_key: dict[tuple[str, str], set[str]] = {}
+        for cand in incoming:
+            by_key.setdefault((cand.symbol, cand.side), set()).add(cand.setup_type)
+        p = self.params or load_setup_params()
+        for cand in incoming:
+            extra = 0
+            rows = list(cand.factor_breakdown)
+            if kz or cand.kill_zone_aligned:
+                cand.kill_zone_aligned = True
+                extra += p.conv_kill_zone_bonus
+                add_factor(rows, "kill_zone", float(p.conv_kill_zone_bonus))
+            if cand.volume_confirmed:
+                extra += p.conv_volume_bonus
+                add_factor(rows, "volume_confirm", float(p.conv_volume_bonus))
+            if len(by_key.get((cand.symbol, cand.side), ())) >= 2:
+                extra += p.conv_multi_pattern_bonus
+                add_factor(rows, "multi_pattern", float(p.conv_multi_pattern_bonus))
+            cand.conviction = max(0, min(100, cand.conviction + extra))
+            cand.factor_breakdown = scale_breakdown(rows, cand.conviction)
+            cand.contributing_factors = [r["name"] for r in cand.factor_breakdown]
 
     async def submit(self, incoming: list[SetupCandidate]) -> list[SetupCandidate]:
         if not incoming:
             return []
+        self.stats.pre_filter += len(incoming)
         for cand in incoming:
             self.stats.raw += 1
             record_setup_candidate(cand.setup_type, cand.side)
-            log.info("setup raw %s", cand.log_fields())
+            log.info("setup raw / pre-filter %s", cand.log_fields())
             self.raw_log.append(cand.log_fields())
+            self.pre_filter_log.append(cand.log_fields())
 
         winners = self._dedupe_against_recent(incoming)
-        published: list[SetupCandidate] = []
-        min_conv = self.params.min_conviction_to_validate if self.params else 60
+        self.stats.post_filter += len(winners)
         for cand in winners:
+            log.info("setup post-filter %s", cand.log_fields())
+            self.post_filter_log.append(cand.log_fields())
+
+        published: list[SetupCandidate] = []
+        params = self.params or load_setup_params()
+        for cand in winners:
+            min_conv = params.min_conviction_for(cand.setup_type)
             if cand.conviction < min_conv:
                 self.stats.skipped_conviction += 1
                 log.info("setup skip conviction<%s %s", min_conv, cand.log_fields())
@@ -179,7 +252,7 @@ def dedupe_candidates(
     *,
     window_ms: int | None = None,
 ) -> list[SetupCandidate]:
-    """Same symbol + direction + overlapping TF within window → highest conviction."""
+    """Same symbol + direction within window → highest conviction, else earliest ts."""
     window = window_ms if window_ms is not None else 300_000
     ordered = sorted(candidates, key=lambda c: (c.ts_ms, -c.conviction))
     kept: list[SetupCandidate] = []
@@ -195,13 +268,13 @@ def dedupe_candidates(
         rival = kept[rival_idx]
         if cand.conviction > rival.conviction:
             kept[rival_idx] = cand
+        elif cand.conviction == rival.conviction and cand.ts_ms < rival.ts_ms:
+            kept[rival_idx] = cand
     return kept
 
 
 def _conflicts(a: SetupCandidate, b: SetupCandidate, *, window_ms: int) -> bool:
     if a.symbol != b.symbol or a.side != b.side:
-        return False
-    if a.timeframe not in OVERLAPPING_TFS or b.timeframe not in OVERLAPPING_TFS:
         return False
     return abs(a.ts_ms - b.ts_ms) <= window_ms
 
@@ -228,6 +301,9 @@ def subscribe_inmemory(bus, orchestrator: SetupOrchestrator) -> None:
     async def _fvg(payload: dict) -> None:
         orchestrator.on_fvg(FVGZone.model_validate(payload))
 
+    async def _ob(payload: dict) -> None:
+        orchestrator.on_ob(OrderBlock.model_validate(payload))
+
     async def _bar(payload: dict) -> None:
         await orchestrator.on_bar(OHLCVBar.model_validate(payload))
 
@@ -240,12 +316,13 @@ def subscribe_inmemory(bus, orchestrator: SetupOrchestrator) -> None:
     async def _kz(payload: dict) -> None:
         orchestrator.on_kill_zone(KillZoneEvent.model_validate(payload))
 
-    async def _anchor(_payload: dict) -> None:
-        return None
+    async def _anchor(payload: dict) -> None:
+        orchestrator.setup6.on_anchor(payload)
 
     subscribe("sweep_events", _sweep)
     subscribe("mss_events", _mss)
     subscribe("fvg_zones", _fvg)
+    subscribe("order_block_zones", _ob)
     subscribe("ohlcv_bars", _bar)
     subscribe("session_levels", _session)
     subscribe("vwap_values", _vwap)

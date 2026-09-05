@@ -1,4 +1,4 @@
-"""Confirmation-candle helpers for Setup 2 (engulfing / pin / reversal)."""
+"""Confirmation-candle helpers (engulfing / pin / hammer / shooting star)."""
 
 from __future__ import annotations
 
@@ -85,6 +85,38 @@ def is_confirmation(
     if prev is None:
         return False
     return bullish_engulfing(prev, curr) if side == "long" else bearish_engulfing(prev, curr)
+
+
+def hammer(bar: OHLCVBar, *, wick_ratio: float = 2.5) -> bool:
+    """Bullish pin (long lower wick) — Setup 4 rejection."""
+    return pin_bar(bar, "long", wick_ratio=wick_ratio)
+
+
+def shooting_star(bar: OHLCVBar, *, wick_ratio: float = 2.5) -> bool:
+    """Bearish pin (long upper wick) — Setup 4 rejection."""
+    return pin_bar(bar, "short", wick_ratio=wick_ratio)
+
+
+def rejection_reverse(
+    prev: OHLCVBar | None,
+    curr: OHLCVBar,
+    side: Side,
+    *,
+    pin_wick_ratio: float = 2.5,
+) -> bool:
+    """Engulfing reverse, pin / hammer / shooting star."""
+    if pin_bar(curr, side, wick_ratio=pin_wick_ratio):
+        return True
+    if prev is None:
+        return False
+    return bullish_engulfing(prev, curr) if side == "long" else bearish_engulfing(prev, curr)
+
+
+def strong_trend_candle(bar: OHLCVBar, side: Side, *, body_frac: float = 0.5) -> bool:
+    """Close in trend direction with body dominating the range."""
+    if _body(bar) < body_frac * _range(bar):
+        return False
+    return is_bullish(bar) if side == "long" else is_bearish(bar)
 
 
 def recent_swing_high(bars: deque[OHLCVBar] | list[OHLCVBar], lookback: int = 8) -> float | None:

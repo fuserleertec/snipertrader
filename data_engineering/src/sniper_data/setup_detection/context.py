@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from sniper_data.avwap import index_ids, redis_avwap_key
 from sniper_data.bus.redis_store import StateStore
 from sniper_data.kill_zones import redis_kill_zone_key
 from sniper_data.models import (
+    AnchoredVWAP,
     FVGZone,
     KillZoneEvent,
     MssEvent,
@@ -17,7 +19,13 @@ from sniper_data.models import (
     VolumeProfile,
     VWAPValues,
 )
-from sniper_data.pattern_detection.context import get_kill_zone, get_volume_profile, list_volume_profiles
+from sniper_data.pattern_detection.context import (
+    get_avwap,
+    get_kill_zone,
+    get_latest_avwap,
+    get_volume_profile,
+    list_volume_profiles,
+)
 from sniper_data.sessions import redis_session_key
 from sniper_data.symbols import normalize_symbol
 from sniper_data.volume_profile import redis_volume_profile_key
@@ -26,18 +34,24 @@ from sniper_data.zones import fvg_key, mss_key, ob_key, sweep_key
 
 # Re-export exact key helpers so callers do not invent names.
 __all__ = [
+    "atr_regime",
     "fvg_key",
     "get_active_fvgs",
     "get_active_obs",
+    "get_avwap",
+    "get_htf_obs",
     "get_kill_zone",
+    "get_latest_avwap",
     "get_mss",
     "get_session",
     "get_session_vwap",
     "get_sweep",
     "get_volume_profile",
+    "list_avwaps",
     "list_volume_profiles",
     "mss_key",
     "ob_key",
+    "redis_avwap_key",
     "redis_kill_zone_key",
     "redis_session_key",
     "redis_volume_profile_key",
@@ -121,19 +135,86 @@ def profile_overlaps_zone(profile: VolumeProfile | None, low: float, high: float
     return False
 
 
-def band_tagged(price: float, vwap: VWAPValues, *, frac: float = 0.25) -> str | None:
-    """Return which ±1σ/±2σ band ``price`` tagged, else None."""
+def band_tagged(price: float, vwap: VWAPValues, *, frac: float = 0.25, include_3s: bool = False) -> str | None:
+    """Return which session-VWAP σ band ``price`` tagged (Phase 1 flat fields)."""
     sigma = vwap.sigma if vwap.sigma > 0 else abs(vwap.band_p1 - vwap.vwap)
     tol = max(abs(price) * 1e-4, frac * sigma if sigma else abs(price) * 0.001)
-    for name, level in (
+    levels = [
         ("plus_1_sigma", vwap.band_p1),
         ("plus_2_sigma", vwap.band_p2),
         ("minus_1_sigma", vwap.band_m1),
         ("minus_2_sigma", vwap.band_m2),
-    ):
+    ]
+    if include_3s:
+        levels.extend(
+            [
+                ("plus_3_sigma", vwap.band_p3),
+                ("minus_3_sigma", vwap.band_m3),
+            ]
+        )
+    for name, level in levels:
         if abs(price - level) <= tol:
             return name
     return None
+
+
+def session_band_extreme(price: float, vwap: VWAPValues, *, frac: float = 0.25) -> str | None:
+    """Setup 4: tag ±2σ or ±3σ on Phase 1 session VWAP (flat ``band_*`` fields)."""
+    tagged = band_tagged(price, vwap, frac=frac, include_3s=True)
+    if tagged in {"plus_2_sigma", "plus_3_sigma", "minus_2_sigma", "minus_3_sigma"}:
+        return tagged
+    return None
+
+
+def atr_regime(atr_val: float | None, price: float, *, high_frac: float) -> str:
+    """Simple ATR regime switch: ``high`` when ATR/price ≥ ``high_frac``, else ``normal``."""
+    if not atr_val or price <= 0:
+        return "normal"
+    return "high" if (atr_val / price) >= high_frac else "normal"
+
+
+async def list_avwaps(store: StateStore, symbol: str) -> list[AnchoredVWAP]:
+    """Read Phase 2 nested-band AVWAP payloads from ``avwap:{symbol}:{anchor_id}``.
+
+    Do **not** interpret Phase 1 flat ``band_p1`` / ``band_m1`` on these keys.
+    """
+    symbol = normalize_symbol(symbol)
+    out: list[AnchoredVWAP] = []
+    seen: set[str] = set()
+    for anchor_id in await index_ids(store, symbol):
+        parsed = _parse(AnchoredVWAP, await store.get(redis_avwap_key(symbol, anchor_id)))
+        if parsed is None or parsed.anchor_id in seen:
+            continue
+        seen.add(parsed.anchor_id)
+        out.append(parsed)
+    latest = await get_latest_avwap(store, symbol)
+    if latest is not None and latest.anchor_id not in seen:
+        out.append(latest)
+    return out
+
+
+def _tf_name(value) -> str | None:
+    if value is None:
+        return None
+    return value.value if hasattr(value, "value") else str(value)
+
+
+async def get_htf_obs(
+    store: StateStore,
+    symbol: str,
+    *,
+    timeframes: tuple[str, ...] = ("1h", "4h"),
+) -> list[OrderBlock]:
+    """HTF order blocks (4H / 1H). Daily is a wide 4H swing proxy — no Daily TF on the wire."""
+    allowed = set(timeframes)
+    out: list[OrderBlock] = []
+    for ob in await get_active_obs(store, symbol):
+        name = _tf_name(ob.timeframe)
+        if name is None:
+            continue
+        if name in allowed:
+            out.append(ob)
+    return out
 
 
 def kill_zone_active(zone: KillZoneEvent | None, *, ts_ms: int | None = None) -> bool:

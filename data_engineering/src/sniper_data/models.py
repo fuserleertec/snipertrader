@@ -186,8 +186,10 @@ SETUP_TYPES = (
     "mss_break",
     "order_block",
     "sweep_mss",
-    "ob_fvg",
     "po3_judas",
+    "sd_extension_fade",
+    "vwap_pullback_cont",
+    "avwap_ob_confluence",
 )
 
 SetupType = Literal[
@@ -196,9 +198,18 @@ SetupType = Literal[
     "mss_break",
     "order_block",
     "sweep_mss",
-    "ob_fvg",
     "po3_judas",
+    "sd_extension_fade",
+    "vwap_pullback_cont",
+    "avwap_ob_confluence",
 ]
+
+# Quant GET /performance/summary product keys (docs / metadata alignment).
+SETUP_PRODUCT_KEYS = {
+    "sd_extension_fade": "4_sd_extension_fade",
+    "vwap_pullback_cont": "5_vwap_pullback_cont",
+    "avwap_ob_confluence": "6_avwap_ob_confluence",
+}
 
 RISK_TIMEFRAMES = ("1m", "5m", "15m")
 RiskTimeframe = Literal["1m", "5m", "15m"]
@@ -224,6 +235,36 @@ RISK_VALIDATE_FIELDS = (
 )
 
 
+ContributingFactor = Literal[
+    "liquidity_sweep",
+    "mss",
+    "fvg",
+    "order_block",
+    "vwap_reclaim",
+    "vwap_band_extension",
+    "vwap_pullback",
+    "first_touch",
+    "low_volume",
+    "volume_confirm",
+    "rejection_candle",
+    "engulfing",
+    "avwap",
+    "htf_ob",
+    "kill_zone",
+    "multi_pattern",
+    "trend_align",
+]
+
+
+class FactorBreakdownRow(BaseModel):
+    """Publish-only explainability row. ``sum(score)`` ≈ conviction (0–100)."""
+
+    name: ContributingFactor
+    weight: float
+    score: float
+    note: str | None = None
+
+
 class SetupSignal(BaseModel):
     """Kafka ``setup_signals`` — Quant-locked Phase 2 payload (id only after approval)."""
 
@@ -245,6 +286,8 @@ class SetupSignal(BaseModel):
     session_type: SessionType | None = None
     position_size: float | None = None
     status: Literal["ACTIVE", "TP_HIT", "SL_HIT", "CANCELLED"] | None = None
+    contributing_factors: list[ContributingFactor] | None = None
+    factor_breakdown: list[FactorBreakdownRow] | None = None
 
 
 class RiskValidateRequest(BaseModel):

@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from sniper_data.models import (
+    AVWAPBands,
+    AnchorSource,
     AnchorType,
+    AnchoredVWAP,
     FVGZone,
     KillZoneEvent,
     MssEvent,
@@ -255,3 +258,130 @@ async def seed_common(
         await store_fvg(store, bullish_fvg())
     if ob:
         await store_ob(store, bearish_ob_overlap())
+
+
+S4_TF = Timeframe.M5
+S5_TF = Timeframe.M5
+S6_TF = Timeframe.H4
+
+
+def phase2_avwap(**overrides) -> AnchoredVWAP:
+    """Phase 2 nested-band AVWAP — no schema_version, no flat band_p1."""
+    snap = AnchoredVWAP(
+        anchor_id="anc-swing-4h",
+        symbol=SYM,
+        anchor_time=T0 - 86_400_000,
+        anchor_price=108.0,
+        vwap_value=100.0,
+        bands=AVWAPBands(
+            plus_1_sigma=102.0,
+            plus_2_sigma=104.0,
+            plus_3_sigma=106.0,
+            minus_1_sigma=98.0,
+            minus_2_sigma=96.0,
+            minus_3_sigma=94.0,
+        ),
+        asset_class=KLASS,
+    )
+    return snap.model_copy(update=overrides) if overrides else snap
+
+
+def htf_bullish_ob(*, low: float = 99.0, high: float = 101.0) -> OrderBlock:
+    return OrderBlock(
+        id="ob-htf-bull-4h",
+        symbol=SYM,
+        asset_class=KLASS,
+        direction="bullish",
+        high=high,
+        low=low,
+        created_ts_ms=T0,
+        mitigated=False,
+        timeframe=Timeframe.H4,
+    )
+
+
+def setup4_vol_warmup(n: int = 20, *, start: int = 0, volume: float = 100.0) -> list[OHLCVBar]:
+    return [bar(start + i, 100.0, 100.8, 99.2, 100.1, volume, timeframe=S4_TF) for i in range(n)]
+
+
+def setup4_fade_long_bars(*, start: int = 20) -> list[OHLCVBar]:
+    """Tag session −2σ (96), low volume, bullish engulfing. Entry ≤ 96.3 for RR≥1.5."""
+    return [
+        bar(start, 96.15, 96.25, 95.85, 95.95, 40.0, timeframe=S4_TF),
+        bar(start + 1, 95.90, 96.35, 95.65, 96.25, 50.0, timeframe=S4_TF),
+    ]
+
+
+def setup5_rising_vwaps(n: int = 20) -> list[VWAPValues]:
+    out: list[VWAPValues] = []
+    for i in range(n):
+        v = 98.0 + (2.0 * i / max(1, n - 1))
+        out.append(session_vwap(vwap=round(v, 6), updated_ts_ms=T0 + i * BAR_MS))
+    return out
+
+
+def setup5_trend_bars(n: int = 20, *, start: int = 0) -> list[OHLCVBar]:
+    """Price stays above rising VWAP; bar 0 prints structure liquidity at 108."""
+    out = [bar(start, 101.0, 108.0, 100.6, 107.0, 70.0, timeframe=S5_TF)]
+    for i in range(1, n):
+        out.append(bar(start + i, 101.0, 101.5, 100.6, 101.2, 60.0, timeframe=S5_TF))
+    return out
+
+
+def pullback_ob() -> OrderBlock:
+    """Bullish OB at session VWAP for Setup 5 (avoids Setup 2 FVG path)."""
+    return OrderBlock(
+        id="ob-pullback-bull",
+        symbol=SYM,
+        asset_class=KLASS,
+        direction="bullish",
+        high=100.5,
+        low=99.5,
+        created_ts_ms=T0,
+        mitigated=False,
+        timeframe=Timeframe.M5,
+    )
+
+
+def setup5_pullback_bars(*, start: int = 20) -> list[OHLCVBar]:
+    """First VWAP touch + bullish engulfing at session VWAP 100."""
+    return [
+        bar(start, 101.20, 101.30, 100.60, 100.70, 45.0, timeframe=S5_TF),
+        bar(start + 1, 100.65, 101.40, 99.70, 101.30, 80.0, timeframe=S5_TF),
+    ]
+
+
+def setup6_htf_warmup(n: int = 14, *, start: int = 0) -> list[OHLCVBar]:
+    return [bar(start + i, 102.0, 102.8, 101.4, 102.1, 80.0, timeframe=S6_TF) for i in range(n)]
+
+
+def setup6_rejection_bars(*, start: int = 14) -> list[OHLCVBar]:
+    """4H hammer into the HTF OB that contains AVWAP 100."""
+    return [
+        bar(start, 101.4, 101.6, 100.8, 101.0, 50.0, timeframe=S6_TF),
+        bar(start + 1, 100.20, 100.45, 99.05, 100.30, 55.0, timeframe=S6_TF),
+    ]
+
+
+async def seed_avwap(store, *, snap: AnchoredVWAP | None = None, ob: bool = True) -> AnchoredVWAP:
+    from sniper_data.avwap import persist_anchor, persist_avwap
+    from sniper_data.models import AnchorMeta
+    from sniper_data.zones import store_ob
+
+    payload = snap or phase2_avwap()
+    await persist_avwap(store, payload)
+    await persist_anchor(
+        store,
+        AnchorMeta(
+            anchor_id=payload.anchor_id,
+            symbol=payload.symbol,
+            anchor_time=payload.anchor_time,
+            anchor_price=payload.anchor_price,
+            source=AnchorSource.SWING_HIGH,
+            asset_class=payload.asset_class,
+            created_ts_ms=payload.anchor_time,
+        ),
+    )
+    if ob:
+        await store_ob(store, htf_bullish_ob())
+    return payload

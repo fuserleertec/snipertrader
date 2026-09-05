@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://snipertrader.ai/schemas/setup_signal.schema.json",
   "title": "SetupSignal",
-  "description": "Kafka topic setup_signals. Phase 2 publish only after POST /risk/validate returns approved:true. id is required here; omit id on the validate candidate. setup_type includes Quant-locked values plus provisional po3_judas (Setup 3) for Quant to add.",
+  "description": "Kafka topic setup_signals. Publish only after POST /risk/validate returns approved:true. id is required here; omit id on the validate candidate. contributing_factors is publish-only (never on validate). setup_type includes Quant-locked values plus provisional po3_judas / Phase 3 slugs for Quant to add.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -27,8 +27,10 @@
         "mss_break",
         "order_block",
         "sweep_mss",
-        "ob_fvg",
-        "po3_judas"
+        "po3_judas",
+        "sd_extension_fade",
+        "vwap_pullback_cont",
+        "avwap_ob_confluence"
       ]
     },
     "side": { "type": "string", "enum": ["long", "short"] },
@@ -63,6 +65,68 @@
       "type": ["string", "null"],
       "enum": ["ACTIVE", "TP_HIT", "SL_HIT", "CANCELLED", null],
       "description": "Lifecycle status. Kafka publish is typically ACTIVE. Additive."
+    },
+    "contributing_factors": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "string",
+        "enum": [
+          "liquidity_sweep",
+          "mss",
+          "fvg",
+          "order_block",
+          "vwap_reclaim",
+          "vwap_band_extension",
+          "vwap_pullback",
+          "first_touch",
+          "low_volume",
+          "volume_confirm",
+          "rejection_candle",
+          "engulfing",
+          "avwap",
+          "htf_ob",
+          "kill_zone",
+          "multi_pattern",
+          "trend_align"
+        ]
+      },
+      "description": "Publish-only factor ids that fired. Labels only — join the chart via id + trigger_event_ids. Omit on POST /risk/validate."
+    },
+    "factor_breakdown": {
+      "type": ["array", "null"],
+      "description": "Publish-only detail rows. sum(score) ≈ conviction (0–100); confidence = conviction/100. Omit on POST /risk/validate.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "weight", "score"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "enum": [
+              "liquidity_sweep",
+              "mss",
+              "fvg",
+              "order_block",
+              "vwap_reclaim",
+              "vwap_band_extension",
+              "vwap_pullback",
+              "first_touch",
+              "low_volume",
+              "volume_confirm",
+              "rejection_candle",
+              "engulfing",
+              "avwap",
+              "htf_ob",
+              "kill_zone",
+              "multi_pattern",
+              "trend_align"
+            ]
+          },
+          "weight": { "type": "number" },
+          "score": { "type": "number" },
+          "note": { "type": ["string", "null"] }
+        }
+      }
     }
   }
 }

@@ -13,11 +13,13 @@ from sniper_data.models import (
     RISK_VALIDATE_FIELDS,
     SCHEMA_VERSION,
     AssetClass,
+    FactorBreakdownRow,
     RiskValidateRequest,
     SessionType,
     SetupSignal,
     SetupType,
 )
+from sniper_data.setup_detection.factors import breakdown_payload, explain
 
 Side = Literal["long", "short"]
 
@@ -42,6 +44,10 @@ class SetupCandidate:
     proposed_position_size: float | None = None
     risk_reward: float = 0.0
     kill_zone: str | None = None
+    contributing_factors: list[str] = field(default_factory=list)
+    factor_breakdown: list[dict[str, Any]] = field(default_factory=list)
+    volume_confirmed: bool = False
+    kill_zone_aligned: bool = False
     notes: dict[str, Any] = field(default_factory=dict)
 
     @property
@@ -63,6 +69,9 @@ class SetupCandidate:
             "stop": self.stop,
             "target": self.target,
             "trigger_event_ids": list(self.trigger_event_ids),
+            "contributing_factors": list(self.contributing_factors),
+            "factor_breakdown": [dict(r) for r in self.factor_breakdown],
+            "ref_vwap": self.ref_vwap,
         }
 
 
@@ -126,6 +135,12 @@ def to_setup_signal(
         session_type=session,
         position_size=position_size,
         status="ACTIVE",
+        contributing_factors=list(candidate.contributing_factors) or None,
+        factor_breakdown=(
+            [FactorBreakdownRow.model_validate(row) for row in candidate.factor_breakdown]
+            if candidate.factor_breakdown
+            else None
+        ),
     )
 
 
@@ -155,3 +170,21 @@ def score_conviction(
     if confirmed_reclaim:
         score += 10
     return max(0, min(100, score))
+
+
+def attach_explainability(candidate: SetupCandidate, names: list[str], **kwargs: Any) -> SetupCandidate:
+    """Set contributing_factors + factor_breakdown scaled to conviction."""
+    factors, rows = explain(names, conviction=candidate.conviction, **kwargs)
+    candidate.contributing_factors = factors
+    candidate.factor_breakdown = list(rows)
+    return candidate
+
+
+# Back-compat alias used by older detector drafts.
+def breakdown_from_factors(factors: list[str], *, conviction: int = 60, **_: Any) -> list[dict[str, Any]]:
+    _ids, rows = explain(factors, conviction=conviction)
+    return list(rows)
+
+
+def published_breakdown(rows: list[dict[str, Any]] | None) -> list[dict[str, Any]] | None:
+    return breakdown_payload(rows)

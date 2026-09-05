@@ -1,6 +1,8 @@
 """Setup 2 — FVG mitigation at a VWAP / volume-profile node.
 
-``setup_type`` is ``fvg_entry``, or ``ob_fvg`` when an order block overlaps.
+Wire ``setup_type`` is always ``fvg_entry``. Quant ``/risk/validate`` does
+not accept ``ob_fvg``. An overlapping order block still goes in
+``trigger_event_ids`` and ``contributing_factors`` (``order_block``).
 Active zones come from Redis ``fvg:{symbol}:*`` (TTL ≤ 48h).
 """
 
@@ -13,7 +15,7 @@ from sniper_data.bus.redis_store import StateStore
 from sniper_data.models import AssetClass, FVGZone, KillZoneEvent, OHLCVBar, OrderBlock, SessionType, VWAPValues
 from sniper_data.pattern_detection.context import get_kill_zone, get_volume_profile, list_volume_profiles
 from sniper_data.setup_detection.atr import atr, stop_beyond
-from sniper_data.setup_detection.candidate import SetupCandidate, risk_reward, score_conviction
+from sniper_data.setup_detection.candidate import SetupCandidate, attach_explainability, risk_reward, score_conviction
 from sniper_data.setup_detection.candles import is_confirmation, recent_swing_high, recent_swing_low
 from sniper_data.setup_detection.context import (
     get_active_fvgs,
@@ -175,7 +177,6 @@ class FVGEntryDetector:
             and ob.direction == fvg.direction
             and ranges_overlap(ob.low, ob.high, fvg.low, fvg.high)
         ]
-        setup_type = "ob_fvg" if overlapping else "fvg_entry"
         ids = [fvg.id] + [ob.id for ob in overlapping]
         pad = self.params.s2_overlap_tol_atr * atr_val
         confluence = 1
@@ -198,9 +199,18 @@ class FVGEntryDetector:
                 SessionType(session)
             except ValueError:
                 ref_session = session
-        return SetupCandidate(
+        names = ["fvg", "engulfing"]
+        if vwap is not None and price_in_range(vwap.vwap, fvg.low, fvg.high, pad=pad):
+            names.append("vwap_reclaim")
+        if overlapping:
+            names.append("order_block")
+        if bar.volume > 0:
+            names.append("volume_confirm")
+        if kz:
+            names.append("kill_zone")
+        cand = SetupCandidate(
             setup_number=SETUP_NUMBER,
-            setup_type=setup_type,  # type: ignore[arg-type]
+            setup_type="fvg_entry",
             symbol=bar.symbol,
             asset_class=klass,
             side=side,  # type: ignore[arg-type]
@@ -216,4 +226,7 @@ class FVGEntryDetector:
             session_type=session,
             risk_reward=rr,
             kill_zone=zone.kill_zone.value if zone is not None else None,
+            volume_confirmed=bar.volume > 0,
+            kill_zone_aligned=kz,
         )
+        return attach_explainability(cand, names)

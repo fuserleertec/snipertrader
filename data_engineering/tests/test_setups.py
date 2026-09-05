@@ -12,7 +12,8 @@ from sniper_data.cli import main
 from sniper_data.models import RISK_VALIDATE_FIELDS, Timeframe
 from sniper_data.pattern_detection.fixtures import SYM, T0
 from sniper_data.pattern_detection.validate import validate_topic
-from sniper_data.setup_detection.candidate import to_risk_request
+from sniper_data.setup_detection.candidate import attach_explainability, to_risk_request
+from sniper_data.setup_detection.factors import STABLE_FACTORS, STABLE_FACTOR_SET
 from sniper_data.setup_detection.fixtures import (
     asia_high_sweep,
     asia_session,
@@ -43,6 +44,19 @@ ROOT = Path(__file__).resolve().parents[2]
 SCHEMAS = ROOT / "schemas"
 
 FORBIDDEN_RISK_KEYS = {"id", "risk_reward", "setup_id", "conviction", "kill_zone", "setup_number"}
+
+
+def _assert_explain(c, *required: str) -> None:
+    assert set(c.contributing_factors) <= STABLE_FACTOR_SET
+    for name in required:
+        assert name in c.contributing_factors
+    assert isinstance(c.factor_breakdown, list) and c.factor_breakdown
+    assert {row["name"] for row in c.factor_breakdown} == set(c.contributing_factors)
+    total = sum(float(row["score"]) for row in c.factor_breakdown)
+    assert abs(total - c.conviction) <= 0.05
+    assert abs(c.confidence - c.conviction / 100.0) < 1e-9
+    for row in c.factor_breakdown:
+        assert {"name", "weight", "score"} <= set(row)
 
 
 def _orch(store=None, bus=None, risk=None, lookback: int = 2) -> SetupOrchestrator:
@@ -91,6 +105,7 @@ async def test_setup1_long_after_buy_side_low_sweep():
     assert c.risk_reward >= 2.0
     assert c.ref_vwap == 100.0
     assert 0 <= c.confidence <= 1
+    _assert_explain(c, "liquidity_sweep", "mss", "vwap_reclaim")
 
 
 @pytest.mark.asyncio
@@ -115,6 +130,7 @@ async def test_setup1_short_after_sell_side_high_sweep():
     assert cands[0].side == "short"
     assert cands[0].target < cands[0].entry < cands[0].stop
     assert cands[0].risk_reward >= 2.0
+    _assert_explain(cands[0], "liquidity_sweep", "mss", "vwap_reclaim")
 
 
 @pytest.mark.asyncio
@@ -164,6 +180,7 @@ async def test_setup2_fvg_entry_at_vwap_node():
     assert c.side == "long"
     assert "fvg-bull-vwap" in c.trigger_event_ids
     assert c.target > c.entry > c.stop
+    _assert_explain(c, "fvg", "engulfing")
 
 
 @pytest.mark.asyncio
@@ -179,8 +196,11 @@ async def test_setup2_ob_fvg_when_order_block_overlaps():
     for b in setup2_retrace_bars():
         cands.extend(await det.on_bar(b))
     assert cands
-    assert cands[0].setup_type == "ob_fvg"
+    assert cands[0].setup_type == "fvg_entry"
     assert "ob-bull-overlap" in cands[0].trigger_event_ids
+    _assert_explain(cands[0], "fvg", "engulfing", "order_block")
+    body = to_risk_request(cands[0])
+    assert body["setup_type"] == "fvg_entry"
 
 
 @pytest.mark.asyncio
@@ -203,6 +223,7 @@ async def test_setup3_po3_judas_asia_sweep_in_ny_am():
     assert c.trigger_event_ids == ["swp-asia-high"]
     assert c.target < c.entry < c.stop
     assert c.kill_zone == "ny_am"
+    _assert_explain(c, "liquidity_sweep", "rejection_candle")
 
 
 @pytest.mark.asyncio
@@ -328,17 +349,24 @@ async def test_approved_publish_matches_setup_signal_schema():
 
 
 @pytest.mark.asyncio
-async def test_replay_emits_all_three_setup_types():
+async def test_replay_emits_all_six_setup_types():
     result = await run_setup_replay()
     types = {s["setup_type"] for s in result["signals"]}
     assert "sweep_reclaim" in types
     assert "po3_judas" in types
-    assert types & {"fvg_entry", "ob_fvg"}
+    assert "fvg_entry" in types
+    assert "ob_fvg" not in types
+    assert all(b.get("setup_type") != "ob_fvg" for b in result["risk_calls"])
+    assert "sd_extension_fade" in types
+    assert "vwap_pullback_cont" in types
+    assert "avwap_ob_confluence" in types
+    assert len(result["signals"]) == 6
     for payload in result["signals"]:
         validate_topic("setup_signals", payload)
         assert "id" in payload
     for body in result["risk_calls"]:
         assert "id" not in body
+        assert "contributing_factors" not in body
         assert set(body) <= set(RISK_VALIDATE_FIELDS)
 
 
@@ -353,11 +381,14 @@ def test_cli_setups_e2e_report(tmp_path):
     assert rc == 0
     report = json.loads(dest.read_text())
     assert report["summary"]["overall"] == "PASS"
-    assert report["phase"] == 2
+    assert report["phase"] == 3
     pack = tmp_path / "quant_replay"
     assert (pack / "sweep_reclaim.validate.json").exists()
     assert (pack / "fvg_entry.validate.json").exists()
     assert (pack / "po3_judas.validate.json").exists()
+    assert (pack / "sd_extension_fade.validate.json").exists()
+    assert (pack / "vwap_pullback_cont.validate.json").exists()
+    assert (pack / "avwap_ob_confluence.validate.json").exists()
     req = json.loads((pack / "sweep_reclaim.validate.json").read_text())
     sig = json.loads((pack / "sweep_reclaim.setup_signal.json").read_text())
     assert "id" not in req
@@ -475,6 +506,17 @@ def test_quant_walkforward_defaults():
     assert p.s3_max_bars_sweep_to_displace == 6
     assert p.dedupe_window_sec == 300
     assert p.min_conviction_to_validate == 60
+    assert p.s4_vol_frac == 0.8
+    assert p.s4_min_rr == 1.5
+    assert p.s4_min_rr_at_3s == 2.0
+    assert p.s4_news_window_sec == 900
+    assert p.s5_trend_bars == 20
+    assert p.s5_first_touch_lookback_bars == 8
+    assert p.s5_min_rr == 2.0
+    assert p.s6_min_rr == 2.0
+    assert p.s6_min_conviction == 70
+    assert p.s6_approach_tol_atr == 0.15
+    assert p.min_conviction_for("avwap_ob_confluence") == 70
 
 
 def test_quant_schemas_include_po3_judas():
@@ -482,11 +524,193 @@ def test_quant_schemas_include_po3_judas():
     req = json.loads((SCHEMAS / "risk_validate_request.schema.json").read_text())
     resp = json.loads((SCHEMAS / "risk_validate_response.schema.json").read_text())
     for doc in (setup, req):
-        assert "po3_judas" in doc["properties"]["setup_type"]["enum"]
+        for slug in ("po3_judas", "sd_extension_fade", "vwap_pullback_cont", "avwap_ob_confluence"):
+            assert slug in doc["properties"]["setup_type"]["enum"]
         assert doc["additionalProperties"] is False
         assert "id" not in req["required"]
+    assert "contributing_factors" in setup["properties"]
+    assert "contributing_factors" not in req["properties"]
     assert "id" not in req["properties"]
     assert resp["required"] == ["approved", "reason", "adjusted_position_size"]
     locked = set(req["properties"])
     assert locked == set(RISK_VALIDATE_FIELDS)
     assert Timeframe.M1.value in req["properties"]["timeframe"]["enum"]
+    assert "factor_breakdown" in setup["properties"]
+    assert "factor_breakdown" not in req["properties"]
+    fb = setup["properties"]["factor_breakdown"]
+    assert fb["type"] == ["array", "null"]
+    assert fb["items"]["required"] == ["name", "weight", "score"]
+    assert setup["properties"]["contributing_factors"]["items"]["enum"] == list(STABLE_FACTORS)
+    assert fb["items"]["properties"]["name"]["enum"] == list(STABLE_FACTORS)
+    assert "ob_fvg" not in req["properties"]["setup_type"]["enum"]
+    assert "ob_fvg" not in setup["properties"]["setup_type"]["enum"]
+
+
+@pytest.mark.asyncio
+async def test_setup4_sd_extension_fade_long():
+    from sniper_data.setup_detection.fixtures import setup4_fade_long_bars, setup4_vol_warmup
+    from sniper_data.setup_detection.setup4 import SdExtensionFadeDetector
+
+    store = InMemoryStateStore()
+    await seed_common(store)
+    det = SdExtensionFadeDetector(store)
+    det.on_vwap(session_vwap())
+    for b in setup4_vol_warmup():
+        assert await det.on_bar(b) == []
+    cands = []
+    for b in setup4_fade_long_bars():
+        cands.extend(await det.on_bar(b))
+    assert len(cands) == 1
+    c = cands[0]
+    assert c.setup_type == "sd_extension_fade"
+    assert c.side == "long"
+    assert c.target == 100.0
+    assert c.stop < 94.0
+    assert c.risk_reward >= 1.5
+    _assert_explain(c, "vwap_band_extension", "low_volume", "rejection_candle")
+
+
+@pytest.mark.asyncio
+async def test_setup4_news_stub_allows_and_skip_window_blocks():
+    from sniper_data.setup_detection.fixtures import setup4_fade_long_bars, setup4_vol_warmup
+    from sniper_data.setup_detection.news import AllowAllNewsFilter, SkipWindowNewsFilter
+    from sniper_data.setup_detection.setup4 import SdExtensionFadeDetector
+
+    store = InMemoryStateStore()
+    await seed_common(store)
+    det = SdExtensionFadeDetector(store, news=AllowAllNewsFilter())
+    det.on_vwap(session_vwap())
+    for b in setup4_vol_warmup():
+        await det.on_bar(b)
+    allowed = []
+    for b in setup4_fade_long_bars():
+        allowed.extend(await det.on_bar(b))
+    assert allowed
+
+    store2 = InMemoryStateStore()
+    await seed_common(store2)
+    last = setup4_fade_long_bars()[-1]
+    blocked = SdExtensionFadeDetector(
+        store2,
+        news=SkipWindowNewsFilter({last.symbol: [last.close_ts_ms]}),
+    )
+    blocked.on_vwap(session_vwap())
+    for b in setup4_vol_warmup():
+        await blocked.on_bar(b)
+    out = []
+    for b in setup4_fade_long_bars():
+        out.extend(await blocked.on_bar(b))
+    assert out == []
+
+
+@pytest.mark.asyncio
+async def test_setup5_vwap_pullback_cont():
+    from sniper_data.setup_detection.fixtures import (
+        VWAP_SESSION,
+        setup5_pullback_bars,
+        setup5_rising_vwaps,
+        setup5_trend_bars,
+    )
+    from sniper_data.setup_detection.setup5 import VwapPullbackContDetector
+    from sniper_data.zones import store_fvg
+
+    store = InMemoryStateStore()
+    await seed_common(store, fvg=True)
+    await store_fvg(store, bullish_fvg())
+    det = VwapPullbackContDetector(store)
+    det.on_fvg(bullish_fvg())
+    trend = setup5_trend_bars()
+    for snap, b in zip(setup5_rising_vwaps(len(trend)), trend, strict=True):
+        det.on_vwap(snap)
+        await det.on_bar(b)
+    det.on_vwap(VWAP_SESSION)
+    cands = []
+    for b in setup5_pullback_bars(start=len(trend)):
+        cands.extend(await det.on_bar(b))
+    assert len(cands) == 1
+    c = cands[0]
+    assert c.setup_type == "vwap_pullback_cont"
+    assert c.side == "long"
+    assert c.risk_reward >= 2.0
+    _assert_explain(c, "trend_align", "vwap_pullback", "first_touch")
+    assert {"fvg", "order_block"} & set(c.contributing_factors)
+
+
+@pytest.mark.asyncio
+async def test_setup6_avwap_ob_confluence_uses_nested_bands():
+    from sniper_data.setup_detection.fixtures import (
+        phase2_avwap,
+        seed_avwap,
+        setup6_htf_warmup,
+        setup6_rejection_bars,
+    )
+    from sniper_data.setup_detection.setup6 import AvwapObConfluenceDetector
+
+    store = InMemoryStateStore()
+    await seed_common(store)
+    snap = await seed_avwap(store)
+    dumped = snap.model_dump()
+    assert "schema_version" not in dumped
+    assert "band_p1" not in dumped
+    assert "bands" in dumped
+    assert set(dumped["bands"]) == {
+        "plus_1_sigma",
+        "plus_2_sigma",
+        "plus_3_sigma",
+        "minus_1_sigma",
+        "minus_2_sigma",
+        "minus_3_sigma",
+    }
+    assert dumped == phase2_avwap().model_dump()
+    det = AvwapObConfluenceDetector(store)
+    for b in setup6_htf_warmup():
+        await det.on_bar(b)
+    cands = []
+    for b in setup6_rejection_bars():
+        cands.extend(await det.on_bar(b))
+    assert len(cands) == 1
+    c = cands[0]
+    assert c.setup_type == "avwap_ob_confluence"
+    assert c.side == "long"
+    assert c.ref_vwap == snap.vwap_value
+    assert c.timeframe == "15m"
+    assert c.conviction >= 70
+    assert c.risk_reward >= 2.0
+    _assert_explain(c, "avwap", "htf_ob", "rejection_candle")
+    body = to_risk_request(c)
+    assert "contributing_factors" not in body
+    assert "factor_breakdown" not in body
+    assert "id" not in body
+
+
+def test_approved_signal_carries_factors_not_on_validate():
+    from sniper_data.models import AssetClass
+    from sniper_data.setup_detection.candidate import SetupCandidate, to_risk_request, to_setup_signal
+
+    cand = SetupCandidate(
+        setup_number=4,
+        setup_type="sd_extension_fade",
+        symbol=SYM,
+        asset_class=AssetClass.CRYPTO,
+        side="long",
+        conviction=70,
+        entry=96.2,
+        stop=93.9,
+        target=100.0,
+        timeframe="5m",
+        trigger_event_ids=["vwap-session-BTCUSDT"],
+        ts_ms=T0,
+        ref_vwap=100.0,
+        session_type="london",
+    )
+    attach_explainability(cand, ["vwap_band_extension", "low_volume"])
+    req = to_risk_request(cand)
+    assert "contributing_factors" not in req
+    assert "factor_breakdown" not in req
+    sig = to_setup_signal(cand, "sig-test", position_size=1.0)
+    dumped = sig.model_dump(mode="json", exclude_none=True)
+    assert dumped["contributing_factors"] == ["vwap_band_extension", "low_volume"]
+    assert isinstance(dumped["factor_breakdown"], list)
+    assert {row["name"] for row in dumped["factor_breakdown"]} == {"vwap_band_extension", "low_volume"}
+    assert abs(sum(row["score"] for row in dumped["factor_breakdown"]) - 70) <= 0.05
+    assert dumped["confidence"] == 0.7
