@@ -9,7 +9,7 @@ def _sig(i: str, symbol: str = "AAPL", status: SignalStatus = SignalStatus.ACTIV
         id=i,
         symbol=symbol,
         asset_class=AssetClass.EQUITY,
-        setup_type="sweep_mss",
+        setup_type="avwap_ob_confluence",
         side=Side.LONG,
         ts_ms=ts,
         entry=190.0,
@@ -27,8 +27,8 @@ async def test_memory_lifecycle_and_filters():
     await store.insert(_sig("c", ts=300, status=SignalStatus.CANCELLED))
 
     await store.insert(_sig("d", symbol="NVDA", ts=50))
-    store.rows["d"] = store.rows["d"].model_copy(update={"setup_type": "ob_fvg"})
-    by_setup = await store.list(setup_type="ob_fvg")
+    store.rows["d"] = store.rows["d"].model_copy(update={"setup_type": "sd_extension_fade"})
+    by_setup = await store.list(setup_type="sd_extension_fade")
     assert [r.id for r in by_setup] == ["d"]
 
     listed = await store.list(symbol="AAPL")

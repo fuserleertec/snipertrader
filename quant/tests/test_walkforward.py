@@ -6,9 +6,12 @@ from pathlib import Path
 from sniper_quant.backtest.detectors import (
     DEFAULT_PARAMS,
     SETUP_INDEX,
+    detect_avwap_ob_confluence,
     detect_fvg_entry,
     detect_po3_judas,
+    detect_sd_extension_fade,
     detect_sweep_reclaim,
+    detect_vwap_pullback_cont,
     parse_setup_ids,
 )
 from sniper_quant.backtest.engine import EventBacktester
@@ -29,6 +32,8 @@ from sniper_quant.cli import main
 def test_parse_setup_ids():
     assert parse_setup_ids("1,2,3") == [1, 2, 3]
     assert parse_setup_ids("sweep_reclaim,po3_judas") == [1, 3]
+    assert parse_setup_ids("4,5,6") == [4, 5, 6]
+    assert parse_setup_ids("sd_extension_fade,avwap_ob_confluence") == [4, 6]
 
 
 def test_locked_defaults():
@@ -69,6 +74,22 @@ def test_locked_defaults():
     assert p.max_bars_sweep_to_displace == 6
     assert p.dedupe_window_sec == 300
     assert p.min_conviction == 60
+    assert p.s4_band_trigger == "either"
+    assert p.s4_vol_max_frac == 0.8
+    assert p.s4_confirm == "either"
+    assert p.s4_stop_buffer_atr == 0.05
+    assert p.s4_min_rr == 1.5
+    assert p.news_skip_minutes == 15
+    assert p.s5_trend_lookback_bars == 20
+    assert p.s5_pullback_level == "either"
+    assert p.s5_require_ob_or_fvg is True
+    assert p.s5_first_touch_window_bars == 5
+    assert p.s5_min_rr == 2.0
+    assert p.s6_ob_timeframe == "4h"
+    assert p.s6_approach_tol_atr == 0.05
+    assert p.s6_confirm == "rejection"
+    assert p.s6_min_rr == 2.0
+    assert p.s6_min_conviction == 70
 
 
 def test_grids_cover_locked_values():
@@ -87,12 +108,21 @@ def test_detectors_fire_on_synthetic():
     sweep = detect_sweep_reclaim(bars, DEFAULT_PARAMS)
     fvg = detect_fvg_entry(bars, DEFAULT_PARAMS)
     po3 = detect_po3_judas(bars, DEFAULT_PARAMS)
+    s4 = detect_sd_extension_fade(bars, DEFAULT_PARAMS)
+    s5 = detect_vwap_pullback_cont(bars, DEFAULT_PARAMS)
+    s6 = detect_avwap_ob_confluence(bars, DEFAULT_PARAMS)
     assert sweep, "expected sweep_reclaim hits on synthetic tape"
     assert fvg, "expected fvg_entry hits on synthetic tape"
     assert po3, "expected po3_judas hits on synthetic tape"
+    assert s4, "expected sd_extension_fade hits on synthetic tape"
+    assert s5, "expected vwap_pullback_cont hits on synthetic tape"
+    assert s6, "expected avwap_ob_confluence hits on synthetic tape"
     assert {s.setup_type for s in sweep} == {"sweep_reclaim"}
     assert {s.setup_type for s in fvg} == {"fvg_entry"}
     assert {s.setup_type for s in po3} == {"po3_judas"}
+    assert {s.setup_type for s in s4} == {"sd_extension_fade"}
+    assert {s.setup_type for s in s5} == {"vwap_pullback_cont"}
+    assert {s.setup_type for s in s6} == {"avwap_ob_confluence"}
 
 
 def test_detected_signals_backtest():
@@ -126,6 +156,27 @@ def test_walkforward_setups_1_2_3():
         assert "**2.0**" in md
         assert "Alignment with ML PR #7" in md
         assert "s3_kill_zone" in md
+
+
+def test_walkforward_setups_4_5_6():
+    bars = synthetic_setup_tape("BTCUSDT", cycles=12, timeframe="5m")
+    rows = walk_forward_setups(bars, [4, 5, 6], n_folds=3, equity=100_000, mode="core")
+    assert [r.setup_type for r in rows] == [SETUP_INDEX[i] for i in (4, 5, 6)]
+    for row in rows:
+        assert len(row.folds) == 3
+        assert row.oos.n_trades >= 1
+        assert 0.0 <= row.oos.win_rate <= 1.0
+        md = render_walkforward_markdown(
+            [row],
+            symbol="BTCUSDT",
+            timeframe="5m",
+            source="test",
+            n_bars=len(bars),
+            n_folds=3,
+            mode="core",
+        )
+        assert row.setup_type in md
+        assert "sd_extension_fade" in md or row.setup_type != "sd_extension_fade"
 
 
 def test_cli_backtest_writes_report(tmp_path: Path, capsys):

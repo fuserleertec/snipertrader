@@ -44,13 +44,13 @@ def test_filters_setup_type_status_time():
     http = _client()
     http.post("/signals", json=_payload(symbol="BTCUSDT", setup_type="sweep_reclaim", ts_ms=1000))
     http.post("/signals", json=_payload(symbol="ETHUSDT", setup_type="fvg_entry", ts_ms=2000))
-    http.post("/signals", json=_payload(symbol="AAPL", setup_type="mss_break", ts_ms=3000, asset_class="equity"))
+    http.post("/signals", json=_payload(symbol="AAPL", setup_type="sd_extension_fade", ts_ms=3000, asset_class="equity"))
 
     by_setup = http.get("/signals", params={"setup_type": "fvg_entry"}).json()["items"]
     assert [r["symbol"] for r in by_setup] == ["ETHUSDT"]
 
     by_sym = http.get("/signals", params={"symbol": "aapl"}).json()["items"]
-    assert [r["setup_type"] for r in by_sym] == ["mss_break"]
+    assert [r["setup_type"] for r in by_sym] == ["sd_extension_fade"]
 
     window = http.get("/signals", params={"from_ts": 1500, "to_ts": 2500}).json()["items"]
     assert [r["symbol"] for r in window] == ["ETHUSDT"]
@@ -58,7 +58,7 @@ def test_filters_setup_type_status_time():
 
 def test_cursor_pagination():
     http = _client()
-    for i, setup in enumerate(("sweep_reclaim", "fvg_entry", "mss_break")):
+    for i, setup in enumerate(("sweep_reclaim", "fvg_entry", "sd_extension_fade")):
         http.post(
             "/signals",
             json=_payload(symbol=f"S{i}USDT", setup_type=setup, ts_ms=1000 + i, asset_class="crypto"),
@@ -101,12 +101,15 @@ def test_ws_upsert_and_status():
         assert patched["closed_ts_ms"] == 9
 
 
-def test_history_is_get_signals_not_a_separate_route():
+def test_history_route_matches_list():
     http = _client()
     spec = http.get("/openapi.json").json()
     assert "/signals" in spec["paths"]
-    assert "/signals/history" not in spec["paths"]
-    assert http.get("/signals/history").status_code == 404
+    assert "/signals/history" in spec["paths"]
+    http.post("/signals", json=_payload(ts_ms=5000))
+    listed = http.get("/signals").json()
+    hist = http.get("/signals/history").json()
+    assert [r["id"] for r in listed["items"]] == [r["id"] for r in hist["items"]]
 
 
 def test_close_fields_on_list_detail_and_cancelled_null():

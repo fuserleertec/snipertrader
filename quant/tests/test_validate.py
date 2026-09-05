@@ -104,7 +104,7 @@ def test_openapi_and_health():
     assert "post" in spec["paths"]["/risk/validate"]
     assert "get" in spec["paths"]["/signals"]
     assert "/ws/signals" in spec["paths"]
-    assert "/signals/history" not in spec["paths"]
+    assert "/signals/history" in spec["paths"]
     props = spec["components"]["schemas"]["SignalView"]["properties"]
     assert "realized_r" in props
     assert "exit_price" in props
@@ -116,12 +116,13 @@ def test_openapi_and_health():
     assert params["setup_types"] == [
         "sweep_reclaim",
         "fvg_entry",
-        "mss_break",
-        "order_block",
-        "sweep_mss",
-        "ob_fvg",
         "po3_judas",
+        "sd_extension_fade",
+        "vwap_pullback_cont",
+        "avwap_ob_confluence",
     ]
+    for dead in ("mss_break", "order_block", "sweep_mss", "ob_fvg"):
+        assert http.post("/risk/validate", json=_payload(setup_type=dead)).status_code == 422
     schema = spec["components"]["schemas"]["CandidateSignal"]
     assert "id" not in schema.get("properties", {})
     assert set(schema["required"]) >= {

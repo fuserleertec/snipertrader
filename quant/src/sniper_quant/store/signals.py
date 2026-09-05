@@ -37,6 +37,7 @@ class SignalStore(Protocol):
         symbol: str | None = None,
         status: SignalStatus | str | None = None,
         setup_type: SetupType | str | None = None,
+        side: Side | str | None = None,
         from_ts: int | None = None,
         to_ts: int | None = None,
         cursor: str | None = None,
@@ -55,6 +56,8 @@ class SignalStore(Protocol):
     ) -> StoredSignal | None: ...
 
     async def active(self) -> list[StoredSignal]: ...
+
+    async def all(self) -> list[StoredSignal]: ...
 
     async def close(self) -> None: ...
 
@@ -76,6 +79,7 @@ class InMemorySignalStore:
         symbol: str | None = None,
         status: SignalStatus | str | None = None,
         setup_type: SetupType | str | None = None,
+        side: Side | str | None = None,
         from_ts: int | None = None,
         to_ts: int | None = None,
         cursor: str | None = None,
@@ -90,6 +94,9 @@ class InMemorySignalStore:
         if setup_type:
             want = setup_type_value(setup_type)
             rows = [r for r in rows if setup_type_value(r.setup_type) == want]
+        if side:
+            want_side = Side(side)
+            rows = [r for r in rows if r.side is want_side]
         if from_ts is not None:
             rows = [r for r in rows if r.ts_ms >= from_ts]
         if to_ts is not None:
@@ -130,6 +137,9 @@ class InMemorySignalStore:
 
     async def active(self) -> list[StoredSignal]:
         return [r for r in self.rows.values() if r.status is SignalStatus.ACTIVE]
+
+    async def all(self) -> list[StoredSignal]:
+        return list(self.rows.values())
 
     async def close(self) -> None:
         return None
@@ -291,6 +301,7 @@ class TimescaleSignalStore:
         symbol: str | None = None,
         status: SignalStatus | str | None = None,
         setup_type: SetupType | str | None = None,
+        side: Side | str | None = None,
         from_ts: int | None = None,
         to_ts: int | None = None,
         cursor: str | None = None,
@@ -325,7 +336,11 @@ class TimescaleSignalStore:
         """
         async with pool.acquire() as conn:
             rows = await conn.fetch(sql, symbol, st, stype, from_ts, to_ts, c_ts, c_id, limit)
-        return [_row_to_signal(r) for r in rows]
+        out = [_row_to_signal(r) for r in rows]
+        if side:
+            want = Side(side)
+            out = [r for r in out if r.side is want]
+        return out
 
     async def update_status(
         self,
@@ -360,6 +375,9 @@ class TimescaleSignalStore:
 
     async def active(self) -> list[StoredSignal]:
         return await self.list(status=SignalStatus.ACTIVE, limit=5000)
+
+    async def all(self) -> list[StoredSignal]:
+        return await self.list(limit=100_000)
 
     async def close(self) -> None:
         if self._pool is not None:

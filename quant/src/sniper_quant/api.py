@@ -8,17 +8,24 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.openapi.utils import get_openapi
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
+from sniper_quant.alerts import CHANNELS, AlertService
+from sniper_quant.auth import ApiKeyRateLimitMiddleware
 from sniper_quant.config import Settings, get_settings
+from sniper_quant.paper import PaperEngine
 from sniper_quant.lifecycle import LifecycleMonitor, resolve_close_patch
 from sniper_quant.live import SignalHub
 from sniper_quant.models import (
+    AssetClass,
     CandidateSignal,
     OHLCVBar,
+    PerformanceSummary,
     SetupType,
     SignalListResponse,
+    Side,
     SignalStatus,
+    FactorBreakdownRow,
     SignalView,
     StoredSignal,
     ValidateResponse,
@@ -35,87 +42,62 @@ from sniper_quant.store.signals import (
 )
 
 API_DESCRIPTION = """
-# SniperTrader Quant API — Phase 2 / Rev. 1.1
+# SniperTrader Quant API — Phase 3 / Rev. 1.1
 
-Risk pre-filter, `setup_signals` second gate, lifecycle TP/SL, and
-Setups 1–3 backtests. Lives beside `data_engineering/`.
-Shares TimescaleDB (`ohlcv_bars`, `signals`) when `USE_INMEMORY` is false.
+Risk pre-filter (mandatory before every publish), `setup_signals` second
+gate, lifecycle TP/SL, performance, alerts (stubs), paper book.
+**No live trading.**
 
-## ML Researchers — Risk Pre-Filter (required before Phase 2 `setup_signals`)
+## Locked `setup_type` enum (six values)
 
-`POST /risk/validate`
+`sweep_reclaim` · `fvg_entry` · `po3_judas` · `sd_extension_fade` ·
+`vwap_pullback_cont` · `avwap_ob_confluence`
 
-Send a **candidate** (`schemas/risk_validate_request.schema.json`).
-**Omit `id`.** Do **not** publish to Kafka `setup_signals` unless `approved`
-is `true`. After approval, assign `id` and persist `adjusted_position_size`.
+Dormant (`mss_break`, `order_block`, `sweep_mss`, `ob_fvg`) → HTTP **422**.
+Do not walk-forward dormant types.
 
-### Locked `setup_type` enum
+`POST /risk/validate` is required before Kafka `setup_signals` or
+`POST /signals`. **Omit `id`.** `contributing_factors` and
+`factor_breakdown` are **publish-only** — not on the validate body.
 
-`sweep_reclaim` · `fvg_entry` · `mss_break` · `order_block` · `sweep_mss` · `ob_fvg` · `po3_judas`
+### Setup-specific risk
 
-### Required stub fields
+| setup_type | min RR | min conviction | extra |
+|---|---|---|---|
+| sweep_reclaim | 2.0 | 60 | |
+| fvg_entry | 1.5 | 60 | |
+| po3_judas | 1.5 | 60 | |
+| sd_extension_fade | 1.5 | 60 | news skip ±15m (stub calendar) |
+| vwap_pullback_cont | 2.0 | 60 | |
+| avwap_ob_confluence | 2.0 | 70 | |
 
-`schema_version` (`"1.1"`), `symbol`, `asset_class`, `setup_type`, `side`,
-`ts_ms`. Optional stubs: `confidence`, `ref_vwap`, `ref_session`.
+Reject reasons: `ok`, `invalid_levels`, `position_size_exceeds_limit`,
+`daily_loss_limit`, `correlation_threshold`, `same_symbol_conflict`,
+`news_window`, `low_conviction`.
 
-### Required for risk
+`adjusted_position_size` is **asset units**. `size_unit` is `"asset"`.
 
-`entry`, `stop`, `target` (numbers), `timeframe` ∈ {`1m`,`5m`,`15m`},
-`trigger_event_ids` (string[]).
+## Frontend
 
-### Optional
+`GET /signals` and **`GET /signals/history`** share the same list
+(filters: `symbol`, `status`, `setup_type`, `side`, `from_ts`, `to_ts`,
+`limit`, `cursor`).
 
-`session_type` — same enum as Data Engineers
-(`asia`/`london`/`ny_am`/`ny_pm`/`rth`/`eth`/`globex`).
+`GET /performance/summary` → `by_setup` keyed by product strings:
+`1_liquidity_sweep_vwap_reclaim`, `2_fvg_mitigation_vwap`,
+`3_po3_asia_range_sweep`, `4_sd_extension_fade`,
+`5_vwap_pullback_cont`, `6_avwap_ob_confluence`.
 
-`proposed_position_size` — engine may overwrite via `adjusted_position_size`.
+## Alerts / paper / auth
 
-Required response keys: `approved`, `reason`, `adjusted_position_size`.
+Alert stubs: Telegram, Discord, Email, webhook. Throttle **5/hour/user**.
+Immediate when `confidence ≥ 0.80`.
 
-Reject reasons:
+Paper book: `GET /paper/account`, `POST /paper/reset`, `POST /paper/demo-fortnight`.
+2-week gate, in-memory, no broker.
 
-- `invalid_levels` — stop/target on the wrong side of entry, or R:R below 1.5
-- `position_size_exceeds_limit` — proposed size > 2% equity risk
-- `daily_loss_limit` — 3% daily loss already hit or this trade would breach
-- `correlation_threshold` — 60-day |ρ| vs an open symbol > 0.70
-- `same_symbol_conflict` — an ACTIVE position on the same symbol in the **opposite** direction (same-direction pyramid is allowed)
-- `ok` — approved
-
-`adjusted_position_size` is in **asset units** (coins / shares / contracts), not USD.
-`size_unit` is always `"asset"`.
-
-Phase 2 second gate: Kafka `setup_signals` (or `POST /v1/signals/ingest`)
-re-checks geometry + 1.5R and persists ACTIVE. `POST /v1/lifecycle/bar`
-moves ACTIVE → TP_HIT / SL_HIT and records `realized_r`, `exit_price`,
-`closed_ts_ms`, plus `outcome`.
-
-Unknown `setup_type` or `timeframe` → HTTP 422.
-
-## Frontend — dashboard signal table
-
-History is **`GET /signals`** with `from_ts` / `to_ts` plus `symbol`,
-`status`, `setup_type`. There is **no** `/signals/history` route.
-
-`GET /signals?symbol=&status=&setup_type=&from_ts=&to_ts=&limit=&cursor=`
-
-Returns `{ "items": Signal[], "next_cursor": string | null }`.
-`from_ts` / `to_ts` are UTC epoch milliseconds (same unit as `ts_ms`).
-Pass `cursor` from the previous page's `next_cursor`.
-
-`GET /signals/{id}` → `Signal`
-
-`Signal` fields: `id`, `ts_ms`, `symbol`, `asset_class`, `setup_type`
-(seven locked values), `side`, `entry`, `stop`, `target`,
-`status` (`ACTIVE`|`TP_HIT`|`SL_HIT`|`CANCELLED`), `confidence`,
-`timeframe`, `ref_session`, `trigger_event_ids`,
-`realized_r` (signed R on TP/SL; **null** for ACTIVE/CANCELLED),
-`exit_price` (optional), `closed_ts_ms` (optional).
-
-On lifecycle close (`TP_HIT` / `SL_HIT`) these three are persisted and
-returned on list, detail, and `WS signal.status`.
-
-`WS /ws/signals` pushes `{ "type": "signal.upsert"|"signal.status", "signal": Signal }`
-on create (`upsert`) and status change (`status`).
+Auth: set `SNIPER_API_KEY` to require `X-API-Key`. Default **off** so
+tests stay open. Optional `RATE_LIMIT_PER_MIN`.
 """
 
 
@@ -131,7 +113,21 @@ class StatusBody(BaseModel):
 
 
 class PublishBody(CandidateSignal):
-    """Same locked candidate as validate. Server assigns ``id`` after approval."""
+    """Validate candidate plus publish-only factor fields. Server assigns ``id``."""
+
+    contributing_factors: list[str] = Field(default_factory=list)
+    factor_breakdown: list[FactorBreakdownRow] = Field(default_factory=list)
+
+
+class AlertSubBody(BaseModel):
+    user_id: str
+    channel: str
+    target: str
+
+
+class AlertUnsubBody(BaseModel):
+    user_id: str
+    channel: str | None = None
 
 
 def _build_stores(settings: Settings) -> tuple[SignalStore, OHLCVLoader, RiskEngine]:
@@ -157,9 +153,11 @@ async def lifespan(app: FastAPI):
     from sniper_quant.validate_service import SignalValidationService
 
     app.state.validator = SignalValidationService(
-        signals, app.state.hub, min_rr=settings.min_rr
+        signals, app.state.hub, min_rr=settings.min_rr, engine=engine
     )
     app.state.monitor = LifecycleMonitor(signals, app.state.hub, ohlcv)
+    app.state.alerts = AlertService()
+    app.state.paper = PaperEngine(starting_equity=settings.default_equity)
     yield
     await signals.close()
     await ohlcv.close()
@@ -188,9 +186,16 @@ def create_app(
         from sniper_quant.validate_service import SignalValidationService
 
         app.state.validator = SignalValidationService(
-            app.state.signals, app.state.hub, min_rr=app.state.settings.min_rr
+            app.state.signals,
+            app.state.hub,
+            min_rr=app.state.settings.min_rr,
+            engine=app.state.engine,
         )
         app.state.monitor = LifecycleMonitor(app.state.signals, app.state.hub, app.state.ohlcv)
+        app.state.alerts = AlertService()
+        app.state.paper = PaperEngine(starting_equity=app.state.settings.default_equity)
+
+    app.add_middleware(ApiKeyRateLimitMiddleware, settings=settings or get_settings())
 
     def _engine() -> RiskEngine:
         return app.state.engine
@@ -201,8 +206,21 @@ def create_app(
     def _hub() -> SignalHub:
         return app.state.hub
 
+    def _alerts() -> AlertService:
+        return app.state.alerts
+
+    def _paper() -> PaperEngine:
+        return app.state.paper
+
     def _view(row: StoredSignal) -> SignalView:
         return SignalView.from_stored(row)
+
+    def _after_upsert(row: StoredSignal) -> None:
+        _paper().open_from_signal(row)
+        _alerts().dispatch(_view(row), now_ms=row.ts_ms)
+
+    def _after_status(row: StoredSignal) -> None:
+        _paper().mark_signal(row)
 
     @app.get("/health")
     async def health() -> dict[str, Any]:
@@ -220,38 +238,51 @@ def create_app(
 
     @app.get("/v1/setups")
     async def list_setups() -> dict[str, Any]:
+        from sniper_quant.setups import PRODUCT_KEYS, SETUP_TYPE_TO_PRODUCT
+
         return {
             "schema_version": "1.1",
             "setup_types": list(SETUP_TYPES),
+            "product_keys": list(PRODUCT_KEYS),
+            "setup_type_to_product": dict(SETUP_TYPE_TO_PRODUCT),
             "notes": SETUP_TYPE_NOTES,
             "locked": True,
         }
 
+    @app.get("/performance/summary", response_model=PerformanceSummary)
+    async def performance_summary() -> PerformanceSummary:
+        """Live metrics. by_setup is keyed by DE product strings, not setup_type."""
+        from sniper_quant.performance import summarize_signals
+
+        rows = await _signals().all()
+        frac = float(_engine().settings.risk_fraction)
+        return summarize_signals(rows, risk_fraction=frac)
+
     @app.post("/risk/validate", response_model=ValidateResponse)
     async def risk_validate(body: CandidateSignal) -> ValidateResponse:
-        """Candidate setup (no id). Call before Phase 2 publish to setup_signals."""
+        """Candidate setup (no id). Mandatory before publish for every setup_type."""
         engine = _engine()
         active = await _signals().active()
         engine.state.sync_from_signals(active)
         return engine.validate(body)
 
-    @app.get("/signals", response_model=SignalListResponse)
-    async def list_signals(
-        symbol: str | None = None,
-        status: SignalStatus | None = None,
-        setup_type: SetupType | None = None,
-        from_ts: int | None = Query(default=None, ge=0, description="Inclusive UTC epoch ms"),
-        to_ts: int | None = Query(default=None, ge=0, description="Inclusive UTC epoch ms"),
-        limit: int = Query(default=50, ge=1, le=500),
-        cursor: str | None = Query(default=None, description="Opaque cursor from next_cursor"),
+    async def _list_signals_impl(
+        symbol: str | None,
+        status: SignalStatus | None,
+        setup_type: SetupType | None,
+        side: Side | None,
+        from_ts: int | None,
+        to_ts: int | None,
+        limit: int,
+        cursor: str | None,
     ) -> SignalListResponse:
-        """History + live table. Filter by time window — there is no /signals/history."""
         if symbol:
             symbol = normalize_symbol(symbol)
         rows = await _signals().list(
             symbol=symbol,
             status=status,
             setup_type=setup_type,
+            side=side,
             from_ts=from_ts,
             to_ts=to_ts,
             cursor=cursor,
@@ -263,6 +294,38 @@ def create_app(
             next_cursor = encode_cursor(last.ts_ms, last.id)
             rows = rows[:limit]
         return SignalListResponse(items=[_view(r) for r in rows], next_cursor=next_cursor)
+
+    @app.get("/signals", response_model=SignalListResponse)
+    async def list_signals(
+        symbol: str | None = None,
+        status: SignalStatus | None = None,
+        setup_type: SetupType | None = None,
+        side: Side | None = None,
+        from_ts: int | None = Query(default=None, ge=0, description="Inclusive UTC epoch ms"),
+        to_ts: int | None = Query(default=None, ge=0, description="Inclusive UTC epoch ms"),
+        limit: int = Query(default=50, ge=1, le=500),
+        cursor: str | None = Query(default=None, description="Opaque cursor from next_cursor"),
+    ) -> SignalListResponse:
+        """Live table + history window."""
+        return await _list_signals_impl(
+            symbol, status, setup_type, side, from_ts, to_ts, limit, cursor
+        )
+
+    @app.get("/signals/history", response_model=SignalListResponse)
+    async def signals_history(
+        symbol: str | None = None,
+        status: SignalStatus | None = None,
+        setup_type: SetupType | None = None,
+        side: Side | None = None,
+        from_ts: int | None = Query(default=None, ge=0),
+        to_ts: int | None = Query(default=None, ge=0),
+        limit: int = Query(default=50, ge=1, le=500),
+        cursor: str | None = Query(default=None),
+    ) -> SignalListResponse:
+        """Same list as GET /signals — explicit history path for Frontend/PM."""
+        return await _list_signals_impl(
+            symbol, status, setup_type, side, from_ts, to_ts, limit, cursor
+        )
 
     @app.get("/signals/{signal_id}", response_model=SignalView)
     async def get_signal(signal_id: str) -> SignalView:
@@ -305,11 +368,14 @@ def create_app(
             session_type=body.session_type,
             position_size=decision.adjusted_position_size,
             status=SignalStatus.ACTIVE,
+            contributing_factors=list(body.contributing_factors or []),
+            factor_breakdown=list(body.factor_breakdown or []),
         )
         await _signals().insert(stored)
         engine.state.sync_from_signals(await _signals().active())
         view = _view(stored)
         await _hub().publish("signal.upsert", view)
+        _after_upsert(stored)
         return view
 
     @app.patch("/signals/{signal_id}", response_model=SignalView)
@@ -340,11 +406,12 @@ def create_app(
         _engine().state.sync_from_signals(await _signals().active())
         view = _view(row)
         await _hub().publish("signal.status", view)
+        _after_status(row)
         return view
 
     @app.post("/v1/signals/ingest", response_model=SignalView)
     async def ingest_setup_signal(body: dict[str, Any]) -> SignalView:
-        """Second gate (same as the Kafka ``setup_signals`` consumer). Sanity only."""
+        """Second gate: re-runs risk pre-filter; rejects unapproved publishes."""
         from sniper_quant.validate_service import SignalValidationService
 
         validator: SignalValidationService = app.state.validator
@@ -358,6 +425,7 @@ def create_app(
                 },
             )
         _engine().state.sync_from_signals(await _signals().active())
+        _after_upsert(stored)
         return _view(stored)
 
     @app.post("/v1/lifecycle/bar")
@@ -366,10 +434,88 @@ def create_app(
         monitor: LifecycleMonitor = app.state.monitor
         closed = await monitor.apply_bar(body)
         _engine().state.sync_from_signals(await _signals().active())
+        for row in closed:
+            _after_status(row)
         return {
             "closed": len(closed),
             "signals": [_view(row).model_dump() for row in closed],
         }
+
+    @app.post("/alerts/subscribe")
+    async def alerts_subscribe(body: AlertSubBody) -> dict[str, Any]:
+        try:
+            _alerts().subscribe(body.user_id, body.channel, body.target)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        return {"ok": True, "channels": list(CHANNELS), **_alerts().dump()}
+
+    @app.post("/alerts/unsubscribe")
+    async def alerts_unsubscribe(body: AlertUnsubBody) -> dict[str, Any]:
+        removed = _alerts().unsubscribe(body.user_id, body.channel)
+        return {"ok": True, "removed": removed}
+
+    @app.get("/alerts")
+    async def alerts_status() -> dict[str, Any]:
+        return _alerts().dump()
+
+    @app.get("/paper/account")
+    async def paper_account() -> dict[str, Any]:
+        return _paper().snapshot()
+
+    @app.get("/paper/positions")
+    async def paper_positions() -> dict[str, Any]:
+        snap = _paper().snapshot()
+        return {"positions": snap["positions"], "closed": snap["closed"]}
+
+    @app.post("/paper/reset")
+    async def paper_reset() -> dict[str, Any]:
+        _paper().reset(_engine().state.equity)
+        return _paper().snapshot()
+
+    @app.post("/paper/demo-fortnight")
+    async def paper_demo_fortnight() -> dict[str, Any]:
+        """Scripted 14-day paper book (no live broker). For the FE/PM 2-week gate."""
+        from sniper_quant.backtest.demo import run_inmemory_demo
+
+        book = _paper()
+        book.reset(_engine().state.equity)
+        result = run_inmemory_demo(book.starting_equity)
+        day_ms = 86_400_000
+        start = 1_700_000_000_000
+        for i, trade in enumerate(result.trades):
+            setup = trade.setup_type
+            row = StoredSignal(
+                id=trade.signal_id or f"paper-{i}",
+                symbol=trade.symbol,
+                asset_class=AssetClass.CRYPTO,
+                setup_type=setup,
+                side=trade.side,
+                ts_ms=start + (i % 14) * day_ms,
+                entry=trade.entry,
+                stop=trade.stop,
+                target=trade.target,
+                position_size=trade.size,
+                status=SignalStatus.ACTIVE,
+            )
+            book.open_from_signal(row)
+            closed = row.model_copy(
+                update={
+                    "status": trade.status,
+                    "exit_px": trade.exit_price,
+                    "r_multiple": trade.r_multiple,
+                    "closed_ts_ms": trade.exit_ts_ms or row.ts_ms + 3_600_000,
+                }
+            )
+            book.close_from_signal(closed)
+        snap = book.snapshot()
+        snap["days_simulated"] = 14
+        snap["demo_trades"] = result.metrics.n_trades
+        snap["how_to_run"] = (
+            "USE_INMEMORY=1 python -m sniper_quant.cli api --inmemory --port 8001 "
+            "then POST /paper/demo-fortnight or POST /risk/validate → POST /signals "
+            "→ POST /v1/lifecycle/bar. No live trading."
+        )
+        return snap
 
     @app.websocket("/ws/signals")
     async def ws_signals(websocket: WebSocket) -> None:

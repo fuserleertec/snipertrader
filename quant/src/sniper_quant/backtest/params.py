@@ -16,6 +16,9 @@ SETUP_INDEX: dict[int, str] = {
     1: "sweep_reclaim",
     2: "fvg_entry",
     3: "po3_judas",
+    4: "sd_extension_fade",
+    5: "vwap_pullback_cont",
+    6: "avwap_ob_confluence",
 }
 
 SETUP_NAME_TO_INDEX: dict[str, int] = {v: k for k, v in SETUP_INDEX.items()}
@@ -108,6 +111,33 @@ class DetectorParams:
     # PR #7 SETUP2_TARGET_RR_FALLBACK — used when target_mode is prior_swing.
     target_rr_fallback: float = 2.0
 
+    # --- Setup 4 sd_extension_fade ---
+    # band_trigger either = ≥2σ. Stop is always beyond the 3σ band.
+    s4_band_trigger: str = "either"
+    s4_vol_max_frac: float = 0.8
+    s4_confirm: str = "either"
+    s4_stop_buffer_atr: float = 0.05
+    s4_min_rr: float = 1.5
+    news_skip_minutes: int = 15
+
+    # --- Setup 5 vwap_pullback_cont ---
+    s5_trend_lookback_bars: int = 20
+    s5_pullback_level: str = "either"
+    s5_require_ob_or_fvg: bool = True
+    s5_first_touch_window_bars: int = 5
+    s5_stop_buffer_atr: float = 0.05
+    s5_min_rr: float = 2.0
+
+    # --- Setup 6 avwap_ob_confluence ---
+    # HTF is synthesized from 5m (12≈1h, 48≈4h, calendar day≈1d).
+    s6_ob_timeframe: str = "4h"
+    s6_approach_tol_atr: float = 0.05
+    s6_confirm: str = "rejection"
+    s6_confirm_tf: str = "1h"
+    s6_stop_buffer_atr: float = 0.05
+    s6_min_rr: float = 2.0
+    s6_min_conviction: int = 70
+
     def resolved_kill_zone(self, asset_class: AssetClass | str) -> str:
         """Match PR #7 ``manipulation_zones``: ``ny_am`` on crypto also allows London."""
         ac = AssetClass(asset_class)
@@ -196,7 +226,7 @@ def parse_setup_ids(raw: str) -> list[int]:
             continue
         n = int(part)
         if n not in SETUP_INDEX:
-            raise ValueError(f"unknown setup id {n!r}; expected 1, 2, or 3")
+            raise ValueError(f"unknown setup id {n!r}; expected 1–6")
         ids.append(n)
     if not ids:
         raise ValueError("no setups specified")
@@ -241,6 +271,33 @@ def setup_fields(setup_type: str) -> tuple[str, ...]:
             "po3_stop_buffer_atr",
             "partial_mid",
             "max_bars_sweep_to_displace",
+        )
+    if setup_type == "sd_extension_fade":
+        return (
+            "s4_band_trigger",
+            "s4_vol_max_frac",
+            "s4_confirm",
+            "pin_wick_ratio",
+            "s4_stop_buffer_atr",
+            "s4_min_rr",
+        )
+    if setup_type == "vwap_pullback_cont":
+        return (
+            "s5_trend_lookback_bars",
+            "s5_pullback_level",
+            "s5_require_ob_or_fvg",
+            "s5_first_touch_window_bars",
+            "s5_stop_buffer_atr",
+            "s5_min_rr",
+        )
+    if setup_type == "avwap_ob_confluence":
+        return (
+            "s6_ob_timeframe",
+            "s6_approach_tol_atr",
+            "s6_confirm",
+            "s6_confirm_tf",
+            "s6_stop_buffer_atr",
+            "s6_min_rr",
         )
     return ()
 
@@ -364,6 +421,82 @@ def po3_judas_grid(*, mode: str = "full") -> tuple[DetectorParams, ...]:
     return tuple(_iter_product(rows))
 
 
+GRID_S4_BAND: tuple[str, ...] = ("2s", "3s", "either")
+GRID_S4_VOL: tuple[float, ...] = (0.7, 0.8, 0.9)
+GRID_S4_CONFIRM: tuple[str, ...] = ("engulfing", "pin", "mss_1m5m", "either")
+GRID_S4_STOP: tuple[float, ...] = (0.0, 0.05)
+GRID_S4_MIN_RR: tuple[float, ...] = (1.5, 2.0)
+GRID_S5_LOOKBACK: tuple[int, ...] = (10, 20, 30)
+GRID_S5_PULLBACK: tuple[str, ...] = ("vwap", "band_1s", "either")
+GRID_S5_TOUCH: tuple[int, ...] = (3, 5, 8)
+GRID_S6_OB_TF: tuple[str, ...] = ("4h", "1d")
+GRID_S6_APPROACH: tuple[float, ...] = (0.05, 0.1)
+GRID_S6_CONFIRM: tuple[str, ...] = ("rejection", "mss")
+GRID_S6_CONFIRM_TF: tuple[str, ...] = ("1h", "4h")
+
+
+def sd_extension_fade_grid(*, mode: str = "full") -> tuple[DetectorParams, ...]:
+    if mode == "baseline":
+        return (DEFAULT_PARAMS,)
+    bands = GRID_S4_BAND if mode == "full" else ("either", "2s")
+    vols = GRID_S4_VOL if mode == "full" else (0.8, 0.9)
+    confirms = GRID_S4_CONFIRM if mode == "full" else ("either", "engulfing")
+    stops = GRID_S4_STOP
+    rrs = GRID_S4_MIN_RR if mode == "full" else (1.5,)
+    wicks = GRID_PIN_WICK if mode == "full" else (2.5,)
+    return tuple(
+        with_params(
+            s4_band_trigger=band,
+            s4_vol_max_frac=vol,
+            s4_confirm=cf,
+            pin_wick_ratio=wick,
+            s4_stop_buffer_atr=sb,
+            s4_min_rr=rr,
+        )
+        for band, vol, cf, wick, sb, rr in product(bands, vols, confirms, wicks, stops, rrs)
+    )
+
+
+def vwap_pullback_cont_grid(*, mode: str = "full") -> tuple[DetectorParams, ...]:
+    if mode == "baseline":
+        return (DEFAULT_PARAMS,)
+    looks = GRID_S5_LOOKBACK if mode == "full" else (10, 20)
+    levels = GRID_S5_PULLBACK if mode == "full" else ("either", "vwap")
+    windows = GRID_S5_TOUCH if mode == "full" else (5,)
+    return tuple(
+        with_params(
+            s5_trend_lookback_bars=lb,
+            s5_pullback_level=lvl,
+            s5_first_touch_window_bars=win,
+            s5_require_ob_or_fvg=True,
+            s5_stop_buffer_atr=0.05,
+            s5_min_rr=2.0,
+        )
+        for lb, lvl, win in product(looks, levels, windows)
+    )
+
+
+def avwap_ob_confluence_grid(*, mode: str = "full") -> tuple[DetectorParams, ...]:
+    if mode == "baseline":
+        return (DEFAULT_PARAMS,)
+    tfs = GRID_S6_OB_TF
+    tols = GRID_S6_APPROACH if mode == "full" else (0.05, 0.1)
+    confirms = GRID_S6_CONFIRM
+    c_tfs = GRID_S6_CONFIRM_TF if mode == "full" else ("1h",)
+    return tuple(
+        with_params(
+            s6_ob_timeframe=tf,
+            s6_approach_tol_atr=tol,
+            s6_confirm=cf,
+            s6_confirm_tf=ctf,
+            s6_stop_buffer_atr=0.05,
+            s6_min_rr=2.0,
+            s6_min_conviction=70,
+        )
+        for tf, tol, cf, ctf in product(tfs, tols, confirms, c_tfs)
+    )
+
+
 def orchestrator_grid() -> tuple[DetectorParams, ...]:
     return tuple(
         with_params(dedupe_window_sec=d, min_conviction=c)
@@ -378,6 +511,12 @@ def grid_for(setup_type: str, *, mode: str = "full") -> tuple[DetectorParams, ..
         return fvg_entry_grid(mode=mode)
     if setup_type == "po3_judas":
         return po3_judas_grid(mode=mode)
+    if setup_type == "sd_extension_fade":
+        return sd_extension_fade_grid(mode=mode)
+    if setup_type == "vwap_pullback_cont":
+        return vwap_pullback_cont_grid(mode=mode)
+    if setup_type == "avwap_ob_confluence":
+        return avwap_ob_confluence_grid(mode=mode)
     raise ValueError(f"no grid for {setup_type!r}")
 
 

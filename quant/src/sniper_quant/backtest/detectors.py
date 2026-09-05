@@ -1,4 +1,4 @@
-"""Rule-based detectors for Setups 1–3 using locked ML parameter ranges."""
+"""Rule-based detectors for locked Setups 1–6."""
 
 from __future__ import annotations
 
@@ -21,8 +21,10 @@ from sniper_quant.backtest.sessions import (
     session_range,
     session_vwap_and_dev,
     typical_price,
+    utc_dt,
 )
 from sniper_quant.models import AssetClass, OHLCVBar, Side
+from sniper_quant.news import in_news_window
 from sniper_quant.usme import atr_from_bars
 
 __all__ = [
@@ -30,12 +32,16 @@ __all__ = [
     "SETUP_INDEX",
     "SETUP_NAME_TO_INDEX",
     "DetectorParams",
+    "detect_avwap_ob_confluence",
     "detect_fvg_entry",
     "detect_po3_judas",
+    "detect_sd_extension_fade",
     "detect_setup",
     "detect_sweep_reclaim",
+    "detect_vwap_pullback_cont",
     "grid_for",
     "parse_setup_ids",
+    "resample_htf",
     "with_params",
 ]
 
@@ -461,10 +467,404 @@ def detect_po3_judas(bars: list[OHLCVBar], params: DetectorParams | None = None)
     return _apply_orchestrator(out, params)
 
 
+def _is_strong_body(bar: OHLCVBar, *, long: bool) -> bool:
+    rng = bar.high - bar.low
+    if rng <= 1e-12:
+        return False
+    body = abs(bar.close - bar.open)
+    if body / rng < 0.6:
+        return False
+    return (bar.close > bar.open) if long else (bar.close < bar.open)
+
+
+def _mss_shift(bars: list[OHLCVBar], i: int, *, long: bool, look: int = 5) -> bool:
+    prior = bars[max(0, i - look) : i]
+    if not prior:
+        return False
+    if long:
+        return bars[i].close > max(b.high for b in prior)
+    return bars[i].close < min(b.low for b in prior)
+
+
+def _s4_confirm(prev: OHLCVBar, bar: OHLCVBar, bars: list[OHLCVBar], i: int, *, long: bool, params: DetectorParams) -> bool:
+    engulf = _is_engulfing(prev, bar, long=long)
+    pin = _is_pin(bar, long=long, ratio=params.pin_wick_ratio)
+    mss = _mss_shift(bars, i, long=long)
+    mode = params.s4_confirm
+    if mode == "engulfing":
+        return engulf
+    if mode == "pin":
+        return pin
+    if mode == "mss_1m5m":
+        return mss
+    return engulf or pin or mss
+
+
+def _band_extension(bar: OHLCVBar, vwap: float, dev: float, *, long: bool) -> float:
+    """How many σ the wick reached beyond VWAP (signed by fade side)."""
+    if dev <= 1e-12:
+        return 0.0
+    if long:
+        return (vwap - bar.low) / dev
+    return (bar.high - vwap) / dev
+
+
+def detect_sd_extension_fade(bars: list[OHLCVBar], params: DetectorParams | None = None) -> list[BacktestSignal]:
+    """Setup 4 — fade a 2σ/3σ session-band tag back to session VWAP."""
+    params = params or DEFAULT_PARAMS
+    if len(bars) < params.atr_period + 8:
+        return []
+    vwap, dev = session_vwap_and_dev(bars)
+    out: list[BacktestSignal] = []
+    i = max(params.atr_period + 2, 3)
+    while i < len(bars) - 1:
+        bar = bars[i]
+        if in_news_window(bar.close_ts_ms, symbol=bar.symbol, skip_minutes=params.news_skip_minutes):
+            i += 1
+            continue
+        if not in_kill_zone(bar, params.resolved_kill_zone(bar.asset_class)):
+            i += 1
+            continue
+        prev_v, prev_d = vwap[i - 1], dev[i - 1]
+        if prev_d <= 1e-12:
+            i += 1
+            continue
+        ext_long = _band_extension(bar, prev_v, prev_d, long=True)
+        ext_short = _band_extension(bar, prev_v, prev_d, long=False)
+        trigger = params.s4_band_trigger
+        side: Side | None = None
+        tagged_sigma = 0.0
+        if trigger == "2s":
+            if 2.0 <= ext_long < 3.0:
+                side, tagged_sigma = Side.LONG, ext_long
+            elif 2.0 <= ext_short < 3.0:
+                side, tagged_sigma = Side.SHORT, ext_short
+        elif trigger == "3s":
+            if ext_long >= 3.0:
+                side, tagged_sigma = Side.LONG, ext_long
+            elif ext_short >= 3.0:
+                side, tagged_sigma = Side.SHORT, ext_short
+        else:  # either ≥2σ
+            if ext_long >= 2.0:
+                side, tagged_sigma = Side.LONG, ext_long
+            elif ext_short >= 2.0:
+                side, tagged_sigma = Side.SHORT, ext_short
+        if side is None:
+            i += 1
+            continue
+        avg_vol = _avg_volume(bars, i)
+        if bar.volume > params.s4_vol_max_frac * avg_vol + 1e-12:
+            i += 1
+            continue
+        confirm = bars[i + 1]
+        if not _s4_confirm(bar, confirm, bars, i + 1, long=side is Side.LONG, params=params):
+            i += 1
+            continue
+        atr = _atr_at(bars, i + 1, params.atr_period)
+        band3 = prev_v - 3.0 * prev_d if side is Side.LONG else prev_v + 3.0 * prev_d
+        buf = params.s4_stop_buffer_atr * atr
+        entry = confirm.close
+        stop = band3 - buf if side is Side.LONG else band3 + buf
+        target = vwap[i + 1]
+        need_rr = 2.0 if tagged_sigma >= 3.0 else params.s4_min_rr
+        if _rr(side, entry, stop, target) + 1e-12 < HARD_RR_FLOOR:
+            i += 1
+            continue
+        if _rr(side, entry, stop, target) + 1e-12 < need_rr:
+            i += 1
+            continue
+        vol_ok = confirm.volume >= 1.1 * _avg_volume(bars, i + 1)
+        kill = params.resolved_kill_zone(confirm.asset_class)
+        conv = _conviction(confluence=1.0, volume_ok=vol_ok, kill_ok=in_kill_zone(confirm, kill))
+        out.append(
+            BacktestSignal(
+                ts_ms=confirm.close_ts_ms,
+                symbol=confirm.symbol,
+                setup_type="sd_extension_fade",
+                side=side,
+                entry=entry,
+                stop=stop,
+                target=target,
+                atr=atr,
+                signal_id=f"sd_extension_fade-{confirm.symbol}-{confirm.open_ts_ms}",
+                confidence=max(conv / 100.0, 0.60),
+            )
+        )
+        i = i + 3
+    orch = params if params.min_conviction <= 60 else with_params(params, min_conviction=60)
+    return _apply_orchestrator(out, orch)
+
+
+def _local_fvg_or_ob(bars: list[OHLCVBar], i: int, *, long: bool) -> bool:
+    lo = max(2, i - 12)
+    for k in range(lo, i):
+        left, right = bars[k - 2], bars[k]
+        if long and left.high < right.low:
+            return True
+        if not long and left.low > right.high:
+            return True
+    if i >= 2:
+        impulse, prior = bars[i - 1], bars[i - 2]
+        if long and impulse.close > impulse.open and prior.close < prior.open:
+            return True
+        if not long and impulse.close < impulse.open and prior.close > prior.open:
+            return True
+    return False
+
+
+def _touched_pullback(bar: OHLCVBar, vwap: float, dev: float, level: str, *, long: bool) -> bool:
+    band = vwap - dev if long else vwap + dev
+    hit_vwap = bar.low <= vwap <= bar.high
+    hit_band = bar.low <= band <= bar.high
+    if level == "vwap":
+        return hit_vwap
+    if level == "band_1s":
+        return hit_band
+    return hit_vwap or hit_band
+
+
+def _away_from_pullback(bar: OHLCVBar, vwap: float, dev: float, *, long: bool) -> bool:
+    pad = 0.35 * max(dev, 1e-9)
+    if long:
+        return bar.close > vwap + pad
+    return bar.close < vwap - pad
+
+
+def detect_vwap_pullback_cont(bars: list[OHLCVBar], params: DetectorParams | None = None) -> list[BacktestSignal]:
+    """Setup 5 — with-trend pullback to VWAP / 1σ, first touch, OB or FVG."""
+    params = params or DEFAULT_PARAMS
+    look = params.s5_trend_lookback_bars
+    if len(bars) < look + params.atr_period + 6:
+        return []
+    vwap, dev = session_vwap_and_dev(bars)
+    out: list[BacktestSignal] = []
+    i = look + 1
+    while i < len(bars) - 1:
+        now, then = bars[i], bars[i - look]
+        if then.close <= 0:
+            i += 1
+            continue
+        up = now.close > then.close
+        down = now.close < then.close
+        if not up and not down:
+            i += 1
+            continue
+        long = up
+        side = Side.LONG if long else Side.SHORT
+        window = params.s5_first_touch_window_bars
+        touch_i = None
+        for k in range(max(look + 3, i - window), i + 1):
+            if not _touched_pullback(bars[k], vwap[k], dev[k], params.s5_pullback_level, long=long):
+                continue
+            prior = bars[max(look, k - 3) : k]
+            if prior and all(
+                _away_from_pullback(b, vwap[j], dev[j], long=long)
+                for j, b in zip(range(k - len(prior), k), prior)
+            ):
+                touch_i = k
+                break
+        if touch_i is None or i - touch_i > window:
+            i += 1
+            continue
+        confirm = bars[i]
+        engulf = _is_engulfing(bars[i - 1], confirm, long=long)
+        strong = _is_strong_body(confirm, long=long)
+        if not (engulf or strong):
+            i += 1
+            continue
+        if params.s5_require_ob_or_fvg and not _local_fvg_or_ob(bars, i, long=long):
+            i += 1
+            continue
+        pullback = bars[touch_i : i + 1]
+        impulse = bars[max(0, i - look) : touch_i] or bars[max(0, i - look) : i]
+        swing_ext = min(b.low for b in pullback) if long else max(b.high for b in pullback)
+        prior_liq = max(b.high for b in impulse) if long else min(b.low for b in impulse)
+        atr = _atr_at(bars, i, params.atr_period)
+        buf = params.s5_stop_buffer_atr * atr
+        entry = confirm.close
+        stop = swing_ext - buf if long else swing_ext + buf
+        target = prior_liq
+        if _rr(side, entry, stop, target) + 1e-12 < params.s5_min_rr:
+            i += 1
+            continue
+        if _rr(side, entry, stop, target) + 1e-12 < HARD_RR_FLOOR:
+            i += 1
+            continue
+        vol_ok = confirm.volume >= 1.1 * _avg_volume(bars, i)
+        kill = params.resolved_kill_zone(confirm.asset_class)
+        conv = _conviction(confluence=1.0, volume_ok=vol_ok, kill_ok=in_kill_zone(confirm, kill))
+        out.append(
+            BacktestSignal(
+                ts_ms=confirm.close_ts_ms,
+                symbol=confirm.symbol,
+                setup_type="vwap_pullback_cont",
+                side=side,
+                entry=entry,
+                stop=stop,
+                target=target,
+                atr=atr,
+                signal_id=f"vwap_pullback_cont-{confirm.symbol}-{confirm.open_ts_ms}",
+                confidence=max(conv / 100.0, 0.60),
+            )
+        )
+        i += params.s5_first_touch_window_bars + 2
+    return _apply_orchestrator(out, params)
+
+
+HTF_GROUP_5M: dict[str, int] = {"1h": 12, "4h": 48, "1d": 288}
+
+
+def resample_htf(bars: list[OHLCVBar], timeframe: str) -> list[OHLCVBar]:
+    """Synthesize HTF bars from 5m (12≈1h, 48≈4h, calendar day≈1d)."""
+    if not bars:
+        return []
+    if timeframe == "1d":
+        groups: dict[str, list[OHLCVBar]] = {}
+        for bar in bars:
+            key = utc_dt(bar.open_ts_ms).date().isoformat()
+            groups.setdefault(key, []).append(bar)
+        return [_merge_bars(chunk, "1d") for chunk in groups.values() if len(chunk) >= 2]
+    n = HTF_GROUP_5M.get(timeframe)
+    if n is None:
+        return list(bars)
+    out: list[OHLCVBar] = []
+    for i in range(0, len(bars), n):
+        chunk = bars[i : i + n]
+        if len(chunk) < max(n // 2, 2):
+            continue
+        out.append(_merge_bars(chunk, timeframe))
+    return out
+
+
+def _merge_bars(chunk: list[OHLCVBar], timeframe: str) -> OHLCVBar:
+    return OHLCVBar(
+        symbol=chunk[0].symbol,
+        asset_class=chunk[0].asset_class,
+        timeframe=timeframe,
+        open_ts_ms=chunk[0].open_ts_ms,
+        close_ts_ms=chunk[-1].close_ts_ms,
+        open=chunk[0].open,
+        high=max(b.high for b in chunk),
+        low=min(b.low for b in chunk),
+        close=chunk[-1].close,
+        volume=sum(b.volume or 0.0 for b in chunk),
+        n_ticks=sum(b.n_ticks or 0 for b in chunk),
+    )
+
+
+def _anchored_vwap(bars: list[OHLCVBar], start: int, end: int) -> float:
+    num = 0.0
+    den = 0.0
+    for bar in bars[start : end + 1]:
+        vol = bar.volume if bar.volume and bar.volume > 0 else 1.0
+        num += typical_price(bar) * vol
+        den += vol
+    return num / den if den else typical_price(bars[end])
+
+
+def _find_htf_obs(htf: list[OHLCVBar]) -> list[tuple[Side, float, float, int, int]]:
+    """(side, lo, hi, htf_index, origin_open_ts_ms)."""
+    obs: list[tuple[Side, float, float, int, int]] = []
+    for i in range(1, len(htf)):
+        prev, cur = htf[i - 1], htf[i]
+        rng = max(cur.high - cur.low, 1e-9)
+        body = abs(cur.close - cur.open)
+        if body < 0.35 * rng:
+            continue
+        if cur.close > cur.open and prev.close < prev.open:
+            obs.append((Side.LONG, min(prev.open, prev.close), max(prev.open, prev.close), i - 1, prev.open_ts_ms))
+        if cur.close < cur.open and prev.close > prev.open:
+            obs.append((Side.SHORT, min(prev.open, prev.close), max(prev.open, prev.close), i - 1, prev.open_ts_ms))
+    return obs
+
+
+def detect_avwap_ob_confluence(bars: list[OHLCVBar], params: DetectorParams | None = None) -> list[BacktestSignal]:
+    """Setup 6 — HTF OB + AVWAP approach, rejection/MSS on 1h or 4h."""
+    params = params or DEFAULT_PARAMS
+    if len(bars) < 60:
+        return []
+    htf_ob = resample_htf(bars, params.s6_ob_timeframe)
+    htf_cf = resample_htf(bars, params.s6_confirm_tf)
+    if len(htf_ob) < 2:
+        return []
+    obs = _find_htf_obs(htf_ob)
+    if not obs:
+        return []
+    out: list[BacktestSignal] = []
+    last_i = -10**9
+    for i in range(params.atr_period + 2, len(bars) - 1):
+        bar = bars[i]
+        atr = _atr_at(bars, i, params.atr_period)
+        tol = params.s6_approach_tol_atr * atr
+        hit = None
+        for side, lo, hi, _idx, origin_ts in reversed(obs):
+            if origin_ts >= bar.open_ts_ms:
+                continue
+            near = (lo - tol) <= bar.close <= (hi + tol) or (lo - tol) <= typical_price(bar) <= (hi + tol)
+            if not near:
+                continue
+            start = next((k for k, b in enumerate(bars) if b.open_ts_ms >= origin_ts), 0)
+            avwap = _anchored_vwap(bars, start, i)
+            if abs(bar.close - avwap) > 1.5 * atr and not ((lo - tol) <= avwap <= (hi + tol)):
+                continue
+            hit = (side, lo, hi, avwap)
+            break
+        if hit is None:
+            continue
+        side, lo, hi, _avwap = hit
+        long = side is Side.LONG
+        confirm_ok = False
+        if params.s6_confirm == "rejection":
+            confirm_ok = _is_pin(bar, long=long, ratio=max(params.pin_wick_ratio, 2.0))
+        elif params.s6_confirm == "mss":
+            ref = htf_cf or htf_ob
+            prior = [h for h in ref if h.close_ts_ms <= bar.close_ts_ms]
+            if len(prior) >= 3:
+                confirm_ok = _mss_shift(prior, len(prior) - 1, long=long, look=2)
+        else:
+            confirm_ok = _is_pin(bar, long=long, ratio=2.0) or _mss_shift(bars, i, long=long)
+        if not confirm_ok:
+            continue
+        buf = params.s6_stop_buffer_atr * atr
+        entry = bar.close
+        stop = (lo - buf) if long else (hi + buf)
+        lookback = [b for b in bars[:i] if b.open_ts_ms >= bars[max(0, i - 80)].open_ts_ms]
+        if not lookback:
+            continue
+        target = max(b.high for b in lookback) if long else min(b.low for b in lookback)
+        if _rr(side, entry, stop, target) + 1e-12 < params.s6_min_rr:
+            continue
+        if i - last_i < 8:
+            continue
+        vol_ok = bar.volume >= 1.1 * _avg_volume(bars, i)
+        conv = _conviction(confluence=1.0, volume_ok=vol_ok, kill_ok=True)
+        conf = max(conv / 100.0, params.s6_min_conviction / 100.0)
+        out.append(
+            BacktestSignal(
+                ts_ms=bar.close_ts_ms,
+                symbol=bar.symbol,
+                setup_type="avwap_ob_confluence",
+                side=side,
+                entry=entry,
+                stop=stop,
+                target=target,
+                atr=atr,
+                signal_id=f"avwap_ob_confluence-{bar.symbol}-{bar.open_ts_ms}",
+                confidence=conf,
+            )
+        )
+        last_i = i
+    orch = with_params(params, min_conviction=params.s6_min_conviction)
+    return _apply_orchestrator(out, orch)
+
+
 DETECTORS = {
     "sweep_reclaim": detect_sweep_reclaim,
     "fvg_entry": detect_fvg_entry,
     "po3_judas": detect_po3_judas,
+    "sd_extension_fade": detect_sd_extension_fade,
+    "vwap_pullback_cont": detect_vwap_pullback_cont,
+    "avwap_ob_confluence": detect_avwap_ob_confluence,
 }
 
 

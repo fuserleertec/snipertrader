@@ -20,9 +20,10 @@ from sniper_quant.models import BacktestMetrics, OHLCVBar, TradeRecord
 
 
 def _score(metrics: BacktestMetrics) -> float:
+    # Empty books must lose to any realized book (a −1.2R tape is still a fit).
     if metrics.n_trades <= 0:
-        return -1.0
-    return metrics.win_rate * 2.0 + metrics.avg_rr - metrics.max_drawdown
+        return -100.0
+    return metrics.win_rate * 2.0 + metrics.avg_rr - metrics.max_drawdown + 0.01 * min(metrics.n_trades, 20)
 
 
 @dataclass
@@ -141,7 +142,14 @@ def walk_forward_setup(
         train_bars = ordered[:train_end]
         test_bars = ordered[test_start:test_end]
         params, train_metrics = optimize_params(train_bars, setup_type, grid, equity=equity)
-        test_signals = detect_setup(setup_type, test_bars, params)
+        # Detect on history through test_end so session/HTF context is intact;
+        # keep only signals whose timestamp falls in the OOS window.
+        seen = ordered[:test_end]
+        t0 = test_bars[0].open_ts_ms if test_bars else 0
+        t1 = test_bars[-1].close_ts_ms if test_bars else 0
+        test_signals = [
+            s for s in detect_setup(setup_type, seen, params) if t0 <= s.ts_ms <= t1
+        ]
         test_result = _run(test_bars, test_signals, equity)
         folds.append(
             FoldResult(
@@ -157,7 +165,9 @@ def walk_forward_setup(
         oos_trades.extend(test_result.trades)
         if test_result.equity_curve:
             oos_equity.extend(test_result.equity_curve[1:])
-        base_sig = detect_setup(setup_type, test_bars, DEFAULT_PARAMS)
+        base_sig = [
+            s for s in detect_setup(setup_type, seen, DEFAULT_PARAMS) if t0 <= s.ts_ms <= t1
+        ]
         base_res = _run(test_bars, base_sig, equity)
         baseline_oos_trades.extend(base_res.trades)
         if base_res.equity_curve:

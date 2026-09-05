@@ -1,0 +1,49 @@
+"""Stub economic-calendar for Setup 4 ``news_skip_minutes``.
+
+Not a live feed. A few fixed timestamps so validate / replay can exercise
+``news_window`` without an external calendar.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+# 2024-06-03 12:00 UTC — sits in the London session of the synthetic tape
+# start day, away from the patterned S4 fade (later London).
+STUB_NEWS_TS_MS: int = 1_717_416_000_000
+
+# Isolated stamp for unit tests (not on the synthetic tape clock).
+TEST_NEWS_TS_MS: int = 1_800_000_000_000
+
+
+@dataclass(frozen=True)
+class NewsEvent:
+    ts_ms: int
+    symbol: str | None = None
+    label: str = "stub_cpi"
+
+
+STUB_CALENDAR: tuple[NewsEvent, ...] = (
+    NewsEvent(ts_ms=STUB_NEWS_TS_MS, symbol=None, label="stub_fomc"),
+    NewsEvent(ts_ms=TEST_NEWS_TS_MS, symbol=None, label="stub_cpi"),
+)
+
+
+def in_news_window(
+    ts_ms: int,
+    *,
+    symbol: str | None = None,
+    skip_minutes: int = 15,
+    calendar: tuple[NewsEvent, ...] = STUB_CALENDAR,
+) -> NewsEvent | None:
+    """Return the first stub event within ±skip_minutes of ``ts_ms``."""
+    window = max(int(skip_minutes), 0) * 60_000
+    if window <= 0:
+        return None
+    want = (symbol or "").upper().replace("-", "") or None
+    for event in calendar:
+        if event.symbol and want and event.symbol != want:
+            continue
+        if abs(int(ts_ms) - event.ts_ms) <= window:
+            return event
+    return None

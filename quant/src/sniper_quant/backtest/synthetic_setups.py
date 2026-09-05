@@ -187,7 +187,109 @@ def _po3_day(symbol: str, day: datetime, mid: float, timeframe: str) -> list[OHL
     return asia + london + [sweep, disp] + follow + rest
 
 
-_CYCLE = ("sweep", "fvg_pin", "po3", "sweep", "fvg_engulf", "po3")
+def _sd_fade_day(symbol: str, day: datetime, mid: float, timeframe: str) -> list[OHLCVBar]:
+    """Low-volume ≥2σ extension + pin confirm, then grind back to session VWAP."""
+    asia = _range(symbol, day, 84, mid, 0.25, timeframe)
+    london_start = day + timedelta(hours=7)
+    tight = _range(symbol, london_start, 24, mid, 0.10, timeframe)
+    ts = _ms(london_start + timedelta(minutes=5 * 24))
+    # Established σ from tight tape is small; wick ~0.45 below mid ≈ ≥2σ.
+    ext = _bar(symbol, ts, mid, mid + 0.04, mid - 0.48, mid - 0.22, volume=22, timeframe=timeframe)
+    pin = _bar(
+        symbol,
+        ts + BAR_MS,
+        mid - 0.28,
+        mid - 0.18,
+        mid - 0.46,
+        mid - 0.26,
+        volume=90,
+        timeframe=timeframe,
+    )
+    follow: list[OHLCVBar] = []
+    t = pin.open_ts_ms + BAR_MS
+    px = pin.close
+    for close in (mid - 0.10, mid + 0.02, mid + 0.08, mid + 0.12):
+        follow.append(_bar(symbol, t, px, close + 0.06, px - 0.04, close, volume=140, timeframe=timeframe))
+        px = close
+        t += BAR_MS
+    used = 24 + 2 + len(follow)
+    rest = _range(symbol, london_start + timedelta(minutes=5 * used), max(78 - used, 4), px, 0.15, timeframe)
+    ny = _range(symbol, day + timedelta(hours=13, minutes=30), 18, rest[-1].close, 0.12, timeframe)
+    return asia + tight + [ext, pin] + follow + rest + ny
+
+
+def _vwap_pb_day(symbol: str, day: datetime, mid: float, timeframe: str) -> list[OHLCVBar]:
+    """Uptrend, first-touch VWAP pullback, bullish FVG, strong-body continuation."""
+    asia = _range(symbol, day, 84, mid - 0.4, 0.12, timeframe)
+    london_start = day + timedelta(hours=7)
+    climb: list[OHLCVBar] = []
+    px = mid - 0.2
+    for i in range(20):
+        nxt = px + 0.10
+        ts = _ms(london_start + timedelta(minutes=5 * i))
+        climb.append(_bar(symbol, ts, px, nxt + 0.03, px - 0.02, nxt, volume=160, timeframe=timeframe))
+        px = nxt
+    # Bullish FVG, then a shallow pullback that tags VWAP near `mid`.
+    ts = _ms(london_start + timedelta(minutes=5 * 20))
+    left = _bar(symbol, ts, px, px + 0.03, px - 0.05, px - 0.01, volume=120, timeframe=timeframe)
+    midb = _bar(symbol, ts + BAR_MS, px, px + 0.45, px - 0.03, px + 0.36, volume=260, timeframe=timeframe)
+    right = _bar(symbol, ts + 2 * BAR_MS, px + 0.30, px + 0.40, px + 0.22, px + 0.28, volume=150, timeframe=timeframe)
+    # Pull back to the live session VWAP (~ last climb VWAP ≈ mid+0.8), not `mid`.
+    pb1 = _bar(symbol, ts + 3 * BAR_MS, px + 0.20, px + 0.22, mid + 0.90, mid + 0.95, volume=130, timeframe=timeframe)
+    pb2 = _bar(symbol, ts + 4 * BAR_MS, mid + 0.95, mid + 1.00, mid + 0.72, mid + 0.82, volume=120, timeframe=timeframe)
+    confirm = _bar(
+        symbol,
+        ts + 5 * BAR_MS,
+        mid + 0.80,
+        mid + 1.05,
+        mid + 0.78,
+        mid + 0.98,
+        volume=240,
+        timeframe=timeframe,
+    )
+    follow: list[OHLCVBar] = []
+    t = confirm.open_ts_ms + BAR_MS
+    cur = confirm.close
+    for close in (px + 0.35, px + 0.55, px + 0.75, px + 0.95):
+        follow.append(_bar(symbol, t, cur, close + 0.06, cur - 0.04, close, volume=150, timeframe=timeframe))
+        cur = close
+        t += BAR_MS
+    used = 22 + 6 + len(follow)
+    rest = _range(symbol, london_start + timedelta(minutes=5 * used), max(78 - used, 4), cur, 0.12, timeframe)
+    ny = _range(symbol, day + timedelta(hours=13, minutes=30), 18, rest[-1].close, 0.10, timeframe)
+    return asia + climb + [left, midb, right, pb1, pb2, confirm] + follow + rest + ny
+
+
+def _avwap_ob_day(symbol: str, day: datetime, mid: float, timeframe: str) -> list[OHLCVBar]:
+    """4h down-bar then 4h displacement (bullish OB), later pin rejection at the zone."""
+    # 48 × 5m = 4h bearish HTF candle (Asia 00:00–04:00).
+    down = _range(symbol, day, 48, mid + 0.6, 0.25, timeframe)
+    # Force the merged 4h close below open by ending lower.
+    last_down_ts = _ms(day + timedelta(minutes=5 * 47))
+    down[-1] = _bar(symbol, last_down_ts, mid, mid + 0.1, mid - 1.4, mid - 1.2, volume=180, timeframe=timeframe)
+    # Next 48 bars: bullish displacement (04:00–08:00, spans Asia→London).
+    up_start = day + timedelta(hours=4)
+    up = _range(symbol, up_start, 47, mid - 1.0, 0.20, timeframe)
+    last_up_ts = _ms(up_start + timedelta(minutes=5 * 47))
+    up.append(_bar(symbol, last_up_ts, mid - 0.4, mid + 2.2, mid - 0.5, mid + 2.0, volume=400, timeframe=timeframe))
+    # Pullback into the bullish OB (prior 4h body around mid-1.2 … mid) with a pin.
+    pb_start = day + timedelta(hours=8)
+    approach = _range(symbol, pb_start, 10, mid - 0.2, 0.15, timeframe)
+    pin_ts = _ms(pb_start + timedelta(minutes=5 * 10))
+    pin = _bar(symbol, pin_ts, mid - 0.15, mid + 0.10, mid - 0.85, mid - 0.05, volume=220, timeframe=timeframe)
+    follow: list[OHLCVBar] = []
+    t = pin.open_ts_ms + BAR_MS
+    px = pin.close
+    for close in (mid + 0.4, mid + 0.9, mid + 1.4, mid + 2.1):
+        follow.append(_bar(symbol, t, px, close + 0.08, px - 0.05, close, volume=160, timeframe=timeframe))
+        px = close
+        t += BAR_MS
+    rest = _range(symbol, pb_start + timedelta(minutes=5 * (11 + len(follow))), 40, px, 0.15, timeframe)
+    ny = _range(symbol, day + timedelta(hours=13, minutes=30), 18, rest[-1].close, 0.12, timeframe)
+    return down + up + approach + [pin] + follow + rest + ny
+
+
+_CYCLE = ("sweep", "fvg_pin", "po3", "s4_fade", "s5_pb", "s6_ob")
 
 
 def synthetic_setup_tape(
@@ -212,6 +314,12 @@ def synthetic_setup_tape(
             chunk = _fvg_day(symbol, day, px, timeframe, pin=True)
         elif kind == "fvg_engulf":
             chunk = _fvg_day(symbol, day, px, timeframe, pin=False)
+        elif kind == "s4_fade":
+            chunk = _sd_fade_day(symbol, day, px, timeframe)
+        elif kind == "s5_pb":
+            chunk = _vwap_pb_day(symbol, day, px, timeframe)
+        elif kind == "s6_ob":
+            chunk = _avwap_ob_day(symbol, day, px, timeframe)
         else:
             chunk = _po3_day(symbol, day, px, timeframe)
         bars.extend(chunk)

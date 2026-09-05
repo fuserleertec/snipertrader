@@ -46,13 +46,12 @@ JSON Schema: [`schemas/risk_validate_request.schema.json`](../schemas/risk_valid
 
 | `setup_type` | Intent |
 |---|---|
-| `sweep_reclaim` | Liquidity sweep + reclaim |
-| `fvg_entry` | Fair-value gap entry |
-| `mss_break` | Market-structure shift / break |
-| `order_block` | Order-block reaction |
-| `sweep_mss` | Sweep followed by MSS |
-| `ob_fvg` | Order block + FVG confluence |
-| `po3_judas` | Power of Three / Judas swing |
+| `sweep_reclaim` | Setup 1 — Liquidity sweep + VWAP reclaim |
+| `fvg_entry` | Setup 2 — Fair-value gap at VWAP / HVN |
+| `po3_judas` | Setup 3 — Power of Three / Judas swing |
+| `sd_extension_fade` | Setup 4 — SD extension fade (2σ/3σ → VWAP) |
+| `vwap_pullback_cont` | Setup 5 — VWAP / 1σ pullback continuation |
+| `avwap_ob_confluence` | Setup 6 — AVWAP + HTF order-block confluence |
 
 Unknown values → HTTP **422**.
 
@@ -69,6 +68,8 @@ Stub fields (same as the DE `SetupSignal` core):
 **Optional:** `session_type` (DE enum:
 `asia` · `london` · `ny_am` · `ny_pm` · `rth` · `eth` · `globex`),
 `proposed_position_size` (engine may overwrite via `adjusted_position_size`).
+`contributing_factors` / `factor_breakdown` are **publish-only** — do not
+send them on `/risk/validate`.
 
 ```json
 {
@@ -118,6 +119,8 @@ ML's prices are **not rewritten**; only size may be adjusted.
 | `daily_loss_limit` | 3% daily loss hit, or this trade would breach the remainder. |
 | `correlation_threshold` | 60-day \|ρ\| vs an open symbol > 0.70. |
 | `same_symbol_conflict` | An ACTIVE position/signal exists on this symbol in the **opposite** direction. Same-direction pyramid is allowed. |
+| `news_window` | Setup 4 only: `ts_ms` within ±15m of the stub calendar. |
+| `low_conviction` | `confidence` sent and below the setup floor (S6=0.70, others=0.60). |
 
 After approval, Phase 2 publish to `setup_signals` **requires** `id` plus
 additive fields `entry`, `stop`, `target`, `timeframe`, `trigger_event_ids`,
@@ -207,9 +210,9 @@ JSON Schema: [`schemas/dashboard_signal.schema.json`](../schemas/dashboard_signa
 | `POST` | `/signals` | `Signal` (after pre-filter; emits `signal.upsert`) |
 | `PATCH` | `/signals/{id}` body `{"status":"TP_HIT"}` | `Signal` (emits `signal.status`) |
 
-History **is** `GET /signals` with `from_ts` / `to_ts` (plus `symbol` /
-`status` / `setup_type`). Do **not** call `/signals/history` — that route
-does not exist.
+History is `GET /signals` **or** `GET /signals/history` with `from_ts` /
+`to_ts` (plus `symbol` / `status` / `setup_type` / `side`). Both share the
+same list implementation.
 
 `from_ts` / `to_ts` are inclusive UTC epoch milliseconds (same unit as `ts_ms`).
 Default `limit` is 50 (max 500). Pass `cursor` = previous `next_cursor` for the
@@ -217,7 +220,7 @@ next page.
 
 `Signal` fields (dashboard row — aligned with the ML validate candidate):
 
-`id`, `ts_ms`, `symbol`, `asset_class`, `setup_type` (seven locked values),
+`id`, `ts_ms`, `symbol`, `asset_class`, `setup_type` (six locked values),
 `side`, `entry`, `stop`, `target`, `status`
 (`ACTIVE`\|`TP_HIT`\|`SL_HIT`\|`CANCELLED`), `confidence`, `timeframe`
 (`1m`\|`5m`\|`15m`), `ref_session`, `trigger_event_ids`,
@@ -246,10 +249,15 @@ Loader: `TimescaleOHLCVLoader` (DE hypertable) or in-memory
 | 1 | Liquidity Sweep + VWAP Reclaim | `sweep_reclaim` |
 | 2 | FVG @ VWAP / HVN | `fvg_entry` |
 | 3 | PO3 / Judas Swing | `po3_judas` |
+| 4 | SD extension fade | `sd_extension_fade` |
+| 5 | VWAP pullback continuation | `vwap_pullback_cont` |
+| 6 | AVWAP + HTF order block | `avwap_ob_confluence` |
 
 ```bash
 sniper-quant backtest --setups 1,2,3 --inmemory --timeframe 5m
 # writes quant/reports/setups_1_3_walkforward.md  (share with ML)
+sniper-quant backtest --setups 4,5,6 --inmemory --timeframe 5m --grid-mode core
+# writes quant/reports/setups_4_6_walkforward.md
 ```
 
 Walk-forward uses an expanding window (first 40% train, remaining 60% in
@@ -259,7 +267,16 @@ Setup 2 confluence / confirmation / entry / target; Setup 3 accum session /
 displacement / band tag. Orchestrator: `dedupe_window_sec=300`,
 `min_conviction=60`. Primary timeframe is **5m**.
 
-`sniper-quant demo` still runs the scripted 7-setup smoke book.
+`sniper-quant demo` runs the scripted 6-setup smoke book (no live trading).
+
+Paper 2-week gate (in-memory, no broker):
+
+```bash
+USE_INMEMORY=1 PYTHONPATH=src python3 -m sniper_quant.cli api --inmemory --port 8001
+# POST /paper/reset
+# POST /risk/validate → POST /signals (or POST /paper/demo-fortnight)
+# GET /paper/account
+```
 
 ## How to run
 

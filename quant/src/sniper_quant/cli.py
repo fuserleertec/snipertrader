@@ -126,7 +126,12 @@ def _run_backtest(args, settings) -> int:
         equity=settings.default_equity,
         mode=args.grid_mode,
     )
-    report_path = Path(args.report) if args.report else Path("reports/setups_1_3_walkforward.md")
+    if args.report:
+        report_path = Path(args.report)
+    elif set(setup_ids) <= {4, 5, 6}:
+        report_path = Path("reports/setups_4_6_walkforward.md")
+    else:
+        report_path = Path("reports/setups_1_3_walkforward.md")
     if not report_path.is_absolute():
         report_path = Path(__file__).resolve().parents[2] / report_path
     md = render_walkforward_markdown(

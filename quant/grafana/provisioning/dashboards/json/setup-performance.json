@@ -187,6 +187,23 @@
           "refId": "A"
         }
       ]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "timescale" },
+      "fieldConfig": { "defaults": { "decimals": 2 }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 20 },
+      "id": 9,
+      "title": "All locked setup_types (1–6)",
+      "type": "table",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "timescale" },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH locked(setup_type) AS (VALUES ('sweep_reclaim'),('fvg_entry'),('po3_judas'),('sd_extension_fade'),('vwap_pullback_cont'),('avwap_ob_confluence')) SELECT l.setup_type, COALESCE(SUM(p.n_signals), 0) AS n_signals, COALESCE(AVG(p.win_rate), 0) AS win_rate, COALESCE(AVG(p.avg_rr), 0) AS avg_realized_r FROM locked l LEFT JOIN signal_performance p ON p.setup_type = l.setup_type AND p.day >= NOW() - INTERVAL '30 days' WHERE l.setup_type IN (${setup_type:sqlstring}) GROUP BY 1 ORDER BY 1",
+          "refId": "A"
+        }
+      ]
     }
   ],
   "refresh": "1m",
@@ -195,26 +212,28 @@
   "templating": {
     "list": [
       {
-        "allValue": null,
+        "allValue": "sweep_reclaim,fvg_entry,po3_judas,sd_extension_fade,vwap_pullback_cont,avwap_ob_confluence",
         "current": { "text": "All", "value": ["$__all"] },
-        "datasource": { "type": "postgres", "uid": "timescale" },
-        "definition": "SELECT DISTINCT setup_type FROM signals ORDER BY 1",
         "includeAll": true,
         "label": "setup_type",
         "multi": true,
         "name": "setup_type",
-        "options": [],
-        "query": "SELECT DISTINCT setup_type FROM signals ORDER BY 1",
-        "refresh": 2,
-        "regex": "",
-        "sort": 1,
-        "type": "query"
+        "options": [
+          { "selected": false, "text": "sweep_reclaim", "value": "sweep_reclaim" },
+          { "selected": false, "text": "fvg_entry", "value": "fvg_entry" },
+          { "selected": false, "text": "po3_judas", "value": "po3_judas" },
+          { "selected": false, "text": "sd_extension_fade", "value": "sd_extension_fade" },
+          { "selected": false, "text": "vwap_pullback_cont", "value": "vwap_pullback_cont" },
+          { "selected": false, "text": "avwap_ob_confluence", "value": "avwap_ob_confluence" }
+        ],
+        "query": "sweep_reclaim,fvg_entry,po3_judas,sd_extension_fade,vwap_pullback_cont,avwap_ob_confluence",
+        "type": "custom"
       }
     ]
   },
   "time": { "from": "now-30d", "to": "now" },
   "timezone": "utc",
-  "title": "Quant — setup performance",
+  "title": "Quant — setup performance (all locked setup_types)",
   "uid": "quant-setup-performance",
-  "version": 1
+  "version": 2
 }

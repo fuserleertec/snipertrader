@@ -14,9 +14,17 @@ from sniper_quant.models import (
     ValidateResponse,
     normalize_symbol,
 )
+from sniper_quant.news import in_news_window
 from sniper_quant.risk.correlation import correlation_check
 from sniper_quant.risk.daily_loss import daily_loss_check
 from sniper_quant.risk.sizing import fixed_fractional_size, requested_risk
+from sniper_quant.setups import (
+    NEWS_SKIP_MINUTES,
+    NEWS_SKIP_SETUP_TYPES,
+    min_conviction_for,
+    min_rr_for,
+    setup_name,
+)
 from sniper_quant.usme import check_provided_levels
 
 
@@ -88,6 +96,9 @@ class RiskEngine:
         equity = self.state.equity
         entry = candidate.entry
         checks: dict = {}
+        setup = setup_name(candidate.setup_type)
+        setup_rr = min_rr_for(setup)
+        setup_conv = min_conviction_for(setup)
 
         try:
             levels = check_provided_levels(
@@ -95,7 +106,7 @@ class RiskEngine:
                 entry=entry,
                 stop=candidate.stop,
                 target=candidate.target,
-                min_rr=settings.min_rr,
+                min_rr=setup_rr,
             )
         except ValueError as exc:
             return ValidateResponse(
@@ -105,19 +116,67 @@ class RiskEngine:
                 entry=entry,
                 stop=candidate.stop,
                 target=candidate.target,
-                checks={"levels": str(exc)},
+                checks={"levels": str(exc), "min_rr": setup_rr, "setup_type": setup},
             )
 
         checks["levels"] = {
             "source": levels.source,
             "r_multiple": levels.r_multiple,
-            "setup_type": candidate.setup_type.value
-            if hasattr(candidate.setup_type, "value")
-            else str(candidate.setup_type),
+            "min_rr": setup_rr,
+            "setup_type": setup,
             "timeframe": candidate.timeframe.value
             if hasattr(candidate.timeframe, "value")
             else str(candidate.timeframe),
         }
+
+        if setup in NEWS_SKIP_SETUP_TYPES:
+            hit = in_news_window(
+                candidate.ts_ms,
+                symbol=candidate.symbol,
+                skip_minutes=NEWS_SKIP_MINUTES,
+            )
+            checks["news_window"] = {
+                "ok": hit is None,
+                "skip_minutes": NEWS_SKIP_MINUTES,
+                "event": None if hit is None else {"ts_ms": hit.ts_ms, "label": hit.label},
+            }
+            if hit is not None:
+                return ValidateResponse(
+                    approved=False,
+                    reason="news_window",
+                    adjusted_position_size=0.0,
+                    entry=levels.entry,
+                    stop=levels.stop,
+                    target=levels.target,
+                    risk_per_unit=levels.risk_per_unit,
+                    checks=checks,
+                )
+
+        if candidate.confidence is not None:
+            conf_pts = candidate.confidence * 100.0
+            conv_ok = conf_pts + 1e-12 >= setup_conv
+            checks["conviction"] = {
+                "ok": conv_ok,
+                "confidence": candidate.confidence,
+                "min_conviction": setup_conv,
+            }
+            if not conv_ok:
+                return ValidateResponse(
+                    approved=False,
+                    reason="low_conviction",
+                    adjusted_position_size=0.0,
+                    entry=levels.entry,
+                    stop=levels.stop,
+                    target=levels.target,
+                    risk_per_unit=levels.risk_per_unit,
+                    checks=checks,
+                )
+        else:
+            checks["conviction"] = {
+                "ok": True,
+                "skipped": True,
+                "min_conviction": setup_conv,
+            }
 
         max_size = fixed_fractional_size(equity, settings.risk_fraction, levels.risk_per_unit)
         requested = candidate.proposed_position_size

@@ -24,11 +24,10 @@
       "enum": [
         "sweep_reclaim",
         "fvg_entry",
-        "mss_break",
-        "order_block",
-        "sweep_mss",
-        "ob_fvg",
-        "po3_judas"
+        "po3_judas",
+        "sd_extension_fade",
+        "vwap_pullback_cont",
+        "avwap_ob_confluence"
       ]
     },
     "side": { "type": "string", "enum": ["long", "short"] },
@@ -63,6 +62,25 @@
       "type": ["string", "null"],
       "enum": ["ACTIVE", "TP_HIT", "SL_HIT", "CANCELLED", null],
       "description": "Lifecycle status. Kafka publish is typically ACTIVE. Additive."
+    },
+    "contributing_factors": {
+      "type": ["array", "null"],
+      "items": { "type": "string" },
+      "description": "Publish-only. Do not send on POST /risk/validate."
+    },
+    "factor_breakdown": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "weight": { "type": "number" },
+          "score": { "type": "number" },
+          "note": { "type": ["string", "null"] }
+        }
+      },
+      "description": "Publish-only {name, weight, score, note?}[]. sum(score) ≈ conviction. Not on POST /risk/validate."
     }
   }
 }

@@ -4,7 +4,7 @@ import re
 from enum import Enum
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from sniper_quant.setups import SESSION_TYPES, SETUP_TYPES, SIGNAL_TIMEFRAMES
 
@@ -43,11 +43,10 @@ class Side(str, Enum):
 class SetupType(str, Enum):
     SWEEP_RECLAIM = "sweep_reclaim"
     FVG_ENTRY = "fvg_entry"
-    MSS_BREAK = "mss_break"
-    ORDER_BLOCK = "order_block"
-    SWEEP_MSS = "sweep_mss"
-    OB_FVG = "ob_fvg"
     PO3_JUDAS = "po3_judas"
+    SD_EXTENSION_FADE = "sd_extension_fade"
+    VWAP_PULLBACK_CONT = "vwap_pullback_cont"
+    AVWAP_OB_CONFLUENCE = "avwap_ob_confluence"
 
 
 class SignalTimeframe(str, Enum):
@@ -68,8 +67,19 @@ class SessionType(str, Enum):
     GLOBEX = "globex"
 
 
+class FactorBreakdownRow(BaseModel):
+    """Publish-only explainability row (ML PR #9). Not on ``POST /risk/validate``."""
+
+    name: str
+    weight: float = 0.0
+    score: float = 0.0
+    note: str | None = None
+
+
 class CandidateSignal(BaseModel):
     """ML candidate for ``POST /risk/validate``. Omit ``id`` — assigned after approval."""
+
+    model_config = ConfigDict(extra="forbid")
 
     schema_version: Literal["1.1"] = SCHEMA_VERSION
     symbol: str
@@ -258,6 +268,14 @@ class StoredSignal(BaseModel):
     exit_px: float | None = None
     r_multiple: float | None = None
     outcome: str | None = None
+    contributing_factors: list[str] = Field(
+        default_factory=list,
+        description="Publish-only. Not accepted on POST /risk/validate.",
+    )
+    factor_breakdown: list[FactorBreakdownRow] = Field(
+        default_factory=list,
+        description="Publish-only {name, weight, score, note?}[]. Not on POST /risk/validate.",
+    )
 
     @field_validator("symbol", mode="before")
     @classmethod
@@ -308,6 +326,41 @@ class BacktestMetrics(BaseModel):
     net_pnl: float
     ending_equity: float
     starting_equity: float
+
+
+class PerformanceBucket(BaseModel):
+    setup_type: str = Field(description="Locked setup_type for Frontend / signal joins.")
+    win_rate: float = 0.0
+    average_rr: float = 0.0
+    sharpe_ratio: float = 0.0
+    max_drawdown_pct: float = 0.0
+    n_signals: int = 0
+    n_closed: int = 0
+    signals_today: int = 0
+    signals_week: int = 0
+
+
+class PerformanceSummary(BaseModel):
+    win_rate: float
+    average_rr: float
+    sharpe_ratio: float
+    max_drawdown_pct: float
+    signals_today: int
+    signals_week: int
+    n_signals: int = 0
+    n_closed: int = 0
+    by_setup: dict[str, PerformanceBucket] = Field(
+        description=(
+            "Keyed by DE product strings "
+            "(1_liquidity_sweep_vwap_reclaim, 2_fvg_mitigation_vwap, "
+            "3_po3_asia_range_sweep, 4_sd_extension_fade, "
+            "5_vwap_pullback_cont, 6_avwap_ob_confluence). "
+            "Each value includes setup_type."
+        )
+    )
+    rolling_win_rate_20: float | None = None
+    drift_warning: bool = False
+    drift_note: str = ""
 
 
 class RiskParams(BaseModel):

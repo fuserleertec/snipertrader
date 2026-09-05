@@ -41,6 +41,8 @@ class Settings(BaseSettings):
     kafka_group: str = Field(default="sniper-quant-validate", alias="KAFKA_GROUP")
     alert_win_rate: float = Field(default=0.35, alias="ALERT_WIN_RATE")
     alert_avg_rr: float = Field(default=0.50, alias="ALERT_AVG_RR")
+    api_key: str = Field(default="", alias="SNIPER_API_KEY")
+    rate_limit_per_min: int = Field(default=0, alias="RATE_LIMIT_PER_MIN")
 
 
 @lru_cache(maxsize=1)

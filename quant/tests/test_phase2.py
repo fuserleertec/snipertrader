@@ -40,7 +40,7 @@ def test_lifecycle_close_fields_on_openapi():
     )
     http = TestClient(app)
     spec = http.get("/openapi.json").json()
-    assert "/signals/history" not in spec["paths"]
+    assert "/signals/history" in spec["paths"]
     props = spec["components"]["schemas"]["SignalView"]["properties"]
     for key in ("realized_r", "exit_price", "closed_ts_ms"):
         assert key in props

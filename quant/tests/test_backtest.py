@@ -17,7 +17,7 @@ def test_inmemory_demo_runs_all_locked_setups():
     result = run_inmemory_demo()
     used = {t.setup_type for t in result.trades}
     assert used == set(SETUP_TYPES)
-    assert result.metrics.n_trades == 14
+    assert result.metrics.n_trades == 12
     m = result.metrics
     assert abs(m.win_rate - 0.5) < 1e-9
     assert m.max_drawdown >= 0.0
@@ -58,7 +58,7 @@ def test_event_sl_before_tp_same_bar():
         BacktestSignal(
             ts_ms=1_100,
             symbol="ES",
-            setup_type="order_block",
+            setup_type="vwap_pullback_cont",
             side=Side.LONG,
             entry=100,
             atr=1.0,  # stop 98, target 104
@@ -74,4 +74,4 @@ def test_demo_universe_has_locked_setup_types():
     types = {s.setup_type for s in signals}
     assert types == set(SETUP_TYPES)
     assert "po3_judas" in types
-    assert len(signals) == 14
+    assert len(signals) == 12
