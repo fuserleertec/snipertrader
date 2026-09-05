@@ -155,6 +155,7 @@ All secrets are environment variables. See [`.env.example`](.env.example).
 | `METRICS_PORT` | `0` | Pipeline/killzone Prometheus port (`0` = off) |
 | `MAX_ANCHORS_PER_SYMBOL` | `32` | Cap on live AVWAP anchors |
 | `SWING_DETECT` | `true` | In-process fractal swing → anchors |
+| `SWING_LOOKBACK` | `5` | MSS / ICT swing confirmation bars each side |
 | `BINANCE_*` / `ALPACA_*` | empty | Live stubs only |
 
 ## Exchange adapters
@@ -262,7 +263,8 @@ Created on pipeline startup (Redpanda also auto-creates):
 ```
 data_engineering/
   src/sniper_data/          library + CLI
-  tests/                    VWAP fixtures, DST sessions, TTL, pipeline
+  src/sniper_data/pattern_detection/  sweep / FVG / MSS / order-block + Phase 2 anchors
+  tests/                    VWAP fixtures, DST sessions, TTL, pattern detectors
   sql/init.sql              Timescale hypertable + indexes
   docker-compose.yml
   Dockerfile
@@ -274,6 +276,8 @@ schemas/                    JSON Schema (repo root, as specified)
 ```
 sniper-data pipeline [--inmemory] [--duration N]
 sniper-data demo     [--inmemory] [--duration N]   # alias of pipeline
+sniper-data patterns [--inmemory] [--duration N]
+sniper-data patterns --inmemory --replay           # ICT fixtures + swing→anchor wiring
 sniper-data api      [--host 0.0.0.0 --port 8000]
 sniper-data evict    [--inmemory]
 sniper-data killzones [--inmemory] [--duration N]
@@ -324,6 +328,79 @@ the anchor and begins accumulating. Idempotent on `anchor_id`.
 * `sniper_data.swings.earnings_anchor` / `news_anchor` are placeholders —
   call them when an earnings or news timestamp is known; they produce the
   same `AnchorRegistration` object.
+* ML ICT swings (below) publish the same JSON to `anchor_events`.
+
+## Pattern detectors (ML Researchers)
+
+`sniper_data.pattern_detection` consumes DE-normalized `raw_ticks`,
+`ohlcv_bars`, `session_levels`, and `vwap_values`. It publishes the
+landed pattern topics and writes zones through `store_fvg` / `store_sweep`
+/ `store_mss` / `store_ob` (TTL ≤ 48h). Zones are **Redis + Kafka only**.
+
+| Detector | Rule | Notes |
+|---|---|---|
+| Sweep (corrected) | Break of established session high/low **plus** in-process delta divergence | `side=sell` = high swept; `side=buy` = low swept. `volume_profile` is scored, **never a gate**. Reclaim/`confirmed` after high-volume opposite close back inside the range. |
+| FVG | 3-candle imbalance on `1m` / `5m` / `15m` | `mitigated` = filled on retrace into `[low, high]`. |
+| MSS | Swing lookback default **5** (`SWING_LOOKBACK`) | Bullish = break of last lower-high after a **real** sell-side sweep. Bearish = break of last higher-low after a buy-side sweep. |
+| Order block | Last opposite candle before displacement | Zone = origin candle high/low. |
+
+Delta is computed **in the detector** as `buy_volume − sell_volume`. There
+is **no `delta` field** on ticks or bars and **no Redis key** for delta.
+
+## ML Researchers Phase 2 — Anchor / AVWAP wiring
+
+When the ICT swing / MSS detector confirms a swing high or swing low it
+**registers an AVWAP anchor** using the locked DE contract. Prefer Kafka
+in-pipeline; use the HTTP helper from notebooks / tools.
+
+**Kafka (realtime, key = symbol, idempotent on `anchor_id`)**
+
+```json
+{
+  "symbol": "BTCUSDT",
+  "anchor_time": 1725458400000,
+  "anchor_price": 64000.0,
+  "source": "swing_high"
+}
+```
+
+`source` is `swing_high` or `swing_low` (also accepted: `manual` · `earnings`
+· `news`). Optional: `anchor_id`, `asset_class` (inferred from the symbol if
+omitted). **No other field names.** Topic: `anchor_events`.
+
+Helpers:
+
+```python
+from sniper_data.pattern_detection.anchors import publish_anchor, post_anchor, swing_to_registration
+from sniper_data.pattern_detection.context import get_avwap, get_volume_profile, get_kill_zone
+
+await publish_anchor(bus, swing_to_registration(symbol, swing, asset_class))
+# or: await post_anchor(req, base_url="http://localhost:8000")
+```
+
+**Consume (do not redefine shapes)**
+
+| Store | Key / topic | Model |
+|---|---|---|
+| Redis | `avwap:{symbol}:{anchor_id}` | `AnchoredVWAP` — `{anchor_id, symbol, anchor_time, anchor_price, vwap_value, bands:{plus_1_sigma…minus_3_sigma}, asset_class}` (no `schema_version`) |
+| Redis | `volume_profile:{symbol}:{session_type}` | `VolumeProfile` — HVN / LVN / POC |
+| Redis | `kill_zone:{symbol}` | `KillZoneEvent` |
+| Kafka | `kill_zone_events` | same JSON as the Redis key |
+
+```python
+snap = await get_avwap(store, "BTCUSDT", anchor_id)
+profile = await get_volume_profile(store, "BTCUSDT", "ny_am")
+zone = await get_kill_zone(store, "BTCUSDT")
+```
+
+Setup-signal publishing stays a later Phase 2 step. In-memory demo:
+
+```bash
+sniper-data patterns --inmemory --replay
+```
+
+That path confirms a swing → `anchor_events` → mock DE AVWAP write →
+`get_avwap` read-back.
 
 ### Frontend contract — AVWAP + volume profile
 

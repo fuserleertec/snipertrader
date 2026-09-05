@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import logging
 import sys
 
@@ -14,10 +15,15 @@ def _setup_logging(level: str) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="sniper-data", description="Phase 1+2 market-data pipeline")
-    parser.add_argument("command", choices=["pipeline", "api", "evict", "demo", "killzones"])
+    parser = argparse.ArgumentParser(prog="sniper-data", description="Phase 1+2 market-data + ML pattern pipeline")
+    parser.add_argument("command", choices=["pipeline", "api", "evict", "demo", "killzones", "patterns"])
     parser.add_argument("--inmemory", action="store_true", help="Use in-process bus/store (no Docker).")
     parser.add_argument("--duration", type=float, default=None, help="Seconds to run the demo/pipeline.")
+    parser.add_argument(
+        "--replay",
+        action="store_true",
+        help="(patterns) Replay ICT fixtures + swing→anchor wiring (no brokers).",
+    )
     parser.add_argument("--host", default=None)
     parser.add_argument("--port", type=int, default=None)
     args = parser.parse_args(argv)
@@ -27,7 +33,15 @@ def main(argv: list[str] | None = None) -> int:
     settings = get_settings()
     _setup_logging(settings.log_level)
 
-    if args.command in {"pipeline", "demo"}:
+    if args.command == "patterns" and args.replay:
+        from sniper_data.pipeline import run_anchor_wiring_demo, run_pattern_replay
+
+        result = asyncio.run(run_pattern_replay())
+        wiring = asyncio.run(run_anchor_wiring_demo())
+        print(json.dumps({"patterns": result, "anchor_wiring": wiring}, indent=2, default=str))
+        return 0
+
+    if args.command in {"pipeline", "demo", "patterns"}:
         from sniper_data.pipeline import run_pipeline
 
         asyncio.run(run_pipeline(inmemory=args.inmemory, duration_s=args.duration))

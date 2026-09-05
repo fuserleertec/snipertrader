@@ -12,13 +12,13 @@ as required on a **new** schema.
 | `ohlcv_bars` | [`ohlcv_bar.schema.json`](ohlcv_bar.schema.json) | OHLCV aggregator | Timescale writer, research |
 | `session_levels` | [`session_levels.schema.json`](session_levels.schema.json) | Session tracker | Redis, Quant API |
 | `vwap_values` | [`vwap_values.schema.json`](vwap_values.schema.json) | VWAP engine | Redis, WebSocket, Quant API |
-| `sweep_events` | [`sweep_event.schema.json`](sweep_event.schema.json) | Pattern detectors (Phase 2 stub) | Redis `sweep:{symbol}:{id}` |
-| `fvg_zones` | [`fvg_zone.schema.json`](fvg_zone.schema.json) | Pattern detectors (Phase 2 stub) | Redis `fvg:{symbol}:{id}` |
-| `mss_events` | [`mss_event.schema.json`](mss_event.schema.json) | Pattern detectors (Phase 2 stub) | Redis `mss:{symbol}:{id}` |
-| `order_block_zones` | [`order_block.schema.json`](order_block.schema.json) | Pattern detectors (Phase 2 stub) | Redis `ob:{symbol}:{id}` |
+| `sweep_events` | [`sweep_event.schema.json`](sweep_event.schema.json) | Sweep detector (`sniper_data.pattern_detection`) | Redis `sweep:{symbol}:{id}`, MSS detector |
+| `fvg_zones` | [`fvg_zone.schema.json`](fvg_zone.schema.json) | FVG detector | Redis `fvg:{symbol}:{id}` |
+| `mss_events` | [`mss_event.schema.json`](mss_event.schema.json) | MSS detector | Redis `mss:{symbol}:{id}` |
+| `order_block_zones` | [`order_block.schema.json`](order_block.schema.json) | Order-block detector | Redis `ob:{symbol}:{id}` |
 | `setup_signals` | [`setup_signal.schema.json`](setup_signal.schema.json) | Signal engine (Phase 2 stub) | Downstream ML / UI |
 | `kill_zone_events` | [`kill_zone_event.schema.json`](kill_zone_event.schema.json) | Kill-zone timer (Phase 2) | Redis `kill_zone:{symbol}`, Frontend / ML |
-| `anchor_events` | (inbound `AnchorRegistration` JSON) | ML / HTTP `/v1/anchors` | Anchored VWAP engine |
+| `anchor_events` | (inbound `AnchorRegistration` JSON) | ML swing/MSS + HTTP `/v1/anchors` | Anchored VWAP engine |
 
 ## Delta / aggressor (ML Researchers)
 

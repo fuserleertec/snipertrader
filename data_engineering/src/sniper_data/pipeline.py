@@ -28,6 +28,7 @@ from sniper_data.metrics import (
 )
 from sniper_data.models import AnchorRegistration, RawTick
 from sniper_data.ohlcv import OHLCVAggregator, redis_ohlcv_channel
+from sniper_data.pattern_detection.engine import PatternEngine
 from sniper_data.sessions import SessionTracker, redis_session_channel, redis_session_key
 from sniper_data.swings import SwingDetector
 from sniper_data.volume_profile import VolumeProfileEngine, redis_volume_profile_key
@@ -64,6 +65,12 @@ class Runtime:
         self.swings = SwingDetector(
             left=self.settings.swing_left,
             right=self.settings.swing_right,
+        )
+        self.patterns = PatternEngine(
+            self.store,
+            self.bus,
+            ttl_seconds=self.settings.fvg_ttl_clamped,
+            swing_lookback=self.settings.swing_lookback,
         )
         self.killzones = KillZoneScheduler(self.settings.symbols)
         self.ticks_processed = 0
@@ -160,6 +167,15 @@ class Runtime:
             time.perf_counter() - t1,
         )
 
+        await self.patterns.on_tick(tick)
+        if levels is not None:
+            await self.patterns.on_session(levels)
+        for snap in snapshots:
+            await self.patterns.on_vwap(snap)
+        pattern_batches = []
+        for bar in closed:
+            pattern_batches.append(await self.patterns.on_bar(bar))
+
         self.ticks_processed += 1
         klass_name = tick.asset_class.value
         self.ticks_by_class[klass_name] = self.ticks_by_class.get(klass_name, 0) + 1
@@ -171,6 +187,7 @@ class Runtime:
             "vwap": snapshots,
             "avwap": avwaps,
             "volume_profile": profiles,
+            "patterns": pattern_batches,
         }
 
     async def run_demo(self, duration_s: float | None = None) -> None:
@@ -255,6 +272,119 @@ class Runtime:
             raise
         except Exception as exc:  # noqa: BLE001
             log.warning("anchor_events consumer: %s", exc)
+
+
+async def run_pattern_replay() -> dict[str, Any]:
+    """Feed locked ICT fixtures through in-memory stores (no Docker / brokers)."""
+    from sniper_data.pattern_detection.fixtures import (
+        buy_side_sweep_sequence,
+        fvg_create_and_fill,
+        london_session,
+        mss_after_sell_sweep_bars,
+        order_block_displacement,
+        sell_side_sweep_sequence,
+        swing_high_sequence,
+        swing_low_sequence,
+    )
+
+    bus = InMemoryBus()
+    store = InMemoryStateStore()
+    stats: dict[str, int] = {}
+
+    async def _run(name: str, setup) -> None:
+        engine = PatternEngine(store, bus, swing_lookback=2)
+        await setup(engine)
+        for key, value in engine.snapshot().items():
+            stats[key] = stats.get(key, 0) + value
+        log.info("replay %s → %s", name, engine.snapshot())
+
+    async def _sweeps(engine: PatternEngine) -> None:
+        engine.sweep.on_session(london_session())
+        for b in sell_side_sweep_sequence(sweep_volume=0.01):
+            await engine.on_bar(b)
+        engine.sweep.on_session(london_session())
+        for b in buy_side_sweep_sequence(sweep_volume=0.01):
+            await engine.on_bar(b)
+
+    async def _fvg(engine: PatternEngine) -> None:
+        for b in fvg_create_and_fill():
+            await engine.on_bar(b)
+
+    async def _ob(engine: PatternEngine) -> None:
+        for b in order_block_displacement():
+            await engine.on_bar(b)
+
+    async def _mss(engine: PatternEngine) -> None:
+        sweep, bars = mss_after_sell_sweep_bars()
+        engine.mss.on_sweep(sweep)
+        for b in bars:
+            await engine.on_bar(b)
+
+    async def _swings(engine: PatternEngine) -> None:
+        for b in swing_high_sequence(lookback=2):
+            await engine.on_bar(b)
+        for b in swing_low_sequence(lookback=2):
+            await engine.on_bar(b)
+
+    await _run("sweep", _sweeps)
+    await _run("fvg", _fvg)
+    await _run("order_block", _ob)
+    await _run("mss", _mss)
+    await _run("swings", _swings)
+    return {
+        "stats": stats,
+        "topics": {t: [r["value"] for r in bus.topics[t]] for t in bus.topics},
+        "redis_keys": sorted(store.data),
+    }
+
+
+async def run_anchor_wiring_demo() -> dict[str, Any]:
+    """In-memory swing → ``anchor_events`` → DE AVWAP Redis key → ML read-back."""
+    from sniper_data.avwap import persist_avwap, register_anchor
+    from sniper_data.models import AssetClass
+    from sniper_data.pattern_detection.anchors import ANCHOR_TOPIC, to_anchor_payload
+    from sniper_data.pattern_detection.context import get_avwap, get_kill_zone, get_volume_profile
+    from sniper_data.pattern_detection.fixtures import SYM, swing_high_sequence
+
+    bus = InMemoryBus()
+    store = InMemoryStateStore()
+    engine = PatternEngine(store, bus, swing_lookback=2)
+    avwap = AnchoredVWAPEngine()
+
+    async def _on_anchor(payload: dict) -> None:
+        req = AnchorRegistration.model_validate(payload)
+        await register_anchor(avwap, store, req)
+
+    bus.subscribe(ANCHOR_TOPIC, _on_anchor)
+
+    for b in swing_high_sequence(lookback=2):
+        await engine.on_bar(b)
+
+    events = [r["value"] for r in bus.topics[ANCHOR_TOPIC]]
+    if not events:
+        raise RuntimeError("swing high fixture did not publish anchor_events")
+    first = events[0]
+    to_anchor_payload(AnchorRegistration.model_validate(first))
+
+    # Simulate DE ticks after the swing so AVWAP has observations.
+    last_bar = swing_high_sequence(lookback=2)[-1]
+    ts = last_bar.close_ts_ms
+    for i, (px, vol) in enumerate(((118.0, 10.0), (119.0, 20.0), (117.5, 30.0))):
+        snaps = avwap.on_tick(SYM, px, vol, ts + i + 1, AssetClass.CRYPTO)
+        for snap in snaps:
+            await persist_avwap(store, snap, avwap.acc_payload(snap.symbol, snap.anchor_id))
+
+    read = await get_avwap(store, SYM, first["anchor_id"])
+    if read is None:
+        raise RuntimeError("AVWAP Redis key missing after mock DE compute")
+
+    return {
+        "anchor_event": first,
+        "avwap": read.model_dump(mode="json"),
+        "volume_profile": await get_volume_profile(store, SYM, "ny_am"),
+        "kill_zone": await get_kill_zone(store, SYM),
+        "stats": engine.snapshot(),
+    }
 
 
 async def run_pipeline(*, inmemory: bool = False, duration_s: float | None = None) -> Runtime:
