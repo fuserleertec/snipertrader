@@ -85,3 +85,20 @@ def test_http_ingest_and_reject():
     assert ok.json()["status"] == "ACTIVE"
     bad = http.post("/v1/signals/ingest", json=_msg(id="http-bad", target=101.0))
     assert bad.status_code == 422
+
+
+async def test_gate_path_validate_then_bus_publish():
+    """Second-gate consumer (InMemoryBus) persists only after a sane publish."""
+    store = InMemorySignalStore()
+    service = SignalValidationService(store, SignalHub(), min_rr=1.5)
+    bus = InMemoryBus()
+    await run_inmemory_consumer(bus, service)
+    await bus.publish(SETUP_SIGNALS_TOPIC, _msg(id="gate-ok"))
+    assert await store.get("gate-ok") is not None
+    await bus.publish(
+        SETUP_SIGNALS_TOPIC,
+        _msg(id="gate-bad", stop=96.0, target=101.0),
+    )
+    assert await store.get("gate-bad") is None
+    assert service.accepted == 1
+    assert service.rejected == 1

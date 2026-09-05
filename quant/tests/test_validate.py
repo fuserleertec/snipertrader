@@ -171,3 +171,135 @@ def test_publish_assigns_id_after_approval():
     patched = http.patch(f"/signals/{created['id']}", json={"status": "TP_HIT"}).json()
     assert patched["status"] == "TP_HIT"
     assert http.get("/signals", params={"status": "ACTIVE"}).json()["items"] == []
+
+
+def test_e2e_ml_must_validate_before_ingest():
+    """ML simulation: /risk/validate first; publish only when approved."""
+    http, _ = _client()
+    candidate = _payload()
+    assert "id" not in candidate
+    decision = http.post("/risk/validate", json=candidate).json()
+    assert decision["approved"] is True
+    assert decision["reason"] == "ok"
+    assert decision["size_unit"] == "asset"
+    published = {
+        **candidate,
+        "id": "ml-sim-1",
+        "position_size": decision["adjusted_position_size"],
+        "status": "ACTIVE",
+    }
+    stored = http.post("/v1/signals/ingest", json=published)
+    assert stored.status_code == 200
+    assert stored.json()["id"] == "ml-sim-1"
+    assert stored.json()["status"] == "ACTIVE"
+
+    over = http.post(
+        "/risk/validate",
+        json=_payload(symbol="ETHUSDT", proposed_position_size=10_000),
+    ).json()
+    assert over["approved"] is False
+    assert over["reason"] == "position_size_exceeds_limit"
+    # Rejected candidates must not be published.
+    assert http.get("/signals/ml-over").status_code == 404
+
+    opposite = http.post(
+        "/risk/validate",
+        json=_payload(side="short", stop=104.0, target=92.0),
+    ).json()
+    assert opposite["approved"] is False
+    assert opposite["reason"] == "same_symbol_conflict"
+    assert opposite["checks"]["same_symbol_conflict"]["rule"] == "opposite_direction"
+
+
+# Locked bodies from ML E2E sims (PR #7). Omit id; ts_ms is a stand-in for "now".
+ML_LOCKED_BODIES = (
+    {
+        "schema_version": "1.1",
+        "symbol": "BTCUSDT",
+        "asset_class": "crypto",
+        "setup_type": "sweep_reclaim",
+        "side": "long",
+        "entry": 100.5,
+        "stop": 99.09,
+        "target": 104,
+        "timeframe": "5m",
+        "trigger_event_ids": ["swp-buy-low", "mss-reclaim-long"],
+        "confidence": 0.9,
+        "ts_ms": 1_700_000_000_000,
+    },
+    {
+        "schema_version": "1.1",
+        "symbol": "BTCUSDT",
+        "asset_class": "crypto",
+        "setup_type": "fvg_entry",
+        "side": "long",
+        "entry": 100.45,
+        "stop": 99.53,
+        "target": 103.5,
+        "timeframe": "1m",
+        "trigger_event_ids": ["fvg-bull-vwap"],
+        "confidence": 1.0,
+        "ts_ms": 1_700_000_000_000,
+    },
+    {
+        "schema_version": "1.1",
+        "symbol": "BTCUSDT",
+        "asset_class": "crypto",
+        "setup_type": "po3_judas",
+        "side": "short",
+        "entry": 100.8,
+        "stop": 104.49,
+        "target": 90,
+        "timeframe": "5m",
+        "trigger_event_ids": ["swp-asia-high"],
+        "confidence": 1.0,
+        "session_type": "ny_am",
+        "ts_ms": 1_700_000_000_000,
+    },
+)
+
+
+def test_ml_pr7_locked_bodies_approve():
+    http, _ = _client()
+    for body in ML_LOCKED_BODIES:
+        assert "id" not in body
+        resp = http.post("/risk/validate", json=body)
+        assert resp.status_code == 200, body["setup_type"]
+        data = resp.json()
+        assert data["approved"] is True, data
+        assert data["reason"] == "ok"
+        assert data["size_unit"] == "asset"
+        assert data["adjusted_position_size"] > 0
+    # Validate never persists.
+    assert http.get("/signals").json()["items"] == []
+
+
+def test_rejects_do_not_proceed_to_signals():
+    """Oversized / inverted / daily-loss rejects must not create ACTIVE rows."""
+    http, _ = _client()
+    over = _payload(symbol="ETHUSDT", proposed_position_size=10_000)
+    decision = http.post("/risk/validate", json=over).json()
+    assert decision["approved"] is False
+    assert decision["reason"] == "position_size_exceeds_limit"
+    pub = http.post("/signals", json=over)
+    assert pub.status_code == 409
+    assert pub.json()["detail"]["validate"]["reason"] == "position_size_exceeds_limit"
+
+    inverted = _payload(stop=104.0, target=99.0)
+    inv = http.post("/risk/validate", json=inverted).json()
+    assert inv["approved"] is False
+    assert inv["reason"] == "invalid_levels"
+    assert http.post("/signals", json=inverted).status_code == 409
+    assert http.get("/signals").json()["items"] == []
+
+    settings = make_settings()
+    engine = RiskEngine(settings=settings, state=RiskState(equity=100_000, daily_pnl=-3_000))
+    lost = TestClient(
+        create_app(settings=settings, signals=InMemorySignalStore(), engine=engine)
+    )
+    hit = _payload(symbol="SOLUSDT")
+    daily = lost.post("/risk/validate", json=hit).json()
+    assert daily["approved"] is False
+    assert daily["reason"] == "daily_loss_limit"
+    assert lost.post("/signals", json=hit).status_code == 409
+    assert lost.get("/signals").json()["items"] == []

@@ -24,6 +24,7 @@ class BacktestSignal:
     atr: float | None = None
     invalidation: float | None = None
     signal_id: str | None = None
+    confidence: float | None = None
 
 
 @dataclass

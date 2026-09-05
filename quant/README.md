@@ -25,9 +25,19 @@ use an in-memory loader — no live Timescale required.
 
 ## ML Researchers — `POST /risk/validate`
 
-Phase 1: detectors only. **Do not publish to Kafka `setup_signals` until
-this endpoint returns `approved: true`.** Assign `id` only after approval
-(Phase 2).
+**E2E (ML simulation):** call `POST /risk/validate` first. Publish to
+Kafka `setup_signals` **only** when `approved` is `true`. Then assign
+`id`, persist `adjusted_position_size` (asset units), and include
+`entry` / `stop` / `target` / `timeframe` / `trigger_event_ids`. The
+quant consumer (`sniper-quant consume` or `POST /v1/signals/ingest`) is
+the second gate — geometry + 1.5R — and will discard a bad publish.
+Tests: `quant/tests/test_validate.py`, `test_validate_service.py`
+(InMemoryBus, no Kafka required).
+
+Joint E2E blockers: live Kafka + ML publisher not wired in this repo;
+Timescale 5m history optional for walk-forward (in-memory tape used
+here). Do **not** start Phase 3 until ML can hit `:8001` and publish
+approved messages to `setup_signals`.
 
 JSON Schema: [`schemas/risk_validate_request.schema.json`](../schemas/risk_validate_request.schema.json)
 · OpenAPI: `http://localhost:8001/docs`
@@ -230,14 +240,16 @@ Loader: `TimescaleOHLCVLoader` (DE hypertable) or in-memory
 | 3 | PO3 / Judas Swing | `po3_judas` |
 
 ```bash
-sniper-quant backtest --setups 1,2,3 --inmemory
+sniper-quant backtest --setups 1,2,3 --inmemory --timeframe 5m
 # writes quant/reports/setups_1_3_walkforward.md  (share with ML)
 ```
 
 Walk-forward uses an expanding window (first 40% train, remaining 60% in
-`--folds` OOS slices). Grid: `stop_atr_mult` ∈ {1.5, 2.0, 2.5},
-`vwap_band_sigma` ∈ {1, 2, 3}, `confirm_bars` ∈ {1, 2}. Defaults are
-documented in the report until ML publishes detector params.
+`--folds` OOS slices). Grids are the **locked ML ranges** (defaults in bold
+in the report): Setup 1 stop buffer / VWAP band / min_rr / MSS lookback;
+Setup 2 confluence / confirmation / entry / target; Setup 3 accum session /
+displacement / band tag. Orchestrator: `dedupe_window_sec=300`,
+`min_conviction=60`. Primary timeframe is **5m**.
 
 `sniper-quant demo` still runs the scripted 7-setup smoke book.
 

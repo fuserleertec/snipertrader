@@ -47,8 +47,14 @@ def main(argv: list[str] | None = None) -> int:
         help="Write walk-forward markdown (default: quant/reports/setups_1_3_walkforward.md)",
     )
     parser.add_argument("--symbol", default="BTCUSDT")
-    parser.add_argument("--timeframe", default="1h")
+    parser.add_argument("--timeframe", default="5m")
     parser.add_argument("--folds", type=int, default=3)
+    parser.add_argument(
+        "--grid-mode",
+        default="full",
+        choices=["baseline", "core", "full"],
+        help="Walk-forward grid: baseline=defaults only, core=reduced, full=locked ML cartesian",
+    )
     parser.add_argument(
         "--symbols",
         default="BTCUSDT,ETHUSDT,AAPL,ES",
@@ -114,7 +120,11 @@ def _run_backtest(args, settings) -> int:
             logging.getLogger(__name__).warning("Timescale load failed (%s); using synthetic", exc)
 
     results = walk_forward_setups(
-        bars, setup_ids, n_folds=args.folds, equity=settings.default_equity
+        bars,
+        setup_ids,
+        n_folds=args.folds,
+        equity=settings.default_equity,
+        mode=args.grid_mode,
     )
     report_path = Path(args.report) if args.report else Path("reports/setups_1_3_walkforward.md")
     if not report_path.is_absolute():
@@ -126,6 +136,7 @@ def _run_backtest(args, settings) -> int:
         source=source,
         n_bars=len(bars),
         n_folds=args.folds,
+        mode=args.grid_mode,
     )
     write_walkforward_report(report_path, md)
     payload = {
@@ -134,9 +145,16 @@ def _run_backtest(args, settings) -> int:
         "timeframe": args.timeframe,
         "n_bars": len(bars),
         "n_folds": args.folds,
+        "grid_mode": args.grid_mode,
         "report": str(report_path),
         "setups": {
-            row.setup_type: row.oos.model_dump()
+            row.setup_type: {
+                "oos": row.oos.model_dump(),
+                "baseline_full": row.baseline_full.model_dump(),
+                "baseline_oos": row.baseline_oos.model_dump(),
+                "recommended": row.recommended,
+                "grid_size": row.grid_size,
+            }
             for row in results
         },
     }
