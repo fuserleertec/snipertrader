@@ -7,6 +7,7 @@ import { usePerformance } from "@/hooks/usePerformance";
 import { useSignals } from "@/hooks/useSignals";
 import { useTheme } from "@/hooks/useTheme";
 import { inferAssetClass } from "@/lib/constants";
+import { isLivePatternWs, wsBase } from "@/lib/env";
 import { overlayForSetup, parseOverlayParam } from "@/lib/setups";
 import { useSearchParams } from "next/navigation";
 import type { QepMode } from "@/lib/mocks/terminal";
@@ -295,7 +296,14 @@ export function Dashboard() {
           <summary>Raw recon payload (debug)</summary>
           <pre>
             {JSON.stringify(
-              { symbol, timeframe, selected: selected?.id ?? null, trigger_event_ids: selected?.trigger_event_ids ?? [] },
+              {
+                symbol,
+                timeframe,
+                selected: selected?.id ?? null,
+                trigger_event_ids: selected?.trigger_event_ids ?? [],
+                pattern_ws: isLivePatternWs() ? wsBase() : "mock",
+                pattern_ws_paths: ["/v1/ws/sweep", "/v1/ws/fvg", "/v1/ws/mss", "/v1/ws/ob"],
+              },
               null,
               2,
             )}

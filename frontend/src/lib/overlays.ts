@@ -195,6 +195,7 @@ export function normalizeMss(value: unknown): MssEvent | null {
 
 /**
  * Adapter for `WS /v1/ws/{fvg|ob|sweep|mss}?symbol=` frames.
+ * Input is the raw `/schemas` 1.1 object (no wrapper envelope).
  * `hint` is the socket path kind so FVG vs OB (same high/low keys) stay exact.
  */
 export function parseOverlayFrame(value: unknown, hint?: OverlayKind): OverlayEvent | null {

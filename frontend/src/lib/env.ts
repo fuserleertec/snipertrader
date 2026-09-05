@@ -16,6 +16,16 @@ export function wsBase(): string {
   return process.env.NEXT_PUBLIC_WS_BASE || "ws://localhost:8000";
 }
 
+/**
+ * Pattern overlay sockets (DE PR #5). Live only when mocks are off *and*
+ * `NEXT_PUBLIC_WS_BASE` is set. Otherwise keep the in-browser mock fallback.
+ */
+export function isLivePatternWs(): boolean {
+  if (isMockMode()) return false;
+  const base = process.env.NEXT_PUBLIC_WS_BASE;
+  return typeof base === "string" && base.length > 0;
+}
+
 /** Empty = same-origin `/v1/*` (Next rewrite → Data Eng). */
 export function httpBase(): string {
   const raw = process.env.NEXT_PUBLIC_HTTP_BASE;

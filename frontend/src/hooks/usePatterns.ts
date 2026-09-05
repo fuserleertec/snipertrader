@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { seedPrice } from "@/lib/constants";
-import { isMockMode } from "@/lib/env";
+import { isLivePatternWs } from "@/lib/env";
 import { startMockPatternSockets } from "@/lib/mocks/patterns";
 import { dropUniverse, getUniverse } from "@/lib/mocks/universe";
 import { applyOverlayEvent, emptyPatternBook, parseOverlayFrame } from "@/lib/overlays";
@@ -18,20 +18,19 @@ function ingest(book: PatternBook, event: OverlayEvent): PatternBook {
 }
 
 /**
- * Pattern overlays. `NEXT_PUBLIC_USE_MOCKS=true` (default) uses in-browser
- * schema 1.1 seed+pubsub. `false` opens DE PR #5 sockets:
- * `WS /v1/ws/sweep|fvg|mss|ob?symbol=` on `NEXT_PUBLIC_WS_BASE`
- * (default `ws://localhost:8000`).
+ * Pattern overlays. Live DE PR #5 sockets when `NEXT_PUBLIC_USE_MOCKS=false`
+ * and `NEXT_PUBLIC_WS_BASE` is set (`ws://localhost:8000/v1/ws/{sweep|fvg|mss|ob}?symbol=`).
+ * Otherwise in-browser schema 1.1 seed+pubsub (same raw frames, no envelope).
  */
 export function usePatterns(symbol: string): PatternBook {
-  const mocks = isMockMode();
-  const [book, setBook] = useState<PatternBook>(() => (mocks ? seedBook(symbol) : emptyPatternBook()));
+  const live = isLivePatternWs();
+  const [book, setBook] = useState<PatternBook>(() => (live ? emptyPatternBook() : seedBook(symbol)));
   const [active, setActive] = useState(symbol);
 
   if (symbol !== active) {
-    if (mocks) dropUniverse(active);
+    if (!live) dropUniverse(active);
     setActive(symbol);
-    setBook(mocks ? seedBook(symbol) : emptyPatternBook());
+    setBook(live ? emptyPatternBook() : seedBook(symbol));
   }
 
   useEffect(() => {
@@ -41,14 +40,14 @@ export function usePatterns(symbol: string): PatternBook {
       setBook((prev) => ingest(prev, event));
     };
 
-    if (mocks) {
+    if (!live) {
       return startMockPatternSockets(symbol, () => seedPrice(symbol), applyFrame);
     }
 
     return openPatternSockets(symbol, (event) => {
       setBook((prev) => ingest(prev, event));
     });
-  }, [symbol, mocks]);
+  }, [symbol, live]);
 
   return book;
 }

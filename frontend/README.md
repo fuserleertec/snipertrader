@@ -66,7 +66,7 @@ Card/table click joins chart overlays via `trigger_event_ids`.
 | Variable | Default | Purpose |
 |---|---|---|
 | `NEXT_PUBLIC_USE_MOCKS` | `true` | In-browser streams. Set `false` for live Data Eng + Quant. |
-| `NEXT_PUBLIC_WS_BASE` | `ws://localhost:8000` | Data Eng WebSocket origin (`/v1/ws/*`) |
+| `NEXT_PUBLIC_WS_BASE` | `ws://localhost:8000` | Data Eng WebSocket origin. Pattern overlays go live only when this is set **and** `USE_MOCKS=false`. |
 | `NEXT_PUBLIC_HTTP_BASE` | `http://localhost:8000` | Data Eng HTTP. Same-origin `/v1/*` is rewritten here. |
 | `NEXT_PUBLIC_QUANT_API_BASE` | `http://localhost:8001` | Quant REST (`/signals`, `/performance/summary`). Same-origin paths rewrite here. |
 | `NEXT_PUBLIC_QUANT_WS_BASE` | `ws://localhost:8001` | Quant WS (`/ws/signals`) |
@@ -272,11 +272,18 @@ type Overlay =
 ```
 
 Zones use `PatternZonesPrimitive`. Points use `setMarkers` (time-asc, one per
-timestamp). Overlay sockets match VWAP: on connect seed Redis
-`{prefix}:{symbol}:*`, then follow `{prefix}:{symbol}`. Frames are exact
-`/schemas` 1.1 JSON. `parseOverlayFrame(frame, hint)` + `PATTERN_WS` in
-`src/lib/overlays.ts`; live client is `openPatternSockets` (`src/lib/patternWs.ts`).
-Sweep is `side` + `swept_level` only.
+timestamp). Overlay sockets match VWAP / DE PR #5: on connect the server
+SCANs Redis `{prefix}:{symbol}:*` then follows `{prefix}:{symbol}`. Frames
+are **raw** `/schemas` 1.1 JSON — no `{type, payload}` envelope.
+
+```js
+const ws = new WebSocket("ws://localhost:8000/v1/ws/sweep?symbol=BTCUSDT");
+ws.onmessage = (e) => JSON.parse(e.data);
+```
+
+`parseOverlayFrame(frame, hint)` + `PATTERN_WS` in `src/lib/overlays.ts`;
+live client is `openPatternSockets` (`src/lib/patternWs.ts`). Sweep is
+`side` + `swept_level` only.
 
 ### Setup-specific views
 
@@ -297,13 +304,14 @@ payload (`—` while null). CSV uses those field names.
 ### Real-time
 
 - Quant `WS /ws/signals` → card strip + tables (`signal.upsert` / `signal.status`)
-- Data Eng `WS /v1/ws/sweep|fvg|mss|ob?symbol=` → pattern book (seed then pub/sub)
+- Data Eng PR #5 `WS /v1/ws/sweep|fvg|mss|ob?symbol=` → pattern book
+  (server seed SCAN, then pub/sub; raw schema 1.1 frames)
 - Toast when `confidence > 0.8`
 - Sound toggle **off** by default
 
-Set `NEXT_PUBLIC_USE_MOCKS=false` to open the four DE sockets on
-`ws://localhost:8000`. Default stays in-browser mocks that emit the same
-schema frames (seed immediately, then interval updates).
+Pattern sockets prefer **live** when `NEXT_PUBLIC_WS_BASE` is set **and**
+`NEXT_PUBLIC_USE_MOCKS=false`. Otherwise the in-browser mock fallback emits
+the same raw frames. See https://github.com/fuserleertec/snipertrader/pull/5
 
 ### Data Eng Phase 2 (optional, non-blocking)
 
