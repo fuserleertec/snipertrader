@@ -28,7 +28,7 @@ function makeSignal(
   const sessions = sessionsForAsset(asset_class);
   const ref_session: SessionType = sessions[seq % sessions.length] ?? "ny_am";
   return {
-    id: `sig_${symbol}_${now_ms}_${seq}`,
+    id: `sig_${symbol}_${seq}`,
     ts_ms: now_ms,
     symbol,
     asset_class,
@@ -81,10 +81,11 @@ export function startMockSignalStream(
   symbol: string,
   lastPrice: () => number,
   onEvent: (event: SignalWsEvent) => void,
+  initial: Signal[] = [],
 ): () => void {
   const asset = inferAssetClass(symbol);
   let seq = 100;
-  const live = new Map<string, Signal>();
+  const live = new Map<string, Signal>(initial.map((s) => [s.id, s]));
 
   const upsert = () => {
     seq += 1;

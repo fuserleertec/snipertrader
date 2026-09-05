@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { seedPrice } from "@/lib/constants";
 import { isMockMode, quantWsUrl } from "@/lib/env";
 import { fetchSignals } from "@/lib/http";
 import { mockListSignals, startMockSignalStream } from "@/lib/mocks/signals";
@@ -11,13 +12,13 @@ import { openJsonWsAt } from "@/lib/ws";
 export function useSignals(symbol: string, lastPrice: () => number): Signal[] {
   const mocks = isMockMode();
   const [rows, setRows] = useState<Signal[]>(() =>
-    mocks ? mockListSignals({ symbol, limit: 24 }, 100).items : [],
+    mocks ? mockListSignals({ symbol, limit: 24 }, seedPrice(symbol)).items : [],
   );
   const [activeSymbol, setActiveSymbol] = useState(symbol);
 
   if (symbol !== activeSymbol) {
     setActiveSymbol(symbol);
-    setRows(mocks ? mockListSignals({ symbol, limit: 24 }, lastPrice()).items : []);
+    setRows(mocks ? mockListSignals({ symbol, limit: 24 }, seedPrice(symbol)).items : []);
   }
 
   useEffect(() => {
@@ -30,7 +31,8 @@ export function useSignals(symbol: string, lastPrice: () => number): Signal[] {
     };
 
     if (mocks) {
-      return startMockSignalStream(symbol, lastPrice, applyEvent);
+      const seed = mockListSignals({ symbol, limit: 24 }, seedPrice(symbol)).items;
+      return startMockSignalStream(symbol, lastPrice, applyEvent, seed);
     }
 
     fetchSignals({ symbol, limit: 40 }).then((list) => {
