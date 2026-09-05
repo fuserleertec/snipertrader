@@ -180,17 +180,98 @@ class OrderBlock(BaseModel):
     origin_close: float | None = None
 
 
+SETUP_TYPES = (
+    "sweep_reclaim",
+    "fvg_entry",
+    "mss_break",
+    "order_block",
+    "sweep_mss",
+    "ob_fvg",
+    "po3_judas",
+)
+
+SetupType = Literal[
+    "sweep_reclaim",
+    "fvg_entry",
+    "mss_break",
+    "order_block",
+    "sweep_mss",
+    "ob_fvg",
+    "po3_judas",
+]
+
+RISK_TIMEFRAMES = ("1m", "5m", "15m")
+RiskTimeframe = Literal["1m", "5m", "15m"]
+
+# Exact POST /risk/validate body. Never include id / risk_reward / conviction / kill_zone*.
+RISK_VALIDATE_FIELDS = (
+    "schema_version",
+    "symbol",
+    "asset_class",
+    "setup_type",
+    "side",
+    "confidence",
+    "ref_vwap",
+    "ref_session",
+    "ts_ms",
+    "entry",
+    "stop",
+    "target",
+    "timeframe",
+    "trigger_event_ids",
+    "session_type",
+    "proposed_position_size",
+)
+
+
 class SetupSignal(BaseModel):
+    """Kafka ``setup_signals`` — Quant-locked Phase 2 payload (id only after approval)."""
+
     schema_version: Literal["1.1"] = SCHEMA_VERSION
     id: str
     symbol: str
     asset_class: AssetClass
-    setup_type: str
+    setup_type: SetupType
     side: Literal["long", "short"]
     confidence: float | None = None
     ref_vwap: float | None = None
     ref_session: str | None = None
     ts_ms: int
+    entry: float | None = None
+    stop: float | None = None
+    target: float | None = None
+    timeframe: RiskTimeframe | None = None
+    trigger_event_ids: list[str] | None = None
+    session_type: SessionType | None = None
+    position_size: float | None = None
+    status: Literal["ACTIVE", "TP_HIT", "SL_HIT", "CANCELLED"] | None = None
+
+
+class RiskValidateRequest(BaseModel):
+    """POST /risk/validate candidate. ``id`` is omitted on purpose."""
+
+    schema_version: Literal["1.1"] = SCHEMA_VERSION
+    symbol: str
+    asset_class: AssetClass
+    setup_type: SetupType
+    side: Literal["long", "short"]
+    ts_ms: int
+    entry: float
+    stop: float
+    target: float
+    timeframe: RiskTimeframe
+    trigger_event_ids: list[str]
+    confidence: float | None = None
+    ref_vwap: float | None = None
+    ref_session: str | None = None
+    session_type: SessionType | None = None
+    proposed_position_size: float | None = None
+
+
+class RiskValidateResponse(BaseModel):
+    approved: bool
+    reason: str
+    adjusted_position_size: float | None = None
 
 
 # ── Phase 2 wire models (NO schema_version — exact Redis / Kafka payloads) ──

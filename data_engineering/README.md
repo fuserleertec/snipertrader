@@ -156,6 +156,25 @@ All secrets are environment variables. See [`.env.example`](.env.example).
 | `MAX_ANCHORS_PER_SYMBOL` | `32` | Cap on live AVWAP anchors |
 | `SWING_DETECT` | `true` | In-process fractal swing → anchors |
 | `SWING_LOOKBACK` | `5` | MSS / ICT swing confirmation bars each side |
+| `RISK_VALIDATE_URL` | `http://localhost:8001/risk/validate` | Quant Risk Pre-Filter |
+| `SETUP_ATR_PERIOD` | `14` | ATR lookback for stop / overlap / displacement |
+| `SETUP_STOP_BUFFER_ATR` | `0.05` | Stop buffer as a multiple of ATR |
+| `SETUP1_MIN_RR` | `2.0` | Setup 1 minimum R:R (nearer of ±1σ/±2σ) |
+| `SETUP1_MSS_SWING_LOOKBACK` | `5` | Setup 1 MSS swing lookback |
+| `SETUP1_MAX_BARS_SWEEP_TO_MSS` | `15` | Expire armed sweep if no MSS |
+| `SETUP1_REQUIRE_CONFIRMED_SWEEP` | `true` | Require `confirmed` / `reclaim` |
+| `SETUP1_TIMEFRAMES` | `5m,15m` | Setup 1 only |
+| `SETUP2_OVERLAP_TOL_ATR` | `0.05` | VWAP / HVN overlap pad |
+| `SETUP2_PIN_WICK_RATIO` | `2.5` | Pin confirmation wick/body |
+| `SETUP2_MAX_FVG_AGE_HOURS` | `24` | Ignore older FVGs |
+| `SETUP2_TARGET_RR_FALLBACK` | `2.0` | If no prior swing |
+| `SETUP3_ACCUM_SESSION` | `asia` | Globex optional for futures |
+| `SETUP3_KILL_ZONE` | `ny_am` | Crypto also accepts London |
+| `SETUP3_DISPLACEMENT_MIN_BODY_ATR` | `1.2` | Displacement body ≥ this × ATR |
+| `SETUP3_REQUIRE_BAND_TAG` | `true` | Sweep must tag ±1σ or ±2σ |
+| `SETUP3_MAX_BARS_SWEEP_TO_DISPLACE` | `6` | Expire Judas if no displacement |
+| `SETUP_DEDUPE_WINDOW_SEC` | `300` | Orchestrator dedupe window |
+| `SETUP_MIN_CONVICTION_TO_VALIDATE` | `60` | Skip risk if conviction below this |
 | `BINANCE_*` / `ALPACA_*` | empty | Live stubs only |
 
 ## Exchange adapters
@@ -278,6 +297,8 @@ sniper-data pipeline [--inmemory] [--duration N]
 sniper-data demo     [--inmemory] [--duration N]   # alias of pipeline
 sniper-data patterns [--inmemory] [--duration N]
 sniper-data patterns --inmemory --replay           # ICT fixtures + swing→anchor wiring
+sniper-data setups   --inmemory                    # USME setups 1–3 fixtures + mock risk
+sniper-data setups   --inmemory --replay           # same
 sniper-data api      [--host 0.0.0.0 --port 8000]
 sniper-data evict    [--inmemory]
 sniper-data killzones [--inmemory] [--duration N]
@@ -393,7 +414,59 @@ profile = await get_volume_profile(store, "BTCUSDT", "ny_am")
 zone = await get_kill_zone(store, "BTCUSDT")
 ```
 
-Setup-signal publishing stays a later Phase 2 step. In-memory demo:
+## Phase 2 — USME setup detection (setups 1–3)
+
+`sniper_data.setup_detection` consumes **only** landed DE topics / Redis keys
+(`sweep_events`, `mss_events`, `fvg_zones`, `ohlcv_bars`, `session_levels`,
+`vwap_values`, `kill_zone_events`, `anchor_events`; Redis `session:`, `vwap:`,
+`fvg:`, `sweep:`, `mss:`, `ob:`, `avwap:`, `volume_profile:`, `kill_zone:`).
+
+DE sweep mapping (do not invert):
+
+* `side=buy` = session **low** swept (ICT sell-side liquidity) → Setup 1 **long**
+  after a bullish MSS (break last LH) whose candle **closes above**
+  `vwap:{symbol}:session`.
+* `side=sell` = session **high** swept (ICT buy-side liquidity) → Setup 1 **short**
+  after a bearish MSS (break last HL) whose candle **closes below** session VWAP.
+
+This reclaim pairing is **USME Setup 1**, not the Phase 1 MSS continuation
+pairing. Incoming `mss_events` are used when `direction` matches reclaim;
+otherwise the detector measures the LH/HL break from `ohlcv_bars`.
+
+| Setup | `setup_type` | Rule |
+|---|---|---|
+| 1 | `sweep_reclaim` | Confirmed sweep + MSS + session-VWAP close on **5m/15m**. Stop = extreme ± `0.05×ATR(14)`. TP = nearer of ±1σ/±2σ with `min_rr=2.0`. Max 15 bars sweep→MSS. |
+| 2 | `fvg_entry` or `ob_fvg` | FVG age ≤ 24h overlapping session VWAP **or** HVN/POC (`overlap_tol=0.05×ATR`). Confirm engulfing **or** pin (`wick_ratio=2.5`). Entry = confirmation close. Stop beyond FVG + ATR buffer. Target = prior swing, else 2R. |
+| 3 | `po3_judas` | Accum `session:{symbol}:asia` (Globex optional for futures). Kill zone `ny_am` (crypto: NY AM or London). Displacement body ≥ `1.2×ATR` within 6 bars. **Require** ±1σ/±2σ tag. Stop = wick ± ATR buffer. TP = opposite accum extreme. |
+
+Orchestrator: setups 1–3 run in parallel. Dedupe (`SETUP_DEDUPE_WINDOW_SEC=300`)
+keeps the highest conviction when symbol + side + overlapping TFs fire.
+Candidates with conviction &lt; `SETUP_MIN_CONVICTION_TO_VALIDATE` (60) are
+logged and **not** sent to risk. Conviction stays in logs only;
+validate / Kafka get `confidence = conviction/100`.
+
+**Risk gate (locked):** before `setup_signals`, `POST {RISK_VALIDATE_URL}` with
+**only** `schema_version`, `symbol`, `asset_class`, `setup_type`, `side`,
+`confidence`, `ref_vwap`, `ref_session`, `ts_ms`, `entry`, `stop`, `target`,
+`timeframe`, `trigger_event_ids`, optional `session_type`, optional
+`proposed_position_size`. **Omit `id`.** Do not send `risk_reward`,
+`setup_id`, `kill_zone*`, or `conviction`. Publish iff `approved: true`, then
+assign `id` and set `status=ACTIVE` / `position_size=adjusted_position_size`.
+Rejects are logged and dropped (Prometheus `sniper_setup_rejected_total` is
+the false-positive proxy).
+
+```bash
+sniper-data setups --inmemory
+sniper-data setups --e2e-report --e2e-out /tmp/phase2_e2e_report.json
+```
+
+`--e2e-report` is the Phase 2 PM integration pack (setups 1–3 through
+mocked `POST /risk/validate`, plus conviction / reject / dedupe gates).
+It writes `quant_replay/` next to `--e2e-out` so Quant can replay locked
+validate JSON against `sniper-quant api --inmemory --port 8001`.
+It does not start Phase 3.
+
+Pattern-detector in-memory demo (sweeps / FVG / MSS / anchors, not setups):
 
 ```bash
 sniper-data patterns --inmemory --replay
@@ -489,7 +562,9 @@ lookup (no `symbol` field).
 Series: `sniper_ticks_processed_total`, `sniper_avwap_updates_total`,
 `sniper_avwap_compute_seconds`, `sniper_volume_profile_updates_total`,
 `sniper_volume_profile_compute_seconds`,
-`sniper_kill_zone_transitions_total`, `sniper_http_request_duration_seconds`.
+`sniper_kill_zone_transitions_total`, `sniper_http_request_duration_seconds`,
+`sniper_setup_detection_latency_seconds`, `sniper_setup_candidates_total`,
+`sniper_setup_approved_total`, `sniper_setup_rejected_total`.
 
 ### Horizontal scaling
 

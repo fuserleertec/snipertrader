@@ -16,22 +16,56 @@ def _setup_logging(level: str) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="sniper-data", description="Phase 1+2 market-data + ML pattern pipeline")
-    parser.add_argument("command", choices=["pipeline", "api", "evict", "demo", "killzones", "patterns"])
+    parser.add_argument("command", choices=["pipeline", "api", "evict", "demo", "killzones", "patterns", "setups"])
     parser.add_argument("--inmemory", action="store_true", help="Use in-process bus/store (no Docker).")
     parser.add_argument("--duration", type=float, default=None, help="Seconds to run the demo/pipeline.")
     parser.add_argument(
         "--replay",
         action="store_true",
-        help="(patterns) Replay ICT fixtures + swing→anchor wiring (no brokers).",
+        help="(patterns|setups) Replay fixtures in-process (no brokers).",
     )
     parser.add_argument("--host", default=None)
     parser.add_argument("--port", type=int, default=None)
+    parser.add_argument(
+        "--e2e-report",
+        action="store_true",
+        help="(setups) Phase 2 PM integration report (in-memory; no Phase 3).",
+    )
+    parser.add_argument(
+        "--e2e-out",
+        default=None,
+        help="Write the Phase 2 E2E report JSON to this path.",
+    )
     args = parser.parse_args(argv)
 
     from sniper_data.config import get_settings
 
     settings = get_settings()
     _setup_logging(settings.log_level)
+
+    if args.command == "setups":
+        from pathlib import Path
+
+        from sniper_data.pipeline import run_setup_loop, run_setup_replay
+
+        if args.e2e_report or args.e2e_out:
+            from sniper_data.setup_detection.e2e import build_phase2_e2e_report, write_quant_replay_pack
+
+            report = asyncio.run(build_phase2_e2e_report())
+            text = json.dumps(report, indent=2, default=str)
+            print(text)
+            if args.e2e_out:
+                dest = Path(args.e2e_out)
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                dest.write_text(text)
+                write_quant_replay_pack(report, dest.parent / "quant_replay")
+            return 0 if report["summary"]["overall"] == "PASS" else 1
+        if args.replay or args.inmemory:
+            result = asyncio.run(run_setup_replay())
+            print(json.dumps(result, indent=2, default=str))
+            return 0
+        asyncio.run(run_setup_loop(inmemory=args.inmemory, duration_s=args.duration))
+        return 0
 
     if args.command == "patterns" and args.replay:
         from sniper_data.pipeline import run_anchor_wiring_demo, run_pattern_replay

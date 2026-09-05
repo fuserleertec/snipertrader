@@ -16,7 +16,7 @@ as required on a **new** schema.
 | `fvg_zones` | [`fvg_zone.schema.json`](fvg_zone.schema.json) | FVG detector | Redis `fvg:{symbol}:{id}` |
 | `mss_events` | [`mss_event.schema.json`](mss_event.schema.json) | MSS detector | Redis `mss:{symbol}:{id}` |
 | `order_block_zones` | [`order_block.schema.json`](order_block.schema.json) | Order-block detector | Redis `ob:{symbol}:{id}` |
-| `setup_signals` | [`setup_signal.schema.json`](setup_signal.schema.json) | Signal engine (Phase 2 stub) | Downstream ML / UI |
+| `setup_signals` | [`setup_signal.schema.json`](setup_signal.schema.json) | ML setup detectors (after Quant risk approval) | Quant / frontend |
 | `kill_zone_events` | [`kill_zone_event.schema.json`](kill_zone_event.schema.json) | Kill-zone timer (Phase 2) | Redis `kill_zone:{symbol}`, Frontend / ML |
 | `anchor_events` | (inbound `AnchorRegistration` JSON) | ML swing/MSS + HTTP `/v1/anchors` | Anchored VWAP engine |
 
@@ -68,3 +68,27 @@ holds `{kill_zone, start_time, end_time, active, asset_class}`.
 Convenience pointer (same AVWAP JSON as the last write): `avwap:latest:{symbol}`.
 Anchor metadata (not a wire schema): `avwap:meta:{symbol}:{anchor_id}`,
 index `avwap:index:{symbol}`.
+
+## Quant Risk Pre-Filter + setup_signals (Phase 2)
+
+HTTP (not Kafka): [`risk_validate_request.schema.json`](risk_validate_request.schema.json)
+and [`risk_validate_response.schema.json`](risk_validate_response.schema.json).
+`POST /risk/validate` (default `http://localhost:8001/risk/validate`).
+
+ML **omits `id`** on the request. Publish to `setup_signals` only when
+`approved: true`, then assign `id`.
+
+`setup_type` enum (Quant-locked + Setup 3 provisional):
+
+| Setup | `setup_type` |
+|---|---|
+| 1 Liquidity sweep + VWAP reclaim | `sweep_reclaim` |
+| 2 FVG at VWAP / HVN | `fvg_entry` (`ob_fvg` when an order block overlaps) |
+| 3 PO3 / Judas | `po3_judas` — **Quant: please add this value** to the locked enum |
+
+Validate body allow-list only: `schema_version`, `symbol`, `asset_class`,
+`setup_type`, `side`, `confidence` (conviction/100), `ref_vwap`,
+`ref_session`, `ts_ms`, `entry`, `stop`, `target`, `timeframe`,
+`trigger_event_ids`, optional `session_type`, optional
+`proposed_position_size`. Do **not** send `risk_reward`, `setup_id`,
+`kill_zone*`, or a separate `conviction` field.

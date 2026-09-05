@@ -52,6 +52,26 @@ HTTP_SECONDS = Histogram(
     "API HTTP request latency",
     ["method", "route"],
 )
+SETUP_DETECTION_SECONDS = Histogram(
+    "sniper_setup_detection_latency_seconds",
+    "Wall time to evaluate setups 1–3 for one event batch",
+    ["setup"],
+)
+SETUP_CANDIDATES = Counter(
+    "sniper_setup_candidates_total",
+    "Raw (pre-risk) setup candidates",
+    ["setup_type", "side"],
+)
+SETUP_APPROVED = Counter(
+    "sniper_setup_approved_total",
+    "Candidates published after risk approved:true",
+    ["setup_type"],
+)
+SETUP_REJECTED = Counter(
+    "sniper_setup_rejected_total",
+    "Candidates discarded after risk approved:false (false-positive proxy)",
+    ["setup_type", "reason"],
+)
 
 _metrics_started = False
 
@@ -111,3 +131,20 @@ def record_kill_zone_transition(event: KillZoneEvent) -> None:
 
 def record_http(method: str, route: str, elapsed_s: float) -> None:
     HTTP_SECONDS.labels(method, route).observe(elapsed_s)
+
+
+def record_setup_latency(setup: str, elapsed_s: float) -> None:
+    SETUP_DETECTION_SECONDS.labels(setup).observe(elapsed_s)
+
+
+def record_setup_candidate(setup_type: str, side: str) -> None:
+    SETUP_CANDIDATES.labels(setup_type, side).inc()
+
+
+def record_setup_approved(setup_type: str) -> None:
+    SETUP_APPROVED.labels(setup_type).inc()
+
+
+def record_setup_rejected(setup_type: str, reason: str) -> None:
+    label = (reason or "rejected")[:64]
+    SETUP_REJECTED.labels(setup_type, label).inc()
