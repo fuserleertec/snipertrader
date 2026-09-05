@@ -25,25 +25,41 @@ calendar day ≈ 1d). Validate `timeframe` stays {1m, 5m, 15m}.
 ## Alignment with ML [PR #9](https://github.com/fuserleertec/snipertrader/pull/9)
 
 Setups 4–6 `setup_type` and product keys match PR #9. Validate omits `id`,
-`contributing_factors` (`string[]`), and `factor_breakdown`. Those two fields are
+`contributing_factors`, and `factor_breakdown`. Those two fields are
 **publish-only** on Kafka `setup_signals` (`factor_breakdown` =
 `{name, weight, score, note?}[]`, `sum(score)` ≈ conviction).
-
-PM extras on top of the ML tunables: S4–S6 kill-zone conviction bonus;
-S6 AVWAP anchors `swing_high` / `swing_low` plus earnings/news stubs;
-orchestrator `dedupe_window_sec` default **300**. Walk-forward S4–S6 is
-`sd_extension_fade` / `vwap_pullback_cont` / `avwap_ob_confluence` only.
 
 Dormant `mss_break` / `order_block` / `sweep_mss` are **not** in the
 validate enum (PR #9 E2E still has a Setup 2 `ob_fvg` alias — Quant does
 **not** accept it on `/risk/validate`; use `fvg_entry`).
 
-S4–S6 defaults (bold) match the PM/ML lock: S4 `band_trigger=either`,
-`vol_max_frac=0.8`, `confirm=either`, `pin_wick=2.5`, stop `0.05×ATR`,
-`min_rr=1.5`, news skip 15m stub; S5 lookback 20 / pullback `either` /
-first-touch 5 / `require_ob_or_fvg=true` / `min_rr=2.0`; S6 OB `{4h,1d}`,
-approach `{0.05,0.1}×ATR`, confirm rejection|mss on `{1h,4h}`, `min_rr=2.0`,
-`min_conviction=70`.
+S4–S6 defaults (bold) match [PR #9](https://github.com/fuserleertec/snipertrader/pull/9)
+`SetupParams`: S4 `vol_frac=0.8`, 20-bar avg, `min_rr=1.5` (2.0 at 3σ),
+news skip 900s; S5 trend 20 / first-touch **8** / `min_rr=2.0`; S6
+`min_rr=2.0`, `min_conviction=70`, approach **0.15×ATR**, HTF `{1h,4h}`,
+swing lookback **2**, wire TF 15m. Orchestrator `dedupe_window_sec=300`.
+FE `product_key` for 4–6 stays `*_pending_user_confirm` (PM lock) — PR #9
+performance keys `4_sd_extension_fade` etc. are not used on `/performance/summary`.
+
+| Quant field | PR #9 `SetupParams` | Env | Default match? |
+|---|---|---|---|
+| `s4_vol_max_frac` | `s4_vol_frac` | `SETUP4_VOL_FRAC` | **yes** |
+| `s4_vol_avg_period` | `s4_vol_avg_period` | `SETUP4_VOL_AVG_PERIOD` | **yes** |
+| `s4_min_rr` | `s4_min_rr` | `SETUP4_MIN_RR` | **yes** |
+| `s4_min_rr_at_3s` | `s4_min_rr_at_3s` | `SETUP4_MIN_RR_AT_3S` | **yes** |
+| `news_skip_minutes` | `s4_news_window_sec` | `SETUP4_NEWS_WINDOW_SEC` | **yes** |
+| `s5_trend_lookback_bars` | `s5_trend_bars` | `SETUP5_TREND_BARS` | **yes** |
+| `s5_first_touch_window_bars` | `s5_first_touch_lookback_bars` | `SETUP5_FIRST_TOUCH_LOOKBACK_BARS` | **yes** |
+| `s5_min_rr` | `s5_min_rr` | `SETUP5_MIN_RR` | **yes** |
+| `s6_min_rr` | `s6_min_rr` | `SETUP6_MIN_RR` | **yes** |
+| `s6_min_conviction` | `s6_min_conviction` | `SETUP6_MIN_CONVICTION` | **yes** |
+| `s6_approach_tol_atr` | `s6_approach_tol_atr` | `SETUP6_APPROACH_TOL_ATR` | **yes** |
+| `s6_swing_lookback` | `s6_swing_lookback` | `SETUP6_SWING_LOOKBACK` | **yes** |
+| `dedupe_window_sec` | `dedupe_window_sec` | `SETUP_DEDUPE_WINDOW_SEC` | **yes** |
+
+Conviction reporting here stays 40/30/30. PR #9 uses additive bonuses
+`conv_kill_zone_bonus=10` / volume 10 / multi-pattern 10 on a different
+scale — we still apply a KZ **bonus** on S4–S6, not a hard gate on S5/S6.
 
 ## Alignment with ML PR #7
 
@@ -151,7 +167,7 @@ on `SETUP_*` env — those stay on the grid for retune only.
 | `trend_lookback_bars` | **20** on 5m | {10, 20, 30} |
 | `pullback_level` | **either** | vwap, band_1σ, either |
 | `require_ob_or_fvg` | **true** | true |
-| `first_touch_window_bars` | **5** | {3, 5, 8} |
+| `first_touch_window_bars` | **8** | {3, 5, 8} |
 | `confirm` | with-trend engulfing \| strong_body | fixed |
 | `stop_buffer` | **0.05×ATR** behind swing | 0.05×ATR |
 | `tp` | prior swing liquidity | fixed |
@@ -163,12 +179,23 @@ on `SETUP_*` env — those stay on the grid for retune only.
 | Knob | Default | Grid |
 |---|---|---|
 | `ob_timeframes` | **4h** | 4h, 1d |
-| `approach_tol` | **0.05×ATR** | {0.05, 0.1}×ATR |
+| `approach_tol` | **0.15×ATR** | {0.05, 0.15}×ATR |
 | `confirm` | **rejection** on **1h** | rejection \| mss × {1h, 4h} |
 | `stop` | opposite OB bound + **0.05×ATR** | 0.05×ATR |
 | `tp` | HTF old high/low | fixed |
 | `min_rr` | **2.0** | 2.0 |
 | `min_conviction` | **70** | 70 |
+| `s6_anchor` | **either** (OB + swing_high/low + earnings/news stubs) | ob, swing_high, swing_low, earnings, news, either |
+| `s6_swing_lookback` | **2** | 2 (PR #9 default; grid does not retune) |
+
+PM extras (on top of the ML tunables): S4–S6 apply a kill-zone
+conviction bonus (`kill_zone_align` **30**) when the confirm bar is in
+KZ — not a hard gate on S5/S6 (S4 still skips outside KZ). S6 AVWAP
+may anchor to `swing_high` / `swing_low` or stub `earnings` / `news`.
+Walk-forward S4–S6 uses `sd_extension_fade` / `vwap_pullback_cont` /
+`avwap_ob_confluence` only — never `mss_break` / `order_block` /
+`sweep_mss`. `contributing_factors` is `string[]` on publish/store,
+not on `POST /risk/validate`.
 
 ### Orchestrator (shared)
 
@@ -190,7 +217,7 @@ VWAP is **session-anchored** (DE crypto clocks: Asia 00:00–07:00, London
 
 - Baseline: ML defaults on the full tape and on the same OOS fold slices (no fit).
 - Walk-forward: expanding window (first 40% train; remaining 60% in 3 OOS slices). Each fold grid-searches **train only**, freezes params on **test**.
-- Train objective: `2×win_rate + avg_R − max_drawdown` (empty books score −1).
+- Train objective: `2×win_rate + avg_R − max_drawdown` (empty books score −100).
 - Event backtester: same-bar SL+TP → SL wins; 2% risk/trade; 1 bp + 2 bp costs.
 - Recommended params = majority vote of fold winners (per knob).
 - `globex` accumulation is a futures path; this crypto tape scores it poorly on purpose.
@@ -225,7 +252,7 @@ WF OOS P&L ≥ default OOS on this tape — lean toward the recommended column.
 | `s5_trend_lookback_bars` | 20 | **20** |
 | `s5_pullback_level` | either | **either** |
 | `s5_require_ob_or_fvg` | True | **True** |
-| `s5_first_touch_window_bars` | 5 | **5** |
+| `s5_first_touch_window_bars` | 8 | **8** |
 | `s5_stop_buffer_atr` | 0.05 | **0.05** |
 | `s5_min_rr` | 2.0 | **2.0** |
 
@@ -236,11 +263,13 @@ WF OOS P&L ≥ default OOS on this tape — lean toward the recommended column.
 | Knob | Default | Recommended (fold majority) |
 |---|---|---|
 | `s6_ob_timeframe` | 4h | **4h** |
-| `s6_approach_tol_atr` | 0.05 | **0.05** |
+| `s6_approach_tol_atr` | 0.15 | **0.15** |
 | `s6_confirm` | rejection | **mss** |
 | `s6_confirm_tf` | 1h | **1h** |
 | `s6_stop_buffer_atr` | 0.05 | **0.05** |
 | `s6_min_rr` | 2.0 | **2.0** |
+| `s6_anchor` | either | **either** |
+| `s6_swing_lookback` | 2 | **2** |
 
 WF OOS P&L ≥ default OOS on this tape — lean toward the recommended column.
 
@@ -277,21 +306,21 @@ OOS pooled (defaults): n=4  win=0.0%  avgR=-1.513  Sharpe=-0.282  maxDD=14.7%  p
 
 **Fold 1** — train 853 bars, test 427 bars.
 
-Chosen: `s5_trend_lookback_bars=20`, `s5_pullback_level=either`, `s5_require_ob_or_fvg=True`, `s5_first_touch_window_bars=5`, `s5_stop_buffer_atr=0.05`, `s5_min_rr=2.0`
+Chosen: `s5_trend_lookback_bars=20`, `s5_pullback_level=either`, `s5_require_ob_or_fvg=True`, `s5_first_touch_window_bars=8`, `s5_stop_buffer_atr=0.05`, `s5_min_rr=2.0`
 
 - Train: n=1  win=100.0%  avgR=4.137  Sharpe=7.937  maxDD=0.0%  pnl=8921.44
 - Test:  n=0  win=0.0%  avgR=0.000  Sharpe=0.000  maxDD=0.0%  pnl=0.00
 
 **Fold 2** — train 1280 bars, test 427 bars.
 
-Chosen: `s5_trend_lookback_bars=20`, `s5_pullback_level=either`, `s5_require_ob_or_fvg=True`, `s5_first_touch_window_bars=5`, `s5_stop_buffer_atr=0.05`, `s5_min_rr=2.0`
+Chosen: `s5_trend_lookback_bars=20`, `s5_pullback_level=either`, `s5_require_ob_or_fvg=True`, `s5_first_touch_window_bars=8`, `s5_stop_buffer_atr=0.05`, `s5_min_rr=2.0`
 
 - Train: n=1  win=100.0%  avgR=4.137  Sharpe=6.000  maxDD=0.0%  pnl=8921.44
 - Test:  n=0  win=0.0%  avgR=0.000  Sharpe=0.000  maxDD=0.0%  pnl=0.00
 
 **Fold 3** — train 1707 bars, test 427 bars.
 
-Chosen: `s5_trend_lookback_bars=20`, `s5_pullback_level=either`, `s5_require_ob_or_fvg=True`, `s5_first_touch_window_bars=5`, `s5_stop_buffer_atr=0.05`, `s5_min_rr=2.0`
+Chosen: `s5_trend_lookback_bars=20`, `s5_pullback_level=either`, `s5_require_ob_or_fvg=True`, `s5_first_touch_window_bars=8`, `s5_stop_buffer_atr=0.05`, `s5_min_rr=2.0`
 
 - Train: n=1  win=100.0%  avgR=4.137  Sharpe=5.292  maxDD=0.0%  pnl=8921.44
 - Test:  n=1  win=100.0%  avgR=4.091  Sharpe=11.225  maxDD=0.0%  pnl=8883.13
@@ -304,21 +333,21 @@ OOS pooled (defaults): n=1  win=100.0%  avgR=4.091  Sharpe=0.466  maxDD=0.0%  pn
 
 **Fold 1** — train 853 bars, test 427 bars.
 
-Chosen: `s6_ob_timeframe=4h`, `s6_approach_tol_atr=0.05`, `s6_confirm=rejection`, `s6_confirm_tf=1h`, `s6_stop_buffer_atr=0.05`, `s6_min_rr=2.0`
+Chosen: `s6_ob_timeframe=4h`, `s6_approach_tol_atr=0.15`, `s6_confirm=rejection`, `s6_confirm_tf=1h`, `s6_stop_buffer_atr=0.05`, `s6_min_rr=2.0`, `s6_anchor=either`, `s6_swing_lookback=2`
 
 - Train: n=26  win=3.8%  avgR=-1.458  Sharpe=-10.403  maxDD=93.1%  pnl=-80476.20
 - Test:  n=14  win=7.1%  avgR=-1.150  Sharpe=-13.140  maxDD=94.1%  pnl=-79244.65
 
 **Fold 2** — train 1280 bars, test 427 bars.
 
-Chosen: `s6_ob_timeframe=4h`, `s6_approach_tol_atr=0.05`, `s6_confirm=mss`, `s6_confirm_tf=1h`, `s6_stop_buffer_atr=0.05`, `s6_min_rr=2.0`
+Chosen: `s6_ob_timeframe=4h`, `s6_approach_tol_atr=0.15`, `s6_confirm=mss`, `s6_confirm_tf=1h`, `s6_stop_buffer_atr=0.05`, `s6_min_rr=2.0`, `s6_anchor=either`, `s6_swing_lookback=2`
 
 - Train: n=1  win=100.0%  avgR=2.828  Sharpe=6.107  maxDD=0.3%  pnl=5809.42
 - Test:  n=0  win=0.0%  avgR=0.000  Sharpe=0.000  maxDD=0.0%  pnl=0.00
 
 **Fold 3** — train 1707 bars, test 427 bars.
 
-Chosen: `s6_ob_timeframe=4h`, `s6_approach_tol_atr=0.05`, `s6_confirm=mss`, `s6_confirm_tf=1h`, `s6_stop_buffer_atr=0.05`, `s6_min_rr=2.0`
+Chosen: `s6_ob_timeframe=4h`, `s6_approach_tol_atr=0.15`, `s6_confirm=mss`, `s6_confirm_tf=1h`, `s6_stop_buffer_atr=0.05`, `s6_min_rr=2.0`, `s6_anchor=either`, `s6_swing_lookback=2`
 
 - Train: n=1  win=100.0%  avgR=2.828  Sharpe=5.382  maxDD=0.3%  pnl=5809.42
 - Test:  n=0  win=0.0%  avgR=0.000  Sharpe=0.000  maxDD=0.0%  pnl=0.00
@@ -341,3 +370,50 @@ OOS pooled (defaults): n=30  win=6.7%  avgR=-1.333  Sharpe=0.357  maxDD=94.1%  p
   `sniper-quant backtest --setups 1,2,3 --timeframe 5m --report …`
 - If this report used `--inmemory`, the tape is patterned synthetic days —
   a high OOS win rate is **not** a live edge.
+
+## Integration evidence (Quant Phase 3, after ML PR #9)
+
+Re-run these after each merge. Commands assume `cd quant` and `PYTHONPATH=src`.
+
+### Alerts
+
+- Four channels stubbed: Telegram, Discord, email, Slack
+  (`test_alerts_four_channels_and_throttle`).
+- Throttle: **5 alerts / hour / user** (`429` after the fifth).
+
+### API load
+
+```bash
+PYTHONPATH=src python3 -m pytest -q tests/test_phase3.py -k load
+```
+
+- Target: `GET /signals` p95 **< 200 ms** under 100 concurrent in-process
+  clients (`USE_INMEMORY=1`).
+- Last measured p95: **50.52 ms** (2026-04-07).
+
+### Paper
+
+```bash
+curl -sS -X POST http://127.0.0.1:8001/paper/demo-fortnight \
+  -H 'content-type: application/json'
+```
+
+- Demo fortnight seeds **14 calendar days**, **12 closed** paper trades,
+  `live_trading: false`.
+
+### ML PR #9 → Quant replay
+
+```bash
+PYTHONPATH=src python3 -m pytest -q tests/test_pr9_replay.py
+# or against a live in-memory API:
+curl -sS -X POST http://127.0.0.1:8001/risk/validate \
+  -H 'content-type: application/json' \
+  --data-binary @tests/fixtures/pr9_quant_replay/sd_extension_fade.validate.json
+```
+
+- Locked-field sample bodies for `sd_extension_fade` / `vwap_pullback_cont` /
+  `avwap_ob_confluence` **approve**.
+- Setup-specific 409s: S4 `news_window`, S5 `invalid_levels`, S6
+  `low_conviction` (0.65 < 0.70).
+- `contributing_factors` / `factor_breakdown` on validate → **422**; on
+  publish → stored, not gated.

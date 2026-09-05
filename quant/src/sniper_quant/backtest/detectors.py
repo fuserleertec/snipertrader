@@ -578,7 +578,7 @@ def detect_sd_extension_fade(bars: list[OHLCVBar], params: DetectorParams | None
         if side is None:
             i += 1
             continue
-        avg_vol = _avg_volume(bars, i)
+        avg_vol = _avg_volume(bars, i, params.s4_vol_avg_period)
         if bar.volume > params.s4_vol_max_frac * avg_vol + 1e-12:
             i += 1
             continue
@@ -592,7 +592,7 @@ def detect_sd_extension_fade(bars: list[OHLCVBar], params: DetectorParams | None
         entry = confirm.close
         stop = band3 - buf if side is Side.LONG else band3 + buf
         target = vwap[i + 1]
-        need_rr = 2.0 if tagged_sigma >= 3.0 else params.s4_min_rr
+        need_rr = params.s4_min_rr_at_3s if tagged_sigma >= 3.0 else params.s4_min_rr
         if _rr(side, entry, stop, target) + 1e-12 < HARD_RR_FLOOR:
             i += 1
             continue

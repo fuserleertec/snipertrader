@@ -61,6 +61,24 @@ ML_PR7_FIELD_MAP: tuple[tuple[str, str, str], ...] = (
     ("atr_period", "atr_period", "SETUP_ATR_PERIOD"),
 )
 
+# Quant field → ML PR #9 SetupParams / SETUP_* env
+# https://github.com/fuserleertec/snipertrader/pull/9
+ML_PR9_FIELD_MAP: tuple[tuple[str, str, str], ...] = (
+    ("s4_vol_max_frac", "s4_vol_frac", "SETUP4_VOL_FRAC"),
+    ("s4_vol_avg_period", "s4_vol_avg_period", "SETUP4_VOL_AVG_PERIOD"),
+    ("s4_min_rr", "s4_min_rr", "SETUP4_MIN_RR"),
+    ("s4_min_rr_at_3s", "s4_min_rr_at_3s", "SETUP4_MIN_RR_AT_3S"),
+    ("news_skip_minutes", "s4_news_window_sec", "SETUP4_NEWS_WINDOW_SEC"),
+    ("s5_trend_lookback_bars", "s5_trend_bars", "SETUP5_TREND_BARS"),
+    ("s5_first_touch_window_bars", "s5_first_touch_lookback_bars", "SETUP5_FIRST_TOUCH_LOOKBACK_BARS"),
+    ("s5_min_rr", "s5_min_rr", "SETUP5_MIN_RR"),
+    ("s6_min_rr", "s6_min_rr", "SETUP6_MIN_RR"),
+    ("s6_min_conviction", "s6_min_conviction", "SETUP6_MIN_CONVICTION"),
+    ("s6_approach_tol_atr", "s6_approach_tol_atr", "SETUP6_APPROACH_TOL_ATR"),
+    ("s6_swing_lookback", "s6_swing_lookback", "SETUP6_SWING_LOOKBACK"),
+    ("dedupe_window_sec", "dedupe_window_sec", "SETUP_DEDUPE_WINDOW_SEC"),
+)
+
 VwapBand = Literal["1", "2", "auto"]
 ConfluenceMode = Literal["vwap_touch", "hvn_overlap", "vwap_or_hvn", "vwap_and_hvn"]
 Confirmation = Literal["engulfing", "pin_bar", "either"]
@@ -125,20 +143,22 @@ class DetectorParams:
     s4_confirm: str = "either"
     s4_stop_buffer_atr: float = 0.05
     s4_min_rr: float = 1.5
+    s4_min_rr_at_3s: float = 2.0
+    s4_vol_avg_period: int = 20
     news_skip_minutes: int = 15
 
     # --- Setup 5 vwap_pullback_cont ---
     s5_trend_lookback_bars: int = 20
     s5_pullback_level: str = "either"
     s5_require_ob_or_fvg: bool = True
-    s5_first_touch_window_bars: int = 5
+    s5_first_touch_window_bars: int = 8
     s5_stop_buffer_atr: float = 0.05
     s5_min_rr: float = 2.0
 
     # --- Setup 6 avwap_ob_confluence ---
     # HTF is synthesized from 5m (12≈1h, 48≈4h, calendar day≈1d).
     s6_ob_timeframe: str = "4h"
-    s6_approach_tol_atr: float = 0.05
+    s6_approach_tol_atr: float = 0.15
     s6_confirm: str = "rejection"
     s6_confirm_tf: str = "1h"
     s6_stop_buffer_atr: float = 0.05
@@ -146,7 +166,7 @@ class DetectorParams:
     s6_min_conviction: int = 70
     # either = OB origin + swing_high/low + earnings/news stubs (closest AVWAP).
     s6_anchor: str = "either"
-    s6_swing_lookback: int = 20
+    s6_swing_lookback: int = 2
 
     def resolved_kill_zone(self, asset_class: AssetClass | str) -> str:
         """Match PR #7 ``manipulation_zones``: ``ny_am`` on crypto also allows London."""
@@ -195,6 +215,22 @@ class DetectorParams:
             "s3_max_bars_sweep_to_displace": self.max_bars_sweep_to_displace,
             "dedupe_window_sec": self.dedupe_window_sec,
             "min_conviction_to_validate": self.min_conviction,
+            "s4_vol_frac": self.s4_vol_max_frac,
+            "s4_vol_avg_period": self.s4_vol_avg_period,
+            "s4_min_rr": self.s4_min_rr,
+            "s4_min_rr_at_3s": self.s4_min_rr_at_3s,
+            "s4_news_window_sec": self.news_skip_minutes * 60,
+            "s4_min_conviction": 60,
+            "s5_trend_bars": self.s5_trend_lookback_bars,
+            "s5_first_touch_lookback_bars": self.s5_first_touch_window_bars,
+            "s5_min_rr": self.s5_min_rr,
+            "s5_min_conviction": 60,
+            "s6_min_rr": self.s6_min_rr,
+            "s6_min_conviction": self.s6_min_conviction,
+            "s6_htf_timeframes": ("1h", "4h"),
+            "s6_approach_tol_atr": self.s6_approach_tol_atr,
+            "s6_swing_lookback": self.s6_swing_lookback,
+            "s6_wire_timeframe": "15m",
         }
 
 
@@ -449,7 +485,7 @@ GRID_S5_LOOKBACK: tuple[int, ...] = (10, 20, 30)
 GRID_S5_PULLBACK: tuple[str, ...] = ("vwap", "band_1s", "either")
 GRID_S5_TOUCH: tuple[int, ...] = (3, 5, 8)
 GRID_S6_OB_TF: tuple[str, ...] = ("4h", "1d")
-GRID_S6_APPROACH: tuple[float, ...] = (0.05, 0.1)
+GRID_S6_APPROACH: tuple[float, ...] = (0.05, 0.15)
 GRID_S6_CONFIRM: tuple[str, ...] = ("rejection", "mss")
 GRID_S6_CONFIRM_TF: tuple[str, ...] = ("1h", "4h")
 
@@ -481,7 +517,7 @@ def vwap_pullback_cont_grid(*, mode: str = "full") -> tuple[DetectorParams, ...]
         return (DEFAULT_PARAMS,)
     looks = GRID_S5_LOOKBACK if mode == "full" else (10, 20)
     levels = GRID_S5_PULLBACK if mode == "full" else ("either", "vwap")
-    windows = GRID_S5_TOUCH if mode == "full" else (5,)
+    windows = GRID_S5_TOUCH if mode == "full" else (8,)
     return tuple(
         with_params(
             s5_trend_lookback_bars=lb,
@@ -499,7 +535,7 @@ def avwap_ob_confluence_grid(*, mode: str = "full") -> tuple[DetectorParams, ...
     if mode == "baseline":
         return (DEFAULT_PARAMS,)
     tfs = GRID_S6_OB_TF
-    tols = GRID_S6_APPROACH if mode == "full" else (0.05, 0.1)
+    tols = GRID_S6_APPROACH if mode == "full" else (0.15, 0.05)
     confirms = GRID_S6_CONFIRM
     c_tfs = GRID_S6_CONFIRM_TF if mode == "full" else ("1h",)
     return tuple(

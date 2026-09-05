@@ -314,11 +314,16 @@ displacement / band tag. Orchestrator: `dedupe_window_sec=300`,
 S4–S6 extras (on top of the ML tunables; walk-forward those three live
 types only — never `mss_break` / `order_block` / `sweep_mss`):
 
+- Defaults aligned with [PR #9](https://github.com/fuserleertec/snipertrader/pull/9)
+  `SetupParams`: S5 first-touch **8**, S6 approach **0.15×ATR**, S6 swing
+  lookback **2**, S4 `min_rr_at_3s=2.0` / 20-bar volume avg, news skip 900s.
 - Kill-zone conviction bonus on **all** of S4–S6 (`kill_zone_align` +30
   when the confirm bar is in the resolved KZ).
 - S6 AVWAP anchors: `swing_high` / `swing_low` plus stub `earnings` /
   `news` (default `s6_anchor=either` still includes the HTF OB origin).
 - Orchestrator `dedupe_window_sec` default **300**.
+- Replay PR #9 sample validate bodies:
+  `tests/fixtures/pr9_quant_replay/*.validate.json` (`tests/test_pr9_replay.py`).
 
 `sniper-quant demo` runs the scripted 6-setup smoke book (no live trading).
 
@@ -404,6 +409,7 @@ quant/
   tests/
   grafana/provisioning  Timescale datasource + setup-performance dashboard + alerts
   reports/              walk-forward markdown for ML
+  tests/fixtures/pr9_quant_replay/  PR #9 locked-field validate samples
   Dockerfile
   docker-compose.yml    DE stack + risk-api :8001 + grafana :3002
 data_engineering/sql/02-signals.sql

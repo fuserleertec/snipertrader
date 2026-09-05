@@ -10,14 +10,36 @@ PR https://github.com/fuserleertec/snipertrader/pull/2
 | # | Item | Result | Evidence |
 |---|---|---|---|
 | 1 | Backtest Setups 4–6 | **PASS** | [`quant/reports/setups_4_6_walkforward.md`](setups_4_6_walkforward.md). Enum excludes `mss_break` / `order_block` / `sweep_mss`. FE `product_key` for 4–6 is `*_pending_user_confirm` — no invented entry-rule names. |
-| 2 | Risk API (S4–S6 rules + validate-before-publish) | **PASS** | `tests/test_phase3.py` + `tests/test_validate.py`. Reasons: `invalid_levels`, `news_window`, `low_conviction`, plus existing size/daily/corr/conflict. |
+| 2 | Risk API (S4–S6 rules + validate-before-publish) | **PASS** | `tests/test_phase3.py` + `tests/test_validate.py` + `tests/test_pr9_replay.py`. Reasons: `invalid_levels`, `news_window`, `low_conviction`, plus existing size/daily/corr/conflict. |
 | 3 | Alerts (Telegram/Discord/Email/webhook) + 5/hour throttle | **PASS** | `test_alerts_four_channels_and_throttle`: 4 stubs, max 5/hour/user, extras throttled. |
 | 4 | Public API auth + history + performance + load 100 | **PASS** | `GET /signals/history`, `GET /performance/summary` `by_setup` product keys, `X-API-Key` optional. Load: **p95 = 50.52 ms** (target &lt; 200 ms). |
 | 5 | Paper 2-week gate | **PASS** | `POST /paper/demo-fortnight` → 14 days, 12 closed trades, `live_trading: false`. |
+| 6 | ML PR #9 sample replay | **PASS** | `tests/fixtures/pr9_quant_replay/*.validate.json` approve on `/risk/validate`. Factors 422 on validate, stored on publish. |
 
-**pytest:** `cd quant && PYTHONPATH=src python3 -m pytest -q` → **83 passed**.
+**pytest:** `cd quant && PYTHONPATH=src python3 -m pytest -q -k "not test_walkforward_setups and not test_cli_backtest"` → **95 passed** (re-measured this revision).
 
-## 1) Walk-forward 4–6 (synthetic 5m tape, 2134 bars, 3 folds, `core` grid)
+## PR #9 tunable alignment
+
+Quant defaults match PR #9 `SetupParams` where the knobs exist on both sides:
+
+| Knob | PR #9 | Quant default |
+|---|---|---|
+| S4 `vol_frac` / 20-bar avg | 0.8 / 20 | `s4_vol_max_frac=0.8`, `s4_vol_avg_period=20` |
+| S4 `min_rr` / `min_rr_at_3s` | 1.5 / 2.0 | **1.5** / **2.0** |
+| S4 news window | 900s | `news_skip_minutes=15` |
+| S5 first-touch lookback | 8 | `s5_first_touch_window_bars=8` |
+| S5 / S6 `min_rr` | 2.0 | **2.0** |
+| S6 `min_conviction` | 70 | **70** |
+| S6 approach tol | 0.15×ATR | `s6_approach_tol_atr=0.15` |
+| S6 swing lookback | 2 | `s6_swing_lookback=2` |
+| Orchestrator dedupe | 300s | `dedupe_window_sec=300` |
+
+Intentional: Quant reporting weights stay **40/30/30**. PR #9 uses additive
+`conv_kill_zone_bonus=10` on a different scale. FE `/performance/summary`
+does **not** add PR #9 keys `4_sd_extension_fade` / `5_vwap_pullback_cont` /
+`6_avwap_ob_confluence`.
+
+## 1) Walk-forward 4–6 (synthetic 5m tape, 2134 bars, 3 folds, `core`)
 
 | Setup | `setup_type` (live validate / WF) | WF OOS n | WF OOS win | Baseline full n |
 |---|---|---:|---:|---:|
@@ -76,3 +98,18 @@ USE_INMEMORY=1 PYTHONPATH=src python3 -m sniper_quant.cli api --inmemory --port 
 ```
 
 `POST /paper/demo-fortnight` simulates 14 days / 12 scripted trades. `live_trading` is always `false`.
+
+## 6) ML PR #9 → Quant replay
+
+Locked-field bodies (no `id`, no factors) reconstructed from the PR #9 e2e
+fixture world (`BTCUSDT`, session VWAP 100):
+
+| File | `setup_type` | Expected |
+|---|---|---|
+| `sd_extension_fade.validate.json` | long 96.25 / 93.9 / 100, conf 0.75, 5m | **approve** |
+| `vwap_pullback_cont.validate.json` | long 101.3 / 99.45 / 108, conf 0.70, 5m | **approve** |
+| `avwap_ob_confluence.validate.json` | long 100.3 / 98.95 / 108, conf 0.75, 15m | **approve** |
+
+Rejects (never persist): S4 `ts_ms` in stub news window → `news_window`;
+S5 flattened R:R → `invalid_levels`; S6 `confidence=0.65` → `low_conviction`
++ `POST /signals` **409**. Factors on validate → **422**.

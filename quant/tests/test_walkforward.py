@@ -83,15 +83,17 @@ def test_locked_defaults():
     assert p.s5_trend_lookback_bars == 20
     assert p.s5_pullback_level == "either"
     assert p.s5_require_ob_or_fvg is True
-    assert p.s5_first_touch_window_bars == 5
+    assert p.s5_first_touch_window_bars == 8
     assert p.s5_min_rr == 2.0
     assert p.s6_ob_timeframe == "4h"
-    assert p.s6_approach_tol_atr == 0.05
+    assert p.s6_approach_tol_atr == 0.15
     assert p.s6_confirm == "rejection"
     assert p.s6_min_rr == 2.0
     assert p.s6_min_conviction == 70
     assert p.s6_anchor == "either"
-    assert p.s6_swing_lookback == 20
+    assert p.s6_swing_lookback == 2
+    assert p.s4_min_rr_at_3s == 2.0
+    assert p.s4_vol_avg_period == 20
     assert p.resolved_s6_anchors() == (
         "ob",
         "swing_high",
@@ -185,6 +187,9 @@ def test_walkforward_setups_4_5_6():
             mode="core",
         )
         assert row.setup_type in md
+        assert "Alignment with ML [PR #9]" in md
+        assert "Integration evidence" in md
+        assert "empty books score −100" in md
         assert "sd_extension_fade" in md or row.setup_type != "sd_extension_fade"
 
 
