@@ -1,4 +1,4 @@
-# SniperTrader data-engineering — Phase 1 (Rev. 1.1) + Phase 2
+# SniperTrader data-engineering — Phase 1 (Rev. 1.1) + Phase 2 + Phase 3
 
 Streaming market-data pipeline and **correct VWAP** (volume-weighted variance)
 for SniperTrader.ai. This package lives beside the static site; it does not
@@ -120,6 +120,7 @@ curl -s http://localhost:8000/v1/volume-profile/BTCUSDT
 curl -s -X POST http://localhost:8000/v1/anchors -H 'content-type: application/json' \
   -d '{"symbol":"BTCUSDT","anchor_time":1725458400000,"anchor_price":64000,"source":"manual"}'
 curl -s http://localhost:8000/v1/avwap/BTCUSDT
+curl -s http://localhost:8000/performance/summary
 curl -s http://localhost:8000/metrics
 # ws://localhost:8000/v1/ws/avwap?symbol=BTCUSDT
 # ws://localhost:8000/v1/ws/volume-profile?symbol=BTCUSDT
@@ -217,7 +218,9 @@ older than 48h, and re-`EXPIRE`s keys with TTL `-1` or > 48h.
 
 | Method | Path | Notes |
 |---|---|---|
-| `GET` | `/health` | Redis ping + topic list |
+| `GET` | `/health` | Redis ping + topic list + `phase: 3` |
+| `GET` | `/performance/summary` | Performance Snapshot (six `by_setup` keys) |
+| `POST` | `/performance/outcomes` | Quant / ML outcome ingest |
 | `GET` | `/v1/vwap/{symbol}?anchor=session\|weekly\|rolling` | Latest VWAP + bands |
 | `GET` | `/v1/session/{symbol}/{session_type}` | One session book |
 | `GET` | `/v1/session/{symbol}` | All cached books for the symbol |
@@ -269,7 +272,8 @@ Created on pipeline startup (Redpanda also auto-creates):
 
 `raw_ticks` · `ohlcv_bars` · `session_levels` · `vwap_values` ·
 `sweep_events` · `fvg_zones` · `mss_events` · `order_block_zones` ·
-`setup_signals` · `kill_zone_events` · `anchor_events`
+`setup_signals` · `kill_zone_events` · `anchor_events` ·
+`options_chain` · `order_flow` · `performance_outcomes`
 
 ## Layout
 
@@ -291,6 +295,7 @@ sniper-data demo     [--inmemory] [--duration N]   # alias of pipeline
 sniper-data api      [--host 0.0.0.0 --port 8000]
 sniper-data evict    [--inmemory]
 sniper-data killzones [--inmemory] [--duration N]
+sniper-data bench    [--n 400 --symbols BTCUSDT]
 ```
 
 ## Phase 2 — Multi-asset, Anchored VWAP, volume profile, kill zones
@@ -446,3 +451,89 @@ tick. The API is a pure Redis reader/writer (anchor POST is fence-posted via
 In-memory demo (`sniper-data demo --inmemory --duration 5`) still runs the
 kill-zone loop inside the pipeline (`KILLZONE_INPROCESS=true`). Compose sets
 that to `0` and runs `sniper-data killzones` as its own service.
+
+## Phase 3 — Performance Snapshot, scale, options / order flow
+
+Phase 1/2 contracts are unchanged. Risk stays at Quant `POST /risk/validate`
+on the publisher boundary — **Kafka consumers never filter risk**.
+
+### Performance Snapshot (Frontend + Quant)
+
+```
+GET /performance/summary
+GET /performance/summary?setup=1_liquidity_sweep_vwap_reclaim
+POST /performance/outcomes
+```
+
+Exact envelope (schema [`performance_summary.schema.json`](../schemas/performance_summary.schema.json)).
+`timestamp` is UTC epoch ms. Empty store → **200** with all six `by_setup`
+keys at zero. Keys live in **one** constant, `sniper_data.setups.SETUP_KEYS`
+(Project Manager lock):
+
+| Key | Notes |
+|---|---|
+| `1_liquidity_sweep_vwap_reclaim` | frozen |
+| `2_fvg_mitigation_vwap` | frozen |
+| `3_po3_asia_range_sweep` | `setup_type` alias `po3_judas` |
+| `4_sd_extension_fade` | frozen |
+| `5_vwap_pullback_cont` | frozen |
+| `6_avwap_ob_confluence` | frozen |
+
+Each `by_setup` value is `{ win_rate, average_rr, signals }`.
+`overall` is `{ win_rate, average_rr, sharpe_ratio, max_drawdown_pct, signals_today, signals_week }`.
+
+Quant / ML write outcomes via `POST /performance/outcomes` or Kafka
+`performance_outcomes` (same JSON). Redis key `perf:outcomes` (capped list).
+`?setup=` filters `overall` only; `by_setup` still has all six keys.
+
+See [docs/frontend-quant-api.md](docs/frontend-quant-api.md).
+
+```bash
+curl -s http://localhost:8000/performance/summary
+curl -s -X POST http://localhost:8000/performance/outcomes \
+  -H 'content-type: application/json' \
+  -d '{"setup_type":"po3_judas","won":true,"rr":1.8}'
+```
+
+### Scale / stabilize
+
+* Redis: connection pool (`REDIS_MAX_CONNECTIONS`), retry/backoff, `INFO memory`.
+* Kafka producer/consumer: reconnect/backoff, `acks=all`, `KAFKA_PARTITIONS=6`
+  on topic create (keyed by symbol for parallel consume). Existing topics
+  are not auto-repartitioned.
+* WebSockets (pattern + Phase 2): protocol ping heartbeat (`WS_HEARTBEAT_S`),
+  drop-oldest backpressure (`WS_BACKLOG`), Prometheus connection + publish
+  latency. JSON frames unchanged.
+* Anchor Redis sync throttled to `ANCHOR_SYNC_INTERVAL_S` (default 1s).
+* VWAP / AVWAP stay incremental W/S/Q (O(1) per tick). SLO: **p99 tick→Redis
+  VWAP < 500 ms**. `sniper-data bench` / `tests/test_latency.py`.
+
+Horizontal scale: API and pipeline workers are stateless; Redis is shared
+state. Run N pipeline replicas **partitioned by symbol**. See
+[docs/ha-dr.md](docs/ha-dr.md), [docs/latency.md](docs/latency.md),
+[docs/scalability-test.md](docs/scalability-test.md), [k8s/hpa.yaml](k8s/hpa.yaml).
+
+### Options chain + order flow (US equities)
+
+Topics `options_chain` / `order_flow`. Frozen fields — no `iv`/`oi`/`right`/`side`
+aliases. `MockOptionsFlow` publishes in the demo (`DEMO_OPTIONS_FLOW=1`).
+Live stubs (`OptionsChainConnector`, `OrderFlowConnector`) raise without keys.
+
+### Observability
+
+| Process | Scrape |
+|---|---|
+| API | `http://localhost:8000/metrics` |
+| Pipeline | `http://localhost:9101/metrics` |
+| Kill-zone | `http://localhost:9102/metrics` |
+
+New series: `sniper_ws_connections`, `sniper_ws_publish_seconds`,
+`sniper_ws_dropped_total`, `sniper_redis_errors_total`,
+`sniper_kafka_errors_total`, `sniper_kafka_consumer_lag`,
+`sniper_redis_memory_bytes`, `sniper_vwap_compute_seconds`,
+`sniper_tick_to_vwap_seconds`, `sniper_missing_ticks_total`,
+`sniper_outlier_ticks_total`.
+
+Grafana dashboard: [observability/grafana/dashboards/sniper-data.json](observability/grafana/dashboards/sniper-data.json).
+Prometheus scrape + alerts (lag > 10k, Redis memory > 80% of 512 MiB,
+VWAP p99 SLO): [observability/prometheus/](observability/prometheus/).

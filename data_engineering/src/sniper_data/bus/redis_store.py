@@ -6,7 +6,9 @@ from typing import Any, Protocol
 
 from pydantic import BaseModel
 
+from sniper_data.bus.resilience import Backoff, retry_async
 from sniper_data.config import FVG_TTL_MAX_SECONDS
+from sniper_data.metrics import record_redis_error, set_redis_memory_bytes
 
 log = logging.getLogger(__name__)
 
@@ -91,52 +93,131 @@ class InMemoryStateStore:
     async def ping(self) -> bool:
         return True
 
+    async def info_memory(self) -> int:
+        return sum(len(k) + len(v) for k, v in self.data.items())
+
     async def close(self) -> None:
         return None
 
 
 class RedisStateStore:
-    def __init__(self, url: str) -> None:
+    """Pooled Redis client with retry/backoff. Shared state for stateless workers."""
+
+    def __init__(
+        self,
+        url: str,
+        *,
+        max_connections: int = 32,
+        retries: int = 4,
+    ) -> None:
         import redis.asyncio as redis
 
-        self._client = redis.from_url(url, decode_responses=True)
+        self._url = url
+        self._retries = max(1, int(retries))
+        self._pool = redis.ConnectionPool.from_url(
+            url,
+            decode_responses=True,
+            max_connections=max(1, int(max_connections)),
+            socket_timeout=5.0,
+            socket_connect_timeout=5.0,
+            retry_on_timeout=True,
+            health_check_interval=30,
+        )
+        self._client = redis.Redis(connection_pool=self._pool)
+
+    async def _call(self, op: str, fn):
+        def _on_retry(exc: BaseException, attempt: int, delay: float) -> None:
+            record_redis_error(op)
+            log.warning("redis %s retry %s after %s (sleep %.3fs)", op, attempt, exc, delay)
+
+        return await retry_async(
+            fn,
+            attempts=self._retries,
+            backoff=Backoff(base_s=0.05, max_s=2.0),
+            on_retry=_on_retry,
+        )
 
     async def set(self, key: str, value: Any, ttl: int | None = None) -> None:
         payload = encode(value)
-        if key.startswith(ZONE_KEY_PREFIXES):
+
+        async def _once() -> None:
+            if key.startswith(ZONE_KEY_PREFIXES):
+                if ttl is None:
+                    raise ValueError(f"zone key {key} must be written with a TTL")
+                clamped = max(1, min(int(ttl), FVG_TTL_MAX_SECONDS))
+                await self._client.set(key, payload, ex=clamped)
+                return
             if ttl is None:
-                raise ValueError(f"zone key {key} must be written with a TTL")
-            ttl = max(1, min(int(ttl), FVG_TTL_MAX_SECONDS))
-            await self._client.set(key, payload, ex=ttl)
-            return
-        if ttl is None:
-            await self._client.set(key, payload)
-        else:
-            await self._client.set(key, payload, ex=int(ttl))
+                await self._client.set(key, payload)
+            else:
+                await self._client.set(key, payload, ex=int(ttl))
+
+        await self._call("set", _once)
 
     async def get(self, key: str) -> Any:
-        return decode(await self._client.get(key))
+        async def _once() -> Any:
+            return decode(await self._client.get(key))
+
+        return await self._call("get", _once)
 
     async def expire(self, key: str, ttl: int) -> bool:
-        return bool(await self._client.expire(key, int(ttl)))
+        async def _once() -> bool:
+            return bool(await self._client.expire(key, int(ttl)))
+
+        return await self._call("expire", _once)
 
     async def ttl(self, key: str) -> int:
-        return int(await self._client.ttl(key))
+        async def _once() -> int:
+            return int(await self._client.ttl(key))
+
+        return await self._call("ttl", _once)
 
     async def delete(self, key: str) -> None:
-        await self._client.delete(key)
+        async def _once() -> None:
+            await self._client.delete(key)
+
+        await self._call("delete", _once)
 
     async def scan(self, match: str) -> list[str]:
-        keys: list[str] = []
-        async for key in self._client.scan_iter(match=match, count=200):
-            keys.append(key)
-        return keys
+        async def _once() -> list[str]:
+            keys: list[str] = []
+            async for key in self._client.scan_iter(match=match, count=200):
+                keys.append(key)
+            return keys
+
+        return await self._call("scan", _once)
 
     async def publish(self, channel: str, value: Any) -> None:
-        await self._client.publish(channel, encode(value))
+        async def _once() -> None:
+            await self._client.publish(channel, encode(value))
+
+        await self._call("publish", _once)
 
     async def ping(self) -> bool:
-        return bool(await self._client.ping())
+        async def _once() -> bool:
+            return bool(await self._client.ping())
+
+        try:
+            return await self._call("ping", _once)
+        except Exception as exc:  # noqa: BLE001
+            record_redis_error("ping")
+            log.warning("redis ping failed: %s", exc)
+            return False
+
+    async def info_memory(self) -> int:
+        async def _once() -> int:
+            info = await self._client.info("memory")
+            used = int(info.get("used_memory") or 0)
+            set_redis_memory_bytes(used)
+            return used
+
+        try:
+            return await self._call("info", _once)
+        except Exception as exc:  # noqa: BLE001
+            record_redis_error("info")
+            log.warning("redis INFO memory failed: %s", exc)
+            return 0
 
     async def close(self) -> None:
         await self._client.aclose()
+        await self._pool.aclose()

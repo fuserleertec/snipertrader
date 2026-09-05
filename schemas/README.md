@@ -19,6 +19,9 @@ as required on a **new** schema.
 | `setup_signals` | [`setup_signal.schema.json`](setup_signal.schema.json) | Signal engine (Phase 2 stub) | Downstream ML / UI |
 | `kill_zone_events` | [`kill_zone_event.schema.json`](kill_zone_event.schema.json) | Kill-zone timer (Phase 2) | Redis `kill_zone:{symbol}`, Frontend / ML |
 | `anchor_events` | (inbound `AnchorRegistration` JSON) | ML / HTTP `/v1/anchors` | Anchored VWAP engine |
+| `options_chain` | [`options_chain.schema.json`](options_chain.schema.json) | US-equities options stub / mock | ML / Quant |
+| `order_flow` | [`order_flow.schema.json`](order_flow.schema.json) | US-equities tape stub / mock | ML / Quant |
+| `performance_outcomes` | (inbound outcome JSON) | Quant `POST /performance/outcomes` | Redis `perf:outcomes` |
 
 ## Delta / aggressor (ML Researchers)
 
@@ -77,3 +80,21 @@ holds `{kill_zone, start_time, end_time, active, asset_class}`.
 Convenience pointer (same AVWAP JSON as the last write): `avwap:latest:{symbol}`.
 Anchor metadata (not a wire schema): `avwap:meta:{symbol}:{anchor_id}`,
 index `avwap:index:{symbol}`.
+
+## Phase 3 — Performance Snapshot + US-equities tape
+
+| Store | Schema file | Key / topic |
+|---|---|---|
+| HTTP | [`performance_summary.schema.json`](performance_summary.schema.json) | `GET /performance/summary` |
+| Redis | (outcome list, not a wire schema) | `perf:outcomes` |
+| Kafka | [`options_chain.schema.json`](options_chain.schema.json) | `options_chain` |
+| Kafka | [`order_flow.schema.json`](order_flow.schema.json) | `order_flow` |
+
+`GET /performance/summary` always returns the six Project Manager keys
+(`1_liquidity_sweep_vwap_reclaim` … `6_avwap_ob_confluence`). `setup_type`
+`po3_judas` maps to `3_po3_asia_range_sweep`. See
+`data_engineering/src/sniper_data/setups.py`.
+
+Options / order-flow field names are frozen: use `implied_volatility`,
+`open_interest`, `option_type` (`call`\|`put`), `aggressor` (`buy`\|`sell`).
+Do not invent `iv` / `oi` / `right` / `side` / `taker_side`.

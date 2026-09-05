@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snipertrader.ai/schemas/options_chain.schema.json",
+  "title": "OptionsChain",
+  "description": "US-equities options quote (one contract). Topic: options_chain. symbol is the underlying (uppercase, no hyphens). contract_symbol is the OCC-style code, also uppercase with no hyphens. All times are UTC epoch milliseconds. Frozen field names — no aliases (do not invent iv/oi/right).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "symbol",
+    "asset_class",
+    "exchange",
+    "ts_ms",
+    "expiry_ms",
+    "strike",
+    "option_type",
+    "contract_symbol"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.1" },
+    "symbol": {
+      "type": "string",
+      "pattern": "^[A-Z0-9]+$",
+      "description": "Underlying. Global schema: uppercase, no hyphens (e.g. AAPL)."
+    },
+    "asset_class": { "type": "string", "enum": ["crypto", "equity", "futures"] },
+    "exchange": { "type": "string" },
+    "ts_ms": { "type": "integer", "minimum": 0, "description": "Quote time, UTC milliseconds." },
+    "expiry_ms": { "type": "integer", "minimum": 0, "description": "Option expiration, UTC milliseconds." },
+    "strike": { "type": "number" },
+    "option_type": { "type": "string", "enum": ["call", "put"] },
+    "contract_symbol": {
+      "type": "string",
+      "pattern": "^[A-Z0-9]+$",
+      "description": "OCC-style contract id, uppercase, no hyphens."
+    },
+    "bid": { "type": ["number", "null"], "minimum": 0 },
+    "ask": { "type": ["number", "null"], "minimum": 0 },
+    "last": { "type": ["number", "null"], "minimum": 0 },
+    "volume": { "type": ["number", "null"], "minimum": 0 },
+    "open_interest": { "type": ["number", "null"], "minimum": 0 },
+    "implied_volatility": { "type": ["number", "null"], "minimum": 0 },
+    "delta": { "type": ["number", "null"] },
+    "gamma": { "type": ["number", "null"] },
+    "theta": { "type": ["number", "null"] },
+    "vega": { "type": ["number", "null"] },
+    "rho": { "type": ["number", "null"] }
+  }
+}

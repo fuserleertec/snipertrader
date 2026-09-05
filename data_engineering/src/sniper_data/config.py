@@ -19,6 +19,10 @@ KAFKA_TOPICS = (
     # Phase 2
     "kill_zone_events",
     "anchor_events",
+    # Phase 3
+    "options_chain",
+    "order_flow",
+    "performance_outcomes",
 )
 
 FVG_TTL_MAX_SECONDS = 48 * 60 * 60  # 48 hours
@@ -57,6 +61,19 @@ class Settings(BaseSettings):
     swing_detect: bool = Field(default=True, alias="SWING_DETECT")
     swing_left: int = Field(default=2, alias="SWING_LEFT")
     swing_right: int = Field(default=2, alias="SWING_RIGHT")
+
+    kafka_partitions: int = Field(default=6, alias="KAFKA_PARTITIONS")
+    kafka_send_wait: bool = Field(default=True, alias="KAFKA_SEND_WAIT")
+    kafka_retries: int = Field(default=5, alias="KAFKA_RETRIES")
+    redis_max_connections: int = Field(default=32, alias="REDIS_MAX_CONNECTIONS")
+    redis_retries: int = Field(default=4, alias="REDIS_RETRIES")
+    ws_heartbeat_s: float = Field(default=15.0, alias="WS_HEARTBEAT_S")
+    ws_backlog: int = Field(default=64, alias="WS_BACKLOG")
+    anchor_sync_interval_s: float = Field(default=1.0, alias="ANCHOR_SYNC_INTERVAL_S")
+    demo_options_flow: bool = Field(default=True, alias="DEMO_OPTIONS_FLOW")
+    outlier_move_pct: float = Field(default=0.08, alias="OUTLIER_MOVE_PCT")
+    missing_tick_gap_ms: int = Field(default=5_000, alias="MISSING_TICK_GAP_MS")
+    large_trade_notional: float = Field(default=250_000.0, alias="LARGE_TRADE_NOTIONAL")
 
     binance_api_key: str = Field(default="", alias="BINANCE_API_KEY")
     binance_api_secret: str = Field(default="", alias="BINANCE_API_SECRET")

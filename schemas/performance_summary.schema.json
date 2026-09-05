@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snipertrader.ai/schemas/performance_summary.schema.json",
+  "title": "PerformanceSummary",
+  "description": "Phase 3 Performance Snapshot envelope. GET /performance/summary. Field names are exact. timestamp is UTC epoch milliseconds. by_setup keys are the Project Manager lock (all six frozen). Each by_setup value is {win_rate, average_rr, signals}. Empty store still returns 200 with all six keys at zero. setup_type po3_judas maps to 3_po3_asia_range_sweep.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["timestamp", "overall", "by_setup"],
+  "properties": {
+    "timestamp": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch milliseconds when the snapshot was computed."
+    },
+    "overall": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "win_rate",
+        "average_rr",
+        "sharpe_ratio",
+        "max_drawdown_pct",
+        "signals_today",
+        "signals_week"
+      ],
+      "properties": {
+        "win_rate": { "type": "number" },
+        "average_rr": { "type": "number" },
+        "sharpe_ratio": { "type": "number" },
+        "max_drawdown_pct": { "type": "number" },
+        "signals_today": { "type": "integer", "minimum": 0 },
+        "signals_week": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "by_setup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "1_liquidity_sweep_vwap_reclaim",
+        "2_fvg_mitigation_vwap",
+        "3_po3_asia_range_sweep",
+        "4_sd_extension_fade",
+        "5_vwap_pullback_cont",
+        "6_avwap_ob_confluence"
+      ],
+      "properties": {
+        "1_liquidity_sweep_vwap_reclaim": { "$ref": "#/$defs/setup_stats" },
+        "2_fvg_mitigation_vwap": { "$ref": "#/$defs/setup_stats" },
+        "3_po3_asia_range_sweep": { "$ref": "#/$defs/setup_stats" },
+        "4_sd_extension_fade": { "$ref": "#/$defs/setup_stats" },
+        "5_vwap_pullback_cont": { "$ref": "#/$defs/setup_stats" },
+        "6_avwap_ob_confluence": { "$ref": "#/$defs/setup_stats" }
+      }
+    }
+  },
+  "$defs": {
+    "setup_stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["win_rate", "average_rr", "signals"],
+      "properties": {
+        "win_rate": { "type": "number" },
+        "average_rr": { "type": "number" },
+        "signals": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

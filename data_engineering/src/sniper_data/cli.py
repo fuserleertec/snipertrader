@@ -14,8 +14,10 @@ def _setup_logging(level: str) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="sniper-data", description="Phase 1+2 market-data pipeline")
-    parser.add_argument("command", choices=["pipeline", "api", "evict", "demo", "killzones"])
+    parser = argparse.ArgumentParser(prog="sniper-data", description="Phase 1–3 market-data pipeline")
+    parser.add_argument("command", choices=["pipeline", "api", "evict", "demo", "killzones", "bench"])
+    parser.add_argument("--symbols", default=None, help="Comma symbols for bench (default BTCUSDT).")
+    parser.add_argument("--n", type=int, default=400, help="Tick count for bench.")
     parser.add_argument("--inmemory", action="store_true", help="Use in-process bus/store (no Docker).")
     parser.add_argument("--duration", type=float, default=None, help="Seconds to run the demo/pipeline.")
     parser.add_argument("--host", default=None)
@@ -55,6 +57,14 @@ def main(argv: list[str] | None = None) -> int:
             run_killzone_loop(inmemory=args.inmemory, duration_s=args.duration)
         )
         return 0
+
+    if args.command == "bench":
+        from sniper_data.latency import bench_tick_to_vwap
+
+        symbols = [s.strip().upper() for s in (args.symbols or "BTCUSDT").split(",") if s.strip()]
+        report = asyncio.run(bench_tick_to_vwap(n=args.n, symbols=symbols))
+        print(report)
+        return 0 if report["pass"] else 2
 
     if args.command == "api":
         import uvicorn

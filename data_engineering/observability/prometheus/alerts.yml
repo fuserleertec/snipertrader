@@ -1,0 +1,53 @@
+groups:
+  - name: sniper-data-phase3
+    rules:
+      - alert: KafkaConsumerLagHigh
+        expr: sniper_kafka_consumer_lag > 10000
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Kafka lag > 10k on {{ $labels.topic }} / {{ $labels.group }}"
+          description: "Consumer lag is {{ $value }}. Scale pipeline replicas by symbol or raise partitions."
+
+      - alert: RedisMemoryHigh
+        expr: sniper_redis_memory_bytes > 0.8 * 512 * 1024 * 1024
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis used_memory > 80% of the 512 MiB compose budget"
+          description: "used_memory={{ $value }}. Evict zones / raise Redis memory."
+
+      - alert: VwapLatencySLO
+        expr: histogram_quantile(0.99, sum(rate(sniper_tick_to_vwap_seconds_bucket[5m])) by (le)) > 0.5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Tick→VWAP p99 > 500ms (Phase 3 SLO)"
+          description: "p99={{ $value }}s. Check Kafka send_and_wait, Redis, and anchor sync."
+
+      - alert: RedisErrors
+        expr: increase(sniper_redis_errors_total[5m]) > 20
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis error rate elevated ({{ $labels.op }})"
+
+      - alert: KafkaErrors
+        expr: increase(sniper_kafka_errors_total[5m]) > 20
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Kafka error rate elevated ({{ $labels.op }})"
+
+      - alert: MissingTicks
+        expr: increase(sniper_missing_ticks_total[5m]) > 50
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tick gaps on {{ $labels.symbol }}"

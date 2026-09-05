@@ -1,4 +1,4 @@
-"""Prometheus metrics for Phase 2 services.
+"""Prometheus metrics for Phase 2 + Phase 3 services.
 
 Scrape endpoints
 ----------------
@@ -13,7 +13,14 @@ import logging
 import time
 from collections.abc import Callable
 
-from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest, start_http_server
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    Counter,
+    Gauge,
+    Histogram,
+    generate_latest,
+    start_http_server,
+)
 
 from sniper_data.models import AssetClass, KillZoneEvent
 
@@ -51,6 +58,75 @@ HTTP_SECONDS = Histogram(
     "sniper_http_request_duration_seconds",
     "API HTTP request latency",
     ["method", "route"],
+)
+
+# ── Phase 3: scale / latency / quality ──────────────────────────────────────
+
+VWAP_SECONDS = Histogram(
+    "sniper_vwap_compute_seconds",
+    "Wall time to update session/weekly/rolling VWAP for one tick (incremental W/S/Q)",
+    buckets=(0.0001, 0.0005, 0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0),
+)
+TICK_TO_VWAP_SECONDS = Histogram(
+    "sniper_tick_to_vwap_seconds",
+    "End-to-end: handle_tick start → Redis VWAP write (SLO p99 < 500ms)",
+    buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.0),
+)
+WS_CONNECTIONS = Gauge(
+    "sniper_ws_connections",
+    "Open WebSocket connections",
+    ["route"],
+)
+WS_MESSAGES = Counter(
+    "sniper_ws_messages_total",
+    "WebSocket frames sent",
+    ["route"],
+)
+WS_DROPPED = Counter(
+    "sniper_ws_dropped_total",
+    "WebSocket frames dropped under backpressure",
+    ["route"],
+)
+WS_PUBLISH_SECONDS = Histogram(
+    "sniper_ws_publish_seconds",
+    "Time from Redis pub/sub receive to WS send",
+    ["route"],
+    buckets=(0.0005, 0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5),
+)
+REDIS_ERRORS = Counter(
+    "sniper_redis_errors_total",
+    "Redis operation failures (before successful retry)",
+    ["op"],
+)
+KAFKA_ERRORS = Counter(
+    "sniper_kafka_errors_total",
+    "Kafka produce/consume failures (before successful retry)",
+    ["op"],
+)
+KAFKA_LAG = Gauge(
+    "sniper_kafka_consumer_lag",
+    "Kafka consumer lag in messages",
+    ["topic", "group"],
+)
+REDIS_MEMORY_BYTES = Gauge(
+    "sniper_redis_memory_bytes",
+    "Redis used_memory from INFO memory",
+)
+MISSING_TICKS = Counter(
+    "sniper_missing_ticks_total",
+    "Detected timestamp gaps in the inbound tick stream",
+    ["symbol"],
+)
+OUTLIER_TICKS = Counter(
+    "sniper_outlier_ticks_total",
+    "Ticks rejected or flagged as price outliers",
+    ["symbol"],
+)
+PUBLISH_SECONDS = Histogram(
+    "sniper_bus_publish_seconds",
+    "Kafka / in-memory bus publish latency",
+    ["topic"],
+    buckets=(0.0005, 0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5),
 )
 
 _metrics_started = False
@@ -111,3 +187,57 @@ def record_kill_zone_transition(event: KillZoneEvent) -> None:
 
 def record_http(method: str, route: str, elapsed_s: float) -> None:
     HTTP_SECONDS.labels(method, route).observe(elapsed_s)
+
+
+def record_vwap_calc(elapsed_s: float) -> None:
+    VWAP_SECONDS.observe(elapsed_s)
+
+
+def record_tick_to_vwap(elapsed_s: float) -> None:
+    TICK_TO_VWAP_SECONDS.observe(elapsed_s)
+
+
+def record_ws_connect(route: str) -> None:
+    WS_CONNECTIONS.labels(route).inc()
+
+
+def record_ws_disconnect(route: str) -> None:
+    WS_CONNECTIONS.labels(route).dec()
+
+
+def record_ws_message(route: str, elapsed_s: float | None = None) -> None:
+    WS_MESSAGES.labels(route).inc()
+    if elapsed_s is not None:
+        WS_PUBLISH_SECONDS.labels(route).observe(elapsed_s)
+
+
+def record_ws_drop(route: str) -> None:
+    WS_DROPPED.labels(route).inc()
+
+
+def record_redis_error(op: str) -> None:
+    REDIS_ERRORS.labels(op).inc()
+
+
+def record_kafka_error(op: str) -> None:
+    KAFKA_ERRORS.labels(op).inc()
+
+
+def set_kafka_lag(topic: str, group: str, lag: float) -> None:
+    KAFKA_LAG.labels(topic, group).set(lag)
+
+
+def set_redis_memory_bytes(n: float) -> None:
+    REDIS_MEMORY_BYTES.set(n)
+
+
+def record_missing_tick(symbol: str) -> None:
+    MISSING_TICKS.labels(symbol).inc()
+
+
+def record_outlier_tick(symbol: str) -> None:
+    OUTLIER_TICKS.labels(symbol).inc()
+
+
+def record_publish(topic: str, elapsed_s: float) -> None:
+    PUBLISH_SECONDS.labels(topic).observe(elapsed_s)
