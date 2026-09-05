@@ -517,9 +517,8 @@ export function EngineGlossary({ performance }: { performance: PerformanceSummar
         <h2>Understanding the Engine</h2>
       </div>
       <div className="sec-sub">
-        Built-in glossary and a performance tracker wired to{" "}
-        <code>GET /performance/summary</code>. Tracker figures are mock until Quant confirms the
-        live path.
+        Built-in glossary and a performance tracker wired to Quant{" "}
+        <code>GET /performance/summary</code> (<code>:8001</code>) with mock fallback.
       </div>
       <PerformanceTracker summary={performance} />
       <div className="edu-grid" style={{ marginTop: 14 }}>

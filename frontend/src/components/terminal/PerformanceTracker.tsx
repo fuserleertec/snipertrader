@@ -25,11 +25,13 @@ export function PerformanceTracker({ summary }: { summary: PerformanceSummary })
     <div className="panel perf-panel">
       <div className="perf-head">
         <b>Performance tracker</b>
-        <span className="sim">GET /performance/summary</span>
+        <span className="sim">
+          {summary.source === "live" ? "LIVE :8001" : "MOCK FALLBACK"}
+        </span>
       </div>
       <div className="sec-sub" style={{ marginBottom: 10 }}>
-        DE PR #8 envelope. <code>by_setup</code> values are{" "}
-        <code>{`{win_rate, average_rr, signals}`}</code> — product keys shown as-is.
+        Quant PR #2 <code>GET /performance/summary</code>. <code>by_setup</code> keys are product
+        strings. Counts use <code>n_signals</code>.
       </div>
       <div className="qstats" style={{ marginBottom: 12 }}>
         <div className="qstat">

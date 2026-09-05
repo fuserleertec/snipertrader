@@ -64,9 +64,9 @@ export function fetchSignal(id: string): Promise<Signal | null> {
   return getJson<Signal>(`/signals/${id}`, quantHttpUrl);
 }
 
-/** DE PR #8 first (`:8000`), then Quant (`:8001`). Caller falls back to mock. */
+/** Quant PR #2 `GET /performance/summary` via rewrite → :8001, then direct. */
 export async function fetchPerformanceSummary(): Promise<PerformanceSummary | null> {
-  const de = await getJson<PerformanceSummary>("/performance/summary", httpUrl);
-  if (de) return de;
+  const viaRewrite = await getJson<PerformanceSummary>("/performance/summary");
+  if (viaRewrite) return viaRewrite;
   return getJson<PerformanceSummary>("/performance/summary", quantHttpUrl);
 }

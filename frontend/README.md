@@ -153,9 +153,8 @@ REST:
 - `GET /signals?symbol=&status=&setup_type=&from_ts=&to_ts=&limit=` →
   `{ "items": [ Signal ], "next_cursor": string|null }`
 - `GET /signals/{id}` → `Signal`
-- `GET /performance/summary` → DE PR #8 `{ timestamp, overall, by_setup }`
-  (`by_setup[key] = { win_rate, average_rr, signals }`). Falls back to mock
-  if DE `:8000` / Quant `:8001` are down.
+- `GET /performance/summary` → Quant PR #2 at `:8001` (flat envelope +
+  `by_setup` product keys). Same-origin rewrite, then mock fallback.
 
 Locked `setup_type` ↔ `by_setup` product key:
 

@@ -12,7 +12,7 @@ export function usePerformance(refreshKey = 0): PerformanceSummary {
     let alive = true;
     fetchPerformanceSummary().then((raw) => {
       if (!alive) return;
-      setData(raw ? normalizePerformance(raw) : MOCK_PERFORMANCE);
+      setData(raw ? normalizePerformance(raw, "live") : MOCK_PERFORMANCE);
     });
     return () => {
       alive = false;

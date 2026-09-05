@@ -54,8 +54,16 @@ export default function AnalyticsPage() {
           Performance <span className="tag">Analytics</span>
         </h1>
         <p className="hero-sub">
-          DE PR #8 GET /performance/summary — <code>by_setup</code> product keys. Time window
-          filters scale the stub P&amp;L only; per-setup counts use <code>signals</code>.
+          Quant PR #2 <code>GET http://localhost:8001/performance/summary</code> —{" "}
+          <code>by_setup</code> product keys.{" "}
+          {summary.source === "live" ? (
+            <span className="sim" style={{ background: "rgba(0,150,80,0.12)", color: "var(--emerald)" }}>
+              LIVE
+            </span>
+          ) : (
+            <span className="sim">MOCK FALLBACK</span>
+          )}{" "}
+          Stub P&amp;L is not an API field.
         </p>
       </div>
       <div className="filters">

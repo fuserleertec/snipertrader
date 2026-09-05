@@ -175,6 +175,20 @@ export function Dashboard() {
         </div>
 
         <div className="qstats" aria-label="GET /performance/summary">
+          <div className="qstat" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div>
+              <div className="ql">GET /performance/summary</div>
+              <div className="qv" style={{ fontSize: 14 }}>
+                {performance.source === "live" ? (
+                  <span className="sim" style={{ background: "rgba(0,150,80,0.12)", color: "var(--emerald)" }}>
+                    LIVE :8001
+                  </span>
+                ) : (
+                  <span className="sim">MOCK FALLBACK</span>
+                )}
+              </div>
+            </div>
+          </div>
           <div className="qstat">
             <div className="ql">Win Rate</div>
             <div className="qv pos">{fmtWin(performance.overall.win_rate)}</div>

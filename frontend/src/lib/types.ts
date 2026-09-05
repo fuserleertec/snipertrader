@@ -116,7 +116,7 @@ export interface FactorBreakdown {
   note?: string | null;
 }
 
-/** DE PR #8 `overall` block on GET /performance/summary. */
+/** Quant PR #2 overall (also DE #8 `overall`). */
 export interface PerformanceMetrics {
   win_rate: number;
   average_rr: number;
@@ -124,19 +124,32 @@ export interface PerformanceMetrics {
   max_drawdown_pct: number;
   signals_today: number;
   signals_week: number;
+  n_signals?: number;
+  n_closed?: number;
 }
 
-/** DE PR #8 `by_setup` value — only these three fields. */
+/** Quant PR #2 `by_setup` bucket. `signals` is a UI alias of `n_signals`. */
 export interface PerformanceSetupStats {
+  setup_type?: string;
+  product_key?: PerformanceSetupKey;
   win_rate: number;
   average_rr: number;
+  sharpe_ratio?: number;
+  max_drawdown_pct?: number;
   signals: number;
+  n_signals?: number;
+  n_closed?: number;
+  signals_today?: number;
+  signals_week?: number;
 }
 
 export interface PerformanceSummary {
   timestamp: number;
   overall: PerformanceMetrics;
   by_setup: Record<PerformanceSetupKey, PerformanceSetupStats>;
+  source: "live" | "mock";
+  rolling_win_rate_20?: number | null;
+  drift_warning?: boolean;
 }
 
 export type OverlayPreset =
