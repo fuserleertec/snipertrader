@@ -55,6 +55,9 @@ export function startMockSignalStream(
       stop: side === "long" ? price - width : price + width,
       target: side === "long" ? price + width * 2.15 : price - width * 2.15,
       status: "ACTIVE",
+      realized_r: null,
+      exit_price: null,
+      closed_ts_ms: null,
       confidence: seq % 4 === 0 ? 0.84 : template.confidence,
       trigger_event_ids: template.trigger_event_ids.length
         ? template.trigger_event_ids
@@ -71,7 +74,14 @@ export function startMockSignalStream(
     if (!active.length) return;
     const signal = active[seq % active.length];
     const status: SignalStatus = SIGNAL_STATUSES[(seq % 3) + 1] ?? "TP_HIT";
-    const updated: Signal = { ...signal, status };
+    const closed = status === "TP_HIT" || status === "SL_HIT";
+    const updated: Signal = {
+      ...signal,
+      status,
+      realized_r: status === "TP_HIT" ? 1.85 : status === "SL_HIT" ? -1.0 : null,
+      exit_price: closed ? (status === "TP_HIT" ? signal.target : signal.stop) : null,
+      closed_ts_ms: closed ? Date.now() : null,
+    };
     live.set(updated.id, updated);
     onEvent({ type: "signal.status", signal: updated });
   };

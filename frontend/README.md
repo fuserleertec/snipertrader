@@ -157,9 +157,9 @@ pattern streams. REST base `http://localhost:8001`. Docs: `/docs`.
 
 REST:
 
-- `GET /signals?symbol=&status=&setup_type=&side=&from_ts=&to_ts=&limit=&cursor=` →
+- `GET /signals?symbol=&status=&setup_type=&from_ts=&to_ts=&limit=&cursor=` →
   `{ "items": [ Signal ], "next_cursor": string|null }`
-- `GET /signals/history` — same list + filters (history alias)
+  History is this same list (no separate history endpoint).
 - `GET /signals/{id}` → `Signal`
 - `GET /performance/summary` → Quant PR #2 at `:8001` (flat envelope +
   `by_setup` product keys). Same-origin rewrite, then mock fallback.
@@ -182,8 +182,14 @@ Dropped from UI: `mss_break`, `order_block`, `sweep_mss`, `ob_fvg`, `*_pending_u
 
 PR #9 / Quant explainability: `contributing_factors: string[]` (publish-only;
 unknown ids are kept) + `factor_breakdown: {name, weight, score, note?}[]`
-with `sum(score)` ≈ conviction. Closed rows may include `realized_r`,
-`exit_price`, `closed_ts_ms`.
+with `sum(score)` ≈ conviction.
+
+Close fields (do **not** compute on FE; mock until Quant lands them on PR #2):
+
+- `realized_r`: `number | null` — null on ACTIVE/CANCELLED; signed R on TP_HIT/SL_HIT
+- optional `exit_price`, `closed_ts_ms`
+
+WS `signal.upsert` / `signal.status` include `realized_r` when the row is closed.
 
 Overlays 4–6: ±2σ/±3σ + rejection + session VWAP target; pullback shade + OB/FVG; AVWAP + OB confluence.
 
@@ -276,9 +282,9 @@ Setups 4–6 keep the Phase 1 overlays (σ fade, pullback, AVWAP+OB).
 
 ### Signal history
 
-Dedicated history table: setup_type, symbol, date range, outcome
-(`ACTIVE|TP_HIT|SL_HIT|CANCELLED`). Columns include outcome and `realized_r`
-(planned R:R while open). CSV uses Quant field names.
+History is **`GET /signals`** with `from_ts`/`to_ts` + `status`/`setup_type`/`symbol`.
+No `/signals/history`. Columns: outcome (`status`) and `realized_r` from the
+payload (`—` while null). CSV uses those field names.
 
 ### Real-time
 

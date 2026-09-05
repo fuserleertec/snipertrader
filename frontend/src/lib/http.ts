@@ -76,7 +76,7 @@ export function signalListPath(query: SignalListQuery = {}, path = "/signals"): 
   return qs ? `${path}?${qs}` : path;
 }
 
-/** Quant PR #2 `GET /signals` (alias `GET /signals/history`). Rewrite → :8001, then direct. */
+/** Quant PR #2 `GET /signals` — history is this same list (`from_ts`/`to_ts` + filters). */
 export async function fetchSignals(query: SignalListQuery = {}): Promise<SignalListResponse | null> {
   const path = signalListPath(query);
   const viaRewrite = await getSameOrigin<SignalListResponse>(path);

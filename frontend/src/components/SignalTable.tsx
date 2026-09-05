@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SETUP_TYPES, SIGNAL_STATUSES, SYMBOLS } from "@/lib/constants";
-import { outcomeLabel, realizedMultiple, riskReward, zoneLabel } from "@/lib/signals";
+import { isMockMode } from "@/lib/env";
+import { fetchSignals } from "@/lib/http";
+import { normalizeSignal, outcomeLabel, realizedMultiple, zoneLabel } from "@/lib/signals";
 import type { SetupType, Signal, SignalStatus } from "@/lib/types";
 
 function utcStamp(ms: number): string {
@@ -33,7 +35,6 @@ function toCsv(rows: Signal[]): string {
     "stop",
     "target",
     "status",
-    "outcome",
     "realized_r",
     "exit_price",
     "closed_ts_ms",
@@ -50,7 +51,6 @@ function toCsv(rows: Signal[]): string {
       r.stop,
       r.target,
       r.status,
-      outcomeLabel(r),
       r.realized_r ?? "",
       r.exit_price ?? "",
       r.closed_ts_ms ?? "",
@@ -74,16 +74,39 @@ export function SignalTable({
   soundOn: boolean;
   onToggleSound: () => void;
 }) {
+  const mocks = isMockMode();
   const [typeFilter, setTypeFilter] = useState<SetupType | "all">("all");
   const [statusFilter, setStatusFilter] = useState<SignalStatus | "all">("all");
   const [symbolFilter, setSymbolFilter] = useState("all");
   const [fromDay, setFromDay] = useState("");
   const [toDay, setToDay] = useState("");
+  const [liveRows, setLiveRows] = useState<Signal[] | null>(null);
+
+  useEffect(() => {
+    if (mocks) return;
+    let alive = true;
+    fetchSignals({
+      symbol: symbolFilter === "all" ? undefined : symbolFilter,
+      setup_type: typeFilter === "all" ? undefined : typeFilter,
+      status: statusFilter === "all" ? undefined : statusFilter,
+      from_ts: dayStart(fromDay) ?? undefined,
+      to_ts: dayEnd(toDay) ?? undefined,
+      limit: 80,
+    }).then((list) => {
+      if (!alive || !list) return;
+      setLiveRows(list.items.map((row) => normalizeSignal(row)).filter((row): row is Signal => !!row));
+    });
+    return () => {
+      alive = false;
+    };
+  }, [mocks, symbolFilter, typeFilter, statusFilter, fromDay, toDay]);
 
   const filtered = useMemo(() => {
+    const source = !mocks && liveRows ? liveRows : rows;
+    if (!mocks && liveRows) return source;
     const from = dayStart(fromDay);
     const to = dayEnd(toDay);
-    return rows.filter((r) => {
+    return source.filter((r) => {
       if (typeFilter !== "all" && r.setup_type !== typeFilter) return false;
       if (statusFilter !== "all" && r.status !== statusFilter) return false;
       if (symbolFilter !== "all" && r.symbol !== symbolFilter) return false;
@@ -91,7 +114,7 @@ export function SignalTable({
       if (to != null && r.ts_ms > to) return false;
       return true;
     });
-  }, [rows, typeFilter, statusFilter, symbolFilter, fromDay, toDay]);
+  }, [mocks, rows, liveRows, typeFilter, statusFilter, symbolFilter, fromDay, toDay]);
 
   const download = () => {
     const blob = new Blob([toCsv(filtered)], { type: "text/csv" });
@@ -111,8 +134,10 @@ export function SignalTable({
         <span className="sim">GET /signals</span>
       </div>
       <div className="sec-sub">
-        Past Quant rows with outcome (TP/SL) and <code>realized_r</code>. Filters: setup_type, symbol,
-        date range, outcome. CSV uses the same field names.
+        Same <code>GET /signals</code> as the live table (<code>from_ts</code>/<code>to_ts</code>,{" "}
+        <code>status</code>, <code>setup_type</code>, <code>symbol</code>). Outcome is{" "}
+        <code>status</code>. <code>realized_r</code> is a Quant field (null while ACTIVE/CANCELLED) —
+        not computed here.
       </div>
       <div className="table-tools" style={{ marginBottom: 10 }}>
         <select value={symbolFilter} onChange={(e) => setSymbolFilter(e.target.value)}>
@@ -135,7 +160,7 @@ export function SignalTable({
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as SignalStatus | "all")}
         >
-          <option value="all">all outcome</option>
+          <option value="all">all status</option>
           {SIGNAL_STATUSES.map((s) => (
             <option key={s} value={s}>
               {s}
@@ -168,7 +193,7 @@ export function SignalTable({
               <th>Direction</th>
               <th>Zone</th>
               <th>Outcome</th>
-              <th>R</th>
+              <th>realized_r</th>
             </tr>
           </thead>
           <tbody>
@@ -199,9 +224,7 @@ export function SignalTable({
                   <td>
                     <span className={`badge badge-${row.status}`}>{outcomeLabel(row)}</span>
                   </td>
-                  <td className="mono">
-                    {rMult != null ? rMult.toFixed(2) : `plan ${riskReward(row).toFixed(2)}`}
-                  </td>
+                  <td className="mono">{rMult != null ? rMult.toFixed(2) : "—"}</td>
                 </tr>
               );
             })}

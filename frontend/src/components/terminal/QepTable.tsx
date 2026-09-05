@@ -12,7 +12,7 @@ import {
   type EnsemblePick,
   type QepMode,
 } from "@/lib/mocks/terminal";
-import { riskReward } from "@/lib/signals";
+import { realizedMultiple } from "@/lib/signals";
 import type { Signal, SignalStatus, SetupType } from "@/lib/types";
 import { SETUP_TYPES, SIGNAL_STATUSES, SYMBOLS } from "@/lib/constants";
 
@@ -73,9 +73,9 @@ export function QepTable({
   );
 
   const download = () => {
-    const header = "ts_ms,symbol,setup_type,side,entry,stop,target,status,outcome,realized_r,confidence,trigger_event_ids";
+    const header = "ts_ms,symbol,setup_type,side,entry,stop,target,status,realized_r,exit_price,closed_ts_ms,confidence,trigger_event_ids";
     const lines = setupRows.map((r) =>
-      [r.ts_ms, r.symbol, r.setup_type, r.side, r.entry, r.stop, r.target, r.status, r.outcome ?? r.status, r.realized_r ?? "", r.confidence, r.trigger_event_ids.join("|")].join(","),
+      [r.ts_ms, r.symbol, r.setup_type, r.side, r.entry, r.stop, r.target, r.status, r.realized_r ?? "", r.exit_price ?? "", r.closed_ts_ms ?? "", r.confidence, r.trigger_event_ids.join("|")].join(","),
     );
     const blob = new Blob([[header, ...lines].join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -295,7 +295,8 @@ function SetupRow({
         <EngineChips engines={engines} />
       </td>
       <td className="qep-reason">
-        {whyForSetup(signal)} · R {riskReward(signal).toFixed(2)}
+        {whyForSetup(signal)}
+        {realizedMultiple(signal) != null ? ` · realized_r ${realizedMultiple(signal)!.toFixed(2)}` : ""}
       </td>
     </tr>
   );

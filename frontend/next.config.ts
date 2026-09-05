@@ -19,10 +19,6 @@ const nextConfig: NextConfig = {
         destination: `${quantHttp}/signals`,
       },
       {
-        source: "/signals/history",
-        destination: `${quantHttp}/signals/history`,
-      },
-      {
         source: "/signals/:id",
         destination: `${quantHttp}/signals/:id`,
       },

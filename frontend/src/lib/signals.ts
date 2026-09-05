@@ -24,12 +24,13 @@ export function zoneLabel(signal: Signal): string {
   return `${fmtPx(zone_low)}–${fmtPx(zone_high)}  E ${fmtPx(signal.entry)}  S ${fmtPx(signal.stop)}  T ${fmtPx(signal.target)}`;
 }
 
+/** Wire field only — never derived from entry/stop/target. */
 export function realizedMultiple(signal: Signal): number | null {
+  if (signal.status !== "TP_HIT" && signal.status !== "SL_HIT") return null;
   return typeof signal.realized_r === "number" && Number.isFinite(signal.realized_r) ? signal.realized_r : null;
 }
 
 export function outcomeLabel(signal: Signal): string {
-  if (signal.outcome) return signal.outcome;
   return signal.status;
 }
 
@@ -98,11 +99,14 @@ export function normalizeSignal(value: unknown): Signal | null {
     trigger_event_ids: Array.isArray(s.trigger_event_ids) ? s.trigger_event_ids.filter((x): x is string => typeof x === "string") : [],
     contributing_factors: factors,
     factor_breakdown: breakdown,
-    realized_r: optionalNum(s.realized_r ?? s.r_multiple),
-    exit_price: optionalNum(s.exit_price ?? s.exit_px),
+    realized_r: statusClosed(s.status) ? optionalNum(s.realized_r) : null,
+    exit_price: optionalNum(s.exit_price),
     closed_ts_ms: optionalNum(s.closed_ts_ms),
-    outcome: typeof s.outcome === "string" ? s.outcome : null,
   };
+}
+
+function statusClosed(status: unknown): boolean {
+  return status === "TP_HIT" || status === "SL_HIT";
 }
 
 export function isSignal(value: unknown): value is Signal {

@@ -106,9 +106,9 @@ export function Dashboard() {
     : "Sep 5, 03:12 AM";
 
   const downloadCsv = () => {
-    const header = "ts_ms,symbol,setup_type,side,entry,stop,target,status,confidence,trigger_event_ids";
+    const header = "ts_ms,symbol,setup_type,side,entry,stop,target,status,realized_r,exit_price,closed_ts_ms,confidence,trigger_event_ids";
     const lines = allSignals.map((r) =>
-      [r.ts_ms, r.symbol, r.setup_type, r.side, r.entry, r.stop, r.target, r.status, r.confidence, r.trigger_event_ids.join("|")].join(","),
+      [r.ts_ms, r.symbol, r.setup_type, r.side, r.entry, r.stop, r.target, r.status, r.realized_r ?? "", r.exit_price ?? "", r.closed_ts_ms ?? "", r.confidence, r.trigger_event_ids.join("|")].join(","),
     );
     const blob = new Blob([[header, ...lines].join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);

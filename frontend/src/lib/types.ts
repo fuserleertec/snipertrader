@@ -298,11 +298,13 @@ export interface Signal {
   contributing_factors?: string[];
   /** Quant publish-only {name, weight, score, note?}[]. */
   factor_breakdown?: FactorBreakdown[];
-  /** Quant SignalView close fields (null while ACTIVE / CANCELLED). */
+  /**
+   * Quant close fields (PR #2). Do not compute on FE.
+   * `realized_r` is null on ACTIVE/CANCELLED; signed R on TP_HIT/SL_HIT.
+   */
   realized_r?: number | null;
   exit_price?: number | null;
   closed_ts_ms?: number | null;
-  outcome?: string | null;
 }
 
 export interface SignalListResponse {
@@ -310,7 +312,7 @@ export interface SignalListResponse {
   next_cursor: string | null;
 }
 
-/** Quant PR #2 GET /signals (also GET /signals/history). */
+/** Quant PR #2 GET /signals (history = this list + from_ts/to_ts/status/setup_type/symbol). */
 export interface SignalListQuery {
   symbol?: string;
   status?: SignalStatus;

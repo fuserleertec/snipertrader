@@ -2,7 +2,6 @@ import { inferAssetClass } from "../constants";
 import { sessionWindows } from "../sessions";
 import { explain, factorsForSetup } from "../factors";
 import { overlayEventsFromBook } from "../overlays";
-import { riskReward } from "../signals";
 import type { FVGZone, MssEvent, OrderBlock, PatternBook, SetupType, Signal, SweepEvent } from "../types";
 
 const cache = new Map<string, { book: PatternBook; signals: Signal[]; price: number }>();
@@ -177,6 +176,9 @@ function signalOf(
     timeframe: "5m",
     ref_session: inferAssetClass(symbol) === "crypto" ? "ny_am" : "rth",
     trigger_event_ids,
+    realized_r: null,
+    exit_price: null,
+    closed_ts_ms: null,
     ...explain(factorsForSetup(setup_type), Math.round(confidence * 100)),
   };
 }
@@ -199,32 +201,30 @@ export function signalsFromBook(symbol: string, price: number, book: PatternBook
     closeOf(
       signalOf(symbol, price, now, "sweep_reclaim", "long", 11, [sweepBuy?.id].filter(Boolean) as string[], 0.81),
       "TP_HIT",
-      11,
+      2.1,
     ),
     closeOf(
       signalOf(symbol, price, now, "fvg_entry", "short", 12, [fvgBear?.id].filter(Boolean) as string[], 0.66),
       "SL_HIT",
-      12,
+      -1.0,
     ),
     closeOf(
       signalOf(symbol, price, now, "po3_judas", "long", 13, [sweepSell?.id].filter(Boolean) as string[], 0.71),
       "TP_HIT",
-      13,
+      1.75,
     ),
   ];
 }
 
-function closeOf(signal: Signal, status: "TP_HIT" | "SL_HIT", seq: number): Signal {
-  const planned = riskReward(signal);
-  const realized = status === "TP_HIT" ? planned : -1;
+/** Mock Quant close fields — literals, not FE-computed from entry/stop/target. */
+function closeOf(signal: Signal, status: "TP_HIT" | "SL_HIT", realized_r: number): Signal {
   return {
     ...signal,
     id: `${signal.id}_closed`,
     status,
-    realized_r: Math.round(realized * 100) / 100,
+    realized_r,
     exit_price: status === "TP_HIT" ? signal.target : signal.stop,
-    closed_ts_ms: signal.ts_ms + seq * 60_000,
-    outcome: status,
+    closed_ts_ms: signal.ts_ms + 15 * 60_000,
   };
 }
 
