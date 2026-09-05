@@ -84,6 +84,98 @@ Stubs only (no network). Channels: `telegram`, `discord`, `email`, `webhook`. Im
 
 - History: `GET /signals` **and** `GET /signals/history` (same list; `side` filter added).
 - Performance: `GET /performance/summary` → `by_setup` keyed by **product_key** (`1_liquidity_sweep_vwap_reclaim`, `2_fvg_mitigation_vwap`, `3_po3_asia_range_sweep`, `4_sd_extension_fade`, `5_vwap_pullback_cont`, `6_avwap_ob_confluence`). Each bucket includes `setup_type`. Dormant `mss_break` / `order_block` / `sweep_mss` and `*_pending_user_confirm` are omitted. Drift: rolling 20-trade WR &lt; 45% → `drift_warning`.
+
+Empty-book response (in-memory, 2026-09-05):
+
+```json
+{
+  "win_rate": 0.0,
+  "average_rr": 0.0,
+  "sharpe_ratio": 0.0,
+  "max_drawdown_pct": 0.0,
+  "signals_today": 0,
+  "signals_week": 0,
+  "n_signals": 0,
+  "n_closed": 0,
+  "by_setup": {
+    "1_liquidity_sweep_vwap_reclaim": {
+      "setup_type": "sweep_reclaim",
+      "product_key": "1_liquidity_sweep_vwap_reclaim",
+      "win_rate": 0.0,
+      "average_rr": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown_pct": 0.0,
+      "signals_today": 0,
+      "signals_week": 0,
+      "n_signals": 0,
+      "n_closed": 0
+    },
+    "2_fvg_mitigation_vwap": {
+      "setup_type": "fvg_entry",
+      "product_key": "2_fvg_mitigation_vwap",
+      "win_rate": 0.0,
+      "average_rr": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown_pct": 0.0,
+      "signals_today": 0,
+      "signals_week": 0,
+      "n_signals": 0,
+      "n_closed": 0
+    },
+    "3_po3_asia_range_sweep": {
+      "setup_type": "po3_judas",
+      "product_key": "3_po3_asia_range_sweep",
+      "win_rate": 0.0,
+      "average_rr": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown_pct": 0.0,
+      "signals_today": 0,
+      "signals_week": 0,
+      "n_signals": 0,
+      "n_closed": 0
+    },
+    "4_sd_extension_fade": {
+      "setup_type": "sd_extension_fade",
+      "product_key": "4_sd_extension_fade",
+      "win_rate": 0.0,
+      "average_rr": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown_pct": 0.0,
+      "signals_today": 0,
+      "signals_week": 0,
+      "n_signals": 0,
+      "n_closed": 0
+    },
+    "5_vwap_pullback_cont": {
+      "setup_type": "vwap_pullback_cont",
+      "product_key": "5_vwap_pullback_cont",
+      "win_rate": 0.0,
+      "average_rr": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown_pct": 0.0,
+      "signals_today": 0,
+      "signals_week": 0,
+      "n_signals": 0,
+      "n_closed": 0
+    },
+    "6_avwap_ob_confluence": {
+      "setup_type": "avwap_ob_confluence",
+      "product_key": "6_avwap_ob_confluence",
+      "win_rate": 0.0,
+      "average_rr": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown_pct": 0.0,
+      "signals_today": 0,
+      "signals_week": 0,
+      "n_signals": 0,
+      "n_closed": 0
+    }
+  },
+  "rolling_win_rate_20": null,
+  "drift_warning": false,
+  "drift_note": ""
+}
+```
 - Auth: `SNIPER_API_KEY` → require `X-API-Key` (default **off**). Optional `RATE_LIMIT_PER_MIN`.
 - Load methodology: **100 concurrent** in-process `TestClient` threads (`GET /signals?limit=20`), not 100 real sockets. Measured (2026-09-05): min 8.35 ms · p50 32.48 ms · **p95 56.37 ms** · p99 65.44 ms · max 71.42 ms. Target p95 &lt; 200 ms → **PASS**.
 

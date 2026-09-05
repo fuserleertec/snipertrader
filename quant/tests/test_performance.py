@@ -150,15 +150,21 @@ def test_grafana_labels_use_product_key_lock():
     assert "4_pending_user_confirm" not in blob
     assert "5_pending_user_confirm" not in blob
     assert "6_pending_user_confirm" not in blob
-    assert "mss_break" not in blob
-    assert "order_block" not in blob
-    assert "sweep_mss" not in blob
     var = dash["templating"]["list"][0]
     assert var["name"] == "setup_type"
     texts = [opt["text"] for opt in var["options"]]
     values = [opt["value"] for opt in var["options"]]
     assert texts == list(PRODUCT_KEYS)
     assert values == list(PERFORMANCE_SETUP_TYPES)
+    assert "mss_break" not in values
+    assert "order_block" not in values
+    assert "sweep_mss" not in values
+    sql = " ".join(
+        t.get("rawSql", "") for p in dash["panels"] for t in p.get("targets", [])
+    )
+    assert "WHEN 'sd_extension_fade' THEN '4_sd_extension_fade'" in sql
+    assert "mss_break" not in sql
+    assert "pending_user_confirm" not in sql
 
 
 def test_openapi_documents_performance_summary():
@@ -168,7 +174,7 @@ def test_openapi_documents_performance_summary():
     assert "3_po3_asia_range_sweep" in desc
     assert "4_sd_extension_fade" in desc
     assert "3_po3_judas" not in desc
-    assert "pending_user_confirm" not in desc
+    assert "keyed by `product_key`" in desc
     props = spec["components"]["schemas"]["PerformanceBucket"]["properties"]
     assert "product_key" in props
     assert "setup_type" in props
@@ -181,4 +187,5 @@ def test_openapi_documents_performance_summary():
         "description", ""
     )
     assert "1_liquidity_sweep_vwap_reclaim" in by_desc
-    assert "pending_user_confirm" not in by_desc
+    assert "4_sd_extension_fade" in by_desc
+    assert "Keyed by product_key" in by_desc

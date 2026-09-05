@@ -40,7 +40,9 @@ news skip 900s; S5 trend 20 / first-touch **8** / `min_rr=2.0`; S6
 swing lookback **2**, wire TF 15m. Orchestrator `dedupe_window_sec=300`.
 `GET /performance/summary` `by_setup` is keyed by product strings
 `1_liquidity_sweep_vwap_reclaim` … `6_avwap_ob_confluence`; each bucket
-includes `setup_type`. Dormant / `*_pending_user_confirm` are omitted.
+includes `setup_type` (`sweep_reclaim` … `avwap_ob_confluence`). Dormant
+`mss_break` / `order_block` / `sweep_mss` and `*_pending_user_confirm`
+are omitted. Empty-book sample is in `phase3_pm_evidence.md`.
 
 | Quant field | PR #9 `SetupParams` | Env | Default match? |
 |---|---|---|---|
