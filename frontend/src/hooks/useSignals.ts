@@ -27,10 +27,14 @@ export function useSignals(symbol: string, lastPrice: () => number): Signal[] {
     let alive = true;
 
     const applyEvent = (data: unknown) => {
-      if (!isSignalWsEvent(data)) return;
-      const signal = normalizeSignal(data.signal);
-      if (!signal || signal.symbol !== symbol) return;
-      setRows((prev) => upsertSignal(prev, signal));
+      try {
+        if (!isSignalWsEvent(data)) return;
+        const signal = normalizeSignal(data.signal);
+        if (!signal || signal.symbol !== symbol) return;
+        setRows((prev) => upsertSignal(prev, signal));
+      } catch {
+        /* ignore malformed frames */
+      }
     };
 
     if (mocks) {

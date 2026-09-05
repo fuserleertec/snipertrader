@@ -74,6 +74,18 @@ function optionalNum(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+function readSessionType(value: unknown): SessionType | null | undefined {
+  if (value == null) return value === null ? null : undefined;
+  if (typeof value === "string" && (SESSION_TYPES as string[]).includes(value)) {
+    return value as SessionType;
+  }
+  return undefined;
+}
+
+function statusClosed(status: unknown): boolean {
+  return status === "TP_HIT" || status === "SL_HIT";
+}
+
 export function normalizeSignal(value: unknown): Signal | null {
   if (!value || typeof value !== "object") return null;
   const s = value as Record<string, unknown>;
@@ -108,18 +120,6 @@ export function normalizeSignal(value: unknown): Signal | null {
     exit_price: optionalNum(s.exit_price),
     closed_ts_ms: optionalNum(s.closed_ts_ms),
   };
-}
-
-function readSessionType(value: unknown): SessionType | null | undefined {
-  if (value == null) return value === null ? null : undefined;
-  if (typeof value === "string" && (SESSION_TYPES as string[]).includes(value)) {
-    return value as SessionType;
-  }
-  return undefined;
-}
-
-function statusClosed(status: unknown): boolean {
-  return status === "TP_HIT" || status === "SL_HIT";
 }
 
 export function isSignal(value: unknown): value is Signal {
