@@ -1,10 +1,40 @@
-# Preview the Conviction Terminal (not the marketing site)
+# Preview the Conviction Terminal
 
-The GitHub/Vercel project attached to **snipertrader.ai** deploys the **static
-marketing site** from the repo root (`vercel.json` + `*.html`). That preview
-will show the old landing page. `/` is **not** the Next.js dashboard.
+## Why the old PR preview was marketing HTML
 
-## Local (paper window — this is the proof path)
+The Git-connected Vercel project `snipertrader` (`prj_U2PT9S5OZuNgmj0s9EnnroUpThlx`)
+has **Root Directory = null** (repo root) and root `vercel.json` used
+`"framework": null` plus static `*.html`. Vercel therefore publishes
+`index.html` / `stock_picks.html`. `/dashboard` 404s because that file
+does not exist on the marketing site.
+
+`rootDirectory` is a **Vercel project setting**, not a supported
+`vercel.json` key (see Vercel project-configuration). Changing the live
+project’s Root Directory to `frontend` would break production marketing
+on `main`.
+
+## What this PR does (option A — preview/staging)
+
+On **this branch only**, root `vercel.json` builds the Next app as a
+paper static export and publishes `frontend/out`:
+
+```
+install: npm install --prefix frontend
+build:   SNIPER_STATIC_EXPORT=1 NEXT_PUBLIC_USE_MOCKS=true npm run build --prefix frontend
+output:  frontend/out
+```
+
+- `/` is the Conviction Terminal (not `index.html`)
+- `/dashboard` redirects to `/`
+- `NEXT_PUBLIC_USE_MOCKS=true` (also `frontend/.env.production`)
+- No `live_trading`, no Quant/DE keys required
+- Production `main` is unchanged — it still uses marketing `vercel.json`
+
+Marketing recipe is saved at [`/vercel.marketing.json`](../vercel.marketing.json).
+Do **not** merge this branch’s root `vercel.json` to `main` without restoring
+that file.
+
+## Local
 
 ```bash
 cd frontend
@@ -13,38 +43,29 @@ NEXT_PUBLIC_USE_MOCKS=true npm run dev
 # http://localhost:3000
 ```
 
-From repo root: `npm run dev:dashboard`.
+Repo root: `npm run dev:dashboard`.
 
-## Live Quant / Data Eng (still paper — no production flip)
+## Full Next.js runtime (second Vercel project)
 
-```bash
-cd frontend
-NEXT_PUBLIC_USE_MOCKS=false \
-NEXT_PUBLIC_WS_BASE=ws://localhost:8000 \
-NEXT_PUBLIC_HTTP_BASE=http://localhost:8000 \
-NEXT_PUBLIC_QUANT_API_BASE=http://localhost:8001 \
-NEXT_PUBLIC_QUANT_WS_BASE=ws://localhost:8001 \
-npm run dev
-```
+For SSR + `/v1` rewrites (not required for paper mocks), sniperteam
+creates a **separate** Vercel project (do not edit the marketing project):
 
-DE Phase 2 streams (PR #5) when that API is up:
+| Setting | Value |
+|---|---|
+| Root Directory | `frontend` |
+| Framework preset | Next.js |
+| Install | `npm install` |
+| Build | `NEXT_PUBLIC_USE_MOCKS=true npm run build` |
+| Env | `NEXT_PUBLIC_USE_MOCKS=true` |
+| Production branch | do **not** point `snipertrader.ai` here |
 
-- `WS /v1/ws/avwap?symbol=`
-- `WS /v1/ws/volume-profile?symbol=`
-- `WS /v1/ws/kill-zone?symbol=`
+`frontend/vercel.json` is the config for that project.
 
-Mocks stay the default. Missing live frames fall back to weekly `vwap_values`
-(AVWAP) and in-browser kill-zone / volume-profile seeds.
+## Blockers if Git preview is still marketing
 
-## Optional second Vercel project (dashboard only)
-
-Create a **separate** Vercel project (do not change the marketing project's
-Root Directory):
-
-1. Root Directory = `frontend`
-2. Framework = Next.js (see `frontend/vercel.json`)
-3. Env: `NEXT_PUBLIC_USE_MOCKS=true` for paper
-
-```bash
-cd frontend && npx vercel
-```
+1. Vercel project **Root Directory** is still `.` and the deploy ignored this
+   branch’s `outputDirectory` — check the deployment build logs.
+2. Deployment Protection / SSO on `*.vercel.app` — use the team preview
+   login, not an anonymous curl.
+3. `main` deploys will stay marketing until someone copies this
+   `vercel.json` there (do not — that is a production flip).

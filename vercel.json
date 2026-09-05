@@ -1,11 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "functions": {
-    "api/**/*.js": { "maxDuration": 60 }
-  },
-  "crons": [
-    { "path": "/api/recon/refresh", "schedule": "0 13 * * *" },
-    { "path": "/api/recon/refresh", "schedule": "0 22 * * *" }
+  "installCommand": "npm install --prefix frontend",
+  "buildCommand": "SNIPER_STATIC_EXPORT=1 NEXT_PUBLIC_USE_MOCKS=true npm run build --prefix frontend",
+  "outputDirectory": "frontend/out",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "redirects": [
+    { "source": "/dashboard", "destination": "/", "permanent": false },
+    { "source": "/dashboard.html", "destination": "/", "permanent": false }
   ]
 }
