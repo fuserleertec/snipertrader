@@ -1,6 +1,8 @@
 import { httpUrl, quantHttpUrl } from "./env";
 import type {
   AnchorType,
+  AnchoredVwap,
+  KillZoneEvent,
   OHLCVBar,
   PerformanceSummary,
   SessionLevels,
@@ -10,6 +12,7 @@ import type {
   SignalListQuery,
   SignalListResponse,
   VWAPValues,
+  VolumeProfile,
 } from "./types";
 
 async function getJson<T>(path: string, buildUrl: (path: string) => string = httpUrl): Promise<T | null> {
@@ -86,6 +89,23 @@ export async function fetchSignal(id: string): Promise<Signal | null> {
   const viaRewrite = await getSameOrigin<Signal>(path);
   if (viaRewrite) return viaRewrite;
   return getJson<Signal>(path, quantHttpUrl);
+}
+
+/** Data Eng PR #5 — optional overlay helpers. Same-origin `/v1/*` rewrite. */
+export function fetchAvwap(symbol: string, anchorId?: string): Promise<AnchoredVwap | null> {
+  const path = anchorId
+    ? `/v1/avwap/${symbol}/${encodeURIComponent(anchorId)}`
+    : `/v1/avwap/${symbol}`;
+  return getJson<AnchoredVwap>(path);
+}
+
+export function fetchVolumeProfile(symbol: string, sessionType?: SessionType): Promise<VolumeProfile | null> {
+  const path = sessionType ? `/v1/volume-profile/${symbol}/${sessionType}` : `/v1/volume-profile/${symbol}`;
+  return getJson<VolumeProfile>(path);
+}
+
+export function fetchKillZone(symbol: string): Promise<KillZoneEvent | null> {
+  return getJson<KillZoneEvent>(`/v1/kill-zone/${symbol}`);
 }
 
 /** Quant PR #2 `GET /performance/summary` via rewrite → :8001, then direct. */

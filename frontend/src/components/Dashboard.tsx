@@ -14,6 +14,8 @@ import { dropUniverse } from "@/lib/mocks/universe";
 import { convictionOf, tierOf } from "@/lib/mocks/terminal";
 import { defaultVisibleSessions } from "@/lib/sessions";
 import type { OverlayPreset, Signal, Timeframe } from "@/lib/types";
+import { SignalTable } from "./SignalTable";
+import { SetupCards } from "./SetupCards";
 import { playAlert, ToastHost, type ToastItem } from "./ToastHost";
 import { AppNav } from "./terminal/AppNav";
 import { EngineGlossary, ExecutionDesk, Narratives, PickGrid, ReconAudit } from "./terminal/PickAndDesk";
@@ -225,6 +227,8 @@ export function Dashboard() {
 
         {selected && <SignalDetail signal={selected} onClose={() => setSelected(null)} />}
 
+        <SetupCards signals={allSignals} selectedId={selected?.id ?? null} onSelect={onOpenChart} />
+
         <QepTable
           signals={allSignals}
           lastPrice={market.lastPrice}
@@ -233,6 +237,14 @@ export function Dashboard() {
           soundOn={soundOn}
           onToggleSound={() => setSoundOn((v) => !v)}
           initialMode={(params.get("tab") as QepMode | null) ?? undefined}
+        />
+
+        <SignalTable
+          rows={allSignals}
+          selectedId={selected?.id ?? null}
+          onSelect={onOpenChart}
+          soundOn={soundOn}
+          onToggleSound={() => setSoundOn((v) => !v)}
         />
 
         <div ref={chartRef}>
@@ -256,6 +268,7 @@ export function Dashboard() {
             theme={theme}
             patterns={patterns}
             lastPrice={market.lastPrice}
+            killZone={market.killZone}
           />
         </div>
 

@@ -225,6 +225,56 @@ export interface PatternBook {
   mss: MssEvent[];
 }
 
+/** Discriminated overlay event until ML ships a dedicated overlay payload. */
+export type OverlayKind = "fvg" | "order_block" | "sweep" | "mss";
+
+export type OverlayEvent =
+  | { kind: "fvg"; payload: FVGZone }
+  | { kind: "order_block"; payload: OrderBlock }
+  | { kind: "sweep"; payload: SweepEvent }
+  | { kind: "mss"; payload: MssEvent };
+
+/** Data Eng PR #5 — no schema_version on the wire. */
+export interface AnchoredVwap {
+  anchor_id: string;
+  symbol: string;
+  anchor_time: number;
+  anchor_price: number;
+  vwap_value: number;
+  bands: {
+    plus_1_sigma: number;
+    plus_2_sigma: number;
+    plus_3_sigma: number;
+    minus_1_sigma: number;
+    minus_2_sigma: number;
+    minus_3_sigma: number;
+  };
+  asset_class: AssetClass;
+}
+
+export interface VolumeNode {
+  price: number;
+  volume: number;
+}
+
+export interface VolumeProfile {
+  symbol: string;
+  session_type: SessionType;
+  high_volume_nodes: VolumeNode[];
+  low_volume_nodes: VolumeNode[];
+  poc: number;
+  timestamp: number;
+}
+
+export interface KillZoneEvent {
+  symbol: string;
+  kill_zone: SessionType;
+  start_time: number;
+  end_time: number;
+  active: boolean;
+  asset_class: AssetClass;
+}
+
 export type SignalSide = "long" | "short";
 
 export type SignalStatus = "ACTIVE" | "TP_HIT" | "SL_HIT" | "CANCELLED";

@@ -3,11 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { HISTORY_LIMIT } from "@/lib/constants";
 import { isMockMode } from "@/lib/env";
-import { fetchOhlcv, fetchSessions, fetchVwap } from "@/lib/http";
+import { fetchAvwap, fetchKillZone, fetchOhlcv, fetchSessions, fetchVwap } from "@/lib/http";
+import { avwapToVwapValues, isAnchoredVwap, isKillZone } from "@/lib/overlays";
 import { buildMockHistory, startMockMarket } from "@/lib/mocks/market";
 import type {
   AnchorType,
   ConnectionStatus,
+  KillZoneEvent,
   OHLCVBar,
   SessionLevels,
   Timeframe,
@@ -23,6 +25,7 @@ export interface MarketState {
   vwaps: Partial<Record<AnchorType, VWAPValues>>;
   sessions: Partial<Record<string, SessionLevels>>;
   status: ConnectionStatus;
+  killZone: KillZoneEvent | null;
 }
 
 const empty: MarketState = {
@@ -33,6 +36,7 @@ const empty: MarketState = {
   vwaps: {},
   sessions: {},
   status: "connecting",
+  killZone: null,
 };
 
 function isBar(value: unknown): value is OHLCVBar {
@@ -62,6 +66,7 @@ function mockSeed(symbol: string, timeframe: Timeframe): MarketState {
     vwaps: {},
     sessions: {},
     status: "mock",
+    killZone: null,
   };
 }
 
@@ -151,10 +156,12 @@ export function useMarketData(symbol: string, timeframe: Timeframe): MarketState
     };
 
     (async () => {
-      const [hist, vwapSnap, sessionList] = await Promise.all([
+      const [hist, vwapSnap, sessionList, avwapSnap, kz] = await Promise.all([
         fetchOhlcv(symbol, timeframe, HISTORY_LIMIT),
         fetchVwap(symbol, "session"),
         fetchSessions(symbol),
+        fetchAvwap(symbol),
+        fetchKillZone(symbol),
       ]);
       if (!alive) return;
       if (hist.length) {
@@ -179,6 +186,16 @@ export function useMarketData(symbol: string, timeframe: Timeframe): MarketState
           if (row.value?.session_type) map[row.value.session_type] = row.value;
         }
         setState((prev) => ({ ...prev, sessions: { ...prev.sessions, ...map } }));
+      }
+      if (isAnchoredVwap(avwapSnap)) {
+        const mapped = avwapToVwapValues(avwapSnap);
+        setState((prev) => ({
+          ...prev,
+          vwaps: { ...prev.vwaps, weekly: mapped },
+        }));
+      }
+      if (kz && isKillZone(kz)) {
+        setState((prev) => ({ ...prev, killZone: kz }));
       }
     })();
 
@@ -205,6 +222,22 @@ export function useMarketData(symbol: string, timeframe: Timeframe): MarketState
           ...prev,
           sessions: { ...prev.sessions, [data.session_type]: data },
         }));
+      }, () => undefined),
+    );
+    stops.push(
+      openJsonWs("/v1/ws/avwap", { symbol }, (data) => {
+        if (!isAnchoredVwap(data)) return;
+        const mapped = avwapToVwapValues(data);
+        setState((prev) => ({
+          ...prev,
+          vwaps: { ...prev.vwaps, weekly: mapped },
+        }));
+      }, () => undefined),
+    );
+    stops.push(
+      openJsonWs("/v1/ws/kill-zone", { symbol }, (data) => {
+        if (!isKillZone(data)) return;
+        setState((prev) => ({ ...prev, killZone: data as KillZoneEvent }));
       }, () => undefined),
     );
 

@@ -24,6 +24,15 @@ export function zoneLabel(signal: Signal): string {
   return `${fmtPx(zone_low)}–${fmtPx(zone_high)}  E ${fmtPx(signal.entry)}  S ${fmtPx(signal.stop)}  T ${fmtPx(signal.target)}`;
 }
 
+export function realizedMultiple(signal: Signal): number | null {
+  return typeof signal.realized_r === "number" && Number.isFinite(signal.realized_r) ? signal.realized_r : null;
+}
+
+export function outcomeLabel(signal: Signal): string {
+  if (signal.outcome) return signal.outcome;
+  return signal.status;
+}
+
 function numOr(value: unknown, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }

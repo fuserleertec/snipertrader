@@ -14,7 +14,7 @@ import {
 } from "@/lib/mocks/terminal";
 import { riskReward } from "@/lib/signals";
 import type { Signal, SignalStatus, SetupType } from "@/lib/types";
-import { SETUP_TYPES, SIGNAL_STATUSES } from "@/lib/constants";
+import { SETUP_TYPES, SIGNAL_STATUSES, SYMBOLS } from "@/lib/constants";
 
 function convColor(c: number): string {
   return c >= 70 ? "var(--emerald)" : c >= 50 ? "var(--gold)" : "var(--red)";
@@ -47,6 +47,7 @@ export function QepTable({
   const [sub, setSub] = useState<"All" | "Buy" | "Sell" | "Hold">("All");
   const [typeFilter, setTypeFilter] = useState<SetupType | "all">("all");
   const [statusFilter, setStatusFilter] = useState<SignalStatus | "all">("all");
+  const [symbolFilter, setSymbolFilter] = useState("all");
 
   const cats = mode === "setups" ? ["Setups"] : QEP_CATS[mode];
 
@@ -63,17 +64,18 @@ export function QepTable({
       signals.filter((s) => {
         if (typeFilter !== "all" && s.setup_type !== typeFilter) return false;
         if (statusFilter !== "all" && s.status !== statusFilter) return false;
+        if (symbolFilter !== "all" && s.symbol !== symbolFilter) return false;
         if (sub === "Buy" && s.side !== "long") return false;
         if (sub === "Sell" && s.side !== "short") return false;
         return true;
       }),
-    [signals, typeFilter, statusFilter, sub],
+    [signals, typeFilter, statusFilter, symbolFilter, sub],
   );
 
   const download = () => {
-    const header = "ts_ms,symbol,setup_type,side,entry,stop,target,status,confidence,trigger_event_ids";
+    const header = "ts_ms,symbol,setup_type,side,entry,stop,target,status,outcome,realized_r,confidence,trigger_event_ids";
     const lines = setupRows.map((r) =>
-      [r.ts_ms, r.symbol, r.setup_type, r.side, r.entry, r.stop, r.target, r.status, r.confidence, r.trigger_event_ids.join("|")].join(","),
+      [r.ts_ms, r.symbol, r.setup_type, r.side, r.entry, r.stop, r.target, r.status, r.outcome ?? r.status, r.realized_r ?? "", r.confidence, r.trigger_event_ids.join("|")].join(","),
     );
     const blob = new Blob([[header, ...lines].join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -156,6 +158,14 @@ export function QepTable({
 
       {mode === "setups" && (
         <div className="table-tools" style={{ marginBottom: 10 }}>
+          <select value={symbolFilter} onChange={(e) => setSymbolFilter(e.target.value)}>
+            <option value="all">all symbol</option>
+            {SYMBOLS.map((s) => (
+              <option key={s.symbol} value={s.symbol}>
+                {s.symbol}
+              </option>
+            ))}
+          </select>
           <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as SetupType | "all")}>
             <option value="all">all setup_type</option>
             {SETUP_TYPES.map((t) => (

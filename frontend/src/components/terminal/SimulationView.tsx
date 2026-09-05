@@ -13,6 +13,7 @@ import {
 import type {
   OHLCVBar,
   OverlayPreset,
+  KillZoneEvent,
   PatternBook,
   SessionLevels,
   SessionType,
@@ -41,6 +42,7 @@ export function SimulationView({
   theme,
   patterns,
   anchorVwap = null,
+  killZone = null,
 }: {
   signals: Signal[];
   selected: Signal | null;
@@ -61,6 +63,7 @@ export function SimulationView({
   patterns: PatternBook;
   lastPrice: number | null;
   anchorVwap?: VWAPValues | null;
+  killZone?: KillZoneEvent | null;
 }) {
   const [bias, setBias] = useState(0);
   const ranked = scoreLeaderboard(FALLBACK_PICKS, FALLBACK_DROPPED);
@@ -281,6 +284,11 @@ export function SimulationView({
                 {p.label}
               </button>
             ))}
+          </div>
+          <div className="kline-note">
+            Setup 1 <code>sweep_reclaim</code> — sweep arrow + MSS. Setup 2 <code>fvg_entry</code> — FVG +
+            VWAP. Setup 3 <code>po3_judas</code> — Asia box + Judas sweep.
+            {killZone?.active ? ` Kill zone ${killZone.kill_zone} active.` : ""}
           </div>
           <PriceChart
             bars={bars}

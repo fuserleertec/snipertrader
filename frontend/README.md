@@ -230,6 +230,69 @@ Table columns map 1:1 to Signal fields:
 Mocks emit this exact REST list and WS envelope. Raw `fvg_zone` / `sweep_event`
 Kafka stubs stay with Data Engineering — they are not table rows.
 
+## Phase 2 — Setup visualization & real-time display
+
+Layout lock stays on `stock_picks.html`. Phase 2 sits inside that chrome.
+
+### Setup signal cards
+
+Newest `ACTIVE` Quant rows render as a card strip (symbol, color-coded
+`setup_type`, LONG/SHORT, entry / stop / target, planned R:R, conviction %,
+UTC timestamp). Click → scroll the Kronos chart and apply that row’s
+`trigger_event_ids` annotations plus entry/stop/target lines.
+
+### Pattern overlays (performance)
+
+`lightweight-charts` v4: **one** `PatternZonesPrimitive` for FVG / OB / Asia
+rectangles + MSS lines + sweep arrows; **`setMarkers`** for sweep/MSS/rejection
+points. VWAP ±σ stays on `VwapBandsPrimitive`. Not many extra series.
+
+Until ML ships a dedicated overlay payload, typed mock/live frames go through
+`src/lib/overlays.ts`:
+
+```ts
+type OverlayEvent =
+  | { kind: "fvg"; payload: FVGZone }
+  | { kind: "order_block"; payload: OrderBlock }
+  | { kind: "sweep"; payload: SweepEvent }
+  | { kind: "mss"; payload: MssEvent };
+```
+
+`bookFromOverlayEvents` / `parseOverlayFrame` is the adapter. Live Data Eng
+(PR #5) sockets: `WS /v1/ws/fvg|ob|sweep|mss?symbol=`. Offline mocks emit the
+same Rev 1.1 shapes.
+
+### Setup-specific views
+
+Overlay tabs (product keys) highlight:
+
+| View | setup_type | Chart |
+|---|---|---|
+| Setup 1 | `sweep_reclaim` | sweep arrow, MSS marker, VWAP reclaim |
+| Setup 2 | `fvg_entry` | FVG zone + VWAP node |
+| Setup 3 | `po3_judas` | Asia range box, sweep arrow, displacement |
+
+Setups 4–6 keep the Phase 1 overlays (σ fade, pullback, AVWAP+OB).
+
+### Signal history
+
+Dedicated history table: setup_type, symbol, date range, outcome
+(`ACTIVE|TP_HIT|SL_HIT|CANCELLED`). Columns include outcome and `realized_r`
+(planned R:R while open). CSV uses Quant field names.
+
+### Real-time
+
+- Quant `WS /ws/signals` → card strip + tables (`signal.upsert` / `signal.status`)
+- Toast when `confidence > 0.8`
+- Sound toggle **off** by default
+
+### Data Eng Phase 2 (optional, non-blocking)
+
+Clients exist for PR #5: `GET/WS /v1/avwap`, `/v1/volume-profile`,
+`/v1/kill-zone`. AVWAP (`vwap_value`) maps onto the existing VWAPValues chart
+shape. Kill-zone active state is a chart note. Volume-profile is fetched-ready
+but not drawn yet. Overlay WS above is the useful Phase 2 stream for this UI.
+
 ## Theme
 
 Dark / light toggle uses `body.light` + `body.light-mode` and the SniperTrader

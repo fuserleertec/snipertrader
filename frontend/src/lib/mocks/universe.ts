@@ -1,6 +1,8 @@
 import { inferAssetClass } from "../constants";
 import { sessionWindows } from "../sessions";
 import { explain, factorsForSetup } from "../factors";
+import { overlayEventsFromBook } from "../overlays";
+import { riskReward } from "../signals";
 import type { FVGZone, MssEvent, OrderBlock, PatternBook, SetupType, Signal, SweepEvent } from "../types";
 
 const cache = new Map<string, { book: PatternBook; signals: Signal[]; price: number }>();
@@ -191,7 +193,36 @@ export function signalsFromBook(symbol: string, price: number, book: PatternBook
     signalOf(symbol, price, now, "sd_extension_fade", "short", 4, [fvgBear?.id].filter(Boolean) as string[], 0.73),
     signalOf(symbol, price, now, "vwap_pullback_cont", "long", 5, [obBull?.id, fvgBull?.id].filter(Boolean) as string[], 0.7),
     signalOf(symbol, price, now, "avwap_ob_confluence", "long", 6, [obBull?.id].filter(Boolean) as string[], 0.68),
+    closeOf(
+      signalOf(symbol, price, now, "sweep_reclaim", "long", 11, [sweepBuy?.id].filter(Boolean) as string[], 0.81),
+      "TP_HIT",
+      11,
+    ),
+    closeOf(
+      signalOf(symbol, price, now, "fvg_entry", "short", 12, [fvgBear?.id].filter(Boolean) as string[], 0.66),
+      "SL_HIT",
+      12,
+    ),
+    closeOf(
+      signalOf(symbol, price, now, "po3_judas", "long", 13, [sweepSell?.id].filter(Boolean) as string[], 0.71),
+      "TP_HIT",
+      13,
+    ),
   ];
+}
+
+function closeOf(signal: Signal, status: "TP_HIT" | "SL_HIT", seq: number): Signal {
+  const planned = riskReward(signal);
+  const realized = status === "TP_HIT" ? planned : -1;
+  return {
+    ...signal,
+    id: `${signal.id}_closed`,
+    status,
+    realized_r: Math.round(realized * 100) / 100,
+    exit_price: status === "TP_HIT" ? signal.target : signal.stop,
+    closed_ts_ms: signal.ts_ms + seq * 60_000,
+    outcome: status,
+  };
 }
 
 export function getUniverse(symbol: string, price: number): { book: PatternBook; signals: Signal[] } {
@@ -207,6 +238,11 @@ export function getUniverse(symbol: string, price: number): { book: PatternBook;
 
 export function dropUniverse(symbol: string): void {
   cache.delete(symbol);
+}
+
+/** Typed mock overlay events — same adapter the live DE WS frames use. */
+export function mockOverlayEvents(symbol: string, price: number) {
+  return overlayEventsFromBook(getUniverse(symbol, price).book);
 }
 
 export function asiaWindow(now: number): { start_ms: number; end_ms: number } | null {
