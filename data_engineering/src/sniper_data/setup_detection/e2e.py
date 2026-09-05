@@ -565,6 +565,9 @@ def write_quant_replay_pack(report: dict[str, Any], directory) -> dict[str, str]
     written["index.json"] = str(index)
     script = dest / "curl_replay.sh"
     script.write_text("\n".join(lines) + "\n")
-    script.chmod(0o755)
+    try:
+        script.chmod(0o755)
+    except OSError:
+        pass
     written["curl_replay.sh"] = str(script)
     return written
