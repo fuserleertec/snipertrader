@@ -329,6 +329,17 @@ types only — never `mss_break` / `order_block` / `sweep_mss`):
 
 Paper 2-week gate (in-memory, no broker). `live_trading` is always
 **false**. Kickoff + monitoring: [`reports/paper_gate_2week.md`](reports/paper_gate_2week.md).
+Gate runs through **2026-09-19 07:33:14Z**.
+
+Phase 4 **prep only** (no production flip, no live, no Alpaca live):
+
+| Doc | Path |
+|---|---|
+| Index | [`reports/phase4_prep/README.md`](reports/phase4_prep/README.md) |
+| Paper vs WF tracking | [`reports/phase4_prep/live_vs_backtest_tracking.md`](reports/phase4_prep/live_vs_backtest_tracking.md) |
+| Risk-param playbook | [`reports/phase4_prep/risk_parameter_adjustment_playbook.md`](reports/phase4_prep/risk_parameter_adjustment_playbook.md) |
+| Sizing experiments | [`reports/phase4_prep/position_sizing_optimization_notes.md`](reports/phase4_prep/position_sizing_optimization_notes.md) |
+| Weekly report template | [`reports/phase4_prep/weekly_performance_report_format.md`](reports/phase4_prep/weekly_performance_report_format.md) |
 
 ```bash
 USE_INMEMORY=1 PYTHONPATH=src python3 -m sniper_quant.cli api --inmemory --port 8001
@@ -411,6 +422,7 @@ quant/
   tests/
   grafana/provisioning  Timescale datasource + setup-performance dashboard + alerts
   reports/              walk-forward + paper_gate_2week.md
+  reports/phase4_prep/  Phase 4 non-live templates (no live_trading)
   tests/fixtures/pr9_quant_replay/  PR #9 locked-field validate samples
   Dockerfile
   docker-compose.yml    DE stack + risk-api :8001 + grafana :3002

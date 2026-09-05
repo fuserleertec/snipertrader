@@ -164,3 +164,4 @@ curl -sS -X POST http://127.0.0.1:8001/paper/demo-fortnight
 - **WF expectation:** synthetic; S1–S3 OOS ~100% on n=1–3; S4 0% n=3;
   S5 100% n=1; S6 7.1% n=14 — **not** a live target for the smoke book
 - **Production:** off. `live_trading` stays **false**.
+- **Phase 4 prep** (templates only, no live): [`phase4_prep/README.md`](phase4_prep/README.md)
