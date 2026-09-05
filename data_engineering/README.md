@@ -255,5 +255,9 @@ landed pattern topics and writes zones through `store_fvg` / `store_sweep`
 | MSS | Swing lookback default **5** (`SWING_LOOKBACK`) | Bullish = break of last lower-high after a **real** sell-side sweep. Bearish = break of last higher-low after a buy-side sweep. |
 | Order block | Last opposite candle before displacement | Zone = origin candle high/low. |
 
-Delta is computed as `buy_volume − sell_volume` (no `delta` field). Tick
-`aggressor` / `is_buyer_maker` are classified by the DE aggregator.
+Delta is computed **in the detector** as `buy_volume − sell_volume`. There
+is **no `delta` field** on ticks or bars and **no Redis key** for delta.
+Signed tick volume is `+volume` (buy) / `−volume` (sell). If `aggressor`
+is missing: classify vs mid `((bid+ask)/2)`, else the last print. Cumulative
+divergence prefers bars; ticks are a fallback only when both bar fields
+are null.

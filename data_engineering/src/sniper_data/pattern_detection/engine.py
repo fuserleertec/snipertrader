@@ -73,7 +73,7 @@ class PatternEngine:
         self.last_vwap: dict[tuple[str, str], VWAPValues] = {}
 
     async def on_tick(self, tick: RawTick) -> None:
-        _ = tick
+        self.sweep.on_tick(tick)
 
     async def on_session(self, levels: SessionLevels) -> None:
         self.sweep.on_session(levels)

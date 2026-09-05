@@ -22,8 +22,8 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 from sniper_data.bus.redis_store import StateStore
-from sniper_data.models import AssetClass, OHLCVBar, SessionLevels, SweepEvent
-from sniper_data.pattern_detection.delta import bar_delta
+from sniper_data.models import AssetClass, OHLCVBar, RawTick, SessionLevels, SweepEvent
+from sniper_data.pattern_detection.delta import DeltaBook
 from sniper_data.pattern_detection.ids import make_id
 from sniper_data.sessions import redis_session_key
 
@@ -75,6 +75,11 @@ class SweepDetector:
     def __init__(self, store: StateStore | None = None) -> None:
         self.store = store
         self._state: dict[str, _SymbolState] = {}
+        self.delta = DeltaBook()
+
+    def on_tick(self, tick: RawTick) -> None:
+        """Classify signed tick volume in-process. Never persisted."""
+        self.delta.on_tick(tick)
 
     def _st(self, symbol: str) -> _SymbolState:
         return self._state.setdefault(symbol, _SymbolState())
@@ -134,9 +139,9 @@ class SweepDetector:
         st = self._st(bar.symbol)
         out: list[SweepEvent] = []
 
-        bar_d = bar_delta(bar)
-        if bar_d is None:
-            bar_d = 0.0
+        # Prefer bar buy_volume − sell_volume; tick signed-volume is fallback only.
+        resolved = self.delta.consume_bar(bar)
+        bar_d = 0.0 if resolved is None else resolved
         new_cum = st.cum_delta + bar_d
 
         if st.pending is not None:
