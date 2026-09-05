@@ -196,9 +196,11 @@ async def test_setup2_ob_fvg_when_order_block_overlaps():
     for b in setup2_retrace_bars():
         cands.extend(await det.on_bar(b))
     assert cands
-    assert cands[0].setup_type == "ob_fvg"
+    assert cands[0].setup_type == "fvg_entry"
     assert "ob-bull-overlap" in cands[0].trigger_event_ids
     _assert_explain(cands[0], "fvg", "engulfing", "order_block")
+    body = to_risk_request(cands[0])
+    assert body["setup_type"] == "fvg_entry"
 
 
 @pytest.mark.asyncio
@@ -352,7 +354,9 @@ async def test_replay_emits_all_six_setup_types():
     types = {s["setup_type"] for s in result["signals"]}
     assert "sweep_reclaim" in types
     assert "po3_judas" in types
-    assert types & {"fvg_entry", "ob_fvg"}
+    assert "fvg_entry" in types
+    assert "ob_fvg" not in types
+    assert all(b.get("setup_type") != "ob_fvg" for b in result["risk_calls"])
     assert "sd_extension_fade" in types
     assert "vwap_pullback_cont" in types
     assert "avwap_ob_confluence" in types
@@ -507,9 +511,11 @@ def test_quant_walkforward_defaults():
     assert p.s4_min_rr_at_3s == 2.0
     assert p.s4_news_window_sec == 900
     assert p.s5_trend_bars == 20
+    assert p.s5_first_touch_lookback_bars == 8
     assert p.s5_min_rr == 2.0
     assert p.s6_min_rr == 2.0
     assert p.s6_min_conviction == 70
+    assert p.s6_approach_tol_atr == 0.15
     assert p.min_conviction_for("avwap_ob_confluence") == 70
 
 
@@ -536,6 +542,8 @@ def test_quant_schemas_include_po3_judas():
     assert fb["items"]["required"] == ["name", "weight", "score"]
     assert setup["properties"]["contributing_factors"]["items"]["enum"] == list(STABLE_FACTORS)
     assert fb["items"]["properties"]["name"]["enum"] == list(STABLE_FACTORS)
+    assert "ob_fvg" not in req["properties"]["setup_type"]["enum"]
+    assert "ob_fvg" not in setup["properties"]["setup_type"]["enum"]
 
 
 @pytest.mark.asyncio

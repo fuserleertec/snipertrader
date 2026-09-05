@@ -1,6 +1,8 @@
 """Setup 2 — FVG mitigation at a VWAP / volume-profile node.
 
-``setup_type`` is ``fvg_entry``, or ``ob_fvg`` when an order block overlaps.
+Wire ``setup_type`` is always ``fvg_entry``. Quant ``/risk/validate`` does
+not accept ``ob_fvg``. An overlapping order block still goes in
+``trigger_event_ids`` and ``contributing_factors`` (``order_block``).
 Active zones come from Redis ``fvg:{symbol}:*`` (TTL ≤ 48h).
 """
 
@@ -175,7 +177,6 @@ class FVGEntryDetector:
             and ob.direction == fvg.direction
             and ranges_overlap(ob.low, ob.high, fvg.low, fvg.high)
         ]
-        setup_type = "ob_fvg" if overlapping else "fvg_entry"
         ids = [fvg.id] + [ob.id for ob in overlapping]
         pad = self.params.s2_overlap_tol_atr * atr_val
         confluence = 1
@@ -209,7 +210,7 @@ class FVGEntryDetector:
             names.append("kill_zone")
         cand = SetupCandidate(
             setup_number=SETUP_NUMBER,
-            setup_type=setup_type,  # type: ignore[arg-type]
+            setup_type="fvg_entry",
             symbol=bar.symbol,
             asset_class=klass,
             side=side,  # type: ignore[arg-type]

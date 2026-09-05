@@ -83,7 +83,7 @@ ML **omits `id`** on the request. Publish to `setup_signals` only when
 | Setup | `setup_type` | Performance key |
 |---|---|---|
 | 1 Liquidity sweep + VWAP reclaim | `sweep_reclaim` | |
-| 2 FVG at VWAP / HVN | `fvg_entry` (`ob_fvg` when an order block overlaps) | |
+| 2 FVG at VWAP / HVN | `fvg_entry` (OB overlap via `trigger_event_ids` + `order_block` factor; never `ob_fvg` on validate/publish) | |
 | 3 PO3 / Judas | `po3_judas` | |
 | 4 SD extension fade | `sd_extension_fade` | `4_sd_extension_fade` |
 | 5 VWAP pullback continuation | `vwap_pullback_cont` | `5_vwap_pullback_cont` |

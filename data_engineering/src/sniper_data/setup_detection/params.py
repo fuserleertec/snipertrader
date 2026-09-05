@@ -19,7 +19,7 @@ class SetupParams:
     s1_require_confirmed_sweep: bool = True
     s1_timeframes: tuple[str, ...] = ("5m", "15m")
 
-    # Setup 2 — fvg_entry / ob_fvg
+    # Setup 2 — fvg_entry (OB overlap is trigger ids + order_block factor)
     s2_overlap_tol_atr: float = 0.05
     s2_pin_wick_ratio: float = 2.5
     s2_max_fvg_age_hours: float = 24.0

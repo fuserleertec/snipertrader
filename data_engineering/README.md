@@ -444,7 +444,7 @@ otherwise the detector measures the LH/HL break from `ohlcv_bars`.
 | Setup | `setup_type` | Rule |
 |---|---|---|
 | 1 | `sweep_reclaim` | Confirmed sweep + MSS + session-VWAP close on **5m/15m**. Stop = extreme ± `0.05×ATR(14)`. TP = nearer of ±1σ/±2σ with `min_rr=2.0`. Max 15 bars sweep→MSS. |
-| 2 | `fvg_entry` or `ob_fvg` | FVG age ≤ 24h overlapping session VWAP **or** HVN/POC (`overlap_tol=0.05×ATR`). Confirm engulfing **or** pin (`wick_ratio=2.5`). Entry = confirmation close. Stop beyond FVG + ATR buffer. Target = prior swing, else 2R. |
+| 2 | `fvg_entry` | FVG age ≤ 24h overlapping session VWAP **or** HVN/POC (`overlap_tol=0.05×ATR`). Confirm engulfing **or** pin (`wick_ratio=2.5`). Entry = confirmation close. Stop beyond FVG + ATR buffer. Target = prior swing, else 2R. Overlapping OB stays on `trigger_event_ids` + `order_block` factor — Quant does **not** accept `ob_fvg`. |
 | 3 | `po3_judas` | Accum `session:{symbol}:asia` (Globex optional for futures). Kill zone `ny_am` (crypto: NY AM or London). Displacement body ≥ `1.2×ATR` within 6 bars. **Require** ±1σ/±2σ tag. Stop = wick ± ATR buffer. TP = opposite accum extreme. |
 
 Orchestrator: setups 1–3 run in parallel. Dedupe (`SETUP_DEDUPE_WINDOW_SEC=300`)

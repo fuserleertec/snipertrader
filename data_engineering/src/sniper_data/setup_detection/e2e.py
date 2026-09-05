@@ -62,10 +62,12 @@ LOCKED_TUNABLES = {
     "s4_news_window_sec": 900,
     "s4_min_conviction": 60,
     "s5_trend_bars": 20,
+    "s5_first_touch_lookback_bars": 8,
     "s5_min_rr": 2.0,
     "s5_min_conviction": 60,
     "s6_min_rr": 2.0,
     "s6_min_conviction": 70,
+    "s6_approach_tol_atr": 0.15,
     "s6_htf_timeframes": ("1h", "4h"),
     "dedupe_window_sec": 300,
     "min_conviction_to_validate": 60,
@@ -312,12 +314,11 @@ async def run_setup2_e2e(*, with_ob: bool = False, approved: bool = True) -> dic
     signals = [r["value"] for r in bus.topics.get("setup_signals", [])]
     raw = orch.raw_log[-1] if orch.raw_log else {}
     body = captured[0] if captured else {}
-    expected_type = "ob_fvg" if with_ob else "fvg_entry"
     actual_type = raw.get("setup_type")
     ids = raw.get("trigger_event_ids") or []
     confirm_close = setup2_retrace_bars()[-1].close
     checks = [
-        _assert("setup_type", actual_type == expected_type, actual=actual_type, expected=expected_type),
+        _assert("setup_type", actual_type == "fvg_entry", actual=actual_type, expected="fvg_entry"),
         _assert("confluence_vwap_or_hvn", True, expected=LOCKED_TUNABLES["s2_confluence"]),
         _assert("entry_confirm_close", raw.get("entry") == confirm_close, actual=raw.get("entry"), expected=confirm_close),
         _assert("stop_present", raw.get("stop") is not None),
@@ -334,6 +335,13 @@ async def run_setup2_e2e(*, with_ob: bool = False, approved: bool = True) -> dic
             required_factors=("fvg", "engulfing", "order_block") if with_ob else ("fvg", "engulfing"),
         ),
     ]
+    if with_ob:
+        checks.append(_assert("trigger_has_ob", any(str(i).startswith("ob-") for i in ids), actual=ids))
+    if body:
+        checks.append(_assert("risk_setup_type_fvg_entry", body.get("setup_type") == "fvg_entry", actual=body.get("setup_type")))
+        checks.append(_assert("risk_not_ob_fvg", body.get("setup_type") != "ob_fvg", actual=body.get("setup_type")))
+    if approved and signals:
+        checks.append(_assert("signal_setup_type_fvg_entry", signals[0].get("setup_type") == "fvg_entry", actual=signals[0].get("setup_type")))
     if approved:
         checks.append(_assert("published_one", len(signals) == 1, actual=len(signals)))
         if signals:
@@ -771,7 +779,8 @@ async def run_cli_replay_check() -> dict[str, Any]:
     risk_before = bool(result["risk_calls"]) and all("id" not in b for b in result["risk_calls"])
     checks = [
         _assert("sweep_reclaim", "sweep_reclaim" in types, actual=sorted(types)),
-        _assert("fvg_or_ob", bool(types & {"fvg_entry", "ob_fvg"}), actual=sorted(types)),
+        _assert("fvg_entry", "fvg_entry" in types, actual=sorted(types)),
+        _assert("no_ob_fvg_wire", "ob_fvg" not in types and all(b.get("setup_type") != "ob_fvg" for b in result["risk_calls"]), actual=sorted(types)),
         _assert("po3_judas", "po3_judas" in types, actual=sorted(types)),
         _assert("sd_extension_fade", "sd_extension_fade" in types, actual=sorted(types)),
         _assert("vwap_pullback_cont", "vwap_pullback_cont" in types, actual=sorted(types)),

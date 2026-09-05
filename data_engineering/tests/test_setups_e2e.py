@@ -38,6 +38,8 @@ def test_locked_tunables_match_quant():
     assert p.s3_kill_zone == LOCKED_TUNABLES["s3_kill_zone"] == "ny_am"
     assert p.dedupe_window_sec == LOCKED_TUNABLES["dedupe_window_sec"] == 300
     assert p.min_conviction_to_validate == LOCKED_TUNABLES["min_conviction_to_validate"] == 60
+    assert p.s5_first_touch_lookback_bars == LOCKED_TUNABLES["s5_first_touch_lookback_bars"] == 8
+    assert p.s6_approach_tol_atr == LOCKED_TUNABLES["s6_approach_tol_atr"] == 0.15
 
 
 @pytest.mark.asyncio
@@ -68,7 +70,11 @@ async def test_e2e_setup2_fvg_vwap_hvn_entry_then_risk():
 async def test_e2e_setup2_ob_fvg_when_ob_overlaps():
     result = await run_setup2_e2e(with_ob=True, approved=True)
     _require_pass(result)
-    assert result["setup_type"] == "ob_fvg"
+    assert result["setup_type"] == "fvg_entry"
+    assert result["risk_request"]["setup_type"] == "fvg_entry"
+    assert result["published_signal"]["setup_type"] == "fvg_entry"
+    assert "order_block" in result["published_signal"]["contributing_factors"]
+    assert any(str(i).startswith("ob-") for i in result["raw"]["trigger_event_ids"])
 
 
 @pytest.mark.asyncio
