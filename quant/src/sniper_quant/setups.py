@@ -1,7 +1,7 @@
-"""Locked Phase 1 setup_type enum from ML Researchers.
+"""Locked setup_type enum from ML Researchers (Phase 2 alignment).
 
 ML publishes to ``setup_signals`` in Phase 2 only after ``POST /risk/validate``
-returns ``approved: true``. These six names are the contract — unknown values
+returns ``approved: true``. These seven names are the contract — unknown values
 are rejected (422) on the pre-filter.
 """
 
@@ -14,6 +14,7 @@ SETUP_TYPES: tuple[str, ...] = (
     "order_block",
     "sweep_mss",
     "ob_fvg",
+    "po3_judas",
 )
 
 SETUP_TYPE_NOTES: dict[str, str] = {
@@ -23,6 +24,7 @@ SETUP_TYPE_NOTES: dict[str, str] = {
     "order_block": "Order-block reaction.",
     "sweep_mss": "Sweep followed by market-structure shift.",
     "ob_fvg": "Order block + fair-value gap confluence.",
+    "po3_judas": "Power of Three / Judas swing.",
 }
 
 SIGNAL_TIMEFRAMES: tuple[str, ...] = ("1m", "5m", "15m")

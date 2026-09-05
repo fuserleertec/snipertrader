@@ -48,7 +48,7 @@ is `true`. After approval, assign `id` and persist `adjusted_position_size`.
 
 ### Locked `setup_type` enum
 
-`sweep_reclaim` · `fvg_entry` · `mss_break` · `order_block` · `sweep_mss` · `ob_fvg`
+`sweep_reclaim` · `fvg_entry` · `mss_break` · `order_block` · `sweep_mss` · `ob_fvg` · `po3_judas`
 
 ### Required stub fields
 
@@ -91,7 +91,7 @@ Pass `cursor` from the previous page's `next_cursor`.
 `GET /signals/{id}` → `Signal`
 
 `Signal` fields: `id`, `ts_ms`, `symbol`, `asset_class`, `setup_type`
-(six locked values), `side`, `entry`, `stop`, `target`,
+(seven locked values), `side`, `entry`, `stop`, `target`,
 `status` (`ACTIVE`|`TP_HIT`|`SL_HIT`|`CANCELLED`), `confidence`,
 `timeframe`, `ref_session`, `trigger_event_ids`.
 

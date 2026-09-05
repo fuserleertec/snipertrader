@@ -56,6 +56,15 @@ def test_validate_omits_id_and_rejects_unknown_setup():
     assert resp.status_code == 422
 
 
+def test_validate_accepts_po3_judas():
+    http, _ = _client()
+    resp = http.post("/risk/validate", json=_payload(setup_type="po3_judas"))
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["approved"] is True
+    assert body["reason"] == "ok"
+
+
 def test_validate_requires_risk_fields():
     http, _ = _client()
     body = _payload()
@@ -102,6 +111,7 @@ def test_openapi_and_health():
         "order_block",
         "sweep_mss",
         "ob_fvg",
+        "po3_judas",
     ]
     schema = spec["components"]["schemas"]["CandidateSignal"]
     assert "id" not in schema.get("properties", {})

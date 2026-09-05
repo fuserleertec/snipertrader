@@ -47,6 +47,7 @@ class SetupType(str, Enum):
     ORDER_BLOCK = "order_block"
     SWEEP_MSS = "sweep_mss"
     OB_FVG = "ob_fvg"
+    PO3_JUDAS = "po3_judas"
 
 
 class SignalTimeframe(str, Enum):

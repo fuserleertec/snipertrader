@@ -42,6 +42,7 @@ JSON Schema: [`schemas/risk_validate_request.schema.json`](../schemas/risk_valid
 | `order_block` | Order-block reaction |
 | `sweep_mss` | Sweep followed by MSS |
 | `ob_fvg` | Order block + FVG confluence |
+| `po3_judas` | Power of Three / Judas swing |
 
 Unknown values → HTTP **422**.
 
@@ -172,7 +173,7 @@ next page.
 
 `Signal` fields (dashboard row — aligned with the ML validate candidate):
 
-`id`, `ts_ms`, `symbol`, `asset_class`, `setup_type` (six locked values),
+`id`, `ts_ms`, `symbol`, `asset_class`, `setup_type` (seven locked values),
 `side`, `entry`, `stop`, `target`, `status`
 (`ACTIVE`\|`TP_HIT`\|`SL_HIT`\|`CANCELLED`), `confidence`, `timeframe`
 (`1m`\|`5m`\|`15m`), `ref_session`, `trigger_event_ids`.
@@ -187,7 +188,7 @@ ws.onmessage = (ev) => {
 
 ## Backtester
 
-Event-driven replay of OHLCV + setup signals (all six types). Same-bar
+Event-driven replay of OHLCV + setup signals (all seven locked types). Same-bar
 SL+TP → **SL wins**. Transaction costs = commission + slippage.
 Metrics: **win rate**, **avg R:R**, **Sharpe** (√252), **max drawdown**.
 

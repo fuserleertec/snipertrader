@@ -160,7 +160,7 @@ def _scripted_trade(
 
 
 def demo_universe() -> tuple[list[OHLCVBar], list[BacktestSignal]]:
-    """Scripted wins/losses for all six placeholder setups + correlated ETH tape."""
+    """Scripted wins/losses for all locked setups + correlated ETH tape."""
     bars: list[OHLCVBar] = []
     signals: list[BacktestSignal] = []
     start = 1_700_000_000_000

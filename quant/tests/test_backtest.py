@@ -13,11 +13,11 @@ def test_metrics_helpers():
     assert sharpe_ratio([0.01, -0.01, 0.02, -0.005]) != 0.0
 
 
-def test_inmemory_demo_runs_all_six_setups():
+def test_inmemory_demo_runs_all_locked_setups():
     result = run_inmemory_demo()
     used = {t.setup_type for t in result.trades}
     assert used == set(SETUP_TYPES)
-    assert result.metrics.n_trades == 12
+    assert result.metrics.n_trades == 14
     m = result.metrics
     assert abs(m.win_rate - 0.5) < 1e-9
     assert m.max_drawdown >= 0.0
@@ -69,8 +69,9 @@ def test_event_sl_before_tp_same_bar():
     assert result.trades[0].status is SignalStatus.SL_HIT
 
 
-def test_demo_universe_has_six_setup_types():
+def test_demo_universe_has_locked_setup_types():
     _bars, signals = demo_universe()
     types = {s.setup_type for s in signals}
     assert types == set(SETUP_TYPES)
-    assert len(signals) == 12
+    assert "po3_judas" in types
+    assert len(signals) == 14

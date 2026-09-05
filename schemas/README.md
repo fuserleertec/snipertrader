@@ -23,7 +23,7 @@ HTTP contracts used by Quant (`POST /risk/validate`) — not Kafka topics:
 | `GET /signals`, `GET /signals/{id}` | [`dashboard_signal.schema.json`](dashboard_signal.schema.json) | Frontend table row. List wrapper: `{items, next_cursor}` |
 | `WS /ws/signals` | [`signal_ws_event.schema.json`](signal_ws_event.schema.json) | `{type: signal.upsert\|signal.status, signal}` |
 
-`setup_type` (locked, Phase 1): `sweep_reclaim` · `fvg_entry` · `mss_break` · `order_block` · `sweep_mss` · `ob_fvg`.
+`setup_type` (locked): `sweep_reclaim` · `fvg_entry` · `mss_break` · `order_block` · `sweep_mss` · `ob_fvg` · `po3_judas`.
 
 `setup_signal.schema.json` is additive in Rev. 1.1: optional `entry`, `stop`, `target`, `timeframe`, `trigger_event_ids`, `session_type`, `position_size`, `status`. Kafka publish still **requires** `id`. ML assigns `id` only after the Risk Pre-Filter approves. See [`quant/README.md`](../quant/README.md).
 
