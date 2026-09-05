@@ -5,7 +5,17 @@ import pytest
 from sniper_data.bus.redis_store import InMemoryStateStore
 from sniper_data.config import FVG_TTL_MAX_SECONDS
 from sniper_data.models import AssetClass, FVGZone, MssEvent, OrderBlock, SweepEvent
-from sniper_data.zones import evict_expired_zones, store_fvg, store_mss, store_ob, store_sweep
+from sniper_data.zones import (
+    evict_expired_zones,
+    fvg_channel,
+    mss_channel,
+    ob_channel,
+    store_fvg,
+    store_mss,
+    store_ob,
+    store_sweep,
+    sweep_channel,
+)
 
 
 @pytest.mark.asyncio
@@ -100,6 +110,70 @@ async def test_mss_and_ob_ttl_enforced_and_clamped():
         await store.set("mss:BTCUSDT:bare", {"id": "bare"})
     with pytest.raises(ValueError, match="TTL"):
         await store.set("ob:ES:bare", {"id": "bare"})
+
+
+@pytest.mark.asyncio
+async def test_store_zone_publishes_schema_payload():
+    store = InMemoryStateStore()
+    sweep = SweepEvent(
+        id="s1",
+        symbol="BTCUSDT",
+        asset_class=AssetClass.CRYPTO,
+        side="buy",
+        swept_level=64000.0,
+        ts_ms=1_717_500_000_000,
+    )
+    fvg = FVGZone(
+        id="z1",
+        symbol="BTCUSDT",
+        asset_class=AssetClass.CRYPTO,
+        direction="bearish",
+        high=100.0,
+        low=99.0,
+        created_ts_ms=1_717_500_000_000,
+        mitigated=False,
+    )
+    mss = MssEvent(
+        id="m1",
+        symbol="BTCUSDT",
+        asset_class=AssetClass.CRYPTO,
+        ts_ms=1_717_500_000_000,
+        direction="bearish",
+        broken_level=99.0,
+        swing_high=101.0,
+        swing_low=98.0,
+        trigger_sweep_id="s1",
+        trigger_sweep_side="sell",
+    )
+    ob = OrderBlock(
+        id="ob1",
+        symbol="BTCUSDT",
+        asset_class=AssetClass.CRYPTO,
+        direction="bullish",
+        high=100.0,
+        low=99.0,
+        created_ts_ms=1_717_500_000_000,
+    )
+    await store_sweep(store, sweep)
+    await store_fvg(store, fvg)
+    await store_mss(store, mss)
+    await store_ob(store, ob)
+    # Mitigation / confirm updates also publish.
+    await store_fvg(store, fvg.model_copy(update={"mitigated": True}))
+    await store_ob(store, ob.model_copy(update={"mitigated": True}))
+    await store_sweep(store, sweep.model_copy(update={"confirmed": True}))
+
+    sweep_frames = store.channels[sweep_channel("BTCUSDT")]
+    fvg_frames = store.channels[fvg_channel("BTCUSDT")]
+    mss_frames = store.channels[mss_channel("BTCUSDT")]
+    ob_frames = store.channels[ob_channel("BTCUSDT")]
+    assert sweep_frames[-1]["schema_version"] == "1.1"
+    assert sweep_frames[-1]["confirmed"] is True
+    assert fvg_frames[-1]["mitigated"] is True
+    assert fvg_frames[-1]["schema_version"] == "1.1"
+    assert mss_frames[-1]["schema_version"] == "1.1"
+    assert ob_frames[-1]["mitigated"] is True
+    assert set(sweep_frames[-1]) >= {"id", "symbol", "side", "swept_level", "ts_ms", "asset_class"}
 
 
 @pytest.mark.asyncio

@@ -4,13 +4,19 @@ import json
 from pathlib import Path
 
 from sniper_data.models import (
+    AVWAPBands,
+    AnchoredVWAP,
     AssetClass,
+    KillZoneEvent,
     MssEvent,
     OHLCVBar,
     OrderBlock,
     RawTick,
+    SessionType,
     SweepEvent,
     Timeframe,
+    VolumeNode,
+    VolumeProfile,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -157,6 +163,86 @@ def test_mss_required_and_optional():
     )
     assert bare.timeframe is None
     assert bare.confirmed is None
+
+
+PHASE2 = {
+    "avwap.schema.json",
+    "volume_profile.schema.json",
+    "kill_zone_event.schema.json",
+}
+
+
+def test_phase2_schemas_match_exact_wire_payload():
+    names = {p.name for p in SCHEMAS.glob("*.schema.json")}
+    assert PHASE2 <= names
+    avwap = _load("avwap.schema.json")
+    assert "schema_version" not in avwap["properties"]
+    assert avwap["required"] == [
+        "anchor_id",
+        "symbol",
+        "anchor_time",
+        "anchor_price",
+        "vwap_value",
+        "bands",
+        "asset_class",
+    ]
+    vp = _load("volume_profile.schema.json")
+    assert "schema_version" not in vp["properties"]
+    assert vp["required"] == [
+        "symbol",
+        "session_type",
+        "high_volume_nodes",
+        "low_volume_nodes",
+        "poc",
+        "timestamp",
+    ]
+    kz = _load("kill_zone_event.schema.json")
+    assert "schema_version" not in kz["properties"]
+    assert kz["required"] == [
+        "symbol",
+        "kill_zone",
+        "start_time",
+        "end_time",
+        "active",
+        "asset_class",
+    ]
+
+    snap = AnchoredVWAP(
+        anchor_id="uuid",
+        symbol="BTCUSDT",
+        anchor_time=1725458400000,
+        anchor_price=64000.00,
+        vwap_value=64500.00,
+        bands=AVWAPBands(
+            plus_1_sigma=64700.00,
+            plus_2_sigma=64950.00,
+            plus_3_sigma=65200.00,
+            minus_1_sigma=64300.00,
+            minus_2_sigma=64050.00,
+            minus_3_sigma=63800.00,
+        ),
+        asset_class=AssetClass.CRYPTO,
+    )
+    dumped = snap.model_dump(mode="json")
+    assert set(dumped) == set(avwap["required"])
+    profile = VolumeProfile(
+        symbol="BTCUSDT",
+        session_type=SessionType.NY_AM,
+        high_volume_nodes=[VolumeNode(price=65000.00, volume=1500.5)],
+        low_volume_nodes=[VolumeNode(price=64900.00, volume=200.0)],
+        poc=65000.00,
+        timestamp=1725459000000,
+    )
+    assert set(profile.model_dump(mode="json")) == set(vp["required"])
+    event = KillZoneEvent(
+        symbol="BTCUSDT",
+        kill_zone=SessionType.NY_AM,
+        start_time=1725458400000,
+        end_time=1725462000000,
+        active=True,
+        asset_class=AssetClass.CRYPTO,
+    )
+    assert set(event.model_dump(mode="json")) == set(kz["required"])
 
 
 def test_order_block_required_and_optional():

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snipertrader.ai/schemas/avwap.schema.json",
+  "title": "AnchoredVWAP",
+  "description": "Anchored VWAP with volume-weighted σ bands. Redis key: avwap:{symbol}:{anchor_id}. Wire payload has NO schema_version (Phase 2 contract). σ = sqrt(Σ v_i (p_i − VWAP)² / Σ v_i).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "anchor_id",
+    "symbol",
+    "anchor_time",
+    "anchor_price",
+    "vwap_value",
+    "bands",
+    "asset_class"
+  ],
+  "properties": {
+    "anchor_id": { "type": "string" },
+    "symbol": { "type": "string", "pattern": "^[A-Z0-9]+$" },
+    "anchor_time": { "type": "integer" },
+    "anchor_price": { "type": "number" },
+    "vwap_value": { "type": "number" },
+    "bands": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "plus_1_sigma",
+        "plus_2_sigma",
+        "plus_3_sigma",
+        "minus_1_sigma",
+        "minus_2_sigma",
+        "minus_3_sigma"
+      ],
+      "properties": {
+        "plus_1_sigma": { "type": "number" },
+        "plus_2_sigma": { "type": "number" },
+        "plus_3_sigma": { "type": "number" },
+        "minus_1_sigma": { "type": "number" },
+        "minus_2_sigma": { "type": "number" },
+        "minus_3_sigma": { "type": "number" }
+      }
+    },
+    "asset_class": { "type": "string", "enum": ["crypto", "equity", "futures"] }
+  }
+}

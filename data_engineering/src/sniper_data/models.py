@@ -191,3 +191,85 @@ class SetupSignal(BaseModel):
     ref_vwap: float | None = None
     ref_session: str | None = None
     ts_ms: int
+
+
+# ── Phase 2 wire models (NO schema_version — exact Redis / Kafka payloads) ──
+
+
+class AnchorSource(str, Enum):
+    MANUAL = "manual"
+    SWING_HIGH = "swing_high"
+    SWING_LOW = "swing_low"
+    EARNINGS = "earnings"
+    NEWS = "news"
+
+
+class AVWAPBands(BaseModel):
+    plus_1_sigma: float
+    plus_2_sigma: float
+    plus_3_sigma: float
+    minus_1_sigma: float
+    minus_2_sigma: float
+    minus_3_sigma: float
+
+
+class AnchoredVWAP(BaseModel):
+    """Redis ``avwap:{symbol}:{anchor_id}`` — exact Phase 2 payload."""
+
+    anchor_id: str
+    symbol: str
+    anchor_time: int
+    anchor_price: float
+    vwap_value: float
+    bands: AVWAPBands
+    asset_class: AssetClass
+
+
+class VolumeNode(BaseModel):
+    price: float
+    volume: float
+
+
+class VolumeProfile(BaseModel):
+    """Redis ``volume_profile:{symbol}:{session_type}`` — exact Phase 2 payload."""
+
+    symbol: str
+    session_type: SessionType
+    high_volume_nodes: list[VolumeNode]
+    low_volume_nodes: list[VolumeNode]
+    poc: float
+    timestamp: int
+
+
+class KillZoneEvent(BaseModel):
+    """Kafka ``kill_zone_events`` / Redis ``kill_zone:{symbol}`` — exact Phase 2 payload."""
+
+    symbol: str
+    kill_zone: SessionType
+    start_time: int
+    end_time: int
+    active: bool
+    asset_class: AssetClass
+
+
+class AnchorMeta(BaseModel):
+    """Internal Redis ``avwap:meta:{symbol}:{anchor_id}`` (not a wire schema)."""
+
+    anchor_id: str
+    symbol: str
+    anchor_time: int
+    anchor_price: float
+    source: AnchorSource
+    asset_class: AssetClass
+    created_ts_ms: int
+
+
+class AnchorRegistration(BaseModel):
+    """HTTP / Kafka inbound contract for ML + manual anchors."""
+
+    symbol: str
+    anchor_time: int
+    anchor_price: float
+    source: AnchorSource = AnchorSource.MANUAL
+    asset_class: AssetClass | None = None
+    anchor_id: str | None = None

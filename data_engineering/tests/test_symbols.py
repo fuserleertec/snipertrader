@@ -13,12 +13,14 @@ def test_uppercase_strip_hyphens():
     assert normalize_symbol("AAPL") == "AAPL"
     assert normalize_symbol("es") == "ES"
     assert normalize_symbol("NQ1!") == "NQ1"
+    assert normalize_symbol("ESZ2024") == "ESZ2024"
 
 
 def test_asset_class_field():
     assert infer_asset_class("BTCUSDT") is AssetClass.CRYPTO
     assert infer_asset_class("AAPL") is AssetClass.EQUITY
     assert infer_asset_class("ES") is AssetClass.FUTURES
+    assert infer_asset_class("ESZ2024") is AssetClass.FUTURES
     assert infer_asset_class("XYZ", "futures") is AssetClass.FUTURES
 
 

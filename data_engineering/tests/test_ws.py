@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
@@ -8,7 +10,18 @@ from sniper_data.api import create_app
 from sniper_data.bus.redis_store import InMemoryStateStore
 from sniper_data.bus.timescaledb import InMemoryOHLCVStore
 from sniper_data.config import Settings
-from sniper_data.models import AssetClass, OHLCVBar, SessionLevels, SessionType, Timeframe
+from sniper_data.zones import store_sweep
+from sniper_data.models import (
+    AssetClass,
+    FVGZone,
+    MssEvent,
+    OHLCVBar,
+    OrderBlock,
+    SessionLevels,
+    SessionType,
+    SweepEvent,
+    Timeframe,
+)
 
 
 def _app(store=None, bars=None):
@@ -91,8 +104,147 @@ def test_websocket_ohlcv_seeds_and_follows_channel():
         assert nxt["symbol"] == "BTCUSDT"
 
 
+def test_websocket_avwap_seeds_and_follows():
+    store = InMemoryStateStore()
+    snap = {
+        "anchor_id": "a1",
+        "symbol": "BTCUSDT",
+        "anchor_time": 1,
+        "anchor_price": 64000.0,
+        "vwap_value": 64500.0,
+        "bands": {
+            "plus_1_sigma": 64700.0,
+            "plus_2_sigma": 64950.0,
+            "plus_3_sigma": 65200.0,
+            "minus_1_sigma": 64300.0,
+            "minus_2_sigma": 64050.0,
+            "minus_3_sigma": 63800.0,
+        },
+        "asset_class": "crypto",
+    }
+    store.data["avwap:latest:BTCUSDT"] = __import__("json").dumps(snap)
+    store.data["avwap:index:BTCUSDT"] = '["a1"]'
+    store.data["avwap:BTCUSDT:a1"] = __import__("json").dumps(snap)
+    client, store, _ = _app(store=store)
+    with client.websocket_connect("/v1/ws/avwap?symbol=btc-usdt") as ws:
+        seeded = ws.receive_json()
+        assert seeded["vwap_value"] == 64500.0
+        live = {**snap, "vwap_value": 64600.0}
+        store.channels.setdefault("avwap:BTCUSDT", []).append(live)
+        nxt = ws.receive_json()
+        assert nxt["vwap_value"] == 64600.0
+
+
 def test_websocket_ohlcv_requires_timeframe():
     client, _, _ = _app()
     with pytest.raises(WebSocketDisconnect):
         with client.websocket_connect("/v1/ws/ohlcv?symbol=BTCUSDT"):
             pass
+
+
+def _sweep() -> SweepEvent:
+    return SweepEvent(
+        id="s1",
+        symbol="BTCUSDT",
+        asset_class=AssetClass.CRYPTO,
+        side="sell",
+        swept_level=65000.0,
+        ts_ms=1_717_500_000_000,
+        volume_profile="aggressive",
+        confirmed=True,
+    )
+
+
+def _fvg() -> FVGZone:
+    return FVGZone(
+        id="z1",
+        symbol="BTCUSDT",
+        asset_class=AssetClass.CRYPTO,
+        direction="bullish",
+        high=65010.0,
+        low=64980.0,
+        created_ts_ms=1_717_500_000_000,
+        ttl_seconds=3600,
+    )
+
+
+def _mss() -> MssEvent:
+    return MssEvent(
+        id="m1",
+        symbol="BTCUSDT",
+        asset_class=AssetClass.CRYPTO,
+        ts_ms=1_717_500_000_000,
+        direction="bullish",
+        broken_level=64950.0,
+        swing_high=65100.0,
+        swing_low=64900.0,
+        trigger_sweep_id="s1",
+        trigger_sweep_side="buy",
+        timeframe="5m",
+    )
+
+
+def _ob() -> OrderBlock:
+    return OrderBlock(
+        id="ob1",
+        symbol="BTCUSDT",
+        asset_class=AssetClass.CRYPTO,
+        direction="bearish",
+        high=65100.0,
+        low=65050.0,
+        created_ts_ms=1_717_500_000_000,
+        ttl_seconds=3600,
+        timeframe=Timeframe.M15,
+    )
+
+
+@pytest.mark.parametrize(
+    "route,prefix,seed_fn,live_update,expect_id,expect_field",
+    [
+        ("/v1/ws/sweep", "sweep", _sweep, {"confirmed": False}, "s1", ("side", "sell")),
+        ("/v1/ws/fvg", "fvg", _fvg, {"mitigated": True}, "z1", ("direction", "bullish")),
+        ("/v1/ws/mss", "mss", _mss, {"confirmed": True}, "m1", ("trigger_sweep_side", "buy")),
+        ("/v1/ws/ob", "ob", _ob, {"mitigated": True}, "ob1", ("direction", "bearish")),
+    ],
+)
+def test_websocket_zone_overlay_seeds_and_follows(
+    route, prefix, seed_fn, live_update, expect_id, expect_field
+):
+    store = InMemoryStateStore()
+    seed = seed_fn()
+    key = f"{prefix}:{seed.symbol}:{seed.id}"
+    store.data[key] = seed.model_dump_json()
+    client, store, _ = _app(store=store)
+    field, expected = expect_field
+    with client.websocket_connect(f"{route}?symbol=btc-usdt") as ws:
+        seeded = ws.receive_json()
+        assert seeded["schema_version"] == "1.1"
+        assert seeded["id"] == expect_id
+        assert seeded["symbol"] == "BTCUSDT"
+        assert seeded[field] == expected
+        live = seed.model_copy(update=live_update)
+        store.channels.setdefault(f"{prefix}:BTCUSDT", []).append(live.model_dump(mode="json"))
+        nxt = ws.receive_json()
+        assert nxt["schema_version"] == "1.1"
+        assert nxt["id"] == expect_id
+        for k, v in live_update.items():
+            assert nxt[k] == v
+
+
+def test_websocket_sweep_receives_store_publish():
+    """store_sweep SET+EX then PUBLISH — WS client sees the live frame."""
+    store = InMemoryStateStore()
+    seed = _sweep()
+    store.data["sweep:BTCUSDT:s1"] = seed.model_dump_json()
+    client, store, _ = _app(store=store)
+    with client.websocket_connect("/v1/ws/sweep?symbol=btc-usdt") as ws:
+        seeded = ws.receive_json()
+        assert seeded["id"] == "s1"
+        live = seed.model_copy(update={"id": "s2", "confirmed": True, "reclaim": True})
+        asyncio.run(store_sweep(store, live, ttl_seconds=3600))
+        nxt = ws.receive_json()
+        assert nxt["schema_version"] == "1.1"
+        assert nxt["id"] == "s2"
+        assert nxt["confirmed"] is True
+        assert nxt["reclaim"] is True
+        assert nxt["side"] == "sell"

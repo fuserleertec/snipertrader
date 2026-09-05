@@ -17,6 +17,8 @@ as required on a **new** schema.
 | `mss_events` | [`mss_event.schema.json`](mss_event.schema.json) | Pattern detectors (Phase 2 stub) | Redis `mss:{symbol}:{id}` |
 | `order_block_zones` | [`order_block.schema.json`](order_block.schema.json) | Pattern detectors (Phase 2 stub) | Redis `ob:{symbol}:{id}` |
 | `setup_signals` | [`setup_signal.schema.json`](setup_signal.schema.json) | Signal engine (Phase 2 stub) | Downstream ML / UI |
+| `kill_zone_events` | [`kill_zone_event.schema.json`](kill_zone_event.schema.json) | Kill-zone timer (Phase 2) | Redis `kill_zone:{symbol}`, Frontend / ML |
+| `anchor_events` | (inbound `AnchorRegistration` JSON) | ML / HTTP `/v1/anchors` | Anchored VWAP engine |
 
 ## Delta / aggressor (ML Researchers)
 
@@ -46,5 +48,32 @@ Redis key map (real-time state, not Kafka):
 | `mss:{symbol}:{id}` | **≤ 48h (required)** | Market-structure shift |
 | `ob:{symbol}:{id}` | **≤ 48h (required)** | Order-block zone |
 
+Pub/sub channels (Frontend overlay WebSockets; published by `store_*` after SET+EX):
+
+| Channel | WS route | Frame |
+|---|---|---|
+| `sweep:{symbol}` | `WS /v1/ws/sweep?symbol=` | `SweepEvent` |
+| `fvg:{symbol}` | `WS /v1/ws/fvg?symbol=` | `FVGZone` |
+| `mss:{symbol}` | `WS /v1/ws/mss?symbol=` | `MssEvent` |
+| `ob:{symbol}` | `WS /v1/ws/ob?symbol=` | `OrderBlock` |
+
 `anchor_type` ∈ `session` · `weekly` · `rolling`.
 `session_type` ∈ `asia` · `london` · `ny_am` · `ny_pm` · `rth` · `eth` · `globex`.
+
+## Phase 2 wire contracts
+
+Phase 2 Redis / Kafka payloads **do not include `schema_version`**. Field names
+match the Phase 2 spec exactly (`additionalProperties` is `false`).
+
+| Store | Schema file | Key / topic |
+|---|---|---|
+| Redis | [`avwap.schema.json`](avwap.schema.json) | `avwap:{symbol}:{anchor_id}` |
+| Redis | [`volume_profile.schema.json`](volume_profile.schema.json) | `volume_profile:{symbol}:{session_type}` |
+| Kafka + Redis | [`kill_zone_event.schema.json`](kill_zone_event.schema.json) | topic `kill_zone_events`; Redis `kill_zone:{symbol}` |
+
+Kill-zone class-level lookup (not a Kafka payload): `kill_zone:active:{asset_class}`
+holds `{kill_zone, start_time, end_time, active, asset_class}`.
+
+Convenience pointer (same AVWAP JSON as the last write): `avwap:latest:{symbol}`.
+Anchor metadata (not a wire schema): `avwap:meta:{symbol}:{anchor_id}`,
+index `avwap:index:{symbol}`.

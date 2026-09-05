@@ -108,3 +108,63 @@ def test_ohlcv_http_history():
     assert body["bars"][0]["buy_volume"] == 12.0
     assert body["bars"][0]["sell_volume"] == 8.0
     assert "delta" not in body["bars"][0]
+
+
+def test_phase2_anchor_avwap_volume_profile_kill_zone(client):
+    http, store = client
+    created = http.post(
+        "/v1/anchors",
+        json={
+            "symbol": "btc-usdt",
+            "anchor_time": 1725458400000,
+            "anchor_price": 64000.0,
+            "source": "manual",
+        },
+    )
+    assert created.status_code == 201
+    body = created.json()
+    assert body["symbol"] == "BTCUSDT"
+    assert body["source"] == "manual"
+    anchor_id = body["anchor_id"]
+    listed = http.get("/v1/anchors?symbol=BTCUSDT").json()
+    assert listed["anchors"][0]["anchor_id"] == anchor_id
+
+    store.data["avwap:BTCUSDT:" + anchor_id] = (
+        '{"anchor_id":"%s","symbol":"BTCUSDT","anchor_time":1725458400000,'
+        '"anchor_price":64000.0,"vwap_value":64500.0,'
+        '"bands":{"plus_1_sigma":64700.0,"plus_2_sigma":64950.0,"plus_3_sigma":65200.0,'
+        '"minus_1_sigma":64300.0,"minus_2_sigma":64050.0,"minus_3_sigma":63800.0},'
+        '"asset_class":"crypto"}' % anchor_id
+    )
+    store.data["avwap:latest:BTCUSDT"] = store.data["avwap:BTCUSDT:" + anchor_id]
+    latest = http.get("/v1/avwap/BTCUSDT").json()
+    assert latest["vwap_value"] == 64500.0
+    assert latest["bands"]["plus_1_sigma"] == 64700.0
+    assert "schema_version" not in latest
+    one = http.get(f"/v1/avwap/BTCUSDT/{anchor_id}").json()
+    assert one["anchor_id"] == anchor_id
+
+    store.data["volume_profile:BTCUSDT:ny_am"] = (
+        '{"symbol":"BTCUSDT","session_type":"ny_am",'
+        '"high_volume_nodes":[{"price":65000.0,"volume":1500.5}],'
+        '"low_volume_nodes":[{"price":64900.0,"volume":200.0}],'
+        '"poc":65000.0,"timestamp":1725459000000}'
+    )
+    vp = http.get("/v1/volume-profile/BTCUSDT/ny_am").json()
+    assert vp["poc"] == 65000.0
+    assert vp["session_type"] == "ny_am"
+
+    store.data["kill_zone:BTCUSDT"] = (
+        '{"symbol":"BTCUSDT","kill_zone":"ny_am","start_time":1,'
+        '"end_time":2,"active":true,"asset_class":"crypto"}'
+    )
+    store.data["kill_zone:active:crypto"] = (
+        '{"kill_zone":"ny_am","start_time":1,"end_time":2,"active":true,"asset_class":"crypto"}'
+    )
+    kz = http.get("/v1/kill-zone/BTCUSDT").json()
+    assert kz["active"] is True
+    klass = http.get("/v1/kill-zone/active/crypto").json()
+    assert klass["kill_zone"] == "ny_am"
+    metrics = http.get("/metrics")
+    assert metrics.status_code == 200
+    assert b"sniper_http_request_duration_seconds" in metrics.content

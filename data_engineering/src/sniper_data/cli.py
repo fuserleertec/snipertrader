@@ -14,8 +14,8 @@ def _setup_logging(level: str) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="sniper-data", description="Phase 1 market-data pipeline")
-    parser.add_argument("command", choices=["pipeline", "api", "evict", "demo"])
+    parser = argparse.ArgumentParser(prog="sniper-data", description="Phase 1+2 market-data pipeline")
+    parser.add_argument("command", choices=["pipeline", "api", "evict", "demo", "killzones"])
     parser.add_argument("--inmemory", action="store_true", help="Use in-process bus/store (no Docker).")
     parser.add_argument("--duration", type=float, default=None, help="Seconds to run the demo/pipeline.")
     parser.add_argument("--host", default=None)
@@ -46,6 +46,14 @@ def main(argv: list[str] | None = None) -> int:
                 await store.close()
 
         asyncio.run(_once())
+        return 0
+
+    if args.command == "killzones":
+        from sniper_data.kill_zones import run_killzone_loop
+
+        asyncio.run(
+            run_killzone_loop(inmemory=args.inmemory, duration_s=args.duration)
+        )
         return 0
 
     if args.command == "api":

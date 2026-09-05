@@ -47,6 +47,26 @@ def ob_key(symbol: str, zone_id: str) -> str:
     return f"ob:{symbol}:{zone_id}"
 
 
+def fvg_channel(symbol: str) -> str:
+    return f"fvg:{symbol}"
+
+
+def sweep_channel(symbol: str) -> str:
+    return f"sweep:{symbol}"
+
+
+def mss_channel(symbol: str) -> str:
+    return f"mss:{symbol}"
+
+
+def ob_channel(symbol: str) -> str:
+    return f"ob:{symbol}"
+
+
+def zone_scan_pattern(prefix: str, symbol: str) -> str:
+    return f"{prefix}:{symbol}:*"
+
+
 def clamp_ttl(ttl_seconds: int | None) -> int:
     if ttl_seconds is None:
         return FVG_TTL_MAX_SECONDS
@@ -62,6 +82,7 @@ async def store_fvg(
     ttl = clamp_ttl(ttl_seconds if ttl_seconds is not None else zone.ttl_seconds)
     payload = zone.model_copy(update={"ttl_seconds": ttl})
     await store.set(key, payload, ttl=ttl)
+    await store.publish(fvg_channel(zone.symbol), payload)
     return key
 
 
@@ -72,6 +93,7 @@ async def store_sweep(
 ) -> str:
     key = sweep_key(event.symbol, event.id)
     await store.set(key, event, ttl=clamp_ttl(ttl_seconds))
+    await store.publish(sweep_channel(event.symbol), event)
     return key
 
 
@@ -82,6 +104,7 @@ async def store_mss(
 ) -> str:
     key = mss_key(event.symbol, event.id)
     await store.set(key, event, ttl=clamp_ttl(ttl_seconds))
+    await store.publish(mss_channel(event.symbol), event)
     return key
 
 
@@ -94,6 +117,7 @@ async def store_ob(
     ttl = clamp_ttl(ttl_seconds if ttl_seconds is not None else zone.ttl_seconds)
     payload = zone.model_copy(update={"ttl_seconds": ttl})
     await store.set(key, payload, ttl=ttl)
+    await store.publish(ob_channel(zone.symbol), payload)
     return key
 
 
