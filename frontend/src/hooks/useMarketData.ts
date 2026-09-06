@@ -80,6 +80,12 @@ function isSession(value: unknown): value is SessionLevels {
   return typeof v.session_type === "string" && typeof v.open === "number";
 }
 
+/**
+ * Per-symbol DE chart book. The selected symbol is passed into existing
+ * GET/WS clients (ohlcv, vwap, session, avwap, VP, kill-zone).
+ * Mocks generate multi-symbol OHLC; live history may be thin outside BTCUSDT
+ * until DE seeds the full universe.
+ */
 export function useMarketData(symbol: string, timeframe: Timeframe): MarketState {
   const mocks = isMockMode();
   const streamKey = `${symbol}:${timeframe}`;

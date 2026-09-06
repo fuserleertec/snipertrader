@@ -220,6 +220,11 @@ export function mockDroppedPicks(cycle = 0, taken: Set<string> = new Set(), limi
     .slice(0, Math.min(16, Math.max(0, limit)));
 }
 
+/** Prepared `GET /v1/universe` mock — same known fields as `/top`, cap 20. */
+export function mockUniverse(cycle = 0, now = MOCK_NOW): UniverseTopResponse {
+  return mockUniverseTop(DESK_SYMBOL_LIMIT, cycle, now);
+}
+
 export function mockUniverseTop(limit: number, cycle = 0, now = MOCK_NOW): UniverseTopResponse {
   const cap = Math.min(DESK_SYMBOL_LIMIT, Math.max(1, limit));
   const symbols = [...SETUP_UNIVERSE]

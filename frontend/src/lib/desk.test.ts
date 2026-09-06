@@ -14,8 +14,23 @@ import {
   uniqueSymbols,
   universeSourceFromAllowed,
 } from "./desk";
-import { joinSymbols, normalizeCategorizedPicks, normalizeEnsemblePicks, normalizeUniverseTop, signalListPath, universeTopPath } from "./http";
-import { mockCategorizedPicks, mockDroppedPicks, mockEnsemblePicks, mockUniverseTop, SETUP_UNIVERSE } from "./mocks/lists";
+import {
+  avwapPath,
+  joinSymbols,
+  killZonePath,
+  normalizeCategorizedPicks,
+  normalizeEnsemblePicks,
+  normalizeUniverseTop,
+  ohlcvPath,
+  sessionPath,
+  signalListPath,
+  universePath,
+  universeTopPath,
+  volumeProfilePath,
+  vwapPath,
+} from "./http";
+import { mockCategorizedPicks, mockDroppedPicks, mockEnsemblePicks, mockUniverse, mockUniverseTop, SETUP_UNIVERSE } from "./mocks/lists";
+import { buildMockHistory } from "./mocks/market";
 import { ensembleFeatureTooltip, presentEnsemble } from "./mocks/terminal";
 import { mockListSignals } from "./mocks/signals";
 import { normalizeSignal } from "./signals";
@@ -480,6 +495,7 @@ describe("provisional universe is mock-only", () => {
   });
 
   it("GET /v1/universe/top mock + parser honor limit 10/20", () => {
+    assert.equal(universePath(), "/v1/universe");
     assert.equal(universeTopPath(10), "/v1/universe/top?limit=10");
     assert.equal(universeTopPath(20), "/v1/universe/top?limit=20");
     assert.equal(universeTopPath(3), "/v1/universe/top?limit=10");
@@ -509,6 +525,33 @@ describe("provisional universe is mock-only", () => {
     const allowed = allowedSymbolSet(parsed?.symbols);
     assert.equal(universeSourceFromAllowed(allowed), "DE");
     assert.equal(universeSourceFromAllowed(new Set()), "SETUP_UNIVERSE");
+    const full = mockUniverse();
+    assert.ok(full.symbols.length <= 20);
+    assert.equal(full.limit, 20);
+  });
+
+  it("chart feed paths pass the selected symbol into existing DE clients", () => {
+    assert.equal(ohlcvPath("es", "5m", 200), "/v1/ohlcv/ES?timeframe=5m&limit=200");
+    assert.equal(vwapPath("CL", "session"), "/v1/vwap/CL?anchor=session");
+    assert.equal(sessionPath("GC"), "/v1/session/GC");
+    assert.equal(sessionPath("NQ", "rth"), "/v1/session/NQ/rth");
+    assert.equal(avwapPath("BTCUSDT"), "/v1/avwap/BTCUSDT");
+    assert.equal(volumeProfilePath("AAPL", "rth"), "/v1/volume-profile/AAPL/rth");
+    assert.equal(killZonePath("ETHUSDT"), "/v1/kill-zone/ETHUSDT");
+  });
+
+  it("mock OHLC is per-symbol for ES/CL/GC/NQ until DE seeds live history", () => {
+    const es = buildMockHistory("ES", "5m");
+    const cl = buildMockHistory("CL", "5m");
+    const gc = buildMockHistory("GC", "5m");
+    const nq = buildMockHistory("NQ", "5m");
+    assert.ok(es.length > 50 && cl.length > 50 && gc.length > 50 && nq.length > 50);
+    assert.ok(es.every((b) => b.symbol === "ES" && b.asset_class === "futures"));
+    assert.ok(cl.every((b) => b.symbol === "CL"));
+    assert.ok(gc.every((b) => b.symbol === "GC"));
+    assert.ok(nq.every((b) => b.symbol === "NQ"));
+    assert.notEqual(es[0]?.close, cl[0]?.close);
+    assert.notEqual(gc[0]?.close, nq[0]?.close);
   });
 
   it("recon audit mock caps at 16", () => {

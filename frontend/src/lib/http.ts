@@ -1,4 +1,12 @@
-import { DESK_SYMBOL_LIMIT, ENSEMBLE_LIMIT, inferAssetClass, LIST_REFRESH_SEC, wireAssetClass } from "./constants";
+import {
+  DESK_SYMBOL_LIMIT,
+  ENSEMBLE_LIMIT,
+  HISTORY_LIMIT,
+  inferAssetClass,
+  LIST_REFRESH_SEC,
+  normalizeSymbol,
+  wireAssetClass,
+} from "./constants";
 import { activeSetupQuery, capCategorized, clampRefreshSec, rankItems } from "./desk";
 import { httpUrl, picksHttpUrl, quantHttpUrl } from "./env";
 import { normalizeAvwap, normalizeKillZone, normalizeVolumeProfile } from "./overlays";
@@ -52,27 +60,57 @@ async function getSameOrigin<T>(path: string): Promise<T | null> {
   }
 }
 
+function symbolSegment(symbol: string): string {
+  return encodeURIComponent(normalizeSymbol(symbol) || symbol.toUpperCase());
+}
+
+/** Per-symbol DE chart feeds — pass ANY selected symbol (ES/CL/GC/NQ, …). */
+export function ohlcvPath(symbol: string, timeframe: string, limit = HISTORY_LIMIT): string {
+  return `/v1/ohlcv/${symbolSegment(symbol)}?timeframe=${timeframe}&limit=${limit}`;
+}
+
+export function vwapPath(symbol: string, anchor: AnchorType): string {
+  return `/v1/vwap/${symbolSegment(symbol)}?anchor=${anchor}`;
+}
+
+export function sessionPath(symbol: string, sessionType?: SessionType): string {
+  const seg = symbolSegment(symbol);
+  return sessionType ? `/v1/session/${seg}/${sessionType}` : `/v1/session/${seg}`;
+}
+
+export function avwapPath(symbol: string, anchorId?: string): string {
+  const seg = symbolSegment(symbol);
+  return anchorId ? `/v1/avwap/${seg}/${encodeURIComponent(anchorId)}` : `/v1/avwap/${seg}`;
+}
+
+export function volumeProfilePath(symbol: string, sessionType?: SessionType): string {
+  const seg = symbolSegment(symbol);
+  return sessionType ? `/v1/volume-profile/${seg}/${sessionType}` : `/v1/volume-profile/${seg}`;
+}
+
+export function killZonePath(symbol: string): string {
+  return `/v1/kill-zone/${symbolSegment(symbol)}`;
+}
+
 export function fetchVwap(symbol: string, anchor: AnchorType): Promise<VWAPValues | null> {
-  return getJson<VWAPValues>(`/v1/vwap/${symbol}?anchor=${anchor}`);
+  return getJson<VWAPValues>(vwapPath(symbol, anchor));
 }
 
 export function fetchSession(symbol: string, sessionType: SessionType): Promise<SessionLevels | null> {
-  return getJson<SessionLevels>(`/v1/session/${symbol}/${sessionType}`);
+  return getJson<SessionLevels>(sessionPath(symbol, sessionType));
 }
 
 export function fetchSessions(symbol: string): Promise<SessionListResponse | null> {
-  return getJson<SessionListResponse>(`/v1/session/${symbol}`);
+  return getJson<SessionListResponse>(sessionPath(symbol));
 }
 
 /** LIVE (PR #1): GET /v1/ohlcv/{symbol}?timeframe=1m&limit=200 → { symbol, timeframe, bars } */
 export async function fetchOhlcv(
   symbol: string,
   timeframe: string,
-  limit = 200,
+  limit = HISTORY_LIMIT,
 ): Promise<OHLCVBar[]> {
-  const body = await getJson<OHLCVBar[] | { bars?: OHLCVBar[] }>(
-    `/v1/ohlcv/${symbol}?timeframe=${timeframe}&limit=${limit}`,
-  );
+  const body = await getJson<OHLCVBar[] | { bars?: OHLCVBar[] }>(ohlcvPath(symbol, timeframe, limit));
   if (!body) return [];
   if (Array.isArray(body)) return body;
   return body.bars ?? [];
@@ -148,25 +186,22 @@ export async function fetchSignal(id: string): Promise<Signal | null> {
 
 /** DE Phase 2 — `GET /v1/avwap/{symbol}` or `/{anchor_id}`. Same-origin `/v1/*` rewrite. */
 export async function fetchAvwap(symbol: string, anchorId?: string): Promise<AnchoredVwap | null> {
-  const path = anchorId
-    ? `/v1/avwap/${symbol}/${encodeURIComponent(anchorId)}`
-    : `/v1/avwap/${symbol}`;
-  return normalizeAvwap(await getJson<unknown>(path));
+  return normalizeAvwap(await getJson<unknown>(avwapPath(symbol, anchorId)));
 }
 
 /** DE Phase 2 — one session book, or unwrap `{ profiles: [{ value }] }`. */
 export async function fetchVolumeProfile(symbol: string, sessionType?: SessionType): Promise<VolumeProfile | null> {
   if (sessionType) {
-    return normalizeVolumeProfile(await getJson<unknown>(`/v1/volume-profile/${symbol}/${sessionType}`));
+    return normalizeVolumeProfile(await getJson<unknown>(volumeProfilePath(symbol, sessionType)));
   }
-  const listed = await getJson<unknown>(`/v1/volume-profile/${symbol}`);
+  const listed = await getJson<unknown>(volumeProfilePath(symbol));
   const fromList = normalizeVolumeProfile(listed);
   if (fromList) return fromList;
-  return normalizeVolumeProfile(await getJson<unknown>(`/v1/volume-profile/${symbol}/asia`));
+  return normalizeVolumeProfile(await getJson<unknown>(volumeProfilePath(symbol, "asia")));
 }
 
 export async function fetchKillZone(symbol: string): Promise<KillZoneEvent | null> {
-  return normalizeKillZone(await getJson<unknown>(`/v1/kill-zone/${symbol}`));
+  return normalizeKillZone(await getJson<unknown>(killZonePath(symbol)));
 }
 
 /** Quant PR #2 `GET /performance/summary` via rewrite → :8001, then direct. Optional `symbols=` (≤20). */
@@ -316,6 +351,11 @@ export async function fetchEnsemblePicks(): Promise<EnsemblePicksResponse | null
   return normalizeEnsemblePicks(await getPicksJson<unknown>("/picks/ensemble"));
 }
 
+/** DE `GET /v1/universe` — prepared; same known fields as `/top`. No Redis keys on the wire. */
+export function universePath(): string {
+  return "/v1/universe";
+}
+
 /** DE `GET /v1/universe/top?limit=10` (P0) or `limit=20` (P2/P4). */
 export function universeTopPath(limit: number): string {
   const cap = limit <= ENSEMBLE_LIMIT ? ENSEMBLE_LIMIT : DESK_SYMBOL_LIMIT;
@@ -356,6 +396,14 @@ export async function fetchUniverseTop(limit: number): Promise<UniverseTopRespon
   const viaRewrite = await getSameOrigin<unknown>(path);
   if (viaRewrite) return normalizeUniverseTop(viaRewrite, cap);
   return normalizeUniverseTop(await getJson<unknown>(path), cap);
+}
+
+/** Prepared `GET /v1/universe` — same `{ as_of_ts_ms, symbols[] }` fields as `/top`, cap 20. */
+export async function fetchUniverse(): Promise<UniverseTopResponse | null> {
+  const path = universePath();
+  const viaRewrite = await getSameOrigin<unknown>(path);
+  if (viaRewrite) return normalizeUniverseTop(viaRewrite, DESK_SYMBOL_LIMIT);
+  return normalizeUniverseTop(await getJson<unknown>(path), DESK_SYMBOL_LIMIT);
 }
 
 /** GET /picks/categorized?asset_class=&limit=20 — no class required; ≤20 symbols. */
