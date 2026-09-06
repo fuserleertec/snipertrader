@@ -67,6 +67,14 @@
   .sec{font-family:var(--font-d);font-size:13px;letter-spacing:.14em;color:var(--muted);margin:28px 0 12px;display:flex;align-items:center;gap:10px}
   .sec .num{color:var(--cyan);font-family:var(--font-m);font-size:12px}
 
+  /* asset-class filter */
+  .filters{display:flex;gap:8px;margin:0 0 12px;flex-wrap:wrap;align-items:center}
+  .filters .lbl{font-family:var(--font-m);font-size:10px;letter-spacing:.08em;color:var(--faint);text-transform:uppercase;margin-right:2px}
+  .fbtn{font-family:var(--font-m);font-size:11px;letter-spacing:.05em;background:var(--panel);color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:6px 14px;cursor:pointer;transition:all .15s;text-transform:uppercase}
+  .fbtn:hover{color:var(--fg);border-color:var(--cyan)}
+  .fbtn.active{color:var(--emerald);border-color:var(--emerald);background:color-mix(in srgb,var(--emerald) 10%,var(--panel))}
+  .fbtn .cnt{opacity:.6;margin-left:5px;font-size:10px}
+
   /* leaderboard */
   .board{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden}
   .row{display:grid;grid-template-columns:34px 1.3fr .9fr .9fr 1.1fr .7fr 1.3fr 1.1fr;gap:10px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border-soft);cursor:pointer;transition:background .12s}
@@ -178,6 +186,13 @@
   <div class="stats" id="stats"></div>
 
   <div class="sec"><span class="num">01</span> DECISION SURFACE — ranked by conviction · click a row to audit</div>
+  <div class="filters" id="filters">
+    <span class="lbl">Asset class</span>
+    <button class="fbtn active" data-f="all" onclick="setFilter('all')">All <span class="cnt"></span></button>
+    <button class="fbtn" data-f="equity" onclick="setFilter('equity')">Equities <span class="cnt"></span></button>
+    <button class="fbtn" data-f="crypto" onclick="setFilter('crypto')">Crypto <span class="cnt"></span></button>
+    <button class="fbtn" data-f="futures" onclick="setFilter('futures')">Futures <span class="cnt"></span></button>
+  </div>
   <div class="board" id="board"></div>
 
   <div class="sec"><span class="num">02</span> ENSEMBLE HEALTH — does the swarm actually work?</div>
@@ -461,14 +476,16 @@ function rowHtml(r,i){
 }
 
 function render(){
+  const list = filteredResults();
+  updateFilterCounts();
   document.getElementById('board').innerHTML =
     `<div class="row head"><span>#</span><span>Symbol</span><span>Last</span><span>Chg</span><span>Bias (swarm)</span><span>Setup</span><span>Conviction</span><span>Structure</span></div>` +
-    results.map((r,i)=>rowHtml(r,i)+detailHtml(r,i)).join('');
+    list.map((r,i)=>rowHtml(r,i)+detailHtml(r,i)).join('');
 
   // stats
-  const longs = results.filter(r=>r.trade.direction==='LONG').length;
-  const shorts = results.filter(r=>r.trade.direction==='SHORT').length;
-  const holds = results.filter(r=>r.trade.direction==='HOLD').length;
+  const longs = list.filter(r=>r.trade.direction==='LONG').length;
+  const shorts = list.filter(r=>r.trade.direction==='SHORT').length;
+  const holds = list.filter(r=>r.trade.direction==='HOLD').length;
   const asOf = ASOF;
   document.getElementById('asof').textContent = asOf;
   const tb = DATA.trade_backtest;
@@ -505,7 +522,7 @@ function render(){
     </div>`;
 
   // dropped
-  const dropped = results.filter(r=>r.trade.direction==='HOLD');
+  const dropped = list.filter(r=>r.trade.direction==='HOLD');
   document.getElementById('dropped').innerHTML = dropped.length? dropped.map((r,i)=>{
     const mf=r.mirofish; const k=r.kronos;
     const reason = mf.consensus>0.6 ? 'bullish bias but poor R:R — overhead resistance too close' :
@@ -545,6 +562,28 @@ function render(){
 }
 
 let openRow = -1;
+
+// ── asset-class filter ──
+let FILTER = 'all';
+function filteredResults(){
+  if(FILTER === 'all') return results;
+  return results.filter(r => CLS[r.symbol] === FILTER);
+}
+function setFilter(f){
+  FILTER = f;
+  openRow = -1;
+  document.querySelectorAll('.fbtn').forEach(b => b.classList.toggle('active', b.dataset.f === f));
+  render();
+}
+function updateFilterCounts(){
+  const counts = {all: results.length};
+  results.forEach(r => { const c = CLS[r.symbol]; counts[c] = (counts[c] || 0) + 1; });
+  document.querySelectorAll('.fbtn').forEach(b => {
+    const c = b.querySelector('.cnt');
+    if(c) c.textContent = counts[b.dataset.f] || 0;
+  });
+}
+
 function toggle(i){
   const rows = document.querySelectorAll('#board .row:not(.head)');
   const details = document.querySelectorAll('#board .detail');
