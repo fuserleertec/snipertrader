@@ -14,8 +14,8 @@
  *                                  optional rank_components + contributing_factors)
  *   GET /picks/categorized       → ≤20     (?asset_class=&limit=20)
  *   GET /signals                 → multi-symbol desk (~20; ?symbols= + filters;
- *                                  keep contributing_factors + factor_breakdown;
- *                                  optional ensemble_score / rank_components)
+ *                                  contributing_factors + factor_breakdown;
+ *                                  ensemble_score / rank_components / category)
  *   GET /signals/history         → same filters; falls back to GET /signals
  *   GET /performance/summary     → optional ?symbols= (≤20)
  *   GET /v1/universe             → prepared (same known fields, cap 20); not the selector

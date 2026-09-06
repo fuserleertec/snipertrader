@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     "Quantitative Market Intelligence Conviction Terminal — Kronos overlays, Quantum Ensemble picks, and setup_signals.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"

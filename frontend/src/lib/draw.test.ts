@@ -43,7 +43,7 @@ describe("overlay allow-list + trigger filter", () => {
     assert.equal(model.arrows.length, 0);
   });
 
-  it("highlightIds reads only trigger_event_ids", () => {
+  it("highlightIds joins id + trigger_event_ids", () => {
     const ids = highlightIds({
       id: "s",
       ts_ms: 1,
@@ -59,10 +59,16 @@ describe("overlay allow-list + trigger filter", () => {
       timeframe: "5m",
       ref_session: "ny_am",
       trigger_event_ids: ["sw-1", "mss-1"],
+      contributing_factors: null,
+      factor_breakdown: null,
+      ensemble_score: null,
+      rank_components: null,
+      category: "crypto",
       realized_r: null,
       exit_price: null,
       closed_ts_ms: null,
     });
+    assert.equal(ids.has("s"), true);
     assert.equal(ids.has("sw-1"), true);
     assert.equal(ids.has("fvg-1"), false);
   });

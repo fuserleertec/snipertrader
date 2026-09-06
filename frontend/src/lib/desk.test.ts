@@ -50,6 +50,11 @@ function sig(partial: Partial<Signal> & Pick<Signal, "id" | "setup_type" | "symb
     timeframe: "5m",
     ref_session: "ny_am",
     trigger_event_ids: [],
+    contributing_factors: null,
+    factor_breakdown: null,
+    ensemble_score: null,
+    rank_components: null,
+    category: partial.asset_class,
     realized_r: null,
     exit_price: null,
     closed_ts_ms: null,
@@ -69,6 +74,9 @@ describe("Quant list contracts", () => {
     assert.ok(a.items.every((i) => i.rank_components && typeof i.ensemble_score === "number"));
     assert.ok(a.items.every((i) => typeof i.best_confidence === "number"));
     assert.ok(a.items.every((i) => (i.contributing_factors?.length ?? 0) >= 1));
+    assert.ok(a.items.every((i) => i.ensemble_score != null && i.ensemble_score >= 0 && i.ensemble_score <= 100));
+    assert.ok(a.items.every((i) => i.rank_components && typeof i.rank_components.confluence === "number"));
+    assert.ok(a.items.every((i) => i.category === "crypto" || i.category === "equity" || i.category === "futures"));
     assert.ok(a.items.every((i) => !i.setup_types.includes("ob_fvg" as never)));
     assert.notDeepEqual(
       a.items.map((i) => i.symbol),
@@ -83,7 +91,7 @@ describe("Quant list contracts", () => {
     assert.equal(all.items.length, 20);
     assert.ok(new Set(all.items.map((i) => i.asset_class)).size >= 2);
     assert.ok(futures.items.every((i) => i.asset_class === "futures"));
-    assert.ok(all.items.every((i) => ["momentum", "mean_reversion", "confluence", "other"].includes(i.category)));
+    assert.ok(all.items.every((i) => i.category === "crypto" || i.category === "equity" || i.category === "futures"));
   });
 
   it("normalizes the locked Quant GET /picks/ensemble envelope", () => {
@@ -109,8 +117,9 @@ describe("Quant list contracts", () => {
     assert.ok(ens.items.length <= 10);
     assert.equal(ens.items[0]?.symbol, "BTCUSDT");
     assert.equal(ens.items[0]?.ensemble_score, 0);
-    assert.equal(ens.items[0]?.rank_components, undefined);
-    assert.equal(ens.items[0]?.contributing_factors, undefined);
+    assert.equal(ens.items[0]?.rank_components, null);
+    assert.equal(ens.items[0]?.contributing_factors, null);
+    assert.equal(ens.items[0]?.category, "crypto");
   });
 
   it("parses universe_source + ensemble_score + rank_components on GET /picks/ensemble", () => {
@@ -123,29 +132,35 @@ describe("Quant list contracts", () => {
           rank: 1,
           symbol: "CL",
           asset_class: "futures",
-          score: 0.2,
-          ensemble_score: 0.64,
+          score: 20,
+          ensemble_score: 64,
           setup_types: ["vwap_pullback_cont"],
           confidence: 0.7,
+          contributing_factors: ["vwap_pullback", "trend_align"],
+          factor_breakdown: [{ name: "vwap_pullback", weight: 15, score: 40, note: "pullback" }],
+          category: "futures",
           rank_components: {
-            setup_quality: 0.8,
-            risk_adjusted: 0.7,
-            kill_zone: 0.4,
-            volume: 0.5,
-            freshness: 0.6,
+            setup_quality: 32,
+            confluence: 14,
+            kill_zone: 6,
+            volume: 7.5,
+            freshness: 4.5,
           },
         },
       ],
     });
     assert.equal(ens?.universe_source, "DE");
-    assert.equal(ens?.items[0]?.score, 0.64);
-    assert.equal(ens?.items[0]?.ensemble_score, 0.64);
+    assert.equal(ens?.items[0]?.score, 64);
+    assert.equal(ens?.items[0]?.ensemble_score, 64);
+    assert.deepEqual(ens?.items[0]?.contributing_factors, ["vwap_pullback", "trend_align"]);
+    assert.equal(ens?.items[0]?.factor_breakdown?.[0]?.name, "vwap_pullback");
+    assert.equal(ens?.items[0]?.category, "futures");
     assert.deepEqual(ens?.items[0]?.rank_components, {
-      setup_quality: 0.8,
-      risk_adjusted: 0.7,
-      kill_zone: 0.4,
-      volume: 0.5,
-      freshness: 0.6,
+      setup_quality: 32,
+      confluence: 14,
+      kill_zone: 6,
+      volume: 7.5,
+      freshness: 4.5,
     });
   });
 
@@ -159,8 +174,8 @@ describe("Quant list contracts", () => {
           rank: 2,
           symbol: "es",
           asset_class: "futures",
-          score: 0.1,
-          ensemble_score: 0.77,
+          score: 10,
+          ensemble_score: 77,
           setup_types: ["fvg_entry"],
           confidence: 0.2,
           best_confidence: 0.81,
@@ -168,12 +183,12 @@ describe("Quant list contracts", () => {
       ],
     });
     assert.equal(ens?.universe_source, "DE");
-    assert.equal(ens?.items[0]?.score, 0.77);
-    assert.equal(ens?.items[0]?.ensemble_score, 0.77);
+    assert.equal(ens?.items[0]?.score, 77);
+    assert.equal(ens?.items[0]?.ensemble_score, 77);
     assert.equal(ens?.items[0]?.confidence, 0.81);
     assert.equal(ens?.items[0]?.best_confidence, 0.81);
     assert.equal(ens?.items[0]?.symbol, "ES");
-    assert.equal(ens?.items[0]?.rank_components, undefined);
+    assert.equal(ens?.items[0]?.rank_components, null);
   });
 
   it("keeps optional rank_components + contributing_factors on ensemble items", () => {
@@ -185,33 +200,36 @@ describe("Quant list contracts", () => {
           rank: 1,
           symbol: "NQ",
           asset_class: "futures",
-          score: 0.2,
+          score: 20,
           setup_types: ["fvg_entry"],
           confidence: 0.3,
           ensemble_features: {
-            ensemble_score: 0.71,
+            ensemble_score: 71,
             best_confidence: 0.88,
             rank_components: {
-              setup_quality: 0.9,
-              risk_adjusted: 0.6,
-              kill_zone: 0.5,
-              volume: 0.4,
-              freshness: 0.3,
+              setup_quality: 36,
+              confluence: 12,
+              kill_zone: 7.5,
+              volume: 6,
+              freshness: 3,
             },
             contributing_factors: ["liquidity_sweep", "volume_confirm"],
           },
         },
       ],
     });
-    assert.equal(nested?.items[0]?.score, 0.71);
-    assert.equal(nested?.items[0]?.ensemble_score, 0.71);
+    assert.equal(nested?.items[0]?.score, 71);
+    assert.equal(nested?.items[0]?.ensemble_score, 71);
     assert.equal(nested?.items[0]?.confidence, 0.88);
     assert.deepEqual(nested?.items[0]?.contributing_factors, ["liquidity_sweep", "volume_confirm"]);
-    assert.equal(nested?.items[0]?.rank_components?.setup_quality, 0.9);
+    assert.equal(nested?.items[0]?.rank_components?.setup_quality, 36);
+    assert.equal(nested?.items[0]?.rank_components?.confluence, 12);
+    assert.equal(nested?.items[0]?.category, "futures");
 
     const tip = ensembleFeatureTooltip(nested!.items[0]!);
-    assert.match(tip, /ensemble_score 0\.710/);
+    assert.match(tip, /ensemble_score 71\.0/);
     assert.match(tip, /rank_components/);
+    assert.match(tip, /confluence/);
     assert.match(tip, /contributing_factors  liquidity_sweep · volume_confirm/);
 
     const bare = presentEnsemble(
@@ -219,15 +237,19 @@ describe("Quant list contracts", () => {
         rank: 1,
         symbol: "ES",
         asset_class: "futures",
-        score: 0.5,
+        score: 50,
         setup_types: ["sweep_reclaim"],
         confidence: 0.4,
-        ensemble_score: 0.5,
+        ensemble_score: 50,
+        rank_components: null,
+        contributing_factors: null,
+        factor_breakdown: null,
+        category: "futures",
       },
       "market",
     );
-    assert.match(bare.reason, /score 0\.50/);
-    assert.match(bare.tooltip, /ensemble_score 0\.500/);
+    assert.match(bare.reason, /ensemble_score 50\.0/);
+    assert.match(bare.tooltip, /ensemble_score 50\.0/);
     assert.doesNotMatch(bare.tooltip, /rank_components/);
   });
 
@@ -243,17 +265,18 @@ describe("Quant list contracts", () => {
         score: 0.5,
         setup_types: ["sweep_reclaim", "ob_fvg"],
         confidence: 0.4,
-        ensemble_score: 0.5,
-        rank_components: { setup_quality: 1, risk_adjusted: 1, kill_zone: 1, volume: 1, freshness: 1 },
+        ensemble_score: 50,
+        rank_components: { setup_quality: 40, confluence: 20, kill_zone: 15, volume: 15, freshness: 10 },
       })),
     });
     assert.equal(ens?.items.length, 10);
     assert.equal(ens?.refresh_sec, 900);
     assert.ok(ens?.items.every((i) => i.asset_class === "equity"));
     assert.ok(ens?.items.every((i) => !i.setup_types.includes("ob_fvg" as never)));
+    assert.ok(ens?.items.every((i) => i.rank_components?.confluence === 20));
 
     const cats = normalizeCategorizedPicks({
-      items: Array.from({ length: 30 }, (_, i) => ({ symbol: `P${i}`, category: "momentum", score: 70 })),
+      items: Array.from({ length: 30 }, (_, i) => ({ symbol: `P${i}`, category: "equity", score: 70 })),
     });
     assert.equal(cats?.items.length, 20);
   });
@@ -391,19 +414,20 @@ describe("multi-symbol history", () => {
   it("keeps optional ensemble ranking on signal or ensemble_features side channel", () => {
     const base = mockListSignals({ symbol: "ES", limit: 1 }, 0).items[0];
     assert.ok(base);
-    const direct = normalizeSignal({ ...base, ensemble_score: 0.42, rank_components: undefined });
-    assert.equal(direct?.ensemble_score, 0.42);
+    const direct = normalizeSignal({ ...base, ensemble_score: 42, rank_components: undefined });
+    assert.equal(direct?.ensemble_score, 42);
     const side = normalizeSignal({
       ...base,
       ensemble_score: undefined,
       rank_components: undefined,
       ensemble_features: {
-        ensemble_score: 0.55,
-        rank_components: { setup_quality: 0.1, risk_adjusted: 0.2, kill_zone: 0.3, volume: 0.4, freshness: 0.5 },
+        ensemble_score: 55,
+        rank_components: { setup_quality: 10, confluence: 8, kill_zone: 6, volume: 7, freshness: 5 },
       },
     });
-    assert.equal(side?.ensemble_score, 0.55);
-    assert.equal(side?.rank_components?.freshness, 0.5);
+    assert.equal(side?.ensemble_score, 55);
+    assert.equal(side?.rank_components?.freshness, 5);
+    assert.equal(side?.rank_components?.confluence, 8);
     const bare = normalizeSignal({
       id: "s1",
       symbol: "BTCUSDT",
@@ -416,8 +440,8 @@ describe("multi-symbol history", () => {
       contributing_factors: ["liquidity_sweep"],
       factor_breakdown: [{ name: "liquidity_sweep", weight: 15, score: 80 }],
     });
-    assert.equal(bare?.ensemble_score, undefined);
-    assert.equal(bare?.rank_components, undefined);
+    assert.equal(bare?.ensemble_score, null);
+    assert.equal(bare?.rank_components, null);
     assert.deepEqual(bare?.contributing_factors, ["liquidity_sweep"]);
     assert.equal(bare?.factor_breakdown?.[0]?.name, "liquidity_sweep");
   });
@@ -492,8 +516,8 @@ describe("provisional universe is mock-only", () => {
     );
     const cats = capWithinAllowed(
       [
-        { symbol: "TSM", asset_class: "equity", category: "momentum", score: 1, confidence: 1, setup_types: [], entry: 1, stop: 1, target: 1, atr: 1, reward_risk: 1 },
-        { symbol: "CL", asset_class: "futures", category: "other", score: 1, confidence: 1, setup_types: [], entry: 1, stop: 1, target: 1, atr: 1, reward_risk: 1 },
+        { symbol: "TSM", asset_class: "equity", category: "equity", score: 1, confidence: 1, setup_types: [], entry: 1, stop: 1, target: 1, atr: 1, reward_risk: 1 },
+        { symbol: "CL", asset_class: "futures", category: "futures", score: 1, confidence: 1, setup_types: [], entry: 1, stop: 1, target: 1, atr: 1, reward_risk: 1 },
       ],
       allowed,
     );

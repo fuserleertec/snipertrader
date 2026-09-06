@@ -14,7 +14,8 @@ export function SignalDetail({
 }) {
   const ids = signal.contributing_factors ?? [];
   const rows = signal.factor_breakdown ?? [];
-  const conviction = rows.reduce((s, r) => s + r.score, 0);
+  const conviction =
+    signal.ensemble_score != null ? signal.ensemble_score : rows.reduce((s, r) => s + r.score, 0);
   const copy = async () => {
     const payload = {
       id: signal.id,
@@ -30,6 +31,7 @@ export function SignalDetail({
       factor_breakdown: rows,
       ensemble_score: signal.ensemble_score,
       rank_components: signal.rank_components,
+      category: signal.category,
     };
     try {
       await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
@@ -72,13 +74,11 @@ export function SignalDetail({
         </div>
       </div>
       <div className="sec-sub" style={{ marginTop: 12 }}>
-        PR #9 explainability — <code>contributing_factors[]</code> are factor ids.{" "}
-        <code>sum(factor_breakdown.score)</code> ≈ conviction ({conviction.toFixed(0)}). Chart join is{" "}
-        <code>trigger_event_ids</code> only
-        {signal.trigger_event_ids.length ? `: ${signal.trigger_event_ids.join(", ")}` : " (none)"}.
-        {signal.ensemble_score != null
-          ? ` Optional ranking: ensemble_score ${signal.ensemble_score.toFixed(3)}.`
-          : ""}
+        Publish-only explainability — <code>contributing_factors[]</code> badges,{" "}
+        <code>factor_breakdown[]</code> rows. Conviction ← <code>ensemble_score</code>{" "}
+        ({conviction.toFixed(0)}). Chart join is <code>id</code> + <code>trigger_event_ids</code>
+        {`: ${signal.id}${signal.trigger_event_ids.length ? ` · ${signal.trigger_event_ids.join(", ")}` : ""}`}.
+        Never on POST /risk/validate. Paper / live_trading=false.
       </div>
       {signal.rank_components && (
         <div
@@ -101,6 +101,7 @@ export function SignalDetail({
             {id}
           </span>
         ))}
+        {signal.category && <span className="ptag">{signal.category}</span>}
       </div>
       <div className="recon-grid">
         {rows.length === 0 && <div className="note">No factor_breakdown on this row.</div>}
