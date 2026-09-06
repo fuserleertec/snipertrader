@@ -100,11 +100,40 @@ class FactorBreakdownRow(BaseModel):
     note: str | None = None
 
 
+class RankComponents(BaseModel):
+    """Publish-only 0–1 ranking inputs. Not on ``POST /risk/validate``."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    setup_quality: float | None = Field(default=None, ge=0, le=1)
+    risk_adjusted: float | None = Field(default=None, ge=0, le=1)
+    kill_zone: float | None = Field(default=None, ge=0, le=1)
+    volume: float | None = Field(default=None, ge=0, le=1)
+    freshness: float | None = Field(default=None, ge=0, le=1)
+
+    def mean(self) -> float | None:
+        vals = [
+            v
+            for v in (
+                self.setup_quality,
+                self.risk_adjusted,
+                self.kill_zone,
+                self.volume,
+                self.freshness,
+            )
+            if v is not None
+        ]
+        if not vals:
+            return None
+        return sum(vals) / len(vals)
+
+
 class CandidateSignal(BaseModel):
     """ML candidate for ``POST /risk/validate``. Omit ``id`` — assigned after approval.
 
-    ``contributing_factors`` (string[]) and ``factor_breakdown`` are publish /
-    store only. Extra fields are forbidden, so sending them here is 422.
+    ``contributing_factors``, ``factor_breakdown``, ``ensemble_score``, and
+    ``rank_components`` are publish / store only. Extra fields are forbidden,
+    so sending them here is 422.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -161,6 +190,8 @@ SIGNAL_VIEW_FIELDS = (
     "closed_ts_ms",
     "contributing_factors",
     "factor_breakdown",
+    "ensemble_score",
+    "rank_components",
 )
 
 
@@ -168,8 +199,8 @@ class SignalView(BaseModel):
     """Dashboard / Frontend Signal row.
 
     Locked validate fields plus close fields and optional publish-only
-    ``contributing_factors`` / ``factor_breakdown``. Those two are **not**
-    on ``POST /risk/validate``.
+    ``contributing_factors`` / ``factor_breakdown`` / ``ensemble_score`` /
+    ``rank_components``. Those are **not** on ``POST /risk/validate``.
     """
 
     id: str
@@ -210,6 +241,16 @@ class SignalView(BaseModel):
         default_factory=list,
         description="Optional publish-only {name, weight, score, note?}[]. Not on POST /risk/validate.",
     )
+    ensemble_score: float | None = Field(
+        default=None,
+        ge=0,
+        le=100,
+        description="Publish-only 0–100 ensemble rank input. Not on POST /risk/validate.",
+    )
+    rank_components: RankComponents | None = Field(
+        default=None,
+        description="Publish-only 0–1 components. Not on POST /risk/validate.",
+    )
 
     @classmethod
     def from_stored(cls, row: "StoredSignal") -> "SignalView":
@@ -245,6 +286,8 @@ class SignalView(BaseModel):
             outcome=row.outcome,
             contributing_factors=list(row.contributing_factors or []),
             factor_breakdown=list(row.factor_breakdown or []),
+            ensemble_score=row.ensemble_score,
+            rank_components=row.rank_components,
         )
 
 
@@ -359,6 +402,16 @@ class StoredSignal(BaseModel):
     factor_breakdown: list[FactorBreakdownRow] = Field(
         default_factory=list,
         description="Publish-only {name, weight, score, note?}[]. Not on POST /risk/validate.",
+    )
+    ensemble_score: float | None = Field(
+        default=None,
+        ge=0,
+        le=100,
+        description="Publish-only 0–100. Not on POST /risk/validate.",
+    )
+    rank_components: RankComponents | None = Field(
+        default=None,
+        description="Publish-only 0–1 components. Not on POST /risk/validate.",
     )
 
     @field_validator("symbol", mode="before")

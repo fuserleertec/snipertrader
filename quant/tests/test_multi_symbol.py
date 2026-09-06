@@ -210,7 +210,8 @@ def test_asset_class_and_active_setup_filters():
     assert {r["asset_class"] for r in crypto} == {"crypto"}
     assert {r["asset_class"] for r in equity} == {"equity"}
     assert [r["id"] for r in stocks] == [r["id"] for r in equity]
-    assert {r["symbol"] for r in futures} == {"ES", "NQ"}
+    assert {"ES", "NQ"} <= {r["symbol"] for r in futures}
+    assert {r["asset_class"] for r in futures} == {"futures"}
     assert all(r["status"] == "ACTIVE" for r in crypto + equity + futures)
     assert len(crypto) + len(equity) + len(futures) == len(created) + 2
 

@@ -43,6 +43,16 @@ class Settings(BaseSettings):
     alert_avg_rr: float = Field(default=0.50, alias="ALERT_AVG_RR")
     api_key: str = Field(default="", alias="SNIPER_API_KEY")
     rate_limit_per_min: int = Field(default=0, alias="RATE_LIMIT_PER_MIN")
+    paper_universe: str = Field(
+        default="",
+        alias="PAPER_UNIVERSE",
+        description="Override paper universe: JSON path or CSV (SYM or SYM:asset_class).",
+    )
+    setup_universe: str = Field(
+        default="",
+        alias="SETUP_UNIVERSE",
+        description="ML detector allow-list (CSV or JSON path). Ensemble ranks intersection with paper universe.",
+    )
 
 
 @lru_cache(maxsize=1)

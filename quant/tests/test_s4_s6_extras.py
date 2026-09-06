@@ -131,6 +131,8 @@ def test_orchestrator_dedupe_window_sec_default_300():
 
 def test_contributing_factors_publish_only_string_array():
     assert "contributing_factors" not in CandidateSignal.model_fields
+    assert "ensemble_score" not in CandidateSignal.model_fields
+    assert "rank_components" not in CandidateSignal.model_fields
     with pytest.raises(ValidationError):
         CandidateSignal.model_validate(_payload(contributing_factors=["kz_align"]))
     stored = StoredSignal.model_validate(
@@ -152,6 +154,11 @@ def test_contributing_factors_publish_only_string_array():
     spec = http.get("/openapi.json").json()
     cand = spec["components"]["schemas"]["CandidateSignal"]["properties"]
     assert "contributing_factors" not in cand
+    assert "ensemble_score" not in cand
+    assert "rank_components" not in cand
+    pub = spec["components"]["schemas"]["PublishBody"]["properties"]
+    assert "ensemble_score" in pub
+    assert "rank_components" in pub
     items = spec["components"]["schemas"]["PublishBody"]["properties"]["contributing_factors"]["items"]
     assert items["type"] == "string"
     view = spec["components"]["schemas"]["SignalView"]["properties"]
@@ -177,6 +184,12 @@ def test_contributing_factors_publish_only_string_array():
     assert "factor_breakdown" in dash["properties"]
     assert "contributing_factors" not in validate["properties"]
     assert "factor_breakdown" not in validate["properties"]
+    assert "ensemble_score" in setup["properties"]
+    assert "rank_components" in setup["properties"]
+    assert "ensemble_score" in dash["properties"]
+    assert "rank_components" in dash["properties"]
+    assert "ensemble_score" not in validate["properties"]
+    assert "rank_components" not in validate["properties"]
 
 
 def test_s4_s6_enum_and_detectors_exclude_dormant():

@@ -31,6 +31,7 @@ from sniper_quant.models import (
     normalize_symbol,
 )
 from sniper_quant.setups import SETUP_TYPES
+from sniper_quant.universe import load_paper_universe, resolve_ranking_universe
 
 REFRESH_SEC = 900
 TOP_N = 10
@@ -44,36 +45,8 @@ RECENCY_SATURATION = 3.0  # ~3 half-life-weighted approvals saturate recency
 ML_BOOST_MAX = 15.0  # added as ML_BOOST_MAX * ml_score (ml_score in [0, 1])
 DEMO_SCORE_SCALE = 20.0  # synthetic-only ceiling so a real book outranks demo
 
-# Rotating in-memory universe (≥20). Used when the book has fewer symbols
-# than TOP_N, and as a scored backdrop so empty books still rotate.
-DEMO_UNIVERSE: tuple[tuple[str, AssetClass], ...] = (
-    ("BTCUSDT", AssetClass.CRYPTO),
-    ("ETHUSDT", AssetClass.CRYPTO),
-    ("SOLUSDT", AssetClass.CRYPTO),
-    ("BNBUSDT", AssetClass.CRYPTO),
-    ("XRPUSDT", AssetClass.CRYPTO),
-    ("ADAUSDT", AssetClass.CRYPTO),
-    ("AVAXUSDT", AssetClass.CRYPTO),
-    ("DOGEUSDT", AssetClass.CRYPTO),
-    ("LINKUSDT", AssetClass.CRYPTO),
-    ("DOTUSDT", AssetClass.CRYPTO),
-    ("LTCUSDT", AssetClass.CRYPTO),
-    ("ATOMUSDT", AssetClass.CRYPTO),
-    ("AAPL", AssetClass.EQUITY),
-    ("MSFT", AssetClass.EQUITY),
-    ("NVDA", AssetClass.EQUITY),
-    ("AMZN", AssetClass.EQUITY),
-    ("META", AssetClass.EQUITY),
-    ("GOOGL", AssetClass.EQUITY),
-    ("TSLA", AssetClass.EQUITY),
-    ("AMD", AssetClass.EQUITY),
-    ("NFLX", AssetClass.EQUITY),
-    ("SPY", AssetClass.EQUITY),
-    ("ES", AssetClass.FUTURES),
-    ("NQ", AssetClass.FUTURES),
-    ("CL", AssetClass.FUTURES),
-    ("GC", AssetClass.FUTURES),
-)
+# Default paper universe from quant/config/paper_universe.json (~20 mix).
+DEMO_UNIVERSE: tuple[tuple[str, AssetClass], ...] = tuple(load_paper_universe())
 
 # setup_type → FE category for GET /picks/categorized
 SETUP_TO_CATEGORY: dict[str, PickCategory] = {
@@ -129,12 +102,17 @@ def categorize_setups(setup_types: Sequence[str]) -> PickCategory:
 
 def infer_asset_class(symbol: str, fallback: AssetClass | None = None) -> AssetClass:
     cleaned = normalize_symbol(symbol)
+    mapping = {sym: ac for sym, ac in load_paper_universe()}
+    if cleaned in mapping:
+        return mapping[cleaned]
     if cleaned in _DEMO_ASSET:
         return _DEMO_ASSET[cleaned]
     if fallback is not None:
         return fallback
     if cleaned.endswith(("USDT", "USDC", "BUSD")):
         return AssetClass.CRYPTO
+    if cleaned in {"ES", "NQ", "CL", "GC", "YM", "RTY"}:
+        return AssetClass.FUTURES
     return AssetClass.EQUITY
 
 
@@ -206,7 +184,7 @@ def score_symbol(
     ml_score: float = 0.0,
     refresh_sec: int = REFRESH_SEC,
 ) -> dict[str, Any]:
-    """Score one symbol. Real book terms dominate the demo hash."""
+    """Score one symbol. Prefer published ``ensemble_score``, then components."""
     recency_norm, mean_conf, diversity, setups, ref_session = _book_components(
         rows, as_of_ts_ms=as_of_ts_ms, refresh_sec=refresh_sec
     )
@@ -214,9 +192,25 @@ def score_symbol(
     book_score = 100.0 * (
         W_RECENCY * recency_norm + W_CONFIDENCE * mean_conf + W_DIVERSITY * diversity
     )
-    has_book = bool(rows) and any(_is_approved(r) for r in rows)
+    approved = [r for r in rows if _is_approved(r)]
+    published = [float(r.ensemble_score) for r in approved if r.ensemble_score is not None]
+    comp_means = [
+        r.rank_components.mean()
+        for r in approved
+        if r.rank_components is not None and r.rank_components.mean() is not None
+    ]
     bucket = refresh_bucket(as_of_ts_ms, refresh_sec)
-    if has_book:
+    if published:
+        score = max(published)
+        source = "ensemble_score"
+        confidence = mean_conf
+        notes = f"ensemble_score={score:.3f} conf={mean_conf:.3f} n={len(published)}"
+    elif comp_means:
+        score = 100.0 * (sum(comp_means) / len(comp_means))
+        source = "rank_components"
+        confidence = mean_conf
+        notes = f"rank_components={score:.3f} conf={mean_conf:.3f}"
+    elif approved:
         score = book_score + ML_BOOST_MAX * ml
         source = "book"
         confidence = mean_conf
@@ -226,7 +220,7 @@ def score_symbol(
         )
     else:
         unit = demo_unit_score(symbol, bucket)
-        score = DEMO_SCORE_SCALE * unit + ML_BOOST_MAX * ml
+        score = DEMO_SCORE_SCALE * unit + (100.0 * ml if ml else 0.0)
         source = "demo"
         confidence = unit
         notes = f"demo_universe bucket={bucket} hash={unit:.3f} ml={ml:.3f}"
@@ -257,11 +251,11 @@ def rank_ensemble(
     ml_scores: Mapping[str, float] | None = None,
     top_n: int = TOP_N,
     refresh_sec: int = REFRESH_SEC,
+    universe: Sequence[tuple[str, AssetClass]] | None = None,
 ) -> EnsemblePicksResponse:
-    """Rank the demo universe plus every symbol present in ``rows``.
+    """Rank the paper/ML intersection universe from the signal book.
 
-    Always considers ≥20 symbols (``DEMO_UNIVERSE``). Book symbols not in
-    the demo list are added. Returns the top ``top_n`` (default 10).
+    Sort: ``ensemble_score`` desc, then ``confidence`` desc, then symbol.
     """
     now = int(as_of_ts_ms if as_of_ts_ms is not None else time.time() * 1000)
     overlay = {normalize_symbol(k): float(v) for k, v in (ml_scores or {}).items()}
@@ -269,14 +263,11 @@ def rank_ensemble(
     for row in rows:
         by_symbol[normalize_symbol(row.symbol)].append(row)
 
-    universe: dict[str, AssetClass] = {sym: ac for sym, ac in DEMO_UNIVERSE}
-    for symbol, group in by_symbol.items():
-        universe.setdefault(symbol, infer_asset_class(symbol, group[-1].asset_class))
-    for symbol in overlay:
-        universe.setdefault(symbol, infer_asset_class(symbol))
+    pairs = list(universe) if universe is not None else resolve_ranking_universe()
+    resolved: dict[str, AssetClass] = {sym: ac for sym, ac in pairs}
 
     scored = _score_universe(
-        universe,
+        resolved,
         by_symbol,
         overlay,
         as_of_ts_ms=now,
@@ -321,7 +312,7 @@ def _score_universe(
         )
         for symbol in universe
     ]
-    scored.sort(key=lambda item: (-item["score"], item["symbol"]))
+    scored.sort(key=lambda item: (-item["score"], -item["confidence"], item["symbol"]))
     return scored
 
 
@@ -332,19 +323,19 @@ def rank_categorized(
     asset_class: AssetClass | None = None,
     limit: int = 20,
     refresh_sec: int = REFRESH_SEC,
+    universe: Sequence[tuple[str, AssetClass]] | None = None,
 ) -> CategorizedPicksResponse:
-    """Same book/demo scores as ensemble, tagged with a FE category. ≤20 rows."""
+    """Same scores as ensemble, tagged with a FE category. ≤20 rows."""
     now = int(as_of_ts_ms if as_of_ts_ms is not None else time.time() * 1000)
     by_symbol: dict[str, list[StoredSignal]] = defaultdict(list)
     for row in rows:
         by_symbol[normalize_symbol(row.symbol)].append(row)
 
-    universe: dict[str, AssetClass] = {sym: ac for sym, ac in DEMO_UNIVERSE}
-    for symbol, group in by_symbol.items():
-        universe.setdefault(symbol, infer_asset_class(symbol, group[-1].asset_class))
+    pairs = list(universe) if universe is not None else resolve_ranking_universe()
+    resolved: dict[str, AssetClass] = {sym: ac for sym, ac in pairs}
 
     scored = _score_universe(
-        universe,
+        resolved,
         by_symbol,
         {},
         as_of_ts_ms=now,

@@ -22,6 +22,7 @@ from sniper_quant.models import (
     CandidateSignal,
     CategorizedPicksResponse,
     EnsemblePicksResponse,
+    RankComponents,
     OHLCVBar,
     PerformanceSummary,
     SetupType,
@@ -117,12 +118,19 @@ Dormant `mss_break` / `order_block` / `sweep_mss` and
 `*_pending_user_confirm` are omitted.
 
 `GET /picks/ensemble` → Quantum Ensemble Picks (P0). Dynamic top **10**
-from the paper/signal book + optional `ml_scores` JSON overlay.
-`refresh_sec` is **900**. Thin books synthesize a rotating ≥20-symbol
-universe. **No live trading.** See README ranking formula.
+from the paper universe ∩ optional ML `SETUP_UNIVERSE`, scored from the
+signal book. Sort: publish-only `ensemble_score` (0–100) then
+`confidence`. `refresh_sec` is **900**. **No live trading.**
 
 `GET /picks/categorized?asset_class=&limit=20` → same scores, ≤20 rows,
 each tagged `momentum` | `mean_reversion` | `confluence` | `other`.
+
+Paper universe: `quant/config/paper_universe.json` / `PAPER_UNIVERSE`.
+ML `SETUP_UNIVERSE` overrides detectors; ranking uses the intersection.
+
+Multi-symbol risk (existing): corr |ρ| < 0.70, opposite-direction
+same-symbol conflict, 3% daily loss, 2% sizing. Optional
+`RATE_LIMIT_PER_MIN`.
 
 ## Alerts / paper / auth
 
@@ -150,13 +158,23 @@ class StatusBody(BaseModel):
 
 
 class PublishBody(CandidateSignal):
-    """Validate candidate plus publish-only factor fields. Server assigns ``id``."""
+    """Validate candidate plus publish-only ranking fields. Server assigns ``id``."""
 
     contributing_factors: list[str] = Field(
         default_factory=list,
         description="string[]. Publish / signal store only. Not on POST /risk/validate.",
     )
     factor_breakdown: list[FactorBreakdownRow] = Field(default_factory=list)
+    ensemble_score: float | None = Field(
+        default=None,
+        ge=0,
+        le=100,
+        description="Publish-only 0–100. GET /picks/ensemble primary sort. Not on validate.",
+    )
+    rank_components: RankComponents | None = Field(
+        default=None,
+        description="Publish-only {setup_quality, risk_adjusted, kill_zone, volume, freshness} each 0–1.",
+    )
 
 
 class AlertSubBody(BaseModel):
@@ -274,6 +292,16 @@ def create_app(
     async def risk_params() -> dict[str, Any]:
         body = _engine().params().model_dump()
         body["setup_type_notes"] = SETUP_TYPE_NOTES
+        s = app.state.settings
+        body["multi_symbol_risk"] = {
+            "corr_threshold": s.corr_threshold,
+            "corr_rule": "reject when |ρ| > threshold vs an open symbol (60-day Pearson)",
+            "same_symbol_conflict": "opposite_direction",
+            "max_daily_loss_frac": s.max_daily_loss_frac,
+            "risk_fraction": s.risk_fraction,
+            "rate_limit_per_min": s.rate_limit_per_min,
+            "live_trading": False,
+        }
         return body
 
     @app.get("/v1/setups")
@@ -299,6 +327,10 @@ def create_app(
             "kz_conviction_bonus": KZ_CONVICTION_BONUS,
             "s6_anchors": list(S6_ANCHOR_TYPES),
             "contributing_factors": "publish_only",
+            "ensemble_score": "publish_only_0_100",
+            "rank_components": "publish_only_0_1",
+            "paper_universe": "quant/config/paper_universe.json",
+            "setup_universe_env": "SETUP_UNIVERSE",
         }
 
     @app.get("/performance/summary", response_model=PerformanceSummary)
@@ -338,17 +370,14 @@ def create_app(
     ) -> EnsemblePicksResponse:
         """Quantum Ensemble Picks (P0). Dynamic top 10. Paper/signal book only.
 
-        Ranking (0–100 book mix + optional ML boost, documented in README):
-
-        score = 100 × (0.40 × recency_norm + 0.35 × mean_confidence
-                + 0.25 × setup_diversity) + 15 × ml_score
-
-        recency_norm uses a 900s half-life on approved (non-cancelled)
-        publishes, saturated at 3 weighted signals. Thin books fill from
-        a rotating ≥20-symbol demo universe (hash(symbol, 15m-bucket)).
+        Sort: published ``ensemble_score`` (0–100) desc, then ``confidence``
+        desc. Fallback: mean ``rank_components`` × 100, then book mix
+        (recency / confidence / diversity). Universe is
+        ``PAPER_UNIVERSE`` ∩ ``SETUP_UNIVERSE`` when ML set an allow-list.
         ``live_trading`` stays false. No Alpaca live.
         """
         from sniper_quant.picks import REFRESH_SEC, TOP_N, parse_ml_scores, rank_ensemble
+        from sniper_quant.universe import resolve_ranking_universe
 
         try:
             overlay = parse_ml_scores(ml_scores)
@@ -361,6 +390,7 @@ def create_app(
             ml_scores=overlay,
             top_n=TOP_N,
             refresh_sec=REFRESH_SEC,
+            universe=resolve_ranking_universe(app.state.settings),
         )
 
     @app.get("/picks/categorized", response_model=CategorizedPicksResponse)
@@ -380,6 +410,7 @@ def create_app(
         mixed momentum+mean_reversion → confluence. Paper only.
         """
         from sniper_quant.picks import REFRESH_SEC, rank_categorized
+        from sniper_quant.universe import resolve_ranking_universe
 
         try:
             ac = parse_asset_class_query(asset_class)
@@ -392,6 +423,7 @@ def create_app(
             asset_class=ac,
             limit=limit,
             refresh_sec=REFRESH_SEC,
+            universe=resolve_ranking_universe(app.state.settings),
         )
 
     @app.post("/risk/validate", response_model=ValidateResponse)
@@ -524,6 +556,8 @@ def create_app(
             status=SignalStatus.ACTIVE,
             contributing_factors=list(body.contributing_factors or []),
             factor_breakdown=list(body.factor_breakdown or []),
+            ensemble_score=body.ensemble_score,
+            rank_components=body.rank_components,
         )
         await _signals().insert(stored)
         engine.state.sync_from_signals(await _signals().active())
@@ -611,6 +645,13 @@ def create_app(
     @app.get("/alerts")
     async def alerts_status() -> dict[str, Any]:
         return _alerts().dump()
+
+    @app.get("/paper/universe")
+    async def paper_universe() -> dict[str, Any]:
+        """Quant paper universe + optional ML SETUP_UNIVERSE intersection."""
+        from sniper_quant.universe import universe_dump
+
+        return universe_dump(app.state.settings)
 
     @app.get("/paper/account")
     async def paper_account() -> dict[str, Any]:

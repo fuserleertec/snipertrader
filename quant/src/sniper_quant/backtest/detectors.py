@@ -943,8 +943,25 @@ DETECTORS = {
 }
 
 
-def detect_setup(setup_type: str, bars: list[OHLCVBar], params: DetectorParams | None = None) -> list[BacktestSignal]:
+def detect_setup(
+    setup_type: str,
+    bars: list[OHLCVBar],
+    params: DetectorParams | None = None,
+    *,
+    setup_universe: set[str] | None = None,
+) -> list[BacktestSignal]:
+    """Run one locked detector. ``SETUP_UNIVERSE`` (or ``setup_universe``)
+    restricts bars to the ML allow-list when set.
+    """
+    from sniper_quant.models import normalize_symbol
+    from sniper_quant.universe import setup_universe_allowlist
+
     fn = DETECTORS.get(setup_type)
     if fn is None:
         raise ValueError(f"no detector for {setup_type!r}")
+    allowed = setup_universe if setup_universe is not None else setup_universe_allowlist()
+    if allowed is not None:
+        bars = [b for b in bars if normalize_symbol(b.symbol) in allowed]
+        if not bars:
+            return []
     return fn(bars, params)

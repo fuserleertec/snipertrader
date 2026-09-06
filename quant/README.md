@@ -213,6 +213,7 @@ JSON Schema: [`schemas/dashboard_signal.schema.json`](../schemas/dashboard_signa
 | `GET` | `/performance/summary?symbol=` | Live metrics; `by_setup` keyed by `product_key` |
 | `GET` | `/picks/ensemble?as_of_ts_ms=&ml_scores=` | Quantum Ensemble Picks — dynamic top 10, `refresh_sec: 900` |
 | `GET` | `/picks/categorized?asset_class=&limit=20` | Categorized picks ≤20, `refresh_sec: 900` |
+| `GET` | `/paper/universe` | Paper + `SETUP_UNIVERSE` intersection (`live_trading: false`) |
 | `GET` | `/signals/{id}` | `Signal` |
 | `WS` | `/ws/signals` | `{ "type": "signal.upsert" \| "signal.status", "signal": Signal }` |
 | `POST` | `/signals` | `Signal` (after pre-filter; emits `signal.upsert`) |
@@ -252,6 +253,35 @@ zeros. Always present: `1_liquidity_sweep_vwap_reclaim`,
 Dormant `mss_break` / `order_block` / `sweep_mss` and
 `*_pending_user_confirm` are omitted. Metrics come from signal outcomes /
 `realized_r`.
+
+### Paper universe + ML `SETUP_UNIVERSE`
+
+Quant owns a default **20-symbol** paper mix (8 crypto / 8 equity / 4
+futures) at [`config/paper_universe.json`](config/paper_universe.json).
+Override with **`PAPER_UNIVERSE`**: a JSON path, or CSV
+(`BTCUSDT,AAPL,ES` or `BTCUSDT:crypto,AAPL:equity`).
+
+ML **`SETUP_UNIVERSE`** (CSV or JSON path) is the detector allow-list —
+when set, `detect_setup` only walks those symbols. **`GET /picks/ensemble`**
+and **`GET /picks/categorized`** rank the **intersection** of the paper
+universe and `SETUP_UNIVERSE` when both are present. Inspect via
+`GET /paper/universe` (`live_trading` is always false).
+
+### Multi-symbol risk (existing, paper book)
+
+These already apply to every `POST /risk/validate` / publish / ingest
+across the ~20-symbol book:
+
+| Rule | Default | Env |
+|---|---|---|
+| Correlation vs an open peer | reject when \|ρ\| **> 0.70** (60-day Pearson; skip if no history) | `CORR_THRESHOLD` |
+| Same-symbol conflict | **opposite direction** only (same-side pyramid allowed) | — |
+| Daily loss | **3%** of equity (`new_risk` cannot consume the remainder) | `MAX_DAILY_LOSS_FRAC` |
+| Position sizing | **2%** of equity per trade (`adjusted_position_size` in asset units) | `RISK_FRACTION` |
+| HTTP rate limit | off unless set | `RATE_LIMIT_PER_MIN` |
+
+`GET /risk/params` echoes `multi_symbol_risk`. No Alpaca live.
+`live_trading` stays **false**.
 
 `GET /picks/ensemble` (P0 — FE/ML shape; confirm if you need extras):
 
@@ -344,39 +374,33 @@ If a symbol has **both** momentum and mean-reversion setups (and no
 
 ### Ensemble ranking formula
 
-Let `H = 900` (half-life seconds = refresh). For each symbol, take
-approved (non-`CANCELLED`) signals in the book:
+`GET /picks/ensemble` sorts **`ensemble_score` desc, then `confidence`
+desc**, then `symbol` asc. Top **10**. Universe = paper universe ∩
+`SETUP_UNIVERSE` (intersection only when ML set the allow-list).
 
-| Term | Definition | Weight |
-|---|---|---|
-| `recency_weighted_n` | `Σ exp(−ln(2) · age_sec / H)` over those signals | |
-| `recency_norm` | `min(1, recency_weighted_n / 3)` | **0.40** |
-| `mean_confidence` | mean of `confidence` on those signals (`[0,1]`) | **0.35** |
-| `setup_diversity` | `unique(setup_type) / 6` | **0.25** |
-| `ml_score` | optional overlay, clamped `[0,1]` (0 if omitted) | **+15 × ml** |
+Per symbol, `score` (the `ensemble_score` used to sort) is:
+
+1. **Published `ensemble_score`** (0–100) — max across approved
+   (non-`CANCELLED`) signals. Publish-only; **422 on validate**.
+2. Else **mean of `rank_components`** × 100. Optional publish-only
+   object, each field 0–1: `setup_quality`, `risk_adjusted`,
+   `kill_zone`, `volume`, `freshness`.
+3. Else book mix (when the symbol has approved signals but no ML score):
 
 ```
 book_score = 100 × (0.40 × recency_norm + 0.35 × mean_confidence + 0.25 × setup_diversity)
-score      = book_score + 15 × ml_score
 ```
 
-Sort `score` desc, `symbol` asc; take top 10. `confidence` on the row is
-`mean_confidence`. `setup_types` are the unique live types. `ref_session`
-is copied from the newest approved signal.
-
-**Thin / empty book:** the scorer always considers a rotating in-memory
-universe of **26** symbols (12 crypto + 10 equity + 4 futures). Symbols
-with no approved signals get a demo score only:
+   `recency_norm` = `min(1, Σ exp(−ln(2)·age_sec/900) / 3)`.
+4. Else thin-book demo hash on the ranking universe:
 
 ```
-bucket = floor(as_of_ts_ms / (900 × 1000))
-unit   = sha256(symbol + ":" + bucket)[0:8] / 0xFFFFFFFF     # 0..1
-score  = 20 × unit + 15 × ml_score
+bucket = floor(as_of_ts_ms / 900000)
+score  = 20 × sha256(symbol + ":" + bucket)[0:8]/0xFFFFFFFF   # plus 100×ml_scores overlay
 ```
 
-Demo ceiling is **20** (or **35** with a full ML overlay) so a real book
-row outranks the hash fill. The 15-minute `bucket` makes the empty-book
-top 10 rotate instead of returning a canned list.
+`contributing_factors` / `factor_breakdown` stay publish-only (already
+on the store / Signal view). They do not change the sort.
 
 Multi-symbol paper books (~20 symbols) use the same `GET /signals`,
 `GET /signals/history`, `POST /v1/signals/ingest`, and
@@ -401,8 +425,9 @@ next page.
 `realized_r` (signed R on TP/SL; null for ACTIVE/CANCELLED),
 `exit_price` (optional), `closed_ts_ms` (optional),
 `contributing_factors` (optional `string[]`), `factor_breakdown`
-(optional `{name, weight, score, note?}[]`). The last two are
-publish-only — not on `POST /risk/validate`.
+(optional `{name, weight, score, note?}[]`), `ensemble_score`
+(optional 0–100), `rank_components` (optional 0–1 object). The last
+four are publish-only — not on `POST /risk/validate`.
 
 ```js
 const ws = new WebSocket("ws://localhost:8001/ws/signals");
@@ -555,6 +580,7 @@ quant/
   tests/
   grafana/provisioning  Timescale datasource + setup-performance dashboard + alerts
   reports/              walk-forward + paper_gate_2week.md
+  config/paper_universe.json  default ~20-symbol paper mix
   reports/phase4_prep/  Phase 4 non-live templates (no live_trading)
   tests/fixtures/pr9_quant_replay/  PR #9 locked-field validate samples
   Dockerfile

@@ -21,6 +21,7 @@ from sniper_quant.live import SignalHub
 from sniper_quant.models import (
     AssetClass,
     CandidateSignal,
+    RankComponents,
     SessionType,
     SetupType,
     Side,
@@ -172,6 +173,12 @@ class SignalValidationService:
             status=SignalStatus.ACTIVE,
             contributing_factors=list(payload.get("contributing_factors") or []),
             factor_breakdown=list(payload.get("factor_breakdown") or []),
+            ensemble_score=payload.get("ensemble_score"),
+            rank_components=(
+                RankComponents.model_validate(payload["rank_components"])
+                if payload.get("rank_components")
+                else None
+            ),
         )
 
 

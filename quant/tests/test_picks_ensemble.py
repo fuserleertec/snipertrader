@@ -128,6 +128,95 @@ def test_ml_overlay_lifts_symbol_and_rejects_bad_json():
     assert bad.status_code == 422
 
 
+def test_ensemble_score_then_confidence_sort():
+    http = _client()
+    as_of = 1_700_000_400_000
+    low = _payload(
+        symbol="BTCUSDT",
+        setup_type="sweep_reclaim",
+        ts_ms=as_of,
+        confidence=0.99,
+        ensemble_score=40,
+    )
+    high = _payload(
+        symbol="ETHUSDT",
+        setup_type="fvg_entry",
+        ts_ms=as_of,
+        confidence=0.61,
+        ensemble_score=91,
+    )
+    assert http.post("/risk/validate", json=low).status_code == 422
+    assert http.post("/signals", json=low).status_code == 201
+    assert http.post("/signals", json=high).status_code == 201
+    body = http.get("/picks/ensemble", params={"as_of_ts_ms": as_of}).json()
+    assert body["items"][0]["symbol"] == "ETHUSDT"
+    assert body["items"][0]["score"] == 91
+    assert body["items"][1]["symbol"] == "BTCUSDT"
+
+    a = _payload(
+        symbol="SOLUSDT",
+        setup_type="po3_judas",
+        ts_ms=as_of + 1,
+        confidence=0.70,
+        ensemble_score=80,
+    )
+    b = _payload(
+        symbol="AAPL",
+        asset_class="equity",
+        setup_type="vwap_pullback_cont",
+        ts_ms=as_of + 2,
+        confidence=0.95,
+        ensemble_score=80,
+    )
+    assert http.post("/signals", json=a).status_code == 201
+    assert http.post("/signals", json=b).status_code == 201
+    tied = http.get("/picks/ensemble", params={"as_of_ts_ms": as_of + 2}).json()
+    assert tied["items"][0]["symbol"] == "AAPL"
+    assert tied["items"][0]["confidence"] >= tied["items"][1]["confidence"]
+
+
+def test_rank_components_synthesize_and_universe_intersection():
+    http = _client()
+    as_of = 1_700_000_400_000
+    body = _payload(
+        symbol="NVDA",
+        asset_class="equity",
+        setup_type="avwap_ob_confluence",
+        ts_ms=as_of,
+        confidence=0.80,
+        rank_components={
+            "setup_quality": 0.9,
+            "risk_adjusted": 0.7,
+            "kill_zone": 1.0,
+            "volume": 0.4,
+            "freshness": 0.5,
+        },
+    )
+    assert http.post("/risk/validate", json=body).status_code == 422
+    assert http.post("/signals", json=body).status_code == 201
+    picks = http.get("/picks/ensemble", params={"as_of_ts_ms": as_of}).json()
+    nvda = next(r for r in picks["items"] if r["symbol"] == "NVDA")
+    assert abs(nvda["score"] - 70.0) < 0.01
+    assert "rank_components" in (nvda["notes"] or "")
+
+    uni = http.get("/paper/universe").json()
+    assert uni["live_trading"] is False
+    assert uni["n_paper"] >= 20
+    classes = {row["asset_class"] for row in uni["paper_universe"]}
+    assert classes == {"crypto", "equity", "futures"}
+    assert uni["setup_universe"] is None
+
+    settings = make_settings(SETUP_UNIVERSE="BTCUSDT,AAPL")
+    engine = RiskEngine(settings=settings, state=RiskState(equity=100_000))
+    narrow = TestClient(create_app(settings=settings, signals=InMemorySignalStore(), engine=engine))
+    dump = narrow.get("/paper/universe").json()
+    assert dump["intersection"] is True
+    assert {r["symbol"] for r in dump["ranking_universe"]} == {"BTCUSDT", "AAPL"}
+    ranked = narrow.get("/picks/ensemble", params={"as_of_ts_ms": 0}).json()
+    assert {r["symbol"] for r in ranked["items"]} <= {"BTCUSDT", "AAPL"}
+    assert len(ranked["items"]) == 2
+
+
 def test_picks_do_not_enable_live_trading():
     http = _client()
     http.get("/picks/ensemble")
