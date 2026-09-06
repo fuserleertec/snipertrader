@@ -142,6 +142,25 @@ def test_compute_summary_drawdown_and_sharpe():
     assert body["overall"]["max_drawdown_pct"] >= 0.0
 
 
+def test_symbol_filter_and_outcome_list():
+    http, _ = _client()
+    http.post(
+        "/performance/outcomes",
+        json={"setup": "5_vwap_pullback_cont", "won": True, "rr": 1.2, "ts_ms": 10, "symbol": "ES"},
+    )
+    http.post(
+        "/performance/outcomes",
+        json={"setup": "5_vwap_pullback_cont", "won": False, "rr": 0.8, "ts_ms": 11, "symbol": "CL"},
+    )
+    es = http.get("/performance/summary?symbol=ES").json()
+    assert es["overall"]["win_rate"] == 1.0
+    assert set(es["by_setup"]) == set(FROZEN)
+    listed = http.get("/performance/outcomes?symbol=ES").json()
+    assert listed["live_trading"] is False
+    assert listed["count"] == 1
+    assert listed["outcomes"][0]["symbol"] == "ES"
+
+
 def test_unknown_setup_rejected():
     http, _ = _client()
     resp = http.post("/performance/outcomes", json={"setup": "nope", "won": True, "rr": 1})

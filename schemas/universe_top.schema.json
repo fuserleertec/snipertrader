@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snipertrader.ai/schemas/universe_top.schema.json",
+  "title": "UniverseTop",
+  "description": "PM lock: GET /v1/universe/top?limit=10|20. Authoritative universe contract for ML / Quant / Frontend. Replaces provisional SETUP_UNIVERSE. Redis: universe:active. live_trading is always false. Score fields are DE ranking inputs, not Frontend display names.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["as_of_ts_ms", "limit", "live_trading", "score_inputs", "symbols"],
+  "properties": {
+    "as_of_ts_ms": { "type": "integer" },
+    "limit": { "type": "integer", "minimum": 1, "maximum": 20 },
+    "live_trading": { "type": "boolean", "const": false },
+    "score_inputs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["volume", "volatility", "session_active", "levels_available", "pattern_count"]
+      }
+    },
+    "symbols": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "symbol",
+          "asset_class",
+          "rank",
+          "score",
+          "volume",
+          "volatility",
+          "session_active",
+          "levels_available",
+          "pattern_count"
+        ],
+        "properties": {
+          "symbol": { "type": "string", "pattern": "^[A-Z0-9]+$" },
+          "asset_class": { "type": "string", "enum": ["crypto", "equity", "futures"] },
+          "rank": { "type": "integer", "minimum": 1, "maximum": 20 },
+          "score": { "type": "number" },
+          "volume": { "type": "number" },
+          "volatility": { "type": "number" },
+          "session_active": { "type": "boolean" },
+          "levels_available": { "type": "integer", "minimum": 0 },
+          "pattern_count": { "type": "integer", "minimum": 0 }
+        }
+      }
+    }
+  }
+}

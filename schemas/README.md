@@ -22,6 +22,7 @@ as required on a **new** schema.
 | `options_chain` | [`options_chain.schema.json`](options_chain.schema.json) | US-equities options stub / mock | ML / Quant |
 | `order_flow` | [`order_flow.schema.json`](order_flow.schema.json) | US-equities tape stub / mock | ML / Quant |
 | `performance_outcomes` | (inbound outcome JSON) | Quant `POST /performance/outcomes` | Redis `perf:outcomes` |
+| `dashboard_snapshots` | [`dashboard_snapshot.schema.json`](dashboard_snapshot.schema.json) | 15m snapshot job | Redis `dashboard:snapshot:{symbol}`, Frontend poll |
 
 ## Delta / aggressor (ML Researchers)
 
@@ -98,3 +99,65 @@ index `avwap:index:{symbol}`.
 Options / order-flow field names are frozen: use `implied_volatility`,
 `open_interest`, `option_type` (`call`\|`put`), `aggressor` (`buy`\|`sell`).
 Do not invent `iv` / `oi` / `right` / `side` / `taker_side`.
+
+`setup_signal.trigger_event_ids` is an optional list of sweep / FVG / MSS / OB
+ids. Demo generators emit it for **every** configured symbol (including
+`ES`, `CL`, `GC`, `NQ`), not BTCUSDT-only.
+
+## Multi-asset paper expansion — universe + 15m snapshot
+
+**`live_trading=false`.** No live brokers. Paper / mock / demo only.
+
+### PM lock — `GET /v1/universe/top`
+
+**ML / Quant / Frontend consume `GET /v1/universe/top?limit=10|20` as the
+authoritative universe contract.** It replaces any provisional
+`SETUP_UNIVERSE`. Schema:
+[`universe_top.schema.json`](universe_top.schema.json).
+
+Redis backing key: **`universe:active`** (same JSON envelope, computed for
+the configured set so `?limit=10` is a prefix slice). Helper list:
+`GET /v1/universe` / Redis `universe:config` — **not** the ranking contract.
+
+Locked envelope:
+
+```json
+{
+  "as_of_ts_ms": 1725459000000,
+  "limit": 10,
+  "live_trading": false,
+  "score_inputs": ["volume", "volatility", "session_active", "levels_available", "pattern_count"],
+  "symbols": [
+    {
+      "symbol": "ES",
+      "asset_class": "futures",
+      "rank": 1,
+      "score": 0.82,
+      "volume": 12345.6,
+      "volatility": 0.012,
+      "session_active": true,
+      "levels_available": 5,
+      "pattern_count": 4
+    }
+  ]
+}
+```
+
+`score` is a DE paper rank from the listed inputs. Do not invent Frontend
+display field names beyond this shape.
+
+### 15-minute dashboard snapshot
+
+| Store | Schema / payload | Key / topic |
+|---|---|---|
+| Redis | [`dashboard_snapshot.schema.json`](dashboard_snapshot.schema.json) | `dashboard:snapshot:{symbol}` |
+| Redis | index (symbols + key map) | `dashboard:snapshot:index` |
+| Redis | locked top-N envelope | `universe:active` |
+| Redis | configured list helper | `universe:config` |
+| Kafka | per-symbol snapshot (key = symbol) + `_index` / `_universe` | `dashboard_snapshots` |
+
+Embedded `vwap` / `session` / `avwap` / `kill_zone` / `volume_profile` are
+the existing Phase 1/2 payloads or `null`. Pointers name the live Redis keys.
+
+Cadence: `DASHBOARD_SNAPSHOT_INTERVAL_S` (default **900**).
+CLI: `sniper-data snapshot --every 900`.

@@ -254,6 +254,11 @@ PHASE3 = {
     "order_flow.schema.json",
 }
 
+MULTI_ASSET = {
+    "universe_top.schema.json",
+    "dashboard_snapshot.schema.json",
+}
+
 
 def test_phase3_performance_and_us_equity_schemas():
     names = {p.name for p in SCHEMAS.glob("*.schema.json")}
@@ -294,6 +299,42 @@ def test_phase3_performance_and_us_equity_schemas():
         aggressor="buy",
     )
     assert "side" not in of.model_dump()
+
+
+def test_multi_asset_universe_and_snapshot_schemas():
+    names = {p.name for p in SCHEMAS.glob("*.schema.json")}
+    assert MULTI_ASSET <= names
+    top = _load("universe_top.schema.json")
+    assert top["additionalProperties"] is False
+    assert top["properties"]["live_trading"]["const"] is False
+    assert top["required"] == [
+        "as_of_ts_ms",
+        "limit",
+        "live_trading",
+        "score_inputs",
+        "symbols",
+    ]
+    snap = _load("dashboard_snapshot.schema.json")
+    assert snap["properties"]["live_trading"]["const"] is False
+    setup = _load("setup_signal.schema.json")
+    assert "trigger_event_ids" in setup["properties"]
+    assert "trigger_event_ids" not in setup["required"]
+
+
+def test_setup_signal_trigger_event_ids_optional():
+    from sniper_data.models import SetupSignal
+
+    bare = SetupSignal(
+        id="s1",
+        symbol="ES",
+        asset_class=AssetClass.FUTURES,
+        setup_type="5_vwap_pullback_cont",
+        side="long",
+        ts_ms=1,
+    )
+    assert bare.trigger_event_ids is None
+    linked = bare.model_copy(update={"trigger_event_ids": ["sw-ES-1", "fvg-ES-1"]})
+    assert linked.trigger_event_ids == ["sw-ES-1", "fvg-ES-1"]
 
 
 def test_order_block_required_and_optional():

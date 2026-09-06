@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snipertrader.ai/schemas/dashboard_snapshot.schema.json",
+  "title": "DashboardSnapshot",
+  "description": "15-minute paper snapshot for one symbol. Kafka topic: dashboard_snapshots (key=symbol). Redis: dashboard:snapshot:{symbol}. Embedded vwap / session / avwap / kill_zone / volume_profile match existing Phase 1/2 wire shapes (or null). No ranking scores — those live on GET /v1/universe/top. live_trading is always false.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "symbol",
+    "asset_class",
+    "ts_ms",
+    "cadence_s",
+    "live_trading",
+    "pointers",
+    "available"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.1" },
+    "symbol": { "type": "string", "pattern": "^[A-Z0-9]+$" },
+    "asset_class": { "type": "string", "enum": ["crypto", "equity", "futures"] },
+    "ts_ms": { "type": "integer" },
+    "cadence_s": { "type": "integer", "minimum": 1 },
+    "live_trading": { "type": "boolean", "const": false },
+    "price": { "type": ["number", "null"] },
+    "pointers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["vwap", "session", "avwap_latest", "kill_zone", "volume_profile"],
+      "properties": {
+        "vwap": { "type": "string" },
+        "session": { "type": "string" },
+        "avwap_latest": { "type": "string" },
+        "kill_zone": { "type": "string" },
+        "volume_profile": { "type": "string" }
+      }
+    },
+    "available": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["vwap", "session", "avwap", "kill_zone", "volume_profile"],
+      "properties": {
+        "vwap": { "type": "boolean" },
+        "session": { "type": "boolean" },
+        "avwap": { "type": "boolean" },
+        "kill_zone": { "type": "boolean" },
+        "volume_profile": { "type": "boolean" }
+      }
+    },
+    "vwap": { "type": ["object", "null"] },
+    "session": { "type": ["object", "null"] },
+    "avwap": { "type": ["object", "null"] },
+    "kill_zone": { "type": ["object", "null"] },
+    "volume_profile": { "type": ["object", "null"] }
+  }
+}

@@ -237,10 +237,47 @@ class Runtime:
                 except asyncio.TimeoutError:
                     continue
 
+        if self.settings.seed_history:
+            from sniper_data.history import seed_ohlcv_history
+
+            try:
+                await seed_ohlcv_history(self.bars, self.settings.symbols)
+            except Exception as exc:  # noqa: BLE001
+                log.warning("ohlcv history seed: %s", exc)
+        if self.settings.seed_patterns:
+            from sniper_data.patterns import seed_patterns
+
+            try:
+                await seed_patterns(
+                    self.store, self.settings.symbols, bus=self.bus
+                )
+            except Exception as exc:  # noqa: BLE001
+                log.warning("pattern seed: %s", exc)
+        try:
+            from sniper_data.dashboard import publish_snapshots
+            from sniper_data.universe import write_universe_config
+
+            await write_universe_config(
+                self.store,
+                self.settings.symbols,
+                cadence_s=self.settings.dashboard_snapshot_interval_s,
+            )
+            await publish_snapshots(
+                self.store,
+                self.settings.symbols,
+                bus=self.bus,
+                cadence_s=self.settings.dashboard_snapshot_interval_s,
+            )
+        except Exception as exc:  # noqa: BLE001
+            log.warning("initial dashboard snapshot: %s", exc)
+
         evict_task = asyncio.create_task(_evict_loop())
         kz_task = None
         if self.settings.killzone_inprocess:
             kz_task = asyncio.create_task(self._killzone_loop())
+        snap_task = None
+        if self.settings.dashboard_snapshot_inprocess:
+            snap_task = asyncio.create_task(self._snapshot_loop())
         kafka_tasks: list[asyncio.Task] = []
         if isinstance(self.bus, KafkaBus):
             kafka_tasks.append(asyncio.create_task(self._consume_anchor_events()))
@@ -271,11 +308,38 @@ class Runtime:
             evict_task.cancel()
             if kz_task is not None:
                 kz_task.cancel()
+            if snap_task is not None:
+                snap_task.cancel()
             if flow_task is not None:
                 flow_task.cancel()
             for task in kafka_tasks:
                 task.cancel()
             await connector.close()
+
+    async def _snapshot_loop(self) -> None:
+        from sniper_data.dashboard import refresh_paper_state
+
+        while not self._stop.is_set():
+            try:
+                await asyncio.wait_for(
+                    self._stop.wait(),
+                    timeout=self.settings.dashboard_snapshot_interval_s,
+                )
+                break
+            except asyncio.TimeoutError:
+                pass
+            try:
+                await refresh_paper_state(
+                    self.store,
+                    self.settings.symbols,
+                    bus=self.bus,
+                    bars=self.bars,
+                    cadence_s=self.settings.dashboard_snapshot_interval_s,
+                    seed_history=False,
+                    seed_patterns=self.settings.seed_patterns,
+                )
+            except Exception as exc:  # noqa: BLE001
+                log.warning("dashboard snapshot: %s", exc)
 
     async def _killzone_loop(self) -> None:
         while not self._stop.is_set():

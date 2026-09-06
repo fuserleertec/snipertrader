@@ -45,6 +45,10 @@ class InMemoryOHLCVStore:
                 return
         self.bars.append(bar)
 
+    async def upsert_many(self, bars: list[OHLCVBar]) -> None:
+        for bar in bars:
+            await self.upsert(bar)
+
     async def fetch(self, symbol: str, timeframe: str, limit: int = 200) -> list[OHLCVBar]:
         rows = [
             b
@@ -87,6 +91,31 @@ class TimescaleStore:
                 bar.n_ticks,
                 bar.close_ts_ms,
             )
+
+    async def upsert_many(self, bars: list[OHLCVBar]) -> None:
+        if not bars:
+            return
+        if self._pool is None:
+            await self.start()
+        assert self._pool is not None
+        payload = [
+            (
+                bar.open_ts_ms,
+                bar.symbol,
+                bar.asset_class.value,
+                bar.timeframe.value,
+                bar.open,
+                bar.high,
+                bar.low,
+                bar.close,
+                bar.volume,
+                bar.n_ticks,
+                bar.close_ts_ms,
+            )
+            for bar in bars
+        ]
+        async with self._pool.acquire() as conn:
+            await conn.executemany(UPSERT_SQL, payload)
 
     async def fetch(self, symbol: str, timeframe: str, limit: int = 200) -> list[OHLCVBar]:
         if self._pool is None:

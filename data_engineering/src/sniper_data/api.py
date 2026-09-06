@@ -24,6 +24,21 @@ from sniper_data.bus.redis_store import InMemoryStateStore, RedisStateStore, Sta
 from sniper_data.bus.resilience import Backoff
 from sniper_data.bus.timescaledb import InMemoryOHLCVStore, OHLCVStore, TimescaleStore
 from sniper_data.config import KAFKA_TOPICS, Settings, get_settings
+from sniper_data.dashboard import (
+    REDIS_SNAPSHOT_INDEX,
+    collect_symbol_state,
+    redis_snapshot_key,
+)
+from sniper_data.signals import list_signals
+from sniper_data.universe import (
+    MAX_UNIVERSE_SYMBOLS,
+    REDIS_UNIVERSE_CONFIG,
+    clamp_top_limit,
+    config_payload,
+    read_universe_active,
+    slice_active,
+    top_envelope,
+)
 from sniper_data.kill_zones import redis_kill_zone_active_key, redis_kill_zone_channel, redis_kill_zone_key
 from sniper_data.metrics import (
     metrics_response,
@@ -145,6 +160,27 @@ Payload fields (exact): `anchor_id`, `symbol`, `anchor_time`, `anchor_price`,
 `GET /v1/kill-zone/active/{asset_class}` — Redis `kill_zone:active:{asset_class}`.
 
 `WS /v1/ws/kill-zone?symbol=BTCUSDT`
+
+## Multi-asset universe (PM lock)
+
+`GET /v1/universe/top?limit=10|20` is the **authoritative** shared contract
+for ML / Quant / Frontend. It replaces any provisional `SETUP_UNIVERSE`.
+Backed by Redis `universe:active` plus paper ranking inputs (volume,
+volatility, session activity, levels, pattern counts). `live_trading` is
+always `false`.
+
+`GET /v1/universe` is a helper that lists the configured paper universe
+(max 20). It is **not** the ranking contract.
+
+## Dashboard snapshot (≤15m)
+
+`GET /v1/dashboard/snapshot` / `GET /v1/dashboard/snapshot/{symbol}`
+read Redis `dashboard:snapshot:index` and `dashboard:snapshot:{symbol}`.
+
+## Signal history (P2, DE-owned)
+
+`GET /v1/signals?symbol=&symbols=&limit=&offset=` lists `SetupSignal`
+rows (including `trigger_event_ids`) for up to 20 symbols.
 
 ## Metrics
 
@@ -297,6 +333,20 @@ async def lifespan(app: FastAPI):
             log.warning("ohlcv store unavailable: %s", exc)
     app.state.bars = bars
     app.state.performance = PerformanceStore(app.state.store)
+    if settings.seed_history:
+        try:
+            from sniper_data.history import seed_ohlcv_history
+
+            await seed_ohlcv_history(app.state.bars, settings.symbols)
+        except Exception as exc:  # noqa: BLE001
+            log.warning("ohlcv history seed skipped: %s", exc)
+    if settings.seed_patterns:
+        try:
+            from sniper_data.patterns import seed_patterns
+
+            await seed_patterns(app.state.store, settings.symbols)
+        except Exception as exc:  # noqa: BLE001
+            log.warning("pattern seed skipped: %s", exc)
     yield
     await app.state.store.close()
     await app.state.bars.close()
@@ -331,6 +381,7 @@ def create_app(
     @app.get("/health")
     async def health() -> dict[str, Any]:
         ok = await app.state.store.ping()
+        settings = app.state.settings
         return {
             "ok": ok,
             "inmemory": isinstance(app.state.store, InMemoryStateStore),
@@ -338,11 +389,16 @@ def create_app(
             "bars": app.state.bars is not None,
             "phase": 3,
             "setups": list(SETUP_KEYS),
+            "live_trading": False,
+            "universe": list(settings.symbols),
+            "universe_contract": "/v1/universe/top",
+            "max_symbols": MAX_UNIVERSE_SYMBOLS,
         }
 
     @app.get("/performance/summary")
     async def performance_summary(
         setup: str | None = Query(default=None),
+        symbol: str | None = Query(default=None),
     ) -> JSONResponse:
         filt = None
         if setup:
@@ -350,7 +406,18 @@ def create_app(
                 filt = resolve_setup_key(setup)
             except UnknownSetupError as exc:
                 raise HTTPException(400, str(exc)) from exc
-        body = await app.state.performance.summary(setup=filt)
+        body = await app.state.performance.summary(setup=filt, symbol=symbol)
+        return JSONResponse(body)
+
+    @app.get("/performance/outcomes")
+    async def list_performance_outcomes(
+        symbol: str | None = Query(default=None),
+        limit: int = Query(default=50, ge=1, le=200),
+        offset: int = Query(default=0, ge=0),
+    ) -> JSONResponse:
+        body = await app.state.performance.list_outcomes(
+            symbol=symbol, limit=limit, offset=offset
+        )
         return JSONResponse(body)
 
     @app.post("/performance/outcomes", status_code=201)
@@ -368,6 +435,89 @@ def create_app(
             {"ok": True, "n": len(stored), "setups": [s.setup for s in stored]},
             status_code=201,
         )
+
+    @app.get("/v1/universe/top")
+    async def universe_top(
+        limit: int = Query(..., description="Locked sizes: 10 (P0) or 20 (P2/P4). 1–20 accepted."),
+    ) -> JSONResponse:
+        """PM lock — ML / Quant / FE consume this as the universe contract."""
+        try:
+            wanted = clamp_top_limit(limit)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        stored = await read_universe_active(app.state.store)
+        if stored and stored.get("symbols"):
+            return JSONResponse(slice_active(stored, wanted))
+        settings = app.state.settings
+        metrics = []
+        now_ms = int(time.time() * 1000)
+        for symbol in settings.symbols:
+            _snap, row = await collect_symbol_state(
+                app.state.store, symbol, now_ms=now_ms
+            )
+            metrics.append(row)
+        if not metrics:
+            metrics = [
+                {
+                    "symbol": s,
+                    "asset_class": infer_asset_class(s).value,
+                    "volume": 0.0,
+                    "volatility": 0.0,
+                    "session_active": False,
+                    "levels_available": 0,
+                    "pattern_count": 0,
+                }
+                for s in settings.symbols
+            ]
+        envelope = top_envelope(metrics, limit=wanted, now_ms=now_ms)
+        return JSONResponse(envelope.model_dump(mode="json"))
+
+    @app.get("/v1/universe")
+    async def universe_list() -> JSONResponse:
+        """Helper: full configured paper universe. Not the ranking contract."""
+        settings = app.state.settings
+        cached = await app.state.store.get(REDIS_UNIVERSE_CONFIG)
+        if isinstance(cached, dict) and cached.get("symbols"):
+            cached["live_trading"] = False
+            cached["contract"] = "/v1/universe/top"
+            return JSONResponse(cached)
+        body = config_payload(
+            settings.symbols, cadence_s=settings.dashboard_snapshot_interval_s
+        ).model_dump(mode="json")
+        body["contract"] = "/v1/universe/top"
+        return JSONResponse(body)
+
+    @app.get("/v1/dashboard/snapshot/{symbol}")
+    async def dashboard_snapshot_one(symbol: str) -> JSONResponse:
+        symbol = normalize_symbol(symbol)
+        payload = await app.state.store.get(redis_snapshot_key(symbol))
+        if payload is None:
+            raise HTTPException(404, f"no dashboard snapshot for {redis_snapshot_key(symbol)}")
+        return JSONResponse(payload)
+
+    @app.get("/v1/dashboard/snapshot")
+    async def dashboard_snapshot_index() -> JSONResponse:
+        payload = await app.state.store.get(REDIS_SNAPSHOT_INDEX)
+        if payload is None:
+            raise HTTPException(404, "no dashboard snapshot index yet")
+        return JSONResponse(payload)
+
+    @app.get("/v1/signals")
+    async def get_signals(
+        symbol: str | None = Query(default=None),
+        symbols: str | None = Query(default=None),
+        limit: int = Query(default=50, ge=1, le=200),
+        offset: int = Query(default=0, ge=0),
+    ) -> JSONResponse:
+        body = await list_signals(
+            app.state.store,
+            symbol=symbol,
+            symbols=symbols,
+            configured=app.state.settings.symbols,
+            limit=limit,
+            offset=offset,
+        )
+        return JSONResponse(body)
 
     @app.get("/v1/vwap/{symbol}")
     async def get_vwap(
@@ -678,6 +828,9 @@ async def _ws_zone_overlay(
 def _metric_route(path: str) -> str:
     for prefix in (
         "/performance",
+        "/v1/universe",
+        "/v1/dashboard",
+        "/v1/signals",
         "/v1/vwap",
         "/v1/avwap",
         "/v1/session",

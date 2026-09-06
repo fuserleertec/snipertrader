@@ -139,10 +139,16 @@ def compute_summary(
     *,
     now_ms: int | None = None,
     setup_filter: str | None = None,
+    symbol_filter: str | None = None,
 ) -> dict[str, Any]:
     now = now_ms if now_ms is not None else utc_now_ms()
     day0 = _day_start_utc_ms(now)
     week0 = now - MS_PER_WEEK
+    if symbol_filter:
+        from sniper_data.symbols import normalize_symbol
+
+        wanted = normalize_symbol(symbol_filter)
+        rows = [r for r in rows if r.symbol and r.symbol.upper() == wanted]
 
     by_setup = empty_by_setup()
     grouped: dict[str, list[StoredOutcome]] = {k: [] for k in SETUP_KEYS}
@@ -254,10 +260,40 @@ class PerformanceStore:
         self,
         *,
         setup: str | None = None,
+        symbol: str | None = None,
         now_ms: int | None = None,
     ) -> dict[str, Any]:
         rows = await self.load()
-        return compute_summary(rows, now_ms=now_ms, setup_filter=setup)
+        return compute_summary(
+            rows, now_ms=now_ms, setup_filter=setup, symbol_filter=symbol
+        )
+
+    async def list_outcomes(
+        self,
+        *,
+        symbol: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> dict[str, Any]:
+        rows = await self.load()
+        if symbol:
+            from sniper_data.symbols import normalize_symbol
+
+            wanted = normalize_symbol(symbol)
+            rows = [r for r in rows if r.symbol and r.symbol.upper() == wanted]
+        cap = max(1, min(int(limit), 200))
+        start = max(0, int(offset))
+        page = rows[start : start + cap]
+        return {
+            "as_of_ts_ms": utc_now_ms(),
+            "limit": cap,
+            "offset": start,
+            "count": len(page),
+            "total": len(rows),
+            "symbol": symbol,
+            "live_trading": False,
+            "outcomes": [r.model_dump(mode="json") for r in page],
+        }
 
 
 def empty_summary(now_ms: int | None = None) -> dict[str, Any]:

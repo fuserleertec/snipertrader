@@ -24,6 +24,11 @@
     "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
     "ref_vwap": { "type": ["number", "null"] },
     "ref_session": { "type": ["string", "null"] },
-    "ts_ms": { "type": "integer" }
+    "ts_ms": { "type": "integer" },
+    "trigger_event_ids": {
+      "type": ["array", "null"],
+      "items": { "type": "string" },
+      "description": "Ids of sweep / FVG / MSS / OB (or other) events that produced this setup. Same generators run for every configured symbol."
+    }
   }
 }

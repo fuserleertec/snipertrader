@@ -36,11 +36,16 @@ def redis_volume_profile_acc_key(symbol: str, session_type: str | SessionType) -
 DEFAULT_TICK_SIZES: dict[str, float] = {
     "BTCUSDT": 5.0,
     "ETHUSDT": 1.0,
+    "SOLUSDT": 0.05,
+    "BNBUSDT": 0.10,
     "AAPL": 0.05,
     "MSFT": 0.05,
     "NVDA": 0.05,
+    "SPY": 0.01,
     "ES": 0.25,
     "NQ": 0.25,
+    "CL": 0.01,
+    "GC": 0.10,
     "MES": 0.25,
     "MNQ": 0.25,
 }
