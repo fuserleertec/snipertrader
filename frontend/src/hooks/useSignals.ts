@@ -1,61 +1,69 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { seedPrice } from "@/lib/constants";
+import { DESK_SYMBOL_LIMIT, seedPrice } from "@/lib/constants";
 import { isMockMode, quantWsUrl } from "@/lib/env";
-import { fetchSignals } from "@/lib/http";
+import { fetchSignalHistory, fetchSignals } from "@/lib/http";
 import { mockListSignals, startMockSignalStream } from "@/lib/mocks/signals";
 import { isSignalWsEvent, normalizeSignal, upsertSignal } from "@/lib/signals";
 import type { Signal } from "@/lib/types";
 import { openJsonWsAt } from "@/lib/ws";
 
-function seedSignals(symbol: string): Signal[] {
-  return mockListSignals({ symbol, limit: 24 }, seedPrice(symbol)).items;
+function seedDesk(): Signal[] {
+  return mockListSignals({ limit: 200 }, 0).items;
 }
 
-export function useSignals(symbol: string, lastPrice: () => number): Signal[] {
+/**
+ * Desk-wide setup_signals (up to 20 symbols). Chart focus only drives the
+ * mock WS upsert stream — it does not wipe the list.
+ */
+export function useSignals(focusSymbol: string, lastPrice: () => number, refreshKey = 0): Signal[] {
   const mocks = isMockMode();
-  const [rows, setRows] = useState<Signal[]>(() => (mocks ? seedSignals(symbol) : []));
-  const [activeSymbol, setActiveSymbol] = useState(symbol);
-
-  if (symbol !== activeSymbol) {
-    setActiveSymbol(symbol);
-    setRows(mocks ? seedSignals(symbol) : []);
-  }
+  const [rows, setRows] = useState<Signal[]>(() => (mocks ? seedDesk() : []));
 
   useEffect(() => {
     let alive = true;
+    if (mocks) {
+      setRows(seedDesk());
+      return () => {
+        alive = false;
+      };
+    }
+    const query = { limit: 200 };
+    Promise.all([fetchSignalHistory(query), fetchSignals(query)]).then(([history, list]) => {
+      if (!alive) return;
+      const items = history?.items?.length ? history.items : (list?.items ?? []);
+      setRows(items);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [mocks, refreshKey]);
 
+  useEffect(() => {
     const applyEvent = (data: unknown) => {
       try {
         if (!isSignalWsEvent(data)) return;
         const signal = normalizeSignal(data.signal);
-        if (!signal || signal.symbol !== symbol) return;
-        setRows((prev) => upsertSignal(prev, signal));
+        if (!signal) return;
+        setRows((prev) => upsertSignal(prev, signal).slice(0, 80 + DESK_SYMBOL_LIMIT * 4));
       } catch {
         /* ignore malformed frames */
       }
     };
 
     if (mocks) {
-      const seed = seedSignals(symbol);
-      return startMockSignalStream(symbol, lastPrice, applyEvent, seed);
+      const seed = mockListSignals({ symbol: focusSymbol, limit: 24 }, seedPrice(focusSymbol)).items;
+      return startMockSignalStream(focusSymbol, lastPrice, applyEvent, seed);
     }
 
-    fetchSignals({ symbol, limit: 40 }).then((list) => {
-      if (!alive || !list) return;
-      setRows(list.items);
-    });
-
-    // Quant PR #2: WS /ws/signals → { type: "signal.upsert"|"signal.status", signal }
     const stop = openJsonWsAt(quantWsUrl("/ws/signals"), applyEvent, () => undefined);
     return () => {
-      alive = false;
       stop();
     };
     // lastPrice is a stable () => ref.current from the dashboard
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [symbol, mocks]);
+  }, [focusSymbol, mocks]);
 
   return rows;
 }

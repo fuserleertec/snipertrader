@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { SETUP_TYPES, SIGNAL_STATUSES, SYMBOLS } from "@/lib/constants";
+import { DESK_SYMBOL_LIMIT, SETUP_TYPES, SIGNAL_STATUSES } from "@/lib/constants";
+import { uniqueSymbols } from "@/lib/desk";
 import { isMockMode } from "@/lib/env";
-import { fetchSignals } from "@/lib/http";
+import { fetchSignalHistory, fetchSignals } from "@/lib/http";
 import { outcomeLabel, realizedMultiple, zoneLabel } from "@/lib/signals";
 import type { SetupType, Signal, SignalStatus } from "@/lib/types";
 
@@ -87,16 +88,18 @@ export function SignalTable({
   useEffect(() => {
     if (mocks) return;
     let alive = true;
-    fetchSignals({
+    const query = {
       symbol: symbolFilter === "all" ? undefined : symbolFilter,
       setup_type: typeFilter === "all" ? undefined : typeFilter,
       status: statusFilter === "all" ? undefined : statusFilter,
       from_ts: dayStart(fromDay) ?? undefined,
       to_ts: dayEnd(toDay) ?? undefined,
       limit: 80,
-    }).then((list) => {
-      if (!alive || !list) return;
-      setLiveRows(list.items);
+    };
+    Promise.all([fetchSignalHistory(query), fetchSignals(query)]).then(([history, list]) => {
+      if (!alive) return;
+      const items = history?.items?.length ? history.items : (list?.items ?? []);
+      setLiveRows(items);
     });
     return () => {
       alive = false;
@@ -118,6 +121,8 @@ export function SignalTable({
     });
   }, [mocks, rows, liveRows, typeFilter, statusFilter, symbolFilter, fromDay, toDay]);
 
+  const symbolOptions = useMemo(() => uniqueSymbols([...rows, ...(liveRows ?? [])], DESK_SYMBOL_LIMIT), [rows, liveRows]);
+
   const download = () => {
     const blob = new Blob([toCsv(filtered)], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -137,19 +142,20 @@ export function SignalTable({
             <span className="sim">GET /signals</span>
           </div>
           <div className="sec-sub">
-            Same <code>GET /signals</code> as the live table (<code>from_ts</code>/<code>to_ts</code>,{" "}
-            <code>status</code>, <code>setup_type</code>, <code>symbol</code>). Close fields{" "}
-            <code>realized_r</code>, <code>exit_price</code>, <code>closed_ts_ms</code> come from Quant
-            PR #2 (null on ACTIVE/CANCELLED; set on TP_HIT/SL_HIT). Not computed here.
+            Same <code>GET /signals</code> / <code>GET /signals/history</code> (
+            <code>from_ts</code>/<code>to_ts</code>, <code>status</code>, <code>setup_type</code>,{" "}
+            <code>symbol</code>). Desk is multi-symbol (≤20). Zone uses{" "}
+            <code>entry</code>/<code>stop</code>/<code>target</code>; Outcome is <code>status</code>{" "}
+            (TP_HIT/SL_HIT/…). Close fields from Quant. Not computed here.
           </div>
         </>
       )}
       <div className="table-tools" style={{ marginBottom: 10 }}>
         <select value={symbolFilter} onChange={(e) => setSymbolFilter(e.target.value)}>
           <option value="all">all symbol</option>
-          {SYMBOLS.map((s) => (
-            <option key={s.symbol} value={s.symbol}>
-              {s.symbol}
+          {symbolOptions.map((s) => (
+            <option key={s} value={s}>
+              {s}
             </option>
           ))}
         </select>

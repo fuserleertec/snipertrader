@@ -394,11 +394,73 @@ export interface SignalListQuery {
   status?: SignalStatus;
   setup_type?: SetupType;
   side?: SignalSide;
+  /** `stocks` is accepted and mapped to `equity`. */
+  asset_class?: AssetClass | "stocks";
   from_ts?: number;
   to_ts?: number;
   limit?: number;
   /** Opaque page token from the previous `next_cursor`. */
   cursor?: string;
+}
+
+/** Active-setup desk tabs. Stocks → `equity` on the wire. */
+export type AssetTab = "futures" | "stocks" | "cryptos";
+
+export type PickCategory = "momentum" | "mean_reversion" | "confluence" | "other";
+
+export type UniverseSource = "SETUP_UNIVERSE" | "DE";
+
+export interface RankComponents {
+  setup_quality: number;
+  risk_adjusted: number;
+  kill_zone: number;
+  volume: number;
+  freshness: number;
+}
+
+/** GET /picks/ensemble item — Quant ranks top 10 inside the contracted universe. */
+export interface EnsemblePickItem {
+  rank: number;
+  symbol: string;
+  asset_class: AssetClass;
+  score: number;
+  setup_types: SetupType[];
+  confidence: number;
+  ensemble_score: number;
+  rank_components: RankComponents;
+  /** ML ensemble_features via Quant — optional. */
+  contributing_factors?: string[];
+  /** When present, FE maps `confidence ← best_confidence`. */
+  best_confidence?: number;
+}
+
+export interface EnsemblePicksResponse {
+  as_of_ts_ms: number;
+  refresh_sec: number;
+  universe_source: UniverseSource;
+  items: EnsemblePickItem[];
+}
+
+/** GET /picks/categorized item — ≤20, no asset-class restriction on the list. */
+export interface CategorizedPickItem {
+  symbol: string;
+  asset_class: AssetClass;
+  category: PickCategory;
+  score: number;
+  confidence: number;
+  setup_types: SetupType[];
+  entry: number;
+  stop: number;
+  target: number;
+  atr: number;
+  reward_risk: number;
+}
+
+export interface CategorizedPicksResponse {
+  as_of_ts_ms: number;
+  refresh_sec: number;
+  universe_source: UniverseSource;
+  items: CategorizedPickItem[];
 }
 
 export type SignalWsType = "signal.upsert" | "signal.status";
@@ -414,3 +476,17 @@ export interface SessionListResponse {
 }
 
 export type ConnectionStatus = "mock" | "connecting" | "live" | "disconnected";
+
+/** GET /v1/universe/top — DE-authoritative allowed set. Quant re-ranks for P0/P4. */
+export interface UniverseTopSymbol {
+  symbol: string;
+  asset_class: AssetClass;
+  rank: number;
+  score: number;
+}
+
+export interface UniverseTopResponse {
+  as_of_ts_ms: number;
+  limit: number;
+  symbols: UniverseTopSymbol[];
+}

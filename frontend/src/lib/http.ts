@@ -1,18 +1,31 @@
-import { httpUrl, quantHttpUrl } from "./env";
+import { DESK_SYMBOL_LIMIT, ENSEMBLE_LIMIT, inferAssetClass, LIST_REFRESH_SEC, wireAssetClass } from "./constants";
+import { capCategorized, clampRefreshSec, rankItems } from "./desk";
+import { httpUrl, picksHttpUrl, quantHttpUrl } from "./env";
 import { normalizeAvwap, normalizeKillZone, normalizeVolumeProfile } from "./overlays";
 import { normalizeSignal } from "./signals";
 import type {
   AnchorType,
   AnchoredVwap,
+  AssetClass,
+  CategorizedPickItem,
+  CategorizedPicksResponse,
+  EnsemblePickItem,
+  EnsemblePicksResponse,
   KillZoneEvent,
   OHLCVBar,
   PerformanceSummary,
+  PickCategory,
+  RankComponents,
   SessionLevels,
   SessionListResponse,
   SessionType,
+  SetupType,
   Signal,
   SignalListQuery,
   SignalListResponse,
+  UniverseSource,
+  UniverseTopResponse,
+  UniverseTopSymbol,
   VWAPValues,
   VolumeProfile,
 } from "./types";
@@ -70,6 +83,8 @@ export function signalListPath(query: SignalListQuery = {}, path = "/signals"): 
   if (query.status) params.set("status", query.status);
   if (query.setup_type) params.set("setup_type", query.setup_type);
   if (query.side) params.set("side", query.side);
+  const asset = wireAssetClass(query.asset_class);
+  if (asset) params.set("asset_class", asset);
   if (query.from_ts != null) params.set("from_ts", String(query.from_ts));
   if (query.to_ts != null) params.set("to_ts", String(query.to_ts));
   if (query.limit != null) params.set("limit", String(query.limit));
@@ -130,4 +145,169 @@ export async function fetchPerformanceSummary(): Promise<PerformanceSummary | nu
   const viaRewrite = await getSameOrigin<PerformanceSummary>("/performance/summary");
   if (viaRewrite) return viaRewrite;
   return getJson<PerformanceSummary>("/performance/summary", quantHttpUrl);
+}
+
+/**
+ * GET /signals/history — same filters as GET /signals.
+ * Falls back to GET /signals when the history path is not deployed yet.
+ */
+export async function fetchSignalHistory(query: SignalListQuery = {}): Promise<SignalListResponse | null> {
+  const path = signalListPath(query, "/signals/history");
+  const viaRewrite = await getSameOrigin<SignalListResponse>(path);
+  if (viaRewrite) return normalizeList(viaRewrite);
+  const direct = await getJson<SignalListResponse>(path, quantHttpUrl);
+  if (direct) return normalizeList(direct);
+  return fetchSignals(query);
+}
+
+function num(value: unknown, fallback = 0): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function readSetupTypes(raw: unknown): SetupType[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((x): x is SetupType => typeof x === "string" && x !== "ob_fvg");
+}
+
+function readComponents(raw: unknown): RankComponents {
+  const row = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  return {
+    setup_quality: num(row.setup_quality),
+    risk_adjusted: num(row.risk_adjusted),
+    kill_zone: num(row.kill_zone),
+    volume: num(row.volume),
+    freshness: num(row.freshness),
+  };
+}
+
+export function normalizeEnsemblePicks(raw: unknown): EnsemblePicksResponse | null {
+  if (!raw || typeof raw !== "object") return null;
+  const body = raw as Record<string, unknown>;
+  const rows = Array.isArray(body.items) ? body.items : [];
+  const items: EnsemblePickItem[] = [];
+  for (const item of rows) {
+    if (!item || typeof item !== "object") continue;
+    const row = item as Record<string, unknown>;
+    if (typeof row.symbol !== "string" || !row.symbol) continue;
+    const asset = (wireAssetClass(typeof row.asset_class === "string" ? row.asset_class : "") ??
+      inferAssetClass(row.symbol)) as AssetClass;
+    const ensemble_score = num(row.ensemble_score, num(row.score));
+    const best = typeof row.best_confidence === "number" ? row.best_confidence : undefined;
+    const factors = Array.isArray(row.contributing_factors)
+      ? row.contributing_factors.filter((x): x is string => typeof x === "string")
+      : undefined;
+    items.push({
+      rank: num(row.rank, items.length + 1),
+      symbol: row.symbol.toUpperCase(),
+      asset_class: asset,
+      score: ensemble_score,
+      setup_types: readSetupTypes(row.setup_types),
+      confidence: best ?? num(row.confidence),
+      ensemble_score,
+      rank_components: readComponents(row.rank_components),
+      contributing_factors: factors,
+      best_confidence: best,
+    });
+  }
+  const source: UniverseSource = body.universe_source === "DE" ? "DE" : "SETUP_UNIVERSE";
+  return {
+    as_of_ts_ms: num(body.as_of_ts_ms, Date.now()),
+    refresh_sec: clampRefreshSec(body.refresh_sec ?? LIST_REFRESH_SEC),
+    universe_source: source,
+    items: rankItems(items).slice(0, ENSEMBLE_LIMIT),
+  };
+}
+
+const PICK_CATS = new Set(["momentum", "mean_reversion", "confluence", "other"]);
+
+export function normalizeCategorizedPicks(raw: unknown): CategorizedPicksResponse | null {
+  if (!raw || typeof raw !== "object") return null;
+  const body = raw as Record<string, unknown>;
+  const rows = Array.isArray(body.items) ? body.items : [];
+  const items: CategorizedPickItem[] = [];
+  for (const item of rows) {
+    if (!item || typeof item !== "object") continue;
+    const row = item as Record<string, unknown>;
+    if (typeof row.symbol !== "string" || !row.symbol) continue;
+    const cat = typeof row.category === "string" && PICK_CATS.has(row.category) ? (row.category as PickCategory) : "other";
+    const asset = (wireAssetClass(typeof row.asset_class === "string" ? row.asset_class : "") ??
+      inferAssetClass(row.symbol)) as AssetClass;
+    items.push({
+      symbol: row.symbol.toUpperCase(),
+      asset_class: asset,
+      category: cat,
+      score: num(row.score),
+      confidence: num(row.confidence, num(row.score) / 100),
+      setup_types: readSetupTypes(row.setup_types),
+      entry: num(row.entry),
+      stop: num(row.stop),
+      target: num(row.target),
+      atr: num(row.atr, Math.abs(num(row.entry) - num(row.stop))),
+      reward_risk: num(row.reward_risk, row.rewardRisk as number),
+    });
+  }
+  const source: UniverseSource = body.universe_source === "DE" ? "DE" : "SETUP_UNIVERSE";
+  return {
+    as_of_ts_ms: num(body.as_of_ts_ms, Date.now()),
+    refresh_sec: clampRefreshSec(body.refresh_sec ?? LIST_REFRESH_SEC),
+    universe_source: source,
+    items: capCategorized(items).slice(0, DESK_SYMBOL_LIMIT),
+  };
+}
+
+async function getPicksJson<T>(path: string): Promise<T | null> {
+  const viaRewrite = await getSameOrigin<T>(path);
+  if (viaRewrite) return viaRewrite;
+  return getJson<T>(path, picksHttpUrl);
+}
+
+/** GET /picks/ensemble — top 10 ranked symbols. */
+export async function fetchEnsemblePicks(): Promise<EnsemblePicksResponse | null> {
+  return normalizeEnsemblePicks(await getPicksJson<unknown>("/picks/ensemble"));
+}
+
+export function normalizeUniverseTop(raw: unknown, fallbackLimit = ENSEMBLE_LIMIT): UniverseTopResponse | null {
+  if (!raw || typeof raw !== "object") return null;
+  const body = raw as Record<string, unknown>;
+  const rows = Array.isArray(body.symbols) ? body.symbols : Array.isArray(body.items) ? body.items : [];
+  const symbols: UniverseTopSymbol[] = [];
+  for (const item of rows) {
+    if (!item || typeof item !== "object") continue;
+    const row = item as Record<string, unknown>;
+    if (typeof row.symbol !== "string" || !row.symbol) continue;
+    const asset = (wireAssetClass(typeof row.asset_class === "string" ? row.asset_class : "") ??
+      inferAssetClass(row.symbol)) as AssetClass;
+    symbols.push({
+      symbol: row.symbol.toUpperCase(),
+      asset_class: asset,
+      rank: num(row.rank, symbols.length + 1),
+      score: num(row.score),
+    });
+  }
+  if (!symbols.length) return null;
+  const limit = Math.min(DESK_SYMBOL_LIMIT, Math.max(1, num(body.limit, fallbackLimit)));
+  return {
+    as_of_ts_ms: num(body.as_of_ts_ms, Date.now()),
+    limit,
+    symbols: symbols.sort((a, b) => a.rank - b.rank).slice(0, limit),
+  };
+}
+
+/** DE `GET /v1/universe/top?limit=10|20` — allowed set. Quant re-ranks P0/P4. */
+export async function fetchUniverseTop(limit: number): Promise<UniverseTopResponse | null> {
+  const cap = limit <= ENSEMBLE_LIMIT ? ENSEMBLE_LIMIT : DESK_SYMBOL_LIMIT;
+  return normalizeUniverseTop(await getJson<unknown>(`/v1/universe/top?limit=${cap}`), cap);
+}
+
+/** GET /picks/categorized?asset_class=&limit=20 — no class required; ≤20 symbols. */
+export async function fetchCategorizedPicks(query: {
+  asset_class?: AssetClass | "stocks";
+  limit?: number;
+} = {}): Promise<CategorizedPicksResponse | null> {
+  const params = new URLSearchParams();
+  const asset = wireAssetClass(query.asset_class);
+  if (asset) params.set("asset_class", asset);
+  params.set("limit", String(query.limit ?? DESK_SYMBOL_LIMIT));
+  const path = `/picks/categorized?${params.toString()}`;
+  return normalizeCategorizedPicks(await getPicksJson<unknown>(path));
 }

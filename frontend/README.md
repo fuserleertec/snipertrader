@@ -60,18 +60,24 @@ cd quant && sniper-quant api --inmemory --port 8001
 - **01 Header** — “Quantitative Market Intelligence Conviction Terminal” + LIVE
   strip (Next Refresh ET, Data Age, Heartbeat, Health, REFRESH / SHARE / DOWNLOAD)
 - **02 Quantum Ensemble Picks** — provenance table (#, Asset, Signal, Last/Chg,
-  Target, Conviction, Engines K/S/M/F/Q, Why). Two tabs (Market Signals /
-  Smart Money Activity). Quant `setup_signals` live under the small **Setup
-  desk** control (`?tab=setups`; filters + CSV; sound off by default)
+  Target, Conviction, Engines K/S/M/F/Q, Why). Rows come from
+  `GET /picks/ensemble` (top **10**, `refresh_sec=900`). Two tabs (Market
+  Signals / Smart Money Activity) plus All/Futures/Stocks/Cryptos filters.
+  **Active Setup Cards** use Futures / Stocks / Cryptos tabs and a setup 1–6
+  dropdown (`sweep_reclaim` … `avwap_ob_confluence`; no `ob_fvg`). Quant
+  `setup_signals` also live under **Setup desk** (`?tab=setups`)
 - **03 Live Market Simulation View** — Conviction & Velocity Leaderboard,
   MiroFish swarm heatmap, Kronos Structural K-Line (metrics + swarm bias),
   Scenario Probability Matrix. Paper overlay chart is the **Paper desk**
   panel after the matrix (not inside the Kronos card)
-- **04 Categorized Stock Picks** — All / Ultra-High / High / Watchlist cards
+- **04 Categorized Stock Picks** — `GET /picks/categorized` (≤**20** symbols,
+  no asset-class restriction). All / Ultra-High / High / Watchlist cards.
+  Click CHART to plot that symbol.
 - **05 Narrative & Volatility Injectors**
-- **06 Execution & Position Management**
-- **07 Recon Audit**
+- **07 Recon Audit** — dropped names this cycle, **≤16** symbols
 - **08 Understanding the Engine**
+
+Section **06 Execution & Position Management** is removed from this terminal.
 
 Card/table click joins chart overlays via `trigger_event_ids`.
 
@@ -94,6 +100,24 @@ Card/table click joins chart overlays via `trigger_event_ids`.
 | `NEXT_PUBLIC_HTTP_BASE` | `http://localhost:8000` | Data Eng HTTP. Same-origin `/v1/*` is rewritten here. |
 | `NEXT_PUBLIC_QUANT_API_BASE` | `http://localhost:8001` | Quant REST (`/signals`, `/performance/summary`). Same-origin paths rewrite here. |
 | `NEXT_PUBLIC_QUANT_WS_BASE` | `ws://localhost:8001` | Quant WS (`/ws/signals`) |
+| `NEXT_PUBLIC_PICKS_API_BASE` | Quant API base | Optional override for `GET /picks/ensemble` and `GET /picks/categorized`. |
+
+List refresh is **15 minutes** (`refresh_sec=900`). The status strip and paper
+desk share that cadence. Manual **REFRESH** still refetches immediately.
+`NEXT_PUBLIC_USE_MOCKS=true` (default) serves dynamic mock generators behind
+the typed clients — not a hardcoded SMCI/TSM array. Set `false` only after
+Quant/ML/DE list endpoints are up. **`live_trading` stays false.**
+
+Placeholder list contracts (same-origin rewrite → Quant `:8001`):
+
+| Method | Path | Role |
+|---|---|---|
+| GET | `/picks/ensemble` | P0 top 10. `{ as_of_ts_ms, refresh_sec, universe_source, items[{ rank, symbol, asset_class, score, setup_types, confidence, ensemble_score, rank_components }] }` |
+| GET | `/picks/categorized?asset_class=&limit=20` | P4 ≤20. `category` ∈ `momentum\|mean_reversion\|confluence\|other` |
+| GET | `/signals` | Multi-symbol desk + Active Setup Cards (`status=ACTIVE&asset_class=futures\|equity\|crypto`; `stocks` → `equity`) |
+| GET | `/signals/history` | P2 history (same filters). Client falls back to `/signals` |
+| GET | `/performance/summary` | Section 08 tracker |
+| GET | `/v1/universe/top?limit=10\|20` | DE allowed set (`as_of_ts_ms`, `limit`, `symbols[{symbol,asset_class,rank,score}]`). P0 uses 10; P2/P4 use 20. Quant re-ranks for display. |
 
 `NEXT_PUBLIC_QUANT_HTTP_BASE` is accepted as an alias of `QUANT_API_BASE`.
 
@@ -338,13 +362,20 @@ Active setup tab / card filter is an **allow-list**. `sweep_reclaim` never
 draws FVG, OB, or DISP. `fvg_entry` never draws sweep / MSS / Asia / kill-zone.
 `ob_fvg` is not a `setup_type`.
 
+Active Setup Cards are tabbed **Futures / Stocks / Cryptos** (`asset_class`
+`futures` / `equity` / `crypto`; `stocks` is an alias of `equity`) with a
+dropdown for setups **1–6**. The paper chart selector lists symbols for the
+selected tab (ES, CL, GC, NQ on Futures) and follows the focused card or pick.
+
 ### Signal history
 
-History is **`GET /signals`** with `from_ts`/`to_ts` + `status`/`setup_type`/`symbol`.
-No `/signals/history`. Columns: outcome (`status`), `realized_r`, `exit_price`,
+History is **`GET /signals`** plus **`GET /signals/history`** (same
+`from_ts`/`to_ts` + `status`/`setup_type`/`symbol`, up to **20** symbols, no
+asset-class restriction). Columns: Zone from `entry`/`stop`/`target`; Outcome
+from `status` (`TP_HIT` / `SL_HIT` / …); `realized_r`, `exit_price`,
 `closed_ts_ms` from the Quant payload (`—` while null). Same fields on
 `GET /signals/{id}` and WS `signal.status` / `signal.upsert`. CSV uses those
-field names.
+field names. Frontend filters: Symbol, Setup Type, Status.
 
 ### Real-time
 

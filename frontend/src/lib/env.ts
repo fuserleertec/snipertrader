@@ -7,10 +7,31 @@
  *   /v1/ws/vwap · /v1/ws/avwap · /v1/ws/volume-profile · /v1/ws/kill-zone
  *   /v1/ws/sweep|fvg|mss|ob
  * Quant (PR #2):    NEXT_PUBLIC_QUANT_API_BASE / NEXT_PUBLIC_QUANT_WS_BASE
+ *
+ * List / ranking placeholders (Quant :8001 until ML/DE own them):
+ *   GET /picks/ensemble          → top 10  (as_of_ts_ms, refresh_sec=900, universe_source, items[])
+ *   GET /picks/categorized       → ≤20     (?asset_class=&limit=20)
+ *   GET /signals                 → multi-symbol desk (+ ?asset_class=&status=&setup_type=)
+ *   GET /signals/history         → same filters; falls back to GET /signals
+ *   GET /performance/summary
+ * live_trading is never flipped here. Paper / mocks only.
  */
 
 export function isMockMode(): boolean {
   return process.env.NEXT_PUBLIC_USE_MOCKS !== "false";
+}
+
+/** Optional override of Quant list paths. Empty = same-origin `/picks/*` rewrite. */
+export function picksHttpBase(): string {
+  const raw = process.env.NEXT_PUBLIC_PICKS_API_BASE || process.env.NEXT_PUBLIC_QUANT_API_BASE;
+  if (raw === undefined || raw === "") return "http://localhost:8001";
+  return raw.replace(/\/$/, "");
+}
+
+export function picksHttpUrl(path: string): string {
+  const base = picksHttpBase();
+  if (!base) return path;
+  return `${base}${path}`;
 }
 
 export function wsBase(): string {

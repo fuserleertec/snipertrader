@@ -47,6 +47,7 @@ export function StatusStrip({
   dataAge,
   heartbeat,
   health,
+  nextRefresh = "15m cycle",
   onRefresh,
   onShare,
   onDownload,
@@ -55,6 +56,7 @@ export function StatusStrip({
   dataAge: string;
   heartbeat: string;
   health: string;
+  nextRefresh?: string;
   onRefresh: () => void;
   onShare: () => void;
   onDownload: () => void;
@@ -67,7 +69,7 @@ export function StatusStrip({
         <b>{status === "disconnected" ? "OFFLINE" : "LIVE"}</b>
       </span>
       <span className="live">
-        Next Refresh: <b>08:00 &amp; 17:00 ET</b>
+        Next Refresh: <b>{nextRefresh}</b>
       </span>
       <span className="live">
         Data Age: <b>{dataAge}</b>
