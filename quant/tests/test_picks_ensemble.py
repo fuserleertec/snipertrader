@@ -413,7 +413,11 @@ def test_openapi_documents_picks_and_asset_class():
     pick = schemas["EnsemblePick"]
     assert {"rank", "symbol", "asset_class", "score", "confidence"} <= set(pick["required"])
     assert "setup_types" in pick["properties"]
+    assert "rank_components" in pick["properties"]
+    assert "contributing_factors" in pick["properties"]
+    assert "confluence_count" in pick["properties"]
     assert "EnsemblePicksResponse" in schemas
+    assert "ensemble_features" in spec["info"]["description"]
 
     cat = paths["/picks/categorized"]["get"]
     cat_params = {p["name"] for p in cat["parameters"]}

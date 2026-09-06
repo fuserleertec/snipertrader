@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://snipertrader.ai/schemas/ensemble_picks.schema.json",
   "title": "EnsemblePicksResponse",
-  "description": "GET /picks/ensemble — Quantum Ensemble Picks (P0). Dynamic top 10 from the paper/signal book plus optional ML overlay. refresh_sec is 900. Paper only; live_trading stays false.",
+  "description": "GET /picks/ensemble — Quantum Ensemble Picks (P0). Dynamic top 10 from Kafka ensemble_features (key=symbol, 15m) inside the paper universe file. score←ensemble_score, confidence←best_confidence. Skip active_levels=false. refresh_sec is 900. Paper only; live_trading stays false.",
   "type": "object",
   "additionalProperties": false,
   "required": ["as_of_ts_ms", "refresh_sec", "items"],
@@ -41,7 +41,10 @@
         },
         "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
         "ref_session": { "type": ["string", "null"] },
-        "notes": { "type": ["string", "null"] }
+        "notes": { "type": ["string", "null"] },
+        "rank_components": { "type": ["object", "null"] },
+        "contributing_factors": { "type": "array", "items": { "type": "string" } },
+        "confluence_count": { "type": ["integer", "null"], "minimum": 0 }
       }
     }
   }

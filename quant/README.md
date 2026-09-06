@@ -182,7 +182,7 @@ In-memory / test path: `InMemoryBus` on topic `setup_signals`, or
 `POST /v1/signals/ingest` (same handler, no Kafka).
 
 ```bash
-sniper-quant consume            # Kafka at KAFKA_BOOTSTRAP
+sniper-quant consume            # Kafka setup_signals + ensemble_features
 sniper-quant consume --inmemory # bus only (tests / local)
 ```
 
@@ -211,8 +211,8 @@ JSON Schema: [`schemas/dashboard_signal.schema.json`](../schemas/dashboard_signa
 | `GET` | `/signals?symbol=&status=&setup_type=&side=&asset_class=&from_ts=&to_ts=&limit=&cursor=` | `{ "items": Signal[], "next_cursor": string \| null }` |
 | `GET` | `/signals/history` | Same list as `GET /signals` |
 | `GET` | `/performance/summary?symbol=` | Live metrics; `by_setup` keyed by `product_key` |
-| `GET` | `/picks/ensemble?as_of_ts_ms=&ml_scores=` | Quantum Ensemble Picks — dynamic top 10, `refresh_sec: 900` |
-| `GET` | `/picks/categorized?asset_class=&limit=20` | Categorized picks ≤20, `refresh_sec: 900` |
+| `GET` | `/picks/ensemble?as_of_ts_ms=&ml_scores=` | Quantum Ensemble Picks — dynamic top 10 from `ensemble_features`, `refresh_sec: 900` |
+| `GET` | `/picks/categorized?asset_class=&limit=20` | Same features, ≤20, `refresh_sec: 900` |
 | `GET` | `/paper/universe` | File-backed ranking allow-list (`live_trading: false`) |
 | `GET` | `/signals/{id}` | `Signal` |
 | `WS` | `/ws/signals` | `{ "type": "signal.upsert" \| "signal.status", "signal": Signal }` |
@@ -388,28 +388,72 @@ If a symbol has **both** momentum and mean-reversion setups (and no
 `avwap_ob_confluence`), category is **`confluence`**. A lone
 `avwap_ob_confluence` is also `confluence`.
 
+### Kafka `ensemble_features` (ML → Quant, paper only)
+
+ML publishes 15-minute snapshots to Kafka topic **`ensemble_features`**
+(message **key = `symbol`**). Quant consumes them into an in-memory
+latest-per-symbol store (`sniper-quant consume` and the API lifespan).
+Tests use `InMemoryBus` (no broker).
+
+JSON Schema: [`schemas/ensemble_features.schema.json`](../schemas/ensemble_features.schema.json)
+
+| Field | Role |
+|---|---|
+| `schema_version` | `1.1` |
+| `symbol` | Kafka key; must be in `ranking_universe` to appear |
+| `ts_ms` | Snapshot time (15m) |
+| `ensemble_score` | Preferred pick `score` (0–100) |
+| `best_confidence` | Pick `confidence` (0–1) |
+| `rank_components` | Raw points: setup_quality 0–40, risk_adjusted/confluence 0–20, kill_zone 0–15, volume 0–15, freshness 0–10 (sum ~100) |
+| `active_levels` | **`false` → skip** (symbol is not ranked) |
+| `skip_reason` | Echoed in `notes` when present |
+| `contributing_factors` | Optional pick extra |
+| `confluence_count` | Optional pick extra |
+| `setup_types` | Drives `/picks/categorized` category |
+
+`GET /picks/ensemble` item mapping:
+
+| Pick field | Source |
+|---|---|
+| `score` | `ensemble_score` if present, else recompute from `rank_components` |
+| `confidence` | `best_confidence` |
+| `rank_components` | **raw** ML object (not renormalized) |
+| `contributing_factors` | passthrough |
+| `confluence_count` | passthrough |
+
+Recompute weights (only when `ensemble_score` is omitted):
+`setup_quality` **40**, confluence/`risk_adjusted` **20**, `kill_zone`
+**15**, `volume` **15**, `freshness` **10**. Unit values (≤1) are
+multiplied by those weights; point-scale values are summed.
+
+`GET /picks/categorized` uses the **same** snapshots (≤20).
+`refresh_sec` is **900**. `live_trading` stays **false**.
+
 ### Ensemble ranking formula
 
-`GET /picks/ensemble` sorts **`ensemble_score` desc, then `confidence`
+`GET /picks/ensemble` sorts **`score` desc, then `confidence`
 desc**, then `symbol` asc. Top **10 within the paper-file / override
 allow-list** (`min(10, n_allowed)`). Never ranks a symbol outside
-`ranking_universe` from `GET /paper/universe`.
+`ranking_universe` from `GET /paper/universe`. `active_levels=false`
+snapshots are skipped entirely.
 
-Per symbol, `score` (the `ensemble_score` used to sort) is:
+Per symbol, `score` is:
 
-1. **Published `ensemble_score`** (0–100) — max across approved
+1. **ML `ensemble_features.ensemble_score`** (0–100) when a snapshot
+   exists for the symbol.
+2. Else **recompute** from that snapshot's `rank_components` (weights
+   above). Raw components stay on the pick.
+3. Else **published book `ensemble_score`** (0–100) — max across approved
    (non-`CANCELLED`) signals. Publish-only; **422 on validate**.
-2. Else **mean of `rank_components`** × 100. Optional publish-only
-   object, each field 0–1: `setup_quality`, `risk_adjusted`,
-   `kill_zone`, `volume`, `freshness`.
-3. Else book mix (when the symbol has approved signals but no ML score):
+4. Else **mean of book `rank_components`** × 100 (0–1 publish fields).
+5. Else book mix (when the symbol has approved signals but no ML score):
 
 ```
 book_score = 100 × (0.40 × recency_norm + 0.35 × mean_confidence + 0.25 × setup_diversity)
 ```
 
    `recency_norm` = `min(1, Σ exp(−ln(2)·age_sec/900) / 3)`.
-4. Else thin-book demo hash on the ranking universe:
+6. Else thin-book demo hash on the ranking universe:
 
 ```
 bucket = floor(as_of_ts_ms / 900000)
@@ -606,6 +650,7 @@ data_engineering/sql/02-signals.sql
 schemas/risk_validate_*.schema.json
 schemas/ensemble_picks.schema.json
 schemas/categorized_picks.schema.json
+schemas/ensemble_features.schema.json
 ```
 
 ## CLI
@@ -614,6 +659,6 @@ schemas/categorized_picks.schema.json
 sniper-quant api      [--inmemory] [--host 0.0.0.0 --port 8001]
 sniper-quant demo     [--inmemory]   # scripted 7-setup smoke book
 sniper-quant backtest --setups 1,2,3 [--inmemory] [--report PATH] [--folds 3]
-sniper-quant consume  [--inmemory]   # setup_signals second gate
+sniper-quant consume  [--inmemory]   # setup_signals + ensemble_features
 sniper-quant monitor  [--inmemory] [--symbols BTCUSDT,...] [--timeframe 1m]
 ```

@@ -13,6 +13,7 @@ listed below. JSON Schema is draft 2020-12.
 | `sweep_events` | [`sweep_event.schema.json`](sweep_event.schema.json) | Pattern detectors (Phase 2 stub) | Redis `sweep:{symbol}:{id}` |
 | `fvg_zones` | [`fvg_zone.schema.json`](fvg_zone.schema.json) | Pattern detectors (Phase 2 stub) | Redis `fvg:{symbol}:{id}` |
 | `setup_signals` | [`setup_signal.schema.json`](setup_signal.schema.json) | ML (only after `POST /risk/validate` approved) | `quant/` SignalValidationService (second gate) → Timescale `signals` + WS |
+| `ensemble_features` | [`ensemble_features.schema.json`](ensemble_features.schema.json) | ML 15m snapshots (Kafka key=`symbol`) | `quant/` EnsembleFeatureService → `GET /picks/ensemble` + `/picks/categorized` |
 
 HTTP contracts used by Quant (`POST /risk/validate`) — not Kafka topics:
 

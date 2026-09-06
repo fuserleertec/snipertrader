@@ -178,7 +178,13 @@ async def _load_ohlcv(dsn: str, symbol: str, timeframe: str):
 
 
 async def _run_consume(args, settings) -> int:
-    from sniper_quant.bus import InMemoryBus, SETUP_SIGNALS_TOPIC
+    from sniper_quant.bus import ENSEMBLE_FEATURES_TOPIC, InMemoryBus, SETUP_SIGNALS_TOPIC
+    from sniper_quant.features import (
+        EnsembleFeatureService,
+        InMemoryEnsembleStore,
+        run_ensemble_kafka_consumer,
+        run_inmemory_ensemble_consumer,
+    )
     from sniper_quant.live import SignalHub
     from sniper_quant.store.signals import InMemorySignalStore, TimescaleSignalStore
     from sniper_quant.validate_service import (
@@ -189,17 +195,23 @@ async def _run_consume(args, settings) -> int:
 
     store = InMemorySignalStore() if settings.use_inmemory else TimescaleSignalStore(settings.database_url)
     service = SignalValidationService(store, SignalHub(), min_rr=settings.min_rr)
+    features = EnsembleFeatureService(InMemoryEnsembleStore())
     if settings.use_inmemory:
         bus = InMemoryBus()
         await run_inmemory_consumer(bus, service)
+        await run_inmemory_ensemble_consumer(bus, features)
         logging.getLogger(__name__).info(
-            "in-memory consume attached to %s — publish via tests or POST /v1/signals/ingest",
+            "in-memory consume attached to %s and %s — paper only",
             SETUP_SIGNALS_TOPIC,
+            ENSEMBLE_FEATURES_TOPIC,
         )
         # Park the process so compose/dev can keep the consumer "up".
         while True:
             await asyncio.sleep(3600)
-    await run_kafka_consumer(service, settings)
+    await asyncio.gather(
+        run_kafka_consumer(service, settings),
+        run_ensemble_kafka_consumer(features, settings),
+    )
     return 0
 
 

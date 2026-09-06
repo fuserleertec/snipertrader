@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snipertrader.ai/schemas/ensemble_features.schema.json",
+  "title": "EnsembleFeatures",
+  "description": "Kafka topic ensemble_features (key=symbol). 15-minute ML snapshots, schema_version 1.1. Quant GET /picks/ensemble maps score←ensemble_score and confidence←best_confidence. Skip active_levels=false. Paper only; live_trading stays false.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schema_version", "symbol", "ts_ms"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.1" },
+    "symbol": { "type": "string", "pattern": "^[A-Z0-9]+$", "description": "Also the Kafka message key." },
+    "asset_class": {
+      "type": ["string", "null"],
+      "enum": ["crypto", "equity", "futures", null]
+    },
+    "ts_ms": { "type": "integer", "minimum": 0, "description": "Snapshot UTC epoch ms (15m bucket)." },
+    "timeframe": { "type": "string", "const": "15m" },
+    "ensemble_score": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Preferred pick score. If omitted, Quant recomputes from rank_components."
+    },
+    "rank_components": {
+      "type": ["object", "null"],
+      "additionalProperties": true,
+      "description": "Point scale summing ~100: setup_quality 0–40, risk_adjusted (confluence) 0–20, kill_zone 0–15, volume 0–15, freshness 0–10. Kept raw on the pick.",
+      "properties": {
+        "setup_quality": { "type": ["number", "null"], "minimum": 0, "maximum": 40 },
+        "risk_adjusted": { "type": ["number", "null"], "minimum": 0, "maximum": 20 },
+        "kill_zone": { "type": ["number", "null"], "minimum": 0, "maximum": 15 },
+        "volume": { "type": ["number", "null"], "minimum": 0, "maximum": 15 },
+        "freshness": { "type": ["number", "null"], "minimum": 0, "maximum": 10 }
+      }
+    },
+    "best_confidence": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Mapped to pick confidence."
+    },
+    "active_levels": {
+      "type": "boolean",
+      "description": "false → Quant skips this symbol (not ranked)."
+    },
+    "skip_reason": { "type": ["string", "null"] },
+    "contributing_factors": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "confluence_count": { "type": ["integer", "null"], "minimum": 0 },
+    "setup_types": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "sweep_reclaim",
+          "fvg_entry",
+          "po3_judas",
+          "sd_extension_fade",
+          "vwap_pullback_cont",
+          "avwap_ob_confluence"
+        ]
+      }
+    },
+    "ref_session": { "type": ["string", "null"] }
+  }
+}

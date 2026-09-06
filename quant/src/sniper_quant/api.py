@@ -119,12 +119,17 @@ Dormant `mss_break` / `order_block` / `sweep_mss` and
 
 `GET /picks/ensemble` → Quantum Ensemble Picks (P0). Dynamic top **10**
 inside the paper universe file (`config/paper_universe.json`, includes
-ES, NQ, CL, GC). Optional overrides: `DEMO_SYMBOLS`, then `DE_UNIVERSE`
-when DE publishes. `SETUP_UNIVERSE` can only narrow. Symbols outside
-the allow-list are never ranked. Sort: `ensemble_score` then
-`confidence`. `refresh_sec` **900**. **No live trading.**
+ES, NQ, CL, GC). Consumes Kafka **`ensemble_features`** (key=`symbol`,
+15m snapshots, `schema_version` 1.1). Mapping: `score` ←
+`ensemble_score`, `confidence` ← `best_confidence`. Skip
+`active_levels=false`. Prefer ML `ensemble_score`; else recompute from
+`rank_components` (weights: setup_quality 40, confluence/risk_adjusted
+20, kill_zone 15, volume 15, freshness 10) and keep raw components.
+Optional pick extras: `rank_components`, `contributing_factors`,
+`confluence_count`. `SETUP_UNIVERSE` can only narrow. `refresh_sec`
+**900**. **No live trading.**
 
-`GET /picks/categorized?asset_class=&limit=20` → same allow-list and
+`GET /picks/categorized?asset_class=&limit=20` → same features and
 scores, ≤20 rows, tagged `momentum` | `mean_reversion` | `confluence` |
 `other`.
 
@@ -216,7 +221,22 @@ async def lifespan(app: FastAPI):
     app.state.monitor = LifecycleMonitor(signals, app.state.hub, ohlcv)
     app.state.alerts = AlertService()
     app.state.paper = PaperEngine(starting_equity=settings.default_equity)
+    from sniper_quant.features import EnsembleFeatureService, InMemoryEnsembleStore
+
+    app.state.features = InMemoryEnsembleStore()
+    app.state.feature_service = EnsembleFeatureService(app.state.features)
+    feature_task = None
+    if not settings.use_inmemory:
+        import asyncio
+
+        from sniper_quant.features import run_ensemble_kafka_consumer
+
+        feature_task = asyncio.create_task(
+            run_ensemble_kafka_consumer(app.state.feature_service, settings)
+        )
     yield
+    if feature_task is not None:
+        feature_task.cancel()
     await signals.close()
     await ohlcv.close()
 
@@ -227,6 +247,7 @@ def create_app(
     signals: SignalStore | None = None,
     ohlcv: OHLCVLoader | None = None,
     engine: RiskEngine | None = None,
+    features: Any | None = None,
 ) -> FastAPI:
     injected = signals is not None
     app = FastAPI(
@@ -252,6 +273,10 @@ def create_app(
         app.state.monitor = LifecycleMonitor(app.state.signals, app.state.hub, app.state.ohlcv)
         app.state.alerts = AlertService()
         app.state.paper = PaperEngine(starting_equity=app.state.settings.default_equity)
+        from sniper_quant.features import EnsembleFeatureService, InMemoryEnsembleStore
+
+        app.state.features = features or InMemoryEnsembleStore()
+        app.state.feature_service = EnsembleFeatureService(app.state.features)
 
     app.add_middleware(ApiKeyRateLimitMiddleware, settings=settings or get_settings())
 
@@ -334,6 +359,9 @@ def create_app(
             "demo_symbols_env": "DEMO_SYMBOLS",
             "de_universe_env": "DE_UNIVERSE",
             "ranking_lock": "paper_universe_file_or_de_universe",
+            "ensemble_features_topic": "ensemble_features",
+            "ensemble_features_key": "symbol",
+            "ensemble_refresh_sec": 900,
         }
 
     @app.get("/performance/summary", response_model=PerformanceSummary)
@@ -371,12 +399,12 @@ def create_app(
             description='Optional ML overlay JSON object, e.g. {"BTCUSDT":0.82}',
         ),
     ) -> EnsemblePicksResponse:
-        """Quantum Ensemble Picks (P0). Dynamic top 10, paper universe file.
+        """Quantum Ensemble Picks (P0). Dynamic top 10 from ensemble_features.
 
-        Default allow-list: ``config/paper_universe.json`` (includes ES,
-        NQ, CL, GC). Overrides: ``DEMO_SYMBOLS``, then ``DE_UNIVERSE``.
-        ``SETUP_UNIVERSE`` can only narrow. Symbols outside the allow-list
-        are never ranked. Sort: ``ensemble_score`` then ``confidence``.
+        Kafka topic ``ensemble_features`` (key=symbol, 15m). ``score`` ←
+        ``ensemble_score``, ``confidence`` ← ``best_confidence``. Skip
+        ``active_levels=false``. Prefer ML score; else weights 40/20/15/15/10.
+        Universe file includes ES, NQ, CL, GC. ``refresh_sec`` 900.
         ``live_trading`` stays false. No Alpaca live.
         """
         from sniper_quant.picks import REFRESH_SEC, TOP_N, parse_ml_scores, rank_ensemble
@@ -394,6 +422,7 @@ def create_app(
             top_n=TOP_N,
             refresh_sec=REFRESH_SEC,
             universe=resolve_ranking_universe(app.state.settings),
+            features=getattr(app.state, "features", None),
         )
 
     @app.get("/picks/categorized", response_model=CategorizedPicksResponse)
@@ -405,7 +434,7 @@ def create_app(
         limit: int = Query(default=20, ge=1, le=20),
         as_of_ts_ms: int | None = Query(default=None, ge=0),
     ) -> CategorizedPicksResponse:
-        """Categorized paper picks. Same ranking as /picks/ensemble, ≤20 rows.
+        """Categorized paper picks. Same ensemble_features ranking, ≤20 rows.
 
         category from setup_types: vwap_pullback_cont → momentum;
         sweep_reclaim / fvg_entry / po3_judas / sd_extension_fade →
@@ -427,6 +456,7 @@ def create_app(
             limit=limit,
             refresh_sec=REFRESH_SEC,
             universe=resolve_ranking_universe(app.state.settings),
+            features=getattr(app.state, "features", None),
         )
 
     @app.post("/risk/validate", response_model=ValidateResponse)
@@ -654,7 +684,17 @@ def create_app(
         """Paper ranking allow-list (file-backed; DE_UNIVERSE handoff). Paper only."""
         from sniper_quant.universe import universe_dump
 
-        return universe_dump(app.state.settings)
+        body = universe_dump(app.state.settings)
+        store = getattr(app.state, "features", None)
+        if store is not None and hasattr(store, "dump"):
+            body["ensemble_features"] = store.dump()
+        else:
+            body["ensemble_features"] = {
+                "topic": "ensemble_features",
+                "live_trading": False,
+                "refresh_sec": 900,
+            }
+        return body
 
     @app.get("/paper/account")
     async def paper_account() -> dict[str, Any]:

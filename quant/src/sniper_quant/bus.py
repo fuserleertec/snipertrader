@@ -1,4 +1,4 @@
-"""Message-bus helpers for ``setup_signals``.
+"""Message-bus helpers for ``setup_signals`` and ``ensemble_features``.
 
 Mirrors ``sniper_data.bus.kafka`` (InMemoryBus + Kafka consume) without
 importing the DE package so ``quant/`` stays independently installable.
@@ -17,6 +17,7 @@ from pydantic import BaseModel
 log = logging.getLogger(__name__)
 
 SETUP_SIGNALS_TOPIC = "setup_signals"
+ENSEMBLE_FEATURES_TOPIC = "ensemble_features"
 
 
 def dumps_bytes(value: Any) -> bytes:
@@ -68,17 +69,28 @@ class InMemoryBus:
         return [row["value"] for row in self.topics[topic]]
 
 
-async def consume_topic(
+def _decode_kafka_key(raw: bytes | str | None) -> str | None:
+    if raw is None:
+        return None
+    if isinstance(raw, bytes):
+        text = raw.decode(errors="replace").strip()
+    else:
+        text = str(raw).strip()
+    return text or None
+
+
+async def consume_keyed_topic(
     bootstrap: str,
     topic: str,
     group_id: str,
-) -> AsyncIterator[dict]:
+) -> AsyncIterator[tuple[str | None, dict]]:
     from aiokafka import AIOKafkaConsumer
 
     consumer = AIOKafkaConsumer(
         topic,
         bootstrap_servers=bootstrap,
         group_id=group_id,
+        key_deserializer=_decode_kafka_key,
         value_deserializer=lambda b: json.loads(b.decode()),
         auto_offset_reset="earliest",
     )
@@ -87,8 +99,17 @@ async def consume_topic(
         async for msg in consumer:
             value = msg.value
             if isinstance(value, dict):
-                yield value
+                yield msg.key, value
             else:
                 log.warning("skip non-object kafka payload on %s", topic)
     finally:
         await consumer.stop()
+
+
+async def consume_topic(
+    bootstrap: str,
+    topic: str,
+    group_id: str,
+) -> AsyncIterator[dict]:
+    async for _key, value in consume_keyed_topic(bootstrap, topic, group_id):
+        yield value

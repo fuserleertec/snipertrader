@@ -1,9 +1,10 @@
-"""Quantum Ensemble Picks — paper/signal-book ranking (no live trading).
+"""Quantum Ensemble Picks — paper ranking from ``ensemble_features``.
 
 ``GET /picks/ensemble`` returns a dynamic top-10 inside
 ``resolve_ranking_universe`` (file-backed paper mix including ES, NQ,
-CL, GC, or ``DEMO_SYMBOLS`` / ``DE_UNIVERSE`` overrides). Symbols
-outside that set are never ranked. Thin books hash-fill only within
+CL, GC). Kafka topic ``ensemble_features`` (key=symbol, 15m). Skip
+``active_levels=false``. ``score`` ← ``ensemble_score``,
+``confidence`` ← ``best_confidence``. Thin books hash-fill only within
 the allow-list.
 
 Paper path only. ``live_trading`` stays false. No Alpaca / broker.
@@ -19,10 +20,12 @@ from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from sniper_quant.features import FEATURE_WEIGHTS, InMemoryEnsembleStore, score_from_components
 from sniper_quant.models import (
     AssetClass,
     CategorizedPick,
     CategorizedPicksResponse,
+    EnsembleFeatures,
     EnsemblePick,
     EnsemblePicksResponse,
     PickCategory,
@@ -176,7 +179,76 @@ def _book_components(
     return recency_norm, mean_conf, diversity, ordered, newest.ref_session
 
 
+def score_from_feature(feature: EnsembleFeatures) -> dict[str, Any]:
+    """Map an ML snapshot: score←ensemble_score, confidence←best_confidence."""
+    if feature.ensemble_score is not None:
+        score = float(feature.ensemble_score)
+        source = "ml_ensemble_score"
+        notes = f"ml_features ensemble_score={score:.3f}"
+    else:
+        recomputed = score_from_components(feature.rank_components)
+        score = 0.0 if recomputed is None else recomputed
+        source = "ml_rank_components"
+        notes = (
+            f"ml_features recomputed={score:.3f} "
+            f"weights={FEATURE_WEIGHTS}"
+        )
+    confidence = 0.0 if feature.best_confidence is None else float(feature.best_confidence)
+    notes = f"{notes} conf={confidence:.3f}"
+    if feature.skip_reason:
+        notes = f"{notes} skip_reason={feature.skip_reason}"
+    asset = infer_asset_class(feature.symbol, fallback=feature.asset_class)
+    if feature.asset_class is not None:
+        asset = feature.asset_class
+    return {
+        "symbol": feature.symbol,
+        "asset_class": asset,
+        "score": round(score, 4),
+        "setup_types": list(feature.setup_types or []),
+        "confidence": round(confidence, 4),
+        "ref_session": feature.ref_session,
+        "notes": notes,
+        "source": source,
+        "rank_components": feature.rank_components,
+        "contributing_factors": list(feature.contributing_factors or []),
+        "confluence_count": feature.confluence_count,
+    }
+
+
 def score_symbol(
+    symbol: str,
+    rows: Sequence[StoredSignal],
+    *,
+    as_of_ts_ms: int,
+    ml_score: float = 0.0,
+    refresh_sec: int = REFRESH_SEC,
+    feature: EnsembleFeatures | None = None,
+) -> dict[str, Any] | None:
+    """Score one symbol. ML snapshot wins; skip ``active_levels=false``."""
+    if feature is not None:
+        if feature.active_levels is False:
+            return None
+        mapped = score_from_feature(feature)
+        if rows:
+            recency_norm, mean_conf, diversity, book_setups, ref_session = _book_components(
+                rows, as_of_ts_ms=as_of_ts_ms, refresh_sec=refresh_sec
+            )
+            del recency_norm, mean_conf, diversity
+            if not mapped["setup_types"] and book_setups:
+                mapped["setup_types"] = book_setups
+            if mapped["ref_session"] is None:
+                mapped["ref_session"] = ref_session
+        return mapped
+    return _score_symbol_book(
+        symbol,
+        rows,
+        as_of_ts_ms=as_of_ts_ms,
+        ml_score=ml_score,
+        refresh_sec=refresh_sec,
+    )
+
+
+def _score_symbol_book(
     symbol: str,
     rows: Sequence[StoredSignal],
     *,
@@ -241,6 +313,9 @@ def score_symbol(
         "ref_session": ref_session,
         "notes": notes,
         "source": source,
+        "rank_components": None,
+        "contributing_factors": [],
+        "confluence_count": None,
     }
 
 
@@ -252,10 +327,13 @@ def rank_ensemble(
     top_n: int = TOP_N,
     refresh_sec: int = REFRESH_SEC,
     universe: Sequence[tuple[str, AssetClass]] | None = None,
+    features: InMemoryEnsembleStore | None = None,
 ) -> EnsemblePicksResponse:
     """Rank only symbols in the paper / DE ranking allow-list.
 
-    Sort: ``ensemble_score`` desc, then ``confidence`` desc, then symbol.
+    ML ``ensemble_features`` snapshots win when present. Skip
+    ``active_levels=false``. Sort: score desc, then confidence desc,
+    then symbol.
     """
     now = int(as_of_ts_ms if as_of_ts_ms is not None else time.time() * 1000)
     overlay = {normalize_symbol(k): float(v) for k, v in (ml_scores or {}).items()}
@@ -272,6 +350,7 @@ def rank_ensemble(
         overlay,
         as_of_ts_ms=now,
         refresh_sec=refresh_sec,
+        features=features,
     )
     n = max(1, min(int(top_n), 20))
     items = [
@@ -284,6 +363,9 @@ def rank_ensemble(
             confidence=row["confidence"],
             ref_session=row["ref_session"],
             notes=row["notes"],
+            rank_components=row.get("rank_components"),
+            contributing_factors=list(row.get("contributing_factors") or []),
+            confluence_count=row.get("confluence_count"),
         )
         for i, row in enumerate(scored[:n])
     ]
@@ -301,17 +383,22 @@ def _score_universe(
     *,
     as_of_ts_ms: int,
     refresh_sec: int,
+    features: InMemoryEnsembleStore | None = None,
 ) -> list[dict[str, Any]]:
-    scored = [
-        score_symbol(
+    scored: list[dict[str, Any]] = []
+    for symbol in universe:
+        snap = features.latest(symbol, as_of_ts_ms=as_of_ts_ms) if features is not None else None
+        row = score_symbol(
             symbol,
             by_symbol.get(symbol, []),
             as_of_ts_ms=as_of_ts_ms,
             ml_score=overlay.get(symbol, 0.0),
             refresh_sec=refresh_sec,
+            feature=snap,
         )
-        for symbol in universe
-    ]
+        if row is None:
+            continue
+        scored.append(row)
     scored.sort(
         key=lambda item: (
             item.get("source") == "demo",
@@ -331,8 +418,9 @@ def rank_categorized(
     limit: int = 20,
     refresh_sec: int = REFRESH_SEC,
     universe: Sequence[tuple[str, AssetClass]] | None = None,
+    features: InMemoryEnsembleStore | None = None,
 ) -> CategorizedPicksResponse:
-    """Same scores as ensemble, tagged with a FE category. ≤20 rows."""
+    """Same scores as ensemble (same features), tagged with a FE category. ≤20."""
     now = int(as_of_ts_ms if as_of_ts_ms is not None else time.time() * 1000)
     by_symbol: dict[str, list[StoredSignal]] = defaultdict(list)
     for row in rows:
@@ -347,6 +435,7 @@ def rank_categorized(
         {},
         as_of_ts_ms=now,
         refresh_sec=refresh_sec,
+        features=features,
     )
     if asset_class is not None:
         scored = [row for row in scored if row["asset_class"] is asset_class]
@@ -360,6 +449,9 @@ def rank_categorized(
             score=row["score"],
             setup_types=row["setup_types"],
             confidence=row["confidence"],
+            rank_components=row.get("rank_components"),
+            contributing_factors=list(row.get("contributing_factors") or []),
+            confluence_count=row.get("confluence_count"),
         )
         for i, row in enumerate(scored[:n])
     ]

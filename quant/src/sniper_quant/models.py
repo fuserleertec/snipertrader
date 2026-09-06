@@ -296,19 +296,65 @@ class SignalListResponse(BaseModel):
     next_cursor: str | None = None
 
 
+class FeatureRankComponents(BaseModel):
+    """ML ``ensemble_features`` rank_components (point scale, sum ~100).
+
+    ``setup_quality`` 0–40, ``risk_adjusted`` (confluence) 0–20,
+    ``kill_zone`` 0–15, ``volume`` 0–15, ``freshness`` 0–10.
+    Extra ML fields are ignored.
+    """
+
+    model_config = ConfigDict(extra="ignore")
+
+    setup_quality: float | None = Field(default=None, ge=0, le=40)
+    risk_adjusted: float | None = Field(default=None, ge=0, le=20)
+    kill_zone: float | None = Field(default=None, ge=0, le=15)
+    volume: float | None = Field(default=None, ge=0, le=15)
+    freshness: float | None = Field(default=None, ge=0, le=10)
+
+
+class EnsembleFeatures(BaseModel):
+    """Kafka ``ensemble_features`` 15m snapshot (key=symbol). Paper only."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    schema_version: Literal["1.1"] = SCHEMA_VERSION
+    symbol: str
+    asset_class: AssetClass | None = None
+    ts_ms: int
+    timeframe: str = "15m"
+    ensemble_score: float | None = Field(default=None, ge=0, le=100)
+    rank_components: FeatureRankComponents | None = None
+    best_confidence: float | None = Field(default=None, ge=0, le=1)
+    active_levels: bool = True
+    skip_reason: str | None = None
+    contributing_factors: list[str] = Field(default_factory=list)
+    confluence_count: int | None = Field(default=None, ge=0)
+    setup_types: list[str] = Field(default_factory=list)
+    ref_session: str | None = None
+
+    @field_validator("symbol", mode="before")
+    @classmethod
+    def _norm_symbol(cls, value: str) -> str:
+        return normalize_symbol(value)
+
+
 class EnsemblePick(BaseModel):
-    """One row of ``GET /picks/ensemble``. Paper/signal book only."""
+    """One row of ``GET /picks/ensemble``. Paper / ensemble_features only."""
 
     rank: int = Field(ge=1, description="1-based rank after score desc, symbol asc.")
     symbol: str
     asset_class: AssetClass
-    score: float
+    score: float = Field(description="Mapped from ML ensemble_score when present.")
     setup_types: list[str] = Field(default_factory=list)
     confidence: float = Field(
-        description="Mean approved-signal confidence, or demo hash unit when thin."
+        description="Mapped from ML best_confidence when a snapshot exists."
     )
     ref_session: str | None = None
     notes: str | None = None
+    rank_components: FeatureRankComponents | None = None
+    contributing_factors: list[str] = Field(default_factory=list)
+    confluence_count: int | None = None
 
 
 class EnsemblePicksResponse(BaseModel):
@@ -318,7 +364,7 @@ class EnsemblePicksResponse(BaseModel):
 
 
 class CategorizedPick(BaseModel):
-    """One row of ``GET /picks/categorized``. Paper/signal book only."""
+    """One row of ``GET /picks/categorized``. Same features as ensemble."""
 
     rank: int = Field(ge=1)
     symbol: str
@@ -327,6 +373,9 @@ class CategorizedPick(BaseModel):
     score: float
     setup_types: list[str]
     confidence: float
+    rank_components: FeatureRankComponents | None = None
+    contributing_factors: list[str] = Field(default_factory=list)
+    confluence_count: int | None = None
 
 
 class CategorizedPicksResponse(BaseModel):

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://snipertrader.ai/schemas/categorized_picks.schema.json",
   "title": "CategorizedPicksResponse",
-  "description": "GET /picks/categorized — paper/signal-book picks tagged momentum|mean_reversion|confluence|other. refresh_sec is 900. Max 20 items. live_trading stays false.",
+  "description": "GET /picks/categorized — same ensemble_features ranking as /picks/ensemble, tagged momentum|mean_reversion|confluence|other. refresh_sec is 900. Max 20 items. live_trading stays false.",
   "type": "object",
   "additionalProperties": false,
   "required": ["as_of_ts_ms", "refresh_sec", "items"],
@@ -51,7 +51,10 @@
             ]
           }
         },
-        "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "rank_components": { "type": ["object", "null"] },
+        "contributing_factors": { "type": "array", "items": { "type": "string" } },
+        "confluence_count": { "type": ["integer", "null"], "minimum": 0 }
       }
     }
   }
