@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Terminal — Kronos + MiroFish + Cone | SniperTrader.ai</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;900&family=Space+Mono:wght@400;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/assets/theme.css"/>
+<style>
+  :root{
+    --bg:#06090f; --panel:#0a1018; --panel-2:#0d1420; --card:#111a2b;
+    --border:rgba(0,229,160,.14); --border-soft:rgba(0,229,160,.08);
+    --fg:#dbe6f2; --muted:#8aa0b8; --faint:#5f7790;
+    --emerald:#00e5a0; --cyan:#00d4ff; --gold:#f0c040; --red:#ff4455;
+    --bull:#00e5a0; --bear:#ff4455; --flat:#8aa0b8;
+    --font-d:"Orbitron",sans-serif; --font-m:"Space Mono",monospace; --font-b:"Syne",sans-serif;
+  }
+  body.light-mode{
+    --bg:#f4f7fb; --panel:#ffffff; --panel-2:#f1f5f9; --card:#ffffff;
+    --border:rgba(15,40,70,.14); --border-soft:rgba(15,40,70,.08);
+    --fg:#0f1f33; --muted:#5b6b80; --faint:#8a99ad;
+    --emerald:#007a44; --cyan:#0a6fb0; --gold:#9a6e00; --red:#c02030;
+    --bull:#007a44; --bear:#c02030; --flat:#5b6b80;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--fg);
+    font-family:var(--font-b); font-size:15px; line-height:1.5;
+    -webkit-font-smoothing:antialiased; transition:background .25s,color .25s;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:96px 22px 80px}
+
+  /* nav (canonical .kf-nav, page-specific glass override) */
+  .kf-nav{display:flex;align-items:center;gap:18px;padding:14px 18px;position:fixed;top:0;left:0;right:0;z-index:40;background:rgba(6,9,15,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  body.light-mode .kf-nav{background:rgba(255,255,255,.88)}
+  .kf-nav .brand{font-family:var(--font-d);font-weight:700;letter-spacing:.5px;color:var(--fg);font-size:15px;text-decoration:none}
+  .kf-nav .brand b{color:var(--emerald)}
+  .kf-nav .links{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+  .kf-nav .links a{font-family:var(--font-m);font-size:10px;letter-spacing:1px;color:var(--muted);text-decoration:none;text-transform:uppercase;transition:color .2s}
+  .kf-nav .links a:hover{color:var(--fg)}
+  .kf-nav .links a.active{color:var(--emerald)}
+  .tt-btn{margin-left:auto;background:var(--panel-2);border:1px solid var(--border);color:var(--fg);border-radius:10px;padding:7px 12px;cursor:pointer;font-family:var(--font-m);font-size:12px;display:flex;align-items:center;gap:6px}
+  .tt-btn:hover{border-color:var(--cyan)}
+
+  /* provenance banner */
+  .banner{border:1px solid var(--border);background:var(--panel);border-radius:12px;padding:14px 16px;margin:18px 0 20px;display:flex;flex-direction:column;gap:10px}
+  .banner .head{font-family:var(--font-d);font-size:12px;letter-spacing:.12em;color:var(--gold)}
+  .banner .leg{display:flex;flex-wrap:wrap;gap:8px}
+  .leg span{font-family:var(--font-m);font-size:11px;padding:4px 9px;border-radius:6px;border:1px solid var(--border)}
+  .leg .real{color:var(--emerald);border-color:color-mix(in srgb,var(--emerald) 45%,transparent)}
+  .leg .model{color:var(--cyan);border-color:color-mix(in srgb,var(--cyan) 45%,transparent)}
+  .leg .absent{color:var(--faint);border-color:var(--border-soft);text-decoration:line-through}
+  .banner p{margin:0;color:var(--muted);font-size:13px;max-width:920px}
+
+  /* hero stats */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+  .stat{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+  .stat .k{font-family:var(--font-m);font-size:11px;letter-spacing:.08em;color:var(--faint);text-transform:uppercase}
+  .stat .v{font-family:var(--font-d);font-size:22px;font-weight:600;margin-top:4px}
+  .stat .v small{font-family:var(--font-m);font-size:12px;color:var(--muted);font-weight:400}
+  .stat .sub{font-family:var(--font-m);font-size:11px;color:var(--muted);margin-top:3px}
+
+  /* section titles */
+  .sec{font-family:var(--font-d);font-size:13px;letter-spacing:.14em;color:var(--muted);margin:28px 0 12px;display:flex;align-items:center;gap:10px}
+  .sec .num{color:var(--cyan);font-family:var(--font-m);font-size:12px}
+
+  /* leaderboard */
+  .board{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .row{display:grid;grid-template-columns:34px 1.3fr .9fr .9fr 1.1fr .7fr 1.3fr 1.1fr;gap:10px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border-soft);cursor:pointer;transition:background .12s}
+  .row:last-child{border-bottom:none}
+  .row:hover{background:var(--panel-2)}
+  .row.head{background:var(--panel-2);cursor:default;font-family:var(--font-m);font-size:10.5px;letter-spacing:.06em;color:var(--faint);text-transform:uppercase}
+  .row.head:hover{background:var(--panel-2)}
+  .rk{font-family:var(--font-m);color:var(--faint);font-size:12px}
+  .sym{font-family:var(--font-d);font-weight:600;letter-spacing:.04em}
+  .sym .cls{display:block;font-family:var(--font-m);font-size:10.5px;color:var(--faint);font-weight:400;letter-spacing:0}
+  .px{font-family:var(--font-m);font-size:14px}
+  .chg{font-family:var(--font-m);font-size:12.5px}
+  .up{color:var(--bull)} .dn{color:var(--bear)} .fl{color:var(--flat)}
+  .bias{display:flex;flex-direction:column;gap:3px}
+  .bias .pct{font-family:var(--font-m);font-size:12px}
+  .bar{height:6px;border-radius:3px;background:var(--panel-2);overflow:hidden;display:flex}
+  .bar .b{background:var(--bull)} .bar .r{background:var(--bear)}
+  .setup{font-family:var(--font-m);font-size:12px;font-weight:700}
+  .setup .rr{font-weight:400;color:var(--muted);font-size:11px}
+  .tag{display:inline-block;font-family:var(--font-m);font-size:10px;padding:2px 6px;border-radius:5px;border:1px solid var(--border);color:var(--muted);margin:1px 2px 1px 0;white-space:nowrap}
+  .tag.on{color:var(--fg);border-color:color-mix(in srgb,var(--cyan) 55%,transparent)}
+  .conv{font-family:var(--font-d);font-size:16px;font-weight:600}
+  .conv .bar2{height:5px;border-radius:3px;background:var(--panel-2);margin-top:4px;overflow:hidden}
+  .conv .bar2 i{display:block;height:100%;border-radius:3px}
+  .cone{display:flex;flex-direction:column;gap:3px}
+  .cone .bar{height:7px}
+  .cone .lbl{font-family:var(--font-m);font-size:9.5px;color:var(--faint);display:flex;justify-content:space-between}
+  .chev{color:var(--faint);font-family:var(--font-m);font-size:12px;text-align:center}
+
+  /* drill-down */
+  .detail{display:none;background:var(--panel-2);border-bottom:1px solid var(--border-soft);padding:18px 20px}
+  .row.open + .detail{display:block}
+  .dgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:820px){.dgrid{grid-template-columns:1fr}}
+  .dbox{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+  .dbox h4{font-family:var(--font-d);font-size:11px;letter-spacing:.1em;color:var(--muted);margin:0 0 10px;text-transform:uppercase}
+  .lv{display:flex;justify-content:space-between;font-family:var(--font-m);font-size:12.5px;padding:4px 0;border-bottom:1px dashed var(--border-soft)}
+  .lv:last-child{border-bottom:none}
+  .lv .n{color:var(--muted)} .lv .v{font-weight:700}
+  .agent{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border-soft);font-family:var(--font-m);font-size:12px}
+  .agent:last-child{border-bottom:none}
+  .agent .nm{width:96px;color:var(--fg)}
+  .agent .sg{font-weight:700;width:44px}
+  .agent .cf{width:64px;text-align:right;color:var(--muted)}
+  .agent .wh{flex:1;color:var(--faint);font-size:11px;text-align:right}
+  .cbar{display:flex;height:22px;border-radius:6px;overflow:hidden;font-family:var(--font-m);font-size:10.5px;font-weight:700}
+  .cbar div{display:flex;align-items:center;justify-content:center;color:#0b0f16}
+  .cbar .b{background:var(--bull)} .cbar .f{background:var(--flat)} .cbar .r{background:var(--bear)}
+
+  /* health */
+  .health{display:grid;grid-template-columns:1.1fr 1fr;gap:14px}
+  @media(max-width:820px){.health{grid-template-columns:1fr}}
+  .hbox{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px}
+  .hbox h4{font-family:var(--font-d);font-size:12px;letter-spacing:.1em;color:var(--muted);margin:0 0 12px;text-transform:uppercase}
+  .big{font-family:var(--font-d);font-size:40px;font-weight:700;line-height:1}
+  .big.warn{color:var(--gold)} .big.ok{color:var(--emerald)}
+  .method{font-family:var(--font-m);font-size:11.5px;color:var(--muted);margin-top:10px}
+  .persym{font-family:var(--font-m);font-size:11.5px}
+  .persym .l{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed var(--border-soft)}
+  .persym .l:last-child{border-bottom:none}
+  .persym .hr{color:var(--muted)}
+  .cfg{font-family:var(--font-m);font-size:11.5px}
+  .cfg .h,.cfg .r{display:grid;grid-template-columns:2.2fr .7fr .7fr .8fr .7fr .9fr;gap:6px;padding:6px 8px}
+  .cfg .h{color:var(--faint);text-transform:uppercase;font-size:9.5px;letter-spacing:.06em;border-bottom:1px solid var(--border)}
+  .cfg .r{border-bottom:1px dashed var(--border-soft);align-items:center}
+  .cfg .r:last-child{border-bottom:none}
+  .cfg .pf-pos{color:var(--emerald);font-weight:700} .cfg .pf-neg{color:var(--red);font-weight:700}
+  .conc{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
+  .conc h5{font-family:var(--font-d);font-size:10px;letter-spacing:.1em;color:var(--muted);margin:0 0 6px;text-transform:uppercase}
+  .conc .l{font-family:var(--font-m);font-size:11px;display:flex;justify-content:space-between;padding:3px 0}
+  .verdict{border:1px solid color-mix(in srgb,var(--gold) 40%,transparent);background:color-mix(in srgb,var(--gold) 6%,transparent);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--fg);line-height:1.6;margin-top:12px}
+  .foot{font-family:var(--font-m);font-size:11px;color:var(--faint);margin-top:34px;border-top:1px solid var(--border-soft);padding-top:14px;line-height:1.7}
+  .risknote{color:var(--gold);font-family:var(--font-m);font-size:11.5px}
+</style>
+</head>
+<body class="light-mode">
+<nav class="kf-nav">
+  <a href="/index.html"><span class="brand">SNIPER<b>TRADER</b></span></a>
+  <div class="links">
+    <a href="/sniper_market_forecaster.html">Market Forecaster</a>
+    <a href="/market_terminal.html" class="active">Conviction Terminal</a>
+    <a href="/stock_picks.html">Daily Stock Picks</a>
+    <a href="/traderedge_chartai.html">AI Chart</a>
+    <a href="/traderedge_preflight.html">⬡ Pre-Flight Protocols</a>
+    <a href="/traderedge_prop_firms_command_center.html">Prop Firm Center</a>
+    <a href="/usme_products.html">Products</a>
+  </div>
+  <button class="tt-btn" onclick="toggleTheme()"><span class="tt-icon">☀️</span> <span id="themeLabel">LIGHT</span></button>
+</nav>
+
+<div class="wrap">
+
+  <div class="banner">
+    <div class="head">DATA PROVENANCE — WHAT IS REAL, WHAT IS A MODEL</div>
+    <div class="leg">
+      <span class="real">REAL · computed from live OHLCV</span>
+      <span class="model">MODEL · deterministic ensemble</span>
+      <span class="absent">options flow / dark pool / tape (key-gated, not present)</span>
+    </div>
+    <p>Prices, change, Kronos structure (VWAP · FVG · order blocks · sweeps · MSS), ATR, the empirical
+       probability cone, trade levels, and the walk-forward backtest are all <b>computed from real daily
+       OHLCV</b> (Yahoo, key-less, ~2 years). The <b>MiroFish swarm is a deterministic 8-model ensemble</b> —
+       every vote is a real formula over the same data, not a random draw — but it is a model, not a live
+       tape of traders. There is <b>no order-flow / dark-pool / options data</b> here and none is implied.
+       <b>Static snapshot</b> — data as of <span id="asof"></span>; regenerate with
+       <span style="font-family:var(--font-m)">teardown/fetch_data.py → compute_engine.py → build_html.py</span>.</p>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="sec"><span class="num">01</span> DECISION SURFACE — ranked by conviction · click a row to audit</div>
+  <div class="board" id="board"></div>
+
+  <div class="sec"><span class="num">02</span> ENSEMBLE HEALTH — does the swarm actually work?</div>
+  <div class="health" id="health"></div>
+
+  <div class="sec"><span class="num">03</span> DROP AUDIT — scanned but no edge this cycle</div>
+  <div class="board" id="dropped"></div>
+
+  <div class="foot" id="foot"></div>
+</div>
+
+<script id="data" type="application/json">{"results":[{"symbol":"CL","yahoo":"CL=F","currency":"USD","last":91.480003,"chg_pct":0.2,"kronos":{"close":91.480003,"vwap":85.3862,"vwap_pct":7.14,"trend":"up","mss":"bullish","fvg":{"dir":"bull","zone":[86.790001,88.970001],"bar":124,"gap_pct":2.51},"order_block":{"dir":"bull","zone":[82.25,83.779999],"bar":121},"sweep":null,"support":91.05,"resistance":93.5},"mirofish":{"agents":[{"name":"Momentum","signal":"bull","confidence":0.846,"why":"10-bar ROC +5.1%"},{"name":"Trend","signal":"bull","confidence":1.0,"why":"EMA12/26 above, close vs SMA50 > < SMA200"},{"name":"VWAP","signal":"bull","confidence":1.0,"why":"close +7.14% vs 20-bar VWAP"},{"name":"Order Block","signal":"bull","confidence":0.0,"why":"near bull OB [82.25\u201383.78]"},{"name":"Volatility","signal":"neutral","confidence":0.038,"why":"ATR 0.94x its 20-bar mean"},{"name":"Volume","signal":"bull","confidence":1.0,"why":"OBV 10-bar slope +0.331"},{"name":"Mean Rev","signal":"neutral","confidence":0.0,"why":"RSI 65"},{"name":"Structure","signal":"bull","confidence":0.8,"why":"trend=up mss=bullish sweep=\u2014"}],"bull":4.646,"bear":0,"n_bull":6,"n_bear":0,"n_neu":2,"consensus":0.911,"consensus_pct":91.1},"cone":{"sigma_5d":8.55,"bull":36.9,"base":27.9,"bear":35.2,"up":99.305,"down":83.655,"atr":3.6025,"atr_pct":3.94,"horizon_days":5},"trade":{"direction":"LONG","entry":91.480003,"stop":87.87746941092841,"target":95.08253658907158,"rr":1.0},"conviction":99,"n_bars":127},{"symbol":"AVAXUSDT","yahoo":"AVAX-USD","currency":"USD","last":7.636,"chg_pct":0.55,"kronos":{"close":7.636,"vwap":7.3512,"vwap_pct":3.87,"trend":"range","mss":null,"fvg":{"dir":"bull","zone":[7.247467,7.313281],"bar":182,"gap_pct":0.91},"order_block":{"dir":"bull","zone":[7.313281,7.527106],"bar":182},"sweep":null,"support":7.1706,"resistance":8.2997},"mirofish":{"agents":[{"name":"Momentum","signal":"bull","confidence":0.243,"why":"10-bar ROC +1.5%"},{"name":"Trend","signal":"bull","confidence":1.0,"why":"EMA12/26 above, close vs SMA50 > < SMA200"},{"name":"VWAP","signal":"bull","confidence":1.0,"why":"close +3.87% vs 20-bar VWAP"},{"name":"Order Block","signal":"bull","confidence":0.0,"why":"near bull OB [7.31\u20137.53]"},{"name":"Volatility","signal":"neutral","confidence":0.058,"why":"ATR 0.91x its 20-bar mean"},{"name":"Volume","signal":"bull","confidence":1.0,"why":"OBV 10-bar slope +0.531"},{"name":"Mean Rev","signal":"neutral","confidence":0.0,"why":"RSI 62"},{"name":"Structure","signal":"neutral","confidence":0.0,"why":"trend=range mss=None sweep=\u2014"}],"bull":3.243,"bear":0,"n_bull":5,"n_bear":0,"n_neu":3,"consensus":0.882,"consensus_pct":88.2},"cone":{"sigma_5d":6.49,"bull":27.2,"base":45.0,"bear":27.8,"up":8.1314,"down":7.1406,"atr":0.2908,"atr_pct":3.81,"horizon_days":5},"trade":{"direction":"LONG","entry":7.636,"stop":7.1706,"target":8.2997,"rr":1.43},"conviction":88,"n_bars":185},{"symbol":"AAPL","yahoo":"AAPL","currency":"USD","last":319.970001,"chg_pct":-2.51,"kronos":{"close":319.970001,"vwap":313.1266,"vwap_pct":2.19,"trend":"up","mss":null,"fvg":{"dir":"bull","zone":[321.23999,323.529999],"bar":125,"gap_pct":0.71},"order_block":{"dir":"bear","zone":[324.109985,330.809998],"bar":126},"sweep":null,"support":319.35,"resistance":320.28},"mirofish":{"agents":[{"name":"Momentum","signal":"bull","confidence":0.572,"why":"10-bar ROC +3.4%"},{"name":"Trend","signal":"bull","confidence":0.628,"why":"EMA12/26 above, close vs SMA50 > > SMA200"},{"name":"VWAP","signal":"bull","confidence":0.729,"why":"close +2.19% vs 20-bar VWAP"},{"name":"Order Block","signal":"bear","confidence":0.382,"why":"near bear OB [324.11\u2013330.81]"},{"name":"Volatility","signal":"neutral","confidence":0.005,"why":"ATR 0.99x its 20-bar mean"},{"name":"Volume","signal":"bull","confidence":0.42,"why":"OBV 10-bar slope +0.084"},{"name":"Mean Rev","signal":"neutral","confidence":0.0,"why":"RSI 54"},{"name":"Structure","signal":"bull","confidence":0.4,"why":"trend=up mss=None sweep=\u2014"}],"bull":2.749,"bear":0.382,"n_bull":5,"n_bear":1,"n_neu":2,"consensus":0.786,"consensus_pct":78.6},"cone":{"sigma_5d":3.82,"bull":42.3,"base":38.2,"bear":19.5,"up":332.1807,"down":307.7593,"atr":7.6403,"atr_pct":2.39,"horizon_days":5},"trade":{"direction":"LONG","entry":319.970001,"stop":312.32969888675564,"target":327.6103031132444,"rr":1.0},"conviction":83,"n_bars":128},{"symbol":"DOGEUSDT","yahoo":"DOGE-USD","currency":"USD","last":0.08903,"chg_pct":-0.73,"kronos":{"close":0.08903,"vwap":0.0871,"vwap_pct":2.17,"trend":"up","mss":null,"fvg":{"dir":"bull","zone":[0.081982,0.084032],"bar":182,"gap_pct":2.5},"order_block":{"dir":"bull","zone":[0.084032,0.088171],"bar":182},"sweep":null,"support":0.0886,"resistance":0.0917},"mirofish":{"agents":[{"name":"Momentum","signal":"neutral","confidence":0.021,"why":"10-bar ROC -0.1%"},{"name":"Trend","signal":"bull","confidence":1.0,"why":"EMA12/26 above, close vs SMA50 > < SMA200"},{"name":"VWAP","signal":"bull","confidence":0.739,"why":"close +2.22% vs 20-bar VWAP"},{"name":"Order Block","signal":"bull","confidence":0.0,"why":"near bull OB [0.08\u20130.09]"},{"name":"Volatility","signal":"neutral","confidence":0.113,"why":"ATR 1.17x its 20-bar mean"},{"name":"Volume","signal":"bear","confidence":0.278,"why":"OBV 10-bar slope -0.056"},{"name":"Mean Rev","signal":"neutral","confidence":0.0,"why":"RSI 61"},{"name":"Structure","signal":"bull","confidence":0.4,"why":"trend=up mss=None sweep=\u2014"}],"bull":2.139,"bear":0.278,"n_bull":4,"n_bear":1,"n_neu":3,"consensus":0.772,"consensus_pct":77.2},"cone":{"sigma_5d":6.78,"bull":20.0,"base":51.1,"bear":28.9,"up":0.0951,"down":0.083,"atr":0.0045,"atr_pct":5.06,"horizon_days":5},"trade":{"direction":"LONG","entry":0.08903,"stop":0.08452269272819617,"target":0.09353730727180383,"rr":1.0},"conviction":81,"n_bars":185},{"symbol":"META","yahoo":"META","currency":"USD","last":616.77002,"chg_pct":1.0,"kronos":{"close":616.77002,"vwap":576.8819,"vwap_pct":6.91,"trend":"range","mss":"bullish","fvg":{"dir":"bull","zone":[584.950012,604.349976],"bar":126,"gap_pct":3.32},"order_block":{"dir":"bull","zone":[569.140015,578.679993],"bar":123},"sweep":null,"support":609.55,"resistance":623.73},"mirofish":{"agents":[{"name":"Momentum","signal":"bull","confidence":1.0,"why":"10-bar ROC +12.2%"},{"name":"Trend","signal":"bull","confidence":0.13,"why":"EMA12/26 above, close vs SMA50 > < SMA200"},{"name":"VWAP","signal":"bull","confidence":1.0,"why":"close +6.91% vs 20-bar VWAP"},{"name":"Order Block","signal":"bull","confidence":0.0,"why":"near bull OB [569.14\u2013578.68]"},{"name":"Volatility","signal":"neutral","confidence":0.027,"why":"ATR 0.96x its 20-bar mean"},{"name":"Volume","signal":"bear","confidence":1.0,"why":"OBV 10-bar slope -9.761"},{"name":"Mean Rev","signal":"neutral","confidence":0.0,"why":"RSI 62"},{"name":"Structure","signal":"bull","confidence":0.4,"why":"trend=range mss=bullish sweep=\u2014"}],"bull":2.53,"bear":1.0,"n_bull":5,"n_bear":1,"n_neu":2,"consensus":0.669,"consensus_pct":66.9},"cone":{"sigma_5d":6.07,"bull":26.8,"base":39.8,"bear":33.3,"up":654.2307,"down":579.3094,"atr":20.0918,"atr_pct":3.26,"horizon_days":5},"trade":{"direction":"LONG","entry":616.77002,"stop":596.6781892806281,"target":636.861850719372,"rr":1.0},"conviction":71,"n_bars":128},{"symbol":"GC","yahoo":"GC=F","currency":"USD","last":4476.600098,"chg_pct":-0.34,"kronos":{"close":4476.600098,"vwap":4478.4085,"vwap_pct":-0.04,"trend":"up","mss":null,"fvg":{"dir":"bull","zone":[4402.0,4426.0],"bar":125,"gap_pct":0.55},"order_block":{"dir":"bull","zone":[4329.100098,4402.0],"bar":123},"sweep":{"dir":"bear","level":4510.0},"support":4465.1001,"resistance":4591.7998},"mirofish":{"agents":[{"name":"Momentum","signal":"bear","confidence":0.532,"why":"10-bar ROC -3.2%"},{"name":"Trend","signal":"bull","confidence":0.543,"why":"EMA12/26 above, close vs SMA50 > < SMA200"},{"name":"VWAP","signal":"bear","confidence":0.013,"why":"close -0.04% vs 20-bar VWAP"},{"name":"Order Block","signal":"bull","confidence":0.0,"why":"near bull OB [4329.10\u20134402.00]"},{"name":"Volatility","signal":"neutral","confidence":0.079,"why":"ATR 1.12x its 20-bar mean"},{"name":"Volume","signal":"bull","confidence":1.0,"why":"OBV 10-bar slope +3.621"},{"name":"Mean Rev","signal":"neutral","confidence":0.0,"why":"RSI 56"},{"name":"Structure","signal":"neutral","confidence":0.2,"why":"trend=up mss=None sweep=bear"}],"bull":1.543,"bear":0.545,"n_bull":3,"n_bear":2,"n_neu":3,"consensus":0.662,"consensus_pct":66.2},"cone":{"sigma_5d":3.92,"bull":25.4,"base":41.0,"bear":33.6,"up":4651.8785,"down":4301.3217,"atr":86.6553,"atr_pct":1.94,"horizon_days":5},"trade":{"direction":"LONG","entry":4476.600098,"stop":4389.944831404929,"target":4591.7998,"rr":1.33},"conviction":70,"n_bars":127},{"symbol":"NQ","yahoo":"NQ=F","currency":"USD","last":29565.25,"chg_pct":0.14,"kronos":{"close":29565.25,"vwap":29553.5582,"vwap_pct":0.04,"trend":"range","mss":null,"fvg":{"dir":"bear","zone":[29757.25,30054.5],"bar":114,"gap_pct":0.99},"order_block":{"dir":"bear","zone":[29401.75,29708.0],"bar":120},"sweep":{"dir":"bear","level":29584.25},"support":29160.5,"resistance":29782.0},"mirofish":{"agents":[{"name":"Momentum","signal":"bull","confidence":0.101,"why":"10-bar ROC +0.6%"},{"name":"Trend","signal":"bull","confidence":0.327,"why":"EMA12/26 above, close vs SMA50 > > SMA200"},{"name":"VWAP","signal":"bull","confidence":0.013,"why":"close +0.04% vs 20-bar VWAP"},{"name":"Order Block","signal":"bear","confidence":0.466,"why":"near bear OB [29401.75\u201329708.00]"},{"name":"Volatility","signal":"neutral","confidence":0.104,"why":"ATR 0.84x its 20-bar mean"},{"name":"Volume","signal":"bull","confidence":1.0,"why":"OBV 10-bar slope +0.675"},{"name":"Mean Rev","signal":"neutral","confidence":0.0,"why":"RSI 53"},{"name":"Structure","signal":"neutral","confidence":0.2,"why":"trend=range mss=None sweep=bear"}],"bull":1.441,"bear":0.466,"n_bull":4,"n_bear":1,"n_neu":3,"consensus":0.668,"consensus_pct":66.8},"cone":{"sigma_5d":3.04,"bull":41.8,"base":33.6,"bear":24.6,"up":30465.2021,"down":28665.2979,"atr":457.6178,"atr_pct":1.55,"horizon_days":5},"trade":{"direction":"LONG","entry":29565.25,"stop":29107.632243446355,"target":30022.867756553645,"rr":1.0},"conviction":67,"n_bars":127},{"symbol":"AMD","yahoo":"AMD","currency":"USD","last":477.570007,"chg_pct":4.69,"kronos":{"close":477.570007,"vwap":476.7209,"vwap_pct":0.18,"trend":"down","mss":null,"fvg":{"dir":"bear","zone":[462.209991,463.679993],"bar":125,"gap_pct":0.32},"order_block":{"dir":"bull","zone":[452.359985,462.209991],"bar":125},"sweep":null,"support":463.21,"resistance":491.12},"mirofish":{"agents":[{"name":"Momentum","signal":"bull","confidence":0.152,"why":"10-bar ROC +0.9%"},{"name":"Trend","signal":"bear","confidence":0.687,"why":"EMA12/26 below, close vs SMA50 < > SMA200"},{"name":"VWAP","signal":"bull","confidence":0.059,"why":"close +0.18% vs 20-bar VWAP"},{"name":"Order Block","signal":"bull","confidence":0.0,"why":"near bull OB [452.36\u2013462.21]"},{"name":"Volatility","signal":"neutral","confidence":0.139,"why":"ATR 0.79x its 20-bar mean"},{"name":"Volume","signal":"neutral","confidence":0.062,"why":"OBV 10-bar slope -0.012"},{"name":"Mean Rev","signal":"neutral","confidence":0.0,"why":"RSI 50"},{"name":"Structure","signal":"bear","confidence":0.4,"why":"trend=down mss=None sweep=\u2014"}],"bull":0.211,"bear":1.087,"n_bull":3,"n_bear":2,"n_neu":3,"consensus":0.309,"consensus_pct":30.9},"cone":{"sigma_5d":9.7,"bull":42.3,"base":41.5,"bear":16.3,"up":523.8809,"down":431.2591,"atr":22.5088,"atr_pct":4.71,"horizon_days":5},"trade":{"direction":"SHORT","entry":477.570007,"stop":500.0788440038746,"target":455.06116999612533,"rr":1.0},"conviction":27,"n_bars":128},{"symbol":"NVDA","yahoo":"NVDA","currency":"USD","last":230.360001,"chg_pct":0.84,"kronos":{"close":230.360001,"vwap":220.8251,"vwap_pct":4.32,"trend":"up","mss":null,"fvg":{"dir":"bull","zone":[220.410004,224.75],"bar":126,"gap_pct":1.97},"order_block":{"dir":"bull","zone":[216.809998,229.259995],"bar":122},"sweep":{"dir":"bear","level":230.399994},"support":216.2,"resistance":230.47},"mirofish":{"agents":[{"name":"Momentum","signal":"bull","confidence":1.0,"why":"10-bar ROC +7.3%"},{"name":"Trend","signal":"bull","confidence":1.0,"why":"EMA12/26 above, close vs SMA50 > > SMA200"},{"name":"VWAP","signal":"bull","confidence":1.0,"why":"close +4.32% vs 20-bar VWAP"},{"name":"Order Block","signal":"bull","confidence":0.0,"why":"near bull OB [216.81\u2013229.26]"},{"name":"Volatility","signal":"neutral","confidence":0.033,"why":"ATR 1.05x its 20-bar mean"},{"name":"Volume","signal":"bull","confidence":1.0,"why":"OBV 10-bar slope +72.410"},{"name":"Mean Rev","signal":"neutral","confidence":0.0,"why":"RSI 60"},{"name":"Structure","signal":"neutral","confidence":0.2,"why":"trend=up mss=None sweep=bear"}],"bull":4.0,"bear":0,"n_bull":5,"n_bear":0,"n_neu":3,"consensus":0.9,"consensus_pct":90.0},"cone":{"sigma_5d":5.23,"bull":35.8,"base":33.3,"bear":30.9,"up":242.4136,"down":218.3064,"atr":7.3806,"atr_pct":3.2,"horizon_days":5},"trade":{"direction":"HOLD","entry":230.360001,"stop":216.2,"target":237.74062921108444,"rr":null},"conviction":94,"n_bars":128},{"symbol":"CRWD","yahoo":"CRWD","currency":"USD","last":213.100006,"chg_pct":-0.87,"kronos":{"close":213.100006,"vwap":211.5861,"vwap_pct":0.72,"trend":"up","mss":null,"fvg":{"dir":"bear","zone":[214.850006,221.0],"bar":125,"gap_pct":2.78},"order_block":{"dir":"bull","zone":[200.600006,214.850006],"bar":125},"sweep":null,"support":181.24,"resistance":217.5},"mirofish":{"agents":[{"name":"Momentum","signal":"bull","confidence":1.0,"why":"10-bar ROC +11.0%"},{"name":"Trend","signal":"bull","confidence":1.0,"why":"EMA12/26 above, close vs SMA50 > > SMA200"},{"name":"VWAP","signal":"bull","confidence":0.239,"why":"close +0.72% vs 20-bar VWAP"},{"name":"Order Block","signal":"bull","confidence":0.123,"why":"near bull OB [200.60\u2013214.85]"},{"name":"Volatility","signal":"neutral","confidence":0.127,"why":"ATR 1.19x its 20-bar mean"},{"name":"Volume","signal":"bull","confidence":0.251,"why":"OBV 10-bar slope +0.050"},{"name":"Mean Rev","signal":"neutral","confidence":0.0,"why":"RSI 53"},{"name":"Structure","signal":"bull","confidence":0.4,"why":"trend=up mss=None sweep=\u2014"}],"bull":3.013,"bear":0,"n_bull":6,"n_bear":0,"n_neu":2,"consensus":0.875,"consensus_pct":87.5},"cone":{"sigma_5d":9.03,"bull":47.2,"base":30.1,"bear":22.8,"up":232.349,"down":193.851,"atr":12.3907,"atr_pct":5.81,"horizon_days":5},"trade":{"direction":"HOLD","entry":213.100006,"stop":181.24,"target":225.4907057194566,"rr":null},"conviction":92,"n_bars":128},{"symbol":"LINKUSDT","yahoo":"LINK-USD","currency":"USD","last":12.258,"chg_pct":1.73,"kronos":{"close":12.258,"vwap":11.4175,"vwap_pct":7.36,"trend":"range","mss":"bullish","fvg":{"dir":"bull","zone":[11.284483,11.506112],"bar":182,"gap_pct":1.96},"order_block":{"dir":"bull","zone":[11.506112,12.132386],"bar":182},"sweep":null,"support":10.9287,"resistance":12.5628},"mirofish":{"agents":[{"name":"Momentum","signal":"bull","confidence":0.436,"why":"10-bar ROC +2.6%"},{"name":"Trend","signal":"bull","confidence":1.0,"why":"EMA12/26 above, close vs SMA50 > > SMA200"},{"name":"VWAP","signal":"bull","confidence":1.0,"why":"close +7.36% vs 20-bar VWAP"},{"name":"Order Block","signal":"bull","confidence":0.0,"why":"near bull OB [11.51\u201312.13]"},{"name":"Volatility","signal":"neutral","confidence":0.053,"why":"ATR 1.08x its 20-bar mean"},{"name":"Volume","signal":"bull","confidence":0.248,"why":"OBV 10-bar slope +0.050"},{"name":"Mean Rev","signal":"neutral","confidence":0.0,"why":"RSI 69"},{"name":"Structure","signal":"bull","confidence":0.4,"why":"trend=range mss=bullish sweep=\u2014"}],"bull":3.084,"bear":0,"n_bull":6,"n_bear":0,"n_neu":2,"consensus":0.878,"consensus_pct":87.8},"cone":{"sigma_5d":6.5,"bull":30.6,"base":47.2,"bear":22.2,"up":13.055,"down":11.461,"atr":0.5301,"atr_pct":4.32,"horizon_days":5},"trade":{"direction":"HOLD","entry":12.258,"stop":10.9287,"target":12.788070544705322,"rr":null},"conviction":92,"n_bars":185},{"symbol":"SOLUSDT","yahoo":"SOL-USD","currency":"USD","last":105.879997,"chg_pct":2.61,"kronos":{"close":105.879997,"vwap":98.1035,"vwap_pct":7.93,"trend":"up","mss":null,"fvg":{"dir":"bear","zone":[100.580688,100.983505],"bar":180,"gap_pct":0.4},"order_block":{"dir":"bull","zone":[100.566338,104.584511],"bar":182},"sweep":null,"support":97.4509,"resistance":110.039},"mirofish":{"agents":[{"name":"Momentum","signal":"bear","confidence":0.508,"why":"10-bar ROC -3.0%"},{"name":"Trend","signal":"bull","confidence":1.0,"why":"EMA12/26 above, close vs SMA50 > > SMA200"},{"name":"VWAP","signal":"bull","confidence":1.0,"why":"close +7.93% vs 20-bar VWAP"},{"name":"Order Block","signal":"bull","confidence":0.0,"why":"near bull OB [100.57\u2013104.58]"},{"name":"Volatility","signal":"neutral","confidence":0.083,"why":"ATR 1.12x its 20-bar mean"},{"name":"Volume","signal":"bull","confidence":1.0,"why":"OBV 10-bar slope +0.206"},{"name":"Mean Rev","signal":"neutral","confidence":0.0,"why":"RSI 68"},{"name":"Structure","signal":"bull","confidence":0.4,"why":"trend=up mss=None sweep=\u2014"}],"bull":3.4,"bear":0.508,"n_bull":5,"n_bear":1,"n_neu":2,"consensus":0.795,"consensus_pct":79.5},"cone":{"sigma_5d":7.14,"bull":27.2,"base":50.6,"bear":22.2,"up":113.4399,"down":98.3201,"atr":4.4612,"atr_pct":4.21,"horizon_days":5},"trade":{"direction":"HOLD","entry":105.879997,"stop":97.4509,"target":110.34121125073654,"rr":null},"conviction":84,"n_bars":185},{"symbol":"ETHUSDT","yahoo":"ETH-USD","currency":"USD","last":2481.98999,"chg_pct":0.05,"kronos":{"close":2481.98999,"vwap":2411.4763,"vwap_pct":2.92,"trend":"up","mss":null,"fvg":{"dir":"bear","zone":[2459.62915,2481.944824],"bar":176,"gap_pct":0.9},"order_block":{"dir":"bear","zone":[2370.415527,2526.950195],"bar":181},"sweep":null,"support":2356.1882,"resistance":2545.8811},"mirofish":{"agents":[{"name":"Momentum","signal":"bear","confidence":0.189,"why":"10-bar ROC -1.1%"},{"name":"Trend","signal":"bull","confidence":1.0,"why":"EMA12/26 above, close vs SMA50 > > SMA200"},{"name":"VWAP","signal":"bull","confidence":0.975,"why":"close +2.92% vs 20-bar VWAP"},{"name":"Order Block","signal":"bear","confidence":0.287,"why":"near bear OB [2370.42\u20132526.95]"},{"name":"Volatility","signal":"neutral","confidence":0.017,"why":"ATR 1.03x its 20-bar mean"},{"name":"Volume","signal":"neutral","confidence":0.095,"why":"OBV 10-bar slope -0.019"},{"name":"Mean Rev","signal":"neutral","confidence":0.0,"why":"RSI 64"},{"name":"Structure","signal":"bull","confidence":0.4,"why":"trend=up mss=None sweep=\u2014"}],"bull":2.375,"bear":0.476,"n_bull":3,"n_bear":2,"n_neu":3,"consensus":0.747,"consensus_pct":74.7},"cone":{"sigma_5d":7.0,"bull":25.6,"base":57.8,"bear":16.7,"up":2655.672,"down":2308.308,"atr":91.4838,"atr_pct":3.69,"horizon_days":5},"trade":{"direction":"HOLD","entry":2481.98999,"stop":2356.1882,"target":2573.473794433391,"rr":null},"conviction":79,"n_bars":185},{"symbol":"MSFT","yahoo":"MSFT","currency":"USD","last":499.700012,"chg_pct":-2.04,"kronos":{"close":499.700012,"vwap":496.3305,"vwap_pct":0.68,"trend":"up","mss":null,"fvg":{"dir":"bear","zone":[500.269989,506.390015],"bar":125,"gap_pct":1.21},"order_block":{"dir":"bear","zone":[500.799988,515.650024],"bar":126},"sweep":null,"support":477.15,"resistance":513.73},"mirofish":{"agents":[{"name":"Momentum","signal":"bull","confidence":0.568,"why":"10-bar ROC +3.4%"},{"name":"Trend","signal":"bull","confidence":1.0,"why":"EMA12/26 above, close vs SMA50 > > SMA200"},{"name":"VWAP","signal":"bull","confidence":0.226,"why":"close +0.68% vs 20-bar VWAP"},{"name":"Order Block","signal":"bear","confidence":0.926,"why":"near bear OB [500.80\u2013515.65]"},{"name":"Volatility","signal":"neutral","confidence":0.054,"why":"ATR 0.92x its 20-bar mean"},{"name":"Volume","signal":"bull","confidence":0.632,"why":"OBV 10-bar slope +0.126"},{"name":"Mean Rev","signal":"neutral","confidence":0.0,"why":"RSI 59"},{"name":"Structure","signal":"bull","confidence":0.4,"why":"trend=up mss=None sweep=\u2014"}],"bull":2.826,"bear":0.926,"n_bull":5,"n_bear":1,"n_neu":2,"consensus":0.7,"consensus_pct":70.0},"cone":{"sigma_5d":6.47,"bull":25.2,"base":55.3,"bear":19.5,"up":532.0208,"down":467.3792,"atr":11.839,"atr_pct":2.37,"horizon_days":5},"trade":{"direction":"HOLD","entry":499.700012,"stop":477.15,"target":513.73,"rr":null},"conviction":74,"n_bars":128},{"symbol":"TSLA","yahoo":"TSLA","currency":"USD","last":354.079987,"chg_pct":-5.92,"kronos":{"close":354.079987,"vwap":350.8381,"vwap_pct":0.92,"trend":"range","mss":null,"fvg":{"dir":"bull","zone":[362.700012,365.820007],"bar":126,"gap_pct":0.86},"order_block":{"dir":"bear","zone":[365.820007,384.040009],"bar":126},"sweep":null,"support":352.14,"resistance":366.5},"mirofish":{"agents":[{"name":"Momentum","signal":"bear","confidence":0.403,"why":"10-bar ROC -2.4%"},{"name":"Trend","signal":"neutral","confidence":0.116,"why":"EMA12/26 above, close vs SMA50 < < SMA200"},{"name":"VWAP","signal":"bull","confidence":0.308,"why":"close +0.92% vs 20-bar VWAP"},{"name":"Order Block","signal":"bear","confidence":0.356,"why":"near bear OB [365.82\u2013384.04]"},{"name":"Volatility","signal":"neutral","confidence":0.077,"why":"ATR 1.12x its 20-bar mean"},{"name":"Volume","signal":"bull","confidence":1.0,"why":"OBV 10-bar slope +0.307"},{"name":"Mean Rev","signal":"neutral","confidence":0.0,"why":"RSI 51"},{"name":"Structure","signal":"neutral","confidence":0.0,"why":"trend=range mss=None sweep=\u2014"}],"bull":1.308,"bear":0.759,"n_bull":2,"n_bear":2,"n_neu":4,"consensus":0.59,"consensus_pct":59.0},"cone":{"sigma_5d":6.78,"bull":31.7,"base":35.0,"bear":33.3,"up":378.0866,"down":330.0733,"atr":15.2681,"atr_pct":4.31,"horizon_days":5},"trade":{"direction":"HOLD","entry":354.079987,"stop":null,"target":null,"rr":null},"conviction":59,"n_bars":128},{"symbol":"BTCUSDT","yahoo":"BTC-USD","currency":"USD","last":79714.976562,"chg_pct":-0.14,"kronos":{"close":79714.976562,"vwap":76885.2703,"vwap_pct":3.68,"trend":"range","mss":null,"fvg":{"dir":"bull","zone":[77737.546875,78641.625],"bar":182,"gap_pct":1.16},"order_block":{"dir":"bear","zone":[76940.882812,82262.210938],"bar":181},"sweep":null,"support":79205.5156,"resistance":81346.9531},"mirofish":{"agents":[{"name":"Momentum","signal":"bear","confidence":0.113,"why":"10-bar ROC -0.7%"},{"name":"Trend","signal":"bull","confidence":1.0,"why":"EMA12/26 above, close vs SMA50 > < SMA200"},{"name":"VWAP","signal":"bull","confidence":1.0,"why":"close +3.68% vs 20-bar VWAP"},{"name":"Order Block","signal":"bear","confidence":0.479,"why":"near bear OB [76940.88\u201382262.21]"},{"name":"Volatility","signal":"neutral","confidence":0.023,"why":"ATR 1.03x its 20-bar mean"},{"name":"Volume","signal":"bear","confidence":1.0,"why":"OBV 10-bar slope -0.219"},{"name":"Mean Rev","signal":"neutral","confidence":0.0,"why":"RSI 66"},{"name":"Structure","signal":"neutral","confidence":0.0,"why":"trend=range mss=None sweep=\u2014"}],"bull":2.0,"bear":1.592,"n_bull":2,"n_bear":3,"n_neu":3,"consensus":0.544,"consensus_pct":54.4},"cone":{"sigma_5d":5.2,"bull":26.7,"base":53.9,"bear":19.4,"up":83863.0568,"down":75566.8963,"atr":2239.561,"atr_pct":2.81,"horizon_days":5},"trade":{"direction":"HOLD","entry":79714.976562,"stop":null,"target":null,"rr":null},"conviction":54,"n_bars":185},{"symbol":"PLTR","yahoo":"PLTR","currency":"USD","last":174.330002,"chg_pct":-4.49,"kronos":{"close":174.330002,"vwap":176.7344,"vwap_pct":-1.36,"trend":"range","mss":null,"fvg":{"dir":"bear","zone":[177.570007,183.789993],"bar":125,"gap_pct":3.38},"order_block":{"dir":"bear","zone":[171.910004,185.830002],"bar":126},"sweep":null,"support":169.771,"resistance":180.18},"mirofish":{"agents":[{"name":"Momentum","signal":"bear","confidence":0.52,"why":"10-bar ROC -3.1%"},{"name":"Trend","signal":"bull","confidence":1.0,"why":"EMA12/26 above, close vs SMA50 > > SMA200"},{"name":"VWAP","signal":"bear","confidence":0.453,"why":"close -1.36% vs 20-bar VWAP"},{"name":"Order Block","signal":"bear","confidence":0.826,"why":"near bear OB [171.91\u2013185.83]"},{"name":"Volatility","signal":"neutral","confidence":0.04,"why":"ATR 1.06x its 20-bar mean"},{"name":"Volume","signal":"bull","confidence":0.837,"why":"OBV 10-bar slope +0.167"},{"name":"Mean Rev","signal":"neutral","confidence":0.0,"why":"RSI 54"},{"name":"Structure","signal":"neutral","confidence":0.0,"why":"trend=range mss=None sweep=\u2014"}],"bull":1.837,"bear":1.799,"n_bull":2,"n_bear":3,"n_neu":3,"consensus":0.504,"consensus_pct":50.4},"cone":{"sigma_5d":9.83,"bull":22.0,"base":56.1,"bear":22.0,"up":191.4698,"down":157.1902,"atr":8.5254,"atr_pct":4.89,"horizon_days":5},"trade":{"direction":"HOLD","entry":174.330002,"stop":null,"target":null,"rr":null},"conviction":50,"n_bars":128},{"symbol":"ES","yahoo":"ES=F","currency":"USD","last":7722.0,"chg_pct":-0.42,"kronos":{"close":7722.0,"vwap":7724.0257,"vwap_pct":-0.03,"trend":"range","mss":null,"fvg":{"dir":"bear","zone":[7770.5,7796.5],"bar":113,"gap_pct":0.33},"order_block":{"dir":"bull","zone":[7324.0,7501.0],"bar":99},"sweep":null,"support":7655.0,"resistance":7782.5},"mirofish":{"agents":[{"name":"Momentum","signal":"neutral","confidence":0.067,"why":"10-bar ROC +0.4%"},{"name":"Trend","signal":"bull","confidence":0.418,"why":"EMA12/26 above, close vs SMA50 > > SMA200"},{"name":"VWAP","signal":"bear","confidence":0.009,"why":"close -0.03% vs 20-bar VWAP"},{"name":"Order Block","signal":"bull","confidence":0.0,"why":"near bull OB [7324.00\u20137501.00]"},{"name":"Volatility","signal":"neutral","confidence":0.051,"why":"ATR 0.92x its 20-bar mean"},{"name":"Volume","signal":"bear","confidence":0.513,"why":"OBV 10-bar slope -0.103"},{"name":"Mean Rev","signal":"neutral","confidence":0.0,"why":"RSI 54"},{"name":"Structure","signal":"neutral","confidence":0.0,"why":"trend=range mss=None sweep=\u2014"}],"bull":0.418,"bear":0.522,"n_bull":2,"n_bear":2,"n_neu":4,"consensus":0.473,"consensus_pct":47.3},"cone":{"sigma_5d":1.88,"bull":41.0,"base":36.9,"bear":22.1,"up":7867.4261,"down":7576.5739,"atr":71.8435,"atr_pct":0.93,"horizon_days":5},"trade":{"direction":"HOLD","entry":7722.0,"stop":null,"target":null,"rr":null},"conviction":47,"n_bars":127},{"symbol":"AVGO","yahoo":"AVGO","currency":"USD","last":357.899994,"chg_pct":0.21,"kronos":{"close":357.899994,"vwap":373.7872,"vwap_pct":-4.25,"trend":"down","mss":null,"fvg":{"dir":"bear","zone":[359.399994,362.0],"bar":126,"gap_pct":0.72},"order_block":{"dir":"bull","zone":[364.649994,371.089996],"bar":125},"sweep":null,"support":357.8,"resistance":376.59},"mirofish":{"agents":[{"name":"Momentum","signal":"bear","confidence":0.477,"why":"10-bar ROC -2.9%"},{"name":"Trend","signal":"bear","confidence":0.935,"why":"EMA12/26 below, close vs SMA50 < > SMA200"},{"name":"VWAP","signal":"bear","confidence":1.0,"why":"close -4.25% vs 20-bar VWAP"},{"name":"Order Block","signal":"neutral","confidence":0.0,"why":"near bull OB [364.65\u2013371.09]"},{"name":"Volatility","signal":"neutral","confidence":0.082,"why":"ATR 0.88x its 20-bar mean"},{"name":"Volume","signal":"bull","confidence":1.0,"why":"OBV 10-bar slope +1.695"},{"name":"Mean Rev","signal":"neutral","confidence":0.0,"why":"RSI 38"},{"name":"Structure","signal":"bear","confidence":0.4,"why":"trend=down mss=None sweep=\u2014"}],"bull":1.0,"bear":2.812,"n_bull":1,"n_bear":4,"n_neu":3,"consensus":0.312,"consensus_pct":31.2},"cone":{"sigma_5d":7.21,"bull":28.5,"base":48.0,"bear":23.6,"up":383.7191,"down":332.0809,"atr":13.0264,"atr_pct":3.64,"horizon_days":5},"trade":{"direction":"HOLD","entry":357.899994,"stop":376.59,"target":344.87357232779266,"rr":null},"conviction":27,"n_bars":128},{"symbol":"AMZN","yahoo":"AMZN","currency":"USD","last":258.51001,"chg_pct":-0.15,"kronos":{"close":258.51001,"vwap":262.4956,"vwap_pct":-1.52,"trend":"range","mss":null,"fvg":{"dir":"bear","zone":[256.23999,257.119995],"bar":125,"gap_pct":0.34},"order_block":{"dir":"bear","zone":[257.779999,267.559998],"bar":122},"sweep":{"dir":"bear","level":259.5},"support":257.04,"resistance":266.4},"mirofish":{"agents":[{"name":"Momentum","signal":"neutral","confidence":0.008,"why":"10-bar ROC -0.0%"},{"name":"Trend","signal":"bull","confidence":0.352,"why":"EMA12/26 above, close vs SMA50 > > SMA200"},{"name":"VWAP","signal":"bear","confidence":0.506,"why":"close -1.52% vs 20-bar VWAP"},{"name":"Order Block","signal":"bear","confidence":0.925,"why":"near bear OB [257.78\u2013267.56]"},{"name":"Volatility","signal":"neutral","confidence":0.081,"why":"ATR 0.88x its 20-bar mean"},{"name":"Volume","signal":"bear","confidence":0.824,"why":"OBV 10-bar slope -0.165"},{"name":"Mean Rev","signal":"neutral","confidence":0.0,"why":"RSI 50"},{"name":"Structure","signal":"neutral","confidence":0.2,"why":"trend=range mss=None sweep=bear"}],"bull":0.352,"bear":2.255,"n_bull":1,"n_bear":3,"n_neu":4,"consensus":0.236,"consensus_pct":23.6},"cone":{"sigma_5d":5.82,"bull":26.0,"base":51.2,"bear":22.8,"up":273.5475,"down":243.4726,"atr":6.6919,"atr_pct":2.59,"horizon_days":5},"trade":{"direction":"HOLD","entry":258.51001,"stop":266.4,"target":251.81809440420872,"rr":null},"conviction":24,"n_bars":128}],"backtest":{"universe_hit_rate":0.46,"total_calls":1376,"per_symbol":{"AAPL":{"calls":56,"hits":26,"hit_rate":0.464},"AMD":{"calls":56,"hits":24,"hit_rate":0.429},"AMZN":{"calls":55,"hits":23,"hit_rate":0.418},"AVGO":{"calls":46,"hits":14,"hit_rate":0.304},"CRWD":{"calls":52,"hits":19,"hit_rate":0.365},"META":{"calls":55,"hits":21,"hit_rate":0.382},"MSFT":{"calls":54,"hits":27,"hit_rate":0.5},"NVDA":{"calls":55,"hits":18,"hit_rate":0.327},"PLTR":{"calls":50,"hits":21,"hit_rate":0.42},"TSLA":{"calls":55,"hits":23,"hit_rate":0.418},"BTCUSDT":{"calls":107,"hits":60,"hit_rate":0.561},"ETHUSDT":{"calls":105,"hits":55,"hit_rate":0.524},"SOLUSDT":{"calls":106,"hits":50,"hit_rate":0.472},"LINKUSDT":{"calls":112,"hits":63,"hit_rate":0.562},"AVAXUSDT":{"calls":99,"hits":39,"hit_rate":0.394},"DOGEUSDT":{"calls":111,"hits":65,"hit_rate":0.586},"CL":{"calls":58,"hits":31,"hit_rate":0.534},"GC":{"calls":54,"hits":25,"hit_rate":0.463},"ES":{"calls":41,"hits":11,"hit_rate":0.268},"NQ":{"calls":49,"hits":18,"hit_rate":0.367}},"horizon_days":5},"as_of":"data as of 2026-09-06 12:37 EDT","trade_backtest":{"naive":{"hit_rate":0.505,"calls":8782,"horizon":5},"configs":[{"config":"thr=0.7 hz=20 none fixed2 cost=0.0R","n":7186,"win_rate":36.7,"expectancy_R":0.071,"profit_factor":1.113,"total_R":507.3,"top5":[["NQ",1.37],["DOGEUSDT",1.399],["AVGO",1.423],["MSFT",1.506],["GC",1.862]],"bottom5":[["AMZN",0.621],["PLTR",0.696],["NVDA",0.891],["META",0.932],["AAPL",0.969]]},{"config":"thr=0.7 hz=20 none fixed2 cost=0.05R","n":7186,"win_rate":36.6,"expectancy_R":0.021,"profit_factor":1.031,"total_R":148.0,"top5":[["NQ",1.271],["DOGEUSDT",1.296],["AVGO",1.319],["MSFT",1.394],["GC",1.728]],"bottom5":[["AMZN",0.576],["PLTR",0.646],["NVDA",0.826],["META",0.865],["AAPL",0.898]]},{"config":"thr=0.7 hz=20 none structure cost=0.05R","n":7186,"win_rate":56.6,"expectancy_R":-0.041,"profit_factor":0.906,"total_R":-291.1,"top5":[["LINKUSDT",1.063],["MSFT",1.107],["AMD",1.135],["DOGEUSDT",1.146],["AVGO",1.266]],"bottom5":[["AMZN",0.585],["AAPL",0.689],["NVDA",0.732],["PLTR",0.745],["ES",0.777]]}],"verdict":"No systematic edge. The fixed 2:1 risk/reward shows a small positive profit factor at zero cost (a cost-free artifact), which collapses to ~breakeven at a realistic 0.05R round-trip cost, and the edge is concentrated in ~5 symbols while roughly half the universe loses money. Structure-anchored R:R (the current terminal's approach) is a net loser. Finding real alpha needs better inputs \u2014 intraday bars (VWAP/FVG/order-block are intraday concepts), catalyst overlays (SEC Form 4, earnings), and a focused single hypothesis rather than a naive 8-way vote."}}</script>
+<script>
+const DATA = JSON.parse(document.getElementById('data').textContent);
+const results = DATA.results;
+const backtest = DATA.backtest;
+
+const CLS = {AAPL:'equity',AMD:'equity',AMZN:'equity',AVGO:'equity',CRWD:'equity',META:'equity',MSFT:'equity',NVDA:'equity',PLTR:'equity',TSLA:'equity',
+  BTCUSDT:'crypto',ETHUSDT:'crypto',SOLUSDT:'crypto',LINKUSDT:'crypto',AVAXUSDT:'crypto',DOGEUSDT:'crypto',
+  CL:'futures',GC:'futures',ES:'futures',NQ:'futures'};
+
+const fmt = (n, dec=2) => (n==null?'—':Number(n).toFixed(dec));
+const fmtPx = (n, sym) => (n==null?'—': Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}));
+
+function coneBar(c){ if(!c) return '<span class="fl">—</span>';
+  return `<div class="bar"><div class="b" style="width:${c.bull}%"></div><div class="r" style="width:${c.bear}%"></div></div>
+   <div class="lbl"><span>B ${c.bull}%</span><span>${c.base}%</span><span>R ${c.bear}%</span></div>`;}
+
+function sigClass(s){ return s==='bull'?'up':(s==='bear'?'dn':'fl'); }
+function sigLabel(s){ return s==='bull'?'▲':(s==='bear'?'▼':'·'); }
+
+function structureTags(k){
+  const tags=[];
+  tags.push(['trend '+(k.trend==='up'?'↗':k.trend==='down'?'↘':'→'), k.trend!=='range']);
+  tags.push(['mss '+(k.mss?k.mss:'—'), !!k.mss]);
+  tags.push(['fvg '+(k.fvg?k.fvg.dir[0]:'—'), !!k.fvg]);
+  tags.push(['ob '+(k.order_block?k.order_block.dir[0]:'—'), !!k.order_block]);
+  tags.push(['sweep '+(k.sweep?k.sweep.dir[0]:'—'), !!k.sweep]);
+  return tags.map(t=>`<span class="tag ${t[1]?'on':''}">${t[0]}</span>`).join('');
+}
+
+function agentRows(agents){
+  return agents.map(a=>`<div class="agent"><span class="nm">${a.name}</span>
+    <span class="sg ${sigClass(a.signal)}">${sigLabel(a.signal)} ${a.signal}</span>
+    <span class="cf">${a.confidence.toFixed(2)}</span>
+    <span class="wh">${a.why}</span></div>`).join('');
+}
+
+function detailHtml(r){
+  const k=r.kronos, mf=r.mirofish, c=r.cone, t=r.trade;
+  return `<div class="detail">
+    <div class="dgrid">
+      <div class="dbox">
+        <h4>Kronos — structural levels</h4>
+        <div class="lv"><span class="n">close</span><span class="v">${fmtPx(k.close,r.symbol)}</span></div>
+        <div class="lv"><span class="n">20-bar VWAP</span><span class="v">${fmtPx(k.vwap,r.symbol)} <span class="fl">(${k.vwap_pct==null?'':(k.vwap_pct>0?'+':'')+k.vwap_pct+'%'})</span></span></div>
+        <div class="lv"><span class="n">nearest support</span><span class="v">${fmtPx(k.support,r.symbol)}</span></div>
+        <div class="lv"><span class="n">nearest resistance</span><span class="v">${fmtPx(k.resistance,r.symbol)}</span></div>
+        <div class="lv"><span class="n">trend structure</span><span class="v ${k.trend==='up'?'up':k.trend==='down'?'dn':'fl'}">${k.trend}</span></div>
+        <div class="lv"><span class="n">MSS</span><span class="v">${k.mss||'—'}</span></div>
+        <div class="lv"><span class="n">FVG</span><span class="v">${k.fvg?k.fvg.dir+' '+fmt(k.fvg.zone[0])+'–'+fmt(k.fvg.zone[1]):'—'}</span></div>
+        <div class="lv"><span class="n">order block</span><span class="v">${k.order_block?k.order_block.dir+' '+fmt(k.order_block.zone[0])+'–'+fmt(k.order_block.zone[1]):'—'}</span></div>
+        <div class="lv"><span class="n">liquidity sweep</span><span class="v">${k.sweep?k.sweep.dir+' @ '+fmt(k.sweep.level):'—'}</span></div>
+      </div>
+      <div class="dbox">
+        <h4>MiroFish — 8 deterministic agents</h4>
+        <div class="cbar" style="margin-bottom:10px"><div class="b" style="width:${mf.n_bull/8*100}%">${mf.n_bull}B</div><div class="f" style="width:${mf.n_neu/8*100}%">${mf.n_neu}N</div><div class="r" style="width:${mf.n_bear/8*100}%">${mf.n_bear}R</div></div>
+        ${agentRows(mf.agents)}
+      </div>
+      <div class="dbox">
+        <h4>Probability cone — empirical (${c?c.horizon_days:5}d forward)</h4>
+        ${coneBar(c)}
+        <div class="lv" style="margin-top:10px"><span class="n">σ (${c?c.horizon_days:5}d)</span><span class="v">${c?c.sigma_5d+'%':'—'}</span></div>
+        <div class="lv"><span class="n">ATR(14)</span><span class="v">${c?fmt(c.atr)+' ('+c.atr_pct+'%)':'—'}</span></div>
+        <div class="lv"><span class="n">1σ up cone</span><span class="v up">${c?fmtPx(c.up,r.symbol):'—'}</span></div>
+        <div class="lv"><span class="n">1σ down cone</span><span class="v dn">${c?fmtPx(c.down,r.symbol):'—'}</span></div>
+        <div class="lv"><span class="n">trade</span><span class="v">${t.direction}${t.rr?' @ R:R '+t.rr:''}</span></div>
+        <div class="lv"><span class="n">entry / stop / target</span><span class="v">${fmtPx(t.entry,r.symbol)} / ${fmtPx(t.stop,r.symbol)} / ${fmtPx(t.target,r.symbol)}</span></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function rowHtml(r,i){
+  const mf=r.mirofish, c=r.cone, t=r.trade;
+  const dir=t.direction;
+  const dirCls = dir==='LONG'?'up':dir==='SHORT'?'dn':'fl';
+  const convClr = r.conviction>=60?'var(--bull)':r.conviction<=40?'var(--bear)':'var(--flat)';
+  const chgCls = r.chg_pct>=0?'up':'dn';
+  return `<div class="row" onclick="toggle(${i})">
+    <span class="rk">${i+1}</span>
+    <span class="sym">${r.symbol}<span class="cls">${CLS[r.symbol]||''}</span></span>
+    <span class="px">${fmtPx(r.last,r.symbol)}</span>
+    <span class="chg ${chgCls}">${r.chg_pct>=0?'+':''}${fmt(r.chg_pct)}%</span>
+    <span class="bias"><span class="pct">${mf.consensus_pct}% ${sigLabel(mf.consensus>=0.6?'bull':mf.consensus<=0.4?'bear':'neutral')}</span>
+      <span class="bar"><span class="b" style="width:${mf.consensus_pct}%"></span><span class="r" style="width:${100-mf.consensus_pct}%"></span></span></span>
+    <span class="setup ${dirCls}">${dir}${t.rr?` <span class="rr">${t.rr}</span>`:''}</span>
+    <span class="conv" style="color:${convClr}">${r.conviction}<div class="bar2"><i style="width:${r.conviction}%;background:${convClr}"></i></div></span>
+    <span class="cone">${structureTags(r.kronos)}</span>
+  </div>`;
+}
+
+function render(){
+  document.getElementById('board').innerHTML =
+    `<div class="row head"><span>#</span><span>Symbol</span><span>Last</span><span>Chg</span><span>Bias (swarm)</span><span>Setup</span><span>Conviction</span><span>Structure</span></div>` +
+    results.map((r,i)=>rowHtml(r,i)+detailHtml(r,i)).join('');
+
+  // stats
+  const longs = results.filter(r=>r.trade.direction==='LONG').length;
+  const shorts = results.filter(r=>r.trade.direction==='SHORT').length;
+  const holds = results.filter(r=>r.trade.direction==='HOLD').length;
+  const asOf = DATA.as_of || '—';
+  document.getElementById('asof').textContent = asOf;
+  const tb = DATA.trade_backtest;
+  const netPF = tb && tb.configs[1] ? tb.configs[1].profit_factor : null;
+  const naiveHR = backtest.universe_hit_rate;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="k">Universe</div><div class="v">${results.length}<small> symbols</small></div><div class="sub">Yahoo daily · key-less · 2y</div></div>
+    <div class="stat"><div class="k">Directional setups</div><div class="v">${longs+shorts}<small> / ${results.length}</small></div><div class="sub">${longs} long · ${shorts} short</div></div>
+    <div class="stat"><div class="k">No edge (hold)</div><div class="v">${holds}</div><div class="sub">structure or R:R failed</div></div>
+    <div class="stat"><div class="k">Net profit factor</div><div class="v" style="color:${netPF>=1?'var(--emerald)':'var(--gold)'}">${netPF!=null?netPF.toFixed(2):'—'}</div><div class="sub">fixed 2:1 · cost 0.05R · naive hit ${(naiveHR*100).toFixed(0)}%</div></div>`;
+
+  // health — honest trade-level backtest (expectancy, not just hit rate)
+  const cfg = tb ? tb.configs.map(c=>{
+    const pfCls = c.profit_factor>=1?'pf-pos':'pf-neg';
+    return `<div class="r"><span>${c.config}</span><span>${c.n}</span><span>${c.win_rate}%</span><span>${c.expectancy_R>=0?'+':''}${c.expectancy_R.toFixed(3)}</span><span class="${pfCls}">${c.profit_factor!=null?c.profit_factor.toFixed(2):'—'}</span><span>${c.total_R>=0?'+':''}${c.total_R.toFixed(0)}</span></div>`;
+  }).join('') : '';
+  const conc = tb && tb.configs[1] ? (()=>{
+    const top = tb.configs[1].top5.map(([s,p])=>`<div class="l"><span>${s}</span><span class="pf-pos">${p.toFixed(2)}</span></div>`).join('');
+    const bot = tb.configs[1].bottom5.map(([s,p])=>`<div class="l"><span>${s}</span><span class="pf-neg">${p.toFixed(2)}</span></div>`).join('');
+    return `<div class="conc"><div><h5>best 5 · profit factor</h5>${top}</div><div><h5>worst 5 · profit factor</h5>${bot}</div></div>`;
+  })() : '';
+  document.getElementById('health').innerHTML = `
+    <div class="hbox">
+      <h4>Trade-level backtest — expectancy (TP/SL, walk-forward)</h4>
+      <div class="cfg">
+        <div class="h"><span>config</span><span>n</span><span>win%</span><span>E[R]</span><span>PF</span><span>ΣR</span></div>
+        ${cfg}
+      </div>
+    </div>
+    <div class="hbox">
+      <h4>Honest verdict</h4>
+      <div class="method">${tb?tb.verdict:''}</div>
+      ${conc}
+    </div>`;
+
+  // dropped
+  const dropped = results.filter(r=>r.trade.direction==='HOLD');
+  document.getElementById('dropped').innerHTML = dropped.length? dropped.map((r,i)=>{
+    const mf=r.mirofish; const k=r.kronos;
+    const reason = mf.consensus>0.6 ? 'bullish bias but poor R:R — overhead resistance too close' :
+                   mf.consensus<0.4 ? 'bearish bias but poor R:R — support too close below' :
+                   'no directional edge (swarm near 50/50)';
+    return `<div class="row" style="cursor:default;grid-template-columns:1fr 1.2fr 2fr 1fr">
+      <span class="rk">${i+1}</span>
+      <span class="sym">${r.symbol}<span class="cls">${CLS[r.symbol]||''}</span></span>
+      <span class="fl" style="font-family:var(--font-m);font-size:12px">${reason}</span>
+      <span class="fl" style="font-family:var(--font-m);font-size:12px;text-align:right">bias ${mf.consensus_pct}% · conv ${r.conviction}</span>
+    </div>`;
+  }).join('') : '<div class="row" style="cursor:default"><span class="fl">All names pass — no drops this cycle.</span></div>';
+
+  document.getElementById('foot').innerHTML =
+    `<b>Methodology (auditable):</b> prices &amp; OHLCV from Yahoo Finance chart API (key-less, daily, ~2y). Kronos levels =
+     anchored VWAP (20-bar), Fair Value Gaps (gated &gt;0.3%), order blocks, liquidity sweeps, market-structure shift — all
+     standard definitions in <span class="fl">compute_engine.py</span>. MiroFish = 8 independent deterministic models
+     (momentum, trend, VWAP, order-block, volatility, volume, mean-reversion, structure), consensus = confidence-weighted vote
+     with a uniform prior. Cone = empirical distribution of ${backtest.horizon_days}-day forward returns → P(bull/base/bear).
+     Backtest = walk-forward, no lookahead, TP/SL sim with costs. &nbsp; <span class="risknote">Educational only — not financial
+     advice. Paper desk. live_trading=false.</span>`;
+
+  // canonical site footer
+  const foot = document.getElementById('foot');
+  foot.innerHTML += `<div style="margin-top:26px;padding-top:18px;border-top:1px solid var(--border-soft);display:flex;gap:20px;flex-wrap:wrap">
+    <a href="/index.html" style="color:var(--muted);text-decoration:none;font-family:var(--font-m);font-size:11px">SniperTrader.ai</a>
+    <a href="/sniper_market_forecaster.html" style="color:var(--muted);text-decoration:none;font-family:var(--font-m);font-size:11px">Market Forecaster</a>
+    <a href="/stock_picks.html" style="color:var(--muted);text-decoration:none;font-family:var(--font-m);font-size:11px">AI Stock Picks</a>
+    <a href="/traderedge_preflight.html" style="color:var(--muted);text-decoration:none;font-family:var(--font-m);font-size:11px">Pre-Flight Protocols</a>
+    <a href="/traderedge_prop_firms_command_center.html" style="color:var(--muted);text-decoration:none;font-family:var(--font-m);font-size:11px">Prop Firm Center</a>
+    <a href="/about.html" style="color:var(--muted);text-decoration:none;font-family:var(--font-m);font-size:11px">About</a>
+    <a href="/terms.html" style="color:var(--muted);text-decoration:none;font-family:var(--font-m);font-size:11px">Terms</a>
+    <a href="/disclaimer.html" style="color:var(--muted);text-decoration:none;font-family:var(--font-m);font-size:11px">Disclaimer</a>
+  </div>`;
+}
+
+let openRow = -1;
+function toggle(i){
+  const rows = document.querySelectorAll('#board .row:not(.head)');
+  const details = document.querySelectorAll('#board .detail');
+  if(openRow === i){ rows[i].classList.remove('open'); openRow=-1; return; }
+  if(openRow>=0) rows[openRow].classList.remove('open');
+  rows[i].classList.add('open');
+  openRow = i;
+  rows[i].scrollIntoView({block:'nearest',behavior:'smooth'});
+}
+
+function toggleTheme(){
+  const light = document.body.classList.toggle('light-mode');
+  document.getElementById('themeLabel').textContent = light ? 'LIGHT' : 'DARK';
+  document.querySelector('.tt-icon').textContent = light ? '☀️' : '🌙';
+}
+
+// allow ?dark to force dark mode on load (for screenshots / deep links)
+if(location.search.includes('dark')){
+  document.body.classList.remove('light-mode');
+  document.getElementById('themeLabel').textContent = 'DARK';
+  document.querySelector('.tt-icon').textContent = '🌙';
+}
+
+render();
+</script>
+</body>
+</html>

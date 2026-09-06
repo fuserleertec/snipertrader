@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Terminal — Kronos + MiroFish + Cone | SniperTrader.ai</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;900&family=Space+Mono:wght@400;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/assets/theme.css"/>
+<style>
+  :root{
+    --bg:#06090f; --panel:#0a1018; --panel-2:#0d1420; --card:#111a2b;
+    --border:rgba(0,229,160,.14); --border-soft:rgba(0,229,160,.08);
+    --fg:#dbe6f2; --muted:#8aa0b8; --faint:#5f7790;
+    --emerald:#00e5a0; --cyan:#00d4ff; --gold:#f0c040; --red:#ff4455;
+    --bull:#00e5a0; --bear:#ff4455; --flat:#8aa0b8;
+    --font-d:"Orbitron",sans-serif; --font-m:"Space Mono",monospace; --font-b:"Syne",sans-serif;
+  }
+  body.light-mode{
+    --bg:#f4f7fb; --panel:#ffffff; --panel-2:#f1f5f9; --card:#ffffff;
+    --border:rgba(15,40,70,.14); --border-soft:rgba(15,40,70,.08);
+    --fg:#0f1f33; --muted:#5b6b80; --faint:#8a99ad;
+    --emerald:#007a44; --cyan:#0a6fb0; --gold:#9a6e00; --red:#c02030;
+    --bull:#007a44; --bear:#c02030; --flat:#5b6b80;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--fg);
+    font-family:var(--font-b); font-size:15px; line-height:1.5;
+    -webkit-font-smoothing:antialiased; transition:background .25s,color .25s;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:96px 22px 80px}
+
+  /* nav (canonical .kf-nav, page-specific glass override) */
+  .kf-nav{display:flex;align-items:center;gap:18px;padding:14px 18px;position:fixed;top:0;left:0;right:0;z-index:40;background:rgba(6,9,15,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  body.light-mode .kf-nav{background:rgba(255,255,255,.88)}
+  .kf-nav .brand{font-family:var(--font-d);font-weight:700;letter-spacing:.5px;color:var(--fg);font-size:15px;text-decoration:none}
+  .kf-nav .brand b{color:var(--emerald)}
+  .kf-nav .links{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+  .kf-nav .links a{font-family:var(--font-m);font-size:10px;letter-spacing:1px;color:var(--muted);text-decoration:none;text-transform:uppercase;transition:color .2s}
+  .kf-nav .links a:hover{color:var(--fg)}
+  .kf-nav .links a.active{color:var(--emerald)}
+  .tt-btn{margin-left:auto;background:var(--panel-2);border:1px solid var(--border);color:var(--fg);border-radius:10px;padding:7px 12px;cursor:pointer;font-family:var(--font-m);font-size:12px;display:flex;align-items:center;gap:6px}
+  .tt-btn:hover{border-color:var(--cyan)}
+
+  /* provenance banner */
+  .banner{border:1px solid var(--border);background:var(--panel);border-radius:12px;padding:14px 16px;margin:18px 0 20px;display:flex;flex-direction:column;gap:10px}
+  .banner .head{font-family:var(--font-d);font-size:12px;letter-spacing:.12em;color:var(--gold)}
+  .banner .leg{display:flex;flex-wrap:wrap;gap:8px}
+  .leg span{font-family:var(--font-m);font-size:11px;padding:4px 9px;border-radius:6px;border:1px solid var(--border)}
+  .leg .real{color:var(--emerald);border-color:color-mix(in srgb,var(--emerald) 45%,transparent)}
+  .leg .model{color:var(--cyan);border-color:color-mix(in srgb,var(--cyan) 45%,transparent)}
+  .leg .absent{color:var(--faint);border-color:var(--border-soft);text-decoration:line-through}
+  .banner p{margin:0;color:var(--muted);font-size:13px;max-width:920px}
+
+  /* hero stats */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+  .stat{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+  .stat .k{font-family:var(--font-m);font-size:11px;letter-spacing:.08em;color:var(--faint);text-transform:uppercase}
+  .stat .v{font-family:var(--font-d);font-size:22px;font-weight:600;margin-top:4px}
+  .stat .v small{font-family:var(--font-m);font-size:12px;color:var(--muted);font-weight:400}
+  .stat .sub{font-family:var(--font-m);font-size:11px;color:var(--muted);margin-top:3px}
+
+  /* section titles */
+  .sec{font-family:var(--font-d);font-size:13px;letter-spacing:.14em;color:var(--muted);margin:28px 0 12px;display:flex;align-items:center;gap:10px}
+  .sec .num{color:var(--cyan);font-family:var(--font-m);font-size:12px}
+
+  /* leaderboard */
+  .board{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .row{display:grid;grid-template-columns:34px 1.3fr .9fr .9fr 1.1fr .7fr 1.3fr 1.1fr;gap:10px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border-soft);cursor:pointer;transition:background .12s}
+  .row:last-child{border-bottom:none}
+  .row:hover{background:var(--panel-2)}
+  .row.head{background:var(--panel-2);cursor:default;font-family:var(--font-m);font-size:10.5px;letter-spacing:.06em;color:var(--faint);text-transform:uppercase}
+  .row.head:hover{background:var(--panel-2)}
+  .rk{font-family:var(--font-m);color:var(--faint);font-size:12px}
+  .sym{font-family:var(--font-d);font-weight:600;letter-spacing:.04em}
+  .sym .cls{display:block;font-family:var(--font-m);font-size:10.5px;color:var(--faint);font-weight:400;letter-spacing:0}
+  .px{font-family:var(--font-m);font-size:14px}
+  .chg{font-family:var(--font-m);font-size:12.5px}
+  .up{color:var(--bull)} .dn{color:var(--bear)} .fl{color:var(--flat)}
+  .bias{display:flex;flex-direction:column;gap:3px}
+  .bias .pct{font-family:var(--font-m);font-size:12px}
+  .bar{height:6px;border-radius:3px;background:var(--panel-2);overflow:hidden;display:flex}
+  .bar .b{background:var(--bull)} .bar .r{background:var(--bear)}
+  .setup{font-family:var(--font-m);font-size:12px;font-weight:700}
+  .setup .rr{font-weight:400;color:var(--muted);font-size:11px}
+  .tag{display:inline-block;font-family:var(--font-m);font-size:10px;padding:2px 6px;border-radius:5px;border:1px solid var(--border);color:var(--muted);margin:1px 2px 1px 0;white-space:nowrap}
+  .tag.on{color:var(--fg);border-color:color-mix(in srgb,var(--cyan) 55%,transparent)}
+  .conv{font-family:var(--font-d);font-size:16px;font-weight:600}
+  .conv .bar2{height:5px;border-radius:3px;background:var(--panel-2);margin-top:4px;overflow:hidden}
+  .conv .bar2 i{display:block;height:100%;border-radius:3px}
+  .cone{display:flex;flex-direction:column;gap:3px}
+  .cone .bar{height:7px}
+  .cone .lbl{font-family:var(--font-m);font-size:9.5px;color:var(--faint);display:flex;justify-content:space-between}
+  .chev{color:var(--faint);font-family:var(--font-m);font-size:12px;text-align:center}
+
+  /* drill-down */
+  .detail{display:none;background:var(--panel-2);border-bottom:1px solid var(--border-soft);padding:18px 20px}
+  .row.open + .detail{display:block}
+  .dgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:820px){.dgrid{grid-template-columns:1fr}}
+  .dbox{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+  .dbox h4{font-family:var(--font-d);font-size:11px;letter-spacing:.1em;color:var(--muted);margin:0 0 10px;text-transform:uppercase}
+  .lv{display:flex;justify-content:space-between;font-family:var(--font-m);font-size:12.5px;padding:4px 0;border-bottom:1px dashed var(--border-soft)}
+  .lv:last-child{border-bottom:none}
+  .lv .n{color:var(--muted)} .lv .v{font-weight:700}
+  .agent{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border-soft);font-family:var(--font-m);font-size:12px}
+  .agent:last-child{border-bottom:none}
+  .agent .nm{width:96px;color:var(--fg)}
+  .agent .sg{font-weight:700;width:44px}
+  .agent .cf{width:64px;text-align:right;color:var(--muted)}
+  .agent .wh{flex:1;color:var(--faint);font-size:11px;text-align:right}
+  .cbar{display:flex;height:22px;border-radius:6px;overflow:hidden;font-family:var(--font-m);font-size:10.5px;font-weight:700}
+  .cbar div{display:flex;align-items:center;justify-content:center;color:#0b0f16}
+  .cbar .b{background:var(--bull)} .cbar .f{background:var(--flat)} .cbar .r{background:var(--bear)}
+
+  /* health */
+  .health{display:grid;grid-template-columns:1.1fr 1fr;gap:14px}
+  @media(max-width:820px){.health{grid-template-columns:1fr}}
+  .hbox{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px}
+  .hbox h4{font-family:var(--font-d);font-size:12px;letter-spacing:.1em;color:var(--muted);margin:0 0 12px;text-transform:uppercase}
+  .big{font-family:var(--font-d);font-size:40px;font-weight:700;line-height:1}
+  .big.warn{color:var(--gold)} .big.ok{color:var(--emerald)}
+  .method{font-family:var(--font-m);font-size:11.5px;color:var(--muted);margin-top:10px}
+  .persym{font-family:var(--font-m);font-size:11.5px}
+  .persym .l{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed var(--border-soft)}
+  .persym .l:last-child{border-bottom:none}
+  .persym .hr{color:var(--muted)}
+  .cfg{font-family:var(--font-m);font-size:11.5px}
+  .cfg .h,.cfg .r{display:grid;grid-template-columns:2.2fr .7fr .7fr .8fr .7fr .9fr;gap:6px;padding:6px 8px}
+  .cfg .h{color:var(--faint);text-transform:uppercase;font-size:9.5px;letter-spacing:.06em;border-bottom:1px solid var(--border)}
+  .cfg .r{border-bottom:1px dashed var(--border-soft);align-items:center}
+  .cfg .r:last-child{border-bottom:none}
+  .cfg .pf-pos{color:var(--emerald);font-weight:700} .cfg .pf-neg{color:var(--red);font-weight:700}
+  .conc{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
+  .conc h5{font-family:var(--font-d);font-size:10px;letter-spacing:.1em;color:var(--muted);margin:0 0 6px;text-transform:uppercase}
+  .conc .l{font-family:var(--font-m);font-size:11px;display:flex;justify-content:space-between;padding:3px 0}
+  .verdict{border:1px solid color-mix(in srgb,var(--gold) 40%,transparent);background:color-mix(in srgb,var(--gold) 6%,transparent);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--fg);line-height:1.6;margin-top:12px}
+  .foot{font-family:var(--font-m);font-size:11px;color:var(--faint);margin-top:34px;border-top:1px solid var(--border-soft);padding-top:14px;line-height:1.7}
+  .risknote{color:var(--gold);font-family:var(--font-m);font-size:11.5px}
+</style>
+</head>
+<body class="light-mode">
+<nav class="kf-nav">
+  <a href="/index.html"><span class="brand">SNIPER<b>TRADER</b></span></a>
+  <div class="links">
+    <a href="/sniper_market_forecaster.html">Market Forecaster</a>
+    <a href="/market_terminal.html" class="active">Conviction Terminal</a>
+    <a href="/stock_picks.html">Daily Stock Picks</a>
+    <a href="/traderedge_chartai.html">AI Chart</a>
+    <a href="/traderedge_preflight.html">⬡ Pre-Flight Protocols</a>
+    <a href="/traderedge_prop_firms_command_center.html">Prop Firm Center</a>
+    <a href="/usme_products.html">Products</a>
+  </div>
+  <button class="tt-btn" onclick="toggleTheme()"><span class="tt-icon">☀️</span> <span id="themeLabel">LIGHT</span></button>
+</nav>
+
+<div class="wrap">
+
+  <div class="banner">
+    <div class="head">DATA PROVENANCE — WHAT IS REAL, WHAT IS A MODEL</div>
+    <div class="leg">
+      <span class="real">REAL · computed from live OHLCV</span>
+      <span class="model">MODEL · deterministic ensemble</span>
+      <span class="absent">options flow / dark pool / tape (key-gated, not present)</span>
+    </div>
+    <p>Prices, change, Kronos structure (VWAP · FVG · order blocks · sweeps · MSS), ATR, the empirical
+       probability cone, trade levels, and the walk-forward backtest are all <b>computed from real daily
+       OHLCV</b> (Yahoo, key-less, ~2 years). The <b>MiroFish swarm is a deterministic 8-model ensemble</b> —
+       every vote is a real formula over the same data, not a random draw — but it is a model, not a live
+       tape of traders. There is <b>no order-flow / dark-pool / options data</b> here and none is implied.
+       <b>Static snapshot</b> — data as of <span id="asof"></span>; regenerate with
+       <span style="font-family:var(--font-m)">teardown/fetch_data.py → compute_engine.py → build_html.py</span>.</p>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="sec"><span class="num">01</span> DECISION SURFACE — ranked by conviction · click a row to audit</div>
+  <div class="board" id="board"></div>
+
+  <div class="sec"><span class="num">02</span> ENSEMBLE HEALTH — does the swarm actually work?</div>
+  <div class="health" id="health"></div>
+
+  <div class="sec"><span class="num">03</span> DROP AUDIT — scanned but no edge this cycle</div>
+  <div class="board" id="dropped"></div>
+
+  <div class="foot" id="foot"></div>
+</div>
+
+<script id="data" type="application/json">__DATA__</script>
+<script>
+const DATA = JSON.parse(document.getElementById('data').textContent);
+const results = DATA.results;
+const backtest = DATA.backtest;
+
+const CLS = {AAPL:'equity',AMD:'equity',AMZN:'equity',AVGO:'equity',CRWD:'equity',META:'equity',MSFT:'equity',NVDA:'equity',PLTR:'equity',TSLA:'equity',
+  BTCUSDT:'crypto',ETHUSDT:'crypto',SOLUSDT:'crypto',LINKUSDT:'crypto',AVAXUSDT:'crypto',DOGEUSDT:'crypto',
+  CL:'futures',GC:'futures',ES:'futures',NQ:'futures'};
+
+const fmt = (n, dec=2) => (n==null?'—':Number(n).toFixed(dec));
+const fmtPx = (n, sym) => (n==null?'—': Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}));
+
+function coneBar(c){ if(!c) return '<span class="fl">—</span>';
+  return `<div class="bar"><div class="b" style="width:${c.bull}%"></div><div class="r" style="width:${c.bear}%"></div></div>
+   <div class="lbl"><span>B ${c.bull}%</span><span>${c.base}%</span><span>R ${c.bear}%</span></div>`;}
+
+function sigClass(s){ return s==='bull'?'up':(s==='bear'?'dn':'fl'); }
+function sigLabel(s){ return s==='bull'?'▲':(s==='bear'?'▼':'·'); }
+
+function structureTags(k){
+  const tags=[];
+  tags.push(['trend '+(k.trend==='up'?'↗':k.trend==='down'?'↘':'→'), k.trend!=='range']);
+  tags.push(['mss '+(k.mss?k.mss:'—'), !!k.mss]);
+  tags.push(['fvg '+(k.fvg?k.fvg.dir[0]:'—'), !!k.fvg]);
+  tags.push(['ob '+(k.order_block?k.order_block.dir[0]:'—'), !!k.order_block]);
+  tags.push(['sweep '+(k.sweep?k.sweep.dir[0]:'—'), !!k.sweep]);
+  return tags.map(t=>`<span class="tag ${t[1]?'on':''}">${t[0]}</span>`).join('');
+}
+
+function agentRows(agents){
+  return agents.map(a=>`<div class="agent"><span class="nm">${a.name}</span>
+    <span class="sg ${sigClass(a.signal)}">${sigLabel(a.signal)} ${a.signal}</span>
+    <span class="cf">${a.confidence.toFixed(2)}</span>
+    <span class="wh">${a.why}</span></div>`).join('');
+}
+
+function detailHtml(r){
+  const k=r.kronos, mf=r.mirofish, c=r.cone, t=r.trade;
+  return `<div class="detail">
+    <div class="dgrid">
+      <div class="dbox">
+        <h4>Kronos — structural levels</h4>
+        <div class="lv"><span class="n">close</span><span class="v">${fmtPx(k.close,r.symbol)}</span></div>
+        <div class="lv"><span class="n">20-bar VWAP</span><span class="v">${fmtPx(k.vwap,r.symbol)} <span class="fl">(${k.vwap_pct==null?'':(k.vwap_pct>0?'+':'')+k.vwap_pct+'%'})</span></span></div>
+        <div class="lv"><span class="n">nearest support</span><span class="v">${fmtPx(k.support,r.symbol)}</span></div>
+        <div class="lv"><span class="n">nearest resistance</span><span class="v">${fmtPx(k.resistance,r.symbol)}</span></div>
+        <div class="lv"><span class="n">trend structure</span><span class="v ${k.trend==='up'?'up':k.trend==='down'?'dn':'fl'}">${k.trend}</span></div>
+        <div class="lv"><span class="n">MSS</span><span class="v">${k.mss||'—'}</span></div>
+        <div class="lv"><span class="n">FVG</span><span class="v">${k.fvg?k.fvg.dir+' '+fmt(k.fvg.zone[0])+'–'+fmt(k.fvg.zone[1]):'—'}</span></div>
+        <div class="lv"><span class="n">order block</span><span class="v">${k.order_block?k.order_block.dir+' '+fmt(k.order_block.zone[0])+'–'+fmt(k.order_block.zone[1]):'—'}</span></div>
+        <div class="lv"><span class="n">liquidity sweep</span><span class="v">${k.sweep?k.sweep.dir+' @ '+fmt(k.sweep.level):'—'}</span></div>
+      </div>
+      <div class="dbox">
+        <h4>MiroFish — 8 deterministic agents</h4>
+        <div class="cbar" style="margin-bottom:10px"><div class="b" style="width:${mf.n_bull/8*100}%">${mf.n_bull}B</div><div class="f" style="width:${mf.n_neu/8*100}%">${mf.n_neu}N</div><div class="r" style="width:${mf.n_bear/8*100}%">${mf.n_bear}R</div></div>
+        ${agentRows(mf.agents)}
+      </div>
+      <div class="dbox">
+        <h4>Probability cone — empirical (${c?c.horizon_days:5}d forward)</h4>
+        ${coneBar(c)}
+        <div class="lv" style="margin-top:10px"><span class="n">σ (${c?c.horizon_days:5}d)</span><span class="v">${c?c.sigma_5d+'%':'—'}</span></div>
+        <div class="lv"><span class="n">ATR(14)</span><span class="v">${c?fmt(c.atr)+' ('+c.atr_pct+'%)':'—'}</span></div>
+        <div class="lv"><span class="n">1σ up cone</span><span class="v up">${c?fmtPx(c.up,r.symbol):'—'}</span></div>
+        <div class="lv"><span class="n">1σ down cone</span><span class="v dn">${c?fmtPx(c.down,r.symbol):'—'}</span></div>
+        <div class="lv"><span class="n">trade</span><span class="v">${t.direction}${t.rr?' @ R:R '+t.rr:''}</span></div>
+        <div class="lv"><span class="n">entry / stop / target</span><span class="v">${fmtPx(t.entry,r.symbol)} / ${fmtPx(t.stop,r.symbol)} / ${fmtPx(t.target,r.symbol)}</span></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function rowHtml(r,i){
+  const mf=r.mirofish, c=r.cone, t=r.trade;
+  const dir=t.direction;
+  const dirCls = dir==='LONG'?'up':dir==='SHORT'?'dn':'fl';
+  const convClr = r.conviction>=60?'var(--bull)':r.conviction<=40?'var(--bear)':'var(--flat)';
+  const chgCls = r.chg_pct>=0?'up':'dn';
+  return `<div class="row" onclick="toggle(${i})">
+    <span class="rk">${i+1}</span>
+    <span class="sym">${r.symbol}<span class="cls">${CLS[r.symbol]||''}</span></span>
+    <span class="px">${fmtPx(r.last,r.symbol)}</span>
+    <span class="chg ${chgCls}">${r.chg_pct>=0?'+':''}${fmt(r.chg_pct)}%</span>
+    <span class="bias"><span class="pct">${mf.consensus_pct}% ${sigLabel(mf.consensus>=0.6?'bull':mf.consensus<=0.4?'bear':'neutral')}</span>
+      <span class="bar"><span class="b" style="width:${mf.consensus_pct}%"></span><span class="r" style="width:${100-mf.consensus_pct}%"></span></span></span>
+    <span class="setup ${dirCls}">${dir}${t.rr?` <span class="rr">${t.rr}</span>`:''}</span>
+    <span class="conv" style="color:${convClr}">${r.conviction}<div class="bar2"><i style="width:${r.conviction}%;background:${convClr}"></i></div></span>
+    <span class="cone">${structureTags(r.kronos)}</span>
+  </div>`;
+}
+
+function render(){
+  document.getElementById('board').innerHTML =
+    `<div class="row head"><span>#</span><span>Symbol</span><span>Last</span><span>Chg</span><span>Bias (swarm)</span><span>Setup</span><span>Conviction</span><span>Structure</span></div>` +
+    results.map((r,i)=>rowHtml(r,i)+detailHtml(r,i)).join('');
+
+  // stats
+  const longs = results.filter(r=>r.trade.direction==='LONG').length;
+  const shorts = results.filter(r=>r.trade.direction==='SHORT').length;
+  const holds = results.filter(r=>r.trade.direction==='HOLD').length;
+  const asOf = DATA.as_of || '—';
+  document.getElementById('asof').textContent = asOf;
+  const tb = DATA.trade_backtest;
+  const netPF = tb && tb.configs[1] ? tb.configs[1].profit_factor : null;
+  const naiveHR = backtest.universe_hit_rate;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="k">Universe</div><div class="v">${results.length}<small> symbols</small></div><div class="sub">Yahoo daily · key-less · 2y</div></div>
+    <div class="stat"><div class="k">Directional setups</div><div class="v">${longs+shorts}<small> / ${results.length}</small></div><div class="sub">${longs} long · ${shorts} short</div></div>
+    <div class="stat"><div class="k">No edge (hold)</div><div class="v">${holds}</div><div class="sub">structure or R:R failed</div></div>
+    <div class="stat"><div class="k">Net profit factor</div><div class="v" style="color:${netPF>=1?'var(--emerald)':'var(--gold)'}">${netPF!=null?netPF.toFixed(2):'—'}</div><div class="sub">fixed 2:1 · cost 0.05R · naive hit ${(naiveHR*100).toFixed(0)}%</div></div>`;
+
+  // health — honest trade-level backtest (expectancy, not just hit rate)
+  const cfg = tb ? tb.configs.map(c=>{
+    const pfCls = c.profit_factor>=1?'pf-pos':'pf-neg';
+    return `<div class="r"><span>${c.config}</span><span>${c.n}</span><span>${c.win_rate}%</span><span>${c.expectancy_R>=0?'+':''}${c.expectancy_R.toFixed(3)}</span><span class="${pfCls}">${c.profit_factor!=null?c.profit_factor.toFixed(2):'—'}</span><span>${c.total_R>=0?'+':''}${c.total_R.toFixed(0)}</span></div>`;
+  }).join('') : '';
+  const conc = tb && tb.configs[1] ? (()=>{
+    const top = tb.configs[1].top5.map(([s,p])=>`<div class="l"><span>${s}</span><span class="pf-pos">${p.toFixed(2)}</span></div>`).join('');
+    const bot = tb.configs[1].bottom5.map(([s,p])=>`<div class="l"><span>${s}</span><span class="pf-neg">${p.toFixed(2)}</span></div>`).join('');
+    return `<div class="conc"><div><h5>best 5 · profit factor</h5>${top}</div><div><h5>worst 5 · profit factor</h5>${bot}</div></div>`;
+  })() : '';
+  document.getElementById('health').innerHTML = `
+    <div class="hbox">
+      <h4>Trade-level backtest — expectancy (TP/SL, walk-forward)</h4>
+      <div class="cfg">
+        <div class="h"><span>config</span><span>n</span><span>win%</span><span>E[R]</span><span>PF</span><span>ΣR</span></div>
+        ${cfg}
+      </div>
+    </div>
+    <div class="hbox">
+      <h4>Honest verdict</h4>
+      <div class="method">${tb?tb.verdict:''}</div>
+      ${conc}
+    </div>`;
+
+  // dropped
+  const dropped = results.filter(r=>r.trade.direction==='HOLD');
+  document.getElementById('dropped').innerHTML = dropped.length? dropped.map((r,i)=>{
+    const mf=r.mirofish; const k=r.kronos;
+    const reason = mf.consensus>0.6 ? 'bullish bias but poor R:R — overhead resistance too close' :
+                   mf.consensus<0.4 ? 'bearish bias but poor R:R — support too close below' :
+                   'no directional edge (swarm near 50/50)';
+    return `<div class="row" style="cursor:default;grid-template-columns:1fr 1.2fr 2fr 1fr">
+      <span class="rk">${i+1}</span>
+      <span class="sym">${r.symbol}<span class="cls">${CLS[r.symbol]||''}</span></span>
+      <span class="fl" style="font-family:var(--font-m);font-size:12px">${reason}</span>
+      <span class="fl" style="font-family:var(--font-m);font-size:12px;text-align:right">bias ${mf.consensus_pct}% · conv ${r.conviction}</span>
+    </div>`;
+  }).join('') : '<div class="row" style="cursor:default"><span class="fl">All names pass — no drops this cycle.</span></div>';
+
+  document.getElementById('foot').innerHTML =
+    `<b>Methodology (auditable):</b> prices &amp; OHLCV from Yahoo Finance chart API (key-less, daily, ~2y). Kronos levels =
+     anchored VWAP (20-bar), Fair Value Gaps (gated &gt;0.3%), order blocks, liquidity sweeps, market-structure shift — all
+     standard definitions in <span class="fl">compute_engine.py</span>. MiroFish = 8 independent deterministic models
+     (momentum, trend, VWAP, order-block, volatility, volume, mean-reversion, structure), consensus = confidence-weighted vote
+     with a uniform prior. Cone = empirical distribution of ${backtest.horizon_days}-day forward returns → P(bull/base/bear).
+     Backtest = walk-forward, no lookahead, TP/SL sim with costs. &nbsp; <span class="risknote">Educational only — not financial
+     advice. Paper desk. live_trading=false.</span>`;
+
+  // canonical site footer
+  const foot = document.getElementById('foot');
+  foot.innerHTML += `<div style="margin-top:26px;padding-top:18px;border-top:1px solid var(--border-soft);display:flex;gap:20px;flex-wrap:wrap">
+    <a href="/index.html" style="color:var(--muted);text-decoration:none;font-family:var(--font-m);font-size:11px">SniperTrader.ai</a>
+    <a href="/sniper_market_forecaster.html" style="color:var(--muted);text-decoration:none;font-family:var(--font-m);font-size:11px">Market Forecaster</a>
+    <a href="/stock_picks.html" style="color:var(--muted);text-decoration:none;font-family:var(--font-m);font-size:11px">AI Stock Picks</a>
+    <a href="/traderedge_preflight.html" style="color:var(--muted);text-decoration:none;font-family:var(--font-m);font-size:11px">Pre-Flight Protocols</a>
+    <a href="/traderedge_prop_firms_command_center.html" style="color:var(--muted);text-decoration:none;font-family:var(--font-m);font-size:11px">Prop Firm Center</a>
+    <a href="/about.html" style="color:var(--muted);text-decoration:none;font-family:var(--font-m);font-size:11px">About</a>
+    <a href="/terms.html" style="color:var(--muted);text-decoration:none;font-family:var(--font-m);font-size:11px">Terms</a>
+    <a href="/disclaimer.html" style="color:var(--muted);text-decoration:none;font-family:var(--font-m);font-size:11px">Disclaimer</a>
+  </div>`;
+}
+
+let openRow = -1;
+function toggle(i){
+  const rows = document.querySelectorAll('#board .row:not(.head)');
+  const details = document.querySelectorAll('#board .detail');
+  if(openRow === i){ rows[i].classList.remove('open'); openRow=-1; return; }
+  if(openRow>=0) rows[openRow].classList.remove('open');
+  rows[i].classList.add('open');
+  openRow = i;
+  rows[i].scrollIntoView({block:'nearest',behavior:'smooth'});
+}
+
+function toggleTheme(){
+  const light = document.body.classList.toggle('light-mode');
+  document.getElementById('themeLabel').textContent = light ? 'LIGHT' : 'DARK';
+  document.querySelector('.tt-icon').textContent = light ? '☀️' : '🌙';
+}
+
+// allow ?dark to force dark mode on load (for screenshots / deep links)
+if(location.search.includes('dark')){
+  document.body.classList.remove('light-mode');
+  document.getElementById('themeLabel').textContent = 'DARK';
+  document.querySelector('.tt-icon').textContent = '🌙';
+}
+
+render();
+</script>
+</body>
+</html>
