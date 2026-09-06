@@ -114,8 +114,9 @@ export function QepTable({
         Five engines — Kronos (temporal), SNN (spike/regime), MiroFish (pattern), Fundamental
         (filings), Quantum (weighted resolver) — vote into a single 0–100 conviction, then rank
         into a provenance-tagged table. Rows are the <b>top 10</b> from{" "}
-        <code>GET /picks/ensemble</code> ({universeSource}, 15-minute refresh). Paper preview uses
-        a dynamic mock of that contract — not a hardcoded ticker list.
+        <code>GET /picks/ensemble</code> ({universeSource || "API items only"}, 15-minute refresh).
+        Quant ranks the top 10 inside the DE allowed set when contracted; until then the
+        mock uses provisional SETUP_UNIVERSE. The table displays API <code>items</code> only.
       </div>
 
       <div className="qep-bar">

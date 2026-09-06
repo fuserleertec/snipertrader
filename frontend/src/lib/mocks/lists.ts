@@ -1,7 +1,8 @@
 /**
- * Dynamic paper generators for Quant list contracts.
- * FE displays API results only — these run behind the typed clients.
- * Provisional universe is SETUP_UNIVERSE until DE is authoritative.
+ * Dynamic paper generators for Quant/DE list contracts.
+ * SETUP_UNIVERSE is provisional and mock-only. When DE is contracted,
+ * Quant ranks top-10 inside GET /v1/universe/top. The UI never imports
+ * this array as a P0/P4 list — it only displays API `items`.
  */
 import {
   DESK_SYMBOL_LIMIT,
@@ -98,9 +99,16 @@ export function mockQuote(symbol: string, cycle = 0): { last: number; chgPct: nu
   return { last, chgPct, target };
 }
 
-export function mockEnsemblePicks(cycle = 0, now = MOCK_NOW): EnsemblePicksResponse {
+export function mockEnsemblePicks(
+  cycle = 0,
+  now = MOCK_NOW,
+  allowed?: string[],
+): EnsemblePicksResponse {
   const asOf = now + cycle * LIST_REFRESH_SEC * 1000;
-  const ranked: EnsemblePickItem[] = SETUP_UNIVERSE.map((row) => {
+  const allow = new Set((allowed ?? []).map((s) => s.toUpperCase()));
+  const pool = allow.size ? SETUP_UNIVERSE.filter((row) => allow.has(row.symbol)) : SETUP_UNIVERSE;
+  const source = allow.size ? ("DE" as const) : ("SETUP_UNIVERSE" as const);
+  const ranked: EnsemblePickItem[] = pool.map((row) => {
     const seed = `${row.symbol}:${cycle}:ens`;
     const signals = getUniverse(row.symbol, seedPrice(row.symbol)).signals.filter((s) => s.status === "ACTIVE");
     const best = [...signals].sort(
@@ -136,7 +144,7 @@ export function mockEnsemblePicks(cycle = 0, now = MOCK_NOW): EnsemblePicksRespo
   return {
     as_of_ts_ms: asOf,
     refresh_sec: LIST_REFRESH_SEC,
-    universe_source: "SETUP_UNIVERSE",
+    universe_source: source,
     items: ranked,
   };
 }
@@ -146,10 +154,14 @@ export function mockCategorizedPicks(
   now?: number,
   assetClass?: AssetClass,
   limit = DESK_SYMBOL_LIMIT,
+  allowed?: string[],
 ): CategorizedPicksResponse {
   const asOf = (now ?? MOCK_NOW) + cycle * LIST_REFRESH_SEC * 1000;
   const cap = Math.min(DESK_SYMBOL_LIMIT, Math.max(1, limit));
-  const pool = assetClass ? SETUP_UNIVERSE.filter((s) => s.asset_class === assetClass) : SETUP_UNIVERSE;
+  const allow = new Set((allowed ?? []).map((s) => s.toUpperCase()));
+  const base = allow.size ? SETUP_UNIVERSE.filter((s) => allow.has(s.symbol)) : SETUP_UNIVERSE;
+  const pool = assetClass ? base.filter((s) => s.asset_class === assetClass) : base;
+  const source = allow.size ? ("DE" as const) : ("SETUP_UNIVERSE" as const);
   const items: CategorizedPickItem[] = pool
     .map((row) => {
       const seed = `${row.symbol}:${cycle}:cat`;
@@ -180,7 +192,7 @@ export function mockCategorizedPicks(
   return {
     as_of_ts_ms: asOf,
     refresh_sec: LIST_REFRESH_SEC,
-    universe_source: "SETUP_UNIVERSE",
+    universe_source: source,
     items,
   };
 }

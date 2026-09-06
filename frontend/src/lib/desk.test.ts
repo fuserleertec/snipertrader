@@ -1,7 +1,17 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { LIST_REFRESH_SEC, SETUP_FILTERS, SETUP_TYPES, wireAssetClass } from "./constants";
-import { activeSetupQuery, cardsForTab, chartSymbolsForTab, clampRefreshSec, setupFilterType, uniqueSymbols } from "./desk";
+import {
+  activeSetupQuery,
+  allowedSymbolSet,
+  cardsForTab,
+  capWithinAllowed,
+  chartSymbolsForTab,
+  clampRefreshSec,
+  rankWithinAllowed,
+  setupFilterType,
+  uniqueSymbols,
+} from "./desk";
 import { joinSymbols, normalizeCategorizedPicks, normalizeEnsemblePicks, normalizeUniverseTop, signalListPath } from "./http";
 import { mockCategorizedPicks, mockDroppedPicks, mockEnsemblePicks, mockUniverseTop, SETUP_UNIVERSE } from "./mocks/lists";
 import { mockListSignals } from "./mocks/signals";
@@ -300,6 +310,47 @@ describe("provisional universe is mock-only", () => {
   it("SETUP_UNIVERSE is 20 symbols and excludes SMCI/TSM placeholders", () => {
     assert.equal(SETUP_UNIVERSE.length, 20);
     assert.ok(!SETUP_UNIVERSE.some((s) => s.symbol === "SMCI" || s.symbol === "TSM"));
+  });
+
+  it("Quant P0/P4 rank only inside the DE allowed set and never invent a universe", () => {
+    const allowed = allowedSymbolSet([
+      { symbol: "ES" },
+      { symbol: "CL" },
+      { symbol: "GC" },
+    ]);
+    const ens = mockEnsemblePicks(0, undefined, [...allowed]);
+    assert.ok(ens.items.length <= 10);
+    assert.ok(ens.items.every((i) => allowed.has(i.symbol)));
+    assert.equal(ens.universe_source, "DE");
+    const outside = normalizeEnsemblePicks({
+      as_of_ts_ms: 0,
+      refresh_sec: 900,
+      items: [
+        { rank: 1, symbol: "SMCI", asset_class: "equity", score: 0.9, setup_types: ["sweep_reclaim"], confidence: 0.9 },
+        { rank: 2, symbol: "ES", asset_class: "futures", score: 0.8, setup_types: ["sweep_reclaim"], confidence: 0.8 },
+      ],
+    });
+    const clipped = rankWithinAllowed(outside?.items ?? [], allowed);
+    assert.deepEqual(
+      clipped.map((i) => i.symbol),
+      ["ES"],
+    );
+    const passthrough = rankWithinAllowed(outside?.items ?? [], new Set());
+    assert.deepEqual(
+      passthrough.map((i) => i.symbol),
+      ["SMCI", "ES"],
+    );
+    const cats = capWithinAllowed(
+      [
+        { symbol: "TSM", asset_class: "equity", category: "momentum", score: 1, confidence: 1, setup_types: [], entry: 1, stop: 1, target: 1, atr: 1, reward_risk: 1 },
+        { symbol: "CL", asset_class: "futures", category: "other", score: 1, confidence: 1, setup_types: [], entry: 1, stop: 1, target: 1, atr: 1, reward_risk: 1 },
+      ],
+      allowed,
+    );
+    assert.deepEqual(
+      cats.map((i) => i.symbol),
+      ["CL"],
+    );
   });
 
   it("GET /v1/universe/top mock + parser honor limit 10/20", () => {

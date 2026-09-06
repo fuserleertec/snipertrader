@@ -158,3 +158,23 @@ export function capCategorized(items: CategorizedPickItem[]): CategorizedPickIte
   }
   return out;
 }
+
+/** DE `GET /v1/universe/top` allowed set. Empty = not contracted; do not invent a universe. */
+export function allowedSymbolSet(symbols: Array<{ symbol: string }> | undefined | null): Set<string> {
+  return new Set(uniqueSymbols(symbols ?? []));
+}
+
+/**
+ * Quant ranks P0 inside the DE allowed set when contracted.
+ * Empty allowed → pass API items through (never substitute SETUP_UNIVERSE).
+ */
+export function rankWithinAllowed(items: EnsemblePickItem[], allowed: Set<string>): EnsemblePickItem[] {
+  const scoped = allowed.size ? items.filter((i) => allowed.has(i.symbol.toUpperCase())) : items;
+  return rankItems(scoped);
+}
+
+/** P4 display clip — API items only, optionally inside the DE top-20 set. */
+export function capWithinAllowed(items: CategorizedPickItem[], allowed: Set<string>): CategorizedPickItem[] {
+  const scoped = allowed.size ? items.filter((i) => allowed.has(i.symbol.toUpperCase())) : items;
+  return capCategorized(scoped);
+}
