@@ -29,21 +29,8 @@ export const CRYPTO_SESSIONS: SessionType[] = ["asia", "london", "ny_am", "ny_pm
 export const EQUITY_SESSIONS: SessionType[] = ["rth", "eth"];
 export const FUTURES_SESSIONS: SessionType[] = ["rth", "globex"];
 
+/** Preference order when a futures symbol is already in the dynamic options. Not a UI list. */
 export const FUTURES_SYMBOLS = ["ES", "CL", "GC", "NQ"] as const;
-
-export const SYMBOLS: { symbol: string; asset_class: AssetClass; label: string }[] = [
-  { symbol: "ES", asset_class: "futures", label: "ES" },
-  { symbol: "CL", asset_class: "futures", label: "CL" },
-  { symbol: "GC", asset_class: "futures", label: "GC" },
-  { symbol: "NQ", asset_class: "futures", label: "NQ" },
-  { symbol: "AAPL", asset_class: "equity", label: "AAPL" },
-  { symbol: "NVDA", asset_class: "equity", label: "NVDA" },
-  { symbol: "TSLA", asset_class: "equity", label: "TSLA" },
-  { symbol: "MSFT", asset_class: "equity", label: "MSFT" },
-  { symbol: "BTCUSDT", asset_class: "crypto", label: "BTCUSDT" },
-  { symbol: "ETHUSDT", asset_class: "crypto", label: "ETHUSDT" },
-  { symbol: "SOLUSDT", asset_class: "crypto", label: "SOLUSDT" },
-];
 
 /** Locked setup 1–6. `ob_fvg` is not a setup_type. */
 export const SETUP_FILTERS: { n: 1 | 2 | 3 | 4 | 5 | 6; setup_type: SetupType; label: string }[] = [

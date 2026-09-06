@@ -114,8 +114,8 @@ Placeholder list contracts (same-origin rewrite → Quant `:8001`):
 |---|---|---|
 | GET | `/picks/ensemble` | P0 top 10. Required `{ as_of_ts_ms, refresh_sec, items[{ rank, symbol, asset_class, score, setup_types, confidence }] }`. Optional `universe_source`, `ensemble_score`→`score`, `best_confidence`→`confidence`, `rank_components`, `contributing_factors`. Client poll uses `refresh_sec` (900 = 15m). |
 | GET | `/picks/categorized?asset_class=&limit=20` | P4 ≤20. `category` ∈ `momentum\|mean_reversion\|confluence\|other` |
-| GET | `/signals` | Multi-symbol desk + Active Setup Cards (`symbols=ES,CL,…` ≤20; `status=ACTIVE&asset_class=futures\|equity\|crypto`; `stocks` → `equity`) |
-| GET | `/signals/history` | P2 history (same filters). Client falls back to `/signals` |
+| GET | `/signals?status=ACTIVE&asset_class=futures\|equity\|crypto&setup_type=&symbol=&limit=` | Active Setup Cards. Tabs: Futures→`futures`, Stocks→`equity` (`stocks` alias), Cryptos→`crypto`. `{ items, next_cursor }` |
+| GET | `/signals` + `/signals/history` | P2 history (`symbol`/`status`/`setup_type`/`from_ts`/`to_ts`/`side`/`cursor`, multi-symbol ~20). Client falls back to `/signals` |
 | GET | `/performance/summary` | Section 08 tracker. Optional `?symbols=` (≤20) |
 | GET | `/v1/universe/top?limit=10\|20` | DE allowed set (`as_of_ts_ms`, `limit`, `symbols[{symbol,asset_class,rank,score}]`). P0 uses 10; P2/P4 use 20. Quant re-ranks for display. |
 

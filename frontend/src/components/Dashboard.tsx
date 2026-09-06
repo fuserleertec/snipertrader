@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useActiveSetups } from "@/hooks/useActiveSetups";
 import { useDeskLists } from "@/hooks/useDeskLists";
 import { formatEt, formatRemain, useListRefresh } from "@/hooks/useListRefresh";
 import { useMarketData } from "@/hooks/useMarketData";
@@ -66,6 +67,7 @@ export function Dashboard() {
     if (market.lastPrice != null) priceRef.current = market.lastPrice;
   }, [market.lastPrice]);
   const allSignals = useSignals(symbol, () => priceRef.current, refresh.tick, deskSymbols);
+  const activeSetups = useActiveSetups(assetTab, setupFilter, refresh.tick);
   const selected = resolveSelected(allSignals, selectedId, selectedSnap);
   const patterns = usePatterns(symbol);
   const performance = usePerformance(refresh.tick, deskSymbols);
@@ -292,7 +294,7 @@ export function Dashboard() {
           universeSource={desk.ensemble.universe_source}
           cards={
             <SetupCards
-              signals={allSignals}
+              signals={activeSetups}
               selectedId={selectedId}
               onSelect={onOpenChart}
               assetTab={assetTab}

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { LIST_REFRESH_SEC, SETUP_FILTERS, SETUP_TYPES, wireAssetClass } from "./constants";
-import { cardsForTab, chartSymbolsForTab, clampRefreshSec, setupFilterType, uniqueSymbols } from "./desk";
+import { activeSetupQuery, cardsForTab, chartSymbolsForTab, clampRefreshSec, setupFilterType, uniqueSymbols } from "./desk";
 import { joinSymbols, normalizeCategorizedPicks, normalizeEnsemblePicks, normalizeUniverseTop, signalListPath } from "./http";
 import { mockCategorizedPicks, mockDroppedPicks, mockEnsemblePicks, mockUniverseTop, SETUP_UNIVERSE } from "./mocks/lists";
 import { mockListSignals } from "./mocks/signals";
@@ -173,9 +173,29 @@ describe("desk tabs + chart selector", () => {
     assert.equal(stocks[0]?.symbol, "AAPL");
   });
 
-  it("futures chart selector includes ES CL GC NQ", () => {
-    const opts = chartSymbolsForTab("futures", [], []);
+  it("Active Setup query is GET /signals?status=ACTIVE&asset_class= (stocks→equity)", () => {
+    const futures = activeSetupQuery("futures");
+    assert.equal(futures.status, "ACTIVE");
+    assert.equal(futures.asset_class, "futures");
+    assert.equal(activeSetupQuery("stocks").asset_class, "equity");
+    assert.equal(activeSetupQuery("cryptos").asset_class, "crypto");
+    const path = signalListPath(activeSetupQuery("stocks", { setup_type: "sweep_reclaim", symbol: "aapl", limit: 20 }));
+    assert.equal(path, "/signals?symbol=AAPL&status=ACTIVE&setup_type=sweep_reclaim&asset_class=equity&limit=20");
+    const hist = signalListPath(
+      { symbol: "ES", status: "TP_HIT", setup_type: "fvg_entry", side: "long", from_ts: 1, to_ts: 2, cursor: "c1" },
+      "/signals/history",
+    );
+    assert.equal(
+      hist,
+      "/signals/history?symbol=ES&status=TP_HIT&setup_type=fvg_entry&side=long&from_ts=1&to_ts=2&cursor=c1",
+    );
+  });
+
+  it("futures chart selector includes ES CL GC NQ from the universe extras, not a hardcoded list", () => {
+    const extras = ["ES", "CL", "GC", "NQ"].map((symbol) => ({ symbol, asset_class: "futures" as const }));
+    const opts = chartSymbolsForTab("futures", [], extras);
     assert.ok(["ES", "CL", "GC", "NQ"].every((s) => opts.includes(s)));
+    assert.deepEqual(chartSymbolsForTab("futures", [], []), []);
   });
 
   it("chart selector uses universe/top first (tab symbols in front, not a 4-symbol lock)", () => {

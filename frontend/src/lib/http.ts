@@ -1,5 +1,5 @@
 import { DESK_SYMBOL_LIMIT, ENSEMBLE_LIMIT, inferAssetClass, LIST_REFRESH_SEC, wireAssetClass } from "./constants";
-import { capCategorized, clampRefreshSec, rankItems } from "./desk";
+import { activeSetupQuery, capCategorized, clampRefreshSec, rankItems } from "./desk";
 import { httpUrl, picksHttpUrl, quantHttpUrl } from "./env";
 import { normalizeAvwap, normalizeKillZone, normalizeVolumeProfile } from "./overlays";
 import { normalizeSignal } from "./signals";
@@ -7,6 +7,7 @@ import type {
   AnchorType,
   AnchoredVwap,
   AssetClass,
+  AssetTab,
   CategorizedPickItem,
   CategorizedPicksResponse,
   EnsemblePickItem,
@@ -117,12 +118,24 @@ function normalizeList(raw: SignalListResponse | null): SignalListResponse | nul
   };
 }
 
-/** Quant PR #2 `GET /signals` — history is this same list (`from_ts`/`to_ts` + filters). */
+/** Quant PR #2 `GET /signals` — `{ items: Signal[], next_cursor }`. */
 export async function fetchSignals(query: SignalListQuery = {}): Promise<SignalListResponse | null> {
   const path = signalListPath(query);
   const viaRewrite = await getSameOrigin<SignalListResponse>(path);
   if (viaRewrite) return normalizeList(viaRewrite);
   return normalizeList(await getJson<SignalListResponse>(path, quantHttpUrl));
+}
+
+/**
+ * Active Setup Cards — exact Quant query:
+ * GET /signals?status=ACTIVE&asset_class=futures|equity|crypto&setup_type=&symbol=&limit=
+ * Stocks tab maps to `equity`.
+ */
+export function fetchActiveSetups(
+  tab: AssetTab,
+  extras: { setup_type?: SetupType | "all"; symbol?: string; limit?: number } = {},
+): Promise<SignalListResponse | null> {
+  return fetchSignals(activeSetupQuery(tab, extras));
 }
 
 /** Quant PR #2 `GET /signals/{id}` — same close fields as the list + WS. */

@@ -30,6 +30,27 @@ export function tabToAssetClass(tab: AssetTab): AssetClass {
   return ASSET_TABS.find((t) => t.id === tab)?.asset_class ?? "crypto";
 }
 
+/** Locked Active Setup query — GET /signals?status=ACTIVE&asset_class=&setup_type=&symbol=&limit= */
+export function activeSetupQuery(
+  tab: AssetTab,
+  extras: { setup_type?: SetupType | "all"; symbol?: string; limit?: number } = {},
+): {
+  status: "ACTIVE";
+  asset_class: AssetClass;
+  setup_type?: SetupType;
+  symbol?: string;
+  limit: number;
+} {
+  const setup = extras.setup_type && extras.setup_type !== "all" ? extras.setup_type : undefined;
+  return {
+    status: "ACTIVE",
+    asset_class: tabToAssetClass(tab),
+    ...(setup ? { setup_type: setup } : {}),
+    ...(extras.symbol ? { symbol: extras.symbol.toUpperCase() } : {}),
+    limit: extras.limit ?? DESK_SYMBOL_LIMIT,
+  };
+}
+
 export function assetClassToTab(asset: AssetClass): AssetTab {
   if (asset === "futures") return "futures";
   if (asset === "equity") return "stocks";
@@ -98,10 +119,7 @@ export function chartSymbolsForTab(
   const rest = universe.filter((s) => inferAssetClass(s) !== asset);
   const fromSignals = uniqueSymbols(signals);
   const focused = current ? [current.toUpperCase()] : [];
-  const futuresSeed = tab === "futures" && tabFirst.length === 0 ? [...FUTURES_SYMBOLS] : [];
-  return uniqueSymbols(
-    [...tabFirst, ...rest, ...fromSignals, ...futuresSeed, ...focused].map((symbol) => ({ symbol })),
-  );
+  return uniqueSymbols([...tabFirst, ...rest, ...fromSignals, ...focused].map((symbol) => ({ symbol })));
 }
 
 export function defaultSymbolForTab(tab: AssetTab, options: string[]): string {
