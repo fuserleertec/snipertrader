@@ -18,7 +18,8 @@ from sniper_quant.picks import (
 from sniper_quant.models import PickCategory
 from sniper_quant.risk.engine import RiskEngine, RiskState
 from sniper_quant.store.signals import InMemorySignalStore
-from sniper_quant.universe import load_paper_universe
+from sniper_quant.models import AssetClass
+from sniper_quant.universe import clear_de_top_cache, load_paper_universe
 from tests.conftest import make_settings
 from tests.test_validate import _payload
 
@@ -432,6 +433,78 @@ def test_openapi_documents_picks_and_asset_class():
     assert "asset_class" in sig_params
     assert "asset_class" in hist_params
     assert "/paper/universe" in paths
+    assert "universe/top" in spec["info"]["description"]
+    setups = http.get("/v1/setups").json()
+    assert setups["de_universe_top"] == "/v1/universe/top"
+    assert setups["de_universe_top_limits"] == [10, 20]
 
     acct = http.get("/paper/account").json()
     assert acct["live_trading"] is False
+
+
+def test_de_top_10_is_ensemble_book_20_is_history(monkeypatch):
+    clear_de_top_cache()
+    ten = [
+        ("ES", AssetClass.FUTURES),
+        ("CL", AssetClass.FUTURES),
+        ("GC", AssetClass.FUTURES),
+        ("NQ", AssetClass.FUTURES),
+        ("BTCUSDT", AssetClass.CRYPTO),
+        ("AAPL", AssetClass.EQUITY),
+        ("MSFT", AssetClass.EQUITY),
+        ("NVDA", AssetClass.EQUITY),
+        ("ETHUSDT", AssetClass.CRYPTO),
+        ("SPY", AssetClass.EQUITY),
+    ]
+    twenty = ten + [("SOLUSDT", AssetClass.CRYPTO), ("AMZN", AssetClass.EQUITY)]
+
+    def fake_fetch(_settings, limit: int, **_kw):
+        return list(ten if limit == 10 else twenty)
+
+    monkeypatch.setattr("sniper_quant.universe.fetch_de_universe_top", fake_fetch)
+    http = _client(DE_API_BASE="http://de.test")
+    dump = http.get("/paper/universe").json()
+    assert dump["handoff"] == "de_top"
+    assert dump["live_trading"] is False
+    assert {r["symbol"] for r in dump["ensemble_universe"]} == {s for s, _ in ten}
+    assert {r["symbol"] for r in dump["history_universe"]} == {s for s, _ in twenty}
+
+    empty = http.get("/picks/ensemble", params={"as_of_ts_ms": 0}).json()
+    assert {row["symbol"] for row in empty["items"]} <= {s for s, _ in ten}
+    assert len(empty["items"]) == 10
+    assert REQUIRED_FUTURES <= {row["symbol"] for row in empty["items"]}
+
+    cat = http.get("/picks/categorized", params={"as_of_ts_ms": 0, "limit": 20}).json()
+    assert {row["symbol"] for row in cat["items"]} <= {s for s, _ in twenty}
+    assert "SOLUSDT" in {row["symbol"] for row in cat["items"]}
+    assert "SOLUSDT" not in {row["symbol"] for row in empty["items"]}
+
+    as_of = 1_700_000_400_000
+    assert (
+        http.post(
+            "/signals",
+            json=_payload(symbol="SOLUSDT", setup_type="fvg_entry", ts_ms=as_of, confidence=0.9),
+        ).status_code
+        == 201
+    )
+    assert (
+        http.post(
+            "/signals",
+            json=_payload(
+                symbol="IBM",
+                asset_class="equity",
+                setup_type="fvg_entry",
+                ts_ms=as_of,
+                confidence=0.9,
+            ),
+        ).status_code
+        == 201
+    )
+    listed = http.get("/signals", params={"limit": 100}).json()["items"]
+    assert "SOLUSDT" in {r["symbol"] for r in listed}
+    assert "IBM" not in {r["symbol"] for r in listed}
+    hist = http.get("/signals/history", params={"limit": 100}).json()["items"]
+    assert {r["symbol"] for r in hist} == {r["symbol"] for r in listed}
+    by_sym = http.get("/signals", params={"symbol": "IBM", "limit": 100}).json()["items"]
+    assert {r["symbol"] for r in by_sym} == {"IBM"}
+    clear_de_top_cache()

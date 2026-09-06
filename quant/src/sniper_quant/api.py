@@ -118,20 +118,21 @@ Dormant `mss_break` / `order_block` / `sweep_mss` and
 `*_pending_user_confirm` are omitted.
 
 `GET /picks/ensemble` → Quantum Ensemble Picks (P0). Dynamic top **10**
-inside the paper universe file (`config/paper_universe.json`, includes
-ES, NQ, CL, GC). Consumes Kafka **`ensemble_features`** (key=`symbol`,
-15m snapshots, `schema_version` 1.1). Mapping: `score` ←
+**inside DE `GET /v1/universe/top?limit=10`** when `DE_API_BASE` is up
+(15m refresh). Until DE is up: provisional `DEMO_SYMBOLS` / paper file
+∩ `SETUP_UNIVERSE` (**includes ES, CL, GC, NQ**). Consumes Kafka
+**`ensemble_features`** (key=`symbol`, 15m). Mapping: `score` ←
 `ensemble_score`, `confidence` ← `best_confidence`. Skip
 `active_levels=false`. Prefer ML `ensemble_score`; else recompute from
 `rank_components` (weights: setup_quality 40, confluence/risk_adjusted
-20, kill_zone 15, volume 15, freshness 10) and keep raw components.
-Optional pick extras: `rank_components`, `contributing_factors`,
-`confluence_count`. `SETUP_UNIVERSE` can only narrow. `refresh_sec`
-**900**. **No live trading.**
+20, kill_zone 15, volume 15, freshness 10). `refresh_sec` **900**.
+**No live trading.**
 
-`GET /picks/categorized?asset_class=&limit=20` → same features and
-scores, ≤20 rows, tagged `momentum` | `mean_reversion` | `confluence` |
-`other`.
+`GET /picks/categorized?asset_class=&limit=20` → same features, ranked
+inside DE `GET /v1/universe/top?limit=20` (or the same provisional
+set). ≤20 rows, tagged `momentum` | `mean_reversion` | `confluence` |
+`other`. History consumers (`GET /signals`, `/signals/history`) use
+that same limit=20 book when `symbol` is omitted.
 
 Multi-symbol risk (existing): corr |ρ| < 0.70, opposite-direction
 same-symbol conflict, 3% daily loss, 2% sizing. Optional
@@ -358,7 +359,10 @@ def create_app(
             "setup_universe_env": "SETUP_UNIVERSE",
             "demo_symbols_env": "DEMO_SYMBOLS",
             "de_universe_env": "DE_UNIVERSE",
-            "ranking_lock": "paper_universe_file_or_de_universe",
+            "ranking_lock": "de_universe_top_or_provisional",
+            "de_universe_top": "/v1/universe/top",
+            "de_universe_top_limits": [10, 20],
+            "de_api_base_env": "DE_API_BASE",
             "ensemble_features_topic": "ensemble_features",
             "ensemble_features_key": "symbol",
             "ensemble_refresh_sec": 900,
@@ -404,8 +408,9 @@ def create_app(
         Kafka topic ``ensemble_features`` (key=symbol, 15m). ``score`` ←
         ``ensemble_score``, ``confidence`` ← ``best_confidence``. Skip
         ``active_levels=false``. Prefer ML score; else weights 40/20/15/15/10.
-        Universe file includes ES, NQ, CL, GC. ``refresh_sec`` 900.
-        ``live_trading`` stays false. No Alpaca live.
+        Ranking book: DE ``GET /v1/universe/top?limit=10``. Provisional
+        (DE down): ``DEMO_SYMBOLS`` / paper file ∩ ``SETUP_UNIVERSE``
+        including ES, CL, GC, NQ. ``refresh_sec`` 900. Paper only.
         """
         from sniper_quant.picks import REFRESH_SEC, TOP_N, parse_ml_scores, rank_ensemble
         from sniper_quant.universe import resolve_ranking_universe
@@ -421,7 +426,7 @@ def create_app(
             ml_scores=overlay,
             top_n=TOP_N,
             refresh_sec=REFRESH_SEC,
-            universe=resolve_ranking_universe(app.state.settings),
+            universe=resolve_ranking_universe(app.state.settings, limit=10),
             features=getattr(app.state, "features", None),
         )
 
@@ -455,7 +460,7 @@ def create_app(
             asset_class=ac,
             limit=limit,
             refresh_sec=REFRESH_SEC,
-            universe=resolve_ranking_universe(app.state.settings),
+            universe=resolve_ranking_universe(app.state.settings, limit=20),
             features=getattr(app.state, "features", None),
         )
 
@@ -484,6 +489,13 @@ def create_app(
             ac = parse_asset_class_query(asset_class)
         except ValueError as exc:
             raise HTTPException(422, str(exc)) from exc
+        from sniper_quant.universe import ranking_source, resolve_ranking_universe
+
+        history_book = None
+        if not symbol and ranking_source(app.state.settings, limit=20) == "de_top":
+            history_book = [
+                sym for sym, _ in resolve_ranking_universe(app.state.settings, limit=20)
+            ]
         rows = await _signals().list(
             symbol=symbol,
             status=status,
@@ -494,6 +506,7 @@ def create_app(
             to_ts=to_ts,
             cursor=cursor,
             limit=limit + 1,
+            symbols=history_book,
         )
         next_cursor = None
         if len(rows) > limit:

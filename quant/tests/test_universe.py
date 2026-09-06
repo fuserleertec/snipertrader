@@ -12,14 +12,16 @@ from sniper_quant.config import get_settings
 from sniper_quant.models import AssetClass, OHLCVBar
 from sniper_quant.universe import (
     DEFAULT_UNIVERSE_PATH,
+    REQUIRED_FUTURES,
+    clear_de_top_cache,
     load_paper_universe,
     load_universe_file,
+    parse_universe_top,
     ranking_source,
     resolve_ranking_universe,
+    universe_dump,
 )
 from tests.conftest import make_settings
-
-REQUIRED_FUTURES = {"ES", "CL", "GC", "NQ"}
 
 
 def _paper_symbols() -> set[str]:
@@ -67,6 +69,98 @@ def test_demo_symbols_override_replaces_file():
     settings = make_settings(DEMO_SYMBOLS="ETHUSDT,MSFT")
     assert ranking_source(settings) == "demo_symbols"
     assert {s for s, _ in resolve_ranking_universe(settings)} == {"ETHUSDT", "MSFT"}
+
+
+def test_de_universe_top_limit_10_and_20(monkeypatch: pytest.MonkeyPatch):
+    clear_de_top_cache()
+    ten = [
+        ("ES", AssetClass.FUTURES),
+        ("CL", AssetClass.FUTURES),
+        ("GC", AssetClass.FUTURES),
+        ("NQ", AssetClass.FUTURES),
+        ("BTCUSDT", AssetClass.CRYPTO),
+        ("ETHUSDT", AssetClass.CRYPTO),
+        ("AAPL", AssetClass.EQUITY),
+        ("MSFT", AssetClass.EQUITY),
+        ("NVDA", AssetClass.EQUITY),
+        ("SPY", AssetClass.EQUITY),
+    ]
+    twenty = ten + [
+        ("SOLUSDT", AssetClass.CRYPTO),
+        ("AMZN", AssetClass.EQUITY),
+        ("META", AssetClass.EQUITY),
+        ("GOOGL", AssetClass.EQUITY),
+        ("TSLA", AssetClass.EQUITY),
+        ("BNBUSDT", AssetClass.CRYPTO),
+        ("XRPUSDT", AssetClass.CRYPTO),
+        ("ADAUSDT", AssetClass.CRYPTO),
+        ("AVAXUSDT", AssetClass.CRYPTO),
+        ("LINKUSDT", AssetClass.CRYPTO),
+    ]
+
+    def fake_fetch(_settings, limit: int):
+        return list(ten if limit == 10 else twenty)
+
+    settings = make_settings(DE_API_BASE="http://de.test")
+    assert ranking_source(settings, limit=10, fetcher=fake_fetch) == "de_top"
+    assert resolve_ranking_universe(settings, limit=10, fetcher=fake_fetch) == ten
+    assert resolve_ranking_universe(settings, limit=20, fetcher=fake_fetch) == twenty
+    dump = universe_dump(settings, fetcher=fake_fetch)
+    assert dump["handoff"] == "de_top"
+    assert dump["live_trading"] is False
+    assert {r["symbol"] for r in dump["ensemble_universe"]} == {s for s, _ in ten}
+    assert {r["symbol"] for r in dump["history_universe"]} == {s for s, _ in twenty}
+    assert REQUIRED_FUTURES <= {r["symbol"] for r in dump["ensemble_universe"]}
+
+
+def test_parse_universe_top_and_http_handoff(monkeypatch: pytest.MonkeyPatch):
+    clear_de_top_cache()
+    payload = {
+        "as_of_ts_ms": 1_700_000_400_000,
+        "limit": 10,
+        "symbols": [
+            {"symbol": "ES", "asset_class": "futures", "rank": 1, "score": 0.9},
+            {"symbol": "CL", "asset_class": "futures", "rank": 2, "score": 0.8},
+            {"symbol": "GC", "asset_class": "futures", "rank": 3, "score": 0.7},
+            {"symbol": "NQ", "asset_class": "futures", "rank": 4, "score": 0.6},
+        ],
+    }
+    parsed = parse_universe_top(payload, limit=10)
+    assert [s for s, _ in parsed] == ["ES", "CL", "GC", "NQ"]
+
+    class _Resp:
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self):
+            return payload
+
+    def fake_get(url, params=None, timeout=None):
+        assert url.endswith("/v1/universe/top")
+        assert params["limit"] in (10, 20)
+        return _Resp()
+
+    monkeypatch.setattr("httpx.get", fake_get)
+    settings = make_settings(DE_API_BASE="http://de.test")
+    from sniper_quant.universe import fetch_de_universe_top
+
+    got = fetch_de_universe_top(settings, 10)
+    assert [s for s, _ in got] == ["ES", "CL", "GC", "NQ"]
+    assert ranking_source(settings, limit=10) == "de_top"
+    clear_de_top_cache()
+
+
+def test_de_top_failure_keeps_provisional_futures(monkeypatch: pytest.MonkeyPatch):
+    clear_de_top_cache()
+
+    def boom(url, params=None, timeout=None):
+        raise ConnectionError("de down")
+
+    monkeypatch.setattr("httpx.get", boom)
+    settings = make_settings(DE_API_BASE="http://de.test")
+    ranked = resolve_ranking_universe(settings, limit=10)
+    assert REQUIRED_FUTURES <= {s for s, _ in ranked}
+    assert ranking_source(settings) == "paper_universe"
 
 
 def test_de_universe_handoff_replaces_demo_symbols(tmp_path: Path):

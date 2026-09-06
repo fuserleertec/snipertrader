@@ -341,7 +341,7 @@ def rank_ensemble(
     for row in rows:
         by_symbol[normalize_symbol(row.symbol)].append(row)
 
-    pairs = list(universe) if universe is not None else resolve_ranking_universe()
+    pairs = list(universe) if universe is not None else resolve_ranking_universe(limit=10)
     resolved: dict[str, AssetClass] = {sym: ac for sym, ac in pairs}
 
     scored = _score_universe(
@@ -426,7 +426,7 @@ def rank_categorized(
     for row in rows:
         by_symbol[normalize_symbol(row.symbol)].append(row)
 
-    pairs = list(universe) if universe is not None else resolve_ranking_universe()
+    pairs = list(universe) if universe is not None else resolve_ranking_universe(limit=20)
     resolved: dict[str, AssetClass] = {sym: ac for sym, ac in pairs}
 
     scored = _score_universe(

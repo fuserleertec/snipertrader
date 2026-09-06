@@ -27,6 +27,7 @@ def make_settings(**overrides) -> Settings:
         MIN_RR=1.5,
         DEMO_SYMBOLS="",
         DE_UNIVERSE="",
+        DE_API_BASE="",
         SETUP_UNIVERSE="",
         PAPER_UNIVERSE="",
     )

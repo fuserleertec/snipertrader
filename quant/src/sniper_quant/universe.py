@@ -1,25 +1,39 @@
 """Paper ranking universe (no live trading, no hardcoded symbol lists).
 
-``GET /picks/ensemble`` and ``GET /picks/categorized`` rank **only**
-inside ``resolve_ranking_universe``:
+Handoff (PM): DE ``GET /v1/universe/top?limit=10|20`` (15m refresh).
 
-1. ``DE_UNIVERSE`` when DE has published the feed.
-2. Else ``DEMO_SYMBOLS`` when that override is set (CSV or JSON path).
-3. Else the file-backed paper mix at ``config/paper_universe.json``
-   (includes ES, NQ, CL, GC). Missing file raises — no Python fallback.
-4. Intersect with ``SETUP_UNIVERSE`` when ML set one (narrow only).
+* ``limit=10`` → P0 ensemble ranking book
+* ``limit=20`` → categorized picks + history consumers
 
-Symbols outside that set are never ranked. ``PAPER_UNIVERSE`` overrides
-the paper **book** mix only; it does not expand ranking.
+Until DE is up (``DE_API_BASE`` empty or the call fails), Quant keeps the
+provisional ``DEMO_SYMBOLS`` / paper-file mix ∩ ``SETUP_UNIVERSE``.
+That set includes ES, CL, GC, NQ. ``SETUP_UNIVERSE`` can only narrow.
+
+``PAPER_UNIVERSE`` overrides the paper book mix only.
 """
 
 from __future__ import annotations
 
 import json
+import logging
+import time
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 from sniper_quant.config import Settings, get_settings
 from sniper_quant.models import AssetClass, normalize_symbol
+
+log = logging.getLogger(__name__)
+
+UNIVERSE_TOP_PATH = "/v1/universe/top"
+UNIVERSE_TOP_LIMITS = frozenset({10, 20})
+UNIVERSE_TOP_REFRESH_SEC = 900
+REQUIRED_FUTURES = frozenset({"ES", "CL", "GC", "NQ"})
+
+Fetcher = Callable[[Settings, int], list[tuple[str, AssetClass]] | None]
+
+_DE_TOP_CACHE: dict[tuple[str, int], tuple[float, list[tuple[str, AssetClass]]]] = {}
 
 DEFAULT_UNIVERSE_PATH = Path(__file__).resolve().parents[2] / "config" / "paper_universe.json"
 
@@ -133,7 +147,7 @@ def load_demo_symbols(settings: Settings | None = None) -> list[tuple[str, Asset
 
 
 def load_de_universe_feed(settings: Settings | None = None) -> list[tuple[str, AssetClass]] | None:
-    """Published DE universe. ``None`` until ``DE_UNIVERSE`` is set."""
+    """Offline DE universe file/CSV. ``None`` until ``DE_UNIVERSE`` is set."""
     settings = settings or get_settings()
     raw = (settings.de_universe or "").strip()
     if not raw:
@@ -141,29 +155,105 @@ def load_de_universe_feed(settings: Settings | None = None) -> list[tuple[str, A
     return _load_override(raw)
 
 
+def clear_de_top_cache() -> None:
+    _DE_TOP_CACHE.clear()
+
+
+def parse_universe_top(
+    payload: dict[str, Any],
+    *,
+    limit: int,
+) -> list[tuple[str, AssetClass]]:
+    """Parse DE ``GET /v1/universe/top`` body. Required: as_of_ts_ms, limit, symbols."""
+    if not isinstance(payload, dict):
+        raise ValueError("universe/top must be an object")
+    rows = payload.get("symbols")
+    if not isinstance(rows, list):
+        raise ValueError("universe/top.symbols must be a list")
+    want = min(int(payload.get("limit") or limit), int(limit))
+    pairs = _pairs_from_rows(rows)
+    return pairs[: max(0, want)]
+
+
+def fetch_de_universe_top(
+    settings: Settings | None = None,
+    limit: int = 20,
+    *,
+    timeout: float = 1.5,
+) -> list[tuple[str, AssetClass]] | None:
+    """GET DE ``/v1/universe/top?limit=``. ``None`` if unset or unreachable."""
+    if limit not in UNIVERSE_TOP_LIMITS:
+        raise ValueError("universe/top limit must be 10 or 20")
+    settings = settings or get_settings()
+    base = (settings.de_api_base or "").strip().rstrip("/")
+    if not base:
+        return None
+    cache_key = (base, int(limit))
+    now = time.time()
+    hit = _DE_TOP_CACHE.get(cache_key)
+    if hit and now - hit[0] < UNIVERSE_TOP_REFRESH_SEC:
+        return list(hit[1])
+    url = f"{base}{UNIVERSE_TOP_PATH}"
+    try:
+        import httpx
+
+        resp = httpx.get(url, params={"limit": int(limit)}, timeout=timeout)
+        resp.raise_for_status()
+        pairs = parse_universe_top(resp.json(), limit=limit)
+    except Exception as exc:  # noqa: BLE001
+        log.info("DE %s failed (%s); using provisional universe", url, exc)
+        return None
+    _DE_TOP_CACHE[cache_key] = (now, list(pairs))
+    return pairs
+
+
+def _provisional_universe(settings: Settings) -> list[tuple[str, AssetClass]]:
+    de_file = load_de_universe_feed(settings)
+    if de_file is not None:
+        return de_file
+    return load_demo_symbols(settings)
+
+
+def _narrow(allowed: list[tuple[str, AssetClass]], settings: Settings) -> list[tuple[str, AssetClass]]:
+    setup = parse_setup_universe(settings)
+    if setup is None:
+        return allowed
+    return [(sym, ac) for sym, ac in allowed if sym in setup]
+
+
 def resolve_ranking_universe(
     settings: Settings | None = None,
+    *,
+    limit: int = 20,
+    fetcher: Fetcher | None = None,
 ) -> list[tuple[str, AssetClass]]:
-    """Allow-list for ``GET /picks/ensemble`` / ``/picks/categorized``.
+    """Allow-list for picks / history.
 
-    1. ``DE_UNIVERSE`` when DE has published the feed.
-    2. Else ``DEMO_SYMBOLS`` when set.
-    3. Else ``config/paper_universe.json`` (includes ES, NQ, CL, GC).
-    4. Intersect with ``SETUP_UNIVERSE`` when ML set one.
-
-    Never includes symbols outside that set. Paper only.
+    ``limit=10`` = P0 ensemble book. ``limit=20`` = categorized + history.
+    DE ``GET /v1/universe/top`` when ``DE_API_BASE`` works; otherwise the
+    provisional mix (includes ES, CL, GC, NQ) ∩ ``SETUP_UNIVERSE``.
+    Provisional is **not** sliced to ``limit`` so futures stay in the set.
     """
+    if limit not in UNIVERSE_TOP_LIMITS:
+        raise ValueError("ranking universe limit must be 10 or 20")
     settings = settings or get_settings()
-    de = load_de_universe_feed(settings)
-    allowed = de if de is not None else load_demo_symbols(settings)
-    setup = parse_setup_universe(settings)
-    if setup is not None:
-        allowed = [(sym, ac) for sym, ac in allowed if sym in setup]
-    return allowed
+    fetch = fetcher if fetcher is not None else fetch_de_universe_top
+    top = fetch(settings, limit)
+    if top:
+        return _narrow(top, settings)
+    return _narrow(_provisional_universe(settings), settings)
 
 
-def ranking_source(settings: Settings | None = None) -> str:
+def ranking_source(
+    settings: Settings | None = None,
+    *,
+    limit: int = 20,
+    fetcher: Fetcher | None = None,
+) -> str:
     settings = settings or get_settings()
+    fetch = fetcher if fetcher is not None else fetch_de_universe_top
+    if fetch(settings, limit):
+        return "de_top"
     if (settings.de_universe or "").strip():
         return "de_feed"
     if (settings.demo_symbols or "").strip():
@@ -171,32 +261,46 @@ def ranking_source(settings: Settings | None = None) -> str:
     return "paper_universe"
 
 
-def universe_dump(settings: Settings | None = None) -> dict:
+def universe_dump(
+    settings: Settings | None = None,
+    *,
+    fetcher: Fetcher | None = None,
+) -> dict:
     settings = settings or get_settings()
     paper = load_paper_universe(settings)
     demo = load_demo_symbols(settings)
     de = load_de_universe_feed(settings)
     ml = parse_setup_universe(settings)
-    ranking = resolve_ranking_universe(settings)
-    source = ranking_source(settings)
+    ensemble = resolve_ranking_universe(settings, limit=10, fetcher=fetcher)
+    history = resolve_ranking_universe(settings, limit=20, fetcher=fetcher)
+    source = ranking_source(settings, limit=20, fetcher=fetcher)
+    base = (settings.de_api_base or "").strip().rstrip("/")
+    handoff = "de_top" if source == "de_top" else ("de_feed" if source == "de_feed" else "provisional")
     return {
         "live_trading": False,
-        "refresh_sec": 900,
-        "handoff": "de_feed" if source == "de_feed" else "provisional",
+        "refresh_sec": UNIVERSE_TOP_REFRESH_SEC,
+        "handoff": handoff,
         "ranking_source": source,
+        "de_api_base": base or None,
+        "de_universe_top": f"{base}{UNIVERSE_TOP_PATH}" if base else None,
         "de_universe": [{"symbol": s, "asset_class": a.value} for s, a in de] if de else None,
         "demo_symbols": [{"symbol": s, "asset_class": a.value} for s, a in demo],
         "setup_universe": sorted(ml) if ml is not None else None,
         "paper_universe": [{"symbol": s, "asset_class": a.value} for s, a in paper],
-        "ranking_universe": [{"symbol": s, "asset_class": a.value} for s, a in ranking],
+        "ensemble_universe": [{"symbol": s, "asset_class": a.value} for s, a in ensemble],
+        "history_universe": [{"symbol": s, "asset_class": a.value} for s, a in history],
+        "ranking_universe": [{"symbol": s, "asset_class": a.value} for s, a in ensemble],
         "paper_source": (settings.paper_universe or str(DEFAULT_UNIVERSE_PATH)),
         "intersection": ml is not None,
         "n_paper": len(paper),
-        "n_ranking": len(ranking),
+        "n_ensemble": len(ensemble),
+        "n_history": len(history),
+        "n_ranking": len(ensemble),
+        "required_futures": sorted(REQUIRED_FUTURES),
         "note": (
-            "GET /picks/ensemble ranks only ranking_universe. "
-            "Default: config/paper_universe.json (includes ES, NQ, CL, GC). "
-            "Overrides: DEMO_SYMBOLS, then DE_UNIVERSE when DE publishes. "
+            "Handoff: GET {base}/v1/universe/top?limit=10 (P0 ensemble) and "
+            "limit=20 (categorized + history). Until DE is up, provisional "
+            "DEMO_SYMBOLS / paper file ∩ SETUP_UNIVERSE (includes ES, CL, GC, NQ). "
             "SETUP_UNIVERSE can only narrow. live_trading is always false."
-        ),
+        ).format(base=base or "$DE_API_BASE"),
     }

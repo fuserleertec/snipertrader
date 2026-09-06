@@ -254,34 +254,34 @@ Dormant `mss_break` / `order_block` / `sweep_mss` and
 `*_pending_user_confirm` are omitted. Metrics come from signal outcomes /
 `realized_r`.
 
-### Paper universe vs ranking allow-list
+### Paper universe vs DE `/v1/universe/top` handoff
 
-Quant owns a default **20-symbol** mix (8 crypto / 8 equity / 4 futures
-including **ES, NQ, CL, GC**) at
-[`config/paper_universe.json`](config/paper_universe.json). There is **no
-hardcoded symbol list in Python** — missing file raises. That file is
-both the paper **book** mix and the default ensemble allow-list.
+DE will publish **`GET /v1/universe/top?limit=10|20`** (15m refresh).
+Schema: [`schemas/universe_top.schema.json`](../schemas/universe_top.schema.json).
 
-`GET /picks/ensemble` top-10 (and `/picks/categorized`) rank **only
-inside `ranking_universe`**. Symbols outside that set are never
-returned, even if they have a published `ensemble_score` in the book.
+| Consumer | DE call | Quant use |
+|---|---|---|
+| P0 ensemble | `?limit=10` | Ranking book for `GET /picks/ensemble` (top 10 within that set — typically the whole returned set) |
+| Categorized + history | `?limit=20` | `GET /picks/categorized`. `GET /signals` / `/signals/history` are scoped to this book when DE is up and `symbol` is omitted |
+
+Set **`DE_API_BASE`** (e.g. `http://localhost:8000`) when DE is up. Quant
+caches the response for **900s**. If the call fails or `DE_API_BASE` is
+empty, Quant stays on the **provisional** mix:
 
 | Stage | Allow-list | Env |
 |---|---|---|
-| **Default (now)** | `config/paper_universe.json` ∩ `SETUP_UNIVERSE` when ML sets one | `SETUP_UNIVERSE` |
-| **Override** | Explicit CSV / JSON path | `DEMO_SYMBOLS` |
-| **Handoff (when DE publishes)** | DE universe feed only, still ∩ `SETUP_UNIVERSE` if set | **`DE_UNIVERSE`** |
+| **Provisional (now)** | `DEMO_SYMBOLS` if set, else [`config/paper_universe.json`](config/paper_universe.json) (includes **ES, CL, GC, NQ**) ∩ `SETUP_UNIVERSE` | `DEMO_SYMBOLS`, `SETUP_UNIVERSE` |
+| **Offline file** | CSV / JSON path | `DE_UNIVERSE` |
+| **Handoff** | DE `GET /v1/universe/top?limit=10\|20`, still ∩ `SETUP_UNIVERSE` | **`DE_API_BASE`** |
 
-`PAPER_UNIVERSE` overrides the paper **book** only — it does not expand
-ranking. `GET /paper/universe` shows `handoff` (`provisional` \|
-`de_feed`), `ranking_source` (`paper_universe` \| `demo_symbols` \|
-`de_feed`), `demo_symbols`, `de_universe`, `setup_universe`, and
-`ranking_universe`. `live_trading` is always false.
+Provisional is **not** sliced to 10, so ES/CL/GC/NQ stay in the P0 book
+until DE is live. `SETUP_UNIVERSE` can only **narrow**. `PAPER_UNIVERSE`
+overrides the paper book only.
 
-ML **`SETUP_UNIVERSE`** remains the detector allow-list (`detect_setup`
-only walks those symbols when set). For ranking it can only **narrow**
-the file / `DEMO_SYMBOLS` / `DE_UNIVERSE` set — it cannot add symbols
-that list did not include.
+`GET /paper/universe` shows `handoff` (`provisional` \| `de_feed` \|
+`de_top`), `ranking_source`, `ensemble_universe` (limit 10),
+`history_universe` (limit 20), `de_universe_top`. `live_trading` is
+always false.
 
 ### Multi-symbol risk (existing, paper book)
 
@@ -651,6 +651,7 @@ schemas/risk_validate_*.schema.json
 schemas/ensemble_picks.schema.json
 schemas/categorized_picks.schema.json
 schemas/ensemble_features.schema.json
+schemas/universe_top.schema.json
 ```
 
 ## CLI

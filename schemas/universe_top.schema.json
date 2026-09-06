@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snipertrader.ai/schemas/universe_top.schema.json",
+  "title": "UniverseTop",
+  "description": "Frozen GET /v1/universe/top?limit=10|20 for FE / ML / Quant. Quant uses limit=10 as the P0 ensemble ranking book and limit=20 for categorized + history consumers. 15m refresh. Paper only.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["as_of_ts_ms", "limit", "symbols"],
+  "properties": {
+    "as_of_ts_ms": { "type": "integer" },
+    "limit": { "type": "integer", "enum": [10, 20] },
+    "symbols": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["symbol", "asset_class", "rank", "score"],
+        "properties": {
+          "symbol": { "type": "string", "pattern": "^[A-Z0-9]+$" },
+          "asset_class": { "type": "string", "enum": ["crypto", "equity", "futures"] },
+          "rank": { "type": "integer", "minimum": 1, "maximum": 20 },
+          "score": { "type": "number" }
+        }
+      }
+    }
+  }
+}

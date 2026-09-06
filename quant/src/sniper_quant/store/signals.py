@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import time
+from collections.abc import Sequence
 from typing import Protocol
 
 from sniper_quant.models import (
@@ -50,6 +51,7 @@ class SignalStore(Protocol):
         to_ts: int | None = None,
         cursor: str | None = None,
         limit: int = 50,
+        symbols: Sequence[str] | None = None,
     ) -> list[StoredSignal]: ...
 
     async def update_status(
@@ -93,11 +95,15 @@ class InMemorySignalStore:
         to_ts: int | None = None,
         cursor: str | None = None,
         limit: int = 50,
+        symbols: Sequence[str] | None = None,
     ) -> list[StoredSignal]:
         rows = list(self.rows.values())
         if symbol:
             want = normalize_symbol(symbol)
             rows = [r for r in rows if r.symbol == want]
+        elif symbols:
+            allow = {normalize_symbol(s) for s in symbols}
+            rows = [r for r in rows if r.symbol in allow]
         if status:
             st = SignalStatus(status)
             rows = [r for r in rows if r.status is st]
@@ -320,6 +326,7 @@ class TimescaleSignalStore:
         to_ts: int | None = None,
         cursor: str | None = None,
         limit: int = 50,
+        symbols: Sequence[str] | None = None,
     ) -> list[StoredSignal]:
         pool = await self._conn()
         st = SignalStatus(status).value if status else None
@@ -330,6 +337,7 @@ class TimescaleSignalStore:
         c_id: str | None = None
         if cursor:
             c_ts, c_id = decode_cursor(cursor)
+        allow = [normalize_symbol(s) for s in symbols] if symbols and not symbol else None
         sql = """
         SELECT EXTRACT(EPOCH FROM ts) * 1000 AS ts_ms, id, schema_version,
                symbol, asset_class, setup_type, side, confidence, ref_vwap,
@@ -349,12 +357,13 @@ class TimescaleSignalStore:
                 OR EXTRACT(EPOCH FROM ts) * 1000 < $8
                 OR (EXTRACT(EPOCH FROM ts) * 1000 = $8 AND id < $9)
               )
+          AND ($11::TEXT[] IS NULL OR symbol = ANY($11))
         ORDER BY ts DESC, id DESC
         LIMIT $10
         """
         async with pool.acquire() as conn:
             rows = await conn.fetch(
-                sql, symbol, st, stype, side_v, ac_v, from_ts, to_ts, c_ts, c_id, limit
+                sql, symbol, st, stype, side_v, ac_v, from_ts, to_ts, c_ts, c_id, limit, allow
             )
         return [_row_to_signal(r) for r in rows]
 

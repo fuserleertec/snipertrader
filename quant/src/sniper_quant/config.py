@@ -66,7 +66,12 @@ class Settings(BaseSettings):
     de_universe: str = Field(
         default="",
         alias="DE_UNIVERSE",
-        description="Published DE universe feed (CSV or JSON path). When set, replaces the paper-file ranking allow-list.",
+        description="Offline DE universe feed (CSV or JSON path). Used when DE_API_BASE is unset or /v1/universe/top fails.",
+    )
+    de_api_base: str = Field(
+        default="",
+        alias="DE_API_BASE",
+        description="DE HTTP origin for GET /v1/universe/top?limit=10|20 (e.g. http://localhost:8000). Empty = provisional.",
     )
 
 
