@@ -179,3 +179,95 @@ def test_slice_top_re_ranks_prefix():
     assert sliced["limit"] == 10
     assert [r["symbol"] for r in sliced["symbols"][:2]] == ["ES", "CL"]
     assert set(sliced["symbols"][0]) == {"symbol", "asset_class", "rank", "score"}
+
+
+def _top_wire(symbols: list[str], *, limit: int = 20, as_of: int = 42) -> dict:
+    return {
+        "as_of_ts_ms": as_of,
+        "limit": limit,
+        "symbols": [
+            {"symbol": s, "asset_class": infer_asset_class(s).value, "rank": i + 1, "score": 1.0 - i * 0.01}
+            for i, s in enumerate(symbols)
+        ],
+    }
+
+
+def test_symbols_from_payload_reads_frozen_object_rows():
+    from sniper_data.universe import symbols_from_payload
+
+    names, as_of, members = symbols_from_payload(_top_wire(["ES", "CL", "GC", "NQ"], limit=10))
+    assert names == ["ES", "CL", "GC", "NQ"]
+    assert as_of == 42
+    assert members[0]["symbol"] == "ES"
+    assert members[0]["asset_class"] == "futures"
+    assert members[0]["rank"] == 1
+
+
+@pytest.mark.asyncio
+async def test_scan_uses_http_top_object_rows_not_setup_universe(monkeypatch):
+    """SWAP: SETUP_UNIVERSE must not win when GET /v1/universe/top is up."""
+    import httpx
+
+    from sniper_data.universe import (
+        EnvUniverseProvider,
+        FallbackUniverseProvider,
+        HttpUniverseProvider,
+        RedisUniverseProvider,
+        resolve_scan_universe,
+    )
+
+    monkeypatch.setenv("SETUP_UNIVERSE", "BTCUSDT,AAPL")
+    store = InMemoryStateStore()
+    await write_universe_active(store, ["AAPL", "MSFT"], now_ms=1)
+    seen: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(str(request.url))
+        assert "/v1/universe/top" in str(request.url)
+        assert "limit=20" in str(request.url)
+        return httpx.Response(200, json=_top_wire(["ES", "CL", "GC", "NQ"], limit=20))
+
+    env = EnvUniverseProvider(Settings(SETUP_UNIVERSE="BTCUSDT,AAPL"))
+    http = HttpUniverseProvider("http://de.example", env, transport=httpx.MockTransport(handler))
+    auto = FallbackUniverseProvider(
+        env=env,
+        redis=RedisUniverseProvider(store, env),
+        http=http,
+    )
+    scan = await resolve_scan_universe(auto, limit=20)
+    assert list(scan.symbols) == ["ES", "CL", "GC", "NQ"]
+    assert scan.backend == "http"
+    assert "/v1/universe/top" in scan.source
+    assert scan.ranked is True
+    assert scan.members[0]["rank"] == 1
+    assert seen and "/v1/universe/top" in seen[0]
+    full = await auto.snapshot(ranked=False)
+    assert [row["symbol"] if isinstance(row, dict) else row for row in (await store.get(REDIS_UNIVERSE_ACTIVE))["symbols"]] == ["AAPL", "MSFT"]
+    assert list(full.symbols) == ["AAPL", "MSFT"]
+    assert full.backend == "redis"
+
+
+@pytest.mark.asyncio
+async def test_scan_uses_redis_top_cache_not_setup_universe(monkeypatch):
+    from sniper_data.universe import build_universe_provider, resolve_scan_universe
+
+    monkeypatch.setenv("SETUP_UNIVERSE", "AAPL,MSFT")
+    store = InMemoryStateStore()
+    await write_universe_top(store, _top_wire(["ES", "NQ", "CL", "GC"], limit=10, as_of=7))
+    provider = build_universe_provider(Settings(SETUP_UNIVERSE="AAPL,MSFT"), store=store)
+    scan = await resolve_scan_universe(provider, limit=10)
+    assert list(scan.symbols) == ["ES", "NQ", "CL", "GC"]
+    assert scan.source == REDIS_UNIVERSE_TOP
+    assert scan.backend == "redis"
+
+
+@pytest.mark.asyncio
+async def test_setup_universe_only_when_de_unreachable():
+    from sniper_data.universe import EnvUniverseProvider, HttpUniverseProvider, resolve_scan_universe
+
+    env = EnvUniverseProvider(Settings(SETUP_UNIVERSE="ES,CL,GC,NQ"))
+    http = HttpUniverseProvider("http://127.0.0.1:9", env, timeout_s=0.05)
+    scan = await resolve_scan_universe(http, limit=20)
+    assert list(scan.symbols) == ["ES", "CL", "GC", "NQ"]
+    assert scan.backend == "env"
+    assert scan.source == "SETUP_UNIVERSE"

@@ -168,3 +168,53 @@ def test_phase2_anchor_avwap_volume_profile_kill_zone(client):
     metrics = http.get("/metrics")
     assert metrics.status_code == 200
     assert b"sniper_http_request_duration_seconds" in metrics.content
+
+
+def test_picks_ensemble_consumes_features_not_setup_universe(client):
+    http, _store = client
+    health = http.get("/health").json()
+    assert health["live_trading"] is False
+    assert health["universe_top"] == "/v1/universe/top"
+    top = http.get("/v1/universe/top?limit=10").json()
+    assert set(top) == {"as_of_ts_ms", "limit", "symbols"}
+    assert top["limit"] == 10
+    assert isinstance(top["symbols"][0], dict)
+    assert set(top["symbols"][0]) == {"symbol", "asset_class", "rank", "score"}
+    assert {row["symbol"] for row in top["symbols"]} >= {"ES", "NQ", "CL", "GC"} or len(top["symbols"]) >= 1
+
+    from sniper_data.setup_detection.ranking import ensemble_features_snapshot
+
+    book = http.app.state.ensemble_book
+    book.record({"id": "stale", "symbol": "AAPL", "ensemble_score": 5, "confidence": 0.05, "side": "long", "ts_ms": 1})
+    book.record_features(
+        ensemble_features_snapshot(
+            [
+                {
+                    "symbol": "ES",
+                    "ensemble_score": 81,
+                    "best_confidence": 0.8,
+                    "side": "long",
+                    "setup_type": "sweep_reclaim",
+                    "rank_components": {
+                        "setup_quality": 80,
+                        "confluence": 50,
+                        "kill_zone": 100,
+                        "volume": 100,
+                        "freshness": 90,
+                    },
+                    "contributing_factors": ["liquidity_sweep", "mss"],
+                    "ts_ms": 2,
+                }
+            ]
+        )
+    )
+    picks = http.get("/v1/picks/ensemble?limit=10").json()
+    assert picks["live_trading"] is False
+    assert picks["refresh_seconds"] == 900
+    assert picks["source"] == "ensemble_features"
+    assert picks["picks"][0]["symbol"] == "ES"
+    assert picks["picks"][0]["score"] == 81
+    assert picks["picks"][0]["confidence"] == 0.8
+    assert picks["picks"][0]["rank_components"]["setup_quality"] == 80
+    hist = http.get("/v1/setup-signals/history").json()
+    assert hist["live_trading"] is False

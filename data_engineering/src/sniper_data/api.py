@@ -350,6 +350,11 @@ async def lifespan(app: FastAPI):
         await write_universe_active(app.state.store, settings.symbols)
     except Exception as exc:  # noqa: BLE001
         log.warning("universe:active seed skipped: %s", exc)
+    from sniper_data.setup_detection.ranking import EnsembleBook
+    from sniper_data.universe import build_universe_provider
+
+    app.state.ensemble_book = EnsembleBook()
+    app.state.universe_provider = build_universe_provider(settings, store=app.state.store)
     yield
     await app.state.store.close()
     await app.state.bars.close()
@@ -371,6 +376,11 @@ def create_app(
         app.state.settings = settings or get_settings()
         app.state.bars = bars if bars is not None else InMemoryOHLCVStore()
         app.state.performance = PerformanceStore(store)
+        from sniper_data.setup_detection.ranking import EnsembleBook
+        from sniper_data.universe import build_universe_provider
+
+        app.state.ensemble_book = EnsembleBook()
+        app.state.universe_provider = build_universe_provider(app.state.settings, store=store)
 
     @app.middleware("http")
     async def _prometheus_http(request: Request, call_next):
@@ -486,6 +496,45 @@ def create_app(
             return JSONResponse(cached)
         body = await write_universe_active(app.state.store, app.state.settings.symbols)
         return JSONResponse(body)
+
+    @app.get("/v1/picks/ensemble")
+    async def get_picks_ensemble(limit: int = Query(default=10, ge=1, le=20)) -> JSONResponse:
+        """Quant ``GET /picks/ensemble``: prefer ``ensemble_features``, else signal mirrors."""
+        from sniper_data.setup_detection.ranking import EnsembleBook, consume_picks_ensemble
+        from sniper_data.universe import build_universe_provider, resolve_scan_universe
+
+        book: EnsembleBook | None = getattr(app.state, "ensemble_book", None)
+        if book is None:
+            book = EnsembleBook()
+        provider = getattr(app.state, "universe_provider", None) or build_universe_provider(
+            app.state.settings, store=app.state.store
+        )
+        snap = await resolve_scan_universe(provider, limit=20)
+        body = consume_picks_ensemble(
+            features=book.latest_features,
+            signals=book.signals,
+            limit=limit,
+            universe=snap.symbols,
+        )
+        body["universe_source"] = snap.source
+        return JSONResponse(body)
+
+    @app.get("/v1/setup-signals/history")
+    async def get_setup_history() -> JSONResponse:
+        """Paper Signal History (P2) — join published rows to paper outcomes."""
+        from sniper_data.setup_detection.history import history_summary, join_paper_history
+        from sniper_data.setup_detection.ranking import EnsembleBook
+
+        book: EnsembleBook | None = getattr(app.state, "ensemble_book", None)
+        signals = list(book.signals) if book is not None else []
+        rows = join_paper_history(signals)
+        return JSONResponse(
+            {
+                "history": rows,
+                "summary": history_summary(rows),
+                "live_trading": False,
+            }
+        )
 
     @app.get("/v1/dashboard/snapshot/{symbol}")
     async def dashboard_snapshot_one(symbol: str) -> JSONResponse:

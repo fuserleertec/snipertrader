@@ -29,6 +29,37 @@
       "type": ["array", "null"],
       "items": { "type": "string" },
       "description": "Ids of sweep / FVG / MSS / OB (or other) events that produced this setup. Same generators run for every configured symbol."
+    },
+    "entry": { "type": ["number", "null"] },
+    "stop": { "type": ["number", "null"] },
+    "target": { "type": ["number", "null"] },
+    "timeframe": { "type": ["string", "null"], "enum": ["1m", "5m", "15m", null] },
+    "session_type": {
+      "type": ["string", "null"],
+      "enum": ["asia", "london", "ny_am", "ny_pm", "rth", "eth", "globex", null]
+    },
+    "position_size": { "type": ["number", "null"], "minimum": 0 },
+    "status": {
+      "type": ["string", "null"],
+      "enum": ["ACTIVE", "TP_HIT", "SL_HIT", "CANCELLED", null]
+    },
+    "contributing_factors": { "type": ["array", "null"], "items": { "type": "string" } },
+    "factor_breakdown": { "type": ["array", "null"] },
+    "ensemble_score": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+    "rank_components": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "setup_quality": { "type": "number" },
+        "confluence": { "type": "number" },
+        "kill_zone": { "type": "number" },
+        "volume": { "type": "number" },
+        "freshness": { "type": "number" }
+      }
+    },
+    "category": {
+      "type": ["string", "null"],
+      "enum": ["crypto", "equity", "futures", null]
     }
   }
 }

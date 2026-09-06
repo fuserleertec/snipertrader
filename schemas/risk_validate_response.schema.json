@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snipertrader.ai/schemas/risk_validate_response.schema.json",
+  "title": "RiskValidateResponse",
+  "description": "Decision from POST /risk/validate. ML must not publish to setup_signals unless approved is true.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["approved", "reason", "adjusted_position_size"],
+  "properties": {
+    "approved": { "type": "boolean" },
+    "reason": { "type": "string" },
+    "adjusted_position_size": {
+      "type": ["number", "null"],
+      "description": "Compliant size in units. 0 when rejected for a hard block; suggested max when size was the only issue."
+    }
+  }
+}
