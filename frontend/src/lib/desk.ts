@@ -5,6 +5,7 @@ import {
   FUTURES_SYMBOLS,
   inferAssetClass,
   LIST_REFRESH_SEC,
+  RECON_AUDIT_LIMIT,
   SETUP_FILTERS,
   SETUP_TYPES,
   wireAssetClass,
@@ -210,4 +211,18 @@ export function rankWithinAllowed(items: EnsemblePickItem[], allowed: Set<string
 export function capWithinAllowed(items: CategorizedPickItem[], allowed: Set<string>): CategorizedPickItem[] {
   const scoped = allowed.size ? items.filter((i) => allowed.has(i.symbol.toUpperCase())) : items;
   return capCategorized(scoped);
+}
+
+/** Section 07 Recon Audit — unique symbols, at most 16. */
+export function capReconAudit<T extends { symbol: string }>(rows: T[]): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const row of rows) {
+    const symbol = row.symbol.toUpperCase();
+    if (!symbol || seen.has(symbol)) continue;
+    seen.add(symbol);
+    out.push({ ...row, symbol });
+    if (out.length >= RECON_AUDIT_LIMIT) break;
+  }
+  return out;
 }

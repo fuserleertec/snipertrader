@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { RECON_AUDIT_LIMIT } from "@/lib/constants";
+import { capReconAudit } from "@/lib/desk";
 import {
   GLOSSARY,
   NARRATIVES,
@@ -189,9 +190,7 @@ export function ReconAudit({
     score: d.score,
     reason: reconFromCategorized(d).note,
   }));
-  const rows = [...base, ...extras]
-    .filter((row, i, all) => all.findIndex((r) => r.symbol === row.symbol) === i)
-    .slice(0, RECON_AUDIT_LIMIT);
+  const rows = capReconAudit([...base, ...extras]);
   return (
     <section className="sec">
       <div className="sec-head">

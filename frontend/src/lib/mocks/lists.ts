@@ -9,6 +9,7 @@ import {
   ENSEMBLE_LIMIT,
   inferAssetClass,
   LIST_REFRESH_SEC,
+  RECON_AUDIT_LIMIT,
   seedPrice,
   SETUP_TYPES,
 } from "../constants";
@@ -197,7 +198,11 @@ export function mockCategorizedPicks(
   };
 }
 
-export function mockDroppedPicks(cycle = 0, taken: Set<string> = new Set(), limit = 16): CategorizedPickItem[] {
+export function mockDroppedPicks(
+  cycle = 0,
+  taken: Set<string> = new Set(),
+  limit = RECON_AUDIT_LIMIT,
+): CategorizedPickItem[] {
   return SETUP_UNIVERSE.filter((s) => !taken.has(s.symbol))
     .map((row) => {
       const seed = `${row.symbol}:${cycle}:drop`;
@@ -217,7 +222,7 @@ export function mockDroppedPicks(cycle = 0, taken: Set<string> = new Set(), limi
       };
     })
     .sort((a, b) => a.score - b.score)
-    .slice(0, Math.min(16, Math.max(0, limit)));
+    .slice(0, Math.min(RECON_AUDIT_LIMIT, Math.max(0, limit)));
 }
 
 /** Prepared `GET /v1/universe` mock — same known fields as `/top`, cap 20. */

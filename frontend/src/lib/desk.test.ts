@@ -5,6 +5,7 @@ import {
   activeSetupQuery,
   allowedSymbolSet,
   cardsForTab,
+  capReconAudit,
   capWithinAllowed,
   chartExtrasFromTop,
   chartSymbolsForTab,
@@ -605,7 +606,14 @@ describe("provisional universe is mock-only", () => {
   });
 
   it("recon audit mock caps at 16", () => {
-    const dropped = mockDroppedPicks(0, new Set(), 16);
+    const dropped = mockDroppedPicks(0, new Set(), 99);
     assert.ok(dropped.length <= 16);
+    assert.equal(dropped.length, 16);
+    const overflow = capReconAudit(
+      Array.from({ length: 30 }, (_, i) => ({ symbol: `S${i}`, score: i })),
+    );
+    assert.equal(overflow.length, 16);
+    assert.equal(overflow[0]?.symbol, "S0");
+    assert.equal(new Set(overflow.map((r) => r.symbol)).size, 16);
   });
 });

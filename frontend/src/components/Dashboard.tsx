@@ -12,6 +12,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { inferAssetClass, LIST_REFRESH_SEC } from "@/lib/constants";
 import {
   assetClassToTab,
+  capReconAudit,
   chartExtrasFromTop,
   chartSymbolsForTab,
   defaultSymbolForTab,
@@ -175,7 +176,9 @@ export function Dashboard() {
   };
 
   const visibleSessions = defaultVisibleSessions(inferAssetClass(symbol), market.lastBar?.close_ts_ms ?? 0);
-  const dropped = allSignals.filter((s) => tierOf(convictionOf(s)) === "drop" || s.status !== "ACTIVE");
+  const dropped = capReconAudit(
+    allSignals.filter((s) => tierOf(convictionOf(s)) === "drop" || s.status !== "ACTIVE"),
+  );
   const ageLabel = market.lastBar
     ? new Date(market.lastBar.close_ts_ms).toLocaleString("en-US", {
         month: "short",
