@@ -411,7 +411,8 @@ def test_openapi_documents_picks_and_asset_class():
     assert {"as_of_ts_ms", "ml_scores"} <= ens_params
     assert "200" in ens["responses"]
     pick = schemas["EnsemblePick"]
-    assert set(pick["required"]) >= PICK_FIELDS
+    assert {"rank", "symbol", "asset_class", "score", "confidence"} <= set(pick["required"])
+    assert "setup_types" in pick["properties"]
     assert "EnsemblePicksResponse" in schemas
 
     cat = paths["/picks/categorized"]["get"]
