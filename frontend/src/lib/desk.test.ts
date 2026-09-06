@@ -85,16 +85,53 @@ describe("Quant list contracts", () => {
     assert.ok(ens);
     assert.equal(ens.as_of_ts_ms, 0);
     assert.equal(ens.refresh_sec, 900);
-    assert.equal(ens.universe_source, undefined);
+    assert.equal(ens.universe_source, "SETUP_UNIVERSE");
     assert.equal(ens.items.length, 1);
     assert.ok(ens.items.length <= 10);
-    assert.deepEqual(ens.items[0], {
-      rank: 1,
-      symbol: "BTCUSDT",
-      asset_class: "crypto",
-      score: 0,
-      setup_types: ["sweep_reclaim"],
-      confidence: 0,
+    assert.equal(ens.items[0]?.symbol, "BTCUSDT");
+    assert.equal(ens.items[0]?.ensemble_score, 0);
+    assert.deepEqual(ens.items[0]?.rank_components, {
+      setup_quality: 0,
+      risk_adjusted: 0,
+      kill_zone: 0,
+      volume: 0,
+      freshness: 0,
+    });
+  });
+
+  it("parses universe_source + ensemble_score + rank_components on GET /picks/ensemble", () => {
+    const ens = normalizeEnsemblePicks({
+      as_of_ts_ms: 0,
+      refresh_sec: 900,
+      universe_source: "DE",
+      items: [
+        {
+          rank: 1,
+          symbol: "CL",
+          asset_class: "futures",
+          score: 0.2,
+          ensemble_score: 0.64,
+          setup_types: ["vwap_pullback_cont"],
+          confidence: 0.7,
+          rank_components: {
+            setup_quality: 0.8,
+            risk_adjusted: 0.7,
+            kill_zone: 0.4,
+            volume: 0.5,
+            freshness: 0.6,
+          },
+        },
+      ],
+    });
+    assert.equal(ens?.universe_source, "DE");
+    assert.equal(ens?.items[0]?.score, 0.64);
+    assert.equal(ens?.items[0]?.ensemble_score, 0.64);
+    assert.deepEqual(ens?.items[0]?.rank_components, {
+      setup_quality: 0.8,
+      risk_adjusted: 0.7,
+      kill_zone: 0.4,
+      volume: 0.5,
+      freshness: 0.6,
     });
   });
 
@@ -122,7 +159,13 @@ describe("Quant list contracts", () => {
     assert.equal(ens?.items[0]?.confidence, 0.81);
     assert.equal(ens?.items[0]?.best_confidence, 0.81);
     assert.equal(ens?.items[0]?.symbol, "ES");
-    assert.equal(ens?.items[0]?.rank_components, undefined);
+    assert.deepEqual(ens?.items[0]?.rank_components, {
+      setup_quality: 0,
+      risk_adjusted: 0,
+      kill_zone: 0,
+      volume: 0,
+      freshness: 0,
+    });
   });
 
   it("normalizers clamp to contract caps and map stocks→equity", () => {

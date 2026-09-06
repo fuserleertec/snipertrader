@@ -161,7 +161,7 @@ function classCategory(asset: AssetClass): string {
 /** Map GET /picks/ensemble items onto the locked QEP table columns. */
 export function presentEnsemble(item: EnsemblePickItem, mode: "market" | "activity", cycle = 0): EnsemblePick {
   const quote = mockQuote(item.symbol, cycle);
-  const conv = Math.round((item.ensemble_score ?? item.score) * 100);
+  const conv = Math.round(item.ensemble_score * 100);
   const signal: "Buy" | "Sell" | "Hold" = conv >= 70 ? "Buy" : conv <= 45 ? "Sell" : "Hold";
   const setup = item.setup_types[0] ?? "sweep_reclaim";
   const fake: Signal = {
@@ -185,11 +185,10 @@ export function presentEnsemble(item: EnsemblePickItem, mode: "market" | "activi
   };
   const rc = item.rank_components;
   const factors = item.contributing_factors?.length ? ` · ${item.contributing_factors.join("+")}` : "";
-  const why = rc
-    ? mode === "activity"
+  const why =
+    mode === "activity"
       ? `rank_components vol ${rc.volume.toFixed(2)} · kz ${rc.kill_zone.toFixed(2)} · freshness ${rc.freshness.toFixed(2)}${factors}`
-      : `${item.setup_types.join(" + ") || "ensemble"} · sq ${rc.setup_quality.toFixed(2)} · risk ${rc.risk_adjusted.toFixed(2)}${factors}`
-    : `${item.setup_types.join(" + ") || "ensemble"}${factors}`;
+      : `${item.setup_types.join(" + ") || "ensemble"} · sq ${rc.setup_quality.toFixed(2)} · risk ${rc.risk_adjusted.toFixed(2)}${factors}`;
   return {
     ticker: item.symbol,
     company: `${universeName(item.symbol)} · ${item.asset_class}`,

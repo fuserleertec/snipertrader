@@ -25,6 +25,7 @@ export interface DeskLists {
 const EMPTY_ENSEMBLE: EnsemblePicksResponse = {
   as_of_ts_ms: 0,
   refresh_sec: LIST_REFRESH_SEC,
+  universe_source: "SETUP_UNIVERSE",
   items: [],
 };
 

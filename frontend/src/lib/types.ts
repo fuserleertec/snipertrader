@@ -427,9 +427,9 @@ export interface RankComponents {
 }
 
 /**
- * GET /picks/ensemble item — Quant contract (required):
- * rank, symbol, asset_class, score, setup_types, confidence.
- * Optional ML extras: ensemble_score, rank_components, contributing_factors, best_confidence.
+ * GET /picks/ensemble item — Quant contract:
+ * rank, symbol, asset_class, score, setup_types, confidence,
+ * ensemble_score, rank_components.
  * Mapping: score ← ensemble_score, confidence ← best_confidence when those fields are present.
  */
 export interface EnsemblePickItem {
@@ -439,8 +439,8 @@ export interface EnsemblePickItem {
   score: number;
   setup_types: SetupType[];
   confidence: number;
-  ensemble_score?: number;
-  rank_components?: RankComponents;
+  ensemble_score: number;
+  rank_components: RankComponents;
   contributing_factors?: string[];
   best_confidence?: number;
 }
@@ -448,7 +448,7 @@ export interface EnsemblePickItem {
 export interface EnsemblePicksResponse {
   as_of_ts_ms: number;
   refresh_sec: number;
-  universe_source?: UniverseSource;
+  universe_source: UniverseSource;
   items: EnsemblePickItem[];
 }
 

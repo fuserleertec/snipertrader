@@ -222,16 +222,14 @@ export function normalizeEnsemblePicks(raw: unknown): EnsemblePicksResponse | nu
     if (typeof row.symbol !== "string" || !row.symbol) continue;
     const asset = (wireAssetClass(typeof row.asset_class === "string" ? row.asset_class : "") ??
       inferAssetClass(row.symbol)) as AssetClass;
-    const hasEnsemble = typeof row.ensemble_score === "number" && Number.isFinite(row.ensemble_score);
-    const ensemble_score = hasEnsemble ? (row.ensemble_score as number) : undefined;
-    const score = ensemble_score ?? num(row.score);
+    const ensemble_score = num(row.ensemble_score, num(row.score));
+    const score = ensemble_score;
     const best = typeof row.best_confidence === "number" && Number.isFinite(row.best_confidence)
       ? row.best_confidence
       : undefined;
     const factors = Array.isArray(row.contributing_factors)
       ? row.contributing_factors.filter((x): x is string => typeof x === "string")
       : undefined;
-    const hasComponents = row.rank_components && typeof row.rank_components === "object";
     items.push({
       rank: num(row.rank, items.length + 1),
       symbol: row.symbol.toUpperCase(),
@@ -239,18 +237,17 @@ export function normalizeEnsemblePicks(raw: unknown): EnsemblePicksResponse | nu
       score,
       setup_types: readSetupTypes(row.setup_types),
       confidence: best ?? num(row.confidence),
-      ...(ensemble_score != null ? { ensemble_score } : {}),
-      ...(hasComponents ? { rank_components: readComponents(row.rank_components) } : {}),
+      ensemble_score,
+      rank_components: readComponents(row.rank_components),
       ...(factors?.length ? { contributing_factors: factors } : {}),
       ...(best != null ? { best_confidence: best } : {}),
     });
   }
-  const source: UniverseSource | undefined =
-    body.universe_source === "DE" ? "DE" : body.universe_source === "SETUP_UNIVERSE" ? "SETUP_UNIVERSE" : undefined;
+  const source: UniverseSource = body.universe_source === "DE" ? "DE" : "SETUP_UNIVERSE";
   return {
     as_of_ts_ms: num(body.as_of_ts_ms),
     refresh_sec: clampRefreshSec(body.refresh_sec ?? LIST_REFRESH_SEC),
-    ...(source ? { universe_source: source } : {}),
+    universe_source: source,
     items: rankItems(items).slice(0, ENSEMBLE_LIMIT),
   };
 }

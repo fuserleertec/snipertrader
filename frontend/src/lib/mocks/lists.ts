@@ -137,7 +137,7 @@ export function mockEnsemblePicks(
       best_confidence,
     };
   })
-    .sort((a, b) => (b.ensemble_score ?? b.score) - (a.ensemble_score ?? a.score) || a.symbol.localeCompare(b.symbol))
+    .sort((a, b) => b.ensemble_score - a.ensemble_score || a.symbol.localeCompare(b.symbol))
     .slice(0, ENSEMBLE_LIMIT)
     .map((row, i) => ({ ...row, rank: i + 1 }));
 
