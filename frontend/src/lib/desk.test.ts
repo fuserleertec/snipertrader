@@ -12,8 +12,9 @@ import {
   rankWithinAllowed,
   setupFilterType,
   uniqueSymbols,
+  universeSourceFromAllowed,
 } from "./desk";
-import { joinSymbols, normalizeCategorizedPicks, normalizeEnsemblePicks, normalizeUniverseTop, signalListPath } from "./http";
+import { joinSymbols, normalizeCategorizedPicks, normalizeEnsemblePicks, normalizeUniverseTop, signalListPath, universeTopPath } from "./http";
 import { mockCategorizedPicks, mockDroppedPicks, mockEnsemblePicks, mockUniverseTop, SETUP_UNIVERSE } from "./mocks/lists";
 import { ensembleFeatureTooltip, presentEnsemble } from "./mocks/terminal";
 import { mockListSignals } from "./mocks/signals";
@@ -479,6 +480,10 @@ describe("provisional universe is mock-only", () => {
   });
 
   it("GET /v1/universe/top mock + parser honor limit 10/20", () => {
+    assert.equal(universeTopPath(10), "/v1/universe/top?limit=10");
+    assert.equal(universeTopPath(20), "/v1/universe/top?limit=20");
+    assert.equal(universeTopPath(3), "/v1/universe/top?limit=10");
+    assert.equal(universeTopPath(99), "/v1/universe/top?limit=20");
     const top10 = mockUniverseTop(10);
     const top20 = mockUniverseTop(20);
     assert.equal(top10.limit, 10);
@@ -486,14 +491,24 @@ describe("provisional universe is mock-only", () => {
     assert.equal(top20.symbols.length, 20);
     assert.ok(top10.symbols.some((s) => ["ES", "CL", "GC", "NQ"].includes(s.symbol)) || top20.symbols.some((s) => s.symbol === "ES"));
     const parsed = normalizeUniverseTop({
-      as_of_ts_ms: 1,
+      as_of_ts_ms: 1725459000000,
       limit: 10,
       symbols: [
         { symbol: "ES", asset_class: "futures", rank: 1, score: 0.9 },
         { symbol: "CL", asset_class: "futures", rank: 2, score: 0.8 },
       ],
     });
+    assert.equal(parsed?.as_of_ts_ms, 1725459000000);
     assert.equal(parsed?.symbols[0]?.symbol, "ES");
+    const viaItems = normalizeUniverseTop({
+      as_of_ts_ms: 2,
+      items: [{ symbol: "nq", asset_class: "futures" }],
+    });
+    assert.equal(viaItems?.symbols[0]?.symbol, "NQ");
+    assert.equal(viaItems?.symbols[0]?.asset_class, "futures");
+    const allowed = allowedSymbolSet(parsed?.symbols);
+    assert.equal(universeSourceFromAllowed(allowed), "DE");
+    assert.equal(universeSourceFromAllowed(new Set()), "SETUP_UNIVERSE");
   });
 
   it("recon audit mock caps at 16", () => {

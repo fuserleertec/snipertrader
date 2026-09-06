@@ -18,6 +18,8 @@
  *                                  optional ensemble_score / rank_components)
  *   GET /signals/history         → same filters; falls back to GET /signals
  *   GET /performance/summary     → optional ?symbols= (≤20)
+ *   GET /v1/universe/top         → DE :8000 allowed set (limit=10 P0, 20 P2/P4;
+ *                                  { as_of_ts_ms, limit, symbols[] }; items[] alias)
  * live_trading is never flipped here. Paper / mocks only.
  */
 

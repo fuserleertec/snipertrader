@@ -17,6 +17,7 @@ import type {
   SetupType,
   Signal,
   SignalStatus,
+  UniverseSource,
 } from "./types";
 
 export {
@@ -176,6 +177,14 @@ export function capCategorized(items: CategorizedPickItem[]): CategorizedPickIte
 /** DE `GET /v1/universe/top` allowed set. Empty = not contracted; do not invent a universe. */
 export function allowedSymbolSet(symbols: Array<{ symbol: string }> | undefined | null): Set<string> {
   return new Set(uniqueSymbols(symbols ?? []));
+}
+
+/** Quant envelopes stay SETUP_UNIVERSE until DE `/v1/universe/top` returns symbols. */
+export function universeSourceFromAllowed(
+  allowed: Set<string>,
+  fallback: UniverseSource = "SETUP_UNIVERSE",
+): UniverseSource {
+  return allowed.size ? "DE" : fallback;
 }
 
 /**

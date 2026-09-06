@@ -489,7 +489,11 @@ export interface SessionListResponse {
 
 export type ConnectionStatus = "mock" | "connecting" | "live" | "disconnected";
 
-/** GET /v1/universe/top — DE-authoritative allowed set. Quant re-ranks for P0/P4. */
+/**
+ * GET /v1/universe/top?limit=10|20 — DE-authoritative allowed set.
+ * Canonical envelope: `{ as_of_ts_ms, limit, symbols[] }`.
+ * `items[]` is accepted as an alias. Quant still ranks P0/P4 for display.
+ */
 export interface UniverseTopSymbol {
   symbol: string;
   asset_class: AssetClass;

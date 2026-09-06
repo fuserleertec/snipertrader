@@ -316,6 +316,12 @@ export async function fetchEnsemblePicks(): Promise<EnsemblePicksResponse | null
   return normalizeEnsemblePicks(await getPicksJson<unknown>("/picks/ensemble"));
 }
 
+/** DE `GET /v1/universe/top?limit=10` (P0) or `limit=20` (P2/P4). */
+export function universeTopPath(limit: number): string {
+  const cap = limit <= ENSEMBLE_LIMIT ? ENSEMBLE_LIMIT : DESK_SYMBOL_LIMIT;
+  return `/v1/universe/top?limit=${cap}`;
+}
+
 export function normalizeUniverseTop(raw: unknown, fallbackLimit = ENSEMBLE_LIMIT): UniverseTopResponse | null {
   if (!raw || typeof raw !== "object") return null;
   const body = raw as Record<string, unknown>;
@@ -346,7 +352,10 @@ export function normalizeUniverseTop(raw: unknown, fallbackLimit = ENSEMBLE_LIMI
 /** DE `GET /v1/universe/top?limit=10|20` — allowed set. Quant re-ranks P0/P4. */
 export async function fetchUniverseTop(limit: number): Promise<UniverseTopResponse | null> {
   const cap = limit <= ENSEMBLE_LIMIT ? ENSEMBLE_LIMIT : DESK_SYMBOL_LIMIT;
-  return normalizeUniverseTop(await getJson<unknown>(`/v1/universe/top?limit=${cap}`), cap);
+  const path = universeTopPath(limit);
+  const viaRewrite = await getSameOrigin<unknown>(path);
+  if (viaRewrite) return normalizeUniverseTop(viaRewrite, cap);
+  return normalizeUniverseTop(await getJson<unknown>(path), cap);
 }
 
 /** GET /picks/categorized?asset_class=&limit=20 — no class required; ≤20 symbols. */

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { DESK_SYMBOL_LIMIT, ENSEMBLE_LIMIT, LIST_REFRESH_SEC, RECON_AUDIT_LIMIT } from "@/lib/constants";
-import { allowedSymbolSet, capWithinAllowed, rankWithinAllowed } from "@/lib/desk";
+import { allowedSymbolSet, capWithinAllowed, rankWithinAllowed, universeSourceFromAllowed } from "@/lib/desk";
 import { isMockMode } from "@/lib/env";
 import { fetchCategorizedPicks, fetchEnsemblePicks, fetchUniverseTop } from "@/lib/http";
 import { mockCategorizedPicks, mockDroppedPicks, mockEnsemblePicks, mockUniverseTop } from "@/lib/mocks/lists";
@@ -102,12 +102,12 @@ export function useDeskLists(refreshKey = 0): DeskLists {
       setData({
         ensemble: {
           ...ens,
-          universe_source: allowed10.size ? "DE" : ens.universe_source,
+          universe_source: universeSourceFromAllowed(allowed10, ens.universe_source),
           items: rankWithinAllowed(ens.items, allowed10),
         },
         categorized: {
           ...cats,
-          universe_source: allowed20.size ? "DE" : cats.universe_source,
+          universe_source: universeSourceFromAllowed(allowed20, cats.universe_source),
           items: capWithinAllowed(cats.items, allowed20),
         },
         dropped: [],

@@ -117,7 +117,7 @@ Placeholder list contracts (same-origin rewrite → Quant `:8001`):
 | GET | `/signals?status=ACTIVE&asset_class=futures\|equity\|crypto&setup_type=&symbol=&limit=` | Active Setup Cards. Tabs: Futures→`futures`, Stocks→`equity` (`stocks` alias), Cryptos→`crypto`. `{ items, next_cursor }` |
 | GET | `/signals` + `/signals/history` | P2 history (`symbol`/`status`/`setup_type`/`from_ts`/`to_ts`/`side`/`cursor`, multi-symbol ~20). Client falls back to `/signals` |
 | GET | `/performance/summary` | Section 08 tracker. Optional `?symbols=` (≤20) |
-| GET | `/v1/universe/top?limit=10\|20` | **DE-authoritative** allowed set when contracted (`as_of_ts_ms`, `limit`, `symbols[{symbol,asset_class,rank,score}]`). P0 uses 10; P2/P4 use 20. Quant ranks P0/P4 inside that set. FE displays API `items` only — never a hard-coded P0/P4 universe. Provisional `SETUP_UNIVERSE` is mock-only. |
+| GET | `/v1/universe/top?limit=10\|20` | **DE `:8000` allowed set.** P0 `limit=10`, P2/P4 `limit=20`. Canonical `{ as_of_ts_ms, limit, symbols[{symbol,asset_class,rank,score}] }`. `items[]` accepted as an alias. Sets `universe_source=DE` when the set is non-empty. Quant `/picks/ensemble` + `/picks/categorized` still drive ranked P0/P4 UI inside that set. `refresh_sec=900`. |
 
 `NEXT_PUBLIC_QUANT_HTTP_BASE` is accepted as an alias of `QUANT_API_BASE`.
 
