@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { DESK_SYMBOL_LIMIT, SETUP_TYPES, SIGNAL_STATUSES } from "@/lib/constants";
-import { uniqueSymbols } from "@/lib/desk";
+import { historyStatusMatches, uniqueSymbols } from "@/lib/desk";
 import { isMockMode } from "@/lib/env";
 import { fetchSignalHistory, fetchSignals } from "@/lib/http";
 import { outcomeLabel, realizedMultiple, zoneLabel } from "@/lib/signals";
@@ -112,12 +112,11 @@ export function SignalTable({
 
   const filtered = useMemo(() => {
     const source = !mocks && liveRows ? liveRows : rows;
-    if (!mocks && liveRows) return source;
     const from = dayStart(fromDay);
     const to = dayEnd(toDay);
     return source.filter((r) => {
       if (typeFilter !== "all" && r.setup_type !== typeFilter) return false;
-      if (statusFilter !== "all" && r.status !== statusFilter) return false;
+      if (!historyStatusMatches(r.status, statusFilter)) return false;
       if (symbolFilter !== "all" && r.symbol !== symbolFilter) return false;
       if (from != null && r.ts_ms < from) return false;
       if (to != null && r.ts_ms > to) return false;
@@ -175,7 +174,7 @@ export function SignalTable({
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as SignalStatus | "all")}
         >
-          <option value="all">all status</option>
+          <option value="all">closed (skip ACTIVE / CANCELLED)</option>
           {SIGNAL_STATUSES.map((s) => (
             <option key={s} value={s}>
               {s}

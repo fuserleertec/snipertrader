@@ -16,6 +16,7 @@ import type {
   EnsemblePickItem,
   SetupType,
   Signal,
+  SignalStatus,
 } from "./types";
 
 export {
@@ -119,7 +120,11 @@ export function chartSymbolsForTab(
   const rest = universe.filter((s) => inferAssetClass(s) !== asset);
   const fromSignals = uniqueSymbols(signals);
   const focused = current ? [current.toUpperCase()] : [];
-  return uniqueSymbols([...tabFirst, ...rest, ...fromSignals, ...focused].map((symbol) => ({ symbol })));
+  /** Paper sim: Futures tab can always switch ES/CL/GC/NQ. Not a P0/P4 ranking list. */
+  const paperFutures = tab === "futures" ? [...FUTURES_SYMBOLS] : [];
+  return uniqueSymbols(
+    [...tabFirst, ...paperFutures, ...rest, ...fromSignals, ...focused].map((symbol) => ({ symbol })),
+  );
 }
 
 export function defaultSymbolForTab(tab: AssetTab, options: string[]): string {
@@ -137,6 +142,15 @@ export function clampRefreshSec(raw: unknown): number {
 
 export function parseAssetClassParam(raw: string | undefined | null): AssetClass | undefined {
   return wireAssetClass(raw ?? undefined);
+}
+
+/**
+ * History status filter. `all` skips open ACTIVE and inactive CANCELLED
+ * so the table is wins/losses (TP_HIT / SL_HIT). Explicit status still works.
+ */
+export function historyStatusMatches(status: SignalStatus, filter: SignalStatus | "all"): boolean {
+  if (filter !== "all") return status === filter;
+  return status === "TP_HIT" || status === "SL_HIT";
 }
 
 export function rankItems(items: EnsemblePickItem[]): EnsemblePickItem[] {

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { SETUP_TYPES, SIGNAL_STATUSES } from "@/lib/constants";
-import { uniqueSymbols } from "@/lib/desk";
+import { historyStatusMatches, uniqueSymbols } from "@/lib/desk";
 import {
   ENGINE_META,
   ENGINE_ORDER,
@@ -80,7 +80,7 @@ export function QepTable({
     () =>
       signals.filter((s) => {
         if (typeFilter !== "all" && s.setup_type !== typeFilter) return false;
-        if (statusFilter !== "all" && s.status !== statusFilter) return false;
+        if (!historyStatusMatches(s.status, statusFilter)) return false;
         if (symbolFilter !== "all" && s.symbol !== symbolFilter) return false;
         if (sub === "Buy" && s.side !== "long") return false;
         if (sub === "Sell" && s.side !== "short") return false;
@@ -232,7 +232,7 @@ export function QepTable({
             ))}
           </select>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as SignalStatus | "all")}>
-            <option value="all">all status</option>
+            <option value="all">closed (skip ACTIVE / CANCELLED)</option>
             {SIGNAL_STATUSES.map((s) => (
               <option key={s} value={s}>
                 {s}

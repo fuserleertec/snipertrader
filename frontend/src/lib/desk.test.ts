@@ -8,6 +8,7 @@ import {
   capWithinAllowed,
   chartSymbolsForTab,
   clampRefreshSec,
+  historyStatusMatches,
   rankWithinAllowed,
   setupFilterType,
   uniqueSymbols,
@@ -244,11 +245,16 @@ describe("desk tabs + chart selector", () => {
     );
   });
 
-  it("futures chart selector includes ES CL GC NQ from the universe extras, not a hardcoded list", () => {
-    const extras = ["ES", "CL", "GC", "NQ"].map((symbol) => ({ symbol, asset_class: "futures" as const }));
-    const opts = chartSymbolsForTab("futures", [], extras);
-    assert.ok(["ES", "CL", "GC", "NQ"].every((s) => opts.includes(s)));
-    assert.deepEqual(chartSymbolsForTab("futures", [], []), []);
+  it("futures chart selector can switch ES CL GC NQ (paper sim, not a P0 list)", () => {
+    const extras = ["ES", "CL", "GC", "NQ", "AAPL"].map((symbol) => ({
+      symbol,
+      asset_class: symbol === "AAPL" ? ("equity" as const) : ("futures" as const),
+    }));
+    const fromUniverse = chartSymbolsForTab("futures", [], extras);
+    assert.ok(["ES", "CL", "GC", "NQ"].every((s) => fromUniverse.includes(s)));
+    const paperOnly = chartSymbolsForTab("futures", [], []);
+    assert.ok(["ES", "CL", "GC", "NQ"].every((s) => paperOnly.includes(s)));
+    assert.ok(fromUniverse.indexOf("ES") < fromUniverse.indexOf("AAPL"));
   });
 
   it("chart selector uses universe/top first (tab symbols in front, not a 4-symbol lock)", () => {
@@ -304,6 +310,12 @@ describe("multi-symbol history", () => {
     assert.ok(stocks.every((s) => s.asset_class === "equity"));
     const scoped = mockListSignals({ symbols: ["ES", "CL"], limit: 80 }, 0).items;
     assert.ok(scoped.every((s) => s.symbol === "ES" || s.symbol === "CL"));
+    assert.ok(historyStatusMatches("TP_HIT", "all"));
+    assert.ok(historyStatusMatches("SL_HIT", "all"));
+    assert.equal(historyStatusMatches("ACTIVE", "all"), false);
+    assert.equal(historyStatusMatches("CANCELLED", "all"), false);
+    assert.ok(historyStatusMatches("CANCELLED", "CANCELLED"));
+    assert.ok(historyStatusMatches("ACTIVE", "ACTIVE"));
   });
 
   it("keeps optional ensemble ranking on signal or ensemble_features side channel", () => {
