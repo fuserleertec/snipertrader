@@ -385,7 +385,7 @@ export function normalizeUniverseTop(raw: unknown, fallbackLimit = ENSEMBLE_LIMI
   return {
     as_of_ts_ms: num(body.as_of_ts_ms, Date.now()),
     limit,
-    symbols: symbols.sort((a, b) => a.rank - b.rank).slice(0, limit),
+    symbols: symbols.sort((a, b) => a.rank - b.rank || a.symbol.localeCompare(b.symbol)).slice(0, limit),
   };
 }
 

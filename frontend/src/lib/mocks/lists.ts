@@ -225,6 +225,7 @@ export function mockUniverse(cycle = 0, now = MOCK_NOW): UniverseTopResponse {
   return mockUniverseTop(DESK_SYMBOL_LIMIT, cycle, now);
 }
 
+/** Locked DE envelope: `{ as_of_ts_ms, limit, symbols[] }` ordered by rank asc. */
 export function mockUniverseTop(limit: number, cycle = 0, now = MOCK_NOW): UniverseTopResponse {
   const cap = Math.min(DESK_SYMBOL_LIMIT, Math.max(1, limit));
   const symbols = [...SETUP_UNIVERSE]

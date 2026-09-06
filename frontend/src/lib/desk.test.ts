@@ -503,6 +503,40 @@ describe("provisional universe is mock-only", () => {
     );
   });
 
+  it("parses the locked DE GET /v1/universe/top envelope", () => {
+    const locked = normalizeUniverseTop({
+      as_of_ts_ms: 1725459000000,
+      limit: 10,
+      symbols: [{ symbol: "ES", asset_class: "futures", rank: 1, score: 0.0 }],
+    });
+    assert.deepEqual(locked, {
+      as_of_ts_ms: 1725459000000,
+      limit: 10,
+      symbols: [{ symbol: "ES", asset_class: "futures", rank: 1, score: 0 }],
+    });
+    const reordered = normalizeUniverseTop({
+      as_of_ts_ms: 1725459000000,
+      limit: 10,
+      symbols: [
+        { symbol: "CL", asset_class: "futures", rank: 2, score: 0.0 },
+        { symbol: "ES", asset_class: "futures", rank: 1, score: 0.0 },
+      ],
+    });
+    assert.deepEqual(
+      reordered?.symbols.map((s) => s.symbol),
+      ["ES", "CL"],
+    );
+    const mock10 = mockUniverseTop(10);
+    const mock20 = mockUniverseTop(20);
+    assert.equal(mock10.limit, 10);
+    assert.equal(mock20.limit, 20);
+    assert.deepEqual(
+      mock10.symbols.map((s) => s.rank),
+      mock10.symbols.map((_, i) => i + 1),
+    );
+    assert.ok(mock10.symbols.every((s) => typeof s.score === "number"));
+  });
+
   it("GET /v1/universe/top mock + parser honor limit 10/20", () => {
     assert.equal(universePath(), "/v1/universe");
     assert.equal(universeTopPath(10), "/v1/universe/top?limit=10");

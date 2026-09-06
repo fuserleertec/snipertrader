@@ -490,9 +490,10 @@ export interface SessionListResponse {
 export type ConnectionStatus = "mock" | "connecting" | "live" | "disconnected";
 
 /**
- * GET /v1/universe and GET /v1/universe/top?limit=10|20.
- * Known fields only: `as_of_ts_ms`, `limit`, `symbols[{symbol,asset_class,rank,score}]`.
- * `items[]` is accepted as an alias. Redis `universe:active` is DE-side, not a FE field.
+ * Locked DE `GET /v1/universe/top` envelope:
+ * `{ as_of_ts_ms, limit, symbols[{ symbol, asset_class, rank, score }] }`.
+ * P0 `limit=10`, P2/P4 `limit=20`. `symbols` ordered by rank asc.
+ * This is the allowed set; Quant re-ranks P0/P4 for display.
  */
 export interface UniverseTopSymbol {
   symbol: string;
