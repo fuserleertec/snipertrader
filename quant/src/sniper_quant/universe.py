@@ -1,14 +1,16 @@
-"""DE / ML ranking universe (paper only — no live trading).
+"""Paper ranking universe (no live trading, no hardcoded symbol lists).
 
-``GET /picks/ensemble`` top-10 is ranked **only** within the DE universe
-feed. DE has not published that feed yet, so the provisional allow-list
-is ML/DE ``DEMO_SYMBOLS`` (default ``BTCUSDT,AAPL,ES``, same as
-``data_engineering``) intersected with ``SETUP_UNIVERSE`` when ML sets
-one. ``DE_UNIVERSE`` is the handoff switch — when DE publishes, set it
-and ranking uses that feed only.
+``GET /picks/ensemble`` and ``GET /picks/categorized`` rank **only**
+inside ``resolve_ranking_universe``:
 
-Symbols outside the allow-list are never ranked, even if they appear in
-the paper book or ``quant/config/paper_universe.json``.
+1. ``DE_UNIVERSE`` when DE has published the feed.
+2. Else ``DEMO_SYMBOLS`` when that override is set (CSV or JSON path).
+3. Else the file-backed paper mix at ``config/paper_universe.json``
+   (includes ES, NQ, CL, GC). Missing file raises — no Python fallback.
+4. Intersect with ``SETUP_UNIVERSE`` when ML set one (narrow only).
+
+Symbols outside that set are never ranked. ``PAPER_UNIVERSE`` overrides
+the paper **book** mix only; it does not expand ranking.
 """
 
 from __future__ import annotations
@@ -20,31 +22,10 @@ from sniper_quant.config import Settings, get_settings
 from sniper_quant.models import AssetClass, normalize_symbol
 
 DEFAULT_UNIVERSE_PATH = Path(__file__).resolve().parents[2] / "config" / "paper_universe.json"
-PROVISIONAL_DEMO_SYMBOLS = "BTCUSDT,AAPL,ES"
 
-# Builtin fallback if the JSON file is not on disk (editable install / tests).
-_BUILTIN: tuple[tuple[str, str], ...] = (
-    ("BTCUSDT", "crypto"),
-    ("ETHUSDT", "crypto"),
-    ("SOLUSDT", "crypto"),
-    ("BNBUSDT", "crypto"),
-    ("XRPUSDT", "crypto"),
-    ("ADAUSDT", "crypto"),
-    ("AVAXUSDT", "crypto"),
-    ("LINKUSDT", "crypto"),
-    ("AAPL", "equity"),
-    ("MSFT", "equity"),
-    ("NVDA", "equity"),
-    ("AMZN", "equity"),
-    ("META", "equity"),
-    ("GOOGL", "equity"),
-    ("TSLA", "equity"),
-    ("SPY", "equity"),
-    ("ES", "futures"),
-    ("NQ", "futures"),
-    ("CL", "futures"),
-    ("GC", "futures"),
-)
+# Asset-class inference for CSV tokens that are not already in the universe
+# file (DE extras, SETUP_UNIVERSE). Not a ranking allow-list.
+_FUTURES_ROOTS = frozenset({"ES", "NQ", "CL", "GC", "YM", "RTY", "6E", "6J", "6B"})
 
 
 def default_universe_path() -> Path:
@@ -71,7 +52,7 @@ def _pairs_from_rows(rows: list) -> list[tuple[str, AssetClass]]:
 def _infer_asset(symbol: str) -> AssetClass:
     if symbol.endswith(("USDT", "USDC", "BUSD")):
         return AssetClass.CRYPTO
-    if symbol in {"ES", "NQ", "CL", "GC", "YM", "RTY"}:
+    if symbol in _FUTURES_ROOTS:
         return AssetClass.FUTURES
     return AssetClass.EQUITY
 
@@ -82,6 +63,18 @@ def _load_json_file(path: Path) -> list[tuple[str, AssetClass]]:
     if not isinstance(rows, list):
         raise ValueError(f"universe file must list symbols: {path}")
     return _pairs_from_rows(rows)
+
+
+def load_universe_file(path: Path | None = None) -> list[tuple[str, AssetClass]]:
+    """Load a universe JSON file. No hardcoded symbol fallback."""
+    target = path or DEFAULT_UNIVERSE_PATH
+    if not target.is_file():
+        raise FileNotFoundError(
+            f"paper universe file not found: {target} "
+            "(no hardcoded fallback — restore config/paper_universe.json "
+            "or set PAPER_UNIVERSE / DEMO_SYMBOLS / DE_UNIVERSE)"
+        )
+    return _load_json_file(target)
 
 
 def _parse_csv(raw: str) -> list[tuple[str, AssetClass]]:
@@ -106,14 +99,12 @@ def _load_override(raw: str) -> list[tuple[str, AssetClass]]:
 
 
 def load_paper_universe(settings: Settings | None = None) -> list[tuple[str, AssetClass]]:
-    """Quant paper book mix (not the ensemble allow-list)."""
+    """Quant paper book mix (``PAPER_UNIVERSE`` or the config file)."""
     settings = settings or get_settings()
     raw = (settings.paper_universe or "").strip()
     if raw:
         return _load_override(raw)
-    if DEFAULT_UNIVERSE_PATH.is_file():
-        return _load_json_file(DEFAULT_UNIVERSE_PATH)
-    return _pairs_from_rows([{"symbol": s, "asset_class": a} for s, a in _BUILTIN])
+    return load_universe_file()
 
 
 def parse_setup_universe(settings: Settings | None = None) -> set[str] | None:
@@ -130,10 +121,15 @@ def setup_universe_allowlist(settings: Settings | None = None) -> set[str] | Non
 
 
 def load_demo_symbols(settings: Settings | None = None) -> list[tuple[str, AssetClass]]:
-    """Provisional DE mock-feed universe (``DEMO_SYMBOLS``, DE default)."""
+    """Ranking allow-list before DE handoff.
+
+    ``DEMO_SYMBOLS`` when set; otherwise the file-backed paper universe.
+    """
     settings = settings or get_settings()
-    raw = (settings.demo_symbols or "").strip() or PROVISIONAL_DEMO_SYMBOLS
-    return _load_override(raw)
+    raw = (settings.demo_symbols or "").strip()
+    if raw:
+        return _load_override(raw)
+    return load_universe_file()
 
 
 def load_de_universe_feed(settings: Settings | None = None) -> list[tuple[str, AssetClass]] | None:
@@ -151,10 +147,11 @@ def resolve_ranking_universe(
     """Allow-list for ``GET /picks/ensemble`` / ``/picks/categorized``.
 
     1. ``DE_UNIVERSE`` when DE has published the feed.
-    2. Else provisional ``DEMO_SYMBOLS`` (DE mock default).
-    3. Intersect with ``SETUP_UNIVERSE`` when ML set one.
+    2. Else ``DEMO_SYMBOLS`` when set.
+    3. Else ``config/paper_universe.json`` (includes ES, NQ, CL, GC).
+    4. Intersect with ``SETUP_UNIVERSE`` when ML set one.
 
-    Never includes symbols outside that set.
+    Never includes symbols outside that set. Paper only.
     """
     settings = settings or get_settings()
     de = load_de_universe_feed(settings)
@@ -169,7 +166,9 @@ def ranking_source(settings: Settings | None = None) -> str:
     settings = settings or get_settings()
     if (settings.de_universe or "").strip():
         return "de_feed"
-    return "provisional_demo_symbols"
+    if (settings.demo_symbols or "").strip():
+        return "demo_symbols"
+    return "paper_universe"
 
 
 def universe_dump(settings: Settings | None = None) -> dict:
@@ -196,7 +195,8 @@ def universe_dump(settings: Settings | None = None) -> dict:
         "n_ranking": len(ranking),
         "note": (
             "GET /picks/ensemble ranks only ranking_universe. "
-            "Provisional: DEMO_SYMBOLS ∩ SETUP_UNIVERSE. "
-            "Handoff: set DE_UNIVERSE when DE publishes the live feed."
+            "Default: config/paper_universe.json (includes ES, NQ, CL, GC). "
+            "Overrides: DEMO_SYMBOLS, then DE_UNIVERSE when DE publishes. "
+            "SETUP_UNIVERSE can only narrow. live_trading is always false."
         ),
     }

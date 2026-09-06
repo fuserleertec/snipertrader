@@ -51,17 +51,17 @@ class Settings(BaseSettings):
     setup_universe: str = Field(
         default="",
         alias="SETUP_UNIVERSE",
-        description="ML detector allow-list (CSV or JSON path). Ensemble intersects this with the DE/DEMO allow-list.",
+        description="ML detector allow-list (CSV or JSON path). Ensemble intersects this with the ranking allow-list.",
     )
     demo_symbols: str = Field(
-        default="BTCUSDT,AAPL,ES",
+        default="",
         alias="DEMO_SYMBOLS",
-        description="Provisional DE universe (same default as data_engineering). CSV or JSON path.",
+        description="Optional ranking override (CSV or JSON path). Empty = config/paper_universe.json.",
     )
     de_universe: str = Field(
         default="",
         alias="DE_UNIVERSE",
-        description="Published DE universe feed (CSV or JSON path). When set, replaces DEMO_SYMBOLS for ranking.",
+        description="Published DE universe feed (CSV or JSON path). When set, replaces the paper-file ranking allow-list.",
     )
 
 

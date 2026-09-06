@@ -1,9 +1,10 @@
 """Quantum Ensemble Picks — paper/signal-book ranking (no live trading).
 
-``GET /picks/ensemble`` returns a dynamic top-10 **inside the DE universe
-feed**. Until DE publishes that feed, the allow-list is provisional
-``DEMO_SYMBOLS`` ∩ optional ``SETUP_UNIVERSE``. Symbols outside that set
-are never ranked. Thin books hash-fill only within the allow-list.
+``GET /picks/ensemble`` returns a dynamic top-10 inside
+``resolve_ranking_universe`` (file-backed paper mix including ES, NQ,
+CL, GC, or ``DEMO_SYMBOLS`` / ``DE_UNIVERSE`` overrides). Symbols
+outside that set are never ranked. Thin books hash-fill only within
+the allow-list.
 
 Paper path only. ``live_trading`` stays false. No Alpaca / broker.
 """
@@ -252,7 +253,7 @@ def rank_ensemble(
     refresh_sec: int = REFRESH_SEC,
     universe: Sequence[tuple[str, AssetClass]] | None = None,
 ) -> EnsemblePicksResponse:
-    """Rank only symbols in the DE / provisional ML allow-list.
+    """Rank only symbols in the paper / DE ranking allow-list.
 
     Sort: ``ensemble_score`` desc, then ``confidence`` desc, then symbol.
     """

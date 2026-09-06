@@ -25,6 +25,10 @@ def make_settings(**overrides) -> Settings:
         SL_ATR_MULTIPLE=2.0,
         TP_R_MULTIPLE=2.0,
         MIN_RR=1.5,
+        DEMO_SYMBOLS="",
+        DE_UNIVERSE="",
+        SETUP_UNIVERSE="",
+        PAPER_UNIVERSE="",
     )
     base.update(overrides)
     return Settings(**base)

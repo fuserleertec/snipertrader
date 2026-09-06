@@ -213,7 +213,7 @@ JSON Schema: [`schemas/dashboard_signal.schema.json`](../schemas/dashboard_signa
 | `GET` | `/performance/summary?symbol=` | Live metrics; `by_setup` keyed by `product_key` |
 | `GET` | `/picks/ensemble?as_of_ts_ms=&ml_scores=` | Quantum Ensemble Picks — dynamic top 10, `refresh_sec: 900` |
 | `GET` | `/picks/categorized?asset_class=&limit=20` | Categorized picks ≤20, `refresh_sec: 900` |
-| `GET` | `/paper/universe` | DE / provisional ranking allow-list (`live_trading: false`) |
+| `GET` | `/paper/universe` | File-backed ranking allow-list (`live_trading: false`) |
 | `GET` | `/signals/{id}` | `Signal` |
 | `WS` | `/ws/signals` | `{ "type": "signal.upsert" \| "signal.status", "signal": Signal }` |
 | `POST` | `/signals` | `Signal` (after pre-filter; emits `signal.upsert`) |
@@ -254,34 +254,34 @@ Dormant `mss_break` / `order_block` / `sweep_mss` and
 `*_pending_user_confirm` are omitted. Metrics come from signal outcomes /
 `realized_r`.
 
-### Paper universe vs DE ranking lock
+### Paper universe vs ranking allow-list
 
-Quant owns a default **20-symbol** paper **book** mix (8 crypto / 8 equity
-/ 4 futures) at [`config/paper_universe.json`](config/paper_universe.json)
-(`PAPER_UNIVERSE` override). That mix is for ingest / paper positions.
-It is **not** the ensemble allow-list.
+Quant owns a default **20-symbol** mix (8 crypto / 8 equity / 4 futures
+including **ES, NQ, CL, GC**) at
+[`config/paper_universe.json`](config/paper_universe.json). There is **no
+hardcoded symbol list in Python** — missing file raises. That file is
+both the paper **book** mix and the default ensemble allow-list.
 
-**PM lock:** `GET /picks/ensemble` top-10 is ranked **only within the DE
-universe feed**. Symbols outside that set are never returned, even if
-they have a published `ensemble_score` in the paper book.
-
-#### Provisional → DE handoff
-
-DE has not published the live universe feed yet. Until it does, Quant
-uses the same mock-feed symbols DE already ships:
+`GET /picks/ensemble` top-10 (and `/picks/categorized`) rank **only
+inside `ranking_universe`**. Symbols outside that set are never
+returned, even if they have a published `ensemble_score` in the book.
 
 | Stage | Allow-list | Env |
 |---|---|---|
-| **Provisional (now)** | `DEMO_SYMBOLS` (default `BTCUSDT,AAPL,ES`, same as [`data_engineering`](../data_engineering/README.md)) ∩ `SETUP_UNIVERSE` when ML sets one | `DEMO_SYMBOLS`, `SETUP_UNIVERSE` |
-| **Handoff (when DE publishes)** | DE universe feed only, still ∩ `SETUP_UNIVERSE` if set | **`DE_UNIVERSE`** (CSV or JSON path) |
+| **Default (now)** | `config/paper_universe.json` ∩ `SETUP_UNIVERSE` when ML sets one | `SETUP_UNIVERSE` |
+| **Override** | Explicit CSV / JSON path | `DEMO_SYMBOLS` |
+| **Handoff (when DE publishes)** | DE universe feed only, still ∩ `SETUP_UNIVERSE` if set | **`DE_UNIVERSE`** |
 
-`GET /paper/universe` shows `handoff` (`provisional` \| `de_feed`),
-`ranking_source`, `demo_symbols`, `de_universe`, `setup_universe`, and
+`PAPER_UNIVERSE` overrides the paper **book** only — it does not expand
+ranking. `GET /paper/universe` shows `handoff` (`provisional` \|
+`de_feed`), `ranking_source` (`paper_universe` \| `demo_symbols` \|
+`de_feed`), `demo_symbols`, `de_universe`, `setup_universe`, and
 `ranking_universe`. `live_trading` is always false.
 
 ML **`SETUP_UNIVERSE`** remains the detector allow-list (`detect_setup`
 only walks those symbols when set). For ranking it can only **narrow**
-the DE / `DEMO_SYMBOLS` feed — it cannot add symbols DE did not list.
+the file / `DEMO_SYMBOLS` / `DE_UNIVERSE` set — it cannot add symbols
+that list did not include.
 
 ### Multi-symbol risk (existing, paper book)
 
@@ -391,7 +391,7 @@ If a symbol has **both** momentum and mean-reversion setups (and no
 ### Ensemble ranking formula
 
 `GET /picks/ensemble` sorts **`ensemble_score` desc, then `confidence`
-desc**, then `symbol` asc. Top **10 within the DE / provisional
+desc**, then `symbol` asc. Top **10 within the paper-file / override
 allow-list** (`min(10, n_allowed)`). Never ranks a symbol outside
 `ranking_universe` from `GET /paper/universe`.
 
@@ -597,7 +597,7 @@ quant/
   tests/
   grafana/provisioning  Timescale datasource + setup-performance dashboard + alerts
   reports/              walk-forward + paper_gate_2week.md
-  config/paper_universe.json  default ~20-symbol paper mix
+  config/paper_universe.json  default ~20-symbol paper + ranking mix (ES,NQ,CL,GC)
   reports/phase4_prep/  Phase 4 non-live templates (no live_trading)
   tests/fixtures/pr9_quant_replay/  PR #9 locked-field validate samples
   Dockerfile

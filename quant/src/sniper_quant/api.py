@@ -118,11 +118,11 @@ Dormant `mss_break` / `order_block` / `sweep_mss` and
 `*_pending_user_confirm` are omitted.
 
 `GET /picks/ensemble` → Quantum Ensemble Picks (P0). Dynamic top **10**
-**within the DE universe feed**. Provisional: `DEMO_SYMBOLS` (DE default
-`BTCUSDT,AAPL,ES`) ∩ optional `SETUP_UNIVERSE`. Handoff: `DE_UNIVERSE`
-when DE publishes. Symbols outside the allow-list are never ranked.
-Sort: `ensemble_score` then `confidence`. `refresh_sec` **900**.
-**No live trading.**
+inside the paper universe file (`config/paper_universe.json`, includes
+ES, NQ, CL, GC). Optional overrides: `DEMO_SYMBOLS`, then `DE_UNIVERSE`
+when DE publishes. `SETUP_UNIVERSE` can only narrow. Symbols outside
+the allow-list are never ranked. Sort: `ensemble_score` then
+`confidence`. `refresh_sec` **900**. **No live trading.**
 
 `GET /picks/categorized?asset_class=&limit=20` → same allow-list and
 scores, ≤20 rows, tagged `momentum` | `mean_reversion` | `confluence` |
@@ -333,7 +333,7 @@ def create_app(
             "setup_universe_env": "SETUP_UNIVERSE",
             "demo_symbols_env": "DEMO_SYMBOLS",
             "de_universe_env": "DE_UNIVERSE",
-            "ranking_lock": "de_universe_or_provisional_demo_symbols",
+            "ranking_lock": "paper_universe_file_or_de_universe",
         }
 
     @app.get("/performance/summary", response_model=PerformanceSummary)
@@ -371,12 +371,13 @@ def create_app(
             description='Optional ML overlay JSON object, e.g. {"BTCUSDT":0.82}',
         ),
     ) -> EnsemblePicksResponse:
-        """Quantum Ensemble Picks (P0). Dynamic top 10 inside the DE universe.
+        """Quantum Ensemble Picks (P0). Dynamic top 10, paper universe file.
 
-        Provisional allow-list: ``DEMO_SYMBOLS`` ∩ ``SETUP_UNIVERSE``.
-        When DE publishes the feed, set ``DE_UNIVERSE`` — symbols outside
-        that set are never ranked. Sort: ``ensemble_score`` then
-        ``confidence``. ``live_trading`` stays false. No Alpaca live.
+        Default allow-list: ``config/paper_universe.json`` (includes ES,
+        NQ, CL, GC). Overrides: ``DEMO_SYMBOLS``, then ``DE_UNIVERSE``.
+        ``SETUP_UNIVERSE`` can only narrow. Symbols outside the allow-list
+        are never ranked. Sort: ``ensemble_score`` then ``confidence``.
+        ``live_trading`` stays false. No Alpaca live.
         """
         from sniper_quant.picks import REFRESH_SEC, TOP_N, parse_ml_scores, rank_ensemble
         from sniper_quant.universe import resolve_ranking_universe
@@ -650,7 +651,7 @@ def create_app(
 
     @app.get("/paper/universe")
     async def paper_universe() -> dict[str, Any]:
-        """DE / provisional ML ranking allow-list. Paper only."""
+        """Paper ranking allow-list (file-backed; DE_UNIVERSE handoff). Paper only."""
         from sniper_quant.universe import universe_dump
 
         return universe_dump(app.state.settings)
