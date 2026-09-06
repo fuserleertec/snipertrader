@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from sniper_data.universe import DEFAULT_UNIVERSE_CSV, MAX_UNIVERSE_SYMBOLS, parse_universe
 
 
 KAFKA_TOPICS = (
@@ -23,6 +25,8 @@ KAFKA_TOPICS = (
     "options_chain",
     "order_flow",
     "performance_outcomes",
+    # Multi-asset expansion (paper)
+    "dashboard_snapshots",
 )
 
 FVG_TTL_MAX_SECONDS = 48 * 60 * 60  # 48 hours
@@ -49,7 +53,19 @@ class Settings(BaseSettings):
         alias="DATABASE_URL",
     )
 
-    demo_symbols: str = Field(default="BTCUSDT,AAPL,ES", alias="DEMO_SYMBOLS")
+    dashboard_symbols: str = Field(default="", alias="DASHBOARD_SYMBOLS")
+    universe: str = Field(default="", alias="UNIVERSE")
+    demo_symbols: str = Field(default=DEFAULT_UNIVERSE_CSV, alias="DEMO_SYMBOLS")
+    live_trading: bool = Field(default=False, alias="LIVE_TRADING")
+    dashboard_snapshot_interval_s: int = Field(
+        default=900, alias="DASHBOARD_SNAPSHOT_INTERVAL_S"
+    )
+    dashboard_snapshot_inprocess: bool = Field(
+        default=True, alias="DASHBOARD_SNAPSHOT_INPROCESS"
+    )
+    seed_history: bool = Field(default=True, alias="SEED_HISTORY")
+    seed_patterns: bool = Field(default=True, alias="SEED_PATTERNS")
+    history_bars: int = Field(default=200, alias="HISTORY_BARS")
     rolling_vwap_periods: int = Field(default=20, alias="ROLLING_VWAP_PERIODS")
     fvg_ttl_seconds: int = Field(default=FVG_TTL_MAX_SECONDS, alias="FVG_TTL_SECONDS")
     tick_interval_ms: int = Field(default=80, alias="TICK_INTERVAL_MS")
@@ -94,9 +110,25 @@ class Settings(BaseSettings):
         alias="ALPACA_DATA_WS_URL",
     )
 
+    @field_validator("live_trading")
+    @classmethod
+    def _paper_only(cls, value: bool) -> bool:
+        if value:
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "LIVE_TRADING=true is ignored; this package is paper-only"
+            )
+        return False
+
     @property
     def symbols(self) -> list[str]:
-        return [s.strip().upper() for s in self.demo_symbols.split(",") if s.strip()]
+        """DASHBOARD_SYMBOLS → UNIVERSE → DEMO_SYMBOLS. Max 20. Paper only."""
+        return parse_universe(self.dashboard_symbols, self.universe, self.demo_symbols)
+
+    @property
+    def max_universe_symbols(self) -> int:
+        return MAX_UNIVERSE_SYMBOLS
 
     @property
     def fvg_ttl_clamped(self) -> int:

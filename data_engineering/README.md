@@ -1,10 +1,104 @@
-# SniperTrader data-engineering — Phase 1 (Rev. 1.1) + Phase 2 + Phase 3
+# SniperTrader data-engineering — Phase 1 (Rev. 1.1) + Phase 2 + Phase 3 + multi-asset (paper)
 
 Streaming market-data pipeline and **correct VWAP** (volume-weighted variance)
 for SniperTrader.ai. This package lives beside the static site; it does not
 replace Vercel serverless functions or the HTML pages.
 
 Python **3.11+**. Asyncio throughout (connectors, Kafka, Redis, API).
+
+**`live_trading=false`.** This stack is paper / mock / demo only. It does
+not open live brokers, enable live order routing, or flip paper Alpaca
+paths. `LIVE_TRADING=true` is ignored.
+
+## Multi-asset universe — authoritative contract for ML / FE
+
+**DE owns the universe.** ML / FE should swap off provisional
+`SETUP_UNIVERSE` and consume these two surfaces.
+
+### Redis `universe:active` + `GET /v1/universe`
+
+Refreshed on **startup** and every **15 minutes**. Shape
+([`universe_active.schema.json`](../schemas/universe_active.schema.json)):
+
+```json
+{
+  "as_of_ts_ms": 1725459000000,
+  "symbols": [
+    {"symbol": "BTCUSDT", "asset_class": "crypto"},
+    {"symbol": "ES", "asset_class": "futures"}
+  ],
+  "live_trading": false
+}
+```
+
+`GET /v1/universe` returns that Redis key (full active list, max 20).
+
+### `GET /v1/universe/top?limit=10|20`
+
+Frozen wire for **FE / ML / Quant**. Ranked subset of `universe:active`
+(P0=10, P2/P4=20). Cached at Redis `universe:top`. Schema
+[`universe_top.schema.json`](../schemas/universe_top.schema.json).
+`limit` is **only** `10` or `20`. Required fields only:
+
+```json
+{
+  "as_of_ts_ms": 0,
+  "limit": 10,
+  "symbols": [
+    { "symbol": "ES", "asset_class": "futures", "rank": 1, "score": 0.0 }
+  ]
+}
+```
+
+### How to set the universe (max 20)
+
+Precedence: **`DASHBOARD_SYMBOLS` → `UNIVERSE` → `DEMO_SYMBOLS`**.
+
+Default / demo mix (12 symbols, crypto + equities + futures roots):
+
+`BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,AAPL,MSFT,NVDA,SPY,ES,NQ,CL,GC`
+
+Lists longer than 20 are truncated. There is **no hard asset-class cap**.
+
+### 15-minute dashboard snapshot
+
+Real-time WS is unchanged. A batch job refreshes dashboard-facing
+aggregates every **`DASHBOARD_SNAPSHOT_INTERVAL_S` (default 900)**.
+
+```bash
+sniper-data snapshot --every 900          # compose service
+sniper-data snapshot --once --inmemory    # one cycle, no brokers
+```
+
+| Redis key | Payload |
+|---|---|
+| `universe:active` | **Authoritative** full list (`GET /v1/universe`) |
+| `universe:top` | Ranked cache (`GET /v1/universe/top`) |
+| `universe:config` | Internal helper (string list) |
+| `dashboard:snapshot:{symbol}` | Pointers + embedded Phase 1/2 payloads |
+| `dashboard:snapshot:index` | Symbol → snapshot key map |
+
+Kafka topic **`dashboard_snapshots`**: one message per symbol (key =
+symbol) plus `_index` and `_universe`. Schema:
+[`dashboard_snapshot.schema.json`](../schemas/dashboard_snapshot.schema.json).
+
+HTTP: `GET /v1/dashboard/snapshot` · `GET /v1/dashboard/snapshot/{symbol}`.
+
+### Charts + patterns for every ticker
+
+Demo generators are **not BTCUSDT-only**. The same mock / history /
+sweep / FVG / MSS / OB / pullback pipeline runs for **ES, CL, GC, NQ**
+and every other configured symbol (`asset_class` + session rules).
+
+* `GET /v1/ohlcv/{symbol}?timeframe=15m&limit=200` returns seeded
+  historical bars for the whole universe (Timescale / in-memory).
+* Pattern fixtures write Redis `sweep:` / `fvg:` / `mss:` / `ob:` plus
+  `setup:{symbol}:{id}` with `trigger_event_ids`.
+* `GET /v1/signals?symbols=ES,CL,GC,NQ&limit=50` lists setup history
+  for up to 20 symbols (offset/limit documented on the query string).
+
+`GET /performance/summary?symbol=ES` and `GET /performance/outcomes?symbol=ES`
+filter the Phase 3 outcome store without changing the six `by_setup` keys.
 
 ## Architecture
 
@@ -99,6 +193,7 @@ docker compose up --build
 |---|---|---|
 | `pipeline` | **9101** | Mock producer + consumers (end-to-end). Prometheus `:9101/metrics` |
 | `api` | **8000** | Quant HTTP + WebSocket. Prometheus `GET /metrics` |
+| `snapshot` | **9103** | 15m dashboard snapshot + `universe:active`. Prometheus `:9103/metrics` |
 | `killzone` | **9102** | Kill-zone scheduler. Prometheus `:9102/metrics` |
 | `redpanda` | 19092 | Kafka-compatible broker |
 | `redis` | 6379 | Real-time state |
@@ -121,6 +216,12 @@ curl -s -X POST http://localhost:8000/v1/anchors -H 'content-type: application/j
   -d '{"symbol":"BTCUSDT","anchor_time":1725458400000,"anchor_price":64000,"source":"manual"}'
 curl -s http://localhost:8000/v1/avwap/BTCUSDT
 curl -s http://localhost:8000/performance/summary
+curl -s http://localhost:8000/v1/universe
+curl -s "http://localhost:8000/v1/universe/top?limit=10"
+curl -s "http://localhost:8000/v1/universe/top?limit=20"
+curl -s http://localhost:8000/v1/dashboard/snapshot
+curl -s "http://localhost:8000/v1/ohlcv/ES?timeframe=15m&limit=50"
+curl -s "http://localhost:8000/v1/signals?symbols=ES,CL,GC,NQ"
 curl -s http://localhost:8000/metrics
 # ws://localhost:8000/v1/ws/avwap?symbol=BTCUSDT
 # ws://localhost:8000/v1/ws/volume-profile?symbol=BTCUSDT
@@ -150,7 +251,12 @@ All secrets are environment variables. See [`.env.example`](.env.example).
 | `KAFKA_BOOTSTRAP` | `localhost:19092` | Redpanda / Kafka |
 | `REDIS_URL` | `redis://localhost:6379/0` | State store |
 | `DATABASE_URL` | `postgresql://sniper:sniper@localhost:5432/market` | Timescale |
-| `DEMO_SYMBOLS` | `BTCUSDT,AAPL,ES` | Mock feed universe |
+| `DASHBOARD_SYMBOLS` / `UNIVERSE` | 12-symbol mix | Paper universe (max 20). Preferred over `DEMO_SYMBOLS`. |
+| `DEMO_SYMBOLS` | same 12-symbol mix | Fallback / alias if the two above are empty |
+| `LIVE_TRADING` | `false` | **Always false.** `true` is ignored. |
+| `DASHBOARD_SNAPSHOT_INTERVAL_S` | `900` | ≤15m snapshot + ranking cadence |
+| `DASHBOARD_SNAPSHOT_INPROCESS` | `true` | Run snapshot loop inside `pipeline` (compose sets `0`) |
+| `SEED_HISTORY` / `SEED_PATTERNS` | `true` | Seed OHLCV + sweep/FVG/pullback for all symbols |
 | `ROLLING_VWAP_PERIODS` | `20` | Rolling VWAP window |
 | `FVG_TTL_SECONDS` | `172800` | Clamped to ≤ 48h |
 | `TICK_INTERVAL_MS` | `80` | Mock print interval |
@@ -273,7 +379,8 @@ Created on pipeline startup (Redpanda also auto-creates):
 `raw_ticks` · `ohlcv_bars` · `session_levels` · `vwap_values` ·
 `sweep_events` · `fvg_zones` · `mss_events` · `order_block_zones` ·
 `setup_signals` · `kill_zone_events` · `anchor_events` ·
-`options_chain` · `order_flow` · `performance_outcomes`
+`options_chain` · `order_flow` · `performance_outcomes` ·
+`dashboard_snapshots`
 
 ## Layout
 
@@ -298,12 +405,14 @@ sniper-data killzones [--inmemory] [--duration N]
 sniper-data bench    [--n 400 --symbols BTCUSDT]
 sniper-data load     [--n 3000 --symbols BTCUSDT,ETHUSDT,AAPL,MSFT,NVDA,ES,NQ,CL]
 sniper-data drill    # Redis RDB restart + Kafka catch-up → docs/dr-drill.md
+sniper-data snapshot [--every 900] [--once] [--inmemory]
 ```
 
 ## Phase 2 — Multi-asset, Anchored VWAP, volume profile, kill zones
 
 Phase 1 contracts are unchanged. The mock/demo feed already streams **three**
-asset classes on the existing `raw_ticks` topic (`DEMO_SYMBOLS=BTCUSDT,AAPL,ES`).
+asset classes on the existing `raw_ticks` topic (default mix includes
+`BTCUSDT`, `AAPL`, and futures roots `ES,NQ,CL,GC`).
 Session windows stay asset-class specific (see table above).
 
 ### ML contract — register / request anchors

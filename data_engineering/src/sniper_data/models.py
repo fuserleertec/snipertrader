@@ -191,6 +191,7 @@ class SetupSignal(BaseModel):
     ref_vwap: float | None = None
     ref_session: str | None = None
     ts_ms: int
+    trigger_event_ids: list[str] | None = None
 
 
 # ── Phase 2 wire models (NO schema_version — exact Redis / Kafka payloads) ──

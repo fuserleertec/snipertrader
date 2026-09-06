@@ -101,6 +101,43 @@ kill-zone sockets now send protocol-level pings (`WS_HEARTBEAT_S`, default
 15s) and drop frames when a client backlog exceeds `WS_BACKLOG` (64).
 JSON frame shapes are unchanged.
 
+## Universe contract (authoritative for ML / FE)
+
+**DE owns the universe.** Swap off provisional `SETUP_UNIVERSE`.
+
+| Surface | Shape |
+|---|---|
+| Redis `universe:active` + `GET /v1/universe` | `{ as_of_ts_ms, symbols: [{symbol, asset_class}] }` |
+| `GET /v1/universe/top?limit=10\|20` | frozen ranked subset (Redis `universe:top`) |
+
+`/v1/universe/top` required fields only (`limit` is 10 or 20):
+
+```json
+{
+  "as_of_ts_ms": 0,
+  "limit": 10,
+  "symbols": [
+    { "symbol": "ES", "asset_class": "futures", "rank": 1, "score": 0.0 }
+  ]
+}
+```
+
+Schemas: [`universe_active.schema.json`](../../schemas/universe_active.schema.json),
+[`universe_top.schema.json`](../../schemas/universe_top.schema.json).
+Refreshed on startup and every 15m. `live_trading=false` on the paper stack
+(not a `/top` wire field).
+
+Related paper endpoints:
+
+```
+GET /v1/dashboard/snapshot
+GET /v1/dashboard/snapshot/{symbol}
+GET /v1/ohlcv/{symbol}?timeframe=15m&limit=200   # all universe symbols
+GET /v1/signals?symbols=ES,CL,GC,NQ&limit=50&offset=0
+GET /performance/summary?symbol=ES
+GET /performance/outcomes?symbol=ES&limit=50
+```
+
 ## Metrics (Frontend ops)
 
 | Process | Scrape |

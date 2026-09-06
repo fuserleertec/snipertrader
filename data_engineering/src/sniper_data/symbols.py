@@ -24,7 +24,7 @@ _STRIP = re.compile(r"[^A-Za-z0-9]")
 # if they look like a pair (len >= 6), else equity.
 _EQUITY = {
     "AAPL", "MSFT", "NVDA", "AMZN", "GOOG", "GOOGL", "META", "TSLA",
-    "SPY", "QQQ", "IWM", "DIA",
+    "SPY", "QQQ", "IWM", "DIA", "AMD", "NFLX", "AVGO", "JPM",
 }
 _FUTURES = {
     "ES", "NQ", "YM", "RTY", "CL", "GC", "SI", "NG", "ZB", "ZN", "MES", "MNQ",

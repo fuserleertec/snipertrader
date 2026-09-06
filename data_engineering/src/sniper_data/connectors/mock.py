@@ -12,12 +12,20 @@ from sniper_data.models import AssetClass, OrderBook, RawTick
 from sniper_data.symbols import infer_asset_class, normalize_symbol
 
 
-# (price, typical volume) — crypto + US equity + CME futures for the Phase 2 demo.
+# (price, typical volume) — mixed crypto + US equity + CME futures (paper).
 _SEEDS: dict[str, tuple[float, float]] = {
     "BTCUSDT": (67_250.0, 0.35),
     "ETHUSDT": (3_420.0, 1.2),
+    "SOLUSDT": (148.0, 4.0),
+    "BNBUSDT": (580.0, 1.5),
     "AAPL": (228.40, 120.0),
+    "MSFT": (415.20, 90.0),
+    "NVDA": (118.50, 160.0),
+    "SPY": (542.10, 220.0),
     "ES": (5_812.25, 40.0),
+    "NQ": (20_140.0, 28.0),
+    "CL": (78.35, 80.0),
+    "GC": (2_364.50, 18.0),
     "ESZ2024": (5_812.25, 40.0),
 }
 

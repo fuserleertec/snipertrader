@@ -1,4 +1,6 @@
-# Local Phase 1–3 stack: Redpanda + TimescaleDB + Redis + demo pipeline + API + kill-zone timer.
+# Local Phase 1–3 + multi-asset paper stack.
+# live_trading=false — mock feed only; no live brokers.
+# Dashboard snapshots refresh every 900s (DASHBOARD_SNAPSHOT_INTERVAL_S).
 # Kafka topics are created with KAFKA_PARTITIONS=6 so high-volume symbols
 # (raw_ticks, options_chain, order_flow) can be consumed in parallel.
 #
@@ -80,7 +82,14 @@ services:
       KAFKA_BOOTSTRAP: redpanda:9092
       REDIS_URL: redis://redis:6379/0
       DATABASE_URL: postgresql://sniper:sniper@timescaledb:5432/market
-      DEMO_SYMBOLS: BTCUSDT,AAPL,ES
+      DASHBOARD_SYMBOLS: BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,AAPL,MSFT,NVDA,SPY,ES,NQ,CL,GC
+      UNIVERSE: BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,AAPL,MSFT,NVDA,SPY,ES,NQ,CL,GC
+      DEMO_SYMBOLS: BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,AAPL,MSFT,NVDA,SPY,ES,NQ,CL,GC
+      LIVE_TRADING: "false"
+      DASHBOARD_SNAPSHOT_INTERVAL_S: "900"
+      DASHBOARD_SNAPSHOT_INPROCESS: "0"
+      SEED_HISTORY: "1"
+      SEED_PATTERNS: "1"
       TICK_INTERVAL_MS: 80
       ROLLING_VWAP_PERIODS: 20
       FVG_TTL_SECONDS: 172800
@@ -103,6 +112,10 @@ services:
       KAFKA_BOOTSTRAP: redpanda:9092
       REDIS_URL: redis://redis:6379/0
       DATABASE_URL: postgresql://sniper:sniper@timescaledb:5432/market
+      DASHBOARD_SYMBOLS: BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,AAPL,MSFT,NVDA,SPY,ES,NQ,CL,GC
+      LIVE_TRADING: "false"
+      SEED_HISTORY: "1"
+      SEED_PATTERNS: "1"
     ports:
       - "8000:8000"
     command: ["sniper-data", "api", "--host", "0.0.0.0", "--port", "8000"]
@@ -118,12 +131,39 @@ services:
       SNIPER_ENV: demo
       KAFKA_BOOTSTRAP: redpanda:9092
       REDIS_URL: redis://redis:6379/0
-      DEMO_SYMBOLS: BTCUSDT,AAPL,ES
+      DASHBOARD_SYMBOLS: BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,AAPL,MSFT,NVDA,SPY,ES,NQ,CL,GC
+      DEMO_SYMBOLS: BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,AAPL,MSFT,NVDA,SPY,ES,NQ,CL,GC
+      LIVE_TRADING: "false"
       KILLZONE_POLL_S: "1"
       METRICS_PORT: 9102
     ports:
       - "9102:9102"
     command: ["sniper-data", "killzones"]
+    restart: unless-stopped
+
+  snapshot:
+    build: .
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+    environment:
+      SNIPER_ENV: demo
+      KAFKA_BOOTSTRAP: redpanda:9092
+      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: postgresql://sniper:sniper@timescaledb:5432/market
+      DASHBOARD_SYMBOLS: BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,AAPL,MSFT,NVDA,SPY,ES,NQ,CL,GC
+      LIVE_TRADING: "false"
+      DASHBOARD_SNAPSHOT_INTERVAL_S: "900"
+      SEED_HISTORY: "1"
+      SEED_PATTERNS: "1"
+      METRICS_PORT: 9103
+    ports:
+      - "9103:9103"
+    command: ["sniper-data", "snapshot", "--every", "900"]
     restart: unless-stopped
 
   evict:

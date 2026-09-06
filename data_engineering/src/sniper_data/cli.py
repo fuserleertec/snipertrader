@@ -14,10 +14,23 @@ def _setup_logging(level: str) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="sniper-data", description="Phase 1–3 market-data pipeline")
+    parser = argparse.ArgumentParser(
+        prog="sniper-data",
+        description="Phase 1–3 market-data pipeline (paper; live_trading=false)",
+    )
     parser.add_argument(
         "command",
-        choices=["pipeline", "api", "evict", "demo", "killzones", "bench", "load", "drill"],
+        choices=[
+            "pipeline",
+            "api",
+            "evict",
+            "demo",
+            "killzones",
+            "bench",
+            "load",
+            "drill",
+            "snapshot",
+        ],
     )
     parser.add_argument("--symbols", default=None, help="Comma symbols for bench (default BTCUSDT).")
     parser.add_argument("--n", type=int, default=400, help="Tick count for bench.")
@@ -25,6 +38,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--duration", type=float, default=None, help="Seconds to run the demo/pipeline.")
     parser.add_argument("--host", default=None)
     parser.add_argument("--port", type=int, default=None)
+    parser.add_argument(
+        "--every",
+        type=float,
+        default=None,
+        help="Snapshot cadence seconds (default 900). Used by `snapshot`.",
+    )
+    parser.add_argument(
+        "--once",
+        action="store_true",
+        help="Run a single dashboard snapshot cycle and exit.",
+    )
     args = parser.parse_args(argv)
 
     from sniper_data.config import get_settings
@@ -96,6 +120,28 @@ def main(argv: list[str] | None = None) -> int:
         write_drill_report(obs, dest)
         print({"pass": obs["pass"], "report": str(dest)})
         return 0 if obs["pass"] else 2
+
+    if args.command == "snapshot":
+        from sniper_data.dashboard import run_snapshot_loop
+
+        interval = args.every if args.every is not None else settings.dashboard_snapshot_interval_s
+        result = asyncio.run(
+            run_snapshot_loop(
+                inmemory=args.inmemory,
+                interval_s=interval,
+                duration_s=args.duration,
+                once=args.once or args.duration is not None and args.duration <= 0,
+            )
+        )
+        print(
+            {
+                "symbols": result.get("symbols"),
+                "live_trading": False,
+                "cadence_s": interval,
+                "universe_active": "universe:active",
+            }
+        )
+        return 0
 
     if args.command == "api":
         import uvicorn

@@ -22,6 +22,7 @@ as required on a **new** schema.
 | `options_chain` | [`options_chain.schema.json`](options_chain.schema.json) | US-equities options stub / mock | ML / Quant |
 | `order_flow` | [`order_flow.schema.json`](order_flow.schema.json) | US-equities tape stub / mock | ML / Quant |
 | `performance_outcomes` | (inbound outcome JSON) | Quant `POST /performance/outcomes` | Redis `perf:outcomes` |
+| `dashboard_snapshots` | [`dashboard_snapshot.schema.json`](dashboard_snapshot.schema.json) | 15m snapshot job | Redis `dashboard:snapshot:{symbol}`, Frontend poll |
 
 ## Delta / aggressor (ML Researchers)
 
@@ -98,3 +99,51 @@ index `avwap:index:{symbol}`.
 Options / order-flow field names are frozen: use `implied_volatility`,
 `open_interest`, `option_type` (`call`\|`put`), `aggressor` (`buy`\|`sell`).
 Do not invent `iv` / `oi` / `right` / `side` / `taker_side`.
+
+`setup_signal.trigger_event_ids` is an optional list of sweep / FVG / MSS / OB
+ids. Demo generators emit it for **every** configured symbol (including
+`ES`, `CL`, `GC`, `NQ`), not BTCUSDT-only.
+
+## Multi-asset paper expansion — universe + 15m snapshot
+
+**`live_trading=false`.** No live brokers. Paper / mock / demo only.
+
+### Authoritative contract for ML / FE
+
+**DE owns the universe.** ML should swap off provisional `SETUP_UNIVERSE`.
+
+| Surface | Schema | Payload |
+|---|---|---|
+| Redis **`universe:active`** + `GET /v1/universe` | [`universe_active.schema.json`](universe_active.schema.json) | Full list `{ as_of_ts_ms, symbols: [{symbol, asset_class}] }` |
+| `GET /v1/universe/top?limit=10\|20` | [`universe_top.schema.json`](universe_top.schema.json) | Ranked subset (Redis `universe:top`) |
+
+`universe:active` is written on startup and every 15m snapshot.
+
+Frozen envelope (`GET /v1/universe/top?limit=10|20`) — required fields only:
+
+```json
+{
+  "as_of_ts_ms": 0,
+  "limit": 10,
+  "symbols": [
+    { "symbol": "ES", "asset_class": "futures", "rank": 1, "score": 0.0 }
+  ]
+}
+```
+
+### 15-minute dashboard snapshot
+
+| Store | Schema / payload | Key / topic |
+|---|---|---|
+| Redis | [`dashboard_snapshot.schema.json`](dashboard_snapshot.schema.json) | `dashboard:snapshot:{symbol}` |
+| Redis | index (symbols + key map) | `dashboard:snapshot:index` |
+| Redis | full active list | `universe:active` |
+| Redis | ranked cache | `universe:top` |
+| Redis | configured list helper | `universe:config` |
+| Kafka | per-symbol snapshot (key = symbol) + `_index` / `_universe` | `dashboard_snapshots` |
+
+Embedded `vwap` / `session` / `avwap` / `kill_zone` / `volume_profile` are
+the existing Phase 1/2 payloads or `null`. Pointers name the live Redis keys.
+
+Cadence: `DASHBOARD_SNAPSHOT_INTERVAL_S` (default **900**).
+CLI: `sniper-data snapshot --every 900`.

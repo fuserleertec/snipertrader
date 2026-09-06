@@ -1,0 +1,320 @@
+"""Configurable paper universe — DE-owned authoritative contract.
+
+PM / ML lock
+------------
+Redis ``universe:active`` is the authoritative full list::
+
+    {"as_of_ts_ms": 1725459000000,
+     "symbols": [{"symbol": "ES", "asset_class": "futures"}, ...]}
+
+Written on pipeline/API startup and every 15m snapshot. HTTP:
+
+* ``GET /v1/universe`` → that Redis payload (full active list)
+* ``GET /v1/universe/top?limit=10|20`` → ranked subset (Redis ``universe:top``)
+
+ML / FE should swap off provisional ``SETUP_UNIVERSE`` once these exist.
+
+Env: ``DASHBOARD_SYMBOLS`` (alias ``UNIVERSE``, fallback ``DEMO_SYMBOLS``),
+max 20. Default mix includes ES, CL, GC, NQ plus crypto and equities.
+``live_trading`` is always ``false``.
+"""
+
+from __future__ import annotations
+
+import logging
+import math
+import time
+from typing import Any
+
+from pydantic import BaseModel, Field
+
+from sniper_data.models import AssetClass
+from sniper_data.symbols import infer_asset_class, normalize_symbol
+
+log = logging.getLogger(__name__)
+
+MAX_UNIVERSE_SYMBOLS = 20
+DEFAULT_UNIVERSE_CSV = (
+    "BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,AAPL,MSFT,NVDA,SPY,ES,NQ,CL,GC"
+)
+REDIS_UNIVERSE_ACTIVE = "universe:active"
+REDIS_UNIVERSE_TOP = "universe:top"
+REDIS_UNIVERSE_CONFIG = "universe:config"
+
+SCORE_INPUTS = (
+    "volume",
+    "volatility",
+    "session_active",
+    "levels_available",
+    "pattern_count",
+)
+
+# Weights for the paper ranking. Documented; not an FE field.
+_WEIGHTS = {
+    "volume": 0.30,
+    "volatility": 0.25,
+    "session_active": 0.20,
+    "levels_available": 0.15,
+    "pattern_count": 0.10,
+}
+
+
+class UniverseMember(BaseModel):
+    """Frozen GET /v1/universe/top row — required fields only."""
+
+    symbol: str
+    asset_class: AssetClass
+    rank: int
+    score: float
+
+
+class UniverseTop(BaseModel):
+    """Frozen GET /v1/universe/top envelope. Required fields only."""
+
+    as_of_ts_ms: int
+    limit: int
+    symbols: list[UniverseMember] = Field(default_factory=list)
+
+
+class UniverseActiveItem(BaseModel):
+    """One row of Redis ``universe:active`` / GET /v1/universe."""
+
+    symbol: str
+    asset_class: AssetClass
+
+
+class UniverseActive(BaseModel):
+    """Authoritative full list. Redis ``universe:active``."""
+
+    as_of_ts_ms: int
+    symbols: list[UniverseActiveItem] = Field(default_factory=list)
+    live_trading: bool = False
+
+
+class UniverseConfig(BaseModel):
+    """Internal helper (Redis ``universe:config``). Not the ML contract."""
+
+    as_of_ts_ms: int
+    live_trading: bool = False
+    max_symbols: int = MAX_UNIVERSE_SYMBOLS
+    cadence_s: int = 900
+    symbols: list[str] = Field(default_factory=list)
+    asset_classes: dict[str, str] = Field(default_factory=dict)
+
+
+def parse_universe(*candidates: str | None) -> list[str]:
+    """First non-empty CSV wins. Dedupe, normalize, cap at ``MAX_UNIVERSE_SYMBOLS``."""
+    raw = ""
+    for candidate in candidates:
+        if candidate and str(candidate).strip():
+            raw = str(candidate)
+            break
+    if not raw.strip():
+        raw = DEFAULT_UNIVERSE_CSV
+    seen: list[str] = []
+    for part in raw.split(","):
+        token = part.strip()
+        if not token:
+            continue
+        try:
+            symbol = normalize_symbol(token)
+        except ValueError:
+            log.warning("skipping unnormalizable universe token %r", token)
+            continue
+        if symbol in seen:
+            continue
+        seen.append(symbol)
+        if len(seen) >= MAX_UNIVERSE_SYMBOLS:
+            extras = [p.strip() for p in raw.split(",") if p.strip()]
+            if len(extras) > MAX_UNIVERSE_SYMBOLS:
+                log.warning(
+                    "universe truncated to %s symbols (max %s)",
+                    MAX_UNIVERSE_SYMBOLS,
+                    MAX_UNIVERSE_SYMBOLS,
+                )
+            break
+    return seen or [normalize_symbol(s) for s in DEFAULT_UNIVERSE_CSV.split(",")]
+
+
+def clamp_top_limit(limit: int) -> int:
+    """Query ``limit`` is frozen to 10 or 20."""
+    value = int(limit)
+    if value not in (10, 20):
+        raise ValueError("limit must be 10 or 20")
+    return value
+
+
+def classify_universe(symbols: list[str]) -> dict[str, str]:
+    return {s: infer_asset_class(s).value for s in symbols}
+
+
+def config_payload(
+    symbols: list[str],
+    *,
+    cadence_s: int = 900,
+    now_ms: int | None = None,
+) -> UniverseConfig:
+    now = now_ms if now_ms is not None else int(time.time() * 1000)
+    return UniverseConfig(
+        as_of_ts_ms=now,
+        live_trading=False,
+        max_symbols=MAX_UNIVERSE_SYMBOLS,
+        cadence_s=int(cadence_s),
+        symbols=list(symbols),
+        asset_classes=classify_universe(symbols),
+    )
+
+
+def _norm_volume(volume: float, peak: float) -> float:
+    if peak <= 0:
+        return 0.0
+    return min(1.0, math.log1p(max(0.0, volume)) / math.log1p(peak))
+
+
+def _norm_volatility(volatility: float) -> float:
+    return min(1.0, max(0.0, float(volatility)) / 0.05)
+
+
+def score_metrics(
+    *,
+    volume: float,
+    volatility: float,
+    session_active: bool,
+    levels_available: int,
+    pattern_count: int,
+    peak_volume: float,
+) -> float:
+    parts = {
+        "volume": _norm_volume(volume, peak_volume),
+        "volatility": _norm_volatility(volatility),
+        "session_active": 1.0 if session_active else 0.0,
+        "levels_available": min(1.0, max(0, levels_available) / 5.0),
+        "pattern_count": min(1.0, max(0, pattern_count) / 8.0),
+    }
+    return round(sum(_WEIGHTS[k] * parts[k] for k in SCORE_INPUTS), 6)
+
+
+def rank_rows(rows: list[dict[str, Any]], *, limit: int) -> list[UniverseMember]:
+    peak = max((float(r.get("volume") or 0.0) for r in rows), default=0.0)
+    scored: list[UniverseMember] = []
+    for raw in rows:
+        symbol = normalize_symbol(raw["symbol"])
+        klass = infer_asset_class(symbol, raw.get("asset_class"))
+        volume = float(raw.get("volume") or 0.0)
+        volatility = float(raw.get("volatility") or 0.0)
+        session_active = bool(raw.get("session_active"))
+        levels = int(raw.get("levels_available") or 0)
+        patterns = int(raw.get("pattern_count") or 0)
+        scored.append(
+            UniverseMember(
+                symbol=symbol,
+                asset_class=klass,
+                rank=0,
+                score=score_metrics(
+                    volume=volume,
+                    volatility=volatility,
+                    session_active=session_active,
+                    levels_available=levels,
+                    pattern_count=patterns,
+                    peak_volume=peak,
+                ),
+            )
+        )
+    scored.sort(key=lambda m: (-m.score, m.symbol))
+    out: list[UniverseMember] = []
+    for i, member in enumerate(scored[: clamp_top_limit(limit)], start=1):
+        out.append(member.model_copy(update={"rank": i}))
+    return out
+
+
+def top_envelope(
+    rows: list[dict[str, Any]],
+    *,
+    limit: int,
+    now_ms: int | None = None,
+) -> UniverseTop:
+    now = now_ms if now_ms is not None else int(time.time() * 1000)
+    return UniverseTop(
+        as_of_ts_ms=now,
+        limit=clamp_top_limit(limit),
+        symbols=rank_rows(rows, limit=limit),
+    )
+
+
+def active_payload(
+    symbols: list[str],
+    *,
+    now_ms: int | None = None,
+) -> UniverseActive:
+    now = now_ms if now_ms is not None else int(time.time() * 1000)
+    items = [
+        UniverseActiveItem(symbol=s, asset_class=infer_asset_class(s))
+        for s in symbols
+    ]
+    return UniverseActive(as_of_ts_ms=now, symbols=items, live_trading=False)
+
+
+def _frozen_row(row: dict[str, Any], rank: int) -> dict[str, Any]:
+    return {
+        "symbol": row["symbol"],
+        "asset_class": row["asset_class"],
+        "rank": rank,
+        "score": float(row.get("score") or 0.0),
+    }
+
+
+def slice_top(payload: dict[str, Any], limit: int) -> dict[str, Any]:
+    """Re-slice a stored ``universe:top`` envelope to the frozen wire shape."""
+    wanted = clamp_top_limit(limit)
+    symbols = list(payload.get("symbols") or [])
+    sliced = []
+    for i, row in enumerate(symbols[:wanted], start=1):
+        if isinstance(row, dict):
+            sliced.append(_frozen_row(row, i))
+    return {
+        "as_of_ts_ms": int(payload.get("as_of_ts_ms") or 0),
+        "limit": wanted,
+        "symbols": sliced,
+    }
+
+
+async def write_universe_config(store, symbols: list[str], *, cadence_s: int = 900) -> dict[str, Any]:
+    body = config_payload(symbols, cadence_s=cadence_s).model_dump(mode="json")
+    await store.set(REDIS_UNIVERSE_CONFIG, body)
+    return body
+
+
+async def write_universe_active(
+    store,
+    symbols: list[str] | UniverseActive,
+    *,
+    now_ms: int | None = None,
+) -> dict[str, Any]:
+    """Write Redis ``universe:active`` as ``{as_of_ts_ms, symbols:[{symbol,asset_class}]}``."""
+    if isinstance(symbols, UniverseActive):
+        body = symbols.model_dump(mode="json")
+    else:
+        body = active_payload(list(symbols), now_ms=now_ms).model_dump(mode="json")
+    body["live_trading"] = False
+    await store.set(REDIS_UNIVERSE_ACTIVE, body)
+    return body
+
+
+async def write_universe_top(store, envelope: UniverseTop | dict[str, Any]) -> dict[str, Any]:
+    if isinstance(envelope, UniverseTop):
+        body = envelope.model_dump(mode="json")
+    else:
+        body = slice_top(envelope, clamp_top_limit(int(envelope.get("limit") or 20)))
+        body["as_of_ts_ms"] = int(envelope.get("as_of_ts_ms") or body["as_of_ts_ms"])
+    await store.set(REDIS_UNIVERSE_TOP, body)
+    return body
+
+
+async def read_universe_active(store) -> dict[str, Any] | None:
+    raw = await store.get(REDIS_UNIVERSE_ACTIVE)
+    return raw if isinstance(raw, dict) else None
+
+
+async def read_universe_top(store) -> dict[str, Any] | None:
+    raw = await store.get(REDIS_UNIVERSE_TOP)
+    return raw if isinstance(raw, dict) else None
