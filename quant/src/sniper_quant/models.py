@@ -52,6 +52,32 @@ def parse_asset_class_query(raw: str | None) -> AssetClass | None:
         ) from exc
 
 
+class UniverseMember(BaseModel):
+    """Frozen DE ``GET /v1/universe/top`` row (PR #12). Required fields only."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    symbol: str = Field(pattern=r"^[A-Z0-9]+$")
+    asset_class: AssetClass
+    rank: int = Field(ge=1, le=20)
+    score: float
+
+    @field_validator("symbol", mode="before")
+    @classmethod
+    def _symbol(cls, value: Any) -> str:
+        return normalize_symbol(value)
+
+
+class UniverseTop(BaseModel):
+    """Frozen DE ``GET /v1/universe/top`` envelope. ``additionalProperties: false``."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    as_of_ts_ms: int = Field(ge=0)
+    limit: Literal[10, 20]
+    symbols: list[UniverseMember]
+
+
 class SignalStatus(str, Enum):
     ACTIVE = "ACTIVE"
     TP_HIT = "TP_HIT"

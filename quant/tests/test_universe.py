@@ -50,10 +50,11 @@ def test_default_ranking_is_the_paper_file_not_a_hardcoded_list():
     assert "IBM" not in {s for s, _ in ranked}
 
 
-def test_setup_universe_can_only_narrow_file():
+def test_setup_universe_does_not_narrow_ranking():
     settings = make_settings(SETUP_UNIVERSE="BTCUSDT,ES,FAKECOIN,NVDA")
     ranked = resolve_ranking_universe(settings)
-    assert {s for s, _ in ranked} == {"BTCUSDT", "ES", "NVDA"}
+    assert {s for s, _ in ranked} == _paper_symbols()
+    assert REQUIRED_FUTURES <= {s for s, _ in ranked}
 
     csv = make_settings(PAPER_UNIVERSE="SOLUSDT:crypto,NVDA:equity,NQ:futures")
     assert load_paper_universe(csv) == [
@@ -61,8 +62,12 @@ def test_setup_universe_can_only_narrow_file():
         ("NVDA", AssetClass.EQUITY),
         ("NQ", AssetClass.FUTURES),
     ]
-    # Paper override does not expand (or shrink) the ensemble allow-list.
-    assert {s for s, _ in resolve_ranking_universe(csv)} == _paper_symbols()
+    # PAPER_UNIVERSE is the fallback mix when DE is unreachable.
+    assert resolve_ranking_universe(csv) == [
+        ("SOLUSDT", AssetClass.CRYPTO),
+        ("NVDA", AssetClass.EQUITY),
+        ("NQ", AssetClass.FUTURES),
+    ]
 
 
 def test_demo_symbols_override_replaces_file():
@@ -113,6 +118,64 @@ def test_de_universe_top_limit_10_and_20(monkeypatch: pytest.MonkeyPatch):
     assert REQUIRED_FUTURES <= {r["symbol"] for r in dump["ensemble_universe"]}
 
 
+def test_parse_universe_top_locked_schema():
+    payload = {
+        "as_of_ts_ms": 1_700_000_400_000,
+        "limit": 10,
+        "symbols": [
+            {"symbol": "ES", "asset_class": "futures", "rank": 1, "score": 0.9},
+            {"symbol": "CL", "asset_class": "futures", "rank": 2, "score": 0.8},
+            {"symbol": "GC", "asset_class": "futures", "rank": 3, "score": 0.7},
+            {"symbol": "NQ", "asset_class": "futures", "rank": 4, "score": 0.6},
+        ],
+    }
+    parsed = parse_universe_top(payload, limit=10)
+    assert [s for s, _ in parsed] == ["ES", "CL", "GC", "NQ"]
+
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        parse_universe_top({"limit": 10, "symbols": payload["symbols"]}, limit=10)
+    with pytest.raises(ValidationError):
+        parse_universe_top(
+            {
+                "as_of_ts_ms": 1,
+                "limit": 10,
+                "symbols": [{"symbol": "ES", "asset_class": "futures", "score": 0.1}],
+            },
+            limit=10,
+        )
+    with pytest.raises(ValidationError):
+        parse_universe_top(
+            {
+                "as_of_ts_ms": 1,
+                "limit": 10,
+                "extra": True,
+                "symbols": payload["symbols"],
+            },
+            limit=10,
+        )
+    with pytest.raises(ValidationError):
+        parse_universe_top(
+            {
+                "as_of_ts_ms": 1,
+                "limit": 10,
+                "symbols": [
+                    {
+                        "symbol": "ES",
+                        "asset_class": "futures",
+                        "rank": 1,
+                        "score": 0.1,
+                        "volume": 9,
+                    }
+                ],
+            },
+            limit=10,
+        )
+    with pytest.raises(ValueError, match="limit"):
+        parse_universe_top({**payload, "limit": 20}, limit=10)
+
+
 def test_parse_universe_top_and_http_handoff(monkeypatch: pytest.MonkeyPatch):
     clear_de_top_cache()
     payload = {
@@ -150,7 +213,7 @@ def test_parse_universe_top_and_http_handoff(monkeypatch: pytest.MonkeyPatch):
     clear_de_top_cache()
 
 
-def test_de_top_failure_keeps_provisional_futures(monkeypatch: pytest.MonkeyPatch):
+def test_de_top_failure_uses_fallback_futures(monkeypatch: pytest.MonkeyPatch):
     clear_de_top_cache()
 
     def boom(url, params=None, timeout=None):
@@ -161,9 +224,54 @@ def test_de_top_failure_keeps_provisional_futures(monkeypatch: pytest.MonkeyPatc
     ranked = resolve_ranking_universe(settings, limit=10)
     assert REQUIRED_FUTURES <= {s for s, _ in ranked}
     assert ranking_source(settings) == "paper_universe"
+    dump = universe_dump(settings)
+    assert dump["handoff"] == "fallback"
+    assert dump["live_trading"] is False
 
 
-def test_de_universe_handoff_replaces_demo_symbols(tmp_path: Path):
+def test_de_top_invalid_schema_falls_back(monkeypatch: pytest.MonkeyPatch):
+    clear_de_top_cache()
+
+    class _Resp:
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self):
+            return {"symbols": [{"symbol": "ES"}]}
+
+    monkeypatch.setattr("httpx.get", lambda *a, **k: _Resp())
+    settings = make_settings(DE_API_BASE="http://de.test")
+    assert ranking_source(settings, limit=10) == "paper_universe"
+    assert REQUIRED_FUTURES <= {s for s, _ in resolve_ranking_universe(settings, limit=10)}
+
+
+def test_de_top_ignores_setup_universe(monkeypatch: pytest.MonkeyPatch):
+    clear_de_top_cache()
+    ten = [
+        ("ES", AssetClass.FUTURES),
+        ("CL", AssetClass.FUTURES),
+        ("GC", AssetClass.FUTURES),
+        ("NQ", AssetClass.FUTURES),
+        ("BTCUSDT", AssetClass.CRYPTO),
+        ("ETHUSDT", AssetClass.CRYPTO),
+        ("AAPL", AssetClass.EQUITY),
+        ("MSFT", AssetClass.EQUITY),
+        ("NVDA", AssetClass.EQUITY),
+        ("SPY", AssetClass.EQUITY),
+    ]
+
+    def fake_fetch(_settings, limit: int):
+        return list(ten)
+
+    settings = make_settings(
+        DE_API_BASE="http://de.test",
+        SETUP_UNIVERSE="BTCUSDT,AAPL",
+    )
+    assert resolve_ranking_universe(settings, limit=10, fetcher=fake_fetch) == ten
+    assert REQUIRED_FUTURES <= {s for s, _ in ten}
+
+
+def test_de_universe_file_is_fallback_not_narrowed(tmp_path: Path):
     feed = tmp_path / "de.json"
     feed.write_text(
         '{"symbols":[{"symbol":"ETHUSDT","asset_class":"crypto"},'
@@ -172,7 +280,10 @@ def test_de_universe_handoff_replaces_demo_symbols(tmp_path: Path):
     )
     settings = make_settings(DE_UNIVERSE=str(feed), SETUP_UNIVERSE="ETHUSDT,NVDA")
     assert ranking_source(settings) == "de_feed"
-    assert resolve_ranking_universe(settings) == [("ETHUSDT", AssetClass.CRYPTO)]
+    assert resolve_ranking_universe(settings) == [
+        ("ETHUSDT", AssetClass.CRYPTO),
+        ("MSFT", AssetClass.EQUITY),
+    ]
 
 
 def test_missing_universe_file_raises(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):

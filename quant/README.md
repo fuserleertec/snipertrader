@@ -254,34 +254,32 @@ Dormant `mss_break` / `order_block` / `sweep_mss` and
 `*_pending_user_confirm` are omitted. Metrics come from signal outcomes /
 `realized_r`.
 
-### Paper universe vs DE `/v1/universe/top` handoff
+### Paper universe vs DE `/v1/universe/top` (cut over)
 
-DE will publish **`GET /v1/universe/top?limit=10|20`** (15m refresh).
-Schema: [`schemas/universe_top.schema.json`](../schemas/universe_top.schema.json).
+Quant consumes **`GET {DE_API_BASE}/v1/universe/top?limit=10|20`**
+(15m cache, default `DE_API_BASE=http://localhost:8000`).
+Schema locked: [`schemas/universe_top.schema.json`](../schemas/universe_top.schema.json)
+(DE PR #12). Extra properties or missing `rank` / `score` /
+`as_of_ts_ms` / `limit` are rejected and treated as unreachable.
 
 | Consumer | DE call | Quant use |
 |---|---|---|
-| P0 ensemble | `?limit=10` | Ranking book for `GET /picks/ensemble` (top 10 within that set — typically the whole returned set) |
-| Categorized + history | `?limit=20` | `GET /picks/categorized`. `GET /signals` / `/signals/history` are scoped to this book when DE is up and `symbol` is omitted |
-
-Set **`DE_API_BASE`** (e.g. `http://localhost:8000`) when DE is up. Quant
-caches the response for **900s**. If the call fails or `DE_API_BASE` is
-empty, Quant stays on the **provisional** mix:
+| P0 ensemble | `?limit=10` | Ranking book for `GET /picks/ensemble` (as-is; no `SETUP_UNIVERSE` ∩) |
+| Categorized + history | `?limit=20` | `GET /picks/categorized`. `GET /signals` / `/signals/history` are scoped to this book when `ranking_source=de_top` and `symbol` is omitted |
 
 | Stage | Allow-list | Env |
 |---|---|---|
-| **Provisional (now)** | `DEMO_SYMBOLS` if set, else [`config/paper_universe.json`](config/paper_universe.json) (includes **ES, CL, GC, NQ**) ∩ `SETUP_UNIVERSE` | `DEMO_SYMBOLS`, `SETUP_UNIVERSE` |
-| **Offline file** | CSV / JSON path | `DE_UNIVERSE` |
-| **Handoff** | DE `GET /v1/universe/top?limit=10\|20`, still ∩ `SETUP_UNIVERSE` | **`DE_API_BASE`** |
+| **Primary (wired)** | DE `GET /v1/universe/top?limit=10\|20` as-is | **`DE_API_BASE`** (default `http://localhost:8000`) |
+| **Fallback only if DE unreachable** | `DE_UNIVERSE` file, else `DEMO_SYMBOLS`, else [`config/paper_universe.json`](config/paper_universe.json) (includes **ES, CL, GC, NQ**) | `DE_UNIVERSE`, `DEMO_SYMBOLS` |
+| **Detectors only** | `SETUP_UNIVERSE` — **not** the ranking book | `SETUP_UNIVERSE` |
 
-Provisional is **not** sliced to 10, so ES/CL/GC/NQ stay in the P0 book
-until DE is live. `SETUP_UNIVERSE` can only **narrow**. `PAPER_UNIVERSE`
-overrides the paper book only.
+Set `DE_API_BASE=` (empty) to skip the live client (tests / offline).
+`PAPER_UNIVERSE` overrides the paper-file fallback mix.
 
-`GET /paper/universe` shows `handoff` (`provisional` \| `de_feed` \|
-`de_top`), `ranking_source`, `ensemble_universe` (limit 10),
-`history_universe` (limit 20), `de_universe_top`. `live_trading` is
-always false.
+`GET /paper/universe` shows `handoff` (`de_top` \| `fallback`),
+`ranking_source`, `ensemble_universe` (limit 10), `history_universe`
+(limit 20), `de_top_10` / `de_top_20` (last locked envelopes).
+`live_trading` is always false. `refresh_sec` is 900.
 
 ### Multi-symbol risk (existing, paper book)
 

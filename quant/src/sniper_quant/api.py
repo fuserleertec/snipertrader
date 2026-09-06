@@ -118,19 +118,20 @@ Dormant `mss_break` / `order_block` / `sweep_mss` and
 `*_pending_user_confirm` are omitted.
 
 `GET /picks/ensemble` → Quantum Ensemble Picks (P0). Dynamic top **10**
-**inside DE `GET /v1/universe/top?limit=10`** when `DE_API_BASE` is up
-(15m refresh). Until DE is up: provisional `DEMO_SYMBOLS` / paper file
-∩ `SETUP_UNIVERSE` (**includes ES, CL, GC, NQ**). Consumes Kafka
-**`ensemble_features`** (key=`symbol`, 15m). Mapping: `score` ←
-`ensemble_score`, `confidence` ← `best_confidence`. Skip
-`active_levels=false`. Prefer ML `ensemble_score`; else recompute from
-`rank_components` (weights: setup_quality 40, confluence/risk_adjusted
-20, kill_zone 15, volume 15, freshness 10). `refresh_sec` **900**.
+**inside DE `GET /v1/universe/top?limit=10`** (15m refresh, schema
+locked). Consumes Kafka **`ensemble_features`** (key=`symbol`, 15m).
+Mapping: `score` ← `ensemble_score`, `confidence` ← `best_confidence`.
+Skip `active_levels=false`. Prefer ML `ensemble_score`; else recompute
+from `rank_components` (weights: setup_quality 40,
+confluence/risk_adjusted 20, kill_zone 15, volume 15, freshness 10).
+`refresh_sec` **900**. Fallback only if DE is unreachable:
+`DEMO_SYMBOLS` / paper file / `DE_UNIVERSE` (**includes ES, CL, GC,
+NQ**). `SETUP_UNIVERSE` does **not** narrow the ranking book.
 **No live trading.**
 
 `GET /picks/categorized?asset_class=&limit=20` → same features, ranked
-inside DE `GET /v1/universe/top?limit=20` (or the same provisional
-set). ≤20 rows, tagged `momentum` | `mean_reversion` | `confluence` |
+inside DE `GET /v1/universe/top?limit=20` (or the same fallback set).
+≤20 rows, tagged `momentum` | `mean_reversion` | `confluence` |
 `other`. History consumers (`GET /signals`, `/signals/history`) use
 that same limit=20 book when `symbol` is omitted.
 
@@ -359,7 +360,8 @@ def create_app(
             "setup_universe_env": "SETUP_UNIVERSE",
             "demo_symbols_env": "DEMO_SYMBOLS",
             "de_universe_env": "DE_UNIVERSE",
-            "ranking_lock": "de_universe_top_or_provisional",
+            "ranking_lock": "de_universe_top",
+            "ranking_fallback": "demo_symbols_or_paper_when_de_unreachable",
             "de_universe_top": "/v1/universe/top",
             "de_universe_top_limits": [10, 20],
             "de_api_base_env": "DE_API_BASE",
@@ -408,9 +410,11 @@ def create_app(
         Kafka topic ``ensemble_features`` (key=symbol, 15m). ``score`` ←
         ``ensemble_score``, ``confidence`` ← ``best_confidence``. Skip
         ``active_levels=false``. Prefer ML score; else weights 40/20/15/15/10.
-        Ranking book: DE ``GET /v1/universe/top?limit=10``. Provisional
-        (DE down): ``DEMO_SYMBOLS`` / paper file ∩ ``SETUP_UNIVERSE``
-        including ES, CL, GC, NQ. ``refresh_sec`` 900. Paper only.
+        Ranking book: DE ``GET /v1/universe/top?limit=10`` (schema
+        locked). Fallback if DE unreachable: ``DEMO_SYMBOLS`` / paper
+        file / ``DE_UNIVERSE`` including ES, CL, GC, NQ.
+        ``SETUP_UNIVERSE`` does not narrow ranking. ``refresh_sec`` 900.
+        Paper only.
         """
         from sniper_quant.picks import REFRESH_SEC, TOP_N, parse_ml_scores, rank_ensemble
         from sniper_quant.universe import resolve_ranking_universe
@@ -441,6 +445,8 @@ def create_app(
     ) -> CategorizedPicksResponse:
         """Categorized paper picks. Same ensemble_features ranking, ≤20 rows.
 
+        Ranking book: DE ``GET /v1/universe/top?limit=20``. Fallback if
+        DE unreachable: ``DEMO_SYMBOLS`` / paper / ``DE_UNIVERSE``.
         category from setup_types: vwap_pullback_cont → momentum;
         sweep_reclaim / fvg_entry / po3_judas / sd_extension_fade →
         mean_reversion; avwap_ob_confluence → confluence; none → other;
@@ -694,7 +700,7 @@ def create_app(
 
     @app.get("/paper/universe")
     async def paper_universe() -> dict[str, Any]:
-        """Paper ranking allow-list (file-backed; DE_UNIVERSE handoff). Paper only."""
+        """Paper ranking book. Primary: DE GET /v1/universe/top. Paper only."""
         from sniper_quant.universe import universe_dump
 
         body = universe_dump(app.state.settings)

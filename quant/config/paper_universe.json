@@ -1,7 +1,7 @@
 {
   "refresh_sec": 900,
   "live_trading": false,
-  "note": "Default paper book + ranking mix (~20, includes ES, NQ, CL, GC). GET /picks/ensemble uses this file unless DEMO_SYMBOLS or DE_UNIVERSE is set. SETUP_UNIVERSE can only narrow. live_trading is always false.",
+  "note": "Fallback ranking mix (~20, includes ES, NQ, CL, GC) used only when DE GET /v1/universe/top is unreachable. Primary book is DE top (limit=10 ensemble, limit=20 categorized/history). SETUP_UNIVERSE is detectors only. live_trading is always false.",
   "symbols": [
     {"symbol": "BTCUSDT", "asset_class": "crypto"},
     {"symbol": "ETHUSDT", "asset_class": "crypto"},

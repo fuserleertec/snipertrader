@@ -56,22 +56,22 @@ class Settings(BaseSettings):
     setup_universe: str = Field(
         default="",
         alias="SETUP_UNIVERSE",
-        description="ML detector allow-list (CSV or JSON path). Ensemble intersects this with the ranking allow-list.",
+        description="Detector allow-list only (CSV or JSON path). Not the ranking book after DE cutover.",
     )
     demo_symbols: str = Field(
         default="",
         alias="DEMO_SYMBOLS",
-        description="Optional ranking override (CSV or JSON path). Empty = config/paper_universe.json.",
+        description="Fallback ranking book when DE /v1/universe/top is unreachable. Empty = paper file.",
     )
     de_universe: str = Field(
         default="",
         alias="DE_UNIVERSE",
-        description="Offline DE universe feed (CSV or JSON path). Used when DE_API_BASE is unset or /v1/universe/top fails.",
+        description="Offline DE dump (CSV or JSON path). Fallback only when /v1/universe/top is unreachable.",
     )
     de_api_base: str = Field(
-        default="",
+        default="http://localhost:8000",
         alias="DE_API_BASE",
-        description="DE HTTP origin for GET /v1/universe/top?limit=10|20 (e.g. http://localhost:8000). Empty = provisional.",
+        description="DE HTTP origin for GET /v1/universe/top?limit=10|20. Empty disables the live DE client (tests / offline).",
     )
 
 

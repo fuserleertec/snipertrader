@@ -1,11 +1,11 @@
 """Quantum Ensemble Picks — paper ranking from ``ensemble_features``.
 
 ``GET /picks/ensemble`` returns a dynamic top-10 inside
-``resolve_ranking_universe`` (file-backed paper mix including ES, NQ,
-CL, GC). Kafka topic ``ensemble_features`` (key=symbol, 15m). Skip
-``active_levels=false``. ``score`` ← ``ensemble_score``,
-``confidence`` ← ``best_confidence``. Thin books hash-fill only within
-the allow-list.
+``resolve_ranking_universe`` (DE ``GET /v1/universe/top?limit=10``;
+fallback paper mix including ES, NQ, CL, GC). Kafka topic
+``ensemble_features`` (key=symbol, 15m). Skip ``active_levels=false``.
+``score`` ← ``ensemble_score``, ``confidence`` ← ``best_confidence``.
+Thin books hash-fill only within the allow-list.
 
 Paper path only. ``live_trading`` stays false. No Alpaca / broker.
 """

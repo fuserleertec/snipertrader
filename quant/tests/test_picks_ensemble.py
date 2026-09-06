@@ -191,7 +191,7 @@ def test_ensemble_ranks_paper_file_including_futures():
     dump = http.get("/paper/universe").json()
     paper = _paper_symbols()
     assert dump["live_trading"] is False
-    assert dump["handoff"] == "provisional"
+    assert dump["handoff"] == "fallback"
     assert dump["ranking_source"] == "paper_universe"
     ranked = {r["symbol"] for r in dump["ranking_universe"]}
     assert ranked == paper
@@ -238,13 +238,14 @@ def test_ensemble_ranks_paper_file_including_futures():
 
     de = _client(DE_UNIVERSE="ETHUSDT,MSFT")
     de_dump = de.get("/paper/universe").json()
-    assert de_dump["handoff"] == "de_feed"
+    assert de_dump["handoff"] == "fallback"
+    assert de_dump["ranking_source"] == "de_feed"
     assert {r["symbol"] for r in de_dump["ranking_universe"]} == {"ETHUSDT", "MSFT"}
     ranked_de = de.get("/picks/ensemble", params={"as_of_ts_ms": 0}).json()
     assert {row["symbol"] for row in ranked_de["items"]} == {"ETHUSDT", "MSFT"}
 
 
-def test_rank_components_synthesize_and_universe_intersection():
+def test_rank_components_synthesize_and_setup_universe_not_ranking():
     http = _client()
     as_of = 1_700_000_400_000
     body = _payload(
@@ -274,16 +275,20 @@ def test_rank_components_synthesize_and_universe_intersection():
     classes = {row["asset_class"] for row in uni["paper_universe"]}
     assert classes == {"crypto", "equity", "futures"}
     assert uni["setup_universe"] is None
+    assert uni["intersection"] is False
 
     settings = make_settings(SETUP_UNIVERSE="BTCUSDT,AAPL")
     engine = RiskEngine(settings=settings, state=RiskState(equity=100_000))
-    narrow = TestClient(create_app(settings=settings, signals=InMemorySignalStore(), engine=engine))
-    dump = narrow.get("/paper/universe").json()
-    assert dump["intersection"] is True
-    assert {r["symbol"] for r in dump["ranking_universe"]} == {"BTCUSDT", "AAPL"}
-    ranked = narrow.get("/picks/ensemble", params={"as_of_ts_ms": 0}).json()
-    assert {r["symbol"] for r in ranked["items"]} <= {"BTCUSDT", "AAPL"}
-    assert len(ranked["items"]) == 2
+    detectors_only = TestClient(
+        create_app(settings=settings, signals=InMemorySignalStore(), engine=engine)
+    )
+    dump = detectors_only.get("/paper/universe").json()
+    assert dump["intersection"] is False
+    assert dump["setup_universe"] == ["AAPL", "BTCUSDT"]
+    assert {r["symbol"] for r in dump["ranking_universe"]} == _paper_symbols()
+    ranked = detectors_only.get("/picks/ensemble", params={"as_of_ts_ms": 0}).json()
+    assert {r["symbol"] for r in ranked["items"]} <= _paper_symbols()
+    assert len(ranked["items"]) == 10
 
 
 def test_picks_do_not_enable_live_trading():

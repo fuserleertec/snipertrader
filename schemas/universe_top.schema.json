@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://snipertrader.ai/schemas/universe_top.schema.json",
   "title": "UniverseTop",
-  "description": "Frozen GET /v1/universe/top?limit=10|20 for FE / ML / Quant. Quant uses limit=10 as the P0 ensemble ranking book and limit=20 for categorized + history consumers. 15m refresh. Paper only.",
+  "description": "Frozen GET /v1/universe/top?limit=10|20 for FE / ML / Quant (DE PR #12). Quant cut over: limit=10 is the P0 ensemble ranking book; limit=20 is categorized + history. extra properties forbidden. 15m refresh. Paper only.",
   "type": "object",
   "additionalProperties": false,
   "required": ["as_of_ts_ms", "limit", "symbols"],
