@@ -229,6 +229,27 @@ class SignalListResponse(BaseModel):
     next_cursor: str | None = None
 
 
+class EnsemblePick(BaseModel):
+    """One row of ``GET /picks/ensemble``. Paper/signal book only."""
+
+    rank: int = Field(ge=1, description="1-based rank after score desc, symbol asc.")
+    symbol: str
+    asset_class: AssetClass
+    score: float
+    setup_types: list[str] = Field(default_factory=list)
+    confidence: float = Field(
+        description="Mean approved-signal confidence, or demo hash unit when thin."
+    )
+    ref_session: str | None = None
+    notes: str | None = None
+
+
+class EnsemblePicksResponse(BaseModel):
+    as_of_ts_ms: int
+    refresh_sec: int = 900
+    items: list[EnsemblePick]
+
+
 class SignalWsEvent(BaseModel):
     type: Literal["signal.upsert", "signal.status"]
     signal: SignalView

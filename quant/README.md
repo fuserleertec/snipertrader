@@ -210,7 +210,8 @@ JSON Schema: [`schemas/dashboard_signal.schema.json`](../schemas/dashboard_signa
 |---|---|---|
 | `GET` | `/signals?symbol=&status=&setup_type=&from_ts=&to_ts=&limit=&cursor=` | `{ "items": Signal[], "next_cursor": string \| null }` |
 | `GET` | `/signals/history` | Same list as `GET /signals` |
-| `GET` | `/performance/summary` | Live metrics; `by_setup` keyed by `product_key` |
+| `GET` | `/performance/summary?symbol=` | Live metrics; `by_setup` keyed by `product_key` |
+| `GET` | `/picks/ensemble?as_of_ts_ms=&ml_scores=` | Quantum Ensemble Picks — dynamic top 10, `refresh_sec: 900` |
 | `GET` | `/signals/{id}` | `Signal` |
 | `WS` | `/ws/signals` | `{ "type": "signal.upsert" \| "signal.status", "signal": Signal }` |
 | `POST` | `/signals` | `Signal` (after pre-filter; emits `signal.upsert`) |
@@ -250,6 +251,78 @@ zeros. Always present: `1_liquidity_sweep_vwap_reclaim`,
 Dormant `mss_break` / `order_block` / `sweep_mss` and
 `*_pending_user_confirm` are omitted. Metrics come from signal outcomes /
 `realized_r`.
+
+`GET /picks/ensemble` (P0 — FE/ML shape; confirm if you need extras):
+
+JSON Schema: [`schemas/ensemble_picks.schema.json`](../schemas/ensemble_picks.schema.json)
+
+```json
+{
+  "as_of_ts_ms": 1700000000000,
+  "refresh_sec": 900,
+  "items": [
+    {
+      "rank": 1,
+      "symbol": "BTCUSDT",
+      "asset_class": "crypto",
+      "score": 71.25,
+      "setup_types": ["sweep_reclaim", "fvg_entry"],
+      "confidence": 0.90,
+      "ref_session": "ny_am",
+      "notes": "book recency=0.820 conf=0.900 diversity=0.333 ml=0.000"
+    }
+  ]
+}
+```
+
+Always **10** rows. Not a fixed mock list — rank is computed from the
+paper/signal book (approved, non-cancelled publishes) plus optional ML
+scores (`ml_scores` query = JSON object `{"BTCUSDT":0.82}`). Global
+refresh is **15 minutes** (`refresh_sec: 900`). `as_of_ts_ms` defaults
+to now (tests pass it for determinism). **Paper only** — this endpoint
+never enables `live_trading` and has no Alpaca path.
+
+### Ensemble ranking formula
+
+Let `H = 900` (half-life seconds = refresh). For each symbol, take
+approved (non-`CANCELLED`) signals in the book:
+
+| Term | Definition | Weight |
+|---|---|---|
+| `recency_weighted_n` | `Σ exp(−ln(2) · age_sec / H)` over those signals | |
+| `recency_norm` | `min(1, recency_weighted_n / 3)` | **0.40** |
+| `mean_confidence` | mean of `confidence` on those signals (`[0,1]`) | **0.35** |
+| `setup_diversity` | `unique(setup_type) / 6` | **0.25** |
+| `ml_score` | optional overlay, clamped `[0,1]` (0 if omitted) | **+15 × ml** |
+
+```
+book_score = 100 × (0.40 × recency_norm + 0.35 × mean_confidence + 0.25 × setup_diversity)
+score      = book_score + 15 × ml_score
+```
+
+Sort `score` desc, `symbol` asc; take top 10. `confidence` on the row is
+`mean_confidence`. `setup_types` are the unique live types. `ref_session`
+is copied from the newest approved signal.
+
+**Thin / empty book:** the scorer always considers a rotating in-memory
+universe of **22** symbols (12 crypto + 10 equity). Symbols with no
+approved signals get a demo score only:
+
+```
+bucket = floor(as_of_ts_ms / (900 × 1000))
+unit   = sha256(symbol + ":" + bucket)[0:8] / 0xFFFFFFFF     # 0..1
+score  = 20 × unit + 15 × ml_score
+```
+
+Demo ceiling is **20** (or **35** with a full ML overlay) so a real book
+row outranks the hash fill. The 15-minute `bucket` makes the empty-book
+top 10 rotate instead of returning a canned list.
+
+Multi-symbol paper books (~20 symbols) use the same `GET /signals`,
+`GET /signals/history`, `POST /v1/signals/ingest`, and
+`GET /performance/summary` paths. Cursors stay `(ts_ms, id)` desc.
+`GET /performance/summary?symbol=` filters `by_setup` to one symbol;
+omit it to aggregate the whole book.
 
 History is `GET /signals` **or** `GET /signals/history` with `from_ts` /
 `to_ts` (plus `symbol` / `status` / `setup_type` / `side`). Both share the
@@ -428,6 +501,7 @@ quant/
   docker-compose.yml    DE stack + risk-api :8001 + grafana :3002
 data_engineering/sql/02-signals.sql
 schemas/risk_validate_*.schema.json
+schemas/ensemble_picks.schema.json
 ```
 
 ## CLI

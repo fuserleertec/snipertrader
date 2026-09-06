@@ -6,7 +6,14 @@ import json
 import time
 from typing import Protocol
 
-from sniper_quant.models import AssetClass, SetupType, Side, SignalStatus, StoredSignal
+from sniper_quant.models import (
+    AssetClass,
+    SetupType,
+    Side,
+    SignalStatus,
+    StoredSignal,
+    normalize_symbol,
+)
 
 
 def _now_ms() -> int:
@@ -87,7 +94,8 @@ class InMemorySignalStore:
     ) -> list[StoredSignal]:
         rows = list(self.rows.values())
         if symbol:
-            rows = [r for r in rows if r.symbol == symbol.upper().replace("-", "")]
+            want = normalize_symbol(symbol)
+            rows = [r for r in rows if r.symbol == want]
         if status:
             st = SignalStatus(status)
             rows = [r for r in rows if r.status is st]
@@ -310,6 +318,7 @@ class TimescaleSignalStore:
         pool = await self._conn()
         st = SignalStatus(status).value if status else None
         stype = setup_type_value(setup_type) if setup_type else None
+        side_v = Side(side).value if side else None
         c_ts: int | None = None
         c_id: str | None = None
         if cursor:
@@ -324,23 +333,22 @@ class TimescaleSignalStore:
         WHERE ($1::TEXT IS NULL OR symbol = $1)
           AND ($2::TEXT IS NULL OR status = $2)
           AND ($3::TEXT IS NULL OR setup_type = $3)
-          AND ($4::BIGINT IS NULL OR EXTRACT(EPOCH FROM ts) * 1000 >= $4)
-          AND ($5::BIGINT IS NULL OR EXTRACT(EPOCH FROM ts) * 1000 <= $5)
+          AND ($4::TEXT IS NULL OR side = $4)
+          AND ($5::BIGINT IS NULL OR EXTRACT(EPOCH FROM ts) * 1000 >= $5)
+          AND ($6::BIGINT IS NULL OR EXTRACT(EPOCH FROM ts) * 1000 <= $6)
           AND (
-                $6::BIGINT IS NULL
-                OR EXTRACT(EPOCH FROM ts) * 1000 < $6
-                OR (EXTRACT(EPOCH FROM ts) * 1000 = $6 AND id < $7)
+                $7::BIGINT IS NULL
+                OR EXTRACT(EPOCH FROM ts) * 1000 < $7
+                OR (EXTRACT(EPOCH FROM ts) * 1000 = $7 AND id < $8)
               )
         ORDER BY ts DESC, id DESC
-        LIMIT $8
+        LIMIT $9
         """
         async with pool.acquire() as conn:
-            rows = await conn.fetch(sql, symbol, st, stype, from_ts, to_ts, c_ts, c_id, limit)
-        out = [_row_to_signal(r) for r in rows]
-        if side:
-            want = Side(side)
-            out = [r for r in out if r.side is want]
-        return out
+            rows = await conn.fetch(
+                sql, symbol, st, stype, side_v, from_ts, to_ts, c_ts, c_id, limit
+            )
+        return [_row_to_signal(r) for r in rows]
 
     async def update_status(
         self,

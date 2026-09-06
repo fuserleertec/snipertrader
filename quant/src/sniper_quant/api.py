@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import uuid
 from contextlib import asynccontextmanager
 from typing import Any
@@ -19,6 +20,7 @@ from sniper_quant.live import SignalHub
 from sniper_quant.models import (
     AssetClass,
     CandidateSignal,
+    EnsemblePicksResponse,
     OHLCVBar,
     PerformanceSummary,
     SetupType,
@@ -99,14 +101,20 @@ Reject reasons: `ok`, `invalid_levels`, `position_size_exceeds_limit`,
 
 `GET /performance/summary` → top-level `win_rate`, `average_rr`,
 `sharpe_ratio`, `max_drawdown_pct`, `signals_today`, `signals_week`.
-`by_setup` is keyed by **`product_key`**. Always includes
-`1_liquidity_sweep_vwap_reclaim`, `2_fvg_mitigation_vwap`,
-`3_po3_asia_range_sweep`, `4_sd_extension_fade`,
-`5_vwap_pullback_cont`, `6_avwap_ob_confluence` (zeros when empty).
-Each bucket includes `setup_type` (`sweep_reclaim`, `fvg_entry`,
-`po3_judas`, `sd_extension_fade`, `vwap_pullback_cont`,
-`avwap_ob_confluence`). Dormant `mss_break` / `order_block` /
-`sweep_mss` and `*_pending_user_confirm` are omitted.
+Optional `symbol` filter. `by_setup` is keyed by **`product_key`**.
+Always includes `1_liquidity_sweep_vwap_reclaim`,
+`2_fvg_mitigation_vwap`, `3_po3_asia_range_sweep`,
+`4_sd_extension_fade`, `5_vwap_pullback_cont`,
+`6_avwap_ob_confluence` (zeros when empty). Each bucket includes
+`setup_type` (`sweep_reclaim`, `fvg_entry`, `po3_judas`,
+`sd_extension_fade`, `vwap_pullback_cont`, `avwap_ob_confluence`).
+Dormant `mss_break` / `order_block` / `sweep_mss` and
+`*_pending_user_confirm` are omitted.
+
+`GET /picks/ensemble` → Quantum Ensemble Picks (P0). Dynamic top **10**
+from the paper/signal book + optional `ml_scores` JSON overlay.
+`refresh_sec` is **900**. Thin books synthesize a rotating ≥20-symbol
+universe. **No live trading.** See README ranking formula.
 
 ## Alerts / paper / auth
 
@@ -197,7 +205,7 @@ def create_app(
     injected = signals is not None
     app = FastAPI(
         title="SniperTrader Quant API",
-        version="1.2.0",
+        version="1.3.0",
         description=API_DESCRIPTION,
         lifespan=None if injected else lifespan,
     )
@@ -286,7 +294,9 @@ def create_app(
         }
 
     @app.get("/performance/summary", response_model=PerformanceSummary)
-    async def performance_summary() -> PerformanceSummary:
+    async def performance_summary(
+        symbol: str | None = Query(default=None, description="Optional symbol filter"),
+    ) -> PerformanceSummary:
         """Live metrics. `by_setup` is keyed by `product_key` (not setup_type).
 
         Always includes `1_liquidity_sweep_vwap_reclaim`,
@@ -294,13 +304,56 @@ def create_app(
         `4_sd_extension_fade`, `5_vwap_pullback_cont`,
         `6_avwap_ob_confluence` (zeros when empty). Each bucket includes
         `setup_type`. Dormant `mss_break` / `order_block` / `sweep_mss`
-        and `*_pending_user_confirm` are omitted.
+        and `*_pending_user_confirm` are omitted. Optional `symbol`
+        filters the book (multi-asset paper books ~20 symbols).
         """
         from sniper_quant.performance import summarize_signals
 
         rows = await _signals().all()
+        if symbol:
+            want = normalize_symbol(symbol)
+            rows = [r for r in rows if r.symbol == want]
         frac = float(_engine().settings.risk_fraction)
         return summarize_signals(rows, risk_fraction=frac)
+
+    @app.get("/picks/ensemble", response_model=EnsemblePicksResponse)
+    async def picks_ensemble(
+        as_of_ts_ms: int | None = Query(
+            default=None,
+            ge=0,
+            description="Score-as-of UTC epoch ms (default: now). Bucket = floor(ts / 900000).",
+        ),
+        ml_scores: str | None = Query(
+            default=None,
+            description='Optional ML overlay JSON object, e.g. {"BTCUSDT":0.82}',
+        ),
+    ) -> EnsemblePicksResponse:
+        """Quantum Ensemble Picks (P0). Dynamic top 10. Paper/signal book only.
+
+        Ranking (0–100 book mix + optional ML boost, documented in README):
+
+        score = 100 × (0.40 × recency_norm + 0.35 × mean_confidence
+                + 0.25 × setup_diversity) + 15 × ml_score
+
+        recency_norm uses a 900s half-life on approved (non-cancelled)
+        publishes, saturated at 3 weighted signals. Thin books fill from
+        a rotating ≥20-symbol demo universe (hash(symbol, 15m-bucket)).
+        ``live_trading`` stays false. No Alpaca live.
+        """
+        from sniper_quant.picks import REFRESH_SEC, TOP_N, parse_ml_scores, rank_ensemble
+
+        try:
+            overlay = parse_ml_scores(ml_scores)
+        except (ValueError, TypeError, json.JSONDecodeError) as exc:
+            raise HTTPException(422, f"ml_scores: {exc}") from exc
+        rows = await _signals().all()
+        return rank_ensemble(
+            rows,
+            as_of_ts_ms=as_of_ts_ms,
+            ml_scores=overlay,
+            top_n=TOP_N,
+            refresh_sec=REFRESH_SEC,
+        )
 
     @app.post("/risk/validate", response_model=ValidateResponse)
     async def risk_validate(body: CandidateSignal) -> ValidateResponse:
