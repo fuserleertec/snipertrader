@@ -367,6 +367,31 @@ describe("provisional universe is mock-only", () => {
     assert.ok(!SETUP_UNIVERSE.some((s) => s.symbol === "SMCI" || s.symbol === "TSM"));
   });
 
+  it("picks stay dynamic, universe has ES/CL/GC/NQ, history is multi-symbol wins/losses", () => {
+    const a = mockEnsemblePicks(0);
+    const b = mockEnsemblePicks(5);
+    const cats = mockCategorizedPicks(0);
+    const uni = mockUniverseTop(20);
+    assert.ok(["ES", "CL", "GC", "NQ"].every((s) => uni.symbols.some((row) => row.symbol === s)));
+    assert.ok(["ES", "CL", "GC", "NQ"].every((s) => SETUP_UNIVERSE.some((row) => row.symbol === s)));
+    assert.notDeepEqual(
+      a.items.map((i) => i.symbol),
+      b.items.map((i) => i.symbol),
+    );
+    const banned = new Set(["SMCI", "TSM"]);
+    assert.ok(!a.items.some((i) => banned.has(i.symbol)));
+    assert.ok(!cats.items.some((i) => banned.has(i.symbol)));
+    assert.ok(!uni.symbols.some((i) => banned.has(i.symbol)));
+    const closed = mockListSignals({ limit: 200 }, 0).items.filter((s) => historyStatusMatches(s.status, "all"));
+    const wins = uniqueSymbols(closed.filter((s) => s.status === "TP_HIT"));
+    const losses = uniqueSymbols(closed.filter((s) => s.status === "SL_HIT"));
+    assert.ok(wins.length >= 8);
+    assert.ok(losses.length >= 8);
+    assert.ok(wins.includes("ES") || losses.includes("ES"));
+    assert.ok(!closed.some((s) => banned.has(s.symbol)));
+    assert.ok(closed.every((s) => s.status === "TP_HIT" || s.status === "SL_HIT"));
+  });
+
   it("Quant P0/P4 rank only inside the DE allowed set and never invent a universe", () => {
     const allowed = allowedSymbolSet([
       { symbol: "ES" },
