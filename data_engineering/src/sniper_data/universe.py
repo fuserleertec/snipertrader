@@ -60,26 +60,19 @@ _WEIGHTS = {
 
 
 class UniverseMember(BaseModel):
-    """One row of the locked ``/v1/universe/top`` ``symbols`` array."""
+    """Frozen GET /v1/universe/top row — required fields only."""
 
     symbol: str
     asset_class: AssetClass
     rank: int
     score: float
-    volume: float = 0.0
-    volatility: float = 0.0
-    session_active: bool = False
-    levels_available: int = 0
-    pattern_count: int = 0
 
 
 class UniverseTop(BaseModel):
-    """Locked GET /v1/universe/top envelope. Keep this shape stable."""
+    """Frozen GET /v1/universe/top envelope. Required fields only."""
 
     as_of_ts_ms: int
     limit: int
-    live_trading: bool = False
-    score_inputs: list[str] = Field(default_factory=lambda: list(SCORE_INPUTS))
     symbols: list[UniverseMember] = Field(default_factory=list)
 
 
@@ -144,10 +137,10 @@ def parse_universe(*candidates: str | None) -> list[str]:
 
 
 def clamp_top_limit(limit: int) -> int:
-    """Accept 10 or 20 (required). Also allow 1–20 so callers can slice."""
+    """Query ``limit`` is frozen to 10 or 20."""
     value = int(limit)
-    if value < 1 or value > MAX_UNIVERSE_SYMBOLS:
-        raise ValueError(f"limit must be 1–{MAX_UNIVERSE_SYMBOLS} (10 and 20 are the locked sizes)")
+    if value not in (10, 20):
+        raise ValueError("limit must be 10 or 20")
     return value
 
 
@@ -225,11 +218,6 @@ def rank_rows(rows: list[dict[str, Any]], *, limit: int) -> list[UniverseMember]
                     pattern_count=patterns,
                     peak_volume=peak,
                 ),
-                volume=volume,
-                volatility=volatility,
-                session_active=session_active,
-                levels_available=levels,
-                pattern_count=patterns,
             )
         )
     scored.sort(key=lambda m: (-m.score, m.symbol))
@@ -249,8 +237,6 @@ def top_envelope(
     return UniverseTop(
         as_of_ts_ms=now,
         limit=clamp_top_limit(limit),
-        live_trading=False,
-        score_inputs=list(SCORE_INPUTS),
         symbols=rank_rows(rows, limit=limit),
     )
 
@@ -268,20 +254,26 @@ def active_payload(
     return UniverseActive(as_of_ts_ms=now, symbols=items, live_trading=False)
 
 
+def _frozen_row(row: dict[str, Any], rank: int) -> dict[str, Any]:
+    return {
+        "symbol": row["symbol"],
+        "asset_class": row["asset_class"],
+        "rank": rank,
+        "score": float(row.get("score") or 0.0),
+    }
+
+
 def slice_top(payload: dict[str, Any], limit: int) -> dict[str, Any]:
-    """Re-slice a stored ``universe:top`` ranking envelope."""
+    """Re-slice a stored ``universe:top`` envelope to the frozen wire shape."""
     wanted = clamp_top_limit(limit)
     symbols = list(payload.get("symbols") or [])
-    sliced = symbols[:wanted]
-    for i, row in enumerate(sliced, start=1):
+    sliced = []
+    for i, row in enumerate(symbols[:wanted], start=1):
         if isinstance(row, dict):
-            row = {**row, "rank": i}
-            sliced[i - 1] = row
+            sliced.append(_frozen_row(row, i))
     return {
-        "as_of_ts_ms": payload.get("as_of_ts_ms") or int(time.time() * 1000),
+        "as_of_ts_ms": int(payload.get("as_of_ts_ms") or 0),
         "limit": wanted,
-        "live_trading": False,
-        "score_inputs": list(payload.get("score_inputs") or SCORE_INPUTS),
         "symbols": sliced,
     }
 
@@ -309,8 +301,11 @@ async def write_universe_active(
 
 
 async def write_universe_top(store, envelope: UniverseTop | dict[str, Any]) -> dict[str, Any]:
-    body = envelope.model_dump(mode="json") if isinstance(envelope, UniverseTop) else envelope
-    body["live_trading"] = False
+    if isinstance(envelope, UniverseTop):
+        body = envelope.model_dump(mode="json")
+    else:
+        body = slice_top(envelope, clamp_top_limit(int(envelope.get("limit") or 20)))
+        body["as_of_ts_ms"] = int(envelope.get("as_of_ts_ms") or body["as_of_ts_ms"])
     await store.set(REDIS_UNIVERSE_TOP, body)
     return body
 

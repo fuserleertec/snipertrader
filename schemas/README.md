@@ -119,32 +119,17 @@ ids. Demo generators emit it for **every** configured symbol (including
 
 `universe:active` is written on startup and every 15m snapshot.
 
-Ranked envelope (`/v1/universe/top`):
+Frozen envelope (`GET /v1/universe/top?limit=10|20`) — required fields only:
 
 ```json
 {
-  "as_of_ts_ms": 1725459000000,
+  "as_of_ts_ms": 0,
   "limit": 10,
-  "live_trading": false,
-  "score_inputs": ["volume", "volatility", "session_active", "levels_available", "pattern_count"],
   "symbols": [
-    {
-      "symbol": "ES",
-      "asset_class": "futures",
-      "rank": 1,
-      "score": 0.82,
-      "volume": 12345.6,
-      "volatility": 0.012,
-      "session_active": true,
-      "levels_available": 5,
-      "pattern_count": 4
-    }
+    { "symbol": "ES", "asset_class": "futures", "rank": 1, "score": 0.0 }
   ]
 }
 ```
-
-`score` is a DE paper rank from the listed inputs. Do not invent Frontend
-display field names beyond this shape.
 
 ### 15-minute dashboard snapshot
 

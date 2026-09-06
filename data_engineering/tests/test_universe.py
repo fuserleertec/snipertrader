@@ -54,6 +54,8 @@ def test_universe_cap_twenty():
     with pytest.raises(ValueError):
         clamp_top_limit(0)
     with pytest.raises(ValueError):
+        clamp_top_limit(1)
+    with pytest.raises(ValueError):
         clamp_top_limit(21)
     assert clamp_top_limit(10) == 10
     assert clamp_top_limit(20) == 20
@@ -86,15 +88,9 @@ def test_ranking_orders_by_score_inputs():
     assert ranked[0].asset_class is AssetClass.FUTURES
     env = top_envelope(rows, limit=10, now_ms=1)
     dumped = env.model_dump(mode="json")
-    assert dumped["live_trading"] is False
+    assert set(dumped) == {"as_of_ts_ms", "limit", "symbols"}
     assert dumped["limit"] == 10
-    assert dumped["score_inputs"] == [
-        "volume",
-        "volatility",
-        "session_active",
-        "levels_available",
-        "pattern_count",
-    ]
+    assert set(dumped["symbols"][0]) == {"symbol", "asset_class", "rank", "score"}
 
 
 @pytest.mark.asyncio
@@ -146,18 +142,19 @@ async def test_universe_top_http_is_locked_contract():
     top10 = http.get("/v1/universe/top?limit=10")
     assert top10.status_code == 200
     body = top10.json()
-    assert set(body) >= {"as_of_ts_ms", "limit", "symbols", "live_trading"}
+    assert set(body) == {"as_of_ts_ms", "limit", "symbols"}
     assert body["limit"] == 10
-    assert body["live_trading"] is False
     assert len(body["symbols"]) == 10
     assert body["symbols"][0]["rank"] == 1
     for row in body["symbols"]:
-        assert set(row) >= {"symbol", "asset_class", "rank", "score"}
+        assert set(row) == {"symbol", "asset_class", "rank", "score"}
 
     top20 = http.get("/v1/universe/top?limit=20").json()
+    assert set(top20) == {"as_of_ts_ms", "limit", "symbols"}
     assert top20["limit"] == 20
     assert len(top20["symbols"]) == 12
     assert http.get("/v1/universe/top?limit=21").status_code == 400
+    assert http.get("/v1/universe/top?limit=1").status_code == 400
     health = http.get("/health").json()
     assert health["live_trading"] is False
     assert health["universe_contract"] == "/v1/universe"
@@ -168,15 +165,17 @@ def test_slice_top_re_ranks_prefix():
     payload = {
         "as_of_ts_ms": 9,
         "limit": 20,
-        "live_trading": False,
-        "score_inputs": ["volume"],
         "symbols": [
-            {"symbol": "ES", "rank": 1, "score": 1.0, "asset_class": "futures"},
+            {"symbol": "ES", "rank": 1, "score": 1.0, "asset_class": "futures", "volume": 99},
             {"symbol": "CL", "rank": 2, "score": 0.9, "asset_class": "futures"},
-            {"symbol": "GC", "rank": 3, "score": 0.8, "asset_class": "futures"},
+        ]
+        + [
+            {"symbol": f"X{i}", "rank": i + 2, "score": 0.1, "asset_class": "crypto"}
+            for i in range(10)
         ],
     }
-    sliced = slice_top(payload, 2)
-    assert sliced["limit"] == 2
-    assert [r["symbol"] for r in sliced["symbols"]] == ["ES", "CL"]
-    assert sliced["live_trading"] is False
+    sliced = slice_top(payload, 10)
+    assert set(sliced) == {"as_of_ts_ms", "limit", "symbols"}
+    assert sliced["limit"] == 10
+    assert [r["symbol"] for r in sliced["symbols"][:2]] == ["ES", "CL"]
+    assert set(sliced["symbols"][0]) == {"symbol", "asset_class", "rank", "score"}

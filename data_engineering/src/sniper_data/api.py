@@ -443,7 +443,7 @@ def create_app(
 
     @app.get("/v1/universe/top")
     async def universe_top(
-        limit: int = Query(..., description="Locked sizes: 10 (P0) or 20 (P2/P4). 1–20 accepted."),
+        limit: int = Query(..., description="Frozen: 10 (P0) or 20 (P2/P4)."),
     ) -> JSONResponse:
         """Ranked subset of the DE-owned universe (P0=10, P2/P4=20)."""
         try:

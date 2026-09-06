@@ -35,36 +35,20 @@ Refreshed on **startup** and every **15 minutes**. Shape
 
 ### `GET /v1/universe/top?limit=10|20`
 
-Ranked subset of `universe:active` (P0=10, P2/P4=20). Cached at Redis
-`universe:top`. Schema
-[`universe_top.schema.json`](../schemas/universe_top.schema.json):
+Frozen wire for **FE / ML / Quant**. Ranked subset of `universe:active`
+(P0=10, P2/P4=20). Cached at Redis `universe:top`. Schema
+[`universe_top.schema.json`](../schemas/universe_top.schema.json).
+`limit` is **only** `10` or `20`. Required fields only:
 
 ```json
 {
-  "as_of_ts_ms": 1725459000000,
+  "as_of_ts_ms": 0,
   "limit": 10,
-  "live_trading": false,
-  "score_inputs": ["volume", "volatility", "session_active", "levels_available", "pattern_count"],
   "symbols": [
-    {
-      "symbol": "ES",
-      "asset_class": "futures",
-      "rank": 1,
-      "score": 0.82,
-      "volume": 12345.6,
-      "volatility": 0.012,
-      "session_active": true,
-      "levels_available": 5,
-      "pattern_count": 4
-    }
+    { "symbol": "ES", "asset_class": "futures", "rank": 1, "score": 0.0 }
   ]
 }
 ```
-
-`limit` **must** accept `10` and `20` (also `1–20`). Ranking inputs are
-DE-owned (session volume, VWAP σ / range, session/kill-zone activity,
-available books, pattern count). **No Frontend display field names**
-beyond this locked shape.
 
 ### How to set the universe (max 20)
 

@@ -311,14 +311,16 @@ def test_multi_asset_universe_and_snapshot_schemas():
     assert active["properties"]["symbols"]["items"]["required"] == ["symbol", "asset_class"]
     top = _load("universe_top.schema.json")
     assert top["additionalProperties"] is False
-    assert top["properties"]["live_trading"]["const"] is False
-    assert top["required"] == [
-        "as_of_ts_ms",
-        "limit",
-        "live_trading",
-        "score_inputs",
-        "symbols",
+    assert top["required"] == ["as_of_ts_ms", "limit", "symbols"]
+    assert top["properties"]["limit"]["enum"] == [10, 20]
+    assert top["properties"]["symbols"]["items"]["required"] == [
+        "symbol",
+        "asset_class",
+        "rank",
+        "score",
     ]
+    assert "live_trading" not in top["properties"]
+    assert "score_inputs" not in top["properties"]
     snap = _load("dashboard_snapshot.schema.json")
     assert snap["properties"]["live_trading"]["const"] is False
     setup = _load("setup_signal.schema.json")
