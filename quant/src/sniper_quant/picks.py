@@ -311,7 +311,14 @@ def _score_universe(
         )
         for symbol in universe
     ]
-    scored.sort(key=lambda item: (-item["score"], -item["confidence"], item["symbol"]))
+    scored.sort(
+        key=lambda item: (
+            item.get("source") == "demo",
+            -item["score"],
+            -item["confidence"],
+            item["symbol"],
+        )
+    )
     return scored
 
 
