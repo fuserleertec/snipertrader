@@ -18,20 +18,30 @@ from sniper_quant.picks import (
 from sniper_quant.models import PickCategory
 from sniper_quant.risk.engine import RiskEngine, RiskState
 from sniper_quant.store.signals import InMemorySignalStore
+from sniper_quant.universe import load_paper_universe
 from tests.conftest import make_settings
 from tests.test_validate import _payload
 
 PICK_FIELDS = {"rank", "symbol", "asset_class", "score", "setup_types", "confidence"}
+DE_PROVISIONAL = {"BTCUSDT", "AAPL", "ES"}
 
 
-def _client():
-    settings = make_settings()
+def _wide_demo_symbols() -> str:
+    return ",".join(sym for sym, _ in load_paper_universe(make_settings()))
+
+
+def _client(**overrides):
+    settings = make_settings(**overrides)
     engine = RiskEngine(settings=settings, state=RiskState(equity=100_000))
     return TestClient(create_app(settings=settings, signals=InMemorySignalStore(), engine=engine))
 
 
+def _wide_client():
+    return _client(DEMO_SYMBOLS=_wide_demo_symbols())
+
+
 def test_empty_book_rotating_top10_not_fixed_mock():
-    http = _client()
+    http = _wide_client()
     spec = http.get("/openapi.json").json()
     assert "/picks/ensemble" in spec["paths"]
 
@@ -64,7 +74,7 @@ def test_empty_book_rotating_top10_not_fixed_mock():
 
 
 def test_book_signals_outrank_demo_and_are_dynamic():
-    http = _client()
+    http = _wide_client()
     as_of = 1_700_000_400_000
     for i, setup in enumerate(("sweep_reclaim", "fvg_entry", "po3_judas")):
         resp = http.post(
@@ -112,7 +122,7 @@ def test_book_signals_outrank_demo_and_are_dynamic():
 
 
 def test_ml_overlay_lifts_symbol_and_rejects_bad_json():
-    http = _client()
+    http = _wide_client()
     as_of = 900_000
     baseline = http.get("/picks/ensemble", params={"as_of_ts_ms": as_of}).json()
 
@@ -129,7 +139,7 @@ def test_ml_overlay_lifts_symbol_and_rejects_bad_json():
 
 
 def test_ensemble_score_then_confidence_sort():
-    http = _client()
+    http = _wide_client()
     as_of = 1_700_000_400_000
     low = _payload(
         symbol="BTCUSDT",
@@ -178,8 +188,59 @@ def test_ensemble_score_then_confidence_sort():
     assert by_sym["AAPL"]["confidence"] > by_sym["SOLUSDT"]["confidence"]
 
 
+def test_ensemble_ranks_only_inside_de_provisional_universe():
+    http = _client()  # DEMO_SYMBOLS default = DE BTCUSDT,AAPL,ES
+    dump = http.get("/paper/universe").json()
+    assert dump["live_trading"] is False
+    assert dump["handoff"] == "provisional"
+    assert dump["ranking_source"] == "provisional_demo_symbols"
+    assert {r["symbol"] for r in dump["ranking_universe"]} == DE_PROVISIONAL
+
+    empty = http.get("/picks/ensemble", params={"as_of_ts_ms": 0}).json()
+    assert {row["symbol"] for row in empty["items"]} <= DE_PROVISIONAL
+    assert len(empty["items"]) == 3
+
+    as_of = 1_700_000_400_000
+    outsider = http.post(
+        "/signals",
+        json=_payload(
+            symbol="NVDA",
+            asset_class="equity",
+            setup_type="avwap_ob_confluence",
+            ts_ms=as_of,
+            confidence=0.99,
+            ensemble_score=100,
+        ),
+    )
+    assert outsider.status_code == 201
+    inside = http.post(
+        "/signals",
+        json=_payload(
+            symbol="AAPL",
+            asset_class="equity",
+            setup_type="vwap_pullback_cont",
+            ts_ms=as_of,
+            confidence=0.70,
+            ensemble_score=10,
+        ),
+    )
+    assert inside.status_code == 201
+    body = http.get("/picks/ensemble", params={"as_of_ts_ms": as_of}).json()
+    symbols = {row["symbol"] for row in body["items"]}
+    assert "NVDA" not in symbols
+    assert symbols <= DE_PROVISIONAL
+    assert body["items"][0]["symbol"] == "AAPL"
+
+    de = _client(DE_UNIVERSE="ETHUSDT,MSFT")
+    de_dump = de.get("/paper/universe").json()
+    assert de_dump["handoff"] == "de_feed"
+    assert {r["symbol"] for r in de_dump["ranking_universe"]} == {"ETHUSDT", "MSFT"}
+    ranked = de.get("/picks/ensemble", params={"as_of_ts_ms": 0}).json()
+    assert {row["symbol"] for row in ranked["items"]} == {"ETHUSDT", "MSFT"}
+
+
 def test_rank_components_synthesize_and_universe_intersection():
-    http = _client()
+    http = _wide_client()
     as_of = 1_700_000_400_000
     body = _payload(
         symbol="NVDA",
@@ -209,7 +270,7 @@ def test_rank_components_synthesize_and_universe_intersection():
     assert classes == {"crypto", "equity", "futures"}
     assert uni["setup_universe"] is None
 
-    settings = make_settings(SETUP_UNIVERSE="BTCUSDT,AAPL")
+    settings = make_settings(DEMO_SYMBOLS=_wide_demo_symbols(), SETUP_UNIVERSE="BTCUSDT,AAPL")
     engine = RiskEngine(settings=settings, state=RiskState(equity=100_000))
     narrow = TestClient(create_app(settings=settings, signals=InMemorySignalStore(), engine=engine))
     dump = narrow.get("/paper/universe").json()
@@ -239,7 +300,7 @@ CATEGORIZED_FIELDS = {
 
 
 def test_categorized_picks_shape_filter_and_mapping():
-    http = _client()
+    http = _wide_client()
     spec = http.get("/openapi.json").json()
     assert "/picks/categorized" in spec["paths"]
     params = {p["name"] for p in spec["paths"]["/picks/categorized"]["get"]["parameters"]}

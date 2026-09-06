@@ -1,4 +1,4 @@
-"""Paper universe + SETUP_UNIVERSE intersection (paper only)."""
+"""DE / provisional ML ranking allow-list (paper only)."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ from sniper_quant.models import AssetClass, OHLCVBar
 from sniper_quant.universe import (
     DEFAULT_UNIVERSE_PATH,
     load_paper_universe,
+    ranking_source,
     resolve_ranking_universe,
 )
 from tests.conftest import make_settings
@@ -27,19 +28,19 @@ def test_default_paper_universe_file_has_mix():
     assert ("ES", AssetClass.FUTURES) in pairs
 
 
-def test_setup_universe_intersection_and_csv_override(tmp_path: Path):
-    settings = make_settings(SETUP_UNIVERSE="BTCUSDT,ES,FAKECOIN")
+def test_provisional_demo_symbols_is_de_default_not_paper_book():
+    ranked = resolve_ranking_universe(make_settings())
+    assert {s for s, _ in ranked} == {"BTCUSDT", "AAPL", "ES"}
+    assert ranking_source(make_settings()) == "provisional_demo_symbols"
+    paper = {s for s, _ in load_paper_universe(make_settings())}
+    assert {"NVDA", "SOLUSDT"} <= paper
+    assert "NVDA" not in {s for s, _ in ranked}
+
+
+def test_setup_universe_can_only_narrow_de_feed():
+    settings = make_settings(SETUP_UNIVERSE="BTCUSDT,ES,FAKECOIN,NVDA")
     ranked = resolve_ranking_universe(settings)
     assert {s for s, _ in ranked} == {"BTCUSDT", "ES"}
-
-    alt = tmp_path / "uni.json"
-    alt.write_text(
-        '{"symbols":[{"symbol":"MSFT","asset_class":"equity"},'
-        '{"symbol":"CL","asset_class":"futures"}]}',
-        encoding="utf-8",
-    )
-    custom = make_settings(PAPER_UNIVERSE=str(alt), SETUP_UNIVERSE="MSFT")
-    assert resolve_ranking_universe(custom) == [("MSFT", AssetClass.EQUITY)]
 
     csv = make_settings(PAPER_UNIVERSE="SOLUSDT:crypto,NVDA:equity,NQ:futures")
     assert load_paper_universe(csv) == [
@@ -47,6 +48,20 @@ def test_setup_universe_intersection_and_csv_override(tmp_path: Path):
         ("NVDA", AssetClass.EQUITY),
         ("NQ", AssetClass.FUTURES),
     ]
+    # Paper override does not expand the ensemble allow-list.
+    assert {s for s, _ in resolve_ranking_universe(csv)} == {"BTCUSDT", "AAPL", "ES"}
+
+
+def test_de_universe_handoff_replaces_demo_symbols(tmp_path: Path):
+    feed = tmp_path / "de.json"
+    feed.write_text(
+        '{"symbols":[{"symbol":"ETHUSDT","asset_class":"crypto"},'
+        '{"symbol":"MSFT","asset_class":"equity"}]}',
+        encoding="utf-8",
+    )
+    settings = make_settings(DE_UNIVERSE=str(feed), SETUP_UNIVERSE="ETHUSDT,NVDA")
+    assert ranking_source(settings) == "de_feed"
+    assert resolve_ranking_universe(settings) == [("ETHUSDT", AssetClass.CRYPTO)]
 
 
 def test_setup_universe_filters_detectors():
@@ -66,6 +81,5 @@ def test_setup_universe_filters_detectors():
         for i in range(5)
     ]
     assert detect_setup("sweep_reclaim", bars, DEFAULT_PARAMS, setup_universe={"ETHUSDT"}) == []
-    # Unset allow-list does not drop the tape (may still find no pattern).
     detect_setup("sweep_reclaim", bars, DEFAULT_PARAMS, setup_universe=None)
     get_settings.cache_clear()

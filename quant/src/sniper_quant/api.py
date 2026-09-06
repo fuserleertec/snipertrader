@@ -118,15 +118,15 @@ Dormant `mss_break` / `order_block` / `sweep_mss` and
 `*_pending_user_confirm` are omitted.
 
 `GET /picks/ensemble` → Quantum Ensemble Picks (P0). Dynamic top **10**
-from the paper universe ∩ optional ML `SETUP_UNIVERSE`, scored from the
-signal book. Sort: publish-only `ensemble_score` (0–100) then
-`confidence`. `refresh_sec` is **900**. **No live trading.**
+**within the DE universe feed**. Provisional: `DEMO_SYMBOLS` (DE default
+`BTCUSDT,AAPL,ES`) ∩ optional `SETUP_UNIVERSE`. Handoff: `DE_UNIVERSE`
+when DE publishes. Symbols outside the allow-list are never ranked.
+Sort: `ensemble_score` then `confidence`. `refresh_sec` **900**.
+**No live trading.**
 
-`GET /picks/categorized?asset_class=&limit=20` → same scores, ≤20 rows,
-each tagged `momentum` | `mean_reversion` | `confluence` | `other`.
-
-Paper universe: `quant/config/paper_universe.json` / `PAPER_UNIVERSE`.
-ML `SETUP_UNIVERSE` overrides detectors; ranking uses the intersection.
+`GET /picks/categorized?asset_class=&limit=20` → same allow-list and
+scores, ≤20 rows, tagged `momentum` | `mean_reversion` | `confluence` |
+`other`.
 
 Multi-symbol risk (existing): corr |ρ| < 0.70, opposite-direction
 same-symbol conflict, 3% daily loss, 2% sizing. Optional
@@ -331,6 +331,9 @@ def create_app(
             "rank_components": "publish_only_0_1",
             "paper_universe": "quant/config/paper_universe.json",
             "setup_universe_env": "SETUP_UNIVERSE",
+            "demo_symbols_env": "DEMO_SYMBOLS",
+            "de_universe_env": "DE_UNIVERSE",
+            "ranking_lock": "de_universe_or_provisional_demo_symbols",
         }
 
     @app.get("/performance/summary", response_model=PerformanceSummary)
@@ -368,13 +371,12 @@ def create_app(
             description='Optional ML overlay JSON object, e.g. {"BTCUSDT":0.82}',
         ),
     ) -> EnsemblePicksResponse:
-        """Quantum Ensemble Picks (P0). Dynamic top 10. Paper/signal book only.
+        """Quantum Ensemble Picks (P0). Dynamic top 10 inside the DE universe.
 
-        Sort: published ``ensemble_score`` (0–100) desc, then ``confidence``
-        desc. Fallback: mean ``rank_components`` × 100, then book mix
-        (recency / confidence / diversity). Universe is
-        ``PAPER_UNIVERSE`` ∩ ``SETUP_UNIVERSE`` when ML set an allow-list.
-        ``live_trading`` stays false. No Alpaca live.
+        Provisional allow-list: ``DEMO_SYMBOLS`` ∩ ``SETUP_UNIVERSE``.
+        When DE publishes the feed, set ``DE_UNIVERSE`` — symbols outside
+        that set are never ranked. Sort: ``ensemble_score`` then
+        ``confidence``. ``live_trading`` stays false. No Alpaca live.
         """
         from sniper_quant.picks import REFRESH_SEC, TOP_N, parse_ml_scores, rank_ensemble
         from sniper_quant.universe import resolve_ranking_universe
@@ -648,7 +650,7 @@ def create_app(
 
     @app.get("/paper/universe")
     async def paper_universe() -> dict[str, Any]:
-        """Quant paper universe + optional ML SETUP_UNIVERSE intersection."""
+        """DE / provisional ML ranking allow-list. Paper only."""
         from sniper_quant.universe import universe_dump
 
         return universe_dump(app.state.settings)

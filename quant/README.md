@@ -213,7 +213,7 @@ JSON Schema: [`schemas/dashboard_signal.schema.json`](../schemas/dashboard_signa
 | `GET` | `/performance/summary?symbol=` | Live metrics; `by_setup` keyed by `product_key` |
 | `GET` | `/picks/ensemble?as_of_ts_ms=&ml_scores=` | Quantum Ensemble Picks — dynamic top 10, `refresh_sec: 900` |
 | `GET` | `/picks/categorized?asset_class=&limit=20` | Categorized picks ≤20, `refresh_sec: 900` |
-| `GET` | `/paper/universe` | Paper + `SETUP_UNIVERSE` intersection (`live_trading: false`) |
+| `GET` | `/paper/universe` | DE / provisional ranking allow-list (`live_trading: false`) |
 | `GET` | `/signals/{id}` | `Signal` |
 | `WS` | `/ws/signals` | `{ "type": "signal.upsert" \| "signal.status", "signal": Signal }` |
 | `POST` | `/signals` | `Signal` (after pre-filter; emits `signal.upsert`) |
@@ -254,18 +254,34 @@ Dormant `mss_break` / `order_block` / `sweep_mss` and
 `*_pending_user_confirm` are omitted. Metrics come from signal outcomes /
 `realized_r`.
 
-### Paper universe + ML `SETUP_UNIVERSE`
+### Paper universe vs DE ranking lock
 
-Quant owns a default **20-symbol** paper mix (8 crypto / 8 equity / 4
-futures) at [`config/paper_universe.json`](config/paper_universe.json).
-Override with **`PAPER_UNIVERSE`**: a JSON path, or CSV
-(`BTCUSDT,AAPL,ES` or `BTCUSDT:crypto,AAPL:equity`).
+Quant owns a default **20-symbol** paper **book** mix (8 crypto / 8 equity
+/ 4 futures) at [`config/paper_universe.json`](config/paper_universe.json)
+(`PAPER_UNIVERSE` override). That mix is for ingest / paper positions.
+It is **not** the ensemble allow-list.
 
-ML **`SETUP_UNIVERSE`** (CSV or JSON path) is the detector allow-list —
-when set, `detect_setup` only walks those symbols. **`GET /picks/ensemble`**
-and **`GET /picks/categorized`** rank the **intersection** of the paper
-universe and `SETUP_UNIVERSE` when both are present. Inspect via
-`GET /paper/universe` (`live_trading` is always false).
+**PM lock:** `GET /picks/ensemble` top-10 is ranked **only within the DE
+universe feed**. Symbols outside that set are never returned, even if
+they have a published `ensemble_score` in the paper book.
+
+#### Provisional → DE handoff
+
+DE has not published the live universe feed yet. Until it does, Quant
+uses the same mock-feed symbols DE already ships:
+
+| Stage | Allow-list | Env |
+|---|---|---|
+| **Provisional (now)** | `DEMO_SYMBOLS` (default `BTCUSDT,AAPL,ES`, same as [`data_engineering`](../data_engineering/README.md)) ∩ `SETUP_UNIVERSE` when ML sets one | `DEMO_SYMBOLS`, `SETUP_UNIVERSE` |
+| **Handoff (when DE publishes)** | DE universe feed only, still ∩ `SETUP_UNIVERSE` if set | **`DE_UNIVERSE`** (CSV or JSON path) |
+
+`GET /paper/universe` shows `handoff` (`provisional` \| `de_feed`),
+`ranking_source`, `demo_symbols`, `de_universe`, `setup_universe`, and
+`ranking_universe`. `live_trading` is always false.
+
+ML **`SETUP_UNIVERSE`** remains the detector allow-list (`detect_setup`
+only walks those symbols when set). For ranking it can only **narrow**
+the DE / `DEMO_SYMBOLS` feed — it cannot add symbols DE did not list.
 
 ### Multi-symbol risk (existing, paper book)
 
@@ -375,8 +391,9 @@ If a symbol has **both** momentum and mean-reversion setups (and no
 ### Ensemble ranking formula
 
 `GET /picks/ensemble` sorts **`ensemble_score` desc, then `confidence`
-desc**, then `symbol` asc. Top **10**. Universe = paper universe ∩
-`SETUP_UNIVERSE` (intersection only when ML set the allow-list).
+desc**, then `symbol` asc. Top **10 within the DE / provisional
+allow-list** (`min(10, n_allowed)`). Never ranks a symbol outside
+`ranking_universe` from `GET /paper/universe`.
 
 Per symbol, `score` (the `ensemble_score` used to sort) is:
 
