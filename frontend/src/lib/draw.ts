@@ -53,10 +53,11 @@ function zoneT1(created_ts_ms: number, mitigated: boolean | undefined, ttl_secon
   return nowMs;
 }
 
-/** Chart join: highlight overlays whose `id` is in `setup_signals.trigger_event_ids`. */
+/** Chart join: `setup_signals.id` + `trigger_event_ids`. */
 export function highlightIds(selected: Signal | null): Set<string> {
   const ids = new Set<string>();
   if (!selected) return ids;
+  if (selected.id) ids.add(selected.id);
   for (const id of selected.trigger_event_ids ?? []) {
     if (id) ids.add(id);
   }

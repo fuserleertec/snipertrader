@@ -20,22 +20,26 @@ export interface EnsemblePick {
   category: string;
   source: string;
   latency: string;
+  id: string | null;
+  trigger_event_ids: string[];
 }
 
 export function formatRankComponents(rc: RankComponents): string {
-  return `sq ${rc.setup_quality.toFixed(2)} · risk ${rc.risk_adjusted.toFixed(2)} · kz ${rc.kill_zone.toFixed(2)} · vol ${rc.volume.toFixed(2)} · fresh ${rc.freshness.toFixed(2)}`;
+  return `sq ${rc.setup_quality.toFixed(1)} · confluence ${rc.confluence.toFixed(1)} · kz ${rc.kill_zone.toFixed(1)} · vol ${rc.volume.toFixed(1)} · fresh ${rc.freshness.toFixed(1)}`;
 }
 
 /** Native `title` text for QEP ensemble rows (rank_components + contributing_factors). */
 export function ensembleFeatureTooltip(item: EnsemblePickItem): string {
   const conf = item.best_confidence ?? item.confidence;
-  const lines = [`ensemble_score ${item.ensemble_score.toFixed(3)} · confidence ${conf.toFixed(3)}`];
+  const score = item.ensemble_score ?? item.score;
+  const lines = [`ensemble_score ${score.toFixed(1)} · confidence ${conf.toFixed(3)}`];
   if (item.rank_components) {
     lines.push(`rank_components  ${formatRankComponents(item.rank_components)}`);
   }
   if (item.contributing_factors?.length) {
     lines.push(`contributing_factors  ${item.contributing_factors.join(" · ")}`);
   }
+  if (item.category) lines.push(`category  ${item.category}`);
   return lines.join("\n");
 }
 
@@ -63,6 +67,7 @@ export const NARRATIVES = [
 export interface ReconPick {
   symbol: string;
   cap: string;
+  category: string | null;
   tier: "ultra" | "high" | "watch";
   score: number;
   entry: number;
@@ -80,6 +85,7 @@ export function reconFromCategorized(row: CategorizedPickItem): ReconPick {
   return {
     symbol: row.symbol,
     cap: row.asset_class === "futures" ? "fut" : row.asset_class === "crypto" ? "crypto" : "mid",
+    category: row.category,
     tier: t === "drop" ? "watch" : t,
     score: row.score,
     entry: row.entry,
@@ -87,8 +93,14 @@ export function reconFromCategorized(row: CategorizedPickItem): ReconPick {
     target: row.target,
     atr: row.atr,
     rewardRisk: row.reward_risk,
-    triggers: row.setup_types.length ? row.setup_types : [row.category],
-    note: `${universeName(row.symbol)} · ${row.category} · score ${row.score.toFixed(0)}/100`,
+    triggers: row.contributing_factors?.length
+      ? row.contributing_factors
+      : row.setup_types.length
+        ? row.setup_types
+        : row.category
+          ? [row.category]
+          : [],
+    note: `${universeName(row.symbol)} · category ${row.category ?? "null"} · score ${row.score.toFixed(0)}/100`,
     dropped: t === "drop",
   };
 }
@@ -143,7 +155,11 @@ export const GLOSSARY = [
   { title: "FVG / OB / Sweep / MSS", body: "Rev 1.1 overlays joined to setup_signals.trigger_event_ids. Cards highlight the matching zones.", perf: "schema 1.1" },
 ];
 
+/** P0 conviction ← ensemble_score (0–100). Fallback: setup_signals.confidence. */
 export function convictionOf(signal: Signal): number {
+  if (typeof signal.ensemble_score === "number" && Number.isFinite(signal.ensemble_score)) {
+    return Math.round(signal.ensemble_score);
+  }
   return Math.round(signal.confidence * 100);
 }
 
@@ -166,8 +182,8 @@ export function enginesForSetup(signal: Signal): Record<EngineId, Stance> {
 }
 
 export function whyForSetup(signal: Signal): string {
-  const ids = signal.trigger_event_ids.join(", ") || "no trigger ids";
-  return `${signal.setup_type.replaceAll("_", " ")} ${signal.side.toUpperCase()} joined via trigger_event_ids: ${ids}.`;
+  const ids = signal.trigger_event_ids.join(", ") || "none";
+  return `${signal.setup_type.replaceAll("_", " ")} ${signal.side.toUpperCase()} chart join id ${signal.id} + trigger_event_ids: ${ids}.`;
 }
 
 function classCategory(asset: AssetClass): string {
@@ -179,11 +195,11 @@ function classCategory(asset: AssetClass): string {
 /** Map GET /picks/ensemble items onto the locked QEP table columns. */
 export function presentEnsemble(item: EnsemblePickItem, mode: "market" | "activity", cycle = 0): EnsemblePick {
   const quote = mockQuote(item.symbol, cycle);
-  const conv = Math.round(item.ensemble_score * 100);
+  const conv = item.ensemble_score != null ? Math.round(item.ensemble_score) : 0;
   const signal: "Buy" | "Sell" | "Hold" = conv >= 70 ? "Buy" : conv <= 45 ? "Sell" : "Hold";
   const setup = item.setup_types[0] ?? "sweep_reclaim";
   const fake: Signal = {
-    id: `ens_${item.symbol}`,
+    id: item.id ?? `ens_${item.symbol}`,
     ts_ms: 0,
     symbol: item.symbol,
     asset_class: item.asset_class,
@@ -196,27 +212,27 @@ export function presentEnsemble(item: EnsemblePickItem, mode: "market" | "activi
     confidence: item.confidence,
     timeframe: "5m",
     ref_session: "ny_am",
-    trigger_event_ids: [],
+    trigger_event_ids: item.trigger_event_ids ?? [],
+    contributing_factors: item.contributing_factors,
+    factor_breakdown: item.factor_breakdown,
+    ensemble_score: item.ensemble_score,
+    rank_components: item.rank_components,
+    category: item.category ?? item.asset_class,
     realized_r: null,
     exit_price: null,
     closed_ts_ms: null,
   };
   const rc = item.rank_components;
-  const factors = item.contributing_factors?.length ? ` · ${item.contributing_factors.join("+")}` : "";
+  const factorTags = item.contributing_factors?.length ? ` · ${item.contributing_factors.join("+")}` : "";
   const setups = item.setup_types.join(" + ") || "ensemble";
-  const why =
-    mode === "activity"
-      ? rc
-        ? `rank_components vol ${rc.volume.toFixed(2)} · kz ${rc.kill_zone.toFixed(2)} · freshness ${rc.freshness.toFixed(2)}${factors}`
-        : factors
-          ? `contributing_factors${factors}`
-          : `${setups} · ensemble_score ${item.ensemble_score.toFixed(2)}`
-      : rc
-        ? `${setups} · sq ${rc.setup_quality.toFixed(2)} · risk ${rc.risk_adjusted.toFixed(2)}${factors}`
-        : `${setups} · score ${item.ensemble_score.toFixed(2)}${factors}`;
+  const why = !rc
+    ? `${setups} · ensemble_score ${(item.ensemble_score ?? item.score).toFixed(1)}${factorTags}`
+    : mode === "activity"
+      ? `rank_components vol ${rc.volume.toFixed(1)} · kz ${rc.kill_zone.toFixed(1)} · freshness ${rc.freshness.toFixed(1)}${factorTags}`
+      : `${setups} · sq ${rc.setup_quality.toFixed(1)} · confluence ${rc.confluence.toFixed(1)}${factorTags}`;
   return {
     ticker: item.symbol,
-    company: `${universeName(item.symbol)} · ${item.asset_class}`,
+    company: `${universeName(item.symbol)} · ${item.category ?? item.asset_class}`,
     signal,
     last: quote.last >= 1000 ? quote.last.toFixed(1) : quote.last.toFixed(2),
     chg: `${quote.chgPct >= 0 ? "+" : ""}${quote.chgPct.toFixed(2)}%`,
@@ -226,9 +242,11 @@ export function presentEnsemble(item: EnsemblePickItem, mode: "market" | "activi
     reason: why,
     tooltip: ensembleFeatureTooltip(item),
     mode,
-    category: classCategory(item.asset_class),
+    category: classCategory(item.category ?? item.asset_class),
     source: "GET /picks/ensemble",
     latency: "15m",
+    id: item.id ?? null,
+    trigger_event_ids: item.trigger_event_ids ?? [],
   };
 }
 

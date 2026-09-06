@@ -1,7 +1,6 @@
 import { DESK_SYMBOL_LIMIT, inferAssetClass, SESSION_TYPES } from "./constants";
+import { isInactiveRow, readPublishExplain } from "./bind";
 import type {
-  FactorBreakdown,
-  RankComponents,
   SessionType,
   Signal,
   SignalSide,
@@ -48,77 +47,8 @@ function numOr(value: unknown, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
-function readFactors(raw: unknown): string[] {
-  if (!Array.isArray(raw)) return [];
-  const out: string[] = [];
-  for (const item of raw) {
-    if (typeof item === "string" && item) out.push(item);
-    else if (item && typeof item === "object") {
-      const row = item as { name?: unknown; key?: unknown };
-      const name = typeof row.name === "string" ? row.name : typeof row.key === "string" ? row.key : "";
-      if (name) out.push(name);
-    }
-  }
-  return out;
-}
-
-function readBreakdown(raw: unknown): FactorBreakdown[] {
-  if (!Array.isArray(raw)) return [];
-  const out: FactorBreakdown[] = [];
-  for (const item of raw) {
-    if (!item || typeof item !== "object") continue;
-    const row = item as { name?: unknown; key?: unknown; weight?: unknown; score?: unknown; note?: unknown };
-    const name = typeof row.name === "string" ? row.name : typeof row.key === "string" ? row.key : "";
-    if (!name || typeof row.weight !== "number" || typeof row.score !== "number") continue;
-    out.push({
-      name,
-      weight: row.weight,
-      score: row.score,
-      note: typeof row.note === "string" ? row.note : null,
-    });
-  }
-  return out;
-}
-
 function optionalNum(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
-
-function finiteNum(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
-}
-
-/** Signal body or side-channel `ensemble_features`. */
-function readEnsembleChannel(raw: Record<string, unknown>): {
-  ensemble_score?: number;
-  rank_components?: RankComponents;
-} {
-  const side =
-    raw.ensemble_features && typeof raw.ensemble_features === "object"
-      ? (raw.ensemble_features as Record<string, unknown>)
-      : {};
-  const score = finiteNum(raw.ensemble_score) ?? finiteNum(side.ensemble_score);
-  const src =
-    (raw.rank_components && typeof raw.rank_components === "object"
-      ? (raw.rank_components as Record<string, unknown>)
-      : null) ??
-    (side.rank_components && typeof side.rank_components === "object"
-      ? (side.rank_components as Record<string, unknown>)
-      : null);
-  if (score == null && !src) return {};
-  const rank_components = src
-    ? {
-        setup_quality: numOr(src.setup_quality, 0),
-        risk_adjusted: numOr(src.risk_adjusted, 0),
-        kill_zone: numOr(src.kill_zone, 0),
-        volume: numOr(src.volume, 0),
-        freshness: numOr(src.freshness, 0),
-      }
-    : undefined;
-  return {
-    ...(score != null ? { ensemble_score: score } : {}),
-    ...(rank_components ? { rank_components } : {}),
-  };
 }
 
 function readSessionType(value: unknown): SessionType | null | undefined {
@@ -136,11 +66,11 @@ function statusClosed(status: unknown): boolean {
 export function normalizeSignal(value: unknown): Signal | null {
   if (!value || typeof value !== "object") return null;
   const s = value as Record<string, unknown>;
+  if (isInactiveRow(s)) return null;
   if (typeof s.id !== "string" || typeof s.symbol !== "string" || typeof s.setup_type !== "string") return null;
   if (s.side !== "long" && s.side !== "short") return null;
   const ts = typeof s.ts_ms === "number" ? s.ts_ms : Date.now();
-  const factors = readFactors(s.contributing_factors);
-  const breakdown = readBreakdown(s.factor_breakdown);
+  const explain = readPublishExplain(s);
   return {
     id: s.id,
     ts_ms: ts,
@@ -161,9 +91,11 @@ export function normalizeSignal(value: unknown): Signal | null {
       : [],
     session_type: readSessionType(s.session_type),
     position_size: optionalNum(s.position_size),
-    contributing_factors: factors,
-    factor_breakdown: breakdown,
-    ...readEnsembleChannel(s),
+    contributing_factors: explain.contributing_factors,
+    factor_breakdown: explain.factor_breakdown,
+    ensemble_score: explain.ensemble_score,
+    rank_components: explain.rank_components,
+    category: explain.category,
     realized_r: statusClosed(s.status) ? optionalNum(s.realized_r) : null,
     exit_price: statusClosed(s.status) ? optionalNum(s.exit_price) : null,
     closed_ts_ms: statusClosed(s.status) ? optionalNum(s.closed_ts_ms) : null,

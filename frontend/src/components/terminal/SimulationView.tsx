@@ -361,7 +361,7 @@ export function SimulationView({
           <code>order_block</code> factor + VWAP/HVN + entry confirm. Setup 3 <code>po3_judas</code> —
           Asia box (<code>session:{"{symbol}"}:asia</code>) + extreme sweep + displacement
           {killZone?.active ? ` + kill zone ${killZone.kill_zone} active.` : "."} Card click
-          highlights only <code>trigger_event_ids</code>.
+          highlights <code>id</code> + <code>trigger_event_ids</code>.
         </div>
         <PriceChart
           bars={bars}

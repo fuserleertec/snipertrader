@@ -4,6 +4,7 @@
  * Quant ranks top-10 inside GET /v1/universe/top. The UI never imports
  * this array as a P0/P4 list — it only displays API `items`.
  */
+import { RANK_COMPONENT_MAX, sumRankComponents } from "../bind";
 import {
   DESK_SYMBOL_LIMIT,
   ENSEMBLE_LIMIT,
@@ -12,13 +13,13 @@ import {
   seedPrice,
   SETUP_TYPES,
 } from "../constants";
+import { factorsForSetup } from "../factors";
 import type {
   AssetClass,
   CategorizedPickItem,
   CategorizedPicksResponse,
   EnsemblePickItem,
   EnsemblePicksResponse,
-  PickCategory,
   RankComponents,
   SetupType,
   UniverseTopResponse,
@@ -52,8 +53,6 @@ export const SETUP_UNIVERSE: { symbol: string; asset_class: AssetClass; name: st
   { symbol: "DOGEUSDT", asset_class: "crypto", name: "Dogecoin" },
 ];
 
-const CATEGORIES: PickCategory[] = ["momentum", "mean_reversion", "confluence", "other"];
-
 function hash(input: string): number {
   let h = 2166136261;
   for (let i = 0; i < input.length; i++) h = Math.imul(h ^ input.charCodeAt(i), 16777619);
@@ -70,22 +69,12 @@ function pickSetup(seed: string): SetupType {
 
 function components(seed: string): RankComponents {
   return {
-    setup_quality: +unit(`${seed}:sq`).toFixed(3),
-    risk_adjusted: +unit(`${seed}:ra`).toFixed(3),
-    kill_zone: +unit(`${seed}:kz`).toFixed(3),
-    volume: +unit(`${seed}:vol`).toFixed(3),
-    freshness: +unit(`${seed}:fr`).toFixed(3),
+    setup_quality: +(unit(`${seed}:sq`) * RANK_COMPONENT_MAX.setup_quality).toFixed(2),
+    confluence: +(unit(`${seed}:cf`) * RANK_COMPONENT_MAX.confluence).toFixed(2),
+    kill_zone: +(unit(`${seed}:kz`) * RANK_COMPONENT_MAX.kill_zone).toFixed(2),
+    volume: +(unit(`${seed}:vol`) * RANK_COMPONENT_MAX.volume).toFixed(2),
+    freshness: +(unit(`${seed}:fr`) * RANK_COMPONENT_MAX.freshness).toFixed(2),
   };
-}
-
-function scoreOf(parts: RankComponents): number {
-  return +(
-    parts.setup_quality * 0.28 +
-    parts.risk_adjusted * 0.24 +
-    parts.kill_zone * 0.16 +
-    parts.volume * 0.16 +
-    parts.freshness * 0.16
-  ).toFixed(3);
 }
 
 export function universeName(symbol: string): string {
@@ -116,25 +105,29 @@ export function mockEnsemblePicks(
     )[0];
     const fromSignal = best?.rank_components ?? components(seed);
     const mix = unit(seed);
-    const ensemble_score = +(
-      (best?.ensemble_score ?? scoreOf(fromSignal)) * 0.62 +
-      mix * 0.38
-    ).toFixed(3);
+    const base = best?.ensemble_score ?? sumRankComponents(fromSignal);
+    const ensemble_score = +Math.min(100, Math.max(0, base * 0.62 + mix * 38)).toFixed(2);
     const setups = [...new Set(signals.map((s) => s.setup_type))].slice(0, 2);
-    const best_confidence = best?.confidence ?? +Math.min(0.92, 0.55 + ensemble_score * 0.4).toFixed(3);
+    const setup = setups[0] ?? pickSetup(`${seed}:st`);
+    const best_confidence = best?.confidence ?? +Math.min(0.92, 0.55 + (ensemble_score / 100) * 0.4).toFixed(3);
+    const contributing_factors = best?.contributing_factors?.length
+      ? best.contributing_factors
+      : factorsForSetup(setup).slice(0, 1 + (hash(seed) % 3));
     return {
       rank: 0,
       symbol: row.symbol,
       asset_class: row.asset_class,
       score: ensemble_score,
-      setup_types: setups.length ? setups : [pickSetup(`${seed}:st`)],
+      setup_types: setups.length ? setups : [setup],
       confidence: best_confidence,
       ensemble_score,
       rank_components: fromSignal,
-      contributing_factors: best?.contributing_factors?.length
-        ? best.contributing_factors
-        : [setups[0] ?? pickSetup(seed), "volume_confirm", "trend_align"].slice(0, 1 + (hash(seed) % 3)),
+      contributing_factors,
+      factor_breakdown: best?.factor_breakdown ?? null,
+      category: row.asset_class,
       best_confidence,
+      id: best?.id ?? `ens_${row.symbol}`,
+      trigger_event_ids: best?.trigger_event_ids ?? [],
     };
   })
     .sort((a, b) => b.ensemble_score - a.ensemble_score || a.symbol.localeCompare(b.symbol))
@@ -175,10 +168,12 @@ export function mockCategorizedPicks(
       return {
         symbol: row.symbol,
         asset_class: row.asset_class,
-        category: CATEGORIES[hash(seed) % CATEGORIES.length],
+        category: row.asset_class,
         score,
         confidence: +(score / 100).toFixed(3),
         setup_types: [pickSetup(seed)],
+        contributing_factors: factorsForSetup(pickSetup(seed)),
+        ensemble_score: score,
         entry: +entry.toFixed(4),
         stop: +stop.toFixed(4),
         target: +target.toFixed(4),
@@ -205,7 +200,7 @@ export function mockDroppedPicks(cycle = 0, taken: Set<string> = new Set(), limi
       return {
         symbol: row.symbol,
         asset_class: row.asset_class,
-        category: "other" as const,
+        category: row.asset_class,
         score: +(28 + unit(seed) * 30).toFixed(1),
         confidence: 0.32,
         setup_types: [] as SetupType[],

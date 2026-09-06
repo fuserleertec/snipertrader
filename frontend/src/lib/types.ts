@@ -117,9 +117,9 @@ export type FactorId =
   | "multi_pattern"
   | "trend_align";
 
-/** PR #9 / Quant `factor_breakdown[]`. `name` is a string (locked ids + extras). */
+/** Publish-only `factor_breakdown[]`. `name` is a locked FactorId. */
 export interface FactorBreakdown {
-  name: string;
+  name: FactorId;
   weight: number;
   score: number;
   note?: string | null;
@@ -345,6 +345,9 @@ export interface KillZoneEvent {
   asset_class: AssetClass;
 }
 
+/** P4 categorized picks — same enum as `asset_class`. Nullable on the wire. */
+export type PickCategory = AssetClass;
+
 export type SignalSide = "long" | "short";
 
 export type SignalStatus = "ACTIVE" | "TP_HIT" | "SL_HIT" | "CANCELLED";
@@ -365,20 +368,22 @@ export interface Signal {
   ref_session: SessionType;
   /** Optional Quant / setup_signal.schema.json field — FE uses session VWAP if absent. */
   ref_vwap?: number | null;
-  /** ML PR #7 additive. Null on the wire → `[]`. Chart join is these ids only. */
+  /** ML PR #7 additive. Null on the wire → `[]`. Chart join is `id` + these ids. */
   trigger_event_ids: string[];
   session_type?: SessionType | null;
   position_size?: number | null;
-  /** Quant publish-only string[] (PR #9 locked ids + any extra tags). */
-  contributing_factors?: string[];
-  /** Quant publish-only {name, weight, score, note?}[]. */
-  factor_breakdown?: FactorBreakdown[];
   /**
-   * Optional ML ensemble_features. May arrive on the signal or a
-   * side-channel `ensemble_features` object.
+   * Publish-only (never on POST /risk/validate). Prefer Kafka
+   * `ensemble_features` @15m, else this `setup_signals` row.
+   * There is no wire field named `factors`.
    */
-  ensemble_score?: number;
-  rank_components?: RankComponents;
+  contributing_factors: FactorId[] | null;
+  factor_breakdown: FactorBreakdown[] | null;
+  /** 0–100. Null when the publish row omitted ranking. */
+  ensemble_score: number | null;
+  rank_components: RankComponents | null;
+  /** P4 `crypto|equity|futures`. Same enum as `asset_class`. */
+  category: PickCategory | null;
   /**
    * Quant PR #2 close fields — live on GET /signals, GET /signals/{id},
    * and WS `signal.upsert` / `signal.status`. Do not compute on FE.
@@ -414,36 +419,43 @@ export interface SignalListQuery {
 /** Active-setup desk tabs. Stocks → `equity` on the wire. */
 export type AssetTab = "futures" | "stocks" | "cryptos";
 
-export type PickCategory = "momentum" | "mean_reversion" | "confluence" | "other";
-
 export type UniverseSource = "SETUP_UNIVERSE" | "DE";
 
+/** Publish-only rank object. Max weights 40 / 20 / 15 / 15 / 10. */
 export interface RankComponents {
   setup_quality: number;
-  risk_adjusted: number;
+  confluence: number;
   kill_zone: number;
   volume: number;
   freshness: number;
 }
 
 /**
- * GET /picks/ensemble item — Quant contract (top 10, refresh_sec=900):
- * rank, symbol, asset_class, score, setup_types, confidence.
- * Mapping: score ← ensemble_score, confidence ← best_confidence when those fields are present.
- * Optional ML ensemble_features on the item (or nested `ensemble_features`):
- * rank_components, contributing_factors.
+ * GET /picks/ensemble item — Quant bind lock:
+ * score / conviction ← ensemble_score (0–100)
+ * confidence ← setup_signals.confidence (best_confidence)
+ * rank_components.* ← rank_components object
+ * contributing_factors / factor_breakdown / category as named
+ * chart join ← id + trigger_event_ids
+ * Prefer Kafka ensemble_features @15m; fallback latest setup_signals.
  */
 export interface EnsemblePickItem {
   rank: number;
   symbol: string;
   asset_class: AssetClass;
+  /** Mapped display of `ensemble_score`. */
   score: number;
   setup_types: SetupType[];
   confidence: number;
-  ensemble_score: number;
-  rank_components?: RankComponents;
-  contributing_factors?: string[];
+  ensemble_score: number | null;
+  rank_components: RankComponents | null;
+  contributing_factors: FactorId[] | null;
+  factor_breakdown: FactorBreakdown[] | null;
+  category: PickCategory | null;
   best_confidence?: number;
+  /** Chart / signal join. */
+  id?: string | null;
+  trigger_event_ids?: string[];
 }
 
 export interface EnsemblePicksResponse {
@@ -453,11 +465,11 @@ export interface EnsemblePicksResponse {
   items: EnsemblePickItem[];
 }
 
-/** GET /picks/categorized item — ≤20, no asset-class restriction on the list. */
+/** GET /picks/categorized item — ≤20. `category` is crypto|equity|futures. */
 export interface CategorizedPickItem {
   symbol: string;
   asset_class: AssetClass;
-  category: PickCategory;
+  category: PickCategory | null;
   score: number;
   confidence: number;
   setup_types: SetupType[];
@@ -466,6 +478,12 @@ export interface CategorizedPickItem {
   target: number;
   atr: number;
   reward_risk: number;
+  ensemble_score?: number | null;
+  rank_components?: RankComponents | null;
+  contributing_factors?: FactorId[] | null;
+  factor_breakdown?: FactorBreakdown[] | null;
+  id?: string | null;
+  trigger_event_ids?: string[];
 }
 
 export interface CategorizedPicksResponse {

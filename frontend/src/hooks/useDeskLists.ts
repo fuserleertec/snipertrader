@@ -32,6 +32,7 @@ const EMPTY_ENSEMBLE: EnsemblePicksResponse = {
 const EMPTY_CATS: CategorizedPicksResponse = {
   as_of_ts_ms: 0,
   refresh_sec: LIST_REFRESH_SEC,
+  universe_source: "SETUP_UNIVERSE",
   items: [],
 };
 

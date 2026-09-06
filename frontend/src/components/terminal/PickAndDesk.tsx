@@ -68,7 +68,7 @@ export function PickGrid({
                 <div>
                   <div className="pick-tk">{p.symbol}</div>
                   <div className="pick-name">
-                    {p.cap.toUpperCase()} · score {p.score.toFixed(0)}/100
+                    {(p.category ?? p.cap).toUpperCase()} · score {p.score.toFixed(0)}/100
                   </div>
                 </div>
                 <div className="pick-cat">{c.label}</div>

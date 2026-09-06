@@ -280,7 +280,13 @@ export function QepTable({
                     key={`${p.mode}:${p.ticker}:${p.category}:${i}`}
                     rank={i + 1}
                     pick={p}
-                    onSelect={() => onSelectSymbol?.(p.ticker)}
+                    onSelect={() => {
+                      const match =
+                        (p.id && signals.find((s) => s.id === p.id)) ||
+                        signals.find((s) => s.symbol === p.ticker && s.status === "ACTIVE");
+                      if (match) onSelectSignal(match);
+                      onSelectSymbol?.(p.ticker);
+                    }}
                   />
                 ))}
             {mode === "setups" && setupRows.length === 0 && (

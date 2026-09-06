@@ -1,4 +1,14 @@
 import {
+  categoryOf,
+  isInactiveRow,
+  isObj,
+  readContributingFactors,
+  readEnsembleScore,
+  readFactorBreakdown,
+  readPublishExplain,
+  readRankComponents,
+} from "./bind";
+import {
   DESK_SYMBOL_LIMIT,
   ENSEMBLE_LIMIT,
   HISTORY_LIMIT,
@@ -23,8 +33,6 @@ import type {
   KillZoneEvent,
   OHLCVBar,
   PerformanceSummary,
-  PickCategory,
-  RankComponents,
   SessionLevels,
   SessionListResponse,
   SessionType,
@@ -235,63 +243,47 @@ function readSetupTypes(raw: unknown): SetupType[] {
   return raw.filter((x): x is SetupType => typeof x === "string" && x !== "ob_fvg");
 }
 
-function finiteNum(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
-}
-
-function readFactorList(raw: unknown): string[] | undefined {
-  if (!Array.isArray(raw)) return undefined;
-  const factors = raw.filter((x): x is string => typeof x === "string");
-  return factors.length ? factors : undefined;
-}
-
-/** Optional on the wire — omit rather than invent zeros. */
-function readComponents(raw: unknown): RankComponents | undefined {
-  if (!raw || typeof raw !== "object") return undefined;
-  const row = raw as Record<string, unknown>;
-  return {
-    setup_quality: num(row.setup_quality),
-    risk_adjusted: num(row.risk_adjusted),
-    kill_zone: num(row.kill_zone),
-    volume: num(row.volume),
-    freshness: num(row.freshness),
-  };
-}
-
-function ensembleFeatureBag(row: Record<string, unknown>): Record<string, unknown> {
-  return row.ensemble_features && typeof row.ensemble_features === "object"
-    ? (row.ensemble_features as Record<string, unknown>)
-    : {};
-}
-
 export function normalizeEnsemblePicks(raw: unknown): EnsemblePicksResponse | null {
   if (!raw || typeof raw !== "object") return null;
   const body = raw as Record<string, unknown>;
   const rows = Array.isArray(body.items) ? body.items : [];
   const items: EnsemblePickItem[] = [];
   for (const item of rows) {
-    if (!item || typeof item !== "object") continue;
-    const row = item as Record<string, unknown>;
-    if (typeof row.symbol !== "string" || !row.symbol) continue;
-    const asset = (wireAssetClass(typeof row.asset_class === "string" ? row.asset_class : "") ??
-      inferAssetClass(row.symbol)) as AssetClass;
-    const side = ensembleFeatureBag(row);
-    const ensemble_score = num(row.ensemble_score ?? side.ensemble_score, num(row.score));
-    const score = ensemble_score;
-    const best = finiteNum(row.best_confidence) ?? finiteNum(side.best_confidence);
-    const factors = readFactorList(row.contributing_factors) ?? readFactorList(side.contributing_factors);
-    const rank_components = readComponents(row.rank_components) ?? readComponents(side.rank_components);
+    if (!isObj(item)) continue;
+    if (isInactiveRow(item)) continue;
+    if (typeof item.symbol !== "string" || !item.symbol) continue;
+    const asset = (wireAssetClass(typeof item.asset_class === "string" ? item.asset_class : "") ??
+      inferAssetClass(item.symbol)) as AssetClass;
+    const explain = readPublishExplain(item);
+    const side = isObj(item.ensemble_features) ? item.ensemble_features : {};
+    const ensemble_score = explain.ensemble_score ?? readEnsembleScore(item.score);
+    const best =
+      (typeof item.best_confidence === "number" && Number.isFinite(item.best_confidence)
+        ? item.best_confidence
+        : undefined) ??
+      (typeof side.best_confidence === "number" && Number.isFinite(side.best_confidence)
+        ? side.best_confidence
+        : undefined);
+    const trigger_event_ids = Array.isArray(item.trigger_event_ids)
+      ? item.trigger_event_ids.filter((x): x is string => typeof x === "string")
+      : Array.isArray(side.trigger_event_ids)
+        ? side.trigger_event_ids.filter((x): x is string => typeof x === "string")
+        : [];
     items.push({
-      rank: num(row.rank, items.length + 1),
-      symbol: row.symbol.toUpperCase(),
+      rank: num(item.rank, items.length + 1),
+      symbol: item.symbol.toUpperCase(),
       asset_class: asset,
-      score,
-      setup_types: readSetupTypes(row.setup_types),
-      confidence: best ?? num(row.confidence ?? side.confidence),
+      score: ensemble_score ?? 0,
+      setup_types: readSetupTypes(item.setup_types),
+      confidence: best ?? num(item.confidence, num(side.confidence)),
       ensemble_score,
-      ...(rank_components ? { rank_components } : {}),
-      ...(factors ? { contributing_factors: factors } : {}),
+      rank_components: explain.rank_components,
+      contributing_factors: explain.contributing_factors,
+      factor_breakdown: explain.factor_breakdown,
+      category: explain.category ?? asset,
       ...(best != null ? { best_confidence: best } : {}),
+      id: typeof item.id === "string" ? item.id : typeof side.id === "string" ? side.id : null,
+      trigger_event_ids,
     });
   }
   const source: UniverseSource = body.universe_source === "DE" ? "DE" : "SETUP_UNIVERSE";
@@ -303,32 +295,39 @@ export function normalizeEnsemblePicks(raw: unknown): EnsemblePicksResponse | nu
   };
 }
 
-const PICK_CATS = new Set(["momentum", "mean_reversion", "confluence", "other"]);
-
 export function normalizeCategorizedPicks(raw: unknown): CategorizedPicksResponse | null {
   if (!raw || typeof raw !== "object") return null;
   const body = raw as Record<string, unknown>;
   const rows = Array.isArray(body.items) ? body.items : [];
   const items: CategorizedPickItem[] = [];
   for (const item of rows) {
-    if (!item || typeof item !== "object") continue;
-    const row = item as Record<string, unknown>;
-    if (typeof row.symbol !== "string" || !row.symbol) continue;
-    const cat = typeof row.category === "string" && PICK_CATS.has(row.category) ? (row.category as PickCategory) : "other";
-    const asset = (wireAssetClass(typeof row.asset_class === "string" ? row.asset_class : "") ??
-      inferAssetClass(row.symbol)) as AssetClass;
+    if (!isObj(item)) continue;
+    if (isInactiveRow(item)) continue;
+    if (typeof item.symbol !== "string" || !item.symbol) continue;
+    const asset = (wireAssetClass(typeof item.asset_class === "string" ? item.asset_class : "") ??
+      inferAssetClass(item.symbol)) as AssetClass;
+    const ensemble_score = readEnsembleScore(item.ensemble_score);
+    const trigger_event_ids = Array.isArray(item.trigger_event_ids)
+      ? item.trigger_event_ids.filter((x): x is string => typeof x === "string")
+      : [];
     items.push({
-      symbol: row.symbol.toUpperCase(),
+      symbol: item.symbol.toUpperCase(),
       asset_class: asset,
-      category: cat,
-      score: num(row.score),
-      confidence: num(row.confidence, num(row.score) / 100),
-      setup_types: readSetupTypes(row.setup_types),
-      entry: num(row.entry),
-      stop: num(row.stop),
-      target: num(row.target),
-      atr: num(row.atr, Math.abs(num(row.entry) - num(row.stop))),
-      reward_risk: num(row.reward_risk, row.rewardRisk as number),
+      category: categoryOf(item, asset),
+      score: ensemble_score ?? num(item.score),
+      confidence: num(item.confidence, num(item.score) / 100),
+      setup_types: readSetupTypes(item.setup_types),
+      entry: num(item.entry),
+      stop: num(item.stop),
+      target: num(item.target),
+      atr: num(item.atr, Math.abs(num(item.entry) - num(item.stop))),
+      reward_risk: num(item.reward_risk, item.rewardRisk as number),
+      ensemble_score,
+      rank_components: readRankComponents(item.rank_components),
+      contributing_factors: readContributingFactors(item.contributing_factors),
+      factor_breakdown: readFactorBreakdown(item.factor_breakdown),
+      id: typeof item.id === "string" ? item.id : null,
+      trigger_event_ids,
     });
   }
   const source: UniverseSource = body.universe_source === "DE" ? "DE" : "SETUP_UNIVERSE";
