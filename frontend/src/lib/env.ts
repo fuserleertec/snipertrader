@@ -19,16 +19,23 @@
  *   GET /signals/history         → same filters; falls back to GET /signals
  *   GET /performance/summary     → optional ?symbols= (≤20)
  *   GET /v1/universe             → prepared (same known fields, cap 20); not the selector
- *   GET /v1/universe/top         → chart/universe selector + allowed set
- *                                  (limit=10 P0, 20 P4; { as_of_ts_ms, limit, symbols[] })
+ *   GET /v1/universe/top         → DE PR #12 LIVE :8000 (limit=10|20;
+ *                                  schemas/universe_top.schema.json). Mock only if USE_MOCKS=true.
  *   GET/WS /v1/ohlcv|vwap|session|avwap|volume-profile|kill-zone
- *                                → per-symbol; pass ANY selected symbol
- *                                  (live history may be thin outside BTCUSDT)
+ *                                → per-symbol; full universe incl ES/CL/GC/NQ seeded
  * live_trading is never flipped here. Paper / mocks only.
  */
 
 export function isMockMode(): boolean {
   return process.env.NEXT_PUBLIC_USE_MOCKS !== "false";
+}
+
+/**
+ * DE PR #12 is live at :8000. Universe selector + chart HTTP go live when
+ * mocks are off. No mock substitution on a live miss.
+ */
+export function isLiveDeHttp(): boolean {
+  return !isMockMode();
 }
 
 /** Optional override of Quant list paths. Empty = same-origin `/picks/*` rewrite. */
@@ -49,20 +56,29 @@ export function wsBase(): string {
 }
 
 /**
- * Pattern overlay sockets (DE PR #5). Live only when mocks are off *and*
- * `NEXT_PUBLIC_WS_BASE` is set. Otherwise keep the in-browser mock fallback.
+ * Pattern overlay sockets. Live when mocks are off (DE :8000).
+ * In-browser mock fallback only if NEXT_PUBLIC_USE_MOCKS=true.
  */
 export function isLivePatternWs(): boolean {
-  if (isMockMode()) return false;
-  const base = process.env.NEXT_PUBLIC_WS_BASE;
-  return typeof base === "string" && base.length > 0;
+  return isLiveDeHttp();
 }
 
-/** Empty = same-origin `/v1/*` (Next rewrite → Data Eng). */
+/** Same-origin `/v1/*` rewrite when unset. Live DE default is :8000. */
 export function httpBase(): string {
   const raw = process.env.NEXT_PUBLIC_HTTP_BASE;
   if (raw === undefined || raw === "") return "";
   return raw.replace(/\/$/, "");
+}
+
+/** Direct DE HTTP. Used after same-origin rewrite miss. */
+export function deHttpBase(): string {
+  const raw = process.env.NEXT_PUBLIC_HTTP_BASE;
+  if (raw === undefined || raw === "") return "http://localhost:8000";
+  return raw.replace(/\/$/, "");
+}
+
+export function deHttpUrl(path: string): string {
+  return `${deHttpBase()}${path}`;
 }
 
 /**

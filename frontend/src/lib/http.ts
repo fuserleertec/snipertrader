@@ -8,7 +8,7 @@ import {
   wireAssetClass,
 } from "./constants";
 import { activeSetupQuery, capCategorized, clampRefreshSec, rankItems } from "./desk";
-import { httpUrl, picksHttpUrl, quantHttpUrl } from "./env";
+import { deHttpUrl, httpUrl, picksHttpUrl, quantHttpUrl } from "./env";
 import { normalizeAvwap, normalizeKillZone, normalizeVolumeProfile } from "./overlays";
 import { normalizeSignal } from "./signals";
 import type {
@@ -374,14 +374,14 @@ export function normalizeUniverseTop(raw: unknown, fallbackLimit = ENSEMBLE_LIMI
     const asset = (wireAssetClass(typeof row.asset_class === "string" ? row.asset_class : "") ??
       inferAssetClass(row.symbol)) as AssetClass;
     symbols.push({
-      symbol: row.symbol.toUpperCase(),
+      symbol: normalizeSymbol(row.symbol),
       asset_class: asset,
-      rank: num(row.rank, symbols.length + 1),
+      rank: Math.min(DESK_SYMBOL_LIMIT, Math.max(1, Math.round(num(row.rank, symbols.length + 1)))),
       score: num(row.score),
     });
   }
   if (!symbols.length) return null;
-  const limit = Math.min(DESK_SYMBOL_LIMIT, Math.max(1, num(body.limit, fallbackLimit)));
+  const limit = num(body.limit, fallbackLimit) <= ENSEMBLE_LIMIT ? ENSEMBLE_LIMIT : DESK_SYMBOL_LIMIT;
   return {
     as_of_ts_ms: num(body.as_of_ts_ms, Date.now()),
     limit,
@@ -395,7 +395,7 @@ export async function fetchUniverseTop(limit: number): Promise<UniverseTopRespon
   const path = universeTopPath(limit);
   const viaRewrite = await getSameOrigin<unknown>(path);
   if (viaRewrite) return normalizeUniverseTop(viaRewrite, cap);
-  return normalizeUniverseTop(await getJson<unknown>(path), cap);
+  return normalizeUniverseTop(await getJson<unknown>(path, deHttpUrl), cap);
 }
 
 /** Prepared `GET /v1/universe` — same `{ as_of_ts_ms, symbols[] }` fields as `/top`, cap 20. */
@@ -403,7 +403,7 @@ export async function fetchUniverse(): Promise<UniverseTopResponse | null> {
   const path = universePath();
   const viaRewrite = await getSameOrigin<unknown>(path);
   if (viaRewrite) return normalizeUniverseTop(viaRewrite, DESK_SYMBOL_LIMIT);
-  return normalizeUniverseTop(await getJson<unknown>(path), DESK_SYMBOL_LIMIT);
+  return normalizeUniverseTop(await getJson<unknown>(path, deHttpUrl), DESK_SYMBOL_LIMIT);
 }
 
 /** GET /picks/categorized?asset_class=&limit=20 — no class required; ≤20 symbols. */

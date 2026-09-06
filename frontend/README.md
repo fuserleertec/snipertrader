@@ -118,7 +118,7 @@ Placeholder list contracts (same-origin rewrite → Quant `:8001`):
 | GET | `/signals` + `/signals/history` | P2 history (`symbol`/`status`/`setup_type`/`from_ts`/`to_ts`/`side`/`cursor`, multi-symbol ~20). Client falls back to `/signals` |
 | GET | `/performance/summary` | Section 08 tracker. Optional `?symbols=` (≤20) |
 | GET | `/v1/universe` | Prepared DE full set (same known fields as `/top`, cap 20). **Not** the chart/universe selector. |
-| GET | `/v1/universe/top?limit=10\|20` | **Chart/universe selector + allowed set.** P0 `limit=10`, P4/P2 `limit=20`. Canonical `{ as_of_ts_ms, limit, symbols[{symbol,asset_class,rank,score}] }`. `items[]` accepted as an alias. Sets `universe_source=DE` when the set is non-empty. Quant `/picks/ensemble` + `/picks/categorized` still drive ranked P0/P4 UI inside that set. Mock until DE pings. `refresh_sec=900`. |
+| GET | `/v1/universe/top?limit=10\|20` | **DE PR #12 LIVE** (`schemas/universe_top.schema.json`). Chart/universe selector + allowed set. `limit` ∈ `{10,20}`. `{ as_of_ts_ms, limit, symbols[{symbol,asset_class,rank,score}] }`. Mock only when `NEXT_PUBLIC_USE_MOCKS=true`. Live miss stays empty. 15m from `as_of_ts_ms` / `refresh_sec=900`. |
 | GET/WS | `/v1/ohlcv\|vwap\|session\|avwap\|volume-profile\|kill-zone` | Per-symbol chart feeds. Switching the chart passes the selected symbol (ES/CL/GC/NQ, …). Paper mocks generate multi-symbol OHLC; live demo history may be thin outside BTCUSDT until DE seeds the universe. |
 
 `NEXT_PUBLIC_QUANT_HTTP_BASE` is accepted as an alias of `QUANT_API_BASE`.

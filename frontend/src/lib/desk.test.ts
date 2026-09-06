@@ -31,6 +31,7 @@ import {
   volumeProfilePath,
   vwapPath,
 } from "./http";
+import { isLiveDeHttp, isMockMode } from "./env";
 import { mockCategorizedPicks, mockDroppedPicks, mockEnsemblePicks, mockUniverse, mockUniverseTop, SETUP_UNIVERSE } from "./mocks/lists";
 import { buildMockHistory } from "./mocks/market";
 import { ensembleFeatureTooltip, presentEnsemble } from "./mocks/terminal";
@@ -430,6 +431,10 @@ describe("refresh cadence", () => {
     assert.equal(clampRefreshSec(60), 900);
     assert.equal(clampRefreshSec(1800), 1800);
   });
+
+  it("universe selector is live DE only when mocks are off", () => {
+    assert.equal(isLiveDeHttp(), !isMockMode());
+  });
 });
 
 describe("terminal layout", () => {
@@ -566,7 +571,15 @@ describe("provisional universe is mock-only", () => {
       ],
     });
     assert.equal(parsed?.as_of_ts_ms, 1725459000000);
+    assert.equal(parsed?.limit, 10);
     assert.equal(parsed?.symbols[0]?.symbol, "ES");
+    const mid = normalizeUniverseTop({
+      as_of_ts_ms: 1,
+      limit: 15,
+      symbols: [{ symbol: "es", asset_class: "futures", rank: 1, score: 0 }],
+    });
+    assert.equal(mid?.limit, 20);
+    assert.equal(mid?.symbols[0]?.symbol, "ES");
     const viaItems = normalizeUniverseTop({
       as_of_ts_ms: 2,
       items: [{ symbol: "nq", asset_class: "futures" }],

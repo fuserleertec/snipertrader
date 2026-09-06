@@ -17,6 +17,7 @@ as required on a **new** schema.
 | `mss_events` | [`mss_event.schema.json`](mss_event.schema.json) | Pattern detectors (Phase 2 stub) | Redis `mss:{symbol}:{id}` |
 | `order_block_zones` | [`order_block.schema.json`](order_block.schema.json) | Pattern detectors (Phase 2 stub) | Redis `ob:{symbol}:{id}` |
 | `setup_signals` | [`setup_signal.schema.json`](setup_signal.schema.json) | Signal engine (Phase 2 stub) | Downstream ML / UI |
+| `GET /v1/universe/top` | [`universe_top.schema.json`](universe_top.schema.json) | Data Eng (PR #12) | FE chart/universe selector, Quant P0/P4 allowed set |
 
 ## Delta / aggressor (ML Researchers)
 

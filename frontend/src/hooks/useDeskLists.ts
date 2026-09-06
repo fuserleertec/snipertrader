@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { DESK_SYMBOL_LIMIT, ENSEMBLE_LIMIT, LIST_REFRESH_SEC, RECON_AUDIT_LIMIT } from "@/lib/constants";
 import { allowedSymbolSet, capWithinAllowed, rankWithinAllowed, universeSourceFromAllowed } from "@/lib/desk";
-import { isMockMode } from "@/lib/env";
+import { isLiveDeHttp } from "@/lib/env";
 import { fetchCategorizedPicks, fetchEnsemblePicks, fetchUniverseTop } from "@/lib/http";
 import { mockCategorizedPicks, mockDroppedPicks, mockEnsemblePicks, mockUniverseTop } from "@/lib/mocks/lists";
 import type {
@@ -61,26 +61,27 @@ function mockDesk(cycle: number): DeskLists {
 
 /**
  * P0/P4/universe lists.
- * Chart/universe selector is `GET /v1/universe/top` (limit=10 P0, 20 P4) —
- * not `GET /v1/universe`. Mock until DE pings. Quant ranks P0/P4 inside the set.
+ * Chart/universe selector is live DE `GET /v1/universe/top` (PR #12,
+ * schemas/universe_top.schema.json). Mock only when NEXT_PUBLIC_USE_MOCKS=true.
+ * Live miss stays empty — never substitute SETUP_UNIVERSE.
  */
 export function useDeskLists(refreshKey = 0): DeskLists {
-  const mocks = isMockMode();
+  const live = isLiveDeHttp();
   const [data, setData] = useState<DeskLists>(() =>
-    mocks
-      ? mockDesk(refreshKey)
-      : {
+    live
+      ? {
           ensemble: EMPTY_ENSEMBLE,
           categorized: EMPTY_CATS,
           dropped: [],
           universeTop10: EMPTY_UNI(ENSEMBLE_LIMIT),
           universeTop20: EMPTY_UNI(DESK_SYMBOL_LIMIT),
           source: "live",
-        },
+        }
+      : mockDesk(refreshKey),
   );
 
   useEffect(() => {
-    if (mocks) {
+    if (!live) {
       setData(mockDesk(refreshKey));
       return;
     }
@@ -118,7 +119,7 @@ export function useDeskLists(refreshKey = 0): DeskLists {
     return () => {
       alive = false;
     };
-  }, [mocks, refreshKey]);
+  }, [live, refreshKey]);
 
   return data;
 }
