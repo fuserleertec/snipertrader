@@ -21,8 +21,11 @@ from typing import Any
 
 from sniper_quant.models import (
     AssetClass,
+    CategorizedPick,
+    CategorizedPicksResponse,
     EnsemblePick,
     EnsemblePicksResponse,
+    PickCategory,
     SignalStatus,
     StoredSignal,
     normalize_symbol,
@@ -66,7 +69,21 @@ DEMO_UNIVERSE: tuple[tuple[str, AssetClass], ...] = (
     ("AMD", AssetClass.EQUITY),
     ("NFLX", AssetClass.EQUITY),
     ("SPY", AssetClass.EQUITY),
+    ("ES", AssetClass.FUTURES),
+    ("NQ", AssetClass.FUTURES),
+    ("CL", AssetClass.FUTURES),
+    ("GC", AssetClass.FUTURES),
 )
+
+# setup_type → FE category for GET /picks/categorized
+SETUP_TO_CATEGORY: dict[str, PickCategory] = {
+    "vwap_pullback_cont": PickCategory.MOMENTUM,
+    "sweep_reclaim": PickCategory.MEAN_REVERSION,
+    "fvg_entry": PickCategory.MEAN_REVERSION,
+    "po3_judas": PickCategory.MEAN_REVERSION,
+    "sd_extension_fade": PickCategory.MEAN_REVERSION,
+    "avwap_ob_confluence": PickCategory.CONFLUENCE,
+}
 
 _DEMO_ASSET: dict[str, AssetClass] = {sym: ac for sym, ac in DEMO_UNIVERSE}
 
@@ -83,6 +100,31 @@ def demo_unit_score(symbol: str, bucket: int) -> float:
     """Deterministic 0–1 unit from ``sha256(symbol:bucket)``."""
     digest = hashlib.sha256(f"{normalize_symbol(symbol)}:{bucket}".encode()).hexdigest()
     return int(digest[:8], 16) / 0xFFFFFFFF
+
+
+def categorize_setups(setup_types: Sequence[str]) -> PickCategory:
+    """Map a symbol's live ``setup_types`` to one FE category.
+
+    - ``vwap_pullback_cont`` → momentum (trend continuation)
+    - ``sweep_reclaim``, ``fvg_entry``, ``po3_judas``, ``sd_extension_fade``
+      → mean_reversion (sweep/fade/mitigation)
+    - ``avwap_ob_confluence`` → confluence
+    - no setups (demo fill) → other
+    - mixed momentum + mean_reversion (no confluence setup) → confluence
+    """
+    cats = {SETUP_TO_CATEGORY.get(str(name), PickCategory.OTHER) for name in setup_types}
+    if not cats:
+        return PickCategory.OTHER
+    cats.discard(PickCategory.OTHER)
+    if not cats:
+        return PickCategory.OTHER
+    if PickCategory.CONFLUENCE in cats:
+        return PickCategory.CONFLUENCE
+    if cats == {PickCategory.MOMENTUM}:
+        return PickCategory.MOMENTUM
+    if cats == {PickCategory.MEAN_REVERSION}:
+        return PickCategory.MEAN_REVERSION
+    return PickCategory.CONFLUENCE
 
 
 def infer_asset_class(symbol: str, fallback: AssetClass | None = None) -> AssetClass:
@@ -233,18 +275,13 @@ def rank_ensemble(
     for symbol in overlay:
         universe.setdefault(symbol, infer_asset_class(symbol))
 
-    scored: list[dict[str, Any]] = []
-    for symbol in universe:
-        scored.append(
-            score_symbol(
-                symbol,
-                by_symbol.get(symbol, []),
-                as_of_ts_ms=now,
-                ml_score=overlay.get(symbol, 0.0),
-                refresh_sec=refresh_sec,
-            )
-        )
-    scored.sort(key=lambda item: (-item["score"], item["symbol"]))
+    scored = _score_universe(
+        universe,
+        by_symbol,
+        overlay,
+        as_of_ts_ms=now,
+        refresh_sec=refresh_sec,
+    )
     n = max(1, min(int(top_n), 20))
     items = [
         EnsemblePick(
@@ -260,6 +297,75 @@ def rank_ensemble(
         for i, row in enumerate(scored[:n])
     ]
     return EnsemblePicksResponse(
+        as_of_ts_ms=now,
+        refresh_sec=refresh_sec,
+        items=items,
+    )
+
+
+def _score_universe(
+    universe: Mapping[str, AssetClass],
+    by_symbol: Mapping[str, Sequence[StoredSignal]],
+    overlay: Mapping[str, float],
+    *,
+    as_of_ts_ms: int,
+    refresh_sec: int,
+) -> list[dict[str, Any]]:
+    scored = [
+        score_symbol(
+            symbol,
+            by_symbol.get(symbol, []),
+            as_of_ts_ms=as_of_ts_ms,
+            ml_score=overlay.get(symbol, 0.0),
+            refresh_sec=refresh_sec,
+        )
+        for symbol in universe
+    ]
+    scored.sort(key=lambda item: (-item["score"], item["symbol"]))
+    return scored
+
+
+def rank_categorized(
+    rows: Sequence[StoredSignal],
+    *,
+    as_of_ts_ms: int | None = None,
+    asset_class: AssetClass | None = None,
+    limit: int = 20,
+    refresh_sec: int = REFRESH_SEC,
+) -> CategorizedPicksResponse:
+    """Same book/demo scores as ensemble, tagged with a FE category. ≤20 rows."""
+    now = int(as_of_ts_ms if as_of_ts_ms is not None else time.time() * 1000)
+    by_symbol: dict[str, list[StoredSignal]] = defaultdict(list)
+    for row in rows:
+        by_symbol[normalize_symbol(row.symbol)].append(row)
+
+    universe: dict[str, AssetClass] = {sym: ac for sym, ac in DEMO_UNIVERSE}
+    for symbol, group in by_symbol.items():
+        universe.setdefault(symbol, infer_asset_class(symbol, group[-1].asset_class))
+
+    scored = _score_universe(
+        universe,
+        by_symbol,
+        {},
+        as_of_ts_ms=now,
+        refresh_sec=refresh_sec,
+    )
+    if asset_class is not None:
+        scored = [row for row in scored if row["asset_class"] is asset_class]
+    n = max(1, min(int(limit), 20))
+    items = [
+        CategorizedPick(
+            rank=i + 1,
+            symbol=row["symbol"],
+            asset_class=row["asset_class"],
+            category=categorize_setups(row["setup_types"]),
+            score=row["score"],
+            setup_types=row["setup_types"],
+            confidence=row["confidence"],
+        )
+        for i, row in enumerate(scored[:n])
+    ]
+    return CategorizedPicksResponse(
         as_of_ts_ms=now,
         refresh_sec=refresh_sec,
         items=items,

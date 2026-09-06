@@ -10,10 +10,12 @@ from sniper_quant.api import create_app
 from sniper_quant.picks import (
     DEMO_UNIVERSE,
     REFRESH_SEC,
+    categorize_setups,
     demo_unit_score,
     rank_ensemble,
     refresh_bucket,
 )
+from sniper_quant.models import PickCategory
 from sniper_quant.risk.engine import RiskEngine, RiskState
 from sniper_quant.store.signals import InMemorySignalStore
 from tests.conftest import make_settings
@@ -131,3 +133,110 @@ def test_picks_do_not_enable_live_trading():
     http.get("/picks/ensemble")
     acct = http.get("/paper/account").json()
     assert acct["live_trading"] is False
+
+
+CATEGORIZED_FIELDS = {
+    "rank",
+    "symbol",
+    "asset_class",
+    "category",
+    "score",
+    "setup_types",
+    "confidence",
+}
+
+
+def test_categorized_picks_shape_filter_and_mapping():
+    http = _client()
+    spec = http.get("/openapi.json").json()
+    assert "/picks/categorized" in spec["paths"]
+    params = {p["name"] for p in spec["paths"]["/picks/categorized"]["get"]["parameters"]}
+    assert {"asset_class", "limit"} <= params
+    schema = spec["components"]["schemas"]["CategorizedPick"]
+    assert set(schema["required"]) >= CATEGORIZED_FIELDS
+    assert "momentum" in str(spec["components"]["schemas"]["PickCategory"])
+
+    empty = http.get("/picks/categorized", params={"as_of_ts_ms": 0, "limit": 20}).json()
+    assert empty["refresh_sec"] == 900
+    assert 1 <= len(empty["items"]) <= 20
+    assert [row["rank"] for row in empty["items"]] == list(range(1, len(empty["items"]) + 1))
+    for row in empty["items"]:
+        assert CATEGORIZED_FIELDS <= set(row)
+        assert row["category"] == "other"
+
+    equity = http.get(
+        "/picks/categorized",
+        params={"asset_class": "stocks", "as_of_ts_ms": 0, "limit": 20},
+    ).json()
+    assert equity["items"]
+    assert {row["asset_class"] for row in equity["items"]} == {"equity"}
+    named = http.get(
+        "/picks/categorized",
+        params={"asset_class": "equity", "as_of_ts_ms": 0},
+    ).json()
+    assert [r["symbol"] for r in named["items"]] == [r["symbol"] for r in equity["items"]]
+
+    futures = http.get(
+        "/picks/categorized",
+        params={"asset_class": "futures", "as_of_ts_ms": 0, "limit": 20},
+    ).json()
+    assert futures["items"]
+    assert {row["asset_class"] for row in futures["items"]} == {"futures"}
+    assert {row["symbol"] for row in futures["items"]} <= {"ES", "NQ", "CL", "GC"}
+
+    as_of = 1_700_000_400_000
+    assert (
+        http.post(
+            "/signals",
+            json=_payload(
+                symbol="AAPL",
+                asset_class="equity",
+                setup_type="vwap_pullback_cont",
+                ts_ms=as_of,
+                confidence=0.91,
+            ),
+        ).status_code
+        == 201
+    )
+    assert (
+        http.post(
+            "/signals",
+            json=_payload(
+                symbol="BTCUSDT",
+                setup_type="sd_extension_fade",
+                ts_ms=as_of,
+                confidence=0.90,
+            ),
+        ).status_code
+        == 201
+    )
+    assert (
+        http.post(
+            "/signals",
+            json=_payload(
+                symbol="ES",
+                asset_class="futures",
+                setup_type="avwap_ob_confluence",
+                ts_ms=as_of,
+                confidence=0.86,
+            ),
+        ).status_code
+        == 201
+    )
+
+    body = http.get("/picks/categorized", params={"as_of_ts_ms": as_of, "limit": 20}).json()
+    by_sym = {row["symbol"]: row for row in body["items"]}
+    assert by_sym["AAPL"]["category"] == "momentum"
+    assert by_sym["BTCUSDT"]["category"] == "mean_reversion"
+    assert by_sym["ES"]["category"] == "confluence"
+    assert body["items"][0]["rank"] == 1
+    assert len(body["items"]) <= 20
+
+    assert categorize_setups([]) is PickCategory.OTHER
+    assert categorize_setups(["vwap_pullback_cont"]) is PickCategory.MOMENTUM
+    assert categorize_setups(["sweep_reclaim", "fvg_entry"]) is PickCategory.MEAN_REVERSION
+    assert categorize_setups(["vwap_pullback_cont", "sweep_reclaim"]) is PickCategory.CONFLUENCE
+
+    assert http.get("/picks/categorized", params={"asset_class": "fx"}).status_code == 422
+    assert http.get("/picks/categorized", params={"limit": 21}).status_code == 422
+    assert http.get("/paper/account").json()["live_trading"] is False

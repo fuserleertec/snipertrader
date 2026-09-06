@@ -45,6 +45,7 @@ class SignalStore(Protocol):
         status: SignalStatus | str | None = None,
         setup_type: SetupType | str | None = None,
         side: Side | str | None = None,
+        asset_class: AssetClass | str | None = None,
         from_ts: int | None = None,
         to_ts: int | None = None,
         cursor: str | None = None,
@@ -87,6 +88,7 @@ class InMemorySignalStore:
         status: SignalStatus | str | None = None,
         setup_type: SetupType | str | None = None,
         side: Side | str | None = None,
+        asset_class: AssetClass | str | None = None,
         from_ts: int | None = None,
         to_ts: int | None = None,
         cursor: str | None = None,
@@ -105,6 +107,9 @@ class InMemorySignalStore:
         if side:
             want_side = Side(side)
             rows = [r for r in rows if r.side is want_side]
+        if asset_class:
+            want_ac = AssetClass(asset_class)
+            rows = [r for r in rows if r.asset_class is want_ac]
         if from_ts is not None:
             rows = [r for r in rows if r.ts_ms >= from_ts]
         if to_ts is not None:
@@ -310,6 +315,7 @@ class TimescaleSignalStore:
         status: SignalStatus | str | None = None,
         setup_type: SetupType | str | None = None,
         side: Side | str | None = None,
+        asset_class: AssetClass | str | None = None,
         from_ts: int | None = None,
         to_ts: int | None = None,
         cursor: str | None = None,
@@ -319,6 +325,7 @@ class TimescaleSignalStore:
         st = SignalStatus(status).value if status else None
         stype = setup_type_value(setup_type) if setup_type else None
         side_v = Side(side).value if side else None
+        ac_v = AssetClass(asset_class).value if asset_class else None
         c_ts: int | None = None
         c_id: str | None = None
         if cursor:
@@ -334,19 +341,20 @@ class TimescaleSignalStore:
           AND ($2::TEXT IS NULL OR status = $2)
           AND ($3::TEXT IS NULL OR setup_type = $3)
           AND ($4::TEXT IS NULL OR side = $4)
-          AND ($5::BIGINT IS NULL OR EXTRACT(EPOCH FROM ts) * 1000 >= $5)
-          AND ($6::BIGINT IS NULL OR EXTRACT(EPOCH FROM ts) * 1000 <= $6)
+          AND ($5::TEXT IS NULL OR asset_class = $5)
+          AND ($6::BIGINT IS NULL OR EXTRACT(EPOCH FROM ts) * 1000 >= $6)
+          AND ($7::BIGINT IS NULL OR EXTRACT(EPOCH FROM ts) * 1000 <= $7)
           AND (
-                $7::BIGINT IS NULL
-                OR EXTRACT(EPOCH FROM ts) * 1000 < $7
-                OR (EXTRACT(EPOCH FROM ts) * 1000 = $7 AND id < $8)
+                $8::BIGINT IS NULL
+                OR EXTRACT(EPOCH FROM ts) * 1000 < $8
+                OR (EXTRACT(EPOCH FROM ts) * 1000 = $8 AND id < $9)
               )
         ORDER BY ts DESC, id DESC
-        LIMIT $9
+        LIMIT $10
         """
         async with pool.acquire() as conn:
             rows = await conn.fetch(
-                sql, symbol, st, stype, side_v, from_ts, to_ts, c_ts, c_id, limit
+                sql, symbol, st, stype, side_v, ac_v, from_ts, to_ts, c_ts, c_id, limit
             )
         return [_row_to_signal(r) for r in rows]
 

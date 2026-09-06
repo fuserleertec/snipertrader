@@ -28,6 +28,30 @@ class AssetClass(str, Enum):
     FUTURES = "futures"
 
 
+class PickCategory(str, Enum):
+    MOMENTUM = "momentum"
+    MEAN_REVERSION = "mean_reversion"
+    CONFLUENCE = "confluence"
+    OTHER = "other"
+
+
+def parse_asset_class_query(raw: str | None) -> AssetClass | None:
+    """Parse list/picks ``asset_class``. ``stocks`` / ``stock`` → ``equity``."""
+    if raw is None:
+        return None
+    key = str(raw).strip().lower()
+    if key == "":
+        return None
+    if key in {"stock", "stocks"}:
+        return AssetClass.EQUITY
+    try:
+        return AssetClass(key)
+    except ValueError as exc:
+        raise ValueError(
+            "asset_class must be futures|equity|crypto (stocks is an alias for equity)"
+        ) from exc
+
+
 class SignalStatus(str, Enum):
     ACTIVE = "ACTIVE"
     TP_HIT = "TP_HIT"
@@ -248,6 +272,24 @@ class EnsemblePicksResponse(BaseModel):
     as_of_ts_ms: int
     refresh_sec: int = 900
     items: list[EnsemblePick]
+
+
+class CategorizedPick(BaseModel):
+    """One row of ``GET /picks/categorized``. Paper/signal book only."""
+
+    rank: int = Field(ge=1)
+    symbol: str
+    asset_class: AssetClass
+    category: PickCategory
+    score: float
+    setup_types: list[str] = Field(default_factory=list)
+    confidence: float
+
+
+class CategorizedPicksResponse(BaseModel):
+    as_of_ts_ms: int
+    refresh_sec: int = 900
+    items: list[CategorizedPick]
 
 
 class SignalWsEvent(BaseModel):

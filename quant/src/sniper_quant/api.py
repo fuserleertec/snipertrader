@@ -20,6 +20,7 @@ from sniper_quant.live import SignalHub
 from sniper_quant.models import (
     AssetClass,
     CandidateSignal,
+    CategorizedPicksResponse,
     EnsemblePicksResponse,
     OHLCVBar,
     PerformanceSummary,
@@ -32,6 +33,7 @@ from sniper_quant.models import (
     StoredSignal,
     ValidateResponse,
     normalize_symbol,
+    parse_asset_class_query,
 )
 from sniper_quant.risk.engine import RiskEngine, RiskState
 from sniper_quant.setups import SETUP_TYPE_NOTES, SETUP_TYPES
@@ -96,8 +98,11 @@ Reject reasons: `ok`, `invalid_levels`, `position_size_exceeds_limit`,
 ## Frontend
 
 `GET /signals` and **`GET /signals/history`** share the same list
-(filters: `symbol`, `status`, `setup_type`, `side`, `from_ts`, `to_ts`,
-`limit`, `cursor`).
+(filters: `symbol`, `status`, `setup_type`, `side`, `asset_class`,
+`from_ts`, `to_ts`, `limit`, `cursor`). `asset_class` is
+`futures` | `equity` | `crypto`; `stocks` / `stock` alias → `equity`.
+Active setups by class: `status=ACTIVE` + `asset_class=` + optional
+`setup_type`.
 
 `GET /performance/summary` → top-level `win_rate`, `average_rr`,
 `sharpe_ratio`, `max_drawdown_pct`, `signals_today`, `signals_week`.
@@ -115,6 +120,9 @@ Dormant `mss_break` / `order_block` / `sweep_mss` and
 from the paper/signal book + optional `ml_scores` JSON overlay.
 `refresh_sec` is **900**. Thin books synthesize a rotating ≥20-symbol
 universe. **No live trading.** See README ranking formula.
+
+`GET /picks/categorized?asset_class=&limit=20` → same scores, ≤20 rows,
+each tagged `momentum` | `mean_reversion` | `confluence` | `other`.
 
 ## Alerts / paper / auth
 
@@ -355,6 +363,37 @@ def create_app(
             refresh_sec=REFRESH_SEC,
         )
 
+    @app.get("/picks/categorized", response_model=CategorizedPicksResponse)
+    async def picks_categorized(
+        asset_class: str | None = Query(
+            default=None,
+            description="futures|equity|crypto. stocks/stock → equity.",
+        ),
+        limit: int = Query(default=20, ge=1, le=20),
+        as_of_ts_ms: int | None = Query(default=None, ge=0),
+    ) -> CategorizedPicksResponse:
+        """Categorized paper picks. Same ranking as /picks/ensemble, ≤20 rows.
+
+        category from setup_types: vwap_pullback_cont → momentum;
+        sweep_reclaim / fvg_entry / po3_judas / sd_extension_fade →
+        mean_reversion; avwap_ob_confluence → confluence; none → other;
+        mixed momentum+mean_reversion → confluence. Paper only.
+        """
+        from sniper_quant.picks import REFRESH_SEC, rank_categorized
+
+        try:
+            ac = parse_asset_class_query(asset_class)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        rows = await _signals().all()
+        return rank_categorized(
+            rows,
+            as_of_ts_ms=as_of_ts_ms,
+            asset_class=ac,
+            limit=limit,
+            refresh_sec=REFRESH_SEC,
+        )
+
     @app.post("/risk/validate", response_model=ValidateResponse)
     async def risk_validate(body: CandidateSignal) -> ValidateResponse:
         """Candidate setup (no id). Mandatory before publish for every setup_type."""
@@ -368,6 +407,7 @@ def create_app(
         status: SignalStatus | None,
         setup_type: SetupType | None,
         side: Side | None,
+        asset_class: str | None,
         from_ts: int | None,
         to_ts: int | None,
         limit: int,
@@ -375,11 +415,16 @@ def create_app(
     ) -> SignalListResponse:
         if symbol:
             symbol = normalize_symbol(symbol)
+        try:
+            ac = parse_asset_class_query(asset_class)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
         rows = await _signals().list(
             symbol=symbol,
             status=status,
             setup_type=setup_type,
             side=side,
+            asset_class=ac,
             from_ts=from_ts,
             to_ts=to_ts,
             cursor=cursor,
@@ -398,16 +443,22 @@ def create_app(
         status: SignalStatus | None = None,
         setup_type: SetupType | None = None,
         side: Side | None = None,
+        asset_class: str | None = Query(
+            default=None,
+            description="futures|equity|crypto. stocks/stock → equity. Combine with status=ACTIVE + setup_type for active setups by class.",
+        ),
         from_ts: int | None = Query(default=None, ge=0, description="Inclusive UTC epoch ms"),
         to_ts: int | None = Query(default=None, ge=0, description="Inclusive UTC epoch ms"),
         limit: int = Query(default=50, ge=1, le=500),
         cursor: str | None = Query(default=None, description="Opaque cursor from next_cursor"),
     ) -> SignalListResponse:
-        """Live table + history window. Items include optional publish-only
-        ``contributing_factors`` / ``factor_breakdown`` (not on validate).
+        """Live table + history window. Filters: symbol, status, setup_type,
+        side, asset_class (stocks→equity), from_ts, to_ts, limit, cursor.
+        Active setups by asset: ``status=ACTIVE`` + ``asset_class=`` +
+        optional ``setup_type``.
         """
         return await _list_signals_impl(
-            symbol, status, setup_type, side, from_ts, to_ts, limit, cursor
+            symbol, status, setup_type, side, asset_class, from_ts, to_ts, limit, cursor
         )
 
     @app.get("/signals/history", response_model=SignalListResponse)
@@ -416,6 +467,10 @@ def create_app(
         status: SignalStatus | None = None,
         setup_type: SetupType | None = None,
         side: Side | None = None,
+        asset_class: str | None = Query(
+            default=None,
+            description="Same asset_class filter as GET /signals (stocks→equity).",
+        ),
         from_ts: int | None = Query(default=None, ge=0),
         to_ts: int | None = Query(default=None, ge=0),
         limit: int = Query(default=50, ge=1, le=500),
@@ -423,7 +478,7 @@ def create_app(
     ) -> SignalListResponse:
         """Same list as GET /signals — explicit history path for Frontend/PM."""
         return await _list_signals_impl(
-            symbol, status, setup_type, side, from_ts, to_ts, limit, cursor
+            symbol, status, setup_type, side, asset_class, from_ts, to_ts, limit, cursor
         )
 
     @app.get("/signals/{signal_id}", response_model=SignalView)

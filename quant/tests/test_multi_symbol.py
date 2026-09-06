@@ -156,3 +156,88 @@ def test_multi_symbol_performance_by_setup():
     assert sum(b["n_signals"] for b in one["by_setup"].values()) == 1
 
     assert http.get("/paper/account").json()["live_trading"] is False
+
+
+def _post_futures(http: TestClient, symbol: str, setup: str, ts_ms: int) -> dict:
+    resp = http.post(
+        "/signals",
+        json=_payload(
+            symbol=symbol,
+            asset_class="futures",
+            setup_type=setup,
+            ts_ms=ts_ms,
+            confidence=0.88,
+            ref_session="rth",
+        ),
+    )
+    assert resp.status_code == 201, resp.text
+    return resp.json()
+
+
+def test_asset_class_and_active_setup_filters():
+    http = _client()
+    created = _seed(http, copies=1, via="signals")
+    es = _post_futures(http, "ES", "sweep_reclaim", 1_700_000_500_000)
+    nq = _post_futures(http, "NQ", "vwap_pullback_cont", 1_700_000_510_000)
+    assert es["asset_class"] == "futures"
+    assert nq["status"] == "ACTIVE"
+
+    spec = http.get("/openapi.json").json()
+    sig_params = {p["name"] for p in spec["paths"]["/signals"]["get"]["parameters"]}
+    hist_params = {p["name"] for p in spec["paths"]["/signals/history"]["get"]["parameters"]}
+    assert "asset_class" in sig_params
+    assert "asset_class" in hist_params
+    assert "setup_type" in sig_params
+    assert "status" in sig_params
+
+    crypto = http.get(
+        "/signals",
+        params={"asset_class": "crypto", "status": "ACTIVE", "limit": 100},
+    ).json()["items"]
+    equity = http.get(
+        "/signals",
+        params={"asset_class": "equity", "status": "ACTIVE", "limit": 100},
+    ).json()["items"]
+    stocks = http.get(
+        "/signals",
+        params={"asset_class": "stocks", "status": "ACTIVE", "limit": 100},
+    ).json()["items"]
+    futures = http.get(
+        "/signals",
+        params={"asset_class": "futures", "status": "ACTIVE", "limit": 100},
+    ).json()["items"]
+
+    assert {r["asset_class"] for r in crypto} == {"crypto"}
+    assert {r["asset_class"] for r in equity} == {"equity"}
+    assert [r["id"] for r in stocks] == [r["id"] for r in equity]
+    assert {r["symbol"] for r in futures} == {"ES", "NQ"}
+    assert all(r["status"] == "ACTIVE" for r in crypto + equity + futures)
+    assert len(crypto) + len(equity) + len(futures) == len(created) + 2
+
+    hist_fut = http.get(
+        "/signals/history",
+        params={"asset_class": "futures", "status": "ACTIVE"},
+    ).json()["items"]
+    assert [r["id"] for r in hist_fut] == [r["id"] for r in futures]
+
+    combo = http.get(
+        "/signals",
+        params={
+            "asset_class": "crypto",
+            "setup_type": "sweep_reclaim",
+            "status": "ACTIVE",
+            "limit": 100,
+        },
+    ).json()["items"]
+    assert combo
+    assert {r["setup_type"] for r in combo} == {"sweep_reclaim"}
+    assert {r["asset_class"] for r in combo} == {"crypto"}
+    assert {r["status"] for r in combo} == {"ACTIVE"}
+
+    walked = _walk_pages(http, "/signals", limit=5, asset_class="crypto", status="ACTIVE")
+    assert len(walked) == len(crypto)
+    assert {r["id"] for r in walked} == {r["id"] for r in crypto}
+
+    bad = http.get("/signals", params={"asset_class": "fx"})
+    assert bad.status_code == 422
+    assert http.get("/paper/account").json()["live_trading"] is False

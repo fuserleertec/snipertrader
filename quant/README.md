@@ -208,10 +208,11 @@ JSON Schema: [`schemas/dashboard_signal.schema.json`](../schemas/dashboard_signa
 
 | Method | Path | Response |
 |---|---|---|
-| `GET` | `/signals?symbol=&status=&setup_type=&from_ts=&to_ts=&limit=&cursor=` | `{ "items": Signal[], "next_cursor": string \| null }` |
+| `GET` | `/signals?symbol=&status=&setup_type=&side=&asset_class=&from_ts=&to_ts=&limit=&cursor=` | `{ "items": Signal[], "next_cursor": string \| null }` |
 | `GET` | `/signals/history` | Same list as `GET /signals` |
 | `GET` | `/performance/summary?symbol=` | Live metrics; `by_setup` keyed by `product_key` |
 | `GET` | `/picks/ensemble?as_of_ts_ms=&ml_scores=` | Quantum Ensemble Picks — dynamic top 10, `refresh_sec: 900` |
+| `GET` | `/picks/categorized?asset_class=&limit=20` | Categorized picks ≤20, `refresh_sec: 900` |
 | `GET` | `/signals/{id}` | `Signal` |
 | `WS` | `/ws/signals` | `{ "type": "signal.upsert" \| "signal.status", "signal": Signal }` |
 | `POST` | `/signals` | `Signal` (after pre-filter; emits `signal.upsert`) |
@@ -282,6 +283,65 @@ refresh is **15 minutes** (`refresh_sec: 900`). `as_of_ts_ms` defaults
 to now (tests pass it for determinism). **Paper only** — this endpoint
 never enables `live_trading` and has no Alpaca path.
 
+### Active setups by `asset_class`
+
+`GET /signals` and `GET /signals/history` accept:
+
+`asset_class` = `futures` | `equity` | `crypto`. **`stocks`** / **`stock`**
+is an alias for `equity` (422 on anything else).
+
+Active setups for the multi-asset UI:
+
+```
+GET /signals?status=ACTIVE&asset_class=crypto&setup_type=sweep_reclaim
+GET /signals?status=ACTIVE&asset_class=stocks
+GET /signals/history?status=ACTIVE&asset_class=futures
+```
+
+`setup_type` is the locked six-value enum. Combine freely with `symbol`,
+`side`, `from_ts`, `to_ts`, `limit`, `cursor`. Same filters on both list
+paths; cursors stay `(ts_ms, id)` desc under a ~20-symbol book.
+
+### `GET /picks/categorized`
+
+JSON Schema: [`schemas/categorized_picks.schema.json`](../schemas/categorized_picks.schema.json)
+
+```json
+{
+  "as_of_ts_ms": 1700000000000,
+  "refresh_sec": 900,
+  "items": [
+    {
+      "rank": 1,
+      "symbol": "AAPL",
+      "asset_class": "equity",
+      "category": "momentum",
+      "score": 48.1,
+      "setup_types": ["vwap_pullback_cont"],
+      "confidence": 0.88
+    }
+  ]
+}
+```
+
+Same ranking as `/picks/ensemble` (no ML overlay). Default `limit=20`
+(max 20). Optional `asset_class` uses the same `stocks`→`equity` alias.
+`category` is derived from `setup_types`:
+
+| `setup_type` | `category` | Why |
+|---|---|---|
+| `vwap_pullback_cont` | `momentum` | Trend continuation after a VWAP/1σ pullback |
+| `sweep_reclaim` | `mean_reversion` | Sweep then reclaim (fade the excursion) |
+| `fvg_entry` | `mean_reversion` | Gap mitigation back toward VWAP / HVN |
+| `po3_judas` | `mean_reversion` | Judas fake-out then reverse |
+| `sd_extension_fade` | `mean_reversion` | Fade 2σ/3σ extension toward VWAP |
+| `avwap_ob_confluence` | `confluence` | AVWAP + HTF order-block overlap |
+| *(none / demo fill)* | `other` | Thin-book hash row, no approved setups |
+
+If a symbol has **both** momentum and mean-reversion setups (and no
+`avwap_ob_confluence`), category is **`confluence`**. A lone
+`avwap_ob_confluence` is also `confluence`.
+
 ### Ensemble ranking formula
 
 Let `H = 900` (half-life seconds = refresh). For each symbol, take
@@ -305,8 +365,8 @@ Sort `score` desc, `symbol` asc; take top 10. `confidence` on the row is
 is copied from the newest approved signal.
 
 **Thin / empty book:** the scorer always considers a rotating in-memory
-universe of **22** symbols (12 crypto + 10 equity). Symbols with no
-approved signals get a demo score only:
+universe of **26** symbols (12 crypto + 10 equity + 4 futures). Symbols
+with no approved signals get a demo score only:
 
 ```
 bucket = floor(as_of_ts_ms / (900 × 1000))
@@ -325,8 +385,8 @@ Multi-symbol paper books (~20 symbols) use the same `GET /signals`,
 omit it to aggregate the whole book.
 
 History is `GET /signals` **or** `GET /signals/history` with `from_ts` /
-`to_ts` (plus `symbol` / `status` / `setup_type` / `side`). Both share the
-same list implementation.
+`to_ts` (plus `symbol` / `status` / `setup_type` / `side` /
+`asset_class`). Both share the same list implementation.
 
 `from_ts` / `to_ts` are inclusive UTC epoch milliseconds (same unit as `ts_ms`).
 Default `limit` is 50 (max 500). Pass `cursor` = previous `next_cursor` for the
@@ -502,6 +562,7 @@ quant/
 data_engineering/sql/02-signals.sql
 schemas/risk_validate_*.schema.json
 schemas/ensemble_picks.schema.json
+schemas/categorized_picks.schema.json
 ```
 
 ## CLI
