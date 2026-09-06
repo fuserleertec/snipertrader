@@ -23,7 +23,7 @@ ts = 0
 for rec in raw.values():
     ts = max(ts, rec.get("meta", {}).get("regularMarketTime") or 0)
 as_of = datetime.fromtimestamp(ts, tz=timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M %Z") if ts else "—"
-res["as_of"] = f"data as of {as_of}"
+res["as_of"] = as_of
 
 with open(TMPL) as f:
     tpl = f.read()

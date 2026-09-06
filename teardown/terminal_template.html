@@ -160,7 +160,7 @@
 <div class="wrap">
 
   <div class="banner">
-    <div class="head">DATA PROVENANCE — WHAT IS REAL, WHAT IS A MODEL</div>
+    <div class="head">DATA PROVENANCE — WHAT IS REAL, WHAT IS A MODEL <span id="modebadge" style="margin-left:10px;font-family:var(--font-m);font-size:10px;letter-spacing:.06em;padding:3px 10px;border-radius:20px;border:1px solid var(--border2);color:var(--emerald)">STATIC SNAPSHOT</span></div>
     <div class="leg">
       <span class="real">REAL · computed from live OHLCV</span>
       <span class="model">MODEL · deterministic ensemble</span>
@@ -168,10 +168,10 @@
     </div>
     <p>Prices, change, Kronos structure (VWAP · FVG · order blocks · sweeps · MSS), ATR, the empirical
        probability cone, trade levels, and the walk-forward backtest are all <b>computed from real daily
-       OHLCV</b> (Yahoo, key-less, ~2 years). The <b>MiroFish swarm is a deterministic 8-model ensemble</b> —
+       OHLCV</b> (live Binance + Alpaca; snapshot Yahoo key-less). The <b>MiroFish swarm is a deterministic 8-model ensemble</b> —
        every vote is a real formula over the same data, not a random draw — but it is a model, not a live
        tape of traders. There is <b>no order-flow / dark-pool / options data</b> here and none is implied.
-       <b>Static snapshot</b> — data as of <span id="asof"></span>; regenerate with
+       <b>Data as of</b>: <span id="asof"></span> — static snapshot regenerated offline with
        <span style="font-family:var(--font-m)">teardown/fetch_data.py → compute_engine.py → build_html.py</span>.</p>
   </div>
 
@@ -191,9 +191,167 @@
 
 <script id="data" type="application/json">__DATA__</script>
 <script>
+/* ════════════════════════════════════════════════════════════════════════
+   LIVE ENGINE — client-side port of teardown/compute_engine.py.
+   Every number is a deterministic function of OHLCV fetched live:
+     crypto  → Binance public klines (CORS-open, key-less)
+     equity  → /api/stocks/klines (Alpaca, server-side key)
+     futures → no key-less feed (excluded from the live universe)
+   ════════════════════════════════════════════════════════════════════════ */
+const CRYPTO = ['BTCUSDT','ETHUSDT','SOLUSDT','LINKUSDT','AVAXUSDT','DOGEUSDT'];
+const EQUITY = ['AAPL','AMD','AMZN','AVGO','CRWD','META','MSFT','NVDA','PLTR','TSLA'];
+const FUTURES = ['CL','GC','ES','NQ'];
+const ALL_SYMBOLS = [...EQUITY, ...CRYPTO, ...FUTURES];
+
+function sma(v,n){ if(v.length<n) return null; let s=0; for(let i=v.length-n;i<v.length;i++) s+=v[i]; return s/n; }
+function emaSeries(v,n){ const k=2/(n+1); let prev=null; const o=[]; for(const x of v){ prev=prev==null?x:x*k+prev*(1-k); o.push(prev);} return o; }
+function atrSeries(bars,n=14){
+  const trs=[]; for(let i=1;i<bars.length;i++){ const h=bars[i].h,l=bars[i].l,pc=bars[i-1].c; trs.push(Math.max(h-l,Math.abs(h-pc),Math.abs(l-pc))); }
+  if(trs.length<n) return null;
+  let a=trs.slice(0,n).reduce((x,y)=>x+y,0)/n; const o=new Array(n).fill(null); o.push(a);
+  for(let i=n;i<trs.length;i++){ a=(a*(n-1)+trs[i])/n; o.push(a); }
+  return o;
+}
+function rsiSeries(bars,n=14){
+  const g=[],l=[]; for(let i=1;i<bars.length;i++){ const ch=bars[i].c-bars[i-1].c; g.push(Math.max(ch,0)); l.push(Math.max(-ch,0)); }
+  if(g.length<n) return null;
+  let ag=g.slice(0,n).reduce((x,y)=>x+y,0)/n, al=l.slice(0,n).reduce((x,y)=>x+y,0)/n;
+  const o=new Array(n).fill(null); o.push(al===0?100:100-100/(1+ag/al));
+  for(let i=n;i<g.length;i++){ ag=(ag*(n-1)+g[i])/n; al=(al*(n-1)+l[i])/n; o.push(al===0?100:100-100/(1+ag/al)); }
+  return o;
+}
+function rollingVwap(bars,n=20){ if(bars.length<n) return null; let pv=0,vv=0; for(let i=bars.length-n;i<bars.length;i++){ const b=bars[i],tp=(b.h+b.l+b.c)/3; pv+=tp*b.v; vv+=b.v; } return vv>0?pv/vv:null; }
+function obvSeries(bars){ const o=[]; let run=0; bars.forEach((b,i)=>{ if(i===0){o.push(run);return;} if(b.c>bars[i-1].c)run+=b.v; else if(b.c<bars[i-1].c)run-=b.v; o.push(run);}); return o; }
+function swingPivots(bars,k=3){ const p=[]; for(let i=k;i<bars.length-k;i++){ let h=true,l=true; for(let j=i-k;j<=i+k;j++){ if(bars[j].h>bars[i].h)h=false; if(bars[j].l<bars[i].l)l=false; } if(h)p.push({i,kind:'H',price:bars[i].h}); if(l)p.push({i,kind:'L',price:bars[i].l}); } return p; }
+function fwdReturns(bars,n=5){ const o=[]; for(let i=0;i<bars.length-n;i++) o.push(bars[i+n].c/bars[i].c-1); return o; }
+
+function kronos(bars){
+  const c=bars[bars.length-1].c, piv=swingPivots(bars);
+  const pH=piv.filter(p=>p.kind==='H'), pL=piv.filter(p=>p.kind==='L');
+  const vwap=rollingVwap(bars);
+  let trend='range';
+  if(pH.length>=2&&pL.length>=2){ const hh=pH[pH.length-1].price>pH[pH.length-2].price, ll=pL[pL.length-1].price>pL[pL.length-2].price; if(hh&&ll)trend='up'; else if(!hh&&!ll)trend='down'; }
+  let mss=null;
+  if(pH.length&&c>pH[pH.length-1].price)mss='bullish'; else if(pL.length&&c<pL[pL.length-1].price)mss='bearish';
+  let fvg=null;
+  for(let i=bars.length-2;i>1;i--){ const b0=bars[i-2],b2=bars[i];
+    if(b0.h<b2.l){ const sz=(b2.l-b0.h)/b0.h; if(sz>0.003){ fvg={dir:'bull',zone:[b0.h,b2.l],bar:i,gap_pct:+(sz*100).toFixed(2)}; break; } }
+    if(b0.l>b2.h){ const sz=(b0.l-b2.h)/b0.l; if(sz>0.003){ fvg={dir:'bear',zone:[b2.h,b0.l],bar:i,gap_pct:+(sz*100).toFixed(2)}; break; } } }
+  let ob=null;
+  for(let i=bars.length-1;i>1;i--){ const b0=bars[i],imp=(b0.c-b0.o)/b0.o;
+    if(imp>0.012){ let j=i-1; while(j>0&&bars[j].c>bars[j].o)j--; if(bars[j].c<bars[j].o){ ob={dir:'bull',zone:[bars[j].l,bars[j].h],bar:j}; break; } }
+    if(imp<-0.012){ let j=i-1; while(j>0&&bars[j].c<bars[j].o)j--; if(bars[j].c>bars[j].o){ ob={dir:'bear',zone:[bars[j].l,bars[j].h],bar:j}; break; } } }
+  let sweep=null; const loK=Math.min(...bars.slice(-4,-1).map(b=>b.l)), hiK=Math.max(...bars.slice(-4,-1).map(b=>b.h)); const last=bars[bars.length-1];
+  if(last.l<loK&&last.c>loK)sweep={dir:'bull',level:loK}; else if(last.h>hiK&&last.c<hiK)sweep={dir:'bear',level:hiK};
+  const lows=pL.map(p=>p.price).sort((a,b)=>a-b), highs=pH.map(p=>p.price).sort((a,b)=>a-b);
+  const below=lows.filter(x=>x<c), above=highs.filter(x=>x>c);
+  const support=below.length?Math.max(...below):Math.min(...bars.slice(-20).map(b=>b.l));
+  const resistance=above.length?Math.min(...above):Math.max(...bars.slice(-20).map(b=>b.h));
+  return {close:c, vwap:vwap==null?null:+vwap.toFixed(4), vwap_pct:vwap==null?null:+((c/vwap-1)*100).toFixed(2),
+    trend, mss, fvg, order_block:ob, sweep, support:+support.toFixed(4), resistance:+resistance.toFixed(4)};
+}
+
+function mirofish(bars,k){
+  const closes=bars.map(b=>b.c), ema12=emaSeries(closes,12), ema26=emaSeries(closes,26);
+  const e12=ema12[ema12.length-1], e26=ema26[ema26.length-1];
+  const sma50=sma(closes,50), sma200=sma(closes,closes.length>=200?200:closes.length);
+  const atr=atrSeries(bars), atrNow=atr?atr[atr.length-1]:null, atrSma=atr?sma(atr.filter(v=>v!=null),20):null;
+  const rsi=rsiSeries(bars), rsiNow=rsi?rsi[rsi.length-1]:null;
+  const obv=obvSeries(bars), obvSlope=obv.length>=10?(obv[obv.length-1]-obv[obv.length-10])/(obv[obv.length-10]||1):0;
+  const c=closes[closes.length-1], conf=(x,cap=1)=>+Math.max(0,Math.min(cap,Math.abs(x))).toFixed(3);
+  const A=[];
+  if(closes.length>=11){ const roc=(c/closes[closes.length-11]-1)*100, sig=roc>0.5?'bull':(roc<-0.5?'bear':'neutral');
+    A.push({name:'Momentum',signal:sig,confidence:conf(roc/6),why:`10-bar ROC ${roc>=0?'+':''}${roc.toFixed(1)}%`}); }
+  else A.push({name:'Momentum',signal:'neutral',confidence:0,why:'insufficient bars'});
+  const emaSig=e12>e26?'bull':'bear'; let stack=0; if(sma50&&sma200){ if(c>sma50&&sma50>sma200)stack=1; else if(c<sma50&&sma50<sma200)stack=-1; }
+  const spread=e26?(e12/e26-1):0, tSig=(emaSig==='bull'&&stack>=0)?'bull':((emaSig==='bear'&&stack<=0)?'bear':'neutral');
+  A.push({name:'Trend',signal:tSig,confidence:conf(Math.abs(spread)*40+0.3*stack),why:`EMA12/26 ${e12>e26?'above':'below'}, close vs SMA50 ${sma50?(c>sma50?'>':'<'):'?'} ${(sma50&&sma200)?(sma50>sma200?'>':'<'):''} SMA200`});
+  if(k.vwap){ const d=(c/k.vwap-1)*100; A.push({name:'VWAP',signal:d>0?'bull':'bear',confidence:conf(Math.abs(d)/3),why:`close ${d>=0?'+':''}${d.toFixed(2)}% vs 20-bar VWAP`}); }
+  else A.push({name:'VWAP',signal:'neutral',confidence:0,why:'no VWAP'});
+  if(k.order_block){ const obd=k.order_block.dir, zl=k.order_block.zone[0], zh=k.order_block.zone[1], prox=(c-zl)/(zh-zl||1);
+    A.push({name:'Order Block',signal:(obd==='bull'&&c>zl)?'bull':((obd==='bear'&&c<zh)?'bear':'neutral'),confidence:conf(1-Math.min(Math.abs(prox),1)),why:`near ${obd} OB [${zl.toFixed(2)}–${zh.toFixed(2)}]`}); }
+  else A.push({name:'Order Block',signal:'neutral',confidence:0,why:'no OB'});
+  if(atrNow&&atrSma){ const vr=atrNow/atrSma; let sig='neutral'; if(vr>1.25)sig=sma50?(c>sma50?'bull':'bear'):'bull';
+    A.push({name:'Volatility',signal:sig,confidence:conf((vr-1)/1.5),why:`ATR ${vr.toFixed(2)}x its 20-bar mean`}); }
+  else A.push({name:'Volatility',signal:'neutral',confidence:0,why:'no ATR'});
+  const vSig=obvSlope>0.02?'bull':(obvSlope<-0.02?'bear':'neutral');
+  A.push({name:'Volume',signal:vSig,confidence:conf(Math.abs(obvSlope)*5),why:`OBV 10-bar slope ${obvSlope>=0?'+':''}${obvSlope.toFixed(3)}`});
+  if(rsiNow!=null){ let sig,cf; if(rsiNow>70){sig='bear';cf=(rsiNow-70)/30;} else if(rsiNow<30){sig='bull';cf=(30-rsiNow)/30;} else {sig='neutral';cf=0;}
+    A.push({name:'Mean Rev',signal:sig,confidence:conf(cf),why:`RSI ${rsiNow.toFixed(0)}`}); }
+  else A.push({name:'Mean Rev',signal:'neutral',confidence:0,why:'no RSI'});
+  let st=0; if(k.trend==='up')st+=1; else if(k.trend==='down')st-=1; if(k.mss==='bullish')st+=1; else if(k.mss==='bearish')st-=1;
+  if(k.sweep&&k.sweep.dir==='bull')st+=0.5; else if(k.sweep&&k.sweep.dir==='bear')st-=0.5;
+  A.push({name:'Structure',signal:st>=1?'bull':(st<=-1?'bear':'neutral'),confidence:conf(Math.abs(st)/2.5),why:`trend=${k.trend} mss=${k.mss} sweep=${k.sweep?k.sweep.dir:'—'}`});
+  const bull=A.filter(a=>a.signal==='bull').reduce((s,a)=>s+a.confidence,0), bear=A.filter(a=>a.signal==='bear').reduce((s,a)=>s+a.confidence,0);
+  const nBull=A.filter(a=>a.signal==='bull').length, nBear=A.filter(a=>a.signal==='bear').length, nNeu=A.filter(a=>a.signal==='neutral').length;
+  const consensus=+((bull+0.5)/(bull+bear+1.0)).toFixed(3);
+  return {agents:A, bull:+bull.toFixed(3), bear:+bear.toFixed(3), n_bull:nBull, n_bear:nBear, n_neu:nNeu, consensus, consensus_pct:+(consensus*100).toFixed(1)};
+}
+
+function cone(bars){
+  const c=bars[bars.length-1].c, atr=atrSeries(bars), atrNow=atr?atr[atr.length-1]:null, fr=fwdReturns(bars,5);
+  if(!fr.length||atrNow==null) return null;
+  const mu=fr.reduce((a,b)=>a+b,0)/fr.length, sd=Math.sqrt(fr.reduce((a,x)=>a+(x-mu)**2,0)/fr.length);
+  const bull=fr.filter(x=>x>0.5*sd).length/fr.length, bear=fr.filter(x=>x<-0.5*sd).length/fr.length, base=1-bull-bear;
+  return {sigma_5d:+(sd*100).toFixed(2), bull:+(bull*100).toFixed(1), base:+(base*100).toFixed(1), bear:+(bear*100).toFixed(1),
+    up:+(c*(1+sd)).toFixed(4), down:+(c*(1-sd)).toFixed(4), atr:+atrNow.toFixed(4), atr_pct:+(atrNow/c*100).toFixed(2), horizon_days:5};
+}
+
+function tradeLevels(bars,k,cons){
+  const c=bars[bars.length-1].c, atr=atrSeries(bars), atrNow=atr?atr[atr.length-1]:null, entry=c; let stop=null,target=null,direction;
+  if(cons>=0.60){ direction='LONG';
+    stop=(k.support&&k.support<c)?(atrNow?Math.min(k.support,c-atrNow):k.support):(atrNow?c-atrNow:null);
+    target=(k.resistance&&k.resistance>c)?(atrNow?Math.min(k.resistance,c+3*atrNow):k.resistance):(atrNow?c+2*atrNow:null);
+    if(atrNow&&target&&target<c+atrNow)target=c+atrNow; }
+  else if(cons<=0.40){ direction='SHORT';
+    stop=(k.resistance&&k.resistance>c)?(atrNow?Math.max(k.resistance,c+atrNow):k.resistance):(atrNow?c+atrNow:null);
+    target=(k.support&&k.support<c)?(atrNow?Math.max(k.support,c-3*atrNow):k.support):(atrNow?c-2*atrNow:null);
+    if(atrNow&&target&&target>c-atrNow)target=c-atrNow; }
+  else direction='HOLD';
+  let rr=null;
+  if((direction==='LONG'||direction==='SHORT')&&stop&&target){ const risk=Math.abs(entry-stop),reward=Math.abs(target-entry); rr=risk>0?+(reward/risk).toFixed(2):null;
+    if(direction==='LONG'&&(stop>=entry||target<=entry)){direction='HOLD';rr=null;}
+    else if(direction==='SHORT'&&(stop<=entry||target>=entry)){direction='HOLD';rr=null;}
+    else if(rr!=null&&rr<1.0){direction='HOLD';rr=null;} }
+  return {direction,entry,stop,target,rr};
+}
+
+function conviction(cons,k){ let kick=0; if(k.trend==='up')kick+=4; else if(k.trend==='down')kick-=4; if(k.mss==='bullish')kick+=4; else if(k.mss==='bearish')kick-=4;
+  return Math.max(0,Math.min(100,Math.round(cons*100+kick))); }
+
+function analyzeSymbol(sym,bars){
+  if(!bars||bars.length<60) return null;
+  const k=kronos(bars), mf=mirofish(bars,k), cn=cone(bars), tl=tradeLevels(bars,k,mf.consensus);
+  const prev=bars[bars.length-2]?bars[bars.length-2].c:bars[bars.length-1].c, chg=(bars[bars.length-1].c/prev-1)*100;
+  return {symbol:sym, yahoo:'', currency:'', last:bars[bars.length-1].c, chg_pct:+chg.toFixed(2),
+    kronos:k, mirofish:mf, cone:cn, trade:tl, conviction:conviction(mf.consensus,k), n_bars:bars.length};
+}
+
+async function fetchBinance(sym,limit=200){ const r=await fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${sym}&interval=1d&limit=${limit}`);
+  if(!r.ok){ let m='Binance HTTP '+r.status; try{const e=await r.json(); if(e&&e.msg)m='Binance: '+e.msg;}catch(_){} throw new Error(m); }
+  return (await r.json()).map(k=>({o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]})); }
+async function fetchAlpaca(sym,limit=200){ const r=await fetch(`/api/stocks/klines?symbol=${sym}&timeframe=1d&limit=${limit}`);
+  if(!r.ok){ let m='Stocks API HTTP '+r.status; try{const e=await r.json(); if(e&&e.error)m=e.error;}catch(_){} throw new Error(m); }
+  return (await r.json()).map(b=>({o:+b.open,h:+b.high,l:+b.low,c:+b.close,v:+b.volume})); }
+
+async function fetchLive(){
+  const out=[], sources={};
+  await Promise.all([
+    ...CRYPTO.map(async sym=>{ try{ const r=analyzeSymbol(sym,await fetchBinance(sym)); if(r){out.push(r);sources[sym]='binance';} }catch(e){ sources[sym]='error'; } }),
+    ...EQUITY.map(async sym=>{ try{ const r=analyzeSymbol(sym,await fetchAlpaca(sym)); if(r){out.push(r);sources[sym]='alpaca';} }catch(e){ sources[sym]='error'; } })
+  ]);
+  out.sort((a,b)=>((a.trade.direction!=='HOLD'?0:1)-(b.trade.direction!=='HOLD'?0:1)) || (b.conviction-a.conviction));
+  return {results:out, sources, liveCount:out.length};
+}
+</script>
+<script>
 const DATA = JSON.parse(document.getElementById('data').textContent);
-const results = DATA.results;
+let results = DATA.results;
 const backtest = DATA.backtest;
+let MODE = 'static';
+let SOURCES = {};
+let ASOF = DATA.as_of || '';
+let UNI_SUB = 'Yahoo daily · key-less · 2y';
 
 const CLS = {AAPL:'equity',AMD:'equity',AMZN:'equity',AVGO:'equity',CRWD:'equity',META:'equity',MSFT:'equity',NVDA:'equity',PLTR:'equity',TSLA:'equity',
   BTCUSDT:'crypto',ETHUSDT:'crypto',SOLUSDT:'crypto',LINKUSDT:'crypto',AVAXUSDT:'crypto',DOGEUSDT:'crypto',
@@ -269,7 +427,7 @@ function rowHtml(r,i){
   const chgCls = r.chg_pct>=0?'up':'dn';
   return `<div class="row" onclick="toggle(${i})">
     <span class="rk">${i+1}</span>
-    <span class="sym">${r.symbol}<span class="cls">${CLS[r.symbol]||''}</span></span>
+    <span class="sym">${r.symbol}<span class="cls">${CLS[r.symbol]||''}${r.source==='LIVE'?' · <span style="color:var(--emerald);font-weight:700">LIVE</span>':''}</span></span>
     <span class="px">${fmtPx(r.last,r.symbol)}</span>
     <span class="chg ${chgCls}">${r.chg_pct>=0?'+':''}${fmt(r.chg_pct)}%</span>
     <span class="bias"><span class="pct">${mf.consensus_pct}% ${sigLabel(mf.consensus>=0.6?'bull':mf.consensus<=0.4?'bear':'neutral')}</span>
@@ -289,13 +447,13 @@ function render(){
   const longs = results.filter(r=>r.trade.direction==='LONG').length;
   const shorts = results.filter(r=>r.trade.direction==='SHORT').length;
   const holds = results.filter(r=>r.trade.direction==='HOLD').length;
-  const asOf = DATA.as_of || '—';
+  const asOf = ASOF;
   document.getElementById('asof').textContent = asOf;
   const tb = DATA.trade_backtest;
   const netPF = tb && tb.configs[1] ? tb.configs[1].profit_factor : null;
   const naiveHR = backtest.universe_hit_rate;
   document.getElementById('stats').innerHTML = `
-    <div class="stat"><div class="k">Universe</div><div class="v">${results.length}<small> symbols</small></div><div class="sub">Yahoo daily · key-less · 2y</div></div>
+    <div class="stat"><div class="k">Universe</div><div class="v">${results.length}<small> symbols</small></div><div class="sub">${UNI_SUB}</div></div>
     <div class="stat"><div class="k">Directional setups</div><div class="v">${longs+shorts}<small> / ${results.length}</small></div><div class="sub">${longs} long · ${shorts} short</div></div>
     <div class="stat"><div class="k">No edge (hold)</div><div class="v">${holds}</div><div class="sub">structure or R:R failed</div></div>
     <div class="stat"><div class="k">Net profit factor</div><div class="v" style="color:${netPF>=1?'var(--emerald)':'var(--gold)'}">${netPF!=null?netPF.toFixed(2):'—'}</div><div class="sub">fixed 2:1 · cost 0.05R · naive hit ${(naiveHR*100).toFixed(0)}%</div></div>`;
@@ -340,7 +498,9 @@ function render(){
   }).join('') : '<div class="row" style="cursor:default"><span class="fl">All names pass — no drops this cycle.</span></div>';
 
   document.getElementById('foot').innerHTML =
-    `<b>Methodology (auditable):</b> prices &amp; OHLCV from Yahoo Finance chart API (key-less, daily, ~2y). Kronos levels =
+    `<b>Methodology (auditable):</b> live OHLCV = Binance public klines (crypto, CORS key-less) + Alpaca via
+     <span class="fl">/api/stocks/klines</span> (equity, server-side key). Futures (CL/GC/ES/NQ) have no key-less feed, so they
+     are shown from the snapshot. Kronos levels =
      anchored VWAP (20-bar), Fair Value Gaps (gated &gt;0.3%), order blocks, liquidity sweeps, market-structure shift — all
      standard definitions in <span class="fl">compute_engine.py</span>. MiroFish = 8 independent deterministic models
      (momentum, trend, VWAP, order-block, volatility, volume, mean-reversion, structure), consensus = confidence-weighted vote
@@ -386,7 +546,38 @@ if(location.search.includes('dark')){
   document.querySelector('.tt-icon').textContent = '🌙';
 }
 
-render();
+async function bootstrap(){
+  // merge: live (Binance + Alpaca) where available, snapshot fallback per symbol
+  const snapMap = {};
+  DATA.results.forEach(r => snapMap[r.symbol] = r);
+  const liveMap = {};
+  let nLive = 0;
+  try{
+    const live = await fetchLive();
+    live.results.forEach(r => { liveMap[r.symbol] = r; });
+    nLive = live.results.length;
+    SOURCES = live.sources;
+  }catch(e){ /* stay static */ }
+
+  const merged = ALL_SYMBOLS.map(sym => {
+    const r = liveMap[sym] || snapMap[sym];
+    if(!r) return null;
+    return Object.assign({}, r, { source: liveMap[sym] ? 'LIVE' : 'SNAP' });
+  }).filter(Boolean);
+  merged.sort((a,b)=>((a.trade.direction!=='HOLD'?0:1)-(b.trade.direction!=='HOLD'?0:1)) || (b.conviction-a.conviction));
+
+  results = merged;
+  MODE = nLive > 0 ? 'live' : 'static';
+  const nSnap = merged.length - nLive;
+  ASOF = nLive > 0 ? `live · ${new Date().toLocaleString()} (${nLive} live / ${nSnap} snapshot)` : (DATA.as_of || '');
+  UNI_SUB = nLive > 0 ? `${merged.length} symbols · ${nLive} live · ${nSnap} snapshot` : 'Yahoo daily · key-less · 2y';
+  const badge = document.getElementById('modebadge');
+  badge.textContent = nLive > 0 ? `LIVE ×${nLive}` : 'STATIC SNAPSHOT';
+  badge.style.color = 'var(--emerald)';
+  render();
+}
+
+bootstrap();
 </script>
 </body>
 </html>
