@@ -374,6 +374,12 @@ export interface Signal {
   /** Quant publish-only {name, weight, score, note?}[]. */
   factor_breakdown?: FactorBreakdown[];
   /**
+   * Optional ML ranking inputs (future). May arrive on the signal or a
+   * side-channel `ensemble_features` object. Not required until the ML PR.
+   */
+  ensemble_score?: number;
+  rank_components?: RankComponents;
+  /**
    * Quant PR #2 close fields — live on GET /signals, GET /signals/{id},
    * and WS `signal.upsert` / `signal.status`. Do not compute on FE.
    * All three are null on ACTIVE/CANCELLED; set on TP_HIT/SL_HIT.

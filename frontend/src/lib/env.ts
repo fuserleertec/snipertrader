@@ -11,7 +11,9 @@
  * List / ranking placeholders (Quant :8001 until ML/DE own them):
  *   GET /picks/ensemble          → top 10  (as_of_ts_ms, refresh_sec=900, items[])
  *   GET /picks/categorized       → ≤20     (?asset_class=&limit=20)
- *   GET /signals                 → multi-symbol desk (?symbols= ≤20 + filters)
+ *   GET /signals                 → multi-symbol desk (~20; ?symbols= + filters;
+ *                                  keep contributing_factors + factor_breakdown;
+ *                                  optional ensemble_score / rank_components)
  *   GET /signals/history         → same filters; falls back to GET /signals
  *   GET /performance/summary     → optional ?symbols= (≤20)
  * live_trading is never flipped here. Paper / mocks only.

@@ -27,6 +27,8 @@ export function SignalDetail({
       trigger_event_ids: signal.trigger_event_ids,
       contributing_factors: ids,
       factor_breakdown: rows,
+      ensemble_score: signal.ensemble_score,
+      rank_components: signal.rank_components,
     };
     try {
       await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
@@ -73,7 +75,17 @@ export function SignalDetail({
         <code>sum(factor_breakdown.score)</code> ≈ conviction ({conviction.toFixed(0)}). Chart join is{" "}
         <code>trigger_event_ids</code> only
         {signal.trigger_event_ids.length ? `: ${signal.trigger_event_ids.join(", ")}` : " (none)"}.
+        {signal.ensemble_score != null
+          ? ` Optional ranking: ensemble_score ${signal.ensemble_score.toFixed(3)}.`
+          : ""}
       </div>
+      {signal.rank_components && (
+        <div className="sec-sub">
+          rank_components · sq {signal.rank_components.setup_quality.toFixed(2)} · risk{" "}
+          {signal.rank_components.risk_adjusted.toFixed(2)} · kz {signal.rank_components.kill_zone.toFixed(2)} · vol{" "}
+          {signal.rank_components.volume.toFixed(2)} · fresh {signal.rank_components.freshness.toFixed(2)}
+        </div>
+      )}
       <div className="pick-tags" style={{ marginTop: 10 }}>
         {ids.map((id) => (
           <span key={id} className="ptag">

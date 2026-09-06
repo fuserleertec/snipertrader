@@ -4,7 +4,26 @@ import type { Signal, SignalListQuery, SignalListResponse, SignalStatus, SignalW
 import { deskSymbolList } from "./lists";
 import { getUniverse } from "./universe";
 
+function requestedSymbols(query: SignalListQuery): string[] | undefined {
+  if (query.symbols?.length) {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const raw of query.symbols) {
+      const sym = raw.trim().toUpperCase();
+      if (!sym || seen.has(sym)) continue;
+      seen.add(sym);
+      out.push(sym);
+      if (out.length >= DESK_SYMBOL_LIMIT) break;
+    }
+    return out.length ? out : undefined;
+  }
+  if (query.symbol) return [query.symbol.toUpperCase()];
+  return undefined;
+}
+
 function matches(signal: Signal, query: SignalListQuery): boolean {
+  const symbols = requestedSymbols(query);
+  if (symbols && !symbols.includes(signal.symbol)) return false;
   if (query.symbol && signal.symbol !== query.symbol) return false;
   if (query.status && signal.status !== query.status) return false;
   if (query.setup_type && signal.setup_type !== query.setup_type) return false;
@@ -32,7 +51,7 @@ export function mockGetSignal(id: string, lastPrice: number): Signal | null {
 }
 
 export function mockListSignals(query: SignalListQuery, lastPrice: number): SignalListResponse {
-  const symbols = query.symbol ? [query.symbol] : deskSymbolList().slice(0, DESK_SYMBOL_LIMIT);
+  const symbols = requestedSymbols(query) ?? deskSymbolList().slice(0, DESK_SYMBOL_LIMIT);
   const pool = collectDesk(lastPrice, symbols);
   const items = pool
     .filter((s) => matches(s, query))
@@ -94,6 +113,10 @@ export function startMockSignalStream(
         : book.fvgs[0]
           ? [book.fvgs[0].id]
           : [],
+      contributing_factors: template.contributing_factors,
+      factor_breakdown: template.factor_breakdown,
+      ensemble_score: template.ensemble_score,
+      rank_components: template.rank_components,
     };
     live.set(next.id, next);
     onEvent({ type: "signal.upsert", signal: next });

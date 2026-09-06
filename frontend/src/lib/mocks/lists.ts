@@ -22,7 +22,7 @@ import type {
   SetupType,
   UniverseTopResponse,
 } from "../types";
-import { MOCK_NOW } from "./universe";
+import { getUniverse, MOCK_NOW } from "./universe";
 
 /**
  * Provisional paper scan set (DE-authoritative later). Not a P0/P4 UI array —
@@ -102,24 +102,34 @@ export function mockEnsemblePicks(cycle = 0, now = MOCK_NOW): EnsemblePicksRespo
   const asOf = now + cycle * LIST_REFRESH_SEC * 1000;
   const ranked: EnsemblePickItem[] = SETUP_UNIVERSE.map((row) => {
     const seed = `${row.symbol}:${cycle}:ens`;
-    const rank_components = components(seed);
-    const ensemble_score = scoreOf(rank_components);
-    const setup = pickSetup(`${seed}:st`);
-    const best_confidence = +Math.min(0.92, 0.55 + ensemble_score * 0.4).toFixed(3);
+    const signals = getUniverse(row.symbol, seedPrice(row.symbol)).signals.filter((s) => s.status === "ACTIVE");
+    const best = [...signals].sort(
+      (a, b) => (b.ensemble_score ?? b.confidence) - (a.ensemble_score ?? a.confidence),
+    )[0];
+    const fromSignal = best?.rank_components ?? components(seed);
+    const mix = unit(seed);
+    const ensemble_score = +(
+      (best?.ensemble_score ?? scoreOf(fromSignal)) * 0.62 +
+      mix * 0.38
+    ).toFixed(3);
+    const setups = [...new Set(signals.map((s) => s.setup_type))].slice(0, 2);
+    const best_confidence = best?.confidence ?? +Math.min(0.92, 0.55 + ensemble_score * 0.4).toFixed(3);
     return {
       rank: 0,
       symbol: row.symbol,
       asset_class: row.asset_class,
       score: ensemble_score,
-      setup_types: [setup, pickSetup(`${seed}:st2`)].filter((v, i, a) => a.indexOf(v) === i),
+      setup_types: setups.length ? setups : [pickSetup(`${seed}:st`)],
       confidence: best_confidence,
       ensemble_score,
-      rank_components,
-      contributing_factors: [setup, "volume_confirm", "trend_align"].slice(0, 1 + (hash(seed) % 3)),
+      rank_components: fromSignal,
+      contributing_factors: best?.contributing_factors?.length
+        ? best.contributing_factors
+        : [setups[0] ?? pickSetup(seed), "volume_confirm", "trend_align"].slice(0, 1 + (hash(seed) % 3)),
       best_confidence,
     };
   })
-    .sort((a, b) => b.ensemble_score - a.ensemble_score || a.symbol.localeCompare(b.symbol))
+    .sort((a, b) => (b.ensemble_score ?? b.score) - (a.ensemble_score ?? a.score) || a.symbol.localeCompare(b.symbol))
     .slice(0, ENSEMBLE_LIMIT)
     .map((row, i) => ({ ...row, rank: i + 1 }));
 

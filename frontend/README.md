@@ -205,9 +205,13 @@ pattern streams. REST base `http://localhost:8001`. Docs: `/docs`.
 
 REST:
 
-- `GET /signals?symbol=&status=&setup_type=&from_ts=&to_ts=&limit=&cursor=` →
+- `GET /signals?symbol=&symbols=&status=&setup_type=&from_ts=&to_ts=&limit=&cursor=` →
   `{ "items": [ Signal ], "next_cursor": string|null }`
-  History is this same list (no separate history endpoint).
+  Multi-symbol desk (~20). `symbols=ES,CL,…` optional. History is this same
+  list (client also tries `GET /signals/history`). Keep
+  `contributing_factors` + `factor_breakdown`. Optional future ranking
+  inputs: `ensemble_score` / `rank_components` on the signal or
+  `ensemble_features` side channel (ignored until the ML PR).
 - `GET /signals/{id}` → `Signal`
 - `GET /performance/summary` → Quant PR #2 at `:8001` (flat envelope +
   `by_setup` product keys). Same-origin rewrite, then mock fallback.

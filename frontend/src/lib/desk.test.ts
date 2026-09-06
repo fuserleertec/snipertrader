@@ -5,6 +5,7 @@ import { cardsForTab, chartSymbolsForTab, clampRefreshSec, setupFilterType, uniq
 import { joinSymbols, normalizeCategorizedPicks, normalizeEnsemblePicks, normalizeUniverseTop, signalListPath } from "./http";
 import { mockCategorizedPicks, mockDroppedPicks, mockEnsemblePicks, mockUniverseTop, SETUP_UNIVERSE } from "./mocks/lists";
 import { mockListSignals } from "./mocks/signals";
+import { normalizeSignal } from "./signals";
 import { pinSetupCards } from "./setupView";
 import type { Signal } from "./types";
 
@@ -213,16 +214,57 @@ describe("multi-symbol Quant clients", () => {
 });
 
 describe("multi-symbol history", () => {
-  it("lists signals across the desk (not BTCUSDT-only)", () => {
+  it("lists denser setup_signals across ~20 symbols", () => {
     const { items } = mockListSignals({ limit: 200 }, 0);
     const symbols = uniqueSymbols(items);
-    assert.ok(symbols.length >= 8);
-    assert.ok(symbols.includes("ES"));
+    assert.ok(symbols.length >= 18);
+    assert.ok(symbols.length <= 20);
+    assert.ok(["ES", "CL", "GC", "NQ"].every((s) => symbols.includes(s)));
     assert.ok(symbols.includes("BTCUSDT") || symbols.includes("ETHUSDT"));
+    assert.ok(items.every((s) => (s.contributing_factors?.length ?? 0) >= 1));
+    assert.ok(items.every((s) => (s.factor_breakdown?.length ?? 0) >= 1));
+    assert.ok(items.every((s) => typeof s.ensemble_score === "number"));
+    assert.ok(items.every((s) => s.rank_components && typeof s.rank_components.setup_quality === "number"));
     const futures = mockListSignals({ asset_class: "futures", status: "ACTIVE", limit: 80 }, 0).items;
     assert.ok(futures.every((s) => s.asset_class === "futures"));
     const stocks = mockListSignals({ asset_class: "stocks", limit: 80 }, 0).items;
     assert.ok(stocks.every((s) => s.asset_class === "equity"));
+    const scoped = mockListSignals({ symbols: ["ES", "CL"], limit: 80 }, 0).items;
+    assert.ok(scoped.every((s) => s.symbol === "ES" || s.symbol === "CL"));
+  });
+
+  it("keeps optional ensemble ranking on signal or ensemble_features side channel", () => {
+    const base = mockListSignals({ symbol: "ES", limit: 1 }, 0).items[0];
+    assert.ok(base);
+    const direct = normalizeSignal({ ...base, ensemble_score: 0.42, rank_components: undefined });
+    assert.equal(direct?.ensemble_score, 0.42);
+    const side = normalizeSignal({
+      ...base,
+      ensemble_score: undefined,
+      rank_components: undefined,
+      ensemble_features: {
+        ensemble_score: 0.55,
+        rank_components: { setup_quality: 0.1, risk_adjusted: 0.2, kill_zone: 0.3, volume: 0.4, freshness: 0.5 },
+      },
+    });
+    assert.equal(side?.ensemble_score, 0.55);
+    assert.equal(side?.rank_components?.freshness, 0.5);
+    const bare = normalizeSignal({
+      id: "s1",
+      symbol: "BTCUSDT",
+      setup_type: "sweep_reclaim",
+      side: "long",
+      ts_ms: 1,
+      entry: 1,
+      stop: 0.9,
+      target: 1.2,
+      contributing_factors: ["liquidity_sweep"],
+      factor_breakdown: [{ name: "liquidity_sweep", weight: 15, score: 80 }],
+    });
+    assert.equal(bare?.ensemble_score, undefined);
+    assert.equal(bare?.rank_components, undefined);
+    assert.deepEqual(bare?.contributing_factors, ["liquidity_sweep"]);
+    assert.equal(bare?.factor_breakdown?.[0]?.name, "liquidity_sweep");
   });
 });
 

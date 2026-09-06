@@ -1,5 +1,15 @@
-import { inferAssetClass, SESSION_TYPES } from "./constants";
-import type { FactorBreakdown, SessionType, Signal, SignalSide, SignalStatus, SignalWsEvent, SetupType, Timeframe } from "./types";
+import { DESK_SYMBOL_LIMIT, inferAssetClass, SESSION_TYPES } from "./constants";
+import type {
+  FactorBreakdown,
+  RankComponents,
+  SessionType,
+  Signal,
+  SignalSide,
+  SignalStatus,
+  SignalWsEvent,
+  SetupType,
+  Timeframe,
+} from "./types";
 
 function fmtPx(n: number): string {
   return n >= 1000 ? n.toFixed(1) : n.toFixed(2);
@@ -74,6 +84,43 @@ function optionalNum(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+function finiteNum(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+/** Signal body or side-channel `ensemble_features`. */
+function readEnsembleChannel(raw: Record<string, unknown>): {
+  ensemble_score?: number;
+  rank_components?: RankComponents;
+} {
+  const side =
+    raw.ensemble_features && typeof raw.ensemble_features === "object"
+      ? (raw.ensemble_features as Record<string, unknown>)
+      : {};
+  const score = finiteNum(raw.ensemble_score) ?? finiteNum(side.ensemble_score);
+  const src =
+    (raw.rank_components && typeof raw.rank_components === "object"
+      ? (raw.rank_components as Record<string, unknown>)
+      : null) ??
+    (side.rank_components && typeof side.rank_components === "object"
+      ? (side.rank_components as Record<string, unknown>)
+      : null);
+  if (score == null && !src) return {};
+  const rank_components = src
+    ? {
+        setup_quality: numOr(src.setup_quality, 0),
+        risk_adjusted: numOr(src.risk_adjusted, 0),
+        kill_zone: numOr(src.kill_zone, 0),
+        volume: numOr(src.volume, 0),
+        freshness: numOr(src.freshness, 0),
+      }
+    : undefined;
+  return {
+    ...(score != null ? { ensemble_score: score } : {}),
+    ...(rank_components ? { rank_components } : {}),
+  };
+}
+
 function readSessionType(value: unknown): SessionType | null | undefined {
   if (value == null) return value === null ? null : undefined;
   if (typeof value === "string" && (SESSION_TYPES as string[]).includes(value)) {
@@ -116,6 +163,7 @@ export function normalizeSignal(value: unknown): Signal | null {
     position_size: optionalNum(s.position_size),
     contributing_factors: factors,
     factor_breakdown: breakdown,
+    ...readEnsembleChannel(s),
     realized_r: statusClosed(s.status) ? optionalNum(s.realized_r) : null,
     exit_price: statusClosed(s.status) ? optionalNum(s.exit_price) : null,
     closed_ts_ms: statusClosed(s.status) ? optionalNum(s.closed_ts_ms) : null,
@@ -135,5 +183,5 @@ export function isSignalWsEvent(value: unknown): value is SignalWsEvent {
 export function upsertSignal(prev: Signal[], signal: Signal): Signal[] {
   const next = [signal, ...prev.filter((row) => row.id !== signal.id)];
   next.sort((a, b) => b.ts_ms - a.ts_ms);
-  return next.slice(0, 80);
+  return next.slice(0, DESK_SYMBOL_LIMIT * 12);
 }
