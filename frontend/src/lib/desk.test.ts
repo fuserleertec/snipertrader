@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { LIST_REFRESH_SEC, SETUP_FILTERS, SETUP_TYPES, wireAssetClass } from "./constants";
+import { LIST_REFRESH_SEC, SETUP_FILTERS, SETUP_TYPES, TERMINAL_SECTION_IX, wireAssetClass } from "./constants";
 import {
   activeSetupQuery,
   allowedSymbolSet,
@@ -428,6 +428,13 @@ describe("refresh cadence", () => {
     assert.equal(LIST_REFRESH_SEC, 900);
     assert.equal(clampRefreshSec(60), 900);
     assert.equal(clampRefreshSec(1800), 1800);
+  });
+});
+
+describe("terminal layout", () => {
+  it("omits section 06 Execution & Position Management", () => {
+    assert.deepEqual([...TERMINAL_SECTION_IX], ["01", "02", "03", "04", "05", "07", "08"]);
+    assert.ok(!TERMINAL_SECTION_IX.includes("06" as (typeof TERMINAL_SECTION_IX)[number]));
   });
 });
 

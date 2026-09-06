@@ -57,6 +57,8 @@ export const LIST_REFRESH_SEC = 900;
 export const LIST_REFRESH_MS = LIST_REFRESH_SEC * 1000;
 /** Section 07 Recon Audit — hard cap. */
 export const RECON_AUDIT_LIMIT = 16;
+/** stock_picks layout indices on this terminal. Section 06 Execution is omitted. */
+export const TERMINAL_SECTION_IX = ["01", "02", "03", "04", "05", "07", "08"] as const;
 
 export const TF_MS: Record<Timeframe, number> = {
   "1m": 60_000,
