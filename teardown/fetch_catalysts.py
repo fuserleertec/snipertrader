@@ -11,7 +11,8 @@ import urllib.request
 import urllib.parse
 from datetime import datetime, timezone
 
-EQUITY = ["AAPL", "AMD", "AMZN", "AVGO", "CRWD", "META", "MSFT", "NVDA", "PLTR", "TSLA"]
+EQUITY = ["AAPL", "AMD", "AMZN", "AVGO", "CRWD", "META", "MSFT", "NVDA", "PLTR", "TSLA",
+          "GOOGL", "NFLX", "ADBE", "ORCL", "CRM", "QCOM", "INTC", "TSM", "MU", "COIN"]
 
 UA = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 snipertrader-research@example.com",
       "Accept": "application/json, text/html;q=0.9"}

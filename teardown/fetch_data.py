@@ -10,15 +10,20 @@ import urllib.request
 import urllib.parse
 
 SYMBOLS = {
-    # equities
+    # equities (20)
     "AAPL": "AAPL", "AMD": "AMD", "AMZN": "AMZN", "AVGO": "AVGO",
     "CRWD": "CRWD", "META": "META", "MSFT": "MSFT", "NVDA": "NVDA",
-    "PLTR": "PLTR", "TSLA": "TSLA",
-    # crypto (Yahoo uses USD pairs)
+    "PLTR": "PLTR", "TSLA": "TSLA", "GOOGL": "GOOGL", "NFLX": "NFLX",
+    "ADBE": "ADBE", "ORCL": "ORCL", "CRM": "CRM", "QCOM": "QCOM",
+    "INTC": "INTC", "TSM": "TSM", "MU": "MU", "COIN": "COIN",
+    # crypto (12, Yahoo USD pairs)
     "BTCUSDT": "BTC-USD", "ETHUSDT": "ETH-USD", "SOLUSDT": "SOL-USD",
     "LINKUSDT": "LINK-USD", "AVAXUSDT": "AVAX-USD", "DOGEUSDT": "DOGE-USD",
-    # futures
+    "XRPUSDT": "XRP-USD", "ADAUSDT": "ADA-USD", "DOTUSDT": "DOT-USD",
+    "BNBUSDT": "BNB-USD", "LTCUSDT": "LTC-USD", "ATOMUSDT": "ATOM-USD",
+    # futures (8)
     "CL": "CL=F", "GC": "GC=F", "ES": "ES=F", "NQ": "NQ=F",
+    "HG": "HG=F", "SI": "SI=F", "NG": "NG=F", "ZN": "ZN=F",
 }
 
 RANGE = "2y"

@@ -168,19 +168,16 @@
 <div class="wrap">
 
   <div class="banner">
-    <div class="head">DATA PROVENANCE — WHAT IS REAL, WHAT IS A MODEL <span id="modebadge" style="margin-left:10px;font-family:var(--font-m);font-size:10px;letter-spacing:.06em;padding:3px 10px;border-radius:20px;border:1px solid var(--border2);color:var(--emerald)">STATIC SNAPSHOT</span></div>
-    <div class="leg">
-      <span class="real">REAL · computed from live OHLCV</span>
-      <span class="model">MODEL · deterministic ensemble</span>
-      <span class="absent">options flow / dark pool / tape (key-gated, not present)</span>
-    </div>
-    <p>Prices, change, Kronos structure (VWAP · FVG · order blocks · sweeps · MSS), ATR, the empirical
-       probability cone, trade levels, and the walk-forward backtest are all <b>computed from real
-       OHLCV</b> (live Binance + Alpaca 1h; snapshot Yahoo daily). The <b>MiroFish swarm is a deterministic 8-model ensemble</b> —
-       every vote is a real formula over the same data, not a random draw — but it is a model, not a live
-       tape of traders. There is <b>no order-flow / dark-pool / options data</b> here and none is implied.
-       <b>Data as of</b>: <span id="asof"></span> — static snapshot regenerated offline with
-       <span style="font-family:var(--font-m)">teardown/fetch_data.py → compute_engine.py → build_html.py</span>.</p>
+    <div class="head">ABOUT THIS TERMINAL <span id="modebadge" style="margin-left:10px;font-family:var(--font-m);font-size:10px;letter-spacing:.06em;padding:3px 10px;border-radius:20px;border:1px solid var(--border2);color:var(--emerald)">STATIC SNAPSHOT</span></div>
+    <p>Welcome to the SniperTrader market desk. This page watches the largest stocks, major
+       cryptocurrencies, and key futures, reads each one's recent price action, and surfaces the setups
+       with the strongest technical case, ranked by conviction. Click any name to open the full reasoning
+       behind the call — how the market structure is shaping up, how confident the read is, and where a
+       sensible entry, stop, and target would sit.</p>
+    <p style="margin:0;color:var(--muted);font-size:13px">Everything here is calculated from real, current
+       market data, refreshed live on the page. <b style="color:var(--gold)">This is an educational study
+       tool — it is not financial advice.</b> &nbsp; <span style="font-family:var(--font-m);font-size:11px">Data as of
+       <span id="asof"></span>.</span></p>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -213,9 +210,9 @@
      equity  → /api/stocks/klines (Alpaca, server-side key)
      futures → no key-less feed (excluded from the live universe)
    ════════════════════════════════════════════════════════════════════════ */
-const CRYPTO = ['BTCUSDT','ETHUSDT','SOLUSDT','LINKUSDT','AVAXUSDT','DOGEUSDT'];
-const EQUITY = ['AAPL','AMD','AMZN','AVGO','CRWD','META','MSFT','NVDA','PLTR','TSLA'];
-const FUTURES = ['CL','GC','ES','NQ'];
+const CRYPTO = ['BTCUSDT','ETHUSDT','SOLUSDT','LINKUSDT','AVAXUSDT','DOGEUSDT','XRPUSDT','ADAUSDT','DOTUSDT','BNBUSDT','LTCUSDT','ATOMUSDT'];
+const EQUITY = ['AAPL','AMD','AMZN','AVGO','CRWD','META','MSFT','NVDA','PLTR','TSLA','GOOGL','NFLX','ADBE','ORCL','CRM','QCOM','INTC','TSM','MU','COIN'];
+const FUTURES = ['CL','GC','ES','NQ','HG','SI','NG','ZN'];
 const ALL_SYMBOLS = [...EQUITY, ...CRYPTO, ...FUTURES];
 
 function sma(v,n){ if(v.length<n) return null; let s=0; for(let i=v.length-n;i<v.length;i++) s+=v[i]; return s/n; }
@@ -368,9 +365,10 @@ let SOURCES = {};
 let ASOF = DATA.as_of || '';
 let UNI_SUB = 'Yahoo daily · key-less · 2y';
 
-const CLS = {AAPL:'equity',AMD:'equity',AMZN:'equity',AVGO:'equity',CRWD:'equity',META:'equity',MSFT:'equity',NVDA:'equity',PLTR:'equity',TSLA:'equity',
-  BTCUSDT:'crypto',ETHUSDT:'crypto',SOLUSDT:'crypto',LINKUSDT:'crypto',AVAXUSDT:'crypto',DOGEUSDT:'crypto',
-  CL:'futures',GC:'futures',ES:'futures',NQ:'futures'};
+const CLS = {};
+EQUITY.forEach(s => CLS[s] = 'equity');
+CRYPTO.forEach(s => CLS[s] = 'crypto');
+FUTURES.forEach(s => CLS[s] = 'futures');
 
 const fmt = (n, dec=2) => (n==null?'—':Number(n).toFixed(dec));
 const fmtPx = (n, sym) => (n==null?'—': Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}));
