@@ -86,9 +86,12 @@ summary = {
                "factor at zero cost (a cost-free artifact) that collapses to ~breakeven at a realistic "
                "0.05R round-trip cost — daily 2y ≈ PF 1.03, intraday 1h ≈ PF 1.05, both within noise. "
                "The edge concentrates in ~5 symbols while roughly half the universe loses money, and "
-               "structure-anchored R:R is a net loser on both timeframes. Switching to intraday did NOT "
-               "create alpha — the next lever is better inputs (catalyst overlays like SEC Form 4 / "
-               "earnings, or a focused single hypothesis) rather than another timeframe.",
+               "structure-anchored R:R is a net loser on both timeframes. Catalyst overlays (SEC EDGAR): "
+               "post-earnings-filing drift shows a TENTATIVE signal — PF ~1.16 net at ≤7 days after a "
+               "10-K/10-Q filing (253 trades, in-sample, underpowered — a hypothesis, not proven edge). "
+               "Insider Form 4 shows ZERO open-market purchases across the universe in 30d (insiders are "
+               "net sellers, mostly scheduled 10b5-1 / compensation). Next: validate the drift out-of-sample "
+               "with more symbols + the actual 8-K earnings-release date (not the lagged filing date).",
 }
 
 with open("/Users/snipertrader/snipertrader/teardown/backtest_summary.json", "w") as f:

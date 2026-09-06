@@ -9,6 +9,7 @@ OUT_LOCAL = "/Users/snipertrader/snipertrader/teardown/terminal.html"
 RES = "/Users/snipertrader/snipertrader/teardown/results.json"
 RAW = "/Users/snipertrader/snipertrader/teardown/raw_ohlcv.json"
 SUM = "/Users/snipertrader/snipertrader/teardown/backtest_summary.json"
+CAT = "/Users/snipertrader/snipertrader/teardown/catalysts.json"
 
 with open(RES) as f:
     res = json.load(f)
@@ -16,6 +17,8 @@ with open(RAW) as f:
     raw = json.load(f)
 with open(SUM) as f:
     summary = json.load(f)
+with open(CAT) as f:
+    res["catalysts"] = json.load(f)
 res["trade_backtest"] = summary
 
 # human-readable as-of from the latest regularMarketTime across symbols

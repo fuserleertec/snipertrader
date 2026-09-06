@@ -384,6 +384,27 @@ function agentRows(agents){
     <span class="wh">${a.why}</span></div>`).join('');
 }
 
+function earnDaysAgo(cat){
+  const d = cat && cat.earnings_dates && cat.earnings_dates[0];
+  if(!d) return '—';
+  const days = Math.round((Date.now() - new Date(d + 'T00:00:00').getTime()) / 86400000);
+  return `${d} · ${days}d ago`;
+}
+
+function catalystBox(r){
+  const cat = DATA.catalysts && DATA.catalysts[r.symbol];
+  if(!cat || !cat.insider) return '';
+  const ins = cat.insider;
+  return `<div class="dbox">
+    <h4>Catalyst — SEC EDGAR (key-less)</h4>
+    <div class="lv"><span class="n">open-market buys (P)</span><span class="v ${ins.buys>0?'up':'fl'}">${ins.buys}</span></div>
+    <div class="lv"><span class="n">open-market sells (S)</span><span class="v ${ins.sells>0?'dn':'fl'}">${ins.sells}</span></div>
+    <div class="lv"><span class="n">awards (A) / disposition (D)</span><span class="v">${ins.awards} / ${ins.dispositions}</span></div>
+    <div class="lv"><span class="n">insider score (30d)</span><span class="v">${ins.score.toFixed(2)}</span></div>
+    <div class="lv"><span class="n">last 10-K / 10-Q</span><span class="v">${earnDaysAgo(cat)}</span></div>
+  </div>`;
+}
+
 function detailHtml(r){
   const k=r.kronos, mf=r.mirofish, c=r.cone, t=r.trade;
   return `<div class="detail">
@@ -415,6 +436,7 @@ function detailHtml(r){
         <div class="lv"><span class="n">trade</span><span class="v">${t.direction}${t.rr?' @ R:R '+t.rr:''}</span></div>
         <div class="lv"><span class="n">entry / stop / target</span><span class="v">${fmtPx(t.entry,r.symbol)} / ${fmtPx(t.stop,r.symbol)} / ${fmtPx(t.target,r.symbol)}</span></div>
       </div>
+      ${catalystBox(r)}
     </div>
   </div>`;
 }
