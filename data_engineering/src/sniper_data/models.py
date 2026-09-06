@@ -3,7 +3,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 SCHEMA_VERSION = "1.1"
@@ -180,6 +180,81 @@ class OrderBlock(BaseModel):
     origin_close: float | None = None
 
 
+SetupType = Literal[
+    "sweep_reclaim",
+    "fvg_entry",
+    "mss_break",
+    "order_block",
+    "sweep_mss",
+    "po3_judas",
+    "sd_extension_fade",
+    "vwap_pullback_cont",
+    "avwap_ob_confluence",
+]
+
+RISK_TIMEFRAMES = ("1m", "5m", "15m")
+RiskTimeframe = Literal["1m", "5m", "15m"]
+
+# Exact POST /risk/validate body. Never include id / ensemble / factors.
+RISK_VALIDATE_FIELDS = (
+    "schema_version",
+    "symbol",
+    "asset_class",
+    "setup_type",
+    "side",
+    "confidence",
+    "ref_vwap",
+    "ref_session",
+    "ts_ms",
+    "entry",
+    "stop",
+    "target",
+    "timeframe",
+    "trigger_event_ids",
+    "session_type",
+    "proposed_position_size",
+)
+
+ContributingFactor = Literal[
+    "liquidity_sweep",
+    "mss",
+    "fvg",
+    "order_block",
+    "vwap_reclaim",
+    "vwap_band_extension",
+    "vwap_pullback",
+    "first_touch",
+    "low_volume",
+    "volume_confirm",
+    "rejection_candle",
+    "engulfing",
+    "avwap",
+    "htf_ob",
+    "kill_zone",
+    "multi_pattern",
+    "trend_align",
+]
+
+
+class FactorBreakdownRow(BaseModel):
+    """Publish-only explainability row. ``sum(score)`` ≈ conviction (0–100)."""
+
+    name: ContributingFactor
+    weight: float
+    score: float
+    note: str | None = None
+
+
+class RankComponents(BaseModel):
+    """Publish-only ensemble parts (0–100). Omit on POST /risk/validate."""
+
+    setup_quality: float
+    confluence: float
+    kill_zone: float
+    volume: float
+    freshness: float
+
+
 class SetupSignal(BaseModel):
     schema_version: Literal["1.1"] = SCHEMA_VERSION
     id: str
@@ -191,7 +266,53 @@ class SetupSignal(BaseModel):
     ref_vwap: float | None = None
     ref_session: str | None = None
     ts_ms: int
+    entry: float | None = None
+    stop: float | None = None
+    target: float | None = None
+    timeframe: RiskTimeframe | None = None
     trigger_event_ids: list[str] | None = None
+    session_type: SessionType | None = None
+    position_size: float | None = None
+    status: Literal["ACTIVE", "TP_HIT", "SL_HIT", "CANCELLED"] | None = None
+    contributing_factors: list[ContributingFactor] | None = None
+    factor_breakdown: list[FactorBreakdownRow] | None = None
+    ensemble_score: float | None = Field(default=None, ge=0, le=100)
+    rank_components: RankComponents | None = None
+    category: Literal["crypto", "equity", "futures"] | None = None
+
+    @field_validator("ensemble_score")
+    @classmethod
+    def _score_range(cls, value: float | None) -> float | None:
+        if value is None:
+            return value
+        return max(0.0, min(100.0, float(value)))
+
+
+class RiskValidateRequest(BaseModel):
+    """POST /risk/validate candidate. ``id`` is omitted on purpose."""
+
+    schema_version: Literal["1.1"] = SCHEMA_VERSION
+    symbol: str
+    asset_class: AssetClass
+    setup_type: SetupType
+    side: Literal["long", "short"]
+    ts_ms: int
+    entry: float
+    stop: float
+    target: float
+    timeframe: RiskTimeframe
+    trigger_event_ids: list[str]
+    confidence: float | None = None
+    ref_vwap: float | None = None
+    ref_session: str | None = None
+    session_type: SessionType | None = None
+    proposed_position_size: float | None = None
+
+
+class RiskValidateResponse(BaseModel):
+    approved: bool
+    reason: str
+    adjusted_position_size: float | None = None
 
 
 # ── Phase 2 wire models (NO schema_version — exact Redis / Kafka payloads) ──

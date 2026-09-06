@@ -241,3 +241,42 @@ def record_outlier_tick(symbol: str) -> None:
 
 def record_publish(topic: str, elapsed_s: float) -> None:
     PUBLISH_SECONDS.labels(topic).observe(elapsed_s)
+
+
+SETUP_LATENCY = Histogram(
+    "sniper_setup_detection_latency_seconds",
+    "Setup detector wall time",
+    ["setup"],
+)
+SETUP_CANDIDATES = Counter(
+    "sniper_setup_candidates_total",
+    "Setup candidates produced",
+    ["setup_type", "side"],
+)
+SETUP_APPROVED = Counter(
+    "sniper_setup_approved_total",
+    "Risk-approved setup_signals published",
+    ["setup_type"],
+)
+SETUP_REJECTED = Counter(
+    "sniper_setup_rejected_total",
+    "Risk-rejected setup candidates",
+    ["setup_type", "reason"],
+)
+
+
+def record_setup_latency(setup: str, elapsed_s: float) -> None:
+    SETUP_LATENCY.labels(setup).observe(elapsed_s)
+
+
+def record_setup_candidate(setup_type: str, side: str) -> None:
+    SETUP_CANDIDATES.labels(setup_type, side).inc()
+
+
+def record_setup_approved(setup_type: str) -> None:
+    SETUP_APPROVED.labels(setup_type).inc()
+
+
+def record_setup_rejected(setup_type: str, reason: str) -> None:
+    label = (reason or "unknown")[:64]
+    SETUP_REJECTED.labels(setup_type, label).inc()

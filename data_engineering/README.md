@@ -12,8 +12,10 @@ paths. `LIVE_TRADING=true` is ignored.
 
 ## Multi-asset universe — authoritative contract for ML / FE
 
-**DE owns the universe.** ML / FE should swap off provisional
-`SETUP_UNIVERSE` and consume these two surfaces.
+**DE owns the universe.** ML detectors have **swapped off** provisional
+`SETUP_UNIVERSE`. Scan / ranking reads `GET /v1/universe/top?limit=10|20`
+(object rows). `SETUP_UNIVERSE` is offline fallback only when DE HTTP
+and Redis (`universe:top` / `universe:active`) are unreachable.
 
 ### Redis `universe:active` + `GET /v1/universe`
 

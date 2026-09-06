@@ -409,6 +409,170 @@ class Runtime:
                 continue
 
 
+async def run_pattern_replay() -> dict[str, Any]:
+    """Feed locked ICT fixtures through in-memory stores (no Docker / brokers)."""
+    from sniper_data.bus.kafka import InMemoryBus
+    from sniper_data.bus.redis_store import InMemoryStateStore
+    from sniper_data.pattern_detection.engine import PatternEngine
+    from sniper_data.pattern_detection.fixtures import (
+        buy_side_sweep_sequence,
+        fvg_create_and_fill,
+        london_session,
+        mss_after_sell_sweep_bars,
+        order_block_displacement,
+        sell_side_sweep_sequence,
+        swing_high_sequence,
+        swing_low_sequence,
+    )
+
+    bus = InMemoryBus()
+    store = InMemoryStateStore()
+    stats: dict[str, int] = {}
+
+    async def _run(name: str, setup) -> None:
+        engine = PatternEngine(store, bus, swing_lookback=2)
+        await setup(engine)
+        for key, value in engine.snapshot().items():
+            stats[key] = stats.get(key, 0) + value
+        log.info("replay %s → %s", name, engine.snapshot())
+
+    async def _sweeps(engine: PatternEngine) -> None:
+        engine.sweep.on_session(london_session())
+        for b in sell_side_sweep_sequence(sweep_volume=0.01):
+            await engine.on_bar(b)
+        engine.sweep.on_session(london_session())
+        for b in buy_side_sweep_sequence(sweep_volume=0.01):
+            await engine.on_bar(b)
+
+    async def _fvg(engine: PatternEngine) -> None:
+        for b in fvg_create_and_fill():
+            await engine.on_bar(b)
+
+    async def _ob(engine: PatternEngine) -> None:
+        for b in order_block_displacement():
+            await engine.on_bar(b)
+
+    async def _mss(engine: PatternEngine) -> None:
+        sweep, bars = mss_after_sell_sweep_bars()
+        engine.mss.on_sweep(sweep)
+        for b in bars:
+            await engine.on_bar(b)
+
+    async def _swings(engine: PatternEngine) -> None:
+        for b in swing_high_sequence(lookback=2):
+            await engine.on_bar(b)
+        for b in swing_low_sequence(lookback=2):
+            await engine.on_bar(b)
+
+    await _run("sweep", _sweeps)
+    await _run("fvg", _fvg)
+    await _run("order_block", _ob)
+    await _run("mss", _mss)
+    await _run("swings", _swings)
+    return {
+        "stats": stats,
+        "topics": {t: [r["value"] for r in bus.topics[t]] for t in bus.topics},
+        "redis_keys": sorted(store.data),
+    }
+
+
+async def run_anchor_wiring_demo() -> dict[str, Any]:
+    """In-memory swing → ``anchor_events`` → DE AVWAP Redis key → ML read-back."""
+    from sniper_data.avwap import persist_avwap, register_anchor
+    from sniper_data.bus.kafka import InMemoryBus
+    from sniper_data.bus.redis_store import InMemoryStateStore
+    from sniper_data.models import AssetClass
+    from sniper_data.pattern_detection.anchors import ANCHOR_TOPIC, to_anchor_payload
+    from sniper_data.pattern_detection.context import get_avwap, get_kill_zone, get_volume_profile
+    from sniper_data.pattern_detection.engine import PatternEngine
+    from sniper_data.pattern_detection.fixtures import SYM, swing_high_sequence
+
+    bus = InMemoryBus()
+    store = InMemoryStateStore()
+    engine = PatternEngine(store, bus, swing_lookback=2)
+    avwap = AnchoredVWAPEngine()
+
+    async def _on_anchor(payload: dict) -> None:
+        req = AnchorRegistration.model_validate(payload)
+        await register_anchor(avwap, store, req)
+
+    bus.subscribe(ANCHOR_TOPIC, _on_anchor)
+
+    for b in swing_high_sequence(lookback=2):
+        await engine.on_bar(b)
+
+    events = [r["value"] for r in bus.topics[ANCHOR_TOPIC]]
+    if not events:
+        raise RuntimeError("swing high fixture did not publish anchor_events")
+    first = events[0]
+    to_anchor_payload(AnchorRegistration.model_validate(first))
+
+    last_bar = swing_high_sequence(lookback=2)[-1]
+    ts = last_bar.close_ts_ms
+    for i, (px, vol) in enumerate(((118.0, 10.0), (119.0, 20.0), (117.5, 30.0))):
+        snaps = avwap.on_tick(SYM, px, vol, ts + i + 1, AssetClass.CRYPTO)
+        for snap in snaps:
+            await persist_avwap(store, snap, avwap.acc_payload(snap.symbol, snap.anchor_id))
+
+    read = await get_avwap(store, SYM, first["anchor_id"])
+    if read is None:
+        raise RuntimeError("AVWAP Redis key missing after mock DE compute")
+
+    return {
+        "anchor_event": first,
+        "avwap": read.model_dump(mode="json"),
+        "volume_profile": await get_volume_profile(store, SYM, "ny_am"),
+        "kill_zone": await get_kill_zone(store, SYM),
+        "stats": engine.snapshot(),
+    }
+
+
+async def run_setup_replay() -> dict[str, Any]:
+    from sniper_data.setup_detection.replay import run_setup_replay as _replay
+
+    return await _replay()
+
+
+async def run_paper_multi_scan(
+    *,
+    universe: list[str] | None = None,
+    refresh_minutes: int = 15,
+    cycles: int = 1,
+    duration_s: float | None = None,
+) -> dict[str, Any]:
+    from sniper_data.setup_detection.multi_scan import run_paper_multi_scan as _scan
+
+    return await _scan(
+        universe=universe,
+        refresh_minutes=refresh_minutes,
+        cycles=cycles,
+        duration_s=duration_s,
+    )
+
+
+async def run_setup_loop(*, inmemory: bool = False, duration_s: float | None = None) -> dict[str, Any]:
+    """Live consumer: DE topics → setups 1–6 → risk → ``setup_signals``."""
+    from sniper_data.bus.kafka import EventBus, KafkaBus
+    from sniper_data.bus.redis_store import RedisStateStore
+    from sniper_data.setup_detection.orchestrator import SetupOrchestrator, subscribe_inmemory
+    from sniper_data.setup_detection.risk_client import HttpRiskClient
+
+    settings = get_settings()
+    bus: EventBus = InMemoryBus() if inmemory else KafkaBus(settings.kafka_bootstrap)
+    store: StateStore = InMemoryStateStore() if inmemory else RedisStateStore(settings.redis_url)
+    risk = HttpRiskClient(settings.risk_validate_url)
+    orch = SetupOrchestrator(store, bus, risk, swing_lookback=settings.swing_lookback)
+    await bus.start()
+    if inmemory:
+        subscribe_inmemory(bus, orch)
+        if duration_s:
+            await asyncio.sleep(duration_s)
+        await bus.stop()
+        await store.close()
+        return orch.stats.as_dict()
+    return orch.stats.as_dict()
+
+
 async def run_pipeline(*, inmemory: bool = False, duration_s: float | None = None) -> Runtime:
     logging.basicConfig(
         level=getattr(logging, get_settings().log_level.upper(), logging.INFO),

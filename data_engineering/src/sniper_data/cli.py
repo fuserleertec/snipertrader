@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import logging
 import sys
 
@@ -30,6 +31,8 @@ def main(argv: list[str] | None = None) -> int:
             "load",
             "drill",
             "snapshot",
+            "patterns",
+            "setups",
         ],
     )
     parser.add_argument("--symbols", default=None, help="Comma symbols for bench (default BTCUSDT).")
@@ -49,6 +52,43 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Run a single dashboard snapshot cycle and exit.",
     )
+    parser.add_argument(
+        "--replay",
+        action="store_true",
+        help="(patterns|setups) Replay fixtures in-process (no brokers).",
+    )
+    parser.add_argument(
+        "--e2e-report",
+        action="store_true",
+        help="(setups) Phase 3 PM integration report (setups 1–6, in-memory).",
+    )
+    parser.add_argument(
+        "--e2e-out",
+        default=None,
+        help="Write the Phase 3 E2E report JSON to this path.",
+    )
+    parser.add_argument(
+        "--universe",
+        default=None,
+        help="Comma-separated paper override. Default is GET /v1/universe/top.",
+    )
+    parser.add_argument(
+        "--refresh-minutes",
+        type=int,
+        default=None,
+        help="Multi-symbol scan cadence (default 15). Paper only.",
+    )
+    parser.add_argument(
+        "--paper-scan",
+        action="store_true",
+        help="(setups) Multi-symbol paper scan across the DE universe (in-memory).",
+    )
+    parser.add_argument(
+        "--cycles",
+        type=int,
+        default=1,
+        help="(setups --paper-scan) Number of refresh cycles (default 1).",
+    )
     args = parser.parse_args(argv)
 
     from sniper_data.config import get_settings
@@ -56,7 +96,54 @@ def main(argv: list[str] | None = None) -> int:
     settings = get_settings()
     _setup_logging(settings.log_level)
 
-    if args.command in {"pipeline", "demo"}:
+    if args.command == "setups":
+        from pathlib import Path
+
+        from sniper_data.pipeline import run_setup_loop, run_setup_replay
+
+        if args.e2e_report or args.e2e_out:
+            from sniper_data.setup_detection.e2e import build_phase3_e2e_report, write_quant_replay_pack
+
+            report = asyncio.run(build_phase3_e2e_report())
+            text = json.dumps(report, indent=2, default=str)
+            print(text)
+            if args.e2e_out:
+                dest = Path(args.e2e_out)
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                dest.write_text(text)
+                write_quant_replay_pack(report, dest.parent / "quant_replay")
+            return 0 if report["summary"]["overall"] == "PASS" else 1
+        if args.paper_scan or args.universe:
+            from sniper_data.setup_detection.multi_scan import run_paper_multi_scan
+            from sniper_data.universe import parse_symbol_csv
+
+            override = parse_symbol_csv(args.universe) if args.universe else None
+            result = asyncio.run(
+                run_paper_multi_scan(
+                    universe=override or None,
+                    refresh_minutes=args.refresh_minutes if args.refresh_minutes is not None else 15,
+                    cycles=args.cycles,
+                    duration_s=args.duration,
+                )
+            )
+            print(json.dumps(result, indent=2, default=str))
+            return 0
+        if args.replay or args.inmemory:
+            result = asyncio.run(run_setup_replay())
+            print(json.dumps(result, indent=2, default=str))
+            return 0
+        asyncio.run(run_setup_loop(inmemory=args.inmemory, duration_s=args.duration))
+        return 0
+
+    if args.command == "patterns" and args.replay:
+        from sniper_data.pipeline import run_anchor_wiring_demo, run_pattern_replay
+
+        result = asyncio.run(run_pattern_replay())
+        wiring = asyncio.run(run_anchor_wiring_demo())
+        print(json.dumps({"patterns": result, "anchor_wiring": wiring}, indent=2, default=str))
+        return 0
+
+    if args.command in {"pipeline", "demo", "patterns"}:
         from sniper_data.pipeline import run_pipeline
 
         asyncio.run(run_pipeline(inmemory=args.inmemory, duration_s=args.duration))

@@ -23,8 +23,10 @@ from __future__ import annotations
 
 import logging
 import math
+import os
 import time
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, Protocol
 
 from pydantic import BaseModel, Field
 
@@ -318,3 +320,357 @@ async def read_universe_active(store) -> dict[str, Any] | None:
 async def read_universe_top(store) -> dict[str, Any] | None:
     raw = await store.get(REDIS_UNIVERSE_TOP)
     return raw if isinstance(raw, dict) else None
+
+
+# ── ML / detector consumer (swap off SETUP_UNIVERSE) ─────────────────────────
+# Primary: GET /v1/universe/top matching universe_top.schema.json.
+# Helpers: Redis universe:top, Redis universe:active, GET /v1/universe.
+# Env SETUP_UNIVERSE is offline-only when those DE surfaces are unreachable.
+
+REQUIRED_FUTURES = ("ES", "CL", "GC", "NQ")
+UNIVERSE_HTTP_PATH = "/v1/universe"
+UNIVERSE_TOP_HTTP_PATH = "/v1/universe/top"
+# Backward-compatible alias used by older ML tests / docs.
+UNIVERSE_ACTIVE_KEY = REDIS_UNIVERSE_ACTIVE
+
+
+def coerce_member_symbol(item: Any) -> str | None:
+    """Accept frozen ``{symbol, asset_class, rank, score}`` or a plain string."""
+    if isinstance(item, str):
+        token = item
+    elif isinstance(item, dict):
+        token = item.get("symbol")
+    else:
+        token = None
+    if not token:
+        return None
+    try:
+        return normalize_symbol(str(token))
+    except ValueError:
+        return None
+
+
+def symbols_from_payload(raw: Any) -> tuple[list[str], int | None, list[dict[str, Any]]]:
+    """Parse DE wire payloads. ``symbols`` may be objects or strings."""
+    if raw is None:
+        return [], None, []
+    as_of: int | None = None
+    rows: list[Any]
+    if isinstance(raw, list):
+        rows = raw
+    elif isinstance(raw, dict):
+        rows = list(raw.get("symbols") or raw.get("universe") or raw.get("tickers") or [])
+        if raw.get("as_of_ts_ms") is not None:
+            as_of = int(raw["as_of_ts_ms"])
+    else:
+        return [], None, []
+    names: list[str] = []
+    members: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for item in rows:
+        sym = coerce_member_symbol(item)
+        if not sym or sym in seen:
+            continue
+        seen.add(sym)
+        names.append(sym)
+        if isinstance(item, dict):
+            members.append(dict(item))
+        else:
+            members.append({"symbol": sym, "asset_class": infer_asset_class(sym).value})
+        if len(names) >= MAX_UNIVERSE_SYMBOLS:
+            break
+    return names, as_of, members
+
+
+def parse_symbol_csv(raw: str | None) -> list[str]:
+    return parse_universe(raw or "")
+
+
+@dataclass(frozen=True)
+class UniverseSnapshot:
+    """Detector-facing snapshot. Wire GET /v1/universe/top stays DE-owned."""
+
+    symbols: tuple[str, ...]
+    as_of_ts_ms: int
+    source: str
+    backend: str
+    live_trading: bool = False
+    ranked: bool = False
+    limit: int | None = None
+    members: tuple[dict[str, Any], ...] = ()
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "symbols": list(self.symbols),
+            "as_of_ts_ms": self.as_of_ts_ms,
+            "source": self.source,
+            "backend": self.backend,
+            "live_trading": False,
+            "ranked": self.ranked,
+            "limit": self.limit,
+            "count": len(self.symbols),
+            "members": list(self.members),
+        }
+
+
+class UniverseProvider(Protocol):
+    backend: str
+
+    async def snapshot(self, *, limit: int | None = None, ranked: bool = False) -> UniverseSnapshot: ...
+
+    async def symbols(self, *, limit: int | None = None) -> list[str]: ...
+
+
+def _now_ms() -> int:
+    return int(time.time() * 1000)
+
+
+def _cap_limit(limit: int | None, *, ranked: bool) -> int:
+    if ranked:
+        if limit is None:
+            return 20
+        return 10 if int(limit) <= 10 else 20
+    if limit is None:
+        return MAX_UNIVERSE_SYMBOLS
+    return max(1, min(int(limit), MAX_UNIVERSE_SYMBOLS))
+
+
+def env_fallback_symbols(settings: Any | None = None) -> tuple[list[str], str]:
+    """Offline fallback only. ``SETUP_UNIVERSE`` wins when set; else DE env chain."""
+    from sniper_data.config import Settings, get_settings
+
+    s = settings or get_settings()
+    setup_u = (getattr(s, "setup_universe", None) or os.environ.get("SETUP_UNIVERSE") or "").strip()
+    if setup_u:
+        parsed = parse_universe(setup_u)
+        if parsed:
+            return parsed, "SETUP_UNIVERSE"
+    if isinstance(s, Settings):
+        return list(s.symbols), "settings"
+    return parse_universe(""), "default"
+
+
+class EnvUniverseProvider:
+    """Offline fallback when DE HTTP / Redis are unreachable."""
+
+    backend = "env"
+
+    def __init__(self, settings=None, *, override: list[str] | None = None) -> None:
+        self.settings = settings
+        self.override = override
+
+    async def snapshot(self, *, limit: int | None = None, ranked: bool = False) -> UniverseSnapshot:
+        if self.override is not None:
+            names = parse_universe(",".join(self.override))
+            source = "override"
+        else:
+            names, source = env_fallback_symbols(self.settings)
+        cap = _cap_limit(limit, ranked=ranked)
+        names = names[:cap]
+        return UniverseSnapshot(
+            symbols=tuple(names),
+            as_of_ts_ms=_now_ms(),
+            source=source,
+            backend=self.backend,
+            live_trading=False,
+            ranked=ranked,
+            limit=cap if ranked else None,
+            members=tuple(
+                {"symbol": s, "asset_class": infer_asset_class(s).value} for s in names
+            ),
+        )
+
+    async def symbols(self, *, limit: int | None = None) -> list[str]:
+        return list((await self.snapshot(limit=limit)).symbols)
+
+
+class RedisUniverseProvider:
+    """Helpers: Redis ``universe:top`` (ranked) and ``universe:active`` (full list)."""
+
+    backend = "redis"
+
+    def __init__(self, store, fallback: UniverseProvider) -> None:
+        self.store = store
+        self.fallback = fallback
+
+    async def snapshot(self, *, limit: int | None = None, ranked: bool = False) -> UniverseSnapshot:
+        cap = _cap_limit(limit, ranked=ranked)
+        try:
+            if ranked:
+                raw = await read_universe_top(self.store)
+                if raw and raw.get("symbols"):
+                    names, as_of, members = symbols_from_payload(raw)
+                    names = names[:cap]
+                    members = members[:cap]
+                    if names:
+                        return UniverseSnapshot(
+                            symbols=tuple(names),
+                            as_of_ts_ms=as_of or _now_ms(),
+                            source=REDIS_UNIVERSE_TOP,
+                            backend=self.backend,
+                            live_trading=False,
+                            ranked=True,
+                            limit=cap,
+                            members=tuple(members),
+                        )
+            raw = await read_universe_active(self.store)
+        except Exception as exc:  # noqa: BLE001
+            log.info("universe redis miss: %s", exc)
+            raw = None
+        names, as_of, members = symbols_from_payload(raw)
+        names = names[:cap]
+        members = members[:cap]
+        if names:
+            return UniverseSnapshot(
+                symbols=tuple(names),
+                as_of_ts_ms=as_of or _now_ms(),
+                source=REDIS_UNIVERSE_ACTIVE,
+                backend=self.backend,
+                live_trading=False,
+                ranked=ranked,
+                limit=cap if ranked else None,
+                members=tuple(members),
+            )
+        log.info("universe redis empty; falling back to %s", getattr(self.fallback, "backend", "env"))
+        return await self.fallback.snapshot(limit=limit, ranked=ranked)
+
+    async def symbols(self, *, limit: int | None = None) -> list[str]:
+        return list((await self.snapshot(limit=limit, ranked=True)).symbols)
+
+
+class HttpUniverseProvider:
+    """Primary: ``GET /v1/universe/top?limit=10|20``. Helper: ``GET /v1/universe``."""
+
+    backend = "http"
+
+    def __init__(
+        self,
+        base_url: str,
+        fallback: UniverseProvider,
+        *,
+        timeout_s: float = 3.0,
+        transport=None,
+    ) -> None:
+        self.base_url = base_url.rstrip("/")
+        self.fallback = fallback
+        self.timeout_s = timeout_s
+        self._transport = transport
+
+    def _url(self, *, ranked: bool, limit: int | None) -> str:
+        if ranked:
+            cap = _cap_limit(limit, ranked=True)
+            return f"{self.base_url}{UNIVERSE_TOP_HTTP_PATH}?limit={cap}"
+        return f"{self.base_url}{UNIVERSE_HTTP_PATH}"
+
+    async def snapshot(self, *, limit: int | None = None, ranked: bool = False) -> UniverseSnapshot:
+        if not self.base_url:
+            return await self.fallback.snapshot(limit=limit, ranked=ranked)
+        try:
+            import httpx
+
+            kwargs: dict[str, Any] = {"timeout": self.timeout_s}
+            if self._transport is not None:
+                kwargs["transport"] = self._transport
+            async with httpx.AsyncClient(**kwargs) as client:
+                resp = await client.get(self._url(ranked=ranked, limit=limit))
+                resp.raise_for_status()
+                body = resp.json()
+        except Exception as exc:  # noqa: BLE001 — DE unreachable → fallback
+            log.info("universe http miss (%s): %s", self.base_url, exc)
+            return await self.fallback.snapshot(limit=limit, ranked=ranked)
+        names, as_of, members = symbols_from_payload(body)
+        cap = _cap_limit(limit, ranked=ranked)
+        names = names[:cap]
+        members = members[:cap]
+        if not names:
+            return await self.fallback.snapshot(limit=limit, ranked=ranked)
+        return UniverseSnapshot(
+            symbols=tuple(names),
+            as_of_ts_ms=as_of or _now_ms(),
+            source=self._url(ranked=ranked, limit=limit),
+            backend=self.backend,
+            live_trading=False,
+            ranked=ranked,
+            limit=cap if ranked else None,
+            members=tuple(members),
+        )
+
+    async def symbols(self, *, limit: int | None = None) -> list[str]:
+        return list((await self.snapshot(limit=limit, ranked=True)).symbols)
+
+
+class FallbackUniverseProvider:
+    """Detectors: HTTP /top → Redis ``universe:top`` → helpers → env."""
+
+    backend = "auto"
+
+    def __init__(
+        self,
+        *,
+        env: UniverseProvider,
+        redis: UniverseProvider | None = None,
+        http: UniverseProvider | None = None,
+    ) -> None:
+        self.env = env
+        self.redis = redis
+        self.http = http
+
+    async def snapshot(self, *, limit: int | None = None, ranked: bool = False) -> UniverseSnapshot:
+        if ranked:
+            if self.http is not None:
+                snap = await self.http.snapshot(limit=limit, ranked=True)
+                if snap.backend == "http" and snap.symbols:
+                    return snap
+            if self.redis is not None:
+                snap = await self.redis.snapshot(limit=limit, ranked=True)
+                if snap.backend == "redis" and snap.symbols:
+                    return snap
+            return await self.env.snapshot(limit=limit, ranked=True)
+        if self.redis is not None:
+            snap = await self.redis.snapshot(limit=limit, ranked=False)
+            if snap.backend == "redis" and snap.symbols:
+                return snap
+        if self.http is not None:
+            snap = await self.http.snapshot(limit=limit, ranked=False)
+            if snap.backend == "http" and snap.symbols:
+                return snap
+        return await self.env.snapshot(limit=limit, ranked=False)
+
+    async def symbols(self, *, limit: int | None = None) -> list[str]:
+        return list((await self.snapshot(limit=limit, ranked=True)).symbols)
+
+
+def build_universe_provider(
+    settings=None,
+    *,
+    store=None,
+    override: list[str] | None = None,
+) -> UniverseProvider:
+    """Factory. ``UNIVERSE_BACKEND`` = ``auto`` | ``env`` | ``redis`` | ``http``."""
+    from sniper_data.config import get_settings
+
+    s = settings or get_settings()
+    env = EnvUniverseProvider(s, override=override)
+    if override is not None:
+        return env
+    backend = (getattr(s, "universe_backend", None) or os.environ.get("UNIVERSE_BACKEND") or "auto").strip().lower()
+    http_url = (getattr(s, "universe_http_url", None) or os.environ.get("UNIVERSE_HTTP_URL") or "").strip()
+    redis_p = RedisUniverseProvider(store, env) if store is not None else None
+    http_p = HttpUniverseProvider(http_url, env) if http_url else None
+    if backend == "env":
+        return env
+    if backend == "redis":
+        return redis_p or env
+    if backend == "http":
+        return http_p or env
+    return FallbackUniverseProvider(env=env, redis=redis_p, http=http_p)
+
+
+async def resolve_scan_universe(
+    provider: UniverseProvider,
+    *,
+    limit: int = 20,
+) -> UniverseSnapshot:
+    """Authoritative detector list: ``GET /v1/universe/top?limit=10|20``."""
+    cap = 10 if int(limit) <= 10 else 20
+    return await provider.snapshot(limit=cap, ranked=True)

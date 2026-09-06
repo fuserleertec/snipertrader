@@ -23,6 +23,7 @@ as required on a **new** schema.
 | `order_flow` | [`order_flow.schema.json`](order_flow.schema.json) | US-equities tape stub / mock | ML / Quant |
 | `performance_outcomes` | (inbound outcome JSON) | Quant `POST /performance/outcomes` | Redis `perf:outcomes` |
 | `dashboard_snapshots` | [`dashboard_snapshot.schema.json`](dashboard_snapshot.schema.json) | 15m snapshot job | Redis `dashboard:snapshot:{symbol}`, Frontend poll |
+| `ensemble_features` | (15m book snapshot) | ML paper scan | Quant `GET /picks/ensemble` |
 
 ## Delta / aggressor (ML Researchers)
 
@@ -110,7 +111,8 @@ ids. Demo generators emit it for **every** configured symbol (including
 
 ### Authoritative contract for ML / FE
 
-**DE owns the universe.** ML should swap off provisional `SETUP_UNIVERSE`.
+**DE owns the universe.** ML detectors have swapped off `SETUP_UNIVERSE`
+(offline fallback only when DE HTTP/Redis are unreachable).
 
 | Surface | Schema | Payload |
 |---|---|---|
