@@ -171,8 +171,11 @@ def test_ensemble_score_then_confidence_sort():
     assert http.post("/signals", json=a).status_code == 201
     assert http.post("/signals", json=b).status_code == 201
     tied = http.get("/picks/ensemble", params={"as_of_ts_ms": as_of + 2}).json()
-    assert tied["items"][0]["symbol"] == "AAPL"
-    assert tied["items"][0]["confidence"] >= tied["items"][1]["confidence"]
+    order = [row["symbol"] for row in tied["items"]]
+    assert order.index("AAPL") < order.index("SOLUSDT")
+    by_sym = {row["symbol"]: row for row in tied["items"]}
+    assert by_sym["AAPL"]["score"] == by_sym["SOLUSDT"]["score"] == 80
+    assert by_sym["AAPL"]["confidence"] > by_sym["SOLUSDT"]["confidence"]
 
 
 def test_rank_components_synthesize_and_universe_intersection():
