@@ -391,6 +391,8 @@ export interface SignalListResponse {
 /** Quant PR #2 GET /signals (history = this list + from_ts/to_ts/status/setup_type/symbol). */
 export interface SignalListQuery {
   symbol?: string;
+  /** Multi-symbol desk (≤20). Serialized as `symbols=ES,CL,…`. */
+  symbols?: string[];
   status?: SignalStatus;
   setup_type?: SetupType;
   side?: SignalSide;
@@ -418,7 +420,12 @@ export interface RankComponents {
   freshness: number;
 }
 
-/** GET /picks/ensemble item — Quant ranks top 10 inside the contracted universe. */
+/**
+ * GET /picks/ensemble item — Quant contract (required):
+ * rank, symbol, asset_class, score, setup_types, confidence.
+ * Optional ML extras: ensemble_score, rank_components, contributing_factors, best_confidence.
+ * Mapping: score ← ensemble_score, confidence ← best_confidence when those fields are present.
+ */
 export interface EnsemblePickItem {
   rank: number;
   symbol: string;
@@ -426,18 +433,16 @@ export interface EnsemblePickItem {
   score: number;
   setup_types: SetupType[];
   confidence: number;
-  ensemble_score: number;
-  rank_components: RankComponents;
-  /** ML ensemble_features via Quant — optional. */
+  ensemble_score?: number;
+  rank_components?: RankComponents;
   contributing_factors?: string[];
-  /** When present, FE maps `confidence ← best_confidence`. */
   best_confidence?: number;
 }
 
 export interface EnsemblePicksResponse {
   as_of_ts_ms: number;
   refresh_sec: number;
-  universe_source: UniverseSource;
+  universe_source?: UniverseSource;
   items: EnsemblePickItem[];
 }
 

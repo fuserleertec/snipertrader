@@ -82,7 +82,10 @@ export function uniqueSymbols(rows: Array<{ symbol: string }>, limit = DESK_SYMB
   return out;
 }
 
-/** Chart selector options: tab universe + any focused pick/card, never a single locked pair. */
+/**
+ * Chart selector: DE `GET /v1/universe/top` (or mock of that envelope) first,
+ * tab symbols sorted to the front. Never a locked BTCUSDT/ETH/AAPL/ES quartet.
+ */
 export function chartSymbolsForTab(
   tab: AssetTab,
   signals: Signal[],
@@ -90,22 +93,15 @@ export function chartSymbolsForTab(
   current?: string,
 ): string[] {
   const asset = tabToAssetClass(tab);
-  const seed =
-    tab === "futures"
-      ? [...FUTURES_SYMBOLS]
-      : uniqueSymbols(
-          [...signals, ...extras].filter((r) => (r.asset_class ?? inferAssetClass(r.symbol)) === asset),
-        );
-  const extra = extras
-    .filter((r) => (r.asset_class ?? inferAssetClass(r.symbol)) === asset)
-    .map((r) => r.symbol.toUpperCase());
+  const universe = uniqueSymbols(extras);
+  const tabFirst = universe.filter((s) => inferAssetClass(s) === asset);
+  const rest = universe.filter((s) => inferAssetClass(s) !== asset);
+  const fromSignals = uniqueSymbols(signals);
   const focused = current ? [current.toUpperCase()] : [];
-  const merged = uniqueSymbols(
-    [...seed, ...extra, ...focused, ...signals.filter((s) => s.asset_class === asset).map((s) => s.symbol)].map(
-      (symbol) => ({ symbol }),
-    ),
+  const futuresSeed = tab === "futures" && tabFirst.length === 0 ? [...FUTURES_SYMBOLS] : [];
+  return uniqueSymbols(
+    [...tabFirst, ...rest, ...fromSignals, ...futuresSeed, ...focused].map((symbol) => ({ symbol })),
   );
-  return merged.length ? merged : seed.length ? [...seed] : focused;
 }
 
 export function defaultSymbolForTab(tab: AssetTab, options: string[]): string {
@@ -127,7 +123,7 @@ export function parseAssetClassParam(raw: string | undefined | null): AssetClass
 
 export function rankItems(items: EnsemblePickItem[]): EnsemblePickItem[] {
   return [...items]
-    .sort((a, b) => a.rank - b.rank || b.ensemble_score - a.ensemble_score || a.symbol.localeCompare(b.symbol))
+    .sort((a, b) => a.rank - b.rank || b.score - a.score || a.symbol.localeCompare(b.symbol))
     .slice(0, ENSEMBLE_LIMIT)
     .map((row, i) => ({ ...row, rank: i + 1 }));
 }

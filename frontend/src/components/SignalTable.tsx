@@ -69,6 +69,7 @@ export function SignalTable({
   soundOn,
   onToggleSound,
   embedded = false,
+  deskSymbols = [],
 }: {
   rows: Signal[];
   selectedId: string | null;
@@ -76,6 +77,7 @@ export function SignalTable({
   soundOn: boolean;
   onToggleSound: () => void;
   embedded?: boolean;
+  deskSymbols?: string[];
 }) {
   const mocks = isMockMode();
   const [typeFilter, setTypeFilter] = useState<SetupType | "all">("all");
@@ -84,12 +86,14 @@ export function SignalTable({
   const [fromDay, setFromDay] = useState("");
   const [toDay, setToDay] = useState("");
   const [liveRows, setLiveRows] = useState<Signal[] | null>(null);
+  const deskKey = deskSymbols.join(",");
 
   useEffect(() => {
     if (mocks) return;
     let alive = true;
     const query = {
       symbol: symbolFilter === "all" ? undefined : symbolFilter,
+      symbols: symbolFilter === "all" && deskKey ? deskKey.split(",") : undefined,
       setup_type: typeFilter === "all" ? undefined : typeFilter,
       status: statusFilter === "all" ? undefined : statusFilter,
       from_ts: dayStart(fromDay) ?? undefined,
@@ -104,7 +108,7 @@ export function SignalTable({
     return () => {
       alive = false;
     };
-  }, [mocks, symbolFilter, typeFilter, statusFilter, fromDay, toDay]);
+  }, [mocks, symbolFilter, typeFilter, statusFilter, fromDay, toDay, deskKey]);
 
   const filtered = useMemo(() => {
     const source = !mocks && liveRows ? liveRows : rows;

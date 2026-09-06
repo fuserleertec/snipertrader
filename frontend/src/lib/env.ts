@@ -9,11 +9,11 @@
  * Quant (PR #2):    NEXT_PUBLIC_QUANT_API_BASE / NEXT_PUBLIC_QUANT_WS_BASE
  *
  * List / ranking placeholders (Quant :8001 until ML/DE own them):
- *   GET /picks/ensemble          → top 10  (as_of_ts_ms, refresh_sec=900, universe_source, items[])
+ *   GET /picks/ensemble          → top 10  (as_of_ts_ms, refresh_sec=900, items[])
  *   GET /picks/categorized       → ≤20     (?asset_class=&limit=20)
- *   GET /signals                 → multi-symbol desk (+ ?asset_class=&status=&setup_type=)
+ *   GET /signals                 → multi-symbol desk (?symbols= ≤20 + filters)
  *   GET /signals/history         → same filters; falls back to GET /signals
- *   GET /performance/summary
+ *   GET /performance/summary     → optional ?symbols= (≤20)
  * live_trading is never flipped here. Paper / mocks only.
  */
 

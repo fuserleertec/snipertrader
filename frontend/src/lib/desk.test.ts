@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { LIST_REFRESH_SEC, SETUP_FILTERS, SETUP_TYPES, wireAssetClass } from "./constants";
 import { cardsForTab, chartSymbolsForTab, clampRefreshSec, setupFilterType, uniqueSymbols } from "./desk";
-import { normalizeCategorizedPicks, normalizeEnsemblePicks, normalizeUniverseTop } from "./http";
+import { joinSymbols, normalizeCategorizedPicks, normalizeEnsemblePicks, normalizeUniverseTop, signalListPath } from "./http";
 import { mockCategorizedPicks, mockDroppedPicks, mockEnsemblePicks, mockUniverseTop, SETUP_UNIVERSE } from "./mocks/lists";
 import { mockListSignals } from "./mocks/signals";
 import { pinSetupCards } from "./setupView";
@@ -54,6 +54,64 @@ describe("Quant list contracts", () => {
     assert.ok(new Set(all.items.map((i) => i.asset_class)).size >= 2);
     assert.ok(futures.items.every((i) => i.asset_class === "futures"));
     assert.ok(all.items.every((i) => ["momentum", "mean_reversion", "confluence", "other"].includes(i.category)));
+  });
+
+  it("normalizes the locked Quant GET /picks/ensemble envelope", () => {
+    const ens = normalizeEnsemblePicks({
+      as_of_ts_ms: 0,
+      refresh_sec: 900,
+      items: [
+        {
+          rank: 1,
+          symbol: "BTCUSDT",
+          asset_class: "crypto",
+          score: 0.0,
+          setup_types: ["sweep_reclaim"],
+          confidence: 0.0,
+        },
+      ],
+    });
+    assert.ok(ens);
+    assert.equal(ens.as_of_ts_ms, 0);
+    assert.equal(ens.refresh_sec, 900);
+    assert.equal(ens.universe_source, undefined);
+    assert.equal(ens.items.length, 1);
+    assert.ok(ens.items.length <= 10);
+    assert.deepEqual(ens.items[0], {
+      rank: 1,
+      symbol: "BTCUSDT",
+      asset_class: "crypto",
+      score: 0,
+      setup_types: ["sweep_reclaim"],
+      confidence: 0,
+    });
+  });
+
+  it("maps ensemble_score → score and best_confidence → confidence when present", () => {
+    const ens = normalizeEnsemblePicks({
+      as_of_ts_ms: 1,
+      refresh_sec: 900,
+      universe_source: "DE",
+      items: [
+        {
+          rank: 2,
+          symbol: "es",
+          asset_class: "futures",
+          score: 0.1,
+          ensemble_score: 0.77,
+          setup_types: ["fvg_entry"],
+          confidence: 0.2,
+          best_confidence: 0.81,
+        },
+      ],
+    });
+    assert.equal(ens?.universe_source, "DE");
+    assert.equal(ens?.items[0]?.score, 0.77);
+    assert.equal(ens?.items[0]?.ensemble_score, 0.77);
+    assert.equal(ens?.items[0]?.confidence, 0.81);
+    assert.equal(ens?.items[0]?.best_confidence, 0.81);
+    assert.equal(ens?.items[0]?.symbol, "ES");
+    assert.equal(ens?.items[0]?.rank_components, undefined);
   });
 
   it("normalizers clamp to contract caps and map stocks→equity", () => {
@@ -117,6 +175,40 @@ describe("desk tabs + chart selector", () => {
   it("futures chart selector includes ES CL GC NQ", () => {
     const opts = chartSymbolsForTab("futures", [], []);
     assert.ok(["ES", "CL", "GC", "NQ"].every((s) => opts.includes(s)));
+  });
+
+  it("chart selector uses universe/top first (tab symbols in front, not a 4-symbol lock)", () => {
+    const extras = [
+      { symbol: "AAPL", asset_class: "equity" as const },
+      { symbol: "ES", asset_class: "futures" as const },
+      { symbol: "CL", asset_class: "futures" as const },
+      { symbol: "BTCUSDT", asset_class: "crypto" as const },
+      { symbol: "NVDA", asset_class: "equity" as const },
+    ];
+    const opts = chartSymbolsForTab("futures", [], extras);
+    assert.ok(opts.length >= 5);
+    assert.ok(opts.indexOf("ES") < opts.indexOf("AAPL"));
+    assert.ok(opts.includes("NVDA"));
+    assert.ok(opts.includes("BTCUSDT"));
+  });
+});
+
+describe("multi-symbol Quant clients", () => {
+  it("GET /signals serializes symbols= (≤20) and keeps single-symbol", () => {
+    assert.equal(signalListPath({ symbol: "BTCUSDT" }), "/signals?symbol=BTCUSDT");
+    const path = signalListPath({
+      symbols: ["es", "CL", "GC", "NQ", "es", "AAPL"],
+      status: "ACTIVE",
+      limit: 200,
+    });
+    assert.ok(path.startsWith("/signals?"));
+    assert.match(path, /symbols=ES%2CCL%2CGC%2CNQ%2CAAPL/);
+    assert.match(path, /status=ACTIVE/);
+    assert.equal(joinSymbols(["es", "CL", "es", ...Array.from({ length: 30 }, (_, i) => `S${i}`)])?.split(",").length, 20);
+  });
+
+  it("GET /performance/summary accepts optional symbols=", () => {
+    assert.equal(joinSymbols(["BTCUSDT", "ETHUSDT"]), "BTCUSDT,ETHUSDT");
   });
 });
 

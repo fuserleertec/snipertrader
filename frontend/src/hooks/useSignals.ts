@@ -16,10 +16,17 @@ function seedDesk(): Signal[] {
 /**
  * Desk-wide setup_signals (up to 20 symbols). Chart focus only drives the
  * mock WS upsert stream — it does not wipe the list.
+ * Live: GET /signals + GET /signals/history with optional `symbols=` (≤20).
  */
-export function useSignals(focusSymbol: string, lastPrice: () => number, refreshKey = 0): Signal[] {
+export function useSignals(
+  focusSymbol: string,
+  lastPrice: () => number,
+  refreshKey = 0,
+  deskSymbols: string[] = [],
+): Signal[] {
   const mocks = isMockMode();
   const [rows, setRows] = useState<Signal[]>(() => (mocks ? seedDesk() : []));
+  const symbolKey = deskSymbols.join(",");
 
   useEffect(() => {
     let alive = true;
@@ -29,7 +36,10 @@ export function useSignals(focusSymbol: string, lastPrice: () => number, refresh
         alive = false;
       };
     }
-    const query = { limit: 200 };
+    const query = {
+      limit: 200,
+      symbols: deskSymbols.length ? deskSymbols.slice(0, DESK_SYMBOL_LIMIT) : undefined,
+    };
     Promise.all([fetchSignalHistory(query), fetchSignals(query)]).then(([history, list]) => {
       if (!alive) return;
       const items = history?.items?.length ? history.items : (list?.items ?? []);
@@ -38,7 +48,9 @@ export function useSignals(focusSymbol: string, lastPrice: () => number, refresh
     return () => {
       alive = false;
     };
-  }, [mocks, refreshKey]);
+    // deskSymbols identity is tracked via symbolKey
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mocks, refreshKey, symbolKey]);
 
   useEffect(() => {
     const applyEvent = (data: unknown) => {

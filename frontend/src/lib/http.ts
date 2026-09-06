@@ -77,9 +77,25 @@ export async function fetchOhlcv(
   return body.bars ?? [];
 }
 
+export function joinSymbols(symbols: string[] | undefined, limit = DESK_SYMBOL_LIMIT): string | undefined {
+  if (!symbols?.length) return undefined;
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of symbols) {
+    const sym = raw.trim().toUpperCase();
+    if (!sym || seen.has(sym)) continue;
+    seen.add(sym);
+    out.push(sym);
+    if (out.length >= limit) break;
+  }
+  return out.length ? out.join(",") : undefined;
+}
+
 export function signalListPath(query: SignalListQuery = {}, path = "/signals"): string {
   const params = new URLSearchParams();
-  if (query.symbol) params.set("symbol", query.symbol);
+  const multi = joinSymbols(query.symbols);
+  if (multi) params.set("symbols", multi);
+  else if (query.symbol) params.set("symbol", query.symbol);
   if (query.status) params.set("status", query.status);
   if (query.setup_type) params.set("setup_type", query.setup_type);
   if (query.side) params.set("side", query.side);
@@ -140,11 +156,13 @@ export async function fetchKillZone(symbol: string): Promise<KillZoneEvent | nul
   return normalizeKillZone(await getJson<unknown>(`/v1/kill-zone/${symbol}`));
 }
 
-/** Quant PR #2 `GET /performance/summary` via rewrite → :8001, then direct. */
-export async function fetchPerformanceSummary(): Promise<PerformanceSummary | null> {
-  const viaRewrite = await getSameOrigin<PerformanceSummary>("/performance/summary");
+/** Quant PR #2 `GET /performance/summary` via rewrite → :8001, then direct. Optional `symbols=` (≤20). */
+export async function fetchPerformanceSummary(symbols?: string[]): Promise<PerformanceSummary | null> {
+  const joined = joinSymbols(symbols);
+  const path = joined ? `/performance/summary?symbols=${encodeURIComponent(joined)}` : "/performance/summary";
+  const viaRewrite = await getSameOrigin<PerformanceSummary>(path);
   if (viaRewrite) return viaRewrite;
-  return getJson<PerformanceSummary>("/performance/summary", quantHttpUrl);
+  return getJson<PerformanceSummary>(path, quantHttpUrl);
 }
 
 /**
@@ -191,29 +209,35 @@ export function normalizeEnsemblePicks(raw: unknown): EnsemblePicksResponse | nu
     if (typeof row.symbol !== "string" || !row.symbol) continue;
     const asset = (wireAssetClass(typeof row.asset_class === "string" ? row.asset_class : "") ??
       inferAssetClass(row.symbol)) as AssetClass;
-    const ensemble_score = num(row.ensemble_score, num(row.score));
-    const best = typeof row.best_confidence === "number" ? row.best_confidence : undefined;
+    const hasEnsemble = typeof row.ensemble_score === "number" && Number.isFinite(row.ensemble_score);
+    const ensemble_score = hasEnsemble ? (row.ensemble_score as number) : undefined;
+    const score = ensemble_score ?? num(row.score);
+    const best = typeof row.best_confidence === "number" && Number.isFinite(row.best_confidence)
+      ? row.best_confidence
+      : undefined;
     const factors = Array.isArray(row.contributing_factors)
       ? row.contributing_factors.filter((x): x is string => typeof x === "string")
       : undefined;
+    const hasComponents = row.rank_components && typeof row.rank_components === "object";
     items.push({
       rank: num(row.rank, items.length + 1),
       symbol: row.symbol.toUpperCase(),
       asset_class: asset,
-      score: ensemble_score,
+      score,
       setup_types: readSetupTypes(row.setup_types),
       confidence: best ?? num(row.confidence),
-      ensemble_score,
-      rank_components: readComponents(row.rank_components),
-      contributing_factors: factors,
-      best_confidence: best,
+      ...(ensemble_score != null ? { ensemble_score } : {}),
+      ...(hasComponents ? { rank_components: readComponents(row.rank_components) } : {}),
+      ...(factors?.length ? { contributing_factors: factors } : {}),
+      ...(best != null ? { best_confidence: best } : {}),
     });
   }
-  const source: UniverseSource = body.universe_source === "DE" ? "DE" : "SETUP_UNIVERSE";
+  const source: UniverseSource | undefined =
+    body.universe_source === "DE" ? "DE" : body.universe_source === "SETUP_UNIVERSE" ? "SETUP_UNIVERSE" : undefined;
   return {
-    as_of_ts_ms: num(body.as_of_ts_ms, Date.now()),
+    as_of_ts_ms: num(body.as_of_ts_ms),
     refresh_sec: clampRefreshSec(body.refresh_sec ?? LIST_REFRESH_SEC),
-    universe_source: source,
+    ...(source ? { universe_source: source } : {}),
     items: rankItems(items).slice(0, ENSEMBLE_LIMIT),
   };
 }

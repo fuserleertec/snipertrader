@@ -9,7 +9,7 @@ import { usePerformance } from "@/hooks/usePerformance";
 import { useSignals } from "@/hooks/useSignals";
 import { useTheme } from "@/hooks/useTheme";
 import { inferAssetClass, LIST_REFRESH_SEC } from "@/lib/constants";
-import { assetClassToTab, chartSymbolsForTab, defaultSymbolForTab, tabToAssetClass } from "@/lib/desk";
+import { assetClassToTab, chartSymbolsForTab, defaultSymbolForTab, tabToAssetClass, uniqueSymbols } from "@/lib/desk";
 import { isLivePatternWs, wsBase } from "@/lib/env";
 import { overlayForSetup, parseOverlayParam } from "@/lib/setups";
 import { overlayForFilter, resolveSelected } from "@/lib/setupView";
@@ -47,18 +47,28 @@ export function Dashboard() {
   const chartRef = useRef<HTMLDivElement>(null);
   const scrollTimer = useRef<number | null>(null);
 
-  const refresh = useListRefresh(LIST_REFRESH_SEC);
+  const [refreshSec, setRefreshSec] = useState(LIST_REFRESH_SEC);
+  const refresh = useListRefresh(refreshSec);
   const desk = useDeskLists(refresh.tick);
+
+  useEffect(() => {
+    setRefreshSec(desk.ensemble.refresh_sec);
+  }, [desk.ensemble.refresh_sec]);
+
+  const deskSymbols = useMemo(
+    () => uniqueSymbols([...desk.universeTop20.symbols, ...desk.ensemble.items, ...desk.categorized.items]),
+    [desk.universeTop20.symbols, desk.ensemble.items, desk.categorized.items],
+  );
 
   const market = useMarketData(symbol, timeframe);
   const priceRef = useRef(100);
   useEffect(() => {
     if (market.lastPrice != null) priceRef.current = market.lastPrice;
   }, [market.lastPrice]);
-  const allSignals = useSignals(symbol, () => priceRef.current, refresh.tick);
+  const allSignals = useSignals(symbol, () => priceRef.current, refresh.tick, deskSymbols);
   const selected = resolveSelected(allSignals, selectedId, selectedSnap);
   const patterns = usePatterns(symbol);
-  const performance = usePerformance(refresh.tick);
+  const performance = usePerformance(refresh.tick, deskSymbols);
 
   const chartSymbols = useMemo(
     () =>
@@ -299,6 +309,7 @@ export function Dashboard() {
               soundOn={soundOn}
               onToggleSound={() => setSoundOn((v) => !v)}
               embedded
+              deskSymbols={deskSymbols}
             />
           }
         />
@@ -361,13 +372,17 @@ export function Dashboard() {
                 phase2_ws_paths: ["/v1/ws/avwap", "/v1/ws/volume-profile", "/v1/ws/kill-zone"],
                 overlay_preset: overlayPreset,
                 list_refresh_sec: refresh.refreshSec,
+                ensemble_refresh_sec: desk.ensemble.refresh_sec,
                 picks: {
                   ensemble: "/picks/ensemble",
                   categorized: "/picks/categorized",
+                  signals: "/signals",
+                  performance: "/performance/summary",
                   history: "/signals/history",
                   universe_top: "/v1/universe/top",
                   universe_source: desk.ensemble.universe_source,
                   universe_top10: desk.universeTop10.symbols.map((s) => s.symbol),
+                  desk_symbols: deskSymbols,
                 },
                 live_trading: false,
               },
