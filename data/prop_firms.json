@@ -3,10 +3,10 @@
     "title": "Prop-Firm Intelligence",
     "generator": "manual seed (hermes); upgrade to llm-crawl via scripts/prop_crawl.js",
     "data_policy": "Real published terms, machine-extracted by an LLM parser from each firm's public page (confidence=crawled) or curated from published terms (confidence=manual_seed). verified=true requires human/cross-check review — the crawler never auto-verifies. Nothing is fabricated; every row carries a source_page link.",
-    "last_refreshed": "2026-09-05T11:41:35.642Z",
+    "last_refreshed": "2026-09-06T12:13:51.388Z",
     "refresh_source": "llm-crawl",
-    "refreshed_count": 11,
-    "failed_count": 3
+    "refreshed_count": 12,
+    "failed_count": 2
   },
   "firms": [
     {
@@ -18,7 +18,7 @@
       "model": "multi-model",
       "verified": false,
       "confidence": "crawled",
-      "last_refreshed": "2026-09-05T11:40:54.502Z",
+      "last_refreshed": "2026-09-06T12:13:06.641Z",
       "payout_split": {
         "trader": 80,
         "max_trader": 90
@@ -69,7 +69,7 @@
       "model": "multi-model",
       "verified": false,
       "confidence": "crawled",
-      "last_refreshed": "2026-09-05T11:41:01.035Z",
+      "last_refreshed": "2026-09-06T12:13:13.681Z",
       "payout_split": {
         "trader": 85,
         "max_trader": 95
@@ -118,7 +118,7 @@
       "model": "multi-model",
       "verified": false,
       "confidence": "crawled",
-      "last_refreshed": "2026-09-05T11:41:05.335Z",
+      "last_refreshed": "2026-09-06T12:13:17.930Z",
       "payout_split": {
         "trader": 75,
         "max_trader": 100
@@ -138,7 +138,7 @@
       },
       "account_sizes": {
         "min": 10000,
-        "max": 4000000
+        "max": 100000
       },
       "deal": {
         "active": false
@@ -167,7 +167,7 @@
       "model": "multi-model",
       "verified": false,
       "confidence": "crawled",
-      "last_refreshed": "2026-09-05T11:41:08.324Z",
+      "last_refreshed": "2026-09-06T12:13:21.034Z",
       "payout_split": {
         "trader": 80,
         "max_trader": 100
@@ -215,44 +215,50 @@
       "website": "https://fundedtradingplus.com/",
       "source_page": "https://fundedtradingplus.com/",
       "market": "forex",
-      "model": "instant",
+      "model": "multi-model",
       "verified": false,
-      "confidence": "manual_seed",
-      "last_refreshed": null,
+      "confidence": "crawled",
+      "last_refreshed": "2026-09-06T12:13:23.679Z",
       "payout_split": {
         "trader": 80,
         "max_trader": 100
       },
-      "payout_frequency": "bi-weekly",
+      "payout_frequency": "weekly",
       "payout_speed": {
         "label": "bi-weekly (on-demand after)",
         "estimated": true
       },
       "max_drawdown": {
-        "value": 10,
-        "type": "static",
-        "daily": 5
+        "value": 6,
+        "type": "trailing",
+        "daily": 4
       },
       "eval_fee": {
-        "min_usd": 99
+        "min_usd": 62.3
       },
       "account_sizes": {
-        "min": 12500,
+        "min": 5000,
         "max": 200000
       },
       "deal": {
-        "active": false
+        "active": true,
+        "discount_pct": 30,
+        "verified": false
       },
       "trading_styles": {
         "news": true,
-        "eas": true,
+        "eas": null,
         "weekend": true
       },
       "scaling": {
         "enabled": true
       },
       "refund_fee": true,
-      "data_note": "Curated from published terms; machine re-verification via the daily crawler is pending. Instant funding; split scales to 100%."
+      "data_note": "Extracted by LLM parser from https://fundedtradingplus.com/",
+      "profit_target": {
+        "phase1": 10,
+        "phase2": null
+      }
     },
     {
       "id": "apextrader",
@@ -312,7 +318,7 @@
       "model": "multi-model",
       "verified": false,
       "confidence": "crawled",
-      "last_refreshed": "2026-09-05T11:41:12.906Z",
+      "last_refreshed": "2026-09-06T12:13:27.641Z",
       "payout_split": {
         "trader": 90,
         "max_trader": 90
@@ -365,7 +371,7 @@
       "model": "1-step",
       "verified": false,
       "confidence": "crawled",
-      "last_refreshed": "2026-09-05T11:41:16.081Z",
+      "last_refreshed": "2026-09-06T12:13:31.222Z",
       "payout_split": {
         "trader": 80,
         "max_trader": 90
@@ -414,7 +420,7 @@
       "model": "multi-model",
       "verified": false,
       "confidence": "crawled",
-      "last_refreshed": "2026-09-05T11:41:18.901Z",
+      "last_refreshed": "2026-09-06T12:13:33.428Z",
       "payout_split": {
         "trader": 90,
         "max_trader": 90
@@ -461,7 +467,7 @@
       "model": "1-step",
       "verified": false,
       "confidence": "crawled",
-      "last_refreshed": "2026-09-05T11:41:21.565Z",
+      "last_refreshed": "2026-09-06T12:13:36.101Z",
       "payout_split": {
         "trader": 90,
         "max_trader": 90
@@ -553,7 +559,7 @@
       "model": "1-step",
       "verified": false,
       "confidence": "crawled",
-      "last_refreshed": "2026-09-05T11:41:29.521Z",
+      "last_refreshed": "2026-09-06T12:13:45.763Z",
       "payout_split": {
         "trader": 90,
         "max_trader": 95
@@ -600,7 +606,7 @@
       "model": "multi-model",
       "verified": false,
       "confidence": "crawled",
-      "last_refreshed": "2026-09-05T11:41:33.188Z",
+      "last_refreshed": "2026-09-06T12:13:49.163Z",
       "payout_split": {
         "trader": 90,
         "max_trader": 100
@@ -645,7 +651,7 @@
       "model": "multi-model",
       "verified": false,
       "confidence": "crawled",
-      "last_refreshed": "2026-09-05T11:41:35.642Z",
+      "last_refreshed": "2026-09-06T12:13:51.387Z",
       "payout_split": {
         "trader": 90,
         "max_trader": 90
