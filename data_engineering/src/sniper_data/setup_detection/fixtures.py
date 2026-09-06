@@ -300,15 +300,17 @@ def htf_bullish_ob(*, low: float = 99.0, high: float = 101.0) -> OrderBlock:
     )
 
 
-def setup4_vol_warmup(n: int = 20, *, start: int = 0, volume: float = 100.0) -> list[OHLCVBar]:
-    return [bar(start + i, 100.0, 100.8, 99.2, 100.1, volume, timeframe=S4_TF) for i in range(n)]
+def setup4_vol_warmup(
+    n: int = 20, *, start: int = 0, volume: float = 100.0, timeframe: Timeframe = S4_TF
+) -> list[OHLCVBar]:
+    return [bar(start + i, 100.0, 100.8, 99.2, 100.1, volume, timeframe=timeframe) for i in range(n)]
 
 
-def setup4_fade_long_bars(*, start: int = 20) -> list[OHLCVBar]:
+def setup4_fade_long_bars(*, start: int = 20, timeframe: Timeframe = S4_TF) -> list[OHLCVBar]:
     """Tag session −2σ (96), low volume, bullish engulfing. Entry ≤ 96.3 for RR≥1.5."""
     return [
-        bar(start, 96.15, 96.25, 95.85, 95.95, 40.0, timeframe=S4_TF),
-        bar(start + 1, 95.90, 96.35, 95.65, 96.25, 50.0, timeframe=S4_TF),
+        bar(start, 96.15, 96.25, 95.85, 95.95, 40.0, timeframe=timeframe),
+        bar(start + 1, 95.90, 96.35, 95.65, 96.25, 50.0, timeframe=timeframe),
     ]
 
 
@@ -320,11 +322,11 @@ def setup5_rising_vwaps(n: int = 20) -> list[VWAPValues]:
     return out
 
 
-def setup5_trend_bars(n: int = 20, *, start: int = 0) -> list[OHLCVBar]:
+def setup5_trend_bars(n: int = 20, *, start: int = 0, timeframe: Timeframe = S5_TF) -> list[OHLCVBar]:
     """Price stays above rising VWAP; bar 0 prints structure liquidity at 108."""
-    out = [bar(start, 101.0, 108.0, 100.6, 107.0, 70.0, timeframe=S5_TF)]
+    out = [bar(start, 101.0, 108.0, 100.6, 107.0, 70.0, timeframe=timeframe)]
     for i in range(1, n):
-        out.append(bar(start + i, 101.0, 101.5, 100.6, 101.2, 60.0, timeframe=S5_TF))
+        out.append(bar(start + i, 101.0, 101.5, 100.6, 101.2, 60.0, timeframe=timeframe))
     return out
 
 
@@ -343,11 +345,11 @@ def pullback_ob() -> OrderBlock:
     )
 
 
-def setup5_pullback_bars(*, start: int = 20) -> list[OHLCVBar]:
+def setup5_pullback_bars(*, start: int = 20, timeframe: Timeframe = S5_TF) -> list[OHLCVBar]:
     """First VWAP touch + bullish engulfing at session VWAP 100."""
     return [
-        bar(start, 101.20, 101.30, 100.60, 100.70, 45.0, timeframe=S5_TF),
-        bar(start + 1, 100.65, 101.40, 99.70, 101.30, 80.0, timeframe=S5_TF),
+        bar(start, 101.20, 101.30, 100.60, 100.70, 45.0, timeframe=timeframe),
+        bar(start + 1, 100.65, 101.40, 99.70, 101.30, 80.0, timeframe=timeframe),
     ]
 
 

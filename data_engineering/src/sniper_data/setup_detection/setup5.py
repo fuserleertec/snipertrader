@@ -5,7 +5,11 @@ Trend: price above rising session VWAP for N bars (default 20 on 5m) →
 bullish; below falling → bearish. Pullback to VWAP or ±1σ with OB or FVG.
 First clean touch in a tunable window. Confirm engulfing or strong trend candle.
 
-Locked defaults: N=20 @5m, min_rr 2.0, min conviction 60.
+Locked defaults: N=20 on the firing timeframe (1m or 5m), min_rr 2.0,
+min conviction 60.
+
+Bars: continuous **1m and 5m** from Kafka ``ohlcv_bars`` / ``GET`` /
+``WS /v1/ohlcv``. Never 15m ``dashboard_snapshots``. 15m is scan cadence.
 """
 
 from __future__ import annotations
@@ -34,6 +38,7 @@ from sniper_data.setup_detection.context import (
     price_in_range,
     ranges_overlap,
 )
+from sniper_data.setup_detection.ohlcv_source import clamp_continuous_timeframes, is_continuous_bar
 from sniper_data.setup_detection.params import SetupParams, load_setup_params
 
 log = logging.getLogger(__name__)
@@ -53,7 +58,10 @@ class _Sym:
 
 
 def _tf(bar: OHLCVBar, allowed: tuple[str, ...]) -> str | None:
+    if not is_continuous_bar(bar):
+        return None
     tf = bar.timeframe.value if hasattr(bar.timeframe, "value") else str(bar.timeframe)
+    allowed = clamp_continuous_timeframes(allowed)
     return tf if tf in allowed else None
 
 
@@ -71,33 +79,46 @@ class VwapPullbackContDetector:
     def __init__(self, store: StateStore, *, params: SetupParams | None = None) -> None:
         self.store = store
         self.params = params or load_setup_params()
-        self._state: dict[str, _Sym] = defaultdict(_Sym)
+        self._vwap: dict[str, VWAPValues] = {}
+        self._fvgs: dict[str, dict[str, FVGZone]] = defaultdict(dict)
+        self._state: dict[tuple[str, str], _Sym] = defaultdict(_Sym)
+
+    def _bucket(self, symbol: str, tf: str) -> _Sym:
+        return self._state[(symbol, tf)]
 
     def on_vwap(self, snap: VWAPValues) -> None:
         anchor = snap.anchor_type.value if hasattr(snap.anchor_type, "value") else str(snap.anchor_type)
         if anchor == "session":
-            self._state[snap.symbol].last_vwap = snap
+            self._vwap[snap.symbol] = snap
 
     def on_fvg(self, zone: FVGZone) -> None:
-        st = self._state[zone.symbol]
         if zone.mitigated:
-            st.tracked_fvg.pop(zone.id, None)
+            self._fvgs[zone.symbol].pop(zone.id, None)
             return
-        st.tracked_fvg[zone.id] = zone
+        self._fvgs[zone.symbol][zone.id] = zone
 
     def on_ob(self, _zone: OrderBlock) -> None:
         return None
+
+    def prime_bar(self, bar: OHLCVBar) -> None:
+        """Hydrate 1m/5m history without detecting (GET /v1/ohlcv bootstrap)."""
+        tf = _tf(bar, self.params.s5_timeframes)
+        if tf is None:
+            return
+        st = self._bucket(bar.symbol, tf)
+        st.bars.append(bar)
 
     async def on_bar(self, bar: OHLCVBar) -> list[SetupCandidate]:
         tf = _tf(bar, self.params.s5_timeframes)
         if tf is None:
             return []
-        st = self._state[bar.symbol]
+        st = self._bucket(bar.symbol, tf)
         prev = st.bars[-1] if st.bars else None
         st.bars.append(bar)
-        vwap = st.last_vwap or await get_session_vwap(self.store, bar.symbol)
+        vwap = self._vwap.get(bar.symbol) or st.last_vwap or await get_session_vwap(self.store, bar.symbol)
         if vwap is not None:
             st.last_vwap = vwap
+            self._vwap[bar.symbol] = vwap
             st.vwap_hist.append(vwap.vwap)
         if vwap is None:
             return []
@@ -117,7 +138,7 @@ class VwapPullbackContDetector:
             return []
         st.touches.append(bar.close_ts_ms)
 
-        fvgs = list(st.tracked_fvg.values()) or await get_active_fvgs(self.store, bar.symbol)
+        fvgs = list(self._fvgs[bar.symbol].values()) or await get_active_fvgs(self.store, bar.symbol)
         obs = await get_active_obs(self.store, bar.symbol)
         zone_hit = self._structure_at_pullback(bar, vwap, trend, fvgs, obs, pad=pad)
         if zone_hit is None:
@@ -224,15 +245,15 @@ class VwapPullbackContDetector:
         entry = bar.close
         liq = max(8, self.params.s5_liquidity_lookback_bars)
         if side == "long":
-            swing = recent_swing_low(self._state[bar.symbol].bars, lookback=8) or bar.low
+            swing = recent_swing_low(self._bucket(bar.symbol, tf).bars, lookback=8) or bar.low
             stop = stop_beyond("long", swing, buffer)
-            target = recent_swing_high(self._state[bar.symbol].bars, lookback=liq)
+            target = recent_swing_high(self._bucket(bar.symbol, tf).bars, lookback=liq)
             if target is None or target <= entry:
                 target = entry + self.params.s5_min_rr * abs(entry - stop)
         else:
-            swing = recent_swing_high(self._state[bar.symbol].bars, lookback=8) or bar.high
+            swing = recent_swing_high(self._bucket(bar.symbol, tf).bars, lookback=8) or bar.high
             stop = stop_beyond("short", swing, buffer)
-            target = recent_swing_low(self._state[bar.symbol].bars, lookback=liq)
+            target = recent_swing_low(self._bucket(bar.symbol, tf).bars, lookback=liq)
             if target is None or target >= entry:
                 target = entry - self.params.s5_min_rr * abs(entry - stop)
         rr = risk_reward(side, entry, stop, target)

@@ -33,6 +33,11 @@ from sniper_data.setup_detection.factors import add_factor, scale_breakdown
 from sniper_data.setup_detection.context import get_kill_zone, get_session_vwap, kill_zone_active
 from sniper_data.setup_detection.ranking import score_ensemble
 from sniper_data.setup_detection.news import AllowAllNewsFilter, NewsFilter
+from sniper_data.setup_detection.ohlcv_source import (
+    CONTINUOUS_TIMEFRAMES,
+    fetch_continuous_ohlcv,
+    is_dashboard_snapshot,
+)
 from sniper_data.setup_detection.params import SetupParams, load_setup_params
 from sniper_data.setup_detection.risk_client import RiskClient
 from sniper_data.setup_detection.setup1 import SweepReclaimDetector
@@ -139,6 +144,18 @@ class SetupOrchestrator:
     def on_ob(self, zone: OrderBlock) -> None:
         self.setup5.on_ob(zone)
         self.setup6.on_ob(zone)
+
+    async def hydrate_continuous_ohlcv(self, bars_store, symbols: list[str]) -> int:
+        """Prime S4/S5 from GET-equivalent DE store (1m/5m only)."""
+        n = 0
+        for symbol in symbols:
+            for tf in CONTINUOUS_TIMEFRAMES:
+                rows = await fetch_continuous_ohlcv(bars_store, symbol, tf)
+                for bar in rows:
+                    self.setup4.prime_bar(bar)
+                    self.setup5.prime_bar(bar)
+                    n += 1
+        return n
 
     async def on_bar(self, bar: OHLCVBar) -> list[SetupCandidate]:
         t0 = time.perf_counter()
@@ -326,6 +343,8 @@ def subscribe_inmemory(bus, orchestrator: SetupOrchestrator) -> None:
         orchestrator.on_ob(OrderBlock.model_validate(payload))
 
     async def _bar(payload: dict) -> None:
+        if is_dashboard_snapshot(payload):
+            return
         await orchestrator.on_bar(OHLCVBar.model_validate(payload))
 
     async def _session(payload: dict) -> None:
@@ -344,6 +363,7 @@ def subscribe_inmemory(bus, orchestrator: SetupOrchestrator) -> None:
     subscribe("mss_events", _mss)
     subscribe("fvg_zones", _fvg)
     subscribe("order_block_zones", _ob)
+    # S4/S5 bars: Kafka ohlcv_bars only. Never dashboard_snapshots.
     subscribe("ohlcv_bars", _bar)
     subscribe("session_levels", _session)
     subscribe("vwap_values", _vwap)

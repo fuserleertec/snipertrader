@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from sniper_data.config import Settings, get_settings
+from sniper_data.setup_detection.ohlcv_source import clamp_continuous_timeframes
 
 
 @dataclass(frozen=True)
@@ -39,13 +40,13 @@ class SetupParams:
     s4_min_rr_at_3s: float = 2.0
     s4_news_window_sec: int = 900
     s4_min_conviction: int = 60
-    s4_timeframes: tuple[str, ...] = ("1m", "5m")
+    s4_timeframes: tuple[str, ...] = ("1m", "5m")  # continuous DE bars only; not 15m snapshots
     s4_pin_wick_ratio: float = 2.5
     s4_band_tag_frac: float = 0.25
 
     # Setup 5 — vwap_pullback_cont
     s5_trend_bars: int = 20
-    s5_timeframes: tuple[str, ...] = ("5m",)
+    s5_timeframes: tuple[str, ...] = ("1m", "5m")  # continuous DE bars only; not 15m snapshots
     s5_first_touch_lookback_bars: int = 8
     s5_min_rr: float = 2.0
     s5_min_conviction: int = 60
@@ -118,11 +119,11 @@ def load_setup_params(settings: Settings | None = None) -> SetupParams:
         s4_min_rr_at_3s=s.setup4_min_rr_at_3s,
         s4_news_window_sec=s.setup4_news_window_sec,
         s4_min_conviction=s.setup4_min_conviction,
-        s4_timeframes=_csv(s.setup4_timeframes, ("1m", "5m")),
+        s4_timeframes=clamp_continuous_timeframes(_csv(s.setup4_timeframes, ("1m", "5m"))),
         s4_pin_wick_ratio=s.setup4_pin_wick_ratio,
         s4_band_tag_frac=s.setup4_band_tag_frac,
         s5_trend_bars=s.setup5_trend_bars,
-        s5_timeframes=_csv(s.setup5_timeframes, ("5m",)),
+        s5_timeframes=clamp_continuous_timeframes(_csv(s.setup5_timeframes, ("1m", "5m"))),
         s5_first_touch_lookback_bars=s.setup5_first_touch_lookback_bars,
         s5_min_rr=s.setup5_min_rr,
         s5_min_conviction=s.setup5_min_conviction,

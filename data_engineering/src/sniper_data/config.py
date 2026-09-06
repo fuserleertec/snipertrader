@@ -99,7 +99,7 @@ class Settings(BaseSettings):
     setup4_pin_wick_ratio: float = Field(default=2.5, alias="SETUP4_PIN_WICK_RATIO")
     setup4_band_tag_frac: float = Field(default=0.25, alias="SETUP4_BAND_TAG_FRAC")
     setup5_trend_bars: int = Field(default=20, alias="SETUP5_TREND_BARS")
-    setup5_timeframes: str = Field(default="5m", alias="SETUP5_TIMEFRAMES")
+    setup5_timeframes: str = Field(default="1m,5m", alias="SETUP5_TIMEFRAMES")
     setup5_first_touch_lookback_bars: int = Field(default=8, alias="SETUP5_FIRST_TOUCH_LOOKBACK_BARS")
     setup5_min_rr: float = Field(default=2.0, alias="SETUP5_MIN_RR")
     setup5_min_conviction: int = Field(default=60, alias="SETUP5_MIN_CONVICTION")

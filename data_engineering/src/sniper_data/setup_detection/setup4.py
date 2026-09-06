@@ -5,6 +5,9 @@ Session VWAP only: Redis ``vwap:{symbol}:session`` with Phase 1 flat
 
 Locked defaults: volume < 80% of 20-bar avg, SL beyond ±3σ, TP = session
 VWAP, min_rr 1.5 (prefer 2.0 at 3σ), min conviction 60, news stub 15m.
+
+Bars: continuous **1m and 5m** from Kafka ``ohlcv_bars`` / ``GET`` /
+``WS /v1/ohlcv``. Never 15m ``dashboard_snapshots``. 15m is scan cadence.
 """
 
 from __future__ import annotations
@@ -26,6 +29,7 @@ from sniper_data.setup_detection.context import (
     session_band_extreme,
 )
 from sniper_data.setup_detection.news import AllowAllNewsFilter, NewsFilter
+from sniper_data.setup_detection.ohlcv_source import clamp_continuous_timeframes, is_continuous_bar
 from sniper_data.setup_detection.params import SetupParams, load_setup_params
 
 log = logging.getLogger(__name__)
@@ -43,7 +47,10 @@ class _Sym:
 
 
 def _tf(bar: OHLCVBar, allowed: tuple[str, ...]) -> str | None:
+    if not is_continuous_bar(bar):
+        return None
     tf = bar.timeframe.value if hasattr(bar.timeframe, "value") else str(bar.timeframe)
+    allowed = clamp_continuous_timeframes(allowed)
     return tf if tf in allowed else None
 
 
@@ -76,35 +83,48 @@ class SdExtensionFadeDetector:
         self.store = store
         self.params = params or load_setup_params()
         self.news = news if news is not None else AllowAllNewsFilter()
-        self._state: dict[str, _Sym] = defaultdict(_Sym)
+        self._vwap: dict[str, VWAPValues] = {}
+        self._mss: dict[str, list[MssEvent]] = defaultdict(list)
+        self._state: dict[tuple[str, str], _Sym] = defaultdict(_Sym)
+
+    def _bucket(self, symbol: str, tf: str) -> _Sym:
+        return self._state[(symbol, tf)]
 
     def on_vwap(self, snap: VWAPValues) -> None:
         anchor = snap.anchor_type.value if hasattr(snap.anchor_type, "value") else str(snap.anchor_type)
         if anchor == "session":
-            self._state[snap.symbol].last_vwap = snap
+            self._vwap[snap.symbol] = snap
 
     def on_mss(self, event: MssEvent) -> None:
-        self._state[event.symbol].pending_mss.append(event)
+        self._mss[event.symbol].append(event)
+
+    def prime_bar(self, bar: OHLCVBar) -> None:
+        """Hydrate 1m/5m history without detecting (GET /v1/ohlcv bootstrap)."""
+        tf = _tf(bar, self.params.s4_timeframes)
+        if tf is None:
+            return
+        self._bucket(bar.symbol, tf).bars.append(bar)
 
     async def on_bar(self, bar: OHLCVBar) -> list[SetupCandidate]:
         tf = _tf(bar, self.params.s4_timeframes)
         if tf is None:
             return []
-        st = self._state[bar.symbol]
+        st = self._bucket(bar.symbol, tf)
         prev = st.bars[-1] if st.bars else None
         st.bars.append(bar)
-        vwap = st.last_vwap or await get_session_vwap(self.store, bar.symbol)
+        vwap = self._vwap.get(bar.symbol) or st.last_vwap or await get_session_vwap(self.store, bar.symbol)
         if vwap is not None:
             st.last_vwap = vwap
+            self._vwap[bar.symbol] = vwap
         if vwap is None:
             return []
         if self.news.should_skip(bar.symbol, bar.close_ts_ms, window_ms=self.params.s4_news_window_ms):
             log.info("setup4 skip news window symbol=%s ts=%s", bar.symbol, bar.close_ts_ms)
-            st.pending_mss.clear()
+            self._mss[bar.symbol].clear()
             return []
 
-        pending = list(st.pending_mss)
-        st.pending_mss.clear()
+        pending = list(self._mss[bar.symbol])
+        self._mss[bar.symbol].clear()
         avg_vol = _mean_volume(st.bars, self.params.s4_vol_avg_period)
         if avg_vol is None or avg_vol <= 0:
             return []

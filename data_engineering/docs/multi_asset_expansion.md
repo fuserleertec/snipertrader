@@ -21,7 +21,21 @@ sniper-data setups --inmemory --paper-scan --universe ES,CL,GC,NQ --refresh-minu
 pullback fixtures for each symbol, runs pattern detection + setups 1–6,
 calls Quant `POST /risk/validate` (locked fields, **omit `id`**), then
 publishes `setup_signals` only when `approved: true`. Cadence default is
-**15 minutes**. Use `--cycles 1` in CI; omit for a long-running paper loop.
+**15 minutes** (universe / ensemble scan only). Setup 4 / Setup 5 do **not**
+use that 15m clock as their bar timeframe. Use `--cycles 1` in CI; omit for
+a long-running paper loop.
+
+## Setup 4 / 5 continuous bars (DE PR #12)
+
+`sd_extension_fade` and `vwap_pullback_cont` consume **continuous 1m and 5m**
+bars only:
+
+* Kafka `ohlcv_bars`
+* `WS /v1/ws/ohlcv?timeframe=1m|5m`
+* `GET /v1/ohlcv/{symbol}?timeframe=1m|5m`
+
+They never read `dashboard_snapshots` or Redis `dashboard:snapshot:*`.
+Those 15m envelopes are dashboard / ranking helpers, not detector OHLCV.
 
 Existing `sniper-data setups --inmemory` is still the single-symbol BTCUSDT
 fixture replay.
