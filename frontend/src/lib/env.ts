@@ -18,9 +18,9 @@
  *                                  optional ensemble_score / rank_components)
  *   GET /signals/history         → same filters; falls back to GET /signals
  *   GET /performance/summary     → optional ?symbols= (≤20)
- *   GET /v1/universe             → DE :8000 full allowed set (same known fields, cap 20)
- *   GET /v1/universe/top         → DE :8000 allowed set (limit=10 P0, 20 P2/P4;
- *                                  { as_of_ts_ms, limit, symbols[] }; items[] alias)
+ *   GET /v1/universe             → prepared (same known fields, cap 20); not the selector
+ *   GET /v1/universe/top         → chart/universe selector + allowed set
+ *                                  (limit=10 P0, 20 P4; { as_of_ts_ms, limit, symbols[] })
  *   GET/WS /v1/ohlcv|vwap|session|avwap|volume-profile|kill-zone
  *                                → per-symbol; pass ANY selected symbol
  *                                  (live history may be thin outside BTCUSDT)

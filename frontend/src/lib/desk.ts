@@ -18,6 +18,8 @@ import type {
   Signal,
   SignalStatus,
   UniverseSource,
+  UniverseTopResponse,
+  UniverseTopSymbol,
 } from "./types";
 
 export {
@@ -106,7 +108,15 @@ export function uniqueSymbols(rows: Array<{ symbol: string }>, limit = DESK_SYMB
 }
 
 /**
- * Chart selector: DE `GET /v1/universe/top` (or mock of that envelope) first,
+ * Chart / universe selector extras — `GET /v1/universe/top` only.
+ * P0 uses limit=10; P4/P2/chart use limit=20. Do not pass `GET /v1/universe`.
+ */
+export function chartExtrasFromTop(top: UniverseTopResponse | undefined | null): UniverseTopSymbol[] {
+  return top?.symbols ?? [];
+}
+
+/**
+ * Chart selector: DE `GET /v1/universe/top` extras first (not `/v1/universe`),
  * tab symbols sorted to the front. Never a locked BTCUSDT/ETH/AAPL/ES quartet.
  */
 export function chartSymbolsForTab(

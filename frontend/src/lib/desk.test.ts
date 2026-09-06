@@ -6,6 +6,7 @@ import {
   allowedSymbolSet,
   cardsForTab,
   capWithinAllowed,
+  chartExtrasFromTop,
   chartSymbolsForTab,
   clampRefreshSec,
   historyStatusMatches,
@@ -330,6 +331,14 @@ describe("desk tabs + chart selector", () => {
     assert.ok(opts.length >= 5);
     assert.ok(opts.indexOf("ES") < opts.indexOf("AAPL"));
     assert.ok(opts.includes("NVDA"));
+    const top = mockUniverseTop(20);
+    const fromTop = chartExtrasFromTop(top);
+    assert.equal(fromTop.length, 20);
+    assert.deepEqual(fromTop, top.symbols);
+    assert.deepEqual(chartExtrasFromTop(undefined), []);
+    assert.notEqual(universePath(), universeTopPath(20));
+    const viaTop = chartSymbolsForTab("futures", [], fromTop);
+    assert.ok(viaTop.length >= 4);
     assert.ok(opts.includes("BTCUSDT"));
   });
 });

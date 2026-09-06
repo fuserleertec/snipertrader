@@ -10,7 +10,14 @@ import { usePerformance } from "@/hooks/usePerformance";
 import { useSignals } from "@/hooks/useSignals";
 import { useTheme } from "@/hooks/useTheme";
 import { inferAssetClass, LIST_REFRESH_SEC } from "@/lib/constants";
-import { assetClassToTab, chartSymbolsForTab, defaultSymbolForTab, tabToAssetClass, uniqueSymbols } from "@/lib/desk";
+import {
+  assetClassToTab,
+  chartExtrasFromTop,
+  chartSymbolsForTab,
+  defaultSymbolForTab,
+  tabToAssetClass,
+  uniqueSymbols,
+} from "@/lib/desk";
 import { isLivePatternWs, wsBase } from "@/lib/env";
 import { overlayForSetup, parseOverlayParam } from "@/lib/setups";
 import { overlayForFilter, resolveSelected } from "@/lib/setupView";
@@ -57,8 +64,8 @@ export function Dashboard() {
   }, [desk.ensemble.refresh_sec]);
 
   const deskSymbols = useMemo(
-    () => uniqueSymbols([...desk.universeTop20.symbols, ...desk.ensemble.items, ...desk.categorized.items]),
-    [desk.universeTop20.symbols, desk.ensemble.items, desk.categorized.items],
+    () => uniqueSymbols(chartExtrasFromTop(desk.universeTop20)),
+    [desk.universeTop20],
   );
 
   const market = useMarketData(symbol, timeframe);
@@ -73,14 +80,8 @@ export function Dashboard() {
   const performance = usePerformance(refresh.tick, deskSymbols);
 
   const chartSymbols = useMemo(
-    () =>
-      chartSymbolsForTab(
-        assetTab,
-        allSignals,
-        [...desk.universeTop20.symbols, ...desk.ensemble.items, ...desk.categorized.items],
-        symbol,
-      ),
-    [assetTab, allSignals, desk.universeTop20.symbols, desk.ensemble.items, desk.categorized.items, symbol],
+    () => chartSymbolsForTab(assetTab, allSignals, chartExtrasFromTop(desk.universeTop20), symbol),
+    [assetTab, allSignals, desk.universeTop20, symbol],
   );
 
   useEffect(() => {
@@ -133,11 +134,7 @@ export function Dashboard() {
   const onAssetTab = (tab: AssetTab) => {
     setAssetTab(tab);
     if (inferAssetClass(symbol) !== tabToAssetClass(tab)) {
-      const options = chartSymbolsForTab(tab, allSignals, [
-        ...desk.universeTop20.symbols,
-        ...desk.ensemble.items,
-        ...desk.categorized.items,
-      ]);
+      const options = chartSymbolsForTab(tab, allSignals, chartExtrasFromTop(desk.universeTop20));
       onSymbol(defaultSymbolForTab(tab, options));
     }
   };
@@ -382,8 +379,10 @@ export function Dashboard() {
                   performance: "/performance/summary",
                   history: "/signals/history",
                   universe_top: "/v1/universe/top",
+                  universe: "/v1/universe",
                   universe_source: desk.ensemble.universe_source,
                   universe_top10: desk.universeTop10.symbols.map((s) => s.symbol),
+                  universe_top20: desk.universeTop20.symbols.map((s) => s.symbol),
                   desk_symbols: deskSymbols,
                 },
                 live_trading: false,

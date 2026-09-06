@@ -61,9 +61,8 @@ function mockDesk(cycle: number): DeskLists {
 
 /**
  * P0/P4/universe lists.
- * DE `GET /v1/universe/top` is the allowed set when contracted; Quant ranks
- * top-10 / ≤20 inside it. Mocks only when NEXT_PUBLIC_USE_MOCKS=true
- * (provisional SETUP_UNIVERSE). Live never invents a hard-coded P0/P4 list.
+ * Chart/universe selector is `GET /v1/universe/top` (limit=10 P0, 20 P4) —
+ * not `GET /v1/universe`. Mock until DE pings. Quant ranks P0/P4 inside the set.
  */
 export function useDeskLists(refreshKey = 0): DeskLists {
   const mocks = isMockMode();
