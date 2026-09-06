@@ -282,7 +282,7 @@ class CategorizedPick(BaseModel):
     asset_class: AssetClass
     category: PickCategory
     score: float
-    setup_types: list[str] = Field(default_factory=list)
+    setup_types: list[str]
     confidence: float
 
 
