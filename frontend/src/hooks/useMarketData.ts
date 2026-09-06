@@ -83,8 +83,8 @@ function isSession(value: unknown): value is SessionLevels {
 /**
  * Per-symbol DE chart book. The selected symbol is passed into existing
  * GET/WS clients (ohlcv, vwap, session, avwap, VP, kill-zone).
- * Mocks generate multi-symbol OHLC; live history may be thin outside BTCUSDT
- * until DE seeds the full universe.
+ * Live hops same-origin `/v1/*` then DE :8000. Mocks only when USE_MOCKS=true.
+ * DE PR #12 seeds historical OHLCV for the full universe incl ES/CL/GC/NQ.
  */
 export function useMarketData(symbol: string, timeframe: Timeframe): MarketState {
   const mocks = isMockMode();

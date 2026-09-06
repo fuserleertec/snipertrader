@@ -11,6 +11,7 @@ import {
   chartSymbolsForTab,
   clampRefreshSec,
   historyStatusMatches,
+  nextRefreshFromAsOf,
   rankWithinAllowed,
   setupFilterType,
   uniqueSymbols,
@@ -309,16 +310,18 @@ describe("desk tabs + chart selector", () => {
     );
   });
 
-  it("futures chart selector can switch ES CL GC NQ (paper sim, not a P0 list)", () => {
+  it("futures chart selector switches ES CL GC NQ from /top — never invents a 4-symbol lock", () => {
     const extras = ["ES", "CL", "GC", "NQ", "AAPL"].map((symbol) => ({
       symbol,
       asset_class: symbol === "AAPL" ? ("equity" as const) : ("futures" as const),
     }));
     const fromUniverse = chartSymbolsForTab("futures", [], extras);
     assert.ok(["ES", "CL", "GC", "NQ"].every((s) => fromUniverse.includes(s)));
-    const paperOnly = chartSymbolsForTab("futures", [], []);
-    assert.ok(["ES", "CL", "GC", "NQ"].every((s) => paperOnly.includes(s)));
+    assert.deepEqual(chartSymbolsForTab("futures", [], []), []);
     assert.ok(fromUniverse.indexOf("ES") < fromUniverse.indexOf("AAPL"));
+    const fromMockTop = chartSymbolsForTab("futures", [], chartExtrasFromTop(mockUniverseTop(20)));
+    assert.ok(["ES", "CL", "GC", "NQ"].every((s) => fromMockTop.includes(s)));
+    assert.ok(fromMockTop.length >= 20);
   });
 
   it("chart selector uses universe/top first (tab symbols in front, not a 4-symbol lock)", () => {
@@ -430,6 +433,10 @@ describe("refresh cadence", () => {
     assert.equal(LIST_REFRESH_SEC, 900);
     assert.equal(clampRefreshSec(60), 900);
     assert.equal(clampRefreshSec(1800), 1800);
+    const asOf = 1_725_459_000_000;
+    assert.equal(nextRefreshFromAsOf(asOf, 900, asOf + 1), asOf + 900_000);
+    assert.equal(nextRefreshFromAsOf(asOf, 900, asOf + 900_000), asOf + 1_800_000);
+    assert.ok(nextRefreshFromAsOf(0, 900, 10_000) >= 10_000 + 900_000);
   });
 
   it("universe selector is live DE only when mocks are off", () => {
@@ -561,7 +568,8 @@ describe("provisional universe is mock-only", () => {
     assert.equal(top10.limit, 10);
     assert.equal(top10.symbols.length, 10);
     assert.equal(top20.symbols.length, 20);
-    assert.ok(top10.symbols.some((s) => ["ES", "CL", "GC", "NQ"].includes(s.symbol)) || top20.symbols.some((s) => s.symbol === "ES"));
+    assert.ok(["ES", "CL", "GC", "NQ"].every((s) => top10.symbols.some((row) => row.symbol === s)));
+    assert.ok(["ES", "CL", "GC", "NQ"].every((s) => top20.symbols.some((row) => row.symbol === s)));
     const parsed = normalizeUniverseTop({
       as_of_ts_ms: 1725459000000,
       limit: 10,

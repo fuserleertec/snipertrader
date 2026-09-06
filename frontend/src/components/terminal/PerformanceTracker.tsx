@@ -26,7 +26,7 @@ export function PerformanceTracker({ summary }: { summary: PerformanceSummary })
       <div className="perf-head">
         <b>Performance tracker</b>
         <span className="sim">
-          {summary.source === "live" ? "LIVE :8001" : "MOCK FALLBACK"}
+          {summary.source === "live" ? "LIVE :8001" : "PAPER MOCK"}
         </span>
       </div>
       <div className="sec-sub" style={{ marginBottom: 10 }}>

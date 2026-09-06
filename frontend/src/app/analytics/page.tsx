@@ -61,7 +61,7 @@ export default function AnalyticsPage() {
               LIVE
             </span>
           ) : (
-            <span className="sim">MOCK FALLBACK</span>
+            <span className="sim">PAPER MOCK</span>
           )}{" "}
           Stub P&amp;L is not an API field.
         </p>

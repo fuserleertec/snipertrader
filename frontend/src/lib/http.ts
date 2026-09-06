@@ -60,6 +60,13 @@ async function getSameOrigin<T>(path: string): Promise<T | null> {
   }
 }
 
+/** DE chart/universe HTTP: same-origin rewrite, then :8000 (`deHttpUrl`). */
+async function getDeJson<T>(path: string): Promise<T | null> {
+  const viaRewrite = await getSameOrigin<T>(path);
+  if (viaRewrite) return viaRewrite;
+  return getJson<T>(path, deHttpUrl);
+}
+
 function symbolSegment(symbol: string): string {
   return encodeURIComponent(normalizeSymbol(symbol) || symbol.toUpperCase());
 }
@@ -93,15 +100,15 @@ export function killZonePath(symbol: string): string {
 }
 
 export function fetchVwap(symbol: string, anchor: AnchorType): Promise<VWAPValues | null> {
-  return getJson<VWAPValues>(vwapPath(symbol, anchor));
+  return getDeJson<VWAPValues>(vwapPath(symbol, anchor));
 }
 
 export function fetchSession(symbol: string, sessionType: SessionType): Promise<SessionLevels | null> {
-  return getJson<SessionLevels>(sessionPath(symbol, sessionType));
+  return getDeJson<SessionLevels>(sessionPath(symbol, sessionType));
 }
 
 export function fetchSessions(symbol: string): Promise<SessionListResponse | null> {
-  return getJson<SessionListResponse>(sessionPath(symbol));
+  return getDeJson<SessionListResponse>(sessionPath(symbol));
 }
 
 /** LIVE (PR #1): GET /v1/ohlcv/{symbol}?timeframe=1m&limit=200 → { symbol, timeframe, bars } */
@@ -110,7 +117,7 @@ export async function fetchOhlcv(
   timeframe: string,
   limit = HISTORY_LIMIT,
 ): Promise<OHLCVBar[]> {
-  const body = await getJson<OHLCVBar[] | { bars?: OHLCVBar[] }>(ohlcvPath(symbol, timeframe, limit));
+  const body = await getDeJson<OHLCVBar[] | { bars?: OHLCVBar[] }>(ohlcvPath(symbol, timeframe, limit));
   if (!body) return [];
   if (Array.isArray(body)) return body;
   return body.bars ?? [];
@@ -184,24 +191,24 @@ export async function fetchSignal(id: string): Promise<Signal | null> {
   return normalizeSignal(await getJson<unknown>(path, quantHttpUrl));
 }
 
-/** DE Phase 2 — `GET /v1/avwap/{symbol}` or `/{anchor_id}`. Same-origin `/v1/*` rewrite. */
+/** DE Phase 2 — `GET /v1/avwap/{symbol}` or `/{anchor_id}`. Same-origin `/v1/*` rewrite, then :8000. */
 export async function fetchAvwap(symbol: string, anchorId?: string): Promise<AnchoredVwap | null> {
-  return normalizeAvwap(await getJson<unknown>(avwapPath(symbol, anchorId)));
+  return normalizeAvwap(await getDeJson<unknown>(avwapPath(symbol, anchorId)));
 }
 
 /** DE Phase 2 — one session book, or unwrap `{ profiles: [{ value }] }`. */
 export async function fetchVolumeProfile(symbol: string, sessionType?: SessionType): Promise<VolumeProfile | null> {
   if (sessionType) {
-    return normalizeVolumeProfile(await getJson<unknown>(volumeProfilePath(symbol, sessionType)));
+    return normalizeVolumeProfile(await getDeJson<unknown>(volumeProfilePath(symbol, sessionType)));
   }
-  const listed = await getJson<unknown>(volumeProfilePath(symbol));
+  const listed = await getDeJson<unknown>(volumeProfilePath(symbol));
   const fromList = normalizeVolumeProfile(listed);
   if (fromList) return fromList;
-  return normalizeVolumeProfile(await getJson<unknown>(volumeProfilePath(symbol, "asia")));
+  return normalizeVolumeProfile(await getDeJson<unknown>(volumeProfilePath(symbol, "asia")));
 }
 
 export async function fetchKillZone(symbol: string): Promise<KillZoneEvent | null> {
-  return normalizeKillZone(await getJson<unknown>(killZonePath(symbol)));
+  return normalizeKillZone(await getDeJson<unknown>(killZonePath(symbol)));
 }
 
 /** Quant PR #2 `GET /performance/summary` via rewrite → :8001, then direct. Optional `symbols=` (≤20). */
@@ -392,18 +399,12 @@ export function normalizeUniverseTop(raw: unknown, fallbackLimit = ENSEMBLE_LIMI
 /** DE `GET /v1/universe/top?limit=10|20` — allowed set. Quant re-ranks P0/P4. */
 export async function fetchUniverseTop(limit: number): Promise<UniverseTopResponse | null> {
   const cap = limit <= ENSEMBLE_LIMIT ? ENSEMBLE_LIMIT : DESK_SYMBOL_LIMIT;
-  const path = universeTopPath(limit);
-  const viaRewrite = await getSameOrigin<unknown>(path);
-  if (viaRewrite) return normalizeUniverseTop(viaRewrite, cap);
-  return normalizeUniverseTop(await getJson<unknown>(path, deHttpUrl), cap);
+  return normalizeUniverseTop(await getDeJson<unknown>(universeTopPath(limit)), cap);
 }
 
 /** Prepared `GET /v1/universe` — same `{ as_of_ts_ms, symbols[] }` fields as `/top`, cap 20. */
 export async function fetchUniverse(): Promise<UniverseTopResponse | null> {
-  const path = universePath();
-  const viaRewrite = await getSameOrigin<unknown>(path);
-  if (viaRewrite) return normalizeUniverseTop(viaRewrite, DESK_SYMBOL_LIMIT);
-  return normalizeUniverseTop(await getJson<unknown>(path, deHttpUrl), DESK_SYMBOL_LIMIT);
+  return normalizeUniverseTop(await getDeJson<unknown>(universePath()), DESK_SYMBOL_LIMIT);
 }
 
 /** GET /picks/categorized?asset_class=&limit=20 — no class required; ≤20 symbols. */

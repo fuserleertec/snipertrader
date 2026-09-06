@@ -117,12 +117,13 @@ export function chartExtrasFromTop(top: UniverseTopResponse | undefined | null):
 }
 
 /**
- * Chart selector: DE `GET /v1/universe/top` extras first (not `/v1/universe`),
- * tab symbols sorted to the front. Never a locked BTCUSDT/ETH/AAPL/ES quartet.
+ * Chart selector: DE `GET /v1/universe/top` only (not `/v1/universe`).
+ * Tab symbols sort to the front. Empty extras stay empty — never invent a
+ * 4-symbol ES/CL/GC/NQ (or BTCUSDT/ETH/AAPL/ES) lock.
  */
 export function chartSymbolsForTab(
   tab: AssetTab,
-  signals: Signal[],
+  _signals: Signal[],
   extras: Array<{ symbol: string; asset_class?: AssetClass }>,
   current?: string,
 ): string[] {
@@ -130,13 +131,8 @@ export function chartSymbolsForTab(
   const universe = uniqueSymbols(extras);
   const tabFirst = universe.filter((s) => inferAssetClass(s) === asset);
   const rest = universe.filter((s) => inferAssetClass(s) !== asset);
-  const fromSignals = uniqueSymbols(signals);
-  const focused = current ? [current.toUpperCase()] : [];
-  /** Paper sim: Futures tab can always switch ES/CL/GC/NQ. Not a P0/P4 ranking list. */
-  const paperFutures = tab === "futures" ? [...FUTURES_SYMBOLS] : [];
-  return uniqueSymbols(
-    [...tabFirst, ...paperFutures, ...rest, ...fromSignals, ...focused].map((symbol) => ({ symbol })),
-  );
+  const focused = current && universe.includes(current.toUpperCase()) ? [current.toUpperCase()] : [];
+  return uniqueSymbols([...tabFirst, ...rest, ...focused].map((symbol) => ({ symbol })));
 }
 
 export function defaultSymbolForTab(tab: AssetTab, options: string[]): string {
@@ -150,6 +146,22 @@ export function defaultSymbolForTab(tab: AssetTab, options: string[]): string {
 export function clampRefreshSec(raw: unknown): number {
   const n = typeof raw === "number" && Number.isFinite(raw) ? raw : LIST_REFRESH_SEC;
   return Math.max(LIST_REFRESH_SEC, Math.round(n));
+}
+
+/**
+ * Next 15m tick from DE/Quant `as_of_ts_ms` + `refresh_sec`.
+ * Aligns to the refresh job; never faster than 900s.
+ */
+export function nextRefreshFromAsOf(
+  asOfTsMs: number,
+  refreshSec = LIST_REFRESH_SEC,
+  now = Date.now(),
+): number {
+  const interval = clampRefreshSec(refreshSec) * 1000;
+  if (!asOfTsMs || asOfTsMs <= 0) return now + interval;
+  let next = asOfTsMs + interval;
+  while (next <= now) next += interval;
+  return next;
 }
 
 export function parseAssetClassParam(raw: string | undefined | null): AssetClass | undefined {

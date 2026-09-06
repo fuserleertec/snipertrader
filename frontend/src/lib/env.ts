@@ -23,6 +23,7 @@
  *                                  schemas/universe_top.schema.json). Mock only if USE_MOCKS=true.
  *   GET/WS /v1/ohlcv|vwap|session|avwap|volume-profile|kill-zone
  *                                → per-symbol; full universe incl ES/CL/GC/NQ seeded
+ * Live when USE_MOCKS=false (DE HTTP/WS default :8000). Mock only if USE_MOCKS=true.
  * live_trading is never flipped here. Paper / mocks only.
  */
 

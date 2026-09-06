@@ -57,12 +57,26 @@ export function Dashboard() {
   const scrollTimer = useRef<number | null>(null);
 
   const [refreshSec, setRefreshSec] = useState(LIST_REFRESH_SEC);
-  const refresh = useListRefresh(refreshSec);
+  const [asOfTsMs, setAsOfTsMs] = useState(0);
+  const refresh = useListRefresh(refreshSec, asOfTsMs);
   const desk = useDeskLists(refresh.tick);
 
   useEffect(() => {
     setRefreshSec(desk.ensemble.refresh_sec);
-  }, [desk.ensemble.refresh_sec]);
+    const asOf = Math.max(
+      desk.universeTop20.as_of_ts_ms,
+      desk.universeTop10.as_of_ts_ms,
+      desk.ensemble.as_of_ts_ms,
+      desk.categorized.as_of_ts_ms,
+    );
+    setAsOfTsMs(asOf);
+  }, [
+    desk.ensemble.refresh_sec,
+    desk.universeTop20.as_of_ts_ms,
+    desk.universeTop10.as_of_ts_ms,
+    desk.ensemble.as_of_ts_ms,
+    desk.categorized.as_of_ts_ms,
+  ]);
 
   const deskSymbols = useMemo(
     () => uniqueSymbols(chartExtrasFromTop(desk.universeTop20)),

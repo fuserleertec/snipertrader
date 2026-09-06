@@ -96,14 +96,15 @@ Card/table click joins chart overlays via `trigger_event_ids`.
 | Variable | Default | Purpose |
 |---|---|---|
 | `NEXT_PUBLIC_USE_MOCKS` | `true` | In-browser streams. Set `false` for live Data Eng + Quant. |
-| `NEXT_PUBLIC_WS_BASE` | `ws://localhost:8000` | Data Eng WebSocket origin. Pattern overlays go live only when this is set **and** `USE_MOCKS=false`. |
+| `NEXT_PUBLIC_WS_BASE` | `ws://localhost:8000` | Data Eng WebSocket origin. Live when `USE_MOCKS=false` (defaults to `:8000`). |
 | `NEXT_PUBLIC_HTTP_BASE` | `http://localhost:8000` | Data Eng HTTP. Same-origin `/v1/*` is rewritten here. |
 | `NEXT_PUBLIC_QUANT_API_BASE` | `http://localhost:8001` | Quant REST (`/signals`, `/performance/summary`). Same-origin paths rewrite here. |
 | `NEXT_PUBLIC_QUANT_WS_BASE` | `ws://localhost:8001` | Quant WS (`/ws/signals`) |
 | `NEXT_PUBLIC_PICKS_API_BASE` | Quant API base | Optional override for `GET /picks/ensemble` and `GET /picks/categorized`. |
 
-List refresh is **15 minutes** (`refresh_sec=900`). The status strip and paper
-desk share that cadence. Manual **REFRESH** still refetches immediately.
+List refresh is **15 minutes** from DE/Quant `as_of_ts_ms` + `refresh_sec=900`.
+The status strip and paper desk share that cadence. Manual **REFRESH** still
+refetches immediately.
 `NEXT_PUBLIC_USE_MOCKS=true` (default) serves dynamic mock generators behind
 the typed clients — not a hardcoded SMCI/TSM array. Set `false` only after
 Quant/ML/DE list endpoints are up. **`live_trading` stays false.**
@@ -119,7 +120,7 @@ Placeholder list contracts (same-origin rewrite → Quant `:8001`):
 | GET | `/performance/summary` | Section 08 tracker. Optional `?symbols=` (≤20) |
 | GET | `/v1/universe` | Prepared DE full set (same known fields as `/top`, cap 20). **Not** the chart/universe selector. |
 | GET | `/v1/universe/top?limit=10\|20` | **DE PR #12 LIVE** (`schemas/universe_top.schema.json`). Chart/universe selector + allowed set. `limit` ∈ `{10,20}`. `{ as_of_ts_ms, limit, symbols[{symbol,asset_class,rank,score}] }`. Mock only when `NEXT_PUBLIC_USE_MOCKS=true`. Live miss stays empty. 15m from `as_of_ts_ms` / `refresh_sec=900`. |
-| GET/WS | `/v1/ohlcv\|vwap\|session\|avwap\|volume-profile\|kill-zone` | Per-symbol chart feeds. Switching the chart passes the selected symbol (ES/CL/GC/NQ, …). Paper mocks generate multi-symbol OHLC; live demo history may be thin outside BTCUSDT until DE seeds the universe. |
+| GET/WS | `/v1/ohlcv\|vwap\|session\|avwap\|volume-profile\|kill-zone` | Per-symbol chart feeds. Switching the chart passes the selected symbol (ES/CL/GC/NQ, …). Same-origin `/v1/*` rewrite, then DE `:8000`. Paper mocks generate multi-symbol OHLC only when `USE_MOCKS=true`. DE PR #12 seeds historical OHLCV for the full universe. |
 
 `NEXT_PUBLIC_QUANT_HTTP_BASE` is accepted as an alias of `QUANT_API_BASE`.
 

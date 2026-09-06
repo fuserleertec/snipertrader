@@ -230,18 +230,28 @@ export function mockUniverse(cycle = 0, now = MOCK_NOW): UniverseTopResponse {
   return mockUniverseTop(DESK_SYMBOL_LIMIT, cycle, now);
 }
 
+const PAPER_FUTURES = ["ES", "CL", "GC", "NQ"] as const;
+
 /** Locked DE envelope: `{ as_of_ts_ms, limit, symbols[] }` ordered by rank asc. */
 export function mockUniverseTop(limit: number, cycle = 0, now = MOCK_NOW): UniverseTopResponse {
   const cap = Math.min(DESK_SYMBOL_LIMIT, Math.max(1, limit));
-  const symbols = [...SETUP_UNIVERSE]
-    .map((row) => ({
-      symbol: row.symbol,
-      asset_class: row.asset_class,
-      rank: 0,
-      score: +unit(`${row.symbol}:${cycle}:uni`).toFixed(3),
-    }))
-    .sort((a, b) => b.score - a.score || a.symbol.localeCompare(b.symbol))
-    .slice(0, cap)
+  const scored = [...SETUP_UNIVERSE].map((row) => ({
+    symbol: row.symbol,
+    asset_class: row.asset_class,
+    rank: 0,
+    score: +unit(`${row.symbol}:${cycle}:uni`).toFixed(3),
+  }));
+  const byScore = (a: (typeof scored)[number], b: (typeof scored)[number]) =>
+    b.score - a.score || a.symbol.localeCompare(b.symbol);
+  /** Paper mock always includes ES/CL/GC/NQ when the cap can hold them — not a UI lock. */
+  const pinned =
+    cap >= PAPER_FUTURES.length
+      ? scored.filter((s) => PAPER_FUTURES.includes(s.symbol as (typeof PAPER_FUTURES)[number]))
+      : [];
+  const rest = scored.filter((s) => !pinned.some((p) => p.symbol === s.symbol)).sort(byScore);
+  const keep = pinned.slice(0, cap);
+  const symbols = [...keep, ...rest.slice(0, Math.max(0, cap - keep.length))]
+    .sort(byScore)
     .map((row, i) => ({ ...row, rank: i + 1 }));
   return { as_of_ts_ms: now + cycle * LIST_REFRESH_SEC * 1000, limit: cap, symbols };
 }
