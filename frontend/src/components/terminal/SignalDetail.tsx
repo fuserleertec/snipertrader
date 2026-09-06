@@ -1,5 +1,6 @@
 "use client";
 
+import { formatRankComponents } from "@/lib/mocks/terminal";
 import { productKeyOf } from "@/lib/setups";
 import { riskReward } from "@/lib/signals";
 import type { Signal } from "@/lib/types";
@@ -80,10 +81,18 @@ export function SignalDetail({
           : ""}
       </div>
       {signal.rank_components && (
-        <div className="sec-sub">
-          rank_components · sq {signal.rank_components.setup_quality.toFixed(2)} · risk{" "}
-          {signal.rank_components.risk_adjusted.toFixed(2)} · kz {signal.rank_components.kill_zone.toFixed(2)} · vol{" "}
-          {signal.rank_components.volume.toFixed(2)} · fresh {signal.rank_components.freshness.toFixed(2)}
+        <div
+          className="sec-sub"
+          title={[
+            `rank_components  ${formatRankComponents(signal.rank_components)}`,
+            signal.contributing_factors?.length
+              ? `contributing_factors  ${signal.contributing_factors.join(" · ")}`
+              : "",
+          ]
+            .filter(Boolean)
+            .join("\n")}
+        >
+          rank_components · {formatRankComponents(signal.rank_components)}
         </div>
       )}
       <div className="pick-tags" style={{ marginTop: 10 }}>

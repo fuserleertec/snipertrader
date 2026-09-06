@@ -374,8 +374,8 @@ export interface Signal {
   /** Quant publish-only {name, weight, score, note?}[]. */
   factor_breakdown?: FactorBreakdown[];
   /**
-   * Optional ML ranking inputs (future). May arrive on the signal or a
-   * side-channel `ensemble_features` object. Not required until the ML PR.
+   * Optional ML ensemble_features. May arrive on the signal or a
+   * side-channel `ensemble_features` object.
    */
   ensemble_score?: number;
   rank_components?: RankComponents;
@@ -427,10 +427,11 @@ export interface RankComponents {
 }
 
 /**
- * GET /picks/ensemble item — Quant contract:
- * rank, symbol, asset_class, score, setup_types, confidence,
- * ensemble_score, rank_components.
+ * GET /picks/ensemble item — Quant contract (top 10, refresh_sec=900):
+ * rank, symbol, asset_class, score, setup_types, confidence.
  * Mapping: score ← ensemble_score, confidence ← best_confidence when those fields are present.
+ * Optional ML ensemble_features on the item (or nested `ensemble_features`):
+ * rank_components, contributing_factors.
  */
 export interface EnsemblePickItem {
   rank: number;
@@ -440,7 +441,7 @@ export interface EnsemblePickItem {
   setup_types: SetupType[];
   confidence: number;
   ensemble_score: number;
-  rank_components: RankComponents;
+  rank_components?: RankComponents;
   contributing_factors?: string[];
   best_confidence?: number;
 }

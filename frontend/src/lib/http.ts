@@ -200,8 +200,20 @@ function readSetupTypes(raw: unknown): SetupType[] {
   return raw.filter((x): x is SetupType => typeof x === "string" && x !== "ob_fvg");
 }
 
-function readComponents(raw: unknown): RankComponents {
-  const row = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+function finiteNum(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function readFactorList(raw: unknown): string[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const factors = raw.filter((x): x is string => typeof x === "string");
+  return factors.length ? factors : undefined;
+}
+
+/** Optional on the wire — omit rather than invent zeros. */
+function readComponents(raw: unknown): RankComponents | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const row = raw as Record<string, unknown>;
   return {
     setup_quality: num(row.setup_quality),
     risk_adjusted: num(row.risk_adjusted),
@@ -209,6 +221,12 @@ function readComponents(raw: unknown): RankComponents {
     volume: num(row.volume),
     freshness: num(row.freshness),
   };
+}
+
+function ensembleFeatureBag(row: Record<string, unknown>): Record<string, unknown> {
+  return row.ensemble_features && typeof row.ensemble_features === "object"
+    ? (row.ensemble_features as Record<string, unknown>)
+    : {};
 }
 
 export function normalizeEnsemblePicks(raw: unknown): EnsemblePicksResponse | null {
@@ -222,24 +240,22 @@ export function normalizeEnsemblePicks(raw: unknown): EnsemblePicksResponse | nu
     if (typeof row.symbol !== "string" || !row.symbol) continue;
     const asset = (wireAssetClass(typeof row.asset_class === "string" ? row.asset_class : "") ??
       inferAssetClass(row.symbol)) as AssetClass;
-    const ensemble_score = num(row.ensemble_score, num(row.score));
+    const side = ensembleFeatureBag(row);
+    const ensemble_score = num(row.ensemble_score ?? side.ensemble_score, num(row.score));
     const score = ensemble_score;
-    const best = typeof row.best_confidence === "number" && Number.isFinite(row.best_confidence)
-      ? row.best_confidence
-      : undefined;
-    const factors = Array.isArray(row.contributing_factors)
-      ? row.contributing_factors.filter((x): x is string => typeof x === "string")
-      : undefined;
+    const best = finiteNum(row.best_confidence) ?? finiteNum(side.best_confidence);
+    const factors = readFactorList(row.contributing_factors) ?? readFactorList(side.contributing_factors);
+    const rank_components = readComponents(row.rank_components) ?? readComponents(side.rank_components);
     items.push({
       rank: num(row.rank, items.length + 1),
       symbol: row.symbol.toUpperCase(),
       asset_class: asset,
       score,
       setup_types: readSetupTypes(row.setup_types),
-      confidence: best ?? num(row.confidence),
+      confidence: best ?? num(row.confidence ?? side.confidence),
       ensemble_score,
-      rank_components: readComponents(row.rank_components),
-      ...(factors?.length ? { contributing_factors: factors } : {}),
+      ...(rank_components ? { rank_components } : {}),
+      ...(factors ? { contributing_factors: factors } : {}),
       ...(best != null ? { best_confidence: best } : {}),
     });
   }

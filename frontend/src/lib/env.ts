@@ -9,7 +9,9 @@
  * Quant (PR #2):    NEXT_PUBLIC_QUANT_API_BASE / NEXT_PUBLIC_QUANT_WS_BASE
  *
  * List / ranking placeholders (Quant :8001 until ML/DE own them):
- *   GET /picks/ensemble          → top 10  (as_of_ts_ms, refresh_sec=900, items[])
+ *   GET /picks/ensemble          → top 10  (as_of_ts_ms, refresh_sec=900, items[];
+ *                                  score ← ensemble_score, confidence ← best_confidence;
+ *                                  optional rank_components + contributing_factors)
  *   GET /picks/categorized       → ≤20     (?asset_class=&limit=20)
  *   GET /signals                 → multi-symbol desk (~20; ?symbols= + filters;
  *                                  keep contributing_factors + factor_breakdown;

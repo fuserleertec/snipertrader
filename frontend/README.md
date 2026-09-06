@@ -112,7 +112,7 @@ Placeholder list contracts (same-origin rewrite → Quant `:8001`):
 
 | Method | Path | Role |
 |---|---|---|
-| GET | `/picks/ensemble` | P0 top 10. `{ as_of_ts_ms, refresh_sec, universe_source: SETUP_UNIVERSE\|DE, items[{ rank, symbol, asset_class, score, setup_types, confidence, ensemble_score, rank_components:{ setup_quality, risk_adjusted, kill_zone, volume, freshness } }] }`. `score` ← `ensemble_score`. Client poll uses `refresh_sec` (900). Dynamic lists only. |
+| GET | `/picks/ensemble` | P0 top 10. `{ as_of_ts_ms, refresh_sec=900, universe_source: SETUP_UNIVERSE\|DE, items[{ rank, symbol, asset_class, score, setup_types, confidence, ensemble_score? }] }`. Mapping: `score` ← `ensemble_score`, `confidence` ← `best_confidence` when present. Optional ML `ensemble_features`: `rank_components` (`setup_quality`, `risk_adjusted`, `kill_zone`, `volume`, `freshness`) + `contributing_factors[]` (item or nested object). Client poll uses `refresh_sec` (900). |
 | GET | `/picks/categorized?asset_class=&limit=20` | P4 ≤20. `category` ∈ `momentum\|mean_reversion\|confluence\|other` |
 | GET | `/signals?status=ACTIVE&asset_class=futures\|equity\|crypto&setup_type=&symbol=&limit=` | Active Setup Cards. Tabs: Futures→`futures`, Stocks→`equity` (`stocks` alias), Cryptos→`crypto`. `{ items, next_cursor }` |
 | GET | `/signals` + `/signals/history` | P2 history (`symbol`/`status`/`setup_type`/`from_ts`/`to_ts`/`side`/`cursor`, multi-symbol ~20). Client falls back to `/signals` |
@@ -209,9 +209,9 @@ REST:
   `{ "items": [ Signal ], "next_cursor": string|null }`
   Multi-symbol desk (~20). `symbols=ES,CL,…` optional. History is this same
   list (client also tries `GET /signals/history`). Keep
-  `contributing_factors` + `factor_breakdown`. Optional future ranking
+  `contributing_factors` + `factor_breakdown`. Optional ML ranking
   inputs: `ensemble_score` / `rank_components` on the signal or
-  `ensemble_features` side channel (ignored until the ML PR).
+  `ensemble_features` side channel.
 - `GET /signals/{id}` → `Signal`
 - `GET /performance/summary` → Quant PR #2 at `:8001` (flat envelope +
   `by_setup` product keys). Same-origin rewrite, then mock fallback.

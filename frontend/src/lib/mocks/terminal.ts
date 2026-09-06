@@ -1,4 +1,4 @@
-import type { AssetClass, CategorizedPickItem, EnsemblePickItem, Signal } from "../types";
+import type { AssetClass, CategorizedPickItem, EnsemblePickItem, RankComponents, Signal } from "../types";
 import { mockQuote, universeName } from "./lists";
 
 export type EngineId = "K" | "S" | "M" | "F" | "Q";
@@ -15,10 +15,28 @@ export interface EnsemblePick {
   conviction: number;
   engines: Record<EngineId, Stance>;
   reason: string;
+  tooltip: string;
   mode: "market" | "activity";
   category: string;
   source: string;
   latency: string;
+}
+
+export function formatRankComponents(rc: RankComponents): string {
+  return `sq ${rc.setup_quality.toFixed(2)} · risk ${rc.risk_adjusted.toFixed(2)} · kz ${rc.kill_zone.toFixed(2)} · vol ${rc.volume.toFixed(2)} · fresh ${rc.freshness.toFixed(2)}`;
+}
+
+/** Native `title` text for QEP ensemble rows (rank_components + contributing_factors). */
+export function ensembleFeatureTooltip(item: EnsemblePickItem): string {
+  const conf = item.best_confidence ?? item.confidence;
+  const lines = [`ensemble_score ${item.ensemble_score.toFixed(3)} · confidence ${conf.toFixed(3)}`];
+  if (item.rank_components) {
+    lines.push(`rank_components  ${formatRankComponents(item.rank_components)}`);
+  }
+  if (item.contributing_factors?.length) {
+    lines.push(`contributing_factors  ${item.contributing_factors.join(" · ")}`);
+  }
+  return lines.join("\n");
 }
 
 export const ENGINE_META: Record<EngineId, { label: string; color: string }> = {
@@ -185,10 +203,17 @@ export function presentEnsemble(item: EnsemblePickItem, mode: "market" | "activi
   };
   const rc = item.rank_components;
   const factors = item.contributing_factors?.length ? ` · ${item.contributing_factors.join("+")}` : "";
+  const setups = item.setup_types.join(" + ") || "ensemble";
   const why =
     mode === "activity"
-      ? `rank_components vol ${rc.volume.toFixed(2)} · kz ${rc.kill_zone.toFixed(2)} · freshness ${rc.freshness.toFixed(2)}${factors}`
-      : `${item.setup_types.join(" + ") || "ensemble"} · sq ${rc.setup_quality.toFixed(2)} · risk ${rc.risk_adjusted.toFixed(2)}${factors}`;
+      ? rc
+        ? `rank_components vol ${rc.volume.toFixed(2)} · kz ${rc.kill_zone.toFixed(2)} · freshness ${rc.freshness.toFixed(2)}${factors}`
+        : factors
+          ? `contributing_factors${factors}`
+          : `${setups} · ensemble_score ${item.ensemble_score.toFixed(2)}`
+      : rc
+        ? `${setups} · sq ${rc.setup_quality.toFixed(2)} · risk ${rc.risk_adjusted.toFixed(2)}${factors}`
+        : `${setups} · score ${item.ensemble_score.toFixed(2)}${factors}`;
   return {
     ticker: item.symbol,
     company: `${universeName(item.symbol)} · ${item.asset_class}`,
@@ -199,6 +224,7 @@ export function presentEnsemble(item: EnsemblePickItem, mode: "market" | "activi
     conviction: conv,
     engines: enginesForSetup(fake),
     reason: why,
+    tooltip: ensembleFeatureTooltip(item),
     mode,
     category: classCategory(item.asset_class),
     source: "GET /picks/ensemble",

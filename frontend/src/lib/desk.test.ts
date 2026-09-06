@@ -15,6 +15,7 @@ import {
 } from "./desk";
 import { joinSymbols, normalizeCategorizedPicks, normalizeEnsemblePicks, normalizeUniverseTop, signalListPath } from "./http";
 import { mockCategorizedPicks, mockDroppedPicks, mockEnsemblePicks, mockUniverseTop, SETUP_UNIVERSE } from "./mocks/lists";
+import { ensembleFeatureTooltip, presentEnsemble } from "./mocks/terminal";
 import { mockListSignals } from "./mocks/signals";
 import { normalizeSignal } from "./signals";
 import { pinSetupCards } from "./setupView";
@@ -91,13 +92,8 @@ describe("Quant list contracts", () => {
     assert.ok(ens.items.length <= 10);
     assert.equal(ens.items[0]?.symbol, "BTCUSDT");
     assert.equal(ens.items[0]?.ensemble_score, 0);
-    assert.deepEqual(ens.items[0]?.rank_components, {
-      setup_quality: 0,
-      risk_adjusted: 0,
-      kill_zone: 0,
-      volume: 0,
-      freshness: 0,
-    });
+    assert.equal(ens.items[0]?.rank_components, undefined);
+    assert.equal(ens.items[0]?.contributing_factors, undefined);
   });
 
   it("parses universe_source + ensemble_score + rank_components on GET /picks/ensemble", () => {
@@ -160,13 +156,62 @@ describe("Quant list contracts", () => {
     assert.equal(ens?.items[0]?.confidence, 0.81);
     assert.equal(ens?.items[0]?.best_confidence, 0.81);
     assert.equal(ens?.items[0]?.symbol, "ES");
-    assert.deepEqual(ens?.items[0]?.rank_components, {
-      setup_quality: 0,
-      risk_adjusted: 0,
-      kill_zone: 0,
-      volume: 0,
-      freshness: 0,
+    assert.equal(ens?.items[0]?.rank_components, undefined);
+  });
+
+  it("keeps optional rank_components + contributing_factors on ensemble items", () => {
+    const nested = normalizeEnsemblePicks({
+      as_of_ts_ms: 2,
+      refresh_sec: 900,
+      items: [
+        {
+          rank: 1,
+          symbol: "NQ",
+          asset_class: "futures",
+          score: 0.2,
+          setup_types: ["fvg_entry"],
+          confidence: 0.3,
+          ensemble_features: {
+            ensemble_score: 0.71,
+            best_confidence: 0.88,
+            rank_components: {
+              setup_quality: 0.9,
+              risk_adjusted: 0.6,
+              kill_zone: 0.5,
+              volume: 0.4,
+              freshness: 0.3,
+            },
+            contributing_factors: ["liquidity_sweep", "volume_confirm"],
+          },
+        },
+      ],
     });
+    assert.equal(nested?.items[0]?.score, 0.71);
+    assert.equal(nested?.items[0]?.ensemble_score, 0.71);
+    assert.equal(nested?.items[0]?.confidence, 0.88);
+    assert.deepEqual(nested?.items[0]?.contributing_factors, ["liquidity_sweep", "volume_confirm"]);
+    assert.equal(nested?.items[0]?.rank_components?.setup_quality, 0.9);
+
+    const tip = ensembleFeatureTooltip(nested!.items[0]!);
+    assert.match(tip, /ensemble_score 0\.710/);
+    assert.match(tip, /rank_components/);
+    assert.match(tip, /contributing_factors  liquidity_sweep · volume_confirm/);
+
+    const bare = presentEnsemble(
+      {
+        rank: 1,
+        symbol: "ES",
+        asset_class: "futures",
+        score: 0.5,
+        setup_types: ["sweep_reclaim"],
+        confidence: 0.4,
+        ensemble_score: 0.5,
+      },
+      "market",
+    );
+    assert.match(bare.reason, /score 0\.50/);
+    assert.match(bare.tooltip, /ensemble_score 0\.500/);
+    assert.doesNotMatch(bare.tooltip, /rank_components/);
   });
 
   it("normalizers clamp to contract caps and map stocks→equity", () => {

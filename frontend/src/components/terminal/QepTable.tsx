@@ -387,7 +387,7 @@ function SetupRow({
 function EnsembleRow({ rank, pick, onSelect }: { rank: number; pick: EnsemblePick; onSelect: () => void }) {
   const up = pick.chg.trim().startsWith("+");
   return (
-    <tr className="qep-row" onClick={onSelect} data-symbol={pick.ticker}>
+    <tr className="qep-row" onClick={onSelect} data-symbol={pick.ticker} title={pick.tooltip}>
       <td className="qep-rank">{rank}</td>
       <td>
         <div className="qep-tk">{pick.ticker}</div>
@@ -405,7 +405,7 @@ function EnsembleRow({ rank, pick, onSelect }: { rank: number; pick: EnsemblePic
       </td>
       <td className="qep-target">{pick.target}</td>
       <td>
-        <div className="qep-conv">
+        <div className="qep-conv" title={pick.tooltip}>
           <div className="qep-track">
             <div className="qep-fill" style={{ width: `${pick.conviction}%`, background: convColor(pick.conviction) }} />
           </div>
@@ -415,7 +415,9 @@ function EnsembleRow({ rank, pick, onSelect }: { rank: number; pick: EnsemblePic
       <td>
         <EngineChips engines={pick.engines} />
       </td>
-      <td className="qep-reason">{pick.reason}</td>
+      <td className="qep-reason" title={pick.tooltip}>
+        {pick.reason}
+      </td>
     </tr>
   );
 }
