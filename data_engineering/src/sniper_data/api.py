@@ -32,12 +32,13 @@ from sniper_data.dashboard import (
 from sniper_data.signals import list_signals
 from sniper_data.universe import (
     MAX_UNIVERSE_SYMBOLS,
-    REDIS_UNIVERSE_CONFIG,
+    REDIS_UNIVERSE_ACTIVE,
     clamp_top_limit,
-    config_payload,
     read_universe_active,
-    slice_active,
+    read_universe_top,
+    slice_top,
     top_envelope,
+    write_universe_active,
 )
 from sniper_data.kill_zones import redis_kill_zone_active_key, redis_kill_zone_channel, redis_kill_zone_key
 from sniper_data.metrics import (
@@ -161,16 +162,14 @@ Payload fields (exact): `anchor_id`, `symbol`, `anchor_time`, `anchor_price`,
 
 `WS /v1/ws/kill-zone?symbol=BTCUSDT`
 
-## Multi-asset universe (PM lock)
+## Multi-asset universe (PM / ML lock — DE owns this)
 
-`GET /v1/universe/top?limit=10|20` is the **authoritative** shared contract
-for ML / Quant / Frontend. It replaces any provisional `SETUP_UNIVERSE`.
-Backed by Redis `universe:active` plus paper ranking inputs (volume,
-volatility, session activity, levels, pattern counts). `live_trading` is
-always `false`.
+Authoritative full list: Redis `universe:active` =
+`{ "as_of_ts_ms", "symbols": [ { "symbol", "asset_class" }, ... ] }`.
 
-`GET /v1/universe` is a helper that lists the configured paper universe
-(max 20). It is **not** the ranking contract.
+`GET /v1/universe` returns that key. `GET /v1/universe/top?limit=10|20`
+returns a ranked subset (Redis `universe:top`). ML / FE should swap off
+provisional `SETUP_UNIVERSE`. `live_trading` is always `false`.
 
 ## Dashboard snapshot (≤15m)
 
@@ -347,6 +346,10 @@ async def lifespan(app: FastAPI):
             await seed_patterns(app.state.store, settings.symbols)
         except Exception as exc:  # noqa: BLE001
             log.warning("pattern seed skipped: %s", exc)
+    try:
+        await write_universe_active(app.state.store, settings.symbols)
+    except Exception as exc:  # noqa: BLE001
+        log.warning("universe:active seed skipped: %s", exc)
     yield
     await app.state.store.close()
     await app.state.bars.close()
@@ -391,7 +394,9 @@ def create_app(
             "setups": list(SETUP_KEYS),
             "live_trading": False,
             "universe": list(settings.symbols),
-            "universe_contract": "/v1/universe/top",
+            "universe_contract": "/v1/universe",
+            "universe_redis": REDIS_UNIVERSE_ACTIVE,
+            "universe_top": "/v1/universe/top",
             "max_symbols": MAX_UNIVERSE_SYMBOLS,
         }
 
@@ -440,14 +445,14 @@ def create_app(
     async def universe_top(
         limit: int = Query(..., description="Locked sizes: 10 (P0) or 20 (P2/P4). 1–20 accepted."),
     ) -> JSONResponse:
-        """PM lock — ML / Quant / FE consume this as the universe contract."""
+        """Ranked subset of the DE-owned universe (P0=10, P2/P4=20)."""
         try:
             wanted = clamp_top_limit(limit)
         except ValueError as exc:
             raise HTTPException(400, str(exc)) from exc
-        stored = await read_universe_active(app.state.store)
-        if stored and stored.get("symbols"):
-            return JSONResponse(slice_active(stored, wanted))
+        stored = await read_universe_top(app.state.store)
+        if stored and stored.get("symbols") and stored["symbols"] and "rank" in stored["symbols"][0]:
+            return JSONResponse(slice_top(stored, wanted))
         settings = app.state.settings
         metrics = []
         now_ms = int(time.time() * 1000)
@@ -474,17 +479,12 @@ def create_app(
 
     @app.get("/v1/universe")
     async def universe_list() -> JSONResponse:
-        """Helper: full configured paper universe. Not the ranking contract."""
-        settings = app.state.settings
-        cached = await app.state.store.get(REDIS_UNIVERSE_CONFIG)
+        """Authoritative full list from Redis ``universe:active``."""
+        cached = await read_universe_active(app.state.store)
         if isinstance(cached, dict) and cached.get("symbols"):
             cached["live_trading"] = False
-            cached["contract"] = "/v1/universe/top"
             return JSONResponse(cached)
-        body = config_payload(
-            settings.symbols, cadence_s=settings.dashboard_snapshot_interval_s
-        ).model_dump(mode="json")
-        body["contract"] = "/v1/universe/top"
+        body = await write_universe_active(app.state.store, app.state.settings.symbols)
         return JSONResponse(body)
 
     @app.get("/v1/dashboard/snapshot/{symbol}")

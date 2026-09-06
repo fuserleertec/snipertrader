@@ -1,15 +1,22 @@
-"""Configurable paper universe + locked top-N ranking contract.
+"""Configurable paper universe — DE-owned authoritative contract.
 
-PM lock
--------
-``GET /v1/universe/top?limit=10|20`` is the authoritative shared contract
-for ML / Quant / Frontend. It **replaces** any provisional ``SETUP_UNIVERSE``.
-Redis backing key: ``universe:active`` (same JSON envelope, typically
-computed for the full configured set so ``?limit=10`` is a prefix slice).
+PM / ML lock
+------------
+Redis ``universe:active`` is the authoritative full list::
 
-``live_trading`` is always ``false``. Ranking scores are DE inputs
-(volume / volatility / session activity / levels / pattern counts) — not
-Frontend display names.
+    {"as_of_ts_ms": 1725459000000,
+     "symbols": [{"symbol": "ES", "asset_class": "futures"}, ...]}
+
+Written on pipeline/API startup and every 15m snapshot. HTTP:
+
+* ``GET /v1/universe`` → that Redis payload (full active list)
+* ``GET /v1/universe/top?limit=10|20`` → ranked subset (Redis ``universe:top``)
+
+ML / FE should swap off provisional ``SETUP_UNIVERSE`` once these exist.
+
+Env: ``DASHBOARD_SYMBOLS`` (alias ``UNIVERSE``, fallback ``DEMO_SYMBOLS``),
+max 20. Default mix includes ES, CL, GC, NQ plus crypto and equities.
+``live_trading`` is always ``false``.
 """
 
 from __future__ import annotations
@@ -31,6 +38,7 @@ DEFAULT_UNIVERSE_CSV = (
     "BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,AAPL,MSFT,NVDA,SPY,ES,NQ,CL,GC"
 )
 REDIS_UNIVERSE_ACTIVE = "universe:active"
+REDIS_UNIVERSE_TOP = "universe:top"
 REDIS_UNIVERSE_CONFIG = "universe:config"
 
 SCORE_INPUTS = (
@@ -75,8 +83,23 @@ class UniverseTop(BaseModel):
     symbols: list[UniverseMember] = Field(default_factory=list)
 
 
+class UniverseActiveItem(BaseModel):
+    """One row of Redis ``universe:active`` / GET /v1/universe."""
+
+    symbol: str
+    asset_class: AssetClass
+
+
+class UniverseActive(BaseModel):
+    """Authoritative full list. Redis ``universe:active``."""
+
+    as_of_ts_ms: int
+    symbols: list[UniverseActiveItem] = Field(default_factory=list)
+    live_trading: bool = False
+
+
 class UniverseConfig(BaseModel):
-    """Helper payload for Redis ``universe:config`` / GET /v1/universe."""
+    """Internal helper (Redis ``universe:config``). Not the ML contract."""
 
     as_of_ts_ms: int
     live_trading: bool = False
@@ -232,8 +255,21 @@ def top_envelope(
     )
 
 
-def slice_active(payload: dict[str, Any], limit: int) -> dict[str, Any]:
-    """Re-slice a stored ``universe:active`` envelope to the requested limit."""
+def active_payload(
+    symbols: list[str],
+    *,
+    now_ms: int | None = None,
+) -> UniverseActive:
+    now = now_ms if now_ms is not None else int(time.time() * 1000)
+    items = [
+        UniverseActiveItem(symbol=s, asset_class=infer_asset_class(s))
+        for s in symbols
+    ]
+    return UniverseActive(as_of_ts_ms=now, symbols=items, live_trading=False)
+
+
+def slice_top(payload: dict[str, Any], limit: int) -> dict[str, Any]:
+    """Re-slice a stored ``universe:top`` ranking envelope."""
     wanted = clamp_top_limit(limit)
     symbols = list(payload.get("symbols") or [])
     sliced = symbols[:wanted]
@@ -256,13 +292,34 @@ async def write_universe_config(store, symbols: list[str], *, cadence_s: int = 9
     return body
 
 
-async def write_universe_active(store, envelope: UniverseTop | dict[str, Any]) -> dict[str, Any]:
-    body = envelope.model_dump(mode="json") if isinstance(envelope, UniverseTop) else envelope
+async def write_universe_active(
+    store,
+    symbols: list[str] | UniverseActive,
+    *,
+    now_ms: int | None = None,
+) -> dict[str, Any]:
+    """Write Redis ``universe:active`` as ``{as_of_ts_ms, symbols:[{symbol,asset_class}]}``."""
+    if isinstance(symbols, UniverseActive):
+        body = symbols.model_dump(mode="json")
+    else:
+        body = active_payload(list(symbols), now_ms=now_ms).model_dump(mode="json")
     body["live_trading"] = False
     await store.set(REDIS_UNIVERSE_ACTIVE, body)
     return body
 
 
+async def write_universe_top(store, envelope: UniverseTop | dict[str, Any]) -> dict[str, Any]:
+    body = envelope.model_dump(mode="json") if isinstance(envelope, UniverseTop) else envelope
+    body["live_trading"] = False
+    await store.set(REDIS_UNIVERSE_TOP, body)
+    return body
+
+
 async def read_universe_active(store) -> dict[str, Any] | None:
     raw = await store.get(REDIS_UNIVERSE_ACTIVE)
+    return raw if isinstance(raw, dict) else None
+
+
+async def read_universe_top(store) -> dict[str, Any] | None:
+    raw = await store.get(REDIS_UNIVERSE_TOP)
     return raw if isinstance(raw, dict) else None

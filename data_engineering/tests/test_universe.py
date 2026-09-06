@@ -12,12 +12,14 @@ from sniper_data.universe import (
     DEFAULT_UNIVERSE_CSV,
     MAX_UNIVERSE_SYMBOLS,
     REDIS_UNIVERSE_ACTIVE,
+    REDIS_UNIVERSE_TOP,
     clamp_top_limit,
     parse_universe,
     rank_rows,
-    slice_active,
+    slice_top,
     top_envelope,
     write_universe_active,
+    write_universe_top,
 )
 
 
@@ -103,6 +105,14 @@ async def test_universe_top_http_is_locked_contract():
         DASHBOARD_SYMBOLS="BTCUSDT,ETHUSDT,AAPL,MSFT,NVDA,SPY,ES,NQ,CL,GC,SOLUSDT,BNBUSDT",
         LIVE_TRADING=False,
     )
+    await write_universe_active(store, settings.symbols, now_ms=1_700_000_000_000)
+    raw = await store.get(REDIS_UNIVERSE_ACTIVE)
+    assert raw["as_of_ts_ms"] == 1_700_000_000_000
+    assert raw["live_trading"] is False
+    assert {row["symbol"] for row in raw["symbols"]} == set(settings.symbols)
+    assert all(set(row) == {"symbol", "asset_class"} for row in raw["symbols"])
+    assert {"ES", "CL", "GC", "NQ"} <= {row["symbol"] for row in raw["symbols"]}
+
     env = top_envelope(
         [
             {
@@ -119,13 +129,20 @@ async def test_universe_top_http_is_locked_contract():
         limit=20,
         now_ms=1_700_000_000_000,
     )
-    await write_universe_active(store, env)
-    raw = await store.get(REDIS_UNIVERSE_ACTIVE)
-    assert raw["live_trading"] is False
-    assert len(raw["symbols"]) == 12
+    await write_universe_top(store, env)
+    ranked = await store.get(REDIS_UNIVERSE_TOP)
+    assert ranked["limit"] == 20
+    assert len(ranked["symbols"]) == 12
 
     app = create_app(store=store, settings=settings)
     http = TestClient(app)
+    full = http.get("/v1/universe")
+    assert full.status_code == 200
+    listed = full.json()
+    assert set(listed) >= {"as_of_ts_ms", "symbols"}
+    assert [row["symbol"] for row in listed["symbols"]] == settings.symbols
+    assert all("asset_class" in row for row in listed["symbols"])
+
     top10 = http.get("/v1/universe/top?limit=10")
     assert top10.status_code == 200
     body = top10.json()
@@ -141,16 +158,13 @@ async def test_universe_top_http_is_locked_contract():
     assert top20["limit"] == 20
     assert len(top20["symbols"]) == 12
     assert http.get("/v1/universe/top?limit=21").status_code == 400
-    helper = http.get("/v1/universe").json()
-    assert helper["live_trading"] is False
-    assert "ES" in helper["symbols"]
-    assert helper.get("contract") == "/v1/universe/top"
     health = http.get("/health").json()
     assert health["live_trading"] is False
-    assert health["universe_contract"] == "/v1/universe/top"
+    assert health["universe_contract"] == "/v1/universe"
+    assert health["universe_redis"] == "universe:active"
 
 
-def test_slice_active_re_ranks_prefix():
+def test_slice_top_re_ranks_prefix():
     payload = {
         "as_of_ts_ms": 9,
         "limit": 20,
@@ -162,7 +176,7 @@ def test_slice_active_re_ranks_prefix():
             {"symbol": "GC", "rank": 3, "score": 0.8, "asset_class": "futures"},
         ],
     }
-    sliced = slice_active(payload, 2)
+    sliced = slice_top(payload, 2)
     assert sliced["limit"] == 2
     assert [r["symbol"] for r in sliced["symbols"]] == ["ES", "CL"]
     assert sliced["live_trading"] is False

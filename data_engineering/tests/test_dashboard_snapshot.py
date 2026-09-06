@@ -88,7 +88,8 @@ async def test_ten_plus_mixed_symbols_process_and_snapshot():
     assert index["count"] == len(MIXED)
     active = await store.get(REDIS_UNIVERSE_ACTIVE)
     assert active["live_trading"] is False
-    assert len(active["symbols"]) == len(MIXED)
+    assert {row["symbol"] for row in active["symbols"]} == set(MIXED)
+    assert all(set(row) >= {"symbol", "asset_class"} for row in active["symbols"])
     kafka_keys = {rec["key"] for rec in bus.topics[DASHBOARD_SNAPSHOT_TOPIC]}
     assert set(MIXED) <= kafka_keys
     assert "_index" in kafka_keys

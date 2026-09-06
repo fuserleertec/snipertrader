@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://snipertrader.ai/schemas/universe_top.schema.json",
   "title": "UniverseTop",
-  "description": "PM lock: GET /v1/universe/top?limit=10|20. Authoritative universe contract for ML / Quant / Frontend. Replaces provisional SETUP_UNIVERSE. Redis: universe:active. live_trading is always false. Score fields are DE ranking inputs, not Frontend display names.",
+  "description": "GET /v1/universe/top?limit=10|20 — ranked subset of Redis universe:active. Redis cache: universe:top. Full list contract is GET /v1/universe + universe:active. live_trading is always false. Score fields are DE ranking inputs, not Frontend display names.",
   "type": "object",
   "additionalProperties": false,
   "required": ["as_of_ts_ms", "limit", "live_trading", "score_inputs", "symbols"],

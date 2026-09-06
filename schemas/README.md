@@ -108,18 +108,18 @@ ids. Demo generators emit it for **every** configured symbol (including
 
 **`live_trading=false`.** No live brokers. Paper / mock / demo only.
 
-### PM lock — `GET /v1/universe/top`
+### Authoritative contract for ML / FE
 
-**ML / Quant / Frontend consume `GET /v1/universe/top?limit=10|20` as the
-authoritative universe contract.** It replaces any provisional
-`SETUP_UNIVERSE`. Schema:
-[`universe_top.schema.json`](universe_top.schema.json).
+**DE owns the universe.** ML should swap off provisional `SETUP_UNIVERSE`.
 
-Redis backing key: **`universe:active`** (same JSON envelope, computed for
-the configured set so `?limit=10` is a prefix slice). Helper list:
-`GET /v1/universe` / Redis `universe:config` — **not** the ranking contract.
+| Surface | Schema | Payload |
+|---|---|---|
+| Redis **`universe:active`** + `GET /v1/universe` | [`universe_active.schema.json`](universe_active.schema.json) | Full list `{ as_of_ts_ms, symbols: [{symbol, asset_class}] }` |
+| `GET /v1/universe/top?limit=10\|20` | [`universe_top.schema.json`](universe_top.schema.json) | Ranked subset (Redis `universe:top`) |
 
-Locked envelope:
+`universe:active` is written on startup and every 15m snapshot.
+
+Ranked envelope (`/v1/universe/top`):
 
 ```json
 {
@@ -152,7 +152,8 @@ display field names beyond this shape.
 |---|---|---|
 | Redis | [`dashboard_snapshot.schema.json`](dashboard_snapshot.schema.json) | `dashboard:snapshot:{symbol}` |
 | Redis | index (symbols + key map) | `dashboard:snapshot:index` |
-| Redis | locked top-N envelope | `universe:active` |
+| Redis | full active list | `universe:active` |
+| Redis | ranked cache | `universe:top` |
 | Redis | configured list helper | `universe:config` |
 | Kafka | per-symbol snapshot (key = symbol) + `_index` / `_universe` | `dashboard_snapshots` |
 

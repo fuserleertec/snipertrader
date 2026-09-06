@@ -6,8 +6,8 @@ Keeps real-time WS as-is. Every ``DASHBOARD_SNAPSHOT_INTERVAL_S`` (default
 * Redis ``dashboard:snapshot:{symbol}`` — pointers + embedded Phase 1/2
   payloads (or null) for VWAP / session / AVWAP / kill zone / volume profile
 * Redis ``dashboard:snapshot:index`` — universe pointer map
-* Redis ``universe:active`` — locked top-N ranking (GET /v1/universe/top)
-* Redis ``universe:config`` — full configured list (helper)
+* Redis ``universe:active`` — authoritative full list (GET /v1/universe)
+* Redis ``universe:top`` — ranked subset (GET /v1/universe/top)
 * Kafka ``dashboard_snapshots`` — one message per symbol (key = symbol)
   plus an index frame (key = ``_index``)
 
@@ -40,6 +40,7 @@ from sniper_data.universe import (
     top_envelope,
     write_universe_active,
     write_universe_config,
+    write_universe_top,
 )
 from sniper_data.volume_profile import redis_volume_profile_key
 from sniper_data.vwap import redis_vwap_key
@@ -277,17 +278,20 @@ async def publish_snapshots(
     index_body = index.model_dump(mode="json")
     await store.set(REDIS_SNAPSHOT_INDEX, index_body)
     await write_universe_config(store, symbols, cadence_s=cadence_s)
+    active = await write_universe_active(store, symbols, now_ms=now)
     ranking = top_envelope(metrics, limit=MAX_UNIVERSE_SYMBOLS, now_ms=now)
-    await write_universe_active(store, ranking)
+    await write_universe_top(store, ranking)
     if bus is not None:
         await bus.publish(DASHBOARD_SNAPSHOT_TOPIC, index_body, key="_index")
-        await bus.publish(DASHBOARD_SNAPSHOT_TOPIC, ranking.model_dump(mode="json"), key="_universe")
+        await bus.publish(DASHBOARD_SNAPSHOT_TOPIC, active, key="_universe")
+        await bus.publish(DASHBOARD_SNAPSHOT_TOPIC, ranking.model_dump(mode="json"), key="_top")
     return {
         "ts_ms": now,
         "symbols": symbols,
         "snapshots": [s.model_dump(mode="json") for s in snaps],
         "index": index_body,
-        "universe_active": ranking.model_dump(mode="json"),
+        "universe_active": active,
+        "universe_top": ranking.model_dump(mode="json"),
         "live_trading": False,
     }
 

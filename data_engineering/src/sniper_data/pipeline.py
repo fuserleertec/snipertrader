@@ -255,8 +255,9 @@ class Runtime:
                 log.warning("pattern seed: %s", exc)
         try:
             from sniper_data.dashboard import publish_snapshots
-            from sniper_data.universe import write_universe_config
+            from sniper_data.universe import write_universe_active, write_universe_config
 
+            await write_universe_active(self.store, self.settings.symbols)
             await write_universe_config(
                 self.store,
                 self.settings.symbols,

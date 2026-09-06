@@ -255,6 +255,7 @@ PHASE3 = {
 }
 
 MULTI_ASSET = {
+    "universe_active.schema.json",
     "universe_top.schema.json",
     "dashboard_snapshot.schema.json",
 }
@@ -304,6 +305,10 @@ def test_phase3_performance_and_us_equity_schemas():
 def test_multi_asset_universe_and_snapshot_schemas():
     names = {p.name for p in SCHEMAS.glob("*.schema.json")}
     assert MULTI_ASSET <= names
+    active = _load("universe_active.schema.json")
+    assert active["additionalProperties"] is False
+    assert active["required"] == ["as_of_ts_ms", "symbols"]
+    assert active["properties"]["symbols"]["items"]["required"] == ["symbol", "asset_class"]
     top = _load("universe_top.schema.json")
     assert top["additionalProperties"] is False
     assert top["properties"]["live_trading"]["const"] is False

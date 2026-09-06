@@ -101,18 +101,21 @@ kill-zone sockets now send protocol-level pings (`WS_HEARTBEAT_S`, default
 15s) and drop frames when a client backlog exceeds `WS_BACKLOG` (64).
 JSON frame shapes are unchanged.
 
-## Universe contract (PM lock — Multi-asset paper)
+## Universe contract (authoritative for ML / FE)
 
-**ML / Quant / FE consume `GET /v1/universe/top?limit=10|20`.** This
-replaces provisional `SETUP_UNIVERSE`. Redis: `universe:active`.
-`live_trading` is always `false`.
+**DE owns the universe.** Swap off provisional `SETUP_UNIVERSE`.
 
-Schema: [`universe_top.schema.json`](../../schemas/universe_top.schema.json).
-`GET /v1/universe` is a helper (full configured list, max 20) — not the
-ranking contract.
+| Surface | Shape |
+|---|---|
+| Redis `universe:active` + `GET /v1/universe` | `{ as_of_ts_ms, symbols: [{symbol, asset_class}] }` |
+| `GET /v1/universe/top?limit=10\|20` | ranked subset (Redis `universe:top`) |
 
-Score inputs (DE-owned, not FE display names): `volume`, `volatility`,
-`session_active`, `levels_available`, `pattern_count`.
+Schemas: [`universe_active.schema.json`](../../schemas/universe_active.schema.json),
+[`universe_top.schema.json`](../../schemas/universe_top.schema.json).
+`live_trading` is always `false`. Refreshed on startup and every 15m.
+
+Score inputs on `/top` (DE-owned, not FE display names): `volume`,
+`volatility`, `session_active`, `levels_available`, `pattern_count`.
 
 Related paper endpoints:
 

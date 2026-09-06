@@ -10,18 +10,34 @@ Python **3.11+**. Asyncio throughout (connectors, Kafka, Redis, API).
 not open live brokers, enable live order routing, or flip paper Alpaca
 paths. `LIVE_TRADING=true` is ignored.
 
-## Multi-asset universe (PM lock)
+## Multi-asset universe — authoritative contract for ML / FE
 
-**ML / Quant / Frontend consume `GET /v1/universe/top` as the contract.**
-This replaces any provisional `SETUP_UNIVERSE`.
+**DE owns the universe.** ML / FE should swap off provisional
+`SETUP_UNIVERSE` and consume these two surfaces.
 
+### Redis `universe:active` + `GET /v1/universe`
+
+Refreshed on **startup** and every **15 minutes**. Shape
+([`universe_active.schema.json`](../schemas/universe_active.schema.json)):
+
+```json
+{
+  "as_of_ts_ms": 1725459000000,
+  "symbols": [
+    {"symbol": "BTCUSDT", "asset_class": "crypto"},
+    {"symbol": "ES", "asset_class": "futures"}
+  ],
+  "live_trading": false
+}
 ```
-GET /v1/universe/top?limit=10    # P0 top-10
-GET /v1/universe/top?limit=20    # P2 / P4 (max)
-```
 
-`limit` **must** accept `10` and `20` (also `1–20`). Response shape is
-stable — schema [`universe_top.schema.json`](../schemas/universe_top.schema.json):
+`GET /v1/universe` returns that Redis key (full active list, max 20).
+
+### `GET /v1/universe/top?limit=10|20`
+
+Ranked subset of `universe:active` (P0=10, P2/P4=20). Cached at Redis
+`universe:top`. Schema
+[`universe_top.schema.json`](../schemas/universe_top.schema.json):
 
 ```json
 {
@@ -45,14 +61,10 @@ stable — schema [`universe_top.schema.json`](../schemas/universe_top.schema.js
 }
 ```
 
-Redis backing key: **`universe:active`** (same envelope). The 15-minute
-snapshot job writes it from paper ranking inputs (session volume, VWAP σ /
-session range, kill-zone / session activity, count of available
-vwap/session/avwap/kill-zone/volume-profile books, live pattern count).
-**No Frontend display field names** beyond this locked shape.
-
-`GET /v1/universe` is a **helper** (full configured list, max 20). It is
-not the ranking contract.
+`limit` **must** accept `10` and `20` (also `1–20`). Ranking inputs are
+DE-owned (session volume, VWAP σ / range, session/kill-zone activity,
+available books, pattern count). **No Frontend display field names**
+beyond this locked shape.
 
 ### How to set the universe (max 20)
 
@@ -76,8 +88,9 @@ sniper-data snapshot --once --inmemory    # one cycle, no brokers
 
 | Redis key | Payload |
 |---|---|
-| `universe:active` | Locked `GET /v1/universe/top` envelope |
-| `universe:config` | Configured list helper |
+| `universe:active` | **Authoritative** full list (`GET /v1/universe`) |
+| `universe:top` | Ranked cache (`GET /v1/universe/top`) |
+| `universe:config` | Internal helper (string list) |
 | `dashboard:snapshot:{symbol}` | Pointers + embedded Phase 1/2 payloads |
 | `dashboard:snapshot:index` | Symbol → snapshot key map |
 
@@ -219,9 +232,9 @@ curl -s -X POST http://localhost:8000/v1/anchors -H 'content-type: application/j
   -d '{"symbol":"BTCUSDT","anchor_time":1725458400000,"anchor_price":64000,"source":"manual"}'
 curl -s http://localhost:8000/v1/avwap/BTCUSDT
 curl -s http://localhost:8000/performance/summary
+curl -s http://localhost:8000/v1/universe
 curl -s "http://localhost:8000/v1/universe/top?limit=10"
 curl -s "http://localhost:8000/v1/universe/top?limit=20"
-curl -s http://localhost:8000/v1/universe
 curl -s http://localhost:8000/v1/dashboard/snapshot
 curl -s "http://localhost:8000/v1/ohlcv/ES?timeframe=15m&limit=50"
 curl -s "http://localhost:8000/v1/signals?symbols=ES,CL,GC,NQ"
