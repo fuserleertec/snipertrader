@@ -1,17 +1,46 @@
-"""Historical OHLCV — Timescale ``ohlcv_bars`` (DE hypertable) or in-memory."""
+"""OHLCV bar feed for backtest / lifecycle / paper marks.
+
+Continuous tape is DE **1m / 5m** only:
+
+* Kafka ``ohlcv_bars``
+* ``WS /v1/ws/ohlcv?timeframe=1m|5m``
+* ``GET /v1/ohlcv/{symbol}?timeframe=1m|5m``
+
+Timescale ``ohlcv_bars`` is the persisted form of that Kafka topic — not
+a dashboard snapshot. **Do not** treat ``GET /v1/universe/top`` (15m
+ranking book) or ``GET /v1/dashboard/snapshot`` as an OHLC bar feed.
+
+``live_trading`` stays false.
+"""
 
 from __future__ import annotations
 
 from typing import Protocol
 
-from sniper_quant.models import AssetClass, OHLCVBar
+from sniper_quant.models import AssetClass, OHLCVBar, normalize_symbol
+
+BAR_FEED_TIMEFRAMES = frozenset({"1m", "5m"})
+OHLCV_HTTP_PATH = "/v1/ohlcv"
+OHLCV_WS_PATH = "/v1/ws/ohlcv"
+
+
+def assert_bar_feed_timeframe(timeframe: str) -> str:
+    """Quant bar consumption is locked to continuous 1m / 5m."""
+    tf = str(timeframe or "").strip().lower()
+    if tf not in BAR_FEED_TIMEFRAMES:
+        raise ValueError(
+            "bar feed timeframe must be 1m or 5m (continuous DE ohlcv_bars / "
+            f"/v1/ohlcv / /v1/ws/ohlcv); got {timeframe!r}. "
+            "15m universe/top and dashboard_snapshots are ranking/dashboard only."
+        )
+    return tf
 
 
 class OHLCVLoader(Protocol):
     async def fetch(
         self,
         symbol: str,
-        timeframe: str = "1h",
+        timeframe: str = "5m",
         *,
         from_ms: int | None = None,
         to_ms: int | None = None,
@@ -43,12 +72,13 @@ class InMemoryOHLCVLoader:
     async def fetch(
         self,
         symbol: str,
-        timeframe: str = "1h",
+        timeframe: str = "5m",
         *,
         from_ms: int | None = None,
         to_ms: int | None = None,
         limit: int = 10_000,
     ) -> list[OHLCVBar]:
+        symbol = normalize_symbol(symbol)
         rows = [b for b in self.bars if b.symbol == symbol and b.timeframe == timeframe]
         if from_ms is not None:
             rows = [b for b in rows if b.open_ts_ms >= from_ms]
@@ -126,7 +156,7 @@ class TimescaleOHLCVLoader:
     async def fetch(
         self,
         symbol: str,
-        timeframe: str = "1h",
+        timeframe: str = "5m",
         *,
         from_ms: int | None = None,
         to_ms: int | None = None,
@@ -158,3 +188,72 @@ class TimescaleOHLCVLoader:
         if self._pool is not None:
             await self._pool.close()
             self._pool = None
+
+
+class CompositeBarFeed:
+    """Memory (Kafka/WS upserts) over DE GET, then persisted Kafka ``ohlcv_bars``.
+
+    Never reads ``/v1/universe/top`` or dashboard snapshots.
+    """
+
+    def __init__(
+        self,
+        memory: InMemoryOHLCVLoader | None = None,
+        *,
+        http: OHLCVLoader | None = None,
+        persist: OHLCVLoader | None = None,
+    ) -> None:
+        self.memory = memory or InMemoryOHLCVLoader()
+        self.http = http
+        self.persist = persist
+
+    async def upsert(self, bar: OHLCVBar) -> None:
+        assert_bar_feed_timeframe(bar.timeframe)
+        await self.memory.upsert(bar)
+        if self.persist is not None:
+            try:
+                await self.persist.upsert(bar)
+            except Exception:  # noqa: BLE001
+                pass
+
+    async def fetch(
+        self,
+        symbol: str,
+        timeframe: str = "5m",
+        *,
+        from_ms: int | None = None,
+        to_ms: int | None = None,
+        limit: int = 10_000,
+    ) -> list[OHLCVBar]:
+        tf = assert_bar_feed_timeframe(timeframe)
+        symbol = normalize_symbol(symbol)
+        remote: list[OHLCVBar] = []
+        if self.http is not None:
+            try:
+                remote = await self.http.fetch(
+                    symbol, tf, from_ms=from_ms, to_ms=to_ms, limit=limit
+                )
+            except Exception:  # noqa: BLE001
+                remote = []
+        if not remote and self.persist is not None:
+            try:
+                remote = await self.persist.fetch(
+                    symbol, tf, from_ms=from_ms, to_ms=to_ms, limit=limit
+                )
+            except Exception:  # noqa: BLE001
+                remote = []
+        mem = await self.memory.fetch(
+            symbol, tf, from_ms=from_ms, to_ms=to_ms, limit=limit
+        )
+        by_ts = {b.open_ts_ms: b for b in remote}
+        for bar in mem:
+            by_ts[bar.open_ts_ms] = bar
+        rows = sorted(by_ts.values(), key=lambda b: b.open_ts_ms)
+        return rows[-limit:]
+
+    async def close(self) -> None:
+        await self.memory.close()
+        if self.http is not None:
+            await self.http.close()
+        if self.persist is not None:
+            await self.persist.close()

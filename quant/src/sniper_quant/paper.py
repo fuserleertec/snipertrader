@@ -1,7 +1,9 @@
 """In-memory paper book for the 2-week no-live-trading gate.
 
 Opens a virtual position when a signal is published after risk approval.
-Closes on lifecycle TP/SL. No broker, no live orders. ``live_trading`` is
+Closes on lifecycle TP/SL from the continuous DE **1m/5m** bar feed
+(Kafka ``ohlcv_bars``, ``WS /v1/ws/ohlcv``, ``GET /v1/ohlcv``). Not 15m
+``universe/top`` or dashboard snapshots. No broker. ``live_trading`` is
 always ``False``.
 """
 

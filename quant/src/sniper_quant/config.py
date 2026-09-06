@@ -44,6 +44,16 @@ class Settings(BaseSettings):
         alias="KAFKA_GROUP_ENSEMBLE",
         description="Consumer group for Kafka topic ensemble_features (paper only).",
     )
+    kafka_group_ohlcv: str = Field(
+        default="sniper-quant-ohlcv",
+        alias="KAFKA_GROUP_OHLCV",
+        description="Consumer group for Kafka topic ohlcv_bars (1m/5m bar feed, paper only).",
+    )
+    bar_feed_timeframe: str = Field(
+        default="5m",
+        alias="BAR_FEED_TIMEFRAME",
+        description="Continuous DE bar feed for backtest / lifecycle / paper marks. 1m or 5m only.",
+    )
     alert_win_rate: float = Field(default=0.35, alias="ALERT_WIN_RATE")
     alert_avg_rr: float = Field(default=0.50, alias="ALERT_AVG_RR")
     api_key: str = Field(default="", alias="SNIPER_API_KEY")
@@ -71,7 +81,7 @@ class Settings(BaseSettings):
     de_api_base: str = Field(
         default="http://localhost:8000",
         alias="DE_API_BASE",
-        description="DE HTTP origin for GET /v1/universe/top?limit=10|20. Empty disables the live DE client (tests / offline).",
+        description="DE HTTP origin for /v1/universe/top (15m ranking) and /v1/ohlcv/{symbol} (1m/5m bars). Empty disables live DE clients.",
     )
 
 

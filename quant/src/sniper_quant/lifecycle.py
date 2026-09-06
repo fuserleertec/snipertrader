@@ -120,12 +120,18 @@ class LifecycleMonitor:
         return updated
 
     async def poll_once(self, symbols: list[str], timeframe: str = "1m") -> int:
-        """Apply unseen bars from the OHLCV loader (Timescale or in-memory)."""
+        """Apply unseen 1m/5m bars from the DE bar feed (GET / Kafka cache).
+
+        Not ``/v1/universe/top`` and not dashboard snapshots.
+        """
+        from sniper_quant.store.ohlcv import assert_bar_feed_timeframe
+
+        tf = assert_bar_feed_timeframe(timeframe)
         if self.ohlcv is None:
             return 0
         n = 0
         for symbol in symbols:
-            bars = await self.ohlcv.fetch(symbol, timeframe, limit=500)
+            bars = await self.ohlcv.fetch(symbol, tf, limit=500)
             for bar in bars:
                 key = (bar.symbol, bar.open_ts_ms)
                 if key in self._seen_bars:
@@ -144,11 +150,14 @@ async def run_monitor_loop(
     interval_s: float = 5.0,
     settings: Settings | None = None,
 ) -> None:
+    from sniper_quant.store.ohlcv import assert_bar_feed_timeframe
+
     settings = settings or get_settings()
-    log.info("lifecycle monitor symbols=%s tf=%s", symbols, timeframe)
+    tf = assert_bar_feed_timeframe(timeframe)
+    log.info("lifecycle monitor symbols=%s tf=%s (DE 1m/5m bar feed, paper only)", symbols, tf)
     while True:
         try:
-            closed = await monitor.poll_once(symbols, timeframe)
+            closed = await monitor.poll_once(symbols, tf)
             if closed:
                 log.info("lifecycle closed %s signal(s)", closed)
         except Exception:  # noqa: BLE001 — keep the loop alive

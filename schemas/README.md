@@ -7,7 +7,7 @@ listed below. JSON Schema is draft 2020-12.
 | Topic | Schema file | Producer | Consumers |
 |---|---|---|---|
 | `raw_ticks` | [`raw_tick.schema.json`](raw_tick.schema.json) | Exchange adapters / mock feed | OHLCV, session tracker, VWAP |
-| `ohlcv_bars` | [`ohlcv_bar.schema.json`](ohlcv_bar.schema.json) | OHLCV aggregator | Timescale writer, research |
+| `ohlcv_bars` | [`ohlcv_bar.schema.json`](ohlcv_bar.schema.json) | OHLCV aggregator | Timescale writer; Quant backtest / lifecycle / paper marks use **1m and 5m only** (also `GET /v1/ohlcv/{symbol}` and `WS /v1/ws/ohlcv`). 15m `universe/top` is ranking, not a tape. |
 | `session_levels` | [`session_levels.schema.json`](session_levels.schema.json) | Session tracker | Redis, Quant API |
 | `vwap_values` | [`vwap_values.schema.json`](vwap_values.schema.json) | VWAP engine | Redis, WebSocket, Quant API |
 | `sweep_events` | [`sweep_event.schema.json`](sweep_event.schema.json) | Pattern detectors (Phase 2 stub) | Redis `sweep:{symbol}:{id}` |

@@ -38,7 +38,8 @@ from sniper_quant.models import (
 )
 from sniper_quant.risk.engine import RiskEngine, RiskState
 from sniper_quant.setups import SETUP_TYPE_NOTES, SETUP_TYPES
-from sniper_quant.store.ohlcv import InMemoryOHLCVLoader, OHLCVLoader, TimescaleOHLCVLoader
+from sniper_quant.ohlcv_feed import OhlcvBarService, build_bar_feed
+from sniper_quant.store.ohlcv import InMemoryOHLCVLoader, OHLCVLoader, assert_bar_feed_timeframe
 from sniper_quant.store.signals import (
     InMemorySignalStore,
     SignalStore,
@@ -135,6 +136,19 @@ inside DE `GET /v1/universe/top?limit=20` (or the same fallback set).
 `other`. History consumers (`GET /signals`, `/signals/history`) use
 that same limit=20 book when `symbol` is omitted.
 
+## Bar feed vs ranking book (do not mix)
+
+Quant **bar consumption** (backtest, lifecycle TP/SL, paper marks) uses
+**continuous DE 1m / 5m only**:
+
+* Kafka `ohlcv_bars`
+* `WS /v1/ws/ohlcv?timeframe=1m|5m`
+* `GET /v1/ohlcv/{symbol}?timeframe=1m|5m`
+
+`GET /v1/universe/top` is the **15m ranking book only** (P0 ensemble /
+categorized / history allow-list). `GET /v1/dashboard/snapshot` is **not**
+an OHLC tape. Timescale `ohlcv_bars` is the persisted Kafka topic.
+
 Multi-symbol risk (existing): corr |ρ| < 0.70, opposite-direction
 same-symbol conflict, 3% daily loss, 2% sizing. Optional
 `RATE_LIMIT_PER_MIN`.
@@ -201,7 +215,7 @@ def _build_stores(settings: Settings) -> tuple[SignalStore, OHLCVLoader, RiskEng
         ohlcv: OHLCVLoader = InMemoryOHLCVLoader()
     else:
         signals = TimescaleSignalStore(settings.database_url)
-        ohlcv = TimescaleOHLCVLoader(settings.database_url)
+        ohlcv = build_bar_feed(settings, inmemory=False)
     engine = RiskEngine(settings=settings, state=RiskState(equity=settings.default_equity))
     return signals, ohlcv, engine
 
@@ -227,18 +241,32 @@ async def lifespan(app: FastAPI):
 
     app.state.features = InMemoryEnsembleStore()
     app.state.feature_service = EnsembleFeatureService(app.state.features)
+
+    async def _on_feed_bar(bar):
+        closed = await app.state.monitor.apply_bar(bar)
+        for row in closed:
+            app.state.paper.mark_signal(row)
+
+    app.state.ohlcv_service = OhlcvBarService(ohlcv, on_bar=_on_feed_bar)
     feature_task = None
+    ohlcv_task = None
     if not settings.use_inmemory:
         import asyncio
 
         from sniper_quant.features import run_ensemble_kafka_consumer
+        from sniper_quant.ohlcv_feed import run_ohlcv_kafka_consumer
 
         feature_task = asyncio.create_task(
             run_ensemble_kafka_consumer(app.state.feature_service, settings)
         )
+        ohlcv_task = asyncio.create_task(
+            run_ohlcv_kafka_consumer(app.state.ohlcv_service, settings)
+        )
     yield
     if feature_task is not None:
         feature_task.cancel()
+    if ohlcv_task is not None:
+        ohlcv_task.cancel()
     await signals.close()
     await ohlcv.close()
 
@@ -368,6 +396,16 @@ def create_app(
             "ensemble_features_topic": "ensemble_features",
             "ensemble_features_key": "symbol",
             "ensemble_refresh_sec": 900,
+            "bar_feed": "de_ohlcv_1m_5m",
+            "bar_feed_timeframes": ["1m", "5m"],
+            "bar_feed_kafka": "ohlcv_bars",
+            "bar_feed_http": "/v1/ohlcv/{symbol}?timeframe=1m|5m",
+            "bar_feed_ws": "/v1/ws/ohlcv?timeframe=1m|5m",
+            "bar_feed_not": [
+                "/v1/universe/top",
+                "/v1/dashboard/snapshot",
+            ],
+            "universe_top_role": "15m_ranking_book_only",
         }
 
     @app.get("/performance/summary", response_model=PerformanceSummary)
@@ -670,7 +708,14 @@ def create_app(
 
     @app.post("/v1/lifecycle/bar")
     async def lifecycle_bar(body: OHLCVBar) -> dict[str, Any]:
-        """Apply one OHLCV bar to ACTIVE signals (TP/SL + outcome)."""
+        """Apply one continuous 1m/5m DE bar to ACTIVE signals (TP/SL).
+
+        Rejects 15m / dashboard / universe-top payloads. Paper only.
+        """
+        try:
+            assert_bar_feed_timeframe(body.timeframe)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
         monitor: LifecycleMonitor = app.state.monitor
         closed = await monitor.apply_bar(body)
         _engine().state.sync_from_signals(await _signals().active())

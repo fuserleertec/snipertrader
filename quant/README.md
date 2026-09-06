@@ -18,10 +18,17 @@ Python **3.11+**. FastAPI on **:8001** (DE market-data API stays on :8000).
 | `signals` + `account_daily` | DE `sql/02-signals.sql` (this PR) |
 | Risk Pre-Filter, sizing, backtest | **this package** (`sniper_quant`) |
 
-Historical bars are read from the same `ohlcv_bars` table DE writes
-(same `DATABASE_URL`, same column layout as
-`sniper_data.bus.timescaledb.TimescaleStore`). Tests and `sniper-quant demo`
-use an in-memory loader — no live Timescale required.
+### Bar feed vs ranking book (do not mix)
+
+| Concern | Cadence | Source | Quant use |
+|---|---|---|---|
+| **OHLC tape** | continuous **1m / 5m** | Kafka `ohlcv_bars` · `WS /v1/ws/ohlcv?timeframe=1m\|5m` · `GET /v1/ohlcv/{symbol}?timeframe=1m\|5m` | Backtest, lifecycle TP/SL, paper marks |
+| **Ranking book** | **15m** | `GET /v1/universe/top?limit=10\|20` | `GET /picks/ensemble` (10) · categorized + history (20) |
+| **Dashboard snapshot** | ≤15m | `GET /v1/dashboard/snapshot` | **Not** an OHLC bar feed |
+
+Timescale `ohlcv_bars` is the persisted Kafka topic (same
+`DATABASE_URL` as DE). Tests and `sniper-quant demo` use an in-memory
+loader. **`live_trading` is always false.**
 
 ## ML Researchers — `POST /risk/validate`
 
@@ -192,9 +199,11 @@ Timescale table `signals` (see `data_engineering/sql/02-signals.sql`):
 
 `ACTIVE` → `TP_HIT` | `SL_HIT` | `CANCELLED`
 
-`sniper-quant monitor` (or `POST /v1/lifecycle/bar`) watches OHLCV and
-auto-closes ACTIVE rows when price tags TP or SL. Same-bar SL+TP → **SL
-wins**. Closed rows persist `exit_price` / `realized_r` / `closed_ts_ms`
+`sniper-quant monitor` (or `POST /v1/lifecycle/bar`) watches **continuous
+DE 1m/5m** bars (Kafka `ohlcv_bars`, `WS /v1/ws/ohlcv`, or
+`GET /v1/ohlcv/{symbol}`) and auto-closes ACTIVE rows when price tags TP
+or SL. Same-bar SL+TP → **SL wins**. **Not** 15m `universe/top` or
+dashboard snapshots. Closed rows persist `exit_price` / `realized_r` / `closed_ts_ms`
 (storage columns `exit_px`, `r_multiple`, `closed_ts`) plus `outcome`
 (`win` / `loss`). Those three Frontend fields are on `GET /signals`,
 `GET /signals/{id}`, and `WS signal.status`. `realized_r` is **null**
@@ -502,8 +511,9 @@ Event-driven replay of OHLCV + setup signals. Same-bar SL+TP → **SL wins**.
 Transaction costs = commission + slippage.
 Metrics: **win rate**, **avg R:R**, **Sharpe** (√252), **max drawdown**.
 
-Loader: `TimescaleOHLCVLoader` (DE hypertable) or in-memory
-`synthetic_setup_tape`.
+Loader: DE `GET /v1/ohlcv/{symbol}?timeframe=1m|5m` (or persisted Kafka
+`ohlcv_bars` / Timescale), else in-memory `synthetic_setup_tape` (5m).
+Do not feed 15m dashboard snapshots into the backtester.
 
 | # | Product | `setup_type` |
 |---|---|---|
@@ -658,6 +668,6 @@ schemas/universe_top.schema.json
 sniper-quant api      [--inmemory] [--host 0.0.0.0 --port 8001]
 sniper-quant demo     [--inmemory]   # scripted 7-setup smoke book
 sniper-quant backtest --setups 1,2,3 [--inmemory] [--report PATH] [--folds 3]
-sniper-quant consume  [--inmemory]   # setup_signals + ensemble_features
-sniper-quant monitor  [--inmemory] [--symbols BTCUSDT,...] [--timeframe 1m]
+sniper-quant consume  [--inmemory]   # setup_signals + ensemble_features + ohlcv_bars
+sniper-quant monitor  [--inmemory] [--symbols BTCUSDT,...] [--timeframe 1m]  # 1m|5m only
 ```

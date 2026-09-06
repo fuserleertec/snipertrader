@@ -333,6 +333,15 @@ def universe_dump(
         "n_history": len(history),
         "n_ranking": len(ensemble),
         "required_futures": sorted(REQUIRED_FUTURES),
+        "bar_feed": {
+            "timeframes": ["1m", "5m"],
+            "kafka": "ohlcv_bars",
+            "http": "/v1/ohlcv/{symbol}?timeframe=1m|5m",
+            "ws": "/v1/ws/ohlcv?timeframe=1m|5m",
+            "not": ["/v1/universe/top", "/v1/dashboard/snapshot"],
+            "universe_top_role": "15m_ranking_book_only",
+            "live_trading": False,
+        },
         "note": (
             "CUT OVER: GET {base}/v1/universe/top?limit=10 is the P0 ensemble "
             "book; limit=20 is categorized + history. Schema locked "
@@ -340,6 +349,9 @@ def universe_dump(
             "SETUP_UNIVERSE / DEMO_SYMBOLS / DE_UNIVERSE / paper file are "
             "fallback only when DE is unreachable. SETUP_UNIVERSE does not "
             "narrow the ranking book (detector allow-list only). "
-            "live_trading is always false. refresh_sec=900."
+            "Bar consumption (backtest / lifecycle / paper marks) is "
+            "continuous DE 1m/5m via Kafka ohlcv_bars, WS /v1/ws/ohlcv, or "
+            "GET /v1/ohlcv/{{symbol}} — not 15m universe/top or dashboard "
+            "snapshots. live_trading is always false. refresh_sec=900."
         ).format(base=base or "$DE_API_BASE"),
     }

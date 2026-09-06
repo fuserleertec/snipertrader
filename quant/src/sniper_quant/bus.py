@@ -18,6 +18,7 @@ log = logging.getLogger(__name__)
 
 SETUP_SIGNALS_TOPIC = "setup_signals"
 ENSEMBLE_FEATURES_TOPIC = "ensemble_features"
+OHLCV_BARS_TOPIC = "ohlcv_bars"
 
 
 def dumps_bytes(value: Any) -> bytes:
