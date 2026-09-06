@@ -29,11 +29,15 @@ npm run dev:dashboard
 
 Full notes: [`DEPLOY.md`](./DEPLOY.md) (short copy in [`PREVIEW.md`](./PREVIEW.md)).
 
-**Paper preview (P0 #2, closed pass):**
+**Redeploy this PR:** Vercel project **snipertrader-dashboard**, branch
+`cursor/frontend-multi-asset-desk-f4b0` (PR #14), Root Directory = `frontend`.
+Terminal is at `/`. Do **not** QA the marketing Git Ready preview or the stale
+P0 #2 host
 [https://snipertrader-dashboard-36y96ypn3-sniper-8ee72a26.vercel.app](https://snipertrader-dashboard-36y96ypn3-sniper-8ee72a26.vercel.app)
+(MOCK FALLBACK + 4-symbol lock).
 
 Separate Vercel project, **Root Directory = `frontend`**,
-`NEXT_PUBLIC_USE_MOCKS=true`. That project reads
+`NEXT_PUBLIC_USE_MOCKS=true` on the preview host (no DE/Quant). That project reads
 [`frontend/vercel.json`](./vercel.json) (`"framework": "nextjs"`) so root
 `vercel.json` (`"framework": null` + marketing crons) never applies.
 

@@ -108,7 +108,7 @@ export function QepTable({
       <div className="sec-head">
         <span className="ix">02</span>
         <h2>Quantum Ensemble Picks</h2>
-        <span className="sim">GET /picks/ensemble · top 10</span>
+        <span className="sim">GET /picks/ensemble · top 10 · {universeSource}</span>
       </div>
       <div className="sec-sub">
         Five engines — Kronos (temporal), SNN (spike/regime), MiroFish (pattern), Fundamental

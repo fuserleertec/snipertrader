@@ -48,6 +48,7 @@ export function StatusStrip({
   heartbeat,
   health,
   nextRefresh = "15m cycle",
+  universeLabel,
   onRefresh,
   onShare,
   onDownload,
@@ -57,6 +58,7 @@ export function StatusStrip({
   heartbeat: string;
   health: string;
   nextRefresh?: string;
+  universeLabel?: string;
   onRefresh: () => void;
   onShare: () => void;
   onDownload: () => void;
@@ -68,6 +70,11 @@ export function StatusStrip({
         <span className={live ? "dot" : "dot err"} />
         <b>{status === "disconnected" ? "OFFLINE" : "LIVE"}</b>
       </span>
+      {universeLabel ? (
+        <span className="live">
+          Universe: <b>{universeLabel}</b>
+        </span>
+      ) : null}
       <span className="live">
         Next Refresh: <b>{nextRefresh}</b>
       </span>

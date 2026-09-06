@@ -252,6 +252,7 @@ export function Dashboard() {
           dataAge={ageLabel}
           heartbeat={market.status === "live" ? market.status : "beat 1 • 239ms"}
           health={market.bars.length ? "ok" : "warming"}
+          universeLabel={`${desk.ensemble.universe_source} · GET /v1/universe/top · ${deskSymbols.length} symbols${desk.source === "mock" ? " · PAPER MOCK" : " · LIVE :8000"}`}
           nextRefresh={`${formatEt(refresh.nextAtMs)} ET · ${formatRemain(refresh.remainMs)} · ${refresh.refreshSec}s cycle`}
           onRefresh={refresh.refreshNow}
           onShare={share}
