@@ -167,8 +167,8 @@
       <span class="absent">options flow / dark pool / tape (key-gated, not present)</span>
     </div>
     <p>Prices, change, Kronos structure (VWAP · FVG · order blocks · sweeps · MSS), ATR, the empirical
-       probability cone, trade levels, and the walk-forward backtest are all <b>computed from real daily
-       OHLCV</b> (live Binance + Alpaca; snapshot Yahoo key-less). The <b>MiroFish swarm is a deterministic 8-model ensemble</b> —
+       probability cone, trade levels, and the walk-forward backtest are all <b>computed from real
+       OHLCV</b> (live Binance + Alpaca 1h; snapshot Yahoo daily). The <b>MiroFish swarm is a deterministic 8-model ensemble</b> —
        every vote is a real formula over the same data, not a random draw — but it is a model, not a live
        tape of traders. There is <b>no order-flow / dark-pool / options data</b> here and none is implied.
        <b>Data as of</b>: <span id="asof"></span> — static snapshot regenerated offline with
@@ -294,7 +294,7 @@ function cone(bars){
   const mu=fr.reduce((a,b)=>a+b,0)/fr.length, sd=Math.sqrt(fr.reduce((a,x)=>a+(x-mu)**2,0)/fr.length);
   const bull=fr.filter(x=>x>0.5*sd).length/fr.length, bear=fr.filter(x=>x<-0.5*sd).length/fr.length, base=1-bull-bear;
   return {sigma_5d:+(sd*100).toFixed(2), bull:+(bull*100).toFixed(1), base:+(base*100).toFixed(1), bear:+(bear*100).toFixed(1),
-    up:+(c*(1+sd)).toFixed(4), down:+(c*(1-sd)).toFixed(4), atr:+atrNow.toFixed(4), atr_pct:+(atrNow/c*100).toFixed(2), horizon_days:5};
+    up:+(c*(1+sd)).toFixed(4), down:+(c*(1-sd)).toFixed(4), atr:+atrNow.toFixed(4), atr_pct:+(atrNow/c*100).toFixed(2), horizon_bars:5};
 }
 
 function tradeLevels(bars,k,cons){
@@ -327,10 +327,10 @@ function analyzeSymbol(sym,bars){
     kronos:k, mirofish:mf, cone:cn, trade:tl, conviction:conviction(mf.consensus,k), n_bars:bars.length};
 }
 
-async function fetchBinance(sym,limit=200){ const r=await fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${sym}&interval=1d&limit=${limit}`);
+async function fetchBinance(sym,limit=1000){ const r=await fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${sym}&interval=1h&limit=${limit}`);
   if(!r.ok){ let m='Binance HTTP '+r.status; try{const e=await r.json(); if(e&&e.msg)m='Binance: '+e.msg;}catch(_){} throw new Error(m); }
   return (await r.json()).map(k=>({o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]})); }
-async function fetchAlpaca(sym,limit=200){ const r=await fetch(`/api/stocks/klines?symbol=${sym}&timeframe=1d&limit=${limit}`);
+async function fetchAlpaca(sym,limit=512){ const r=await fetch(`/api/stocks/klines?symbol=${sym}&timeframe=1h&limit=${limit}`);
   if(!r.ok){ let m='Stocks API HTTP '+r.status; try{const e=await r.json(); if(e&&e.error)m=e.error;}catch(_){} throw new Error(m); }
   return (await r.json()).map(b=>({o:+b.open,h:+b.high,l:+b.low,c:+b.close,v:+b.volume})); }
 
@@ -406,9 +406,9 @@ function detailHtml(r){
         ${agentRows(mf.agents)}
       </div>
       <div class="dbox">
-        <h4>Probability cone — empirical (${c?c.horizon_days:5}d forward)</h4>
+        <h4>Probability cone — empirical (${c?c.horizon_bars:5}-bar forward)</h4>
         ${coneBar(c)}
-        <div class="lv" style="margin-top:10px"><span class="n">σ (${c?c.horizon_days:5}d)</span><span class="v">${c?c.sigma_5d+'%':'—'}</span></div>
+        <div class="lv" style="margin-top:10px"><span class="n">σ (${c?c.horizon_bars:5}-bar)</span><span class="v">${c?c.sigma_5d+'%':'—'}</span></div>
         <div class="lv"><span class="n">ATR(14)</span><span class="v">${c?fmt(c.atr)+' ('+c.atr_pct+'%)':'—'}</span></div>
         <div class="lv"><span class="n">1σ up cone</span><span class="v up">${c?fmtPx(c.up,r.symbol):'—'}</span></div>
         <div class="lv"><span class="n">1σ down cone</span><span class="v dn">${c?fmtPx(c.down,r.symbol):'—'}</span></div>
@@ -450,27 +450,27 @@ function render(){
   const asOf = ASOF;
   document.getElementById('asof').textContent = asOf;
   const tb = DATA.trade_backtest;
-  const netPF = tb && tb.configs[1] ? tb.configs[1].profit_factor : null;
+  const netPF = tb && tb.configs[4] ? tb.configs[4].profit_factor : null;
   const naiveHR = backtest.universe_hit_rate;
   document.getElementById('stats').innerHTML = `
     <div class="stat"><div class="k">Universe</div><div class="v">${results.length}<small> symbols</small></div><div class="sub">${UNI_SUB}</div></div>
     <div class="stat"><div class="k">Directional setups</div><div class="v">${longs+shorts}<small> / ${results.length}</small></div><div class="sub">${longs} long · ${shorts} short</div></div>
     <div class="stat"><div class="k">No edge (hold)</div><div class="v">${holds}</div><div class="sub">structure or R:R failed</div></div>
-    <div class="stat"><div class="k">Net profit factor</div><div class="v" style="color:${netPF>=1?'var(--emerald)':'var(--gold)'}">${netPF!=null?netPF.toFixed(2):'—'}</div><div class="sub">fixed 2:1 · cost 0.05R · naive hit ${(naiveHR*100).toFixed(0)}%</div></div>`;
+    <div class="stat"><div class="k">Net profit factor</div><div class="v" style="color:${netPF>=1?'var(--emerald)':'var(--gold)'}">${netPF!=null?netPF.toFixed(2):'—'}</div><div class="sub">intraday 1h · fixed 2:1 · cost 0.05R</div></div>`;
 
   // health — honest trade-level backtest (expectancy, not just hit rate)
   const cfg = tb ? tb.configs.map(c=>{
     const pfCls = c.profit_factor>=1?'pf-pos':'pf-neg';
     return `<div class="r"><span>${c.config}</span><span>${c.n}</span><span>${c.win_rate}%</span><span>${c.expectancy_R>=0?'+':''}${c.expectancy_R.toFixed(3)}</span><span class="${pfCls}">${c.profit_factor!=null?c.profit_factor.toFixed(2):'—'}</span><span>${c.total_R>=0?'+':''}${c.total_R.toFixed(0)}</span></div>`;
   }).join('') : '';
-  const conc = tb && tb.configs[1] ? (()=>{
-    const top = tb.configs[1].top5.map(([s,p])=>`<div class="l"><span>${s}</span><span class="pf-pos">${p.toFixed(2)}</span></div>`).join('');
-    const bot = tb.configs[1].bottom5.map(([s,p])=>`<div class="l"><span>${s}</span><span class="pf-neg">${p.toFixed(2)}</span></div>`).join('');
+  const conc = tb && tb.configs[4] ? (()=>{
+    const top = tb.configs[4].top5.map(([s,p])=>`<div class="l"><span>${s}</span><span class="pf-pos">${p.toFixed(2)}</span></div>`).join('');
+    const bot = tb.configs[4].bottom5.map(([s,p])=>`<div class="l"><span>${s}</span><span class="pf-neg">${p.toFixed(2)}</span></div>`).join('');
     return `<div class="conc"><div><h5>best 5 · profit factor</h5>${top}</div><div><h5>worst 5 · profit factor</h5>${bot}</div></div>`;
   })() : '';
   document.getElementById('health').innerHTML = `
     <div class="hbox">
-      <h4>Trade-level backtest — expectancy (TP/SL, walk-forward)</h4>
+      <h4>Trade-level backtest — expectancy (TP/SL, walk-forward · daily + intraday 1h)</h4>
       <div class="cfg">
         <div class="h"><span>config</span><span>n</span><span>win%</span><span>E[R]</span><span>PF</span><span>ΣR</span></div>
         ${cfg}
@@ -504,7 +504,7 @@ function render(){
      anchored VWAP (20-bar), Fair Value Gaps (gated &gt;0.3%), order blocks, liquidity sweeps, market-structure shift — all
      standard definitions in <span class="fl">compute_engine.py</span>. MiroFish = 8 independent deterministic models
      (momentum, trend, VWAP, order-block, volatility, volume, mean-reversion, structure), consensus = confidence-weighted vote
-     with a uniform prior. Cone = empirical distribution of ${backtest.horizon_days}-day forward returns → P(bull/base/bear).
+     with a uniform prior. Cone = empirical distribution of ${backtest.horizon_bars}-bar forward returns → P(bull/base/bear).
      Backtest = walk-forward, no lookahead, TP/SL sim with costs. &nbsp; <span class="risknote">Educational only — not financial
      advice. Paper desk. live_trading=false.</span>`;
 

@@ -24,7 +24,7 @@ import math
 ATR_N = 14
 VWAP_N = 20
 PIVOT_K = 3
-FWD_DAYS = 5
+FWD_BARS = 5
 
 # --------------------------------------------------------------------------- #
 # Indicators (standard definitions)
@@ -112,7 +112,7 @@ def swing_pivots(bars, k=PIVOT_K):
             piv.append((i, "L", bars[i]["l"]))
     return piv
 
-def fwd_returns(bars, n=FWD_DAYS):
+def fwd_returns(bars, n=FWD_BARS):
     """Overlapping n-day simple returns, aligned to the start bar."""
     out = []
     closes = [b["c"] for b in bars]
@@ -356,12 +356,12 @@ def cone(bars):
     c = bars[-1]["c"]
     atr = atr_series(bars)
     atr_now = atr[-1] if atr else None
-    fr = fwd_returns(bars, FWD_DAYS)
+    fr = fwd_returns(bars, FWD_BARS)
     if not fr or atr_now is None:
         return None
     mu = sum(fr) / len(fr)
     sd = math.sqrt(sum((x - mu) ** 2 for x in fr) / len(fr))
-    # empirical P(bull/base/bear) over the 5-day forward-return distribution
+    # empirical P(bull/base/bear) over the 5-bar forward-return distribution
     bull = sum(1 for x in fr if x > 0.5 * sd) / len(fr)
     bear = sum(1 for x in fr if x < -0.5 * sd) / len(fr)
     base = 1.0 - bull - bear
@@ -377,7 +377,7 @@ def cone(bars):
         "down": round(dn, 4),
         "atr": round(atr_now, 4),
         "atr_pct": round(atr_pct, 2),
-        "horizon_days": FWD_DAYS,
+        "horizon_bars": FWD_BARS,
     }
 
 # --------------------------------------------------------------------------- #
@@ -489,7 +489,7 @@ def analyze(raw):
 
 def backtest(raw):
     """Walk-forward: at each bar (>=60 history), compute the ensemble's directional
-    call, then measure the forward FWD_DAYS return.  Aggregates hit rate across the
+    call, then measure the forward FWD_BARS return.  Aggregates hit rate across the
     universe — the honest replacement for the dashboard's unsourced 'walk-forward 61%'."""
     hits = calls = 0
     per_symbol = {}
@@ -497,14 +497,14 @@ def backtest(raw):
         bars = rec["bars"]
         sh = sc = 0
         closes = [b["c"] for b in bars]
-        for i in range(60, len(bars) - FWD_DAYS):
+        for i in range(60, len(bars) - FWD_BARS):
             window = bars[: i + 1]
             k = kronos(window)
             mf = mirofish(window, k)
             cons = mf["consensus"]
             if cons < 0.60 and cons > 0.40:
                 continue                       # no directional call
-            fwd = closes[i + FWD_DAYS] / closes[i] - 1
+            fwd = closes[i + FWD_BARS] / closes[i] - 1
             call = "bull" if cons >= 0.60 else "bear"
             hit = (call == "bull" and fwd > 0) or (call == "bear" and fwd < 0)
             sc += 1
@@ -516,7 +516,7 @@ def backtest(raw):
         "universe_hit_rate": round(hits / calls, 3) if calls else None,
         "total_calls": calls,
         "per_symbol": per_symbol,
-        "horizon_days": FWD_DAYS,
+        "horizon_bars": FWD_BARS,
     }
 
 def main():
@@ -534,7 +534,7 @@ def main():
         print(f"{r['symbol']:10s} {r['last']:>12.4f} {r['chg_pct']:+6.2f}%  conv={r['conviction']:3d}  "
               f"{tl['direction']:5s} rr={tl['rr']}  swarm={mf['consensus_pct']:5.1f}%  "
               f"cone B/B/B={cn.get('bull')}/{cn.get('base')}/{cn.get('bear')}  trend={r['kronos']['trend']}")
-    print(f"\nBACKTEST (walk-forward, {bt['horizon_days']}d horizon): "
+    print(f"\nBACKTEST (walk-forward, {bt['horizon_bars']}-bar horizon): "
           f"hit_rate={bt['universe_hit_rate']} over {bt['total_calls']} calls")
 
 if __name__ == "__main__":

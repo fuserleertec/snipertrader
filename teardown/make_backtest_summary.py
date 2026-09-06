@@ -1,24 +1,27 @@
 #!/usr/bin/env python3
-"""Produce a compact, honest trade-backtest summary for the terminal UI."""
+"""Produce a compact, honest trade-backtest summary (daily + intraday 1h)."""
 import json
 from backtest_trades import sim_trade
 from compute_engine import backtest
 
-RAW = "/Users/snipertrader/snipertrader/teardown/raw_ohlcv.json"
-FEAT = "/Users/snipertrader/snipertrader/teardown/features.json"
+RAW_D = "/Users/snipertrader/snipertrader/teardown/raw_ohlcv.json"
+FEAT_D = "/Users/snipertrader/snipertrader/teardown/features.json"
+RAW_H = "/Users/snipertrader/snipertrader/teardown/raw_ohlcv_1h.json"
+FEAT_H = "/Users/snipertrader/snipertrader/teardown/features_1h.json"
 
-with open(RAW) as f:
-    raw = json.load(f)
-with open(FEAT) as f:
-    feats = json.load(f)
+raw_d = json.load(open(RAW_D))
+feats_d = json.load(open(FEAT_D))
+raw_h = json.load(open(RAW_H))
+feats_h = json.load(open(FEAT_H))
+
 
 def pf(rs):
     w = sum(r for r in rs if r > 0)
     l = -sum(r for r in rs if r <= 0)
     return round(w / l, 3) if l > 0 else None
 
-def config_trades(threshold, horizon, gate, rr_mode, cost_r):
-    """Return list of (sym, i, r_net)."""
+
+def config_trades(feats, raw, threshold, horizon, gate, rr_mode, cost_r):
     out = []
     for sym, snap in feats.items():
         bars = raw[sym]["bars"]
@@ -37,23 +40,22 @@ def config_trades(threshold, horizon, gate, rr_mode, cost_r):
                 out.append((sym, s["i"], r - cost_r))
     return out
 
-def headline(threshold, horizon, gate, rr_mode, cost_r):
-    tr = config_trades(threshold, horizon, gate, rr_mode, cost_r)
+
+def headline(feats, raw, threshold, horizon, gate, rr_mode, cost_r, tag):
+    tr = config_trades(feats, raw, threshold, horizon, gate, rr_mode, cost_r)
     rs = [r for _, _, r in tr]
     n = len(rs)
     if n == 0:
         return None
     wins = [r for r in rs if r > 0]
-    losses = [r for r in rs if r <= 0]
     gw = sum(wins)
-    gl = -sum(losses)
-    # concentration: top-5 vs bottom-5 symbol PF
+    gl = -sum(r for r in rs if r <= 0)
     syms = {}
     for sym, _, r in tr:
         syms.setdefault(sym, []).append(r)
     pfs = sorted(((s, pf(rl)) for s, rl in syms.items() if pf(rl) is not None), key=lambda x: x[1])
     return {
-        "config": f"thr={threshold} hz={horizon} {gate} {rr_mode} cost={cost_r}R",
+        "config": f"{tag} thr={threshold} hz={horizon} {gate} {rr_mode} cost={cost_r}R",
         "n": n,
         "win_rate": round(len(wins) / n * 100, 1),
         "expectancy_R": round(sum(rs) / n, 3),
@@ -63,27 +65,30 @@ def headline(threshold, horizon, gate, rr_mode, cost_r):
         "bottom5": [(s, p) for s, p in pfs[:5]],
     }
 
-# naive directional hit-rate (the dashboard's "61%" equivalent, measured honestly)
-bt = backtest(raw)
+
+bt = backtest(raw_d)
 
 summary = {
     "naive": {
         "hit_rate": bt["universe_hit_rate"],
         "calls": bt["total_calls"],
-        "horizon": bt["horizon_days"],
+        "horizon": bt["horizon_bars"],
     },
     "configs": [
-        headline(0.70, 20, "none", "fixed2", 0.0),
-        headline(0.70, 20, "none", "fixed2", 0.05),
-        headline(0.70, 20, "none", "structure", 0.05),
+        headline(feats_d, raw_d, 0.70, 20, "none", "fixed2", 0.0, "1d"),
+        headline(feats_d, raw_d, 0.70, 20, "none", "fixed2", 0.05, "1d"),
+        headline(feats_d, raw_d, 0.70, 20, "none", "structure", 0.05, "1d"),
+        headline(feats_h, raw_h, 0.75, 20, "none", "fixed2", 0.0, "1h"),
+        headline(feats_h, raw_h, 0.75, 20, "none", "fixed2", 0.05, "1h"),
+        headline(feats_h, raw_h, 0.70, 20, "none", "structure", 0.05, "1h"),
     ],
-    "verdict": "No systematic edge. The fixed 2:1 risk/reward shows a small positive profit factor at "
-               "zero cost (a cost-free artifact), which collapses to ~breakeven at a realistic 0.05R "
-               "round-trip cost, and the edge is concentrated in ~5 symbols while roughly half the "
-               "universe loses money. Structure-anchored R:R (the current terminal's approach) is a "
-               "net loser. Finding real alpha needs better inputs — intraday bars (VWAP/FVG/order-block "
-               "are intraday concepts), catalyst overlays (SEC Form 4, earnings), and a focused "
-               "single hypothesis rather than a naive 8-way vote.",
+    "verdict": "No systematic edge on EITHER timeframe. Fixed 2:1 R:R shows a small positive profit "
+               "factor at zero cost (a cost-free artifact) that collapses to ~breakeven at a realistic "
+               "0.05R round-trip cost — daily 2y ≈ PF 1.03, intraday 1h ≈ PF 1.05, both within noise. "
+               "The edge concentrates in ~5 symbols while roughly half the universe loses money, and "
+               "structure-anchored R:R is a net loser on both timeframes. Switching to intraday did NOT "
+               "create alpha — the next lever is better inputs (catalyst overlays like SEC Form 4 / "
+               "earnings, or a focused single hypothesis) rather than another timeframe.",
 }
 
 with open("/Users/snipertrader/snipertrader/teardown/backtest_summary.json", "w") as f:
