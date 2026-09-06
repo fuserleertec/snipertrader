@@ -374,6 +374,12 @@ export interface Signal {
   /** Quant publish-only {name, weight, score, note?}[]. */
   factor_breakdown?: FactorBreakdown[];
   /**
+   * Optional ML ensemble_features. May arrive on the signal or a
+   * side-channel `ensemble_features` object.
+   */
+  ensemble_score?: number;
+  rank_components?: RankComponents;
+  /**
    * Quant PR #2 close fields — live on GET /signals, GET /signals/{id},
    * and WS `signal.upsert` / `signal.status`. Do not compute on FE.
    * All three are null on ACTIVE/CANCELLED; set on TP_HIT/SL_HIT.
@@ -391,14 +397,82 @@ export interface SignalListResponse {
 /** Quant PR #2 GET /signals (history = this list + from_ts/to_ts/status/setup_type/symbol). */
 export interface SignalListQuery {
   symbol?: string;
+  /** Multi-symbol desk (≤20). Serialized as `symbols=ES,CL,…`. */
+  symbols?: string[];
   status?: SignalStatus;
   setup_type?: SetupType;
   side?: SignalSide;
+  /** `stocks` is accepted and mapped to `equity`. */
+  asset_class?: AssetClass | "stocks";
   from_ts?: number;
   to_ts?: number;
   limit?: number;
   /** Opaque page token from the previous `next_cursor`. */
   cursor?: string;
+}
+
+/** Active-setup desk tabs. Stocks → `equity` on the wire. */
+export type AssetTab = "futures" | "stocks" | "cryptos";
+
+export type PickCategory = "momentum" | "mean_reversion" | "confluence" | "other";
+
+export type UniverseSource = "SETUP_UNIVERSE" | "DE";
+
+export interface RankComponents {
+  setup_quality: number;
+  risk_adjusted: number;
+  kill_zone: number;
+  volume: number;
+  freshness: number;
+}
+
+/**
+ * GET /picks/ensemble item — Quant contract (top 10, refresh_sec=900):
+ * rank, symbol, asset_class, score, setup_types, confidence.
+ * Mapping: score ← ensemble_score, confidence ← best_confidence when those fields are present.
+ * Optional ML ensemble_features on the item (or nested `ensemble_features`):
+ * rank_components, contributing_factors.
+ */
+export interface EnsemblePickItem {
+  rank: number;
+  symbol: string;
+  asset_class: AssetClass;
+  score: number;
+  setup_types: SetupType[];
+  confidence: number;
+  ensemble_score: number;
+  rank_components?: RankComponents;
+  contributing_factors?: string[];
+  best_confidence?: number;
+}
+
+export interface EnsemblePicksResponse {
+  as_of_ts_ms: number;
+  refresh_sec: number;
+  universe_source: UniverseSource;
+  items: EnsemblePickItem[];
+}
+
+/** GET /picks/categorized item — ≤20, no asset-class restriction on the list. */
+export interface CategorizedPickItem {
+  symbol: string;
+  asset_class: AssetClass;
+  category: PickCategory;
+  score: number;
+  confidence: number;
+  setup_types: SetupType[];
+  entry: number;
+  stop: number;
+  target: number;
+  atr: number;
+  reward_risk: number;
+}
+
+export interface CategorizedPicksResponse {
+  as_of_ts_ms: number;
+  refresh_sec: number;
+  universe_source: UniverseSource;
+  items: CategorizedPickItem[];
 }
 
 export type SignalWsType = "signal.upsert" | "signal.status";
@@ -414,3 +488,22 @@ export interface SessionListResponse {
 }
 
 export type ConnectionStatus = "mock" | "connecting" | "live" | "disconnected";
+
+/**
+ * Locked DE `GET /v1/universe/top` envelope:
+ * `{ as_of_ts_ms, limit, symbols[{ symbol, asset_class, rank, score }] }`.
+ * P0 `limit=10`, P2/P4 `limit=20`. `symbols` ordered by rank asc.
+ * This is the allowed set; Quant re-ranks P0/P4 for display.
+ */
+export interface UniverseTopSymbol {
+  symbol: string;
+  asset_class: AssetClass;
+  rank: number;
+  score: number;
+}
+
+export interface UniverseTopResponse {
+  as_of_ts_ms: number;
+  limit: number;
+  symbols: UniverseTopSymbol[];
+}

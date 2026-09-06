@@ -35,6 +35,18 @@ const nextConfig: NextConfig = {
               source: "/performance/summary",
               destination: `${quantHttp}/performance/summary`,
             },
+            {
+              source: "/signals/history",
+              destination: `${quantHttp}/signals/history`,
+            },
+            {
+              source: "/picks/ensemble",
+              destination: `${quantHttp}/picks/ensemble`,
+            },
+            {
+              source: "/picks/categorized",
+              destination: `${quantHttp}/picks/categorized`,
+            },
           ];
         },
       }),

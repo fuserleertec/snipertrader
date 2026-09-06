@@ -1,4 +1,5 @@
-import type { Signal } from "../types";
+import type { AssetClass, CategorizedPickItem, EnsemblePickItem, RankComponents, Signal } from "../types";
+import { mockQuote, universeName } from "./lists";
 
 export type EngineId = "K" | "S" | "M" | "F" | "Q";
 export type Stance = "buy" | "sell" | "hold";
@@ -14,10 +15,28 @@ export interface EnsemblePick {
   conviction: number;
   engines: Record<EngineId, Stance>;
   reason: string;
+  tooltip: string;
   mode: "market" | "activity";
   category: string;
   source: string;
   latency: string;
+}
+
+export function formatRankComponents(rc: RankComponents): string {
+  return `sq ${rc.setup_quality.toFixed(2)} · risk ${rc.risk_adjusted.toFixed(2)} · kz ${rc.kill_zone.toFixed(2)} · vol ${rc.volume.toFixed(2)} · fresh ${rc.freshness.toFixed(2)}`;
+}
+
+/** Native `title` text for QEP ensemble rows (rank_components + contributing_factors). */
+export function ensembleFeatureTooltip(item: EnsemblePickItem): string {
+  const conf = item.best_confidence ?? item.confidence;
+  const lines = [`ensemble_score ${item.ensemble_score.toFixed(3)} · confidence ${conf.toFixed(3)}`];
+  if (item.rank_components) {
+    lines.push(`rank_components  ${formatRankComponents(item.rank_components)}`);
+  }
+  if (item.contributing_factors?.length) {
+    lines.push(`contributing_factors  ${item.contributing_factors.join(" · ")}`);
+  }
+  return lines.join("\n");
 }
 
 export const ENGINE_META: Record<EngineId, { label: string; color: string }> = {
@@ -30,26 +49,9 @@ export const ENGINE_META: Record<EngineId, { label: string; color: string }> = {
 
 export const ENGINE_ORDER: EngineId[] = ["K", "S", "M", "F", "Q"];
 
-/** Compact subset of the live stock_picks.html Quantum Ensemble table. */
-export const ENSEMBLE_PICKS: EnsemblePick[] = [
-  { ticker: "ES", company: "E-mini S&P 500", signal: "Buy", last: "5,812.25", chg: "+0.64%", target: "5,910", conviction: 81, engines: { K: "buy", S: "buy", M: "buy", F: "hold", Q: "buy" }, reason: "Breadth is broadening into cyclicals while SNN clocks a volume spike on the reopen; fundamentals lag but don't contradict.", mode: "market", category: "Futures", source: "CME ITCH", latency: "6ms" },
-  { ticker: "CL", company: "WTI Crude", signal: "Sell", last: "76.40", chg: "-1.12%", target: "71.50", conviction: 74, engines: { K: "sell", S: "sell", M: "sell", F: "buy", Q: "sell" }, reason: "Kronos and MiroFish both read a rollover pattern into a demand-softening macro print.", mode: "market", category: "Futures", source: "NYMEX", latency: "9ms" },
-  { ticker: "GC", company: "Gold", signal: "Hold", last: "2,486.10", chg: "+0.18%", target: "2,520", conviction: 52, engines: { K: "hold", S: "hold", M: "buy", F: "hold", Q: "hold" }, reason: "A stalled probe of the overnight high leaves Quantum parked in the middle until the next volatility pulse.", mode: "market", category: "Futures", source: "COMEX", latency: "8ms" },
-  { ticker: "NQ", company: "Nasdaq 100", signal: "Buy", last: "20,904.00", chg: "+0.88%", target: "21,300", conviction: 77, engines: { K: "buy", S: "buy", M: "hold", F: "buy", Q: "buy" }, reason: "Momentum in mega-cap tech is confirmed by both temporal and pattern models.", mode: "market", category: "Futures", source: "CME ITCH", latency: "6ms" },
-  { ticker: "NVDA", company: "NVIDIA Corp", signal: "Buy", last: "132.18", chg: "+2.14%", target: "148.00", conviction: 88, engines: { K: "buy", S: "buy", M: "buy", F: "buy", Q: "buy" }, reason: "Every engine agrees: accelerating data-center demand, a breakout analogue, and a fundamentals beat.", mode: "market", category: "Stocks", source: "NASDAQ", latency: "4ms" },
-  { ticker: "AAPL", company: "Apple Inc", signal: "Hold", last: "221.40", chg: "-0.22%", target: "228.00", conviction: 48, engines: { K: "hold", S: "sell", M: "hold", F: "hold", Q: "hold" }, reason: "Sideways price action with only MiroFish leaning bearish on a stalled-breakout analogue.", mode: "market", category: "Stocks", source: "NASDAQ", latency: "4ms" },
-  { ticker: "TSLA", company: "Tesla Inc", signal: "Sell", last: "214.60", chg: "-3.05%", target: "192.00", conviction: 72, engines: { K: "sell", S: "sell", M: "buy", F: "sell", Q: "sell" }, reason: "Delivery-miss chatter plus a sharp SNN volume spike outweigh a lone bullish read.", mode: "market", category: "Stocks", source: "NASDAQ", latency: "4ms" },
-  { ticker: "BTC", company: "Bitcoin", signal: "Buy", last: "61,240", chg: "+3.42%", target: "67,500", conviction: 83, engines: { K: "buy", S: "buy", M: "buy", F: "hold", Q: "buy" }, reason: "ETF inflows plus a textbook accumulation-to-breakout analogue.", mode: "market", category: "Cryptos", source: "Coinbase", latency: "11ms" },
-  { ticker: "ETH", company: "Ethereum", signal: "Hold", last: "2,940", chg: "+0.61%", target: "3,050", conviction: 55, engines: { K: "hold", S: "hold", M: "buy", F: "hold", Q: "hold" }, reason: "Range-bound with a mild bullish tilt from MiroFish only.", mode: "market", category: "Cryptos", source: "Coinbase", latency: "11ms" },
-  { ticker: "SOL", company: "Solana", signal: "Buy", last: "148.20", chg: "+4.87%", target: "172.00", conviction: 79, engines: { K: "buy", S: "buy", M: "buy", F: "hold", Q: "buy" }, reason: "Network activity and a steep SNN spike both confirm continuation.", mode: "market", category: "Cryptos", source: "Coinbase", latency: "11ms" },
-  { ticker: "MSFT", company: "Microsoft Corp", signal: "Buy", last: "438.20", chg: "+0.52%", target: "465.00", conviction: 74, engines: { K: "buy", S: "hold", M: "buy", F: "buy", Q: "buy" }, reason: "A director's open-market purchase lines up with a bullish pattern read.", mode: "activity", category: "Insiders", source: "Form 4", latency: "2h" },
-  { ticker: "PLTR", company: "Palantir Technologies", signal: "Buy", last: "41.15", chg: "+2.88%", target: "47.50", conviction: 69, engines: { K: "buy", S: "buy", M: "hold", F: "hold", Q: "buy" }, reason: "CEO added shares alongside a fresh SNN volume spike on the filing date.", mode: "activity", category: "Insiders", source: "Form 4", latency: "1h" },
-  { ticker: "META", company: "Meta Platforms", signal: "Buy", last: "512.40", chg: "+1.22%", target: "545.00", conviction: 72, engines: { K: "buy", S: "hold", M: "buy", F: "buy", Q: "buy" }, reason: "CFO's scheduled 10b5-1 buy coincides with an ad-revenue beat.", mode: "activity", category: "Executives", source: "10b5-1 filing", latency: "4h" },
-];
-
 export const QEP_CATS: Record<"market" | "activity", string[]> = {
-  market: ["Futures", "Stocks", "Cryptos"],
-  activity: ["Insiders", "Executives"],
+  market: ["All", "Futures", "Stocks", "Cryptos"],
+  activity: ["All", "Insiders", "Executives"],
 };
 
 export const NARRATIVES = [
@@ -73,32 +75,23 @@ export interface ReconPick {
   dropped?: boolean;
 }
 
-/** Snapshot-shaped picks so section 03/04 match the live terminal density. */
-export const FALLBACK_PICKS: ReconPick[] = [
-  { symbol: "SMCI", cap: "small", tier: "high", score: 81, entry: 42.1, stop: 36.4, target: 54.0, atr: 2.4, rewardRisk: 2.1, triggers: ["BOS", "FVG"], note: "SMCI conviction 81/100 · chart: BOS/FVG · vol surge 16%" },
-  { symbol: "TSM", cap: "large", tier: "high", score: 78, entry: 168.2, stop: 154.0, target: 192.0, atr: 3.1, rewardRisk: 2.0, triggers: ["BOS", "FVG"], note: "TSM conviction 78/100 · chart: BOS/FVG" },
-  { symbol: "NVDA", cap: "large", tier: "watch", score: 72, entry: 132.2, stop: 118.0, target: 148.0, atr: 4.2, rewardRisk: 2.1, triggers: ["BREAKOUT", "FVG"], note: "NVDA conviction 72/100 · SEC Form 4 buys: 1 · chart: BREAKOUT/FVG" },
-  { symbol: "BE", cap: "small", tier: "watch", score: 69, entry: 11.4, stop: 9.8, target: 14.6, atr: 0.7, rewardRisk: 2.0, triggers: ["FVG"], note: "BE conviction 69/100 · chart: FVG" },
-];
-
-export const FALLBACK_DROPPED: ReconPick[] = [
-  { symbol: "MSFT", cap: "large", tier: "watch", score: 58, entry: 438.2, stop: 412.0, target: 465.0, atr: 6.1, rewardRisk: 2.0, triggers: [], note: "No pattern · Δ 64% · no conviction · audit — no live levels", dropped: true },
-  { symbol: "RIVN", cap: "mid", tier: "watch", score: 42, entry: 14, stop: 12, target: 18, atr: 0.8, rewardRisk: 2, triggers: [], note: "Composite 42/100 below 65 floor · no chart breakout/BOS/FVG", dropped: true },
-  { symbol: "SOFI", cap: "mid", tier: "watch", score: 22, entry: 8, stop: 7, target: 10, atr: 0.4, rewardRisk: 2, triggers: [], note: "Composite 22/100 below 65 floor · no SEC Form 4 buys", dropped: true },
-  { symbol: "COIN", cap: "mid", tier: "watch", score: 48, entry: 210, stop: 190, target: 240, atr: 8, rewardRisk: 1.5, triggers: [], note: "No pattern · no conviction · audit — no live levels", dropped: true },
-  { symbol: "SNOW", cap: "mid", tier: "watch", score: 44, entry: 115, stop: 100, target: 130, atr: 4, rewardRisk: 1.4, triggers: [], note: "No pattern · no conviction · audit — no live levels", dropped: true },
-  { symbol: "ASTS", cap: "small", tier: "watch", score: 40, entry: 28, stop: 22, target: 36, atr: 1.6, rewardRisk: 1.3, triggers: [], note: "No pattern · no conviction · audit — no live levels", dropped: true },
-  { symbol: "ALB", cap: "mid", tier: "watch", score: 38, entry: 92, stop: 80, target: 110, atr: 3.2, rewardRisk: 1.4, triggers: [], note: "No pattern · Δ 55% · no conviction · audit — no live levels", dropped: true },
-  { symbol: "HOOD", cap: "mid", tier: "watch", score: 36, entry: 21, stop: 17, target: 26, atr: 0.9, rewardRisk: 1.3, triggers: [], note: "No pattern · no conviction · audit — no live levels", dropped: true },
-  { symbol: "SNAP", cap: "mid", tier: "watch", score: 34, entry: 9.4, stop: 8.1, target: 11.2, atr: 0.4, rewardRisk: 1.2, triggers: [], note: "No pattern · no conviction · audit — no live levels", dropped: true },
-  { symbol: "UBER", cap: "large", tier: "watch", score: 46, entry: 72, stop: 64, target: 84, atr: 1.8, rewardRisk: 1.5, triggers: [], note: "No pattern · no conviction · audit — no live levels", dropped: true },
-  { symbol: "PYPL", cap: "large", tier: "watch", score: 41, entry: 66, stop: 58, target: 76, atr: 1.5, rewardRisk: 1.4, triggers: [], note: "No pattern · no conviction · audit — no live levels", dropped: true },
-  { symbol: "NIO", cap: "mid", tier: "watch", score: 31, entry: 4.8, stop: 3.9, target: 6.1, atr: 0.3, rewardRisk: 1.2, triggers: [], note: "No pattern · no conviction · audit — no live levels", dropped: true },
-  { symbol: "PLUG", cap: "small", tier: "watch", score: 28, entry: 2.4, stop: 1.8, target: 3.2, atr: 0.2, rewardRisk: 1.1, triggers: [], note: "No pattern · no conviction · audit — no live levels", dropped: true },
-  { symbol: "MARA", cap: "mid", tier: "watch", score: 33, entry: 16.2, stop: 13.4, target: 20.1, atr: 1.1, rewardRisk: 1.3, triggers: [], note: "No pattern · no conviction · audit — no live levels", dropped: true },
-  { symbol: "RIOT", cap: "mid", tier: "watch", score: 29, entry: 8.6, stop: 7.1, target: 10.8, atr: 0.6, rewardRisk: 1.2, triggers: [], note: "No pattern · no conviction · audit — no live levels", dropped: true },
-  { symbol: "AMC", cap: "small", tier: "watch", score: 24, entry: 4.1, stop: 3.2, target: 5.4, atr: 0.3, rewardRisk: 1.1, triggers: [], note: "No pattern · no conviction · audit — no live levels", dropped: true },
-];
+export function reconFromCategorized(row: CategorizedPickItem): ReconPick {
+  const t = tierOf(row.score);
+  return {
+    symbol: row.symbol,
+    cap: row.asset_class === "futures" ? "fut" : row.asset_class === "crypto" ? "crypto" : "mid",
+    tier: t === "drop" ? "watch" : t,
+    score: row.score,
+    entry: row.entry,
+    stop: row.stop,
+    target: row.target,
+    atr: row.atr,
+    rewardRisk: row.reward_risk,
+    triggers: row.setup_types.length ? row.setup_types : [row.category],
+    note: `${universeName(row.symbol)} · ${row.category} · score ${row.score.toFixed(0)}/100`,
+    dropped: t === "drop",
+  };
+}
 
 export function simScenario(score: number, atr: number, entry: number, bias = 0) {
   const c = Math.min(0.98, Math.max(0.05, score / 100));
@@ -175,6 +168,74 @@ export function enginesForSetup(signal: Signal): Record<EngineId, Stance> {
 export function whyForSetup(signal: Signal): string {
   const ids = signal.trigger_event_ids.join(", ") || "no trigger ids";
   return `${signal.setup_type.replaceAll("_", " ")} ${signal.side.toUpperCase()} joined via trigger_event_ids: ${ids}.`;
+}
+
+function classCategory(asset: AssetClass): string {
+  if (asset === "futures") return "Futures";
+  if (asset === "equity") return "Stocks";
+  return "Cryptos";
+}
+
+/** Map GET /picks/ensemble items onto the locked QEP table columns. */
+export function presentEnsemble(item: EnsemblePickItem, mode: "market" | "activity", cycle = 0): EnsemblePick {
+  const quote = mockQuote(item.symbol, cycle);
+  const conv = Math.round(item.ensemble_score * 100);
+  const signal: "Buy" | "Sell" | "Hold" = conv >= 70 ? "Buy" : conv <= 45 ? "Sell" : "Hold";
+  const setup = item.setup_types[0] ?? "sweep_reclaim";
+  const fake: Signal = {
+    id: `ens_${item.symbol}`,
+    ts_ms: 0,
+    symbol: item.symbol,
+    asset_class: item.asset_class,
+    setup_type: setup,
+    side: signal === "Sell" ? "short" : "long",
+    entry: quote.last,
+    stop: quote.last * 0.99,
+    target: quote.target,
+    status: "ACTIVE",
+    confidence: item.confidence,
+    timeframe: "5m",
+    ref_session: "ny_am",
+    trigger_event_ids: [],
+    realized_r: null,
+    exit_price: null,
+    closed_ts_ms: null,
+  };
+  const rc = item.rank_components;
+  const factors = item.contributing_factors?.length ? ` · ${item.contributing_factors.join("+")}` : "";
+  const setups = item.setup_types.join(" + ") || "ensemble";
+  const why =
+    mode === "activity"
+      ? rc
+        ? `rank_components vol ${rc.volume.toFixed(2)} · kz ${rc.kill_zone.toFixed(2)} · freshness ${rc.freshness.toFixed(2)}${factors}`
+        : factors
+          ? `contributing_factors${factors}`
+          : `${setups} · ensemble_score ${item.ensemble_score.toFixed(2)}`
+      : rc
+        ? `${setups} · sq ${rc.setup_quality.toFixed(2)} · risk ${rc.risk_adjusted.toFixed(2)}${factors}`
+        : `${setups} · score ${item.ensemble_score.toFixed(2)}${factors}`;
+  return {
+    ticker: item.symbol,
+    company: `${universeName(item.symbol)} · ${item.asset_class}`,
+    signal,
+    last: quote.last >= 1000 ? quote.last.toFixed(1) : quote.last.toFixed(2),
+    chg: `${quote.chgPct >= 0 ? "+" : ""}${quote.chgPct.toFixed(2)}%`,
+    target: quote.target >= 1000 ? quote.target.toFixed(0) : quote.target.toFixed(2),
+    conviction: conv,
+    engines: enginesForSetup(fake),
+    reason: why,
+    tooltip: ensembleFeatureTooltip(item),
+    mode,
+    category: classCategory(item.asset_class),
+    source: "GET /picks/ensemble",
+    latency: "15m",
+  };
+}
+
+export function matchesQepCat(pick: EnsemblePick, cat: string): boolean {
+  if (cat === "All") return true;
+  if (cat === "Insiders" || cat === "Executives") return pick.category === "Stocks";
+  return pick.category === cat;
 }
 
 export function swarmCells(seed: string, bias: number): Array<"bull" | "neu" | "bear"> {

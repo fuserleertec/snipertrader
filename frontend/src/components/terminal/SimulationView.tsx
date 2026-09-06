@@ -3,13 +3,8 @@
 import { useState, type RefObject } from "react";
 import { OVERLAY_PRESETS, TIMEFRAMES } from "@/lib/constants";
 import type { Theme } from "@/hooks/useTheme";
-import {
-  FALLBACK_DROPPED,
-  FALLBACK_PICKS,
-  scoreLeaderboard,
-  simScenario,
-  swarmCells,
-} from "@/lib/mocks/terminal";
+import { reconFromCategorized, scoreLeaderboard, simScenario, swarmCells } from "@/lib/mocks/terminal";
+import type { CategorizedPickItem } from "@/lib/types";
 import type {
   OHLCVBar,
   OverlayPreset,
@@ -46,6 +41,8 @@ export function SimulationView({
   anchorVwap = null,
   volumeProfile = null,
   killZone = null,
+  chartSymbols,
+  categorized = [],
 }: {
   chartRef?: RefObject<HTMLDivElement | null>;
   signals: Signal[];
@@ -69,9 +66,12 @@ export function SimulationView({
   anchorVwap?: VWAPValues | null;
   volumeProfile?: VolumeProfile | null;
   killZone?: KillZoneEvent | null;
+  chartSymbols: string[];
+  categorized?: CategorizedPickItem[];
 }) {
   const [bias, setBias] = useState(0);
-  const ranked = scoreLeaderboard(FALLBACK_PICKS, FALLBACK_DROPPED);
+  const pickRows = categorized.slice(0, 20).map(reconFromCategorized);
+  const ranked = scoreLeaderboard(pickRows, pickRows.filter((p) => p.dropped));
   const focus = ranked.find((r) => r.symbol === symbol) ?? ranked[0];
   const sc = focus ? simScenario(focus.score, focus.atr, focus.entry, bias) : simScenario(70, 3, 100, bias);
   const cells = swarmCells(focus?.symbol ?? symbol, bias);
@@ -323,11 +323,18 @@ export function SimulationView({
           <span className="sim">Paper</span>
         </div>
         <div className="symbol-row">
-          <select value={["BTCUSDT", "ETHUSDT", "AAPL", "ES"].includes(symbol) ? symbol : "BTCUSDT"} onChange={(e) => onSymbol(e.target.value)}>
-            <option>BTCUSDT</option>
-            <option>ETHUSDT</option>
-            <option>AAPL</option>
-            <option>ES</option>
+          <select
+            aria-label="Chart symbol"
+            data-chart-symbol={symbol}
+            value={chartSymbols.includes(symbol) ? symbol : (chartSymbols[0] ?? symbol)}
+            onChange={(e) => onSymbol(e.target.value)}
+          >
+            {chartSymbols.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+            {!chartSymbols.includes(symbol) && <option value={symbol}>{symbol}</option>}
           </select>
           {TIMEFRAMES.map((tf) => (
             <button key={tf} type="button" className={`ftab${tf === timeframe ? " active" : ""}`} onClick={() => onTimeframe(tf)}>

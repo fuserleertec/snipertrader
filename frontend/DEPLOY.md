@@ -30,12 +30,15 @@ PR previews on **this** Git connection are marketing HTML. `/` is
 
 ## Project B — Conviction Terminal (FE must create / link)
 
-**Live paper preview (P0 #2 closed pass):**
+**Redeploy this PR on snipertrader-dashboard** from
+`cursor/frontend-multi-asset-desk-f4b0` (PR #14). Terminal is at `/`.
+
+The P0 #2 host is **stale** — do not score it for this PR:
 https://snipertrader-dashboard-36y96ypn3-sniper-8ee72a26.vercel.app
 
 Separate Vercel project. Root Directory = `frontend`.
-`NEXT_PUBLIC_USE_MOCKS=true`. Confirmed Next HTML (`Conviction Terminal`),
-not marketing `index.html`.
+`NEXT_PUBLIC_USE_MOCKS=true` on the preview host. Confirmed Next HTML
+(`Conviction Terminal`), not marketing `index.html`.
 
 Frontend confirmed: the Next app **must** use
 

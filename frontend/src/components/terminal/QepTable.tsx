@@ -1,20 +1,22 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
+import { SETUP_TYPES, SIGNAL_STATUSES } from "@/lib/constants";
+import { historyStatusMatches, uniqueSymbols } from "@/lib/desk";
 import {
   ENGINE_META,
   ENGINE_ORDER,
-  ENSEMBLE_PICKS,
   QEP_CATS,
   convictionOf,
   enginesForSetup,
+  matchesQepCat,
+  presentEnsemble,
   whyForSetup,
   type EnsemblePick,
   type QepMode,
 } from "@/lib/mocks/terminal";
 import { realizedMultiple } from "@/lib/signals";
-import type { Signal, SignalStatus, SetupType } from "@/lib/types";
-import { SETUP_TYPES, SIGNAL_STATUSES, SYMBOLS } from "@/lib/constants";
+import type { EnsemblePickItem, Signal, SignalStatus, SetupType } from "@/lib/types";
 
 function convColor(c: number): string {
   return c >= 70 ? "var(--emerald)" : c >= 50 ? "var(--gold)" : "var(--red)";
@@ -29,23 +31,31 @@ export function QepTable({
   lastPrice,
   selectedId,
   onSelectSignal,
+  onSelectSymbol,
   soundOn,
   onToggleSound,
   initialMode,
   cards,
   history,
   onSetupFilter,
+  ensembleItems,
+  cycle = 0,
+  universeSource = "SETUP_UNIVERSE",
 }: {
   signals: Signal[];
   lastPrice: number | null;
   selectedId: string | null;
   onSelectSignal: (signal: Signal) => void;
+  onSelectSymbol?: (symbol: string) => void;
   soundOn: boolean;
   onToggleSound: () => void;
   initialMode?: QepMode;
   cards?: ReactNode;
   history?: ReactNode;
   onSetupFilter?: (setup: SetupType | "all") => void;
+  ensembleItems: EnsemblePickItem[];
+  cycle?: number;
+  universeSource?: string;
 }) {
   const startMode: QepMode = initialMode === "setups" || initialMode === "activity" ? initialMode : "market";
   const [mode, setMode] = useState<QepMode>(startMode);
@@ -56,20 +66,21 @@ export function QepTable({
   const [symbolFilter, setSymbolFilter] = useState("all");
 
   const cats = mode === "setups" ? ["Setups"] : QEP_CATS[mode];
+  const deskSymbols = useMemo(() => uniqueSymbols(signals), [signals]);
 
-  const ensemble = useMemo(
-    () =>
-      ENSEMBLE_PICKS.filter(
-        (p) => p.mode === mode && p.category === cat && (sub === "All" || p.signal === sub),
-      ),
-    [mode, cat, sub],
-  );
+  const ensemble = useMemo(() => {
+    const view = mode === "activity" ? "activity" : "market";
+    return ensembleItems
+      .map((item) => presentEnsemble(item, view, cycle))
+      .filter((p) => matchesQepCat(p, cat) && (sub === "All" || p.signal === sub))
+      .slice(0, 10);
+  }, [ensembleItems, mode, cat, sub, cycle]);
 
   const setupRows = useMemo(
     () =>
       signals.filter((s) => {
         if (typeFilter !== "all" && s.setup_type !== typeFilter) return false;
-        if (statusFilter !== "all" && s.status !== statusFilter) return false;
+        if (!historyStatusMatches(s.status, statusFilter)) return false;
         if (symbolFilter !== "all" && s.symbol !== symbolFilter) return false;
         if (sub === "Buy" && s.side !== "long") return false;
         if (sub === "Sell" && s.side !== "short") return false;
@@ -97,14 +108,16 @@ export function QepTable({
       <div className="sec-head">
         <span className="ix">02</span>
         <h2>Quantum Ensemble Picks</h2>
-        <span className="sim">Synthetic Demo</span>
+        <span className="sim">GET /picks/ensemble · top 10 · {universeSource}</span>
       </div>
       <div className="sec-sub">
         Five engines — Kronos (temporal), SNN (spike/regime), MiroFish (pattern), Fundamental
         (filings), Quantum (weighted resolver) — vote into a single 0–100 conviction, then rank
-        into a provenance-tagged table. All prices, signals and filings below are{" "}
-        <b>synthetic demo data</b> (not live market data or advice); conviction pulses ±2 every 3s
-        to simulate the heartbeat.
+        into a provenance-tagged table. Rows are the <b>top 10</b> from{" "}
+        <code>GET /picks/ensemble</code> ({universeSource || "API items only"}, 15-minute refresh
+        from <code>as_of_ts_ms</code>). Allowed set is DE <code>GET /v1/universe/top</code>.
+        Mock generators run only when <code>NEXT_PUBLIC_USE_MOCKS=true</code>. The table
+        displays API <code>items</code> only.
       </div>
 
       <div className="qep-bar">
@@ -198,9 +211,9 @@ export function QepTable({
         <div className="table-tools" style={{ marginBottom: 10 }}>
           <select value={symbolFilter} onChange={(e) => setSymbolFilter(e.target.value)}>
             <option value="all">all symbol</option>
-            {SYMBOLS.map((s) => (
-              <option key={s.symbol} value={s.symbol}>
-                {s.symbol}
+            {deskSymbols.map((s) => (
+              <option key={s} value={s}>
+                {s}
               </option>
             ))}
           </select>
@@ -220,7 +233,7 @@ export function QepTable({
             ))}
           </select>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as SignalStatus | "all")}>
-            <option value="all">all status</option>
+            <option value="all">closed (skip ACTIVE / CANCELLED)</option>
             {SIGNAL_STATUSES.map((s) => (
               <option key={s} value={s}>
                 {s}
@@ -263,7 +276,14 @@ export function QepTable({
                     onSelect={() => onSelectSignal(s)}
                   />
                 ))
-              : ensemble.map((p, i) => <EnsembleRow key={`${p.mode}:${p.ticker}:${p.category}`} rank={i + 1} pick={p} />)}
+              : ensemble.map((p, i) => (
+                  <EnsembleRow
+                    key={`${p.mode}:${p.ticker}:${p.category}:${i}`}
+                    rank={i + 1}
+                    pick={p}
+                    onSelect={() => onSelectSymbol?.(p.ticker)}
+                  />
+                ))}
             {mode === "setups" && setupRows.length === 0 && (
               <tr>
                 <td colSpan={8} className="note">
@@ -271,14 +291,21 @@ export function QepTable({
                 </td>
               </tr>
             )}
+            {mode !== "setups" && ensemble.length === 0 && (
+              <tr>
+                <td colSpan={8} className="note">
+                  Waiting for GET /picks/ensemble…
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
-      {mode === "setups" && cards}
-      {mode === "setups" && history ? (
+      {cards}
+      {history ? (
         <details className="hist-fold" open>
           <summary>
-            Signal History — <code>GET /signals</code>
+            Signal History — <code>GET /signals</code> + <code>/signals/history</code> · up to 20 symbols
           </summary>
           {history}
         </details>
@@ -314,7 +341,9 @@ function SetupRow({
 }) {
   const conv = convictionOf(signal);
   const engines = enginesForSetup(signal);
-  const chg = lastPrice != null ? (((lastPrice - signal.entry) / signal.entry) * 100).toFixed(2) : "0.00";
+  const px = signal.symbol === undefined ? lastPrice : lastPrice;
+  const mark = px ?? signal.entry;
+  const chg = mark != null ? (((mark - signal.entry) / signal.entry) * 100).toFixed(2) : "0.00";
   const up = Number(chg) >= 0;
   return (
     <tr className={`qep-row${selected ? " sel" : ""}`} onClick={onSelect}>
@@ -329,7 +358,7 @@ function SetupRow({
         </span>
       </td>
       <td className="qep-price">
-        {fmtPx(lastPrice ?? signal.entry)}
+        {fmtPx(mark ?? signal.entry)}
         <br />
         <span className={up ? "qep-chg-up" : "qep-chg-down"}>
           {up ? "+" : ""}
@@ -356,10 +385,10 @@ function SetupRow({
   );
 }
 
-function EnsembleRow({ rank, pick }: { rank: number; pick: EnsemblePick }) {
+function EnsembleRow({ rank, pick, onSelect }: { rank: number; pick: EnsemblePick; onSelect: () => void }) {
   const up = pick.chg.trim().startsWith("+");
   return (
-    <tr className="qep-row">
+    <tr className="qep-row" onClick={onSelect} data-symbol={pick.ticker} title={pick.tooltip}>
       <td className="qep-rank">{rank}</td>
       <td>
         <div className="qep-tk">{pick.ticker}</div>
@@ -377,7 +406,7 @@ function EnsembleRow({ rank, pick }: { rank: number; pick: EnsemblePick }) {
       </td>
       <td className="qep-target">{pick.target}</td>
       <td>
-        <div className="qep-conv">
+        <div className="qep-conv" title={pick.tooltip}>
           <div className="qep-track">
             <div className="qep-fill" style={{ width: `${pick.conviction}%`, background: convColor(pick.conviction) }} />
           </div>
@@ -387,7 +416,9 @@ function EnsembleRow({ rank, pick }: { rank: number; pick: EnsemblePick }) {
       <td>
         <EngineChips engines={pick.engines} />
       </td>
-      <td className="qep-reason">{pick.reason}</td>
+      <td className="qep-reason" title={pick.tooltip}>
+        {pick.reason}
+      </td>
     </tr>
   );
 }

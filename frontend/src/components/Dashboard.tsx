@@ -1,12 +1,24 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useActiveSetups } from "@/hooks/useActiveSetups";
+import { useDeskLists } from "@/hooks/useDeskLists";
+import { formatEt, formatRemain, useListRefresh } from "@/hooks/useListRefresh";
 import { useMarketData } from "@/hooks/useMarketData";
 import { usePatterns } from "@/hooks/usePatterns";
 import { usePerformance } from "@/hooks/usePerformance";
 import { useSignals } from "@/hooks/useSignals";
 import { useTheme } from "@/hooks/useTheme";
-import { inferAssetClass } from "@/lib/constants";
+import { inferAssetClass, LIST_REFRESH_SEC } from "@/lib/constants";
+import {
+  assetClassToTab,
+  capReconAudit,
+  chartExtrasFromTop,
+  chartSymbolsForTab,
+  defaultSymbolForTab,
+  tabToAssetClass,
+  uniqueSymbols,
+} from "@/lib/desk";
 import { isLivePatternWs, wsBase } from "@/lib/env";
 import { overlayForSetup, parseOverlayParam } from "@/lib/setups";
 import { overlayForFilter, resolveSelected } from "@/lib/setupView";
@@ -15,11 +27,11 @@ import type { QepMode } from "@/lib/mocks/terminal";
 import { dropUniverse } from "@/lib/mocks/universe";
 import { convictionOf, tierOf } from "@/lib/mocks/terminal";
 import { defaultVisibleSessions } from "@/lib/sessions";
-import type { OverlayPreset, SetupType, Signal, Timeframe } from "@/lib/types";
+import type { AssetTab, OverlayPreset, SetupType, Signal, Timeframe } from "@/lib/types";
 import { SignalTable } from "./SignalTable";
 import { SetupCards } from "./SetupCards";
 import { playAlert, ToastHost, type ToastItem } from "./ToastHost";
-import { EngineGlossary, ExecutionDesk, Narratives, PickGrid, ReconAudit } from "./terminal/PickAndDesk";
+import { EngineGlossary, Narratives, PickGrid, ReconAudit } from "./terminal/PickAndDesk";
 import { QepTable } from "./terminal/QepTable";
 import { SignalDetail } from "./terminal/SignalDetail";
 import { SimulationView } from "./terminal/SimulationView";
@@ -28,7 +40,9 @@ import { SiteFooter, StatusStrip, TerminalNav } from "./terminal/SiteChrome";
 export function Dashboard() {
   const { theme, toggle } = useTheme();
   const params = useSearchParams();
-  const [symbol, setSymbol] = useState("BTCUSDT");
+  const [assetTab, setAssetTab] = useState<AssetTab>("futures");
+  const [setupFilter, setSetupFilter] = useState<SetupType | "all">("all");
+  const [symbol, setSymbol] = useState("ES");
   const [timeframe, setTimeframe] = useState<Timeframe>("5m");
   const [overlayPreset, setOverlayPreset] = useState<OverlayPreset>(
     () => parseOverlayParam(params.get("overlay")) ?? "all",
@@ -37,21 +51,53 @@ export function Dashboard() {
   const [selectedSnap, setSelectedSnap] = useState<Signal | null>(null);
   const [soundOn, setSoundOn] = useState(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
-  const [tick, setTick] = useState(0);
   const seenHigh = useRef(new Set<string>());
   const primedHigh = useRef(false);
   const chartRef = useRef<HTMLDivElement>(null);
   const scrollTimer = useRef<number | null>(null);
+
+  const [refreshSec, setRefreshSec] = useState(LIST_REFRESH_SEC);
+  const [asOfTsMs, setAsOfTsMs] = useState(0);
+  const refresh = useListRefresh(refreshSec, asOfTsMs);
+  const desk = useDeskLists(refresh.tick);
+
+  useEffect(() => {
+    setRefreshSec(desk.ensemble.refresh_sec);
+    const asOf = Math.max(
+      desk.universeTop20.as_of_ts_ms,
+      desk.universeTop10.as_of_ts_ms,
+      desk.ensemble.as_of_ts_ms,
+      desk.categorized.as_of_ts_ms,
+    );
+    setAsOfTsMs(asOf);
+  }, [
+    desk.ensemble.refresh_sec,
+    desk.universeTop20.as_of_ts_ms,
+    desk.universeTop10.as_of_ts_ms,
+    desk.ensemble.as_of_ts_ms,
+    desk.categorized.as_of_ts_ms,
+  ]);
+
+  const deskSymbols = useMemo(
+    () => uniqueSymbols(chartExtrasFromTop(desk.universeTop20)),
+    [desk.universeTop20],
+  );
 
   const market = useMarketData(symbol, timeframe);
   const priceRef = useRef(100);
   useEffect(() => {
     if (market.lastPrice != null) priceRef.current = market.lastPrice;
   }, [market.lastPrice]);
-  const allSignals = useSignals(symbol, () => priceRef.current);
+  const allSignals = useSignals(symbol, () => priceRef.current, refresh.tick, deskSymbols);
+  const activeSetups = useActiveSetups(assetTab, setupFilter, refresh.tick);
   const selected = resolveSelected(allSignals, selectedId, selectedSnap);
   const patterns = usePatterns(symbol);
-  const performance = usePerformance(tick);
+  const performance = usePerformance(refresh.tick, deskSymbols);
+
+  const chartSymbols = useMemo(
+    () => chartSymbolsForTab(assetTab, allSignals, chartExtrasFromTop(desk.universeTop20), symbol),
+    [assetTab, allSignals, desk.universeTop20, symbol],
+  );
 
   useEffect(() => {
     if (!selectedId) {
@@ -92,8 +138,19 @@ export function Dashboard() {
   const onSymbol = (next: string) => {
     dropUniverse(symbol);
     setSymbol(next);
+    const nextClass = inferAssetClass(next);
+    const nextTab = assetClassToTab(nextClass);
+    if (nextTab !== assetTab) setAssetTab(nextTab);
     if (selected?.symbol !== next) {
       setSelectedId(null);
+    }
+  };
+
+  const onAssetTab = (tab: AssetTab) => {
+    setAssetTab(tab);
+    if (inferAssetClass(symbol) !== tabToAssetClass(tab)) {
+      const options = chartSymbolsForTab(tab, allSignals, chartExtrasFromTop(desk.universeTop20));
+      onSymbol(defaultSymbolForTab(tab, options));
     }
   };
 
@@ -102,6 +159,7 @@ export function Dashboard() {
     setSelectedId(nextId);
     if (!nextId) return;
     setOverlayPreset(overlayForSetup(signal.setup_type));
+    setAssetTab(assetClassToTab(signal.asset_class));
     if (signal.symbol && signal.symbol !== symbol) {
       dropUniverse(symbol);
       setSymbol(signal.symbol);
@@ -126,12 +184,15 @@ export function Dashboard() {
   };
 
   const onSetupFilter = (setup: SetupType | "all") => {
+    setSetupFilter(setup);
     const next = overlayForFilter(setup);
     if (next) setOverlayPreset(next);
   };
 
   const visibleSessions = defaultVisibleSessions(inferAssetClass(symbol), market.lastBar?.close_ts_ms ?? 0);
-  const dropped = allSignals.filter((s) => tierOf(convictionOf(s)) === "drop" || s.status !== "ACTIVE");
+  const dropped = capReconAudit(
+    allSignals.filter((s) => tierOf(convictionOf(s)) === "drop" || s.status !== "ACTIVE"),
+  );
   const ageLabel = market.lastBar
     ? new Date(market.lastBar.close_ts_ms).toLocaleString("en-US", {
         month: "short",
@@ -191,7 +252,9 @@ export function Dashboard() {
           dataAge={ageLabel}
           heartbeat={market.status === "live" ? market.status : "beat 1 • 239ms"}
           health={market.bars.length ? "ok" : "warming"}
-          onRefresh={() => setTick((n) => n + 1)}
+          universeLabel={`${desk.ensemble.universe_source} · GET /v1/universe/top · ${deskSymbols.length} symbols${desk.source === "mock" ? " · PAPER MOCK" : " · LIVE :8000"}`}
+          nextRefresh={`${formatEt(refresh.nextAtMs)} ET · ${formatRemain(refresh.remainMs)} · ${refresh.refreshSec}s cycle`}
+          onRefresh={refresh.refreshNow}
           onShare={share}
           onDownload={downloadCsv}
         />
@@ -215,7 +278,7 @@ export function Dashboard() {
           </div>
           <div className="qstat">
             <div className="ql">Universe Scanned</div>
-            <div className="qv">{allSignals.length >= 50 ? allSignals.length : 50}</div>
+            <div className="qv">{new Set(allSignals.map((s) => s.symbol)).size || 20}</div>
           </div>
         </div>
 
@@ -225,7 +288,7 @@ export function Dashboard() {
           swarm, scenario probability cones, and narrative injectors are{" "}
           <b>client-side Monte-Carlo simulations</b> — they model how smart-money behavior{" "}
           <i>might</i> resolve, not live order flow, dark-pool, or options data. Nothing here is
-          financial advice.
+          financial advice. Paper desk only — <code>live_trading=false</code>.
         </div>
 
         <QepTable
@@ -233,12 +296,27 @@ export function Dashboard() {
           lastPrice={market.lastPrice}
           selectedId={selectedId}
           onSelectSignal={onOpenChart}
+          onSelectSymbol={(next) => {
+            onSymbol(next);
+            scrollToChart();
+          }}
           soundOn={soundOn}
           onToggleSound={() => setSoundOn((v) => !v)}
           initialMode={(params.get("tab") as QepMode | null) ?? undefined}
           onSetupFilter={onSetupFilter}
+          ensembleItems={desk.ensemble.items}
+          cycle={refresh.tick}
+          universeSource={desk.ensemble.universe_source}
           cards={
-            <SetupCards signals={allSignals} selectedId={selectedId} onSelect={onOpenChart} />
+            <SetupCards
+              signals={activeSetups}
+              selectedId={selectedId}
+              onSelect={onOpenChart}
+              assetTab={assetTab}
+              onAssetTab={onAssetTab}
+              setupFilter={setupFilter}
+              onSetupFilter={onSetupFilter}
+            />
           }
           history={
             <SignalTable
@@ -248,6 +326,7 @@ export function Dashboard() {
               soundOn={soundOn}
               onToggleSound={() => setSoundOn((v) => !v)}
               embedded
+              deskSymbols={deskSymbols}
             />
           }
         />
@@ -264,7 +343,7 @@ export function Dashboard() {
           overlayPreset={overlayPreset}
           onOverlayPreset={setOverlayPreset}
           bars={market.bars}
-          historyKey={`${market.historyKey}:${tick}`}
+          historyKey={`${market.historyKey}:${refresh.tick}`}
           lastBar={market.lastBar}
           vwap={market.vwaps.session ?? null}
           anchorVwap={market.vwaps.weekly ?? market.vwaps.rolling ?? null}
@@ -275,6 +354,8 @@ export function Dashboard() {
           lastPrice={market.lastPrice}
           volumeProfile={market.volumeProfile}
           killZone={market.killZone}
+          chartSymbols={chartSymbols}
+          categorized={desk.categorized.items}
         />
         {selected && <SignalDetail signal={selected} onClose={() => setSelectedId(null)} />}
 
@@ -283,10 +364,14 @@ export function Dashboard() {
           selectedId={selected?.id ?? null}
           onSelect={onSelect}
           onOpenChart={onOpenChart}
+          onSelectSymbol={(next) => {
+            onSymbol(next);
+            scrollToChart();
+          }}
+          categorized={desk.categorized.items}
         />
         <Narratives />
-        <ExecutionDesk selected={selected} />
-        <ReconAudit dropped={dropped.slice(0, 8)} />
+        <ReconAudit dropped={dropped} audit={desk.dropped} />
         <EngineGlossary performance={performance} />
         <details className="raw">
           <summary>Raw recon payload (debug)</summary>
@@ -294,6 +379,8 @@ export function Dashboard() {
             {JSON.stringify(
               {
                 symbol,
+                asset_tab: assetTab,
+                setup_filter: setupFilter,
                 timeframe,
                 selected: selected?.id ?? null,
                 trigger_event_ids: selected?.trigger_event_ids ?? [],
@@ -301,6 +388,22 @@ export function Dashboard() {
                 pattern_ws_paths: ["/v1/ws/sweep", "/v1/ws/fvg", "/v1/ws/mss", "/v1/ws/ob"],
                 phase2_ws_paths: ["/v1/ws/avwap", "/v1/ws/volume-profile", "/v1/ws/kill-zone"],
                 overlay_preset: overlayPreset,
+                list_refresh_sec: refresh.refreshSec,
+                ensemble_refresh_sec: desk.ensemble.refresh_sec,
+                picks: {
+                  ensemble: "/picks/ensemble",
+                  categorized: "/picks/categorized",
+                  signals: "/signals",
+                  performance: "/performance/summary",
+                  history: "/signals/history",
+                  universe_top: "/v1/universe/top",
+                  universe: "/v1/universe",
+                  universe_source: desk.ensemble.universe_source,
+                  universe_top10: desk.universeTop10.symbols.map((s) => s.symbol),
+                  universe_top20: desk.universeTop20.symbols.map((s) => s.symbol),
+                  desk_symbols: deskSymbols,
+                },
+                live_trading: false,
               },
               null,
               2,
@@ -318,4 +421,3 @@ function vwapSigma(sigma?: number): string {
   if (sigma == null) return "24.0";
   return sigma.toFixed(1);
 }
-

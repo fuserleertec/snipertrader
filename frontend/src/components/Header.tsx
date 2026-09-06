@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { SYMBOLS, TIMEFRAMES, normalizeSymbol } from "@/lib/constants";
+import { TIMEFRAMES, normalizeSymbol } from "@/lib/constants";
 import type { ConnectionStatus, Timeframe } from "@/lib/types";
 import type { Theme } from "@/hooks/useTheme";
 
@@ -14,6 +14,7 @@ export function Header({
   theme,
   onToggleTheme,
   lastPrice,
+  symbols = [],
 }: {
   symbol: string;
   onSymbol: (symbol: string) => void;
@@ -23,6 +24,8 @@ export function Header({
   theme: Theme;
   onToggleTheme: () => void;
   lastPrice: number | null;
+  /** Dynamic desk / universe symbols — not a hardcoded asset array. */
+  symbols?: string[];
 }) {
   const [draft, setDraft] = useState("");
 
@@ -41,17 +44,17 @@ export function Header({
         <label className="field">
           <span>Symbol</span>
           <select
-            value={SYMBOLS.some((s) => s.symbol === symbol) ? symbol : "__custom"}
+            value={symbols.includes(symbol) ? symbol : "__custom"}
             onChange={(e) => {
               if (e.target.value !== "__custom") onSymbol(e.target.value);
             }}
           >
-            {SYMBOLS.map((s) => (
-              <option key={s.symbol} value={s.symbol}>
-                {s.label}
+            {symbols.map((s) => (
+              <option key={s} value={s}>
+                {s}
               </option>
             ))}
-            {!SYMBOLS.some((s) => s.symbol === symbol) && (
+            {!symbols.includes(symbol) && (
               <option value="__custom">{symbol}</option>
             )}
           </select>

@@ -2,7 +2,18 @@ import { inferAssetClass } from "../constants";
 import { sessionWindows } from "../sessions";
 import { explain, factorsForSetup } from "../factors";
 import { overlayEventsFromBook } from "../overlays";
-import type { FVGZone, MssEvent, OrderBlock, PatternBook, SessionType, SetupType, Signal, SweepEvent, Timeframe } from "../types";
+import type {
+  FVGZone,
+  MssEvent,
+  OrderBlock,
+  PatternBook,
+  RankComponents,
+  SessionType,
+  SetupType,
+  Signal,
+  SweepEvent,
+  Timeframe,
+} from "../types";
 
 const cache = new Map<string, { book: PatternBook; signals: Signal[]; price: number }>();
 
@@ -159,6 +170,39 @@ function ids(...rows: Array<string | undefined | null>): string[] {
   return rows.filter((id): id is string => typeof id === "string" && id.length > 0);
 }
 
+function hash(input: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < input.length; i++) h = Math.imul(h ^ input.charCodeAt(i), 16777619);
+  return h >>> 0;
+}
+
+function unit(seed: string): number {
+  return (hash(seed) % 10_000) / 10_000;
+}
+
+/** Mock ranking inputs until the ML PR publishes them on setup_signals. */
+function mockRanking(symbol: string, setup: SetupType, seq: number): {
+  ensemble_score: number;
+  rank_components: RankComponents;
+} {
+  const seed = `${symbol}:${setup}:${seq}`;
+  const rank_components: RankComponents = {
+    setup_quality: +unit(`${seed}:sq`).toFixed(3),
+    risk_adjusted: +unit(`${seed}:ra`).toFixed(3),
+    kill_zone: +unit(`${seed}:kz`).toFixed(3),
+    volume: +unit(`${seed}:vol`).toFixed(3),
+    freshness: +unit(`${seed}:fr`).toFixed(3),
+  };
+  const ensemble_score = +(
+    rank_components.setup_quality * 0.28 +
+    rank_components.risk_adjusted * 0.24 +
+    rank_components.kill_zone * 0.16 +
+    rank_components.volume * 0.16 +
+    rank_components.freshness * 0.16
+  ).toFixed(3);
+  return { ensemble_score, rank_components };
+}
+
 function signalOf(
   symbol: string,
   price: number,
@@ -202,6 +246,7 @@ function signalOf(
     exit_price: null,
     closed_ts_ms: null,
     ...explain(factorsForSetup(setup_type), Math.round(confidence * 100)),
+    ...mockRanking(symbol, setup_type, seq),
   };
 }
 

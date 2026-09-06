@@ -29,11 +29,15 @@ npm run dev:dashboard
 
 Full notes: [`DEPLOY.md`](./DEPLOY.md) (short copy in [`PREVIEW.md`](./PREVIEW.md)).
 
-**Paper preview (P0 #2, closed pass):**
+**Redeploy this PR:** Vercel project **snipertrader-dashboard**, branch
+`cursor/frontend-multi-asset-desk-f4b0` (PR #14), Root Directory = `frontend`.
+Terminal is at `/`. Do **not** QA the marketing Git Ready preview or the stale
+P0 #2 host
 [https://snipertrader-dashboard-36y96ypn3-sniper-8ee72a26.vercel.app](https://snipertrader-dashboard-36y96ypn3-sniper-8ee72a26.vercel.app)
+(MOCK FALLBACK + 4-symbol lock).
 
 Separate Vercel project, **Root Directory = `frontend`**,
-`NEXT_PUBLIC_USE_MOCKS=true`. That project reads
+`NEXT_PUBLIC_USE_MOCKS=true` on the preview host (no DE/Quant). That project reads
 [`frontend/vercel.json`](./vercel.json) (`"framework": "nextjs"`) so root
 `vercel.json` (`"framework": null` + marketing crons) never applies.
 
@@ -60,18 +64,24 @@ cd quant && sniper-quant api --inmemory --port 8001
 - **01 Header** — “Quantitative Market Intelligence Conviction Terminal” + LIVE
   strip (Next Refresh ET, Data Age, Heartbeat, Health, REFRESH / SHARE / DOWNLOAD)
 - **02 Quantum Ensemble Picks** — provenance table (#, Asset, Signal, Last/Chg,
-  Target, Conviction, Engines K/S/M/F/Q, Why). Two tabs (Market Signals /
-  Smart Money Activity). Quant `setup_signals` live under the small **Setup
-  desk** control (`?tab=setups`; filters + CSV; sound off by default)
+  Target, Conviction, Engines K/S/M/F/Q, Why). Rows come from
+  `GET /picks/ensemble` (top **10**, `refresh_sec=900`). Two tabs (Market
+  Signals / Smart Money Activity) plus All/Futures/Stocks/Cryptos filters.
+  **Active Setup Cards** use Futures / Stocks / Cryptos tabs and a setup 1–6
+  dropdown (`sweep_reclaim` … `avwap_ob_confluence`; no `ob_fvg`). Quant
+  `setup_signals` also live under **Setup desk** (`?tab=setups`)
 - **03 Live Market Simulation View** — Conviction & Velocity Leaderboard,
   MiroFish swarm heatmap, Kronos Structural K-Line (metrics + swarm bias),
   Scenario Probability Matrix. Paper overlay chart is the **Paper desk**
   panel after the matrix (not inside the Kronos card)
-- **04 Categorized Stock Picks** — All / Ultra-High / High / Watchlist cards
+- **04 Categorized Stock Picks** — `GET /picks/categorized` (≤**20** symbols,
+  no asset-class restriction). All / Ultra-High / High / Watchlist cards.
+  Click CHART to plot that symbol.
 - **05 Narrative & Volatility Injectors**
-- **06 Execution & Position Management**
-- **07 Recon Audit**
+- **07 Recon Audit** — dropped names this cycle, **≤16** symbols
 - **08 Understanding the Engine**
+
+Section **06 Execution & Position Management** is removed from this terminal.
 
 Card/table click joins chart overlays via `trigger_event_ids`.
 
@@ -90,10 +100,31 @@ Card/table click joins chart overlays via `trigger_event_ids`.
 | Variable | Default | Purpose |
 |---|---|---|
 | `NEXT_PUBLIC_USE_MOCKS` | `true` | In-browser streams. Set `false` for live Data Eng + Quant. |
-| `NEXT_PUBLIC_WS_BASE` | `ws://localhost:8000` | Data Eng WebSocket origin. Pattern overlays go live only when this is set **and** `USE_MOCKS=false`. |
+| `NEXT_PUBLIC_WS_BASE` | `ws://localhost:8000` | Data Eng WebSocket origin. Live when `USE_MOCKS=false` (defaults to `:8000`). |
 | `NEXT_PUBLIC_HTTP_BASE` | `http://localhost:8000` | Data Eng HTTP. Same-origin `/v1/*` is rewritten here. |
 | `NEXT_PUBLIC_QUANT_API_BASE` | `http://localhost:8001` | Quant REST (`/signals`, `/performance/summary`). Same-origin paths rewrite here. |
 | `NEXT_PUBLIC_QUANT_WS_BASE` | `ws://localhost:8001` | Quant WS (`/ws/signals`) |
+| `NEXT_PUBLIC_PICKS_API_BASE` | Quant API base | Optional override for `GET /picks/ensemble` and `GET /picks/categorized`. |
+
+List refresh is **15 minutes** from DE/Quant `as_of_ts_ms` + `refresh_sec=900`.
+The status strip and paper desk share that cadence. Manual **REFRESH** still
+refetches immediately.
+`NEXT_PUBLIC_USE_MOCKS=true` (default) serves dynamic mock generators behind
+the typed clients — not a hardcoded SMCI/TSM array. Set `false` only after
+Quant/ML/DE list endpoints are up. **`live_trading` stays false.**
+
+Placeholder list contracts (same-origin rewrite → Quant `:8001`):
+
+| Method | Path | Role |
+|---|---|---|
+| GET | `/picks/ensemble` | P0 top 10. `{ as_of_ts_ms, refresh_sec=900, universe_source: SETUP_UNIVERSE\|DE, items[{ rank, symbol, asset_class, score, setup_types, confidence, ensemble_score? }] }`. Mapping: `score` ← `ensemble_score`, `confidence` ← `best_confidence` when present. Optional ML `ensemble_features`: `rank_components` (`setup_quality`, `risk_adjusted`, `kill_zone`, `volume`, `freshness`) + `contributing_factors[]` (item or nested object). Client poll uses `refresh_sec` (900). |
+| GET | `/picks/categorized?asset_class=&limit=20` | P4 ≤20. `category` ∈ `momentum\|mean_reversion\|confluence\|other` |
+| GET | `/signals?status=ACTIVE&asset_class=futures\|equity\|crypto&setup_type=&symbol=&limit=` | Active Setup Cards. Tabs: Futures→`futures`, Stocks→`equity` (`stocks` alias), Cryptos→`crypto`. `{ items, next_cursor }` |
+| GET | `/signals` + `/signals/history` | P2 history (`symbol`/`status`/`setup_type`/`from_ts`/`to_ts`/`side`/`cursor`, multi-symbol ~20). Client falls back to `/signals` |
+| GET | `/performance/summary` | Section 08 tracker. Optional `?symbols=` (≤20) |
+| GET | `/v1/universe` | Prepared DE full set (same known fields as `/top`, cap 20). **Not** the chart/universe selector. |
+| GET | `/v1/universe/top?limit=10\|20` | **DE PR #12 LIVE** (`schemas/universe_top.schema.json`). Chart/universe selector + allowed set. `limit` ∈ `{10,20}`. `{ as_of_ts_ms, limit, symbols[{symbol,asset_class,rank,score}] }`. Mock only when `NEXT_PUBLIC_USE_MOCKS=true`. Live miss stays empty. 15m from `as_of_ts_ms` / `refresh_sec=900`. |
+| GET/WS | `/v1/ohlcv\|vwap\|session\|avwap\|volume-profile\|kill-zone` | Per-symbol chart feeds. Switching the chart passes the selected symbol (ES/CL/GC/NQ, …). Same-origin `/v1/*` rewrite, then DE `:8000`. Paper mocks generate multi-symbol OHLC only when `USE_MOCKS=true`. DE PR #12 seeds historical OHLCV for the full universe. |
 
 `NEXT_PUBLIC_QUANT_HTTP_BASE` is accepted as an alias of `QUANT_API_BASE`.
 
@@ -181,9 +212,13 @@ pattern streams. REST base `http://localhost:8001`. Docs: `/docs`.
 
 REST:
 
-- `GET /signals?symbol=&status=&setup_type=&from_ts=&to_ts=&limit=&cursor=` →
+- `GET /signals?symbol=&symbols=&status=&setup_type=&from_ts=&to_ts=&limit=&cursor=` →
   `{ "items": [ Signal ], "next_cursor": string|null }`
-  History is this same list (no separate history endpoint).
+  Multi-symbol desk (~20). `symbols=ES,CL,…` optional. History is this same
+  list (client also tries `GET /signals/history`). Keep
+  `contributing_factors` + `factor_breakdown`. Optional ML ranking
+  inputs: `ensemble_score` / `rank_components` on the signal or
+  `ensemble_features` side channel.
 - `GET /signals/{id}` → `Signal`
 - `GET /performance/summary` → Quant PR #2 at `:8001` (flat envelope +
   `by_setup` product keys). Same-origin rewrite, then mock fallback.
@@ -338,13 +373,20 @@ Active setup tab / card filter is an **allow-list**. `sweep_reclaim` never
 draws FVG, OB, or DISP. `fvg_entry` never draws sweep / MSS / Asia / kill-zone.
 `ob_fvg` is not a `setup_type`.
 
+Active Setup Cards are tabbed **Futures / Stocks / Cryptos** (`asset_class`
+`futures` / `equity` / `crypto`; `stocks` is an alias of `equity`) with a
+dropdown for setups **1–6**. The paper chart selector lists symbols for the
+selected tab (ES, CL, GC, NQ on Futures) and follows the focused card or pick.
+
 ### Signal history
 
-History is **`GET /signals`** with `from_ts`/`to_ts` + `status`/`setup_type`/`symbol`.
-No `/signals/history`. Columns: outcome (`status`), `realized_r`, `exit_price`,
+History is **`GET /signals`** plus **`GET /signals/history`** (same
+`from_ts`/`to_ts` + `status`/`setup_type`/`symbol`, up to **20** symbols, no
+asset-class restriction). Columns: Zone from `entry`/`stop`/`target`; Outcome
+from `status` (`TP_HIT` / `SL_HIT` / …); `realized_r`, `exit_price`,
 `closed_ts_ms` from the Quant payload (`—` while null). Same fields on
 `GET /signals/{id}` and WS `signal.status` / `signal.upsert`. CSV uses those
-field names.
+field names. Frontend filters: Symbol, Setup Type, Status.
 
 ### Real-time
 
