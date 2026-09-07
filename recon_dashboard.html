@@ -79,6 +79,13 @@
 
   <section>
     <div class="panel">
+      <h2>Small-cap / OTC Watchlist</h2>
+      <div id="smallcaps"><div class="empty">Loading …</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="panel">
       <h2>Dump / Exit Alerts</h2>
       <div id="alerts"><div class="empty">Loading …</div></div>
     </div>
@@ -125,9 +132,10 @@ function render(d){
   sb.innerHTML='<span class="badge gate">SIMULATION</span> '+esc((d.simulation&&d.simulation.note)||'paper only — no live orders.')+' · equity $'+(d.simulation&&d.simulation.equity?d.simulation.equity:'—');
 
   // stats
-  const picks=(d.picks||[]), crypto=(d.crypto||[]), alerts=(d.sellAlerts||[]), rejected=(d.volumeRejected||[]), orders=(d.simulatedOrders||[]);
+  const picks=(d.picks||[]), crypto=(d.crypto||[]), alerts=(d.sellAlerts||[]), rejected=(d.volumeRejected||[]), orders=(d.simulatedOrders||[]), smallcaps=(d.smallCaps||[]);
   const stats=[
     ['Stock candidates', picks.length],
+    ['Small-cap / OTC', smallcaps.length],
     ['Crypto scanned', crypto.length],
     ['Simulated orders', orders.length],
     ['Dump alerts', alerts.length],
@@ -145,6 +153,22 @@ function render(d){
   } else {
     const head='<table><thead><tr><th>Symbol</th><th>Signal</th><th>Conviction</th><th>Weighted</th><th>Volume</th><th>Catalyst</th><th>Size</th><th>Stop / TP1</th><th>Missing</th></tr></thead><tbody>';
     document.getElementById('decisions').innerHTML=head+rows.join('')+'</tbody></table>';
+  }
+
+  // small-cap / OTC watchlist
+  if (!smallcaps.length) {
+    document.getElementById('smallcaps').innerHTML='<div class="empty">No small-cap / OTC candidates this cycle.</div>';
+  } else {
+    const scRows = smallcaps.map(s =>
+      '<tr>'+
+      '<td><span class="sym">'+esc(s.symbol)+'</span>'+(s.otc?' <span class="badge gate">OTC</span>':'')+' <span class="dim">['+esc(s.exchange)+']</span></td>'+
+      '<td>$'+n(s.price)+'</td>'+
+      '<td>'+n(s.rsi)+'</td>'+
+      '<td>'+(s.high52wProximity!=null?n(s.high52wProximity)+'%':'—')+'</td>'+
+      '<td>'+n(s.score)+'</td>'+
+      '<td class="dim">'+esc(s.note||'')+'</td>'+
+      '</tr>').join('');
+    document.getElementById('smallcaps').innerHTML='<table><thead><tr><th>Symbol</th><th>Price</th><th>RSI</th><th>52w Prox</th><th>Score</th><th>Note</th></tr></thead><tbody>'+scRows+'</tbody></table>';
   }
 
   // alerts
