@@ -123,7 +123,7 @@ def fwd_returns(bars, n=FWD_BARS):
 # --------------------------------------------------------------------------- #
 # KRONOS — structural detection
 # --------------------------------------------------------------------------- #
-def kronos(bars):
+def structure(bars):
     c = bars[-1]["c"]
     piv = swing_pivots(bars)
     piv_h = [p for p in piv if p[1] == "H"]
@@ -222,7 +222,7 @@ def kronos(bars):
 def _conf(x, cap=1.0):
     return round(max(0.0, min(cap, abs(x))), 3)
 
-def mirofish(bars, k):
+def ensemble(bars, k):
     closes = [b["c"] for b in bars]
     ema12 = ema_series(closes, 12)[-1]
     ema26 = ema_series(closes, 26)[-1]
@@ -265,10 +265,10 @@ def mirofish(bars, k):
     if k["vwap"]:
         d = (c / k["vwap"] - 1) * 100
         sig = "bull" if d > 0 else "bear"
-        agents.append({"name": "VWAP", "signal": sig, "confidence": _conf(abs(d) / 3),
-                       "why": f"close {d:+.2f}% vs 20-bar VWAP"})
+        agents.append({"name": "Avg Price", "signal": sig, "confidence": _conf(abs(d) / 3),
+                       "why": f"close {d:+.2f}% vs 20-bar avg price"})
     else:
-        agents.append({"name": "VWAP", "signal": "neutral", "confidence": 0, "why": "no VWAP"})
+        agents.append({"name": "Avg Price", "signal": "neutral", "confidence": 0, "why": "no avg price"})
 
     # 4. Order block (proximity to nearest OB)
     if k["order_block"]:
@@ -281,10 +281,10 @@ def mirofish(bars, k):
             sig = "bear"
         else:
             sig = "neutral"
-        agents.append({"name": "Order Block", "signal": sig, "confidence": _conf(1 - min(abs(prox), 1)),
-                       "why": f"near {obd} OB [{zl:.2f}–{zh:.2f}]"})
+        agents.append({"name": "Key Level", "signal": sig, "confidence": _conf(1 - min(abs(prox), 1)),
+                       "why": f"near {obd} key [{zl:.2f}–{zh:.2f}]"})
     else:
-        agents.append({"name": "Order Block", "signal": "neutral", "confidence": 0, "why": "no OB"})
+        agents.append({"name": "Key Level", "signal": "neutral", "confidence": 0, "why": "no key level"})
 
     # 5. Volatility regime (ATR vs 20-bar ATR)
     if atr_now and atr_sma:
@@ -335,7 +335,7 @@ def mirofish(bars, k):
         st -= 0.5
     sig = "bull" if st >= 1 else ("bear" if st <= -1 else "neutral")
     agents.append({"name": "Structure", "signal": sig, "confidence": _conf(abs(st) / 2.5),
-                   "why": f"trend={k['trend']} mss={k['mss']} sweep={k['sweep']['dir'] if k['sweep'] else '—'}"})
+                   "why": f"trend={k['trend']} break={k['mss']} sweep={k['sweep']['dir'] if k['sweep'] else '—'}"})
 
     # Consensus: confidence-weighted, with a uniform prior so a finite ensemble
     # never reads a fake 0% or 100%.  (NEU casts no directional vote.)
@@ -463,8 +463,8 @@ def analyze(raw):
         bars = rec["bars"]
         if not bars or len(bars) < 60:
             continue
-        k = kronos(bars)
-        mf = mirofish(bars, k)
+        k = structure(bars)
+        mf = ensemble(bars, k)
         cn = cone(bars)
         cons = mf["consensus"]
         tl = trade_levels(bars, k, cons)
@@ -476,8 +476,8 @@ def analyze(raw):
             "currency": rec["meta"].get("currency", ""),
             "last": bars[-1]["c"],
             "chg_pct": round(chg, 2),
-            "kronos": k,
-            "mirofish": mf,
+            "structure": k,
+            "ensemble": mf,
             "cone": cn,
             "trade": tl,
             "conviction": conviction(cons, k),
@@ -500,8 +500,8 @@ def backtest(raw):
         closes = [b["c"] for b in bars]
         for i in range(60, len(bars) - FWD_BARS):
             window = bars[: i + 1]
-            k = kronos(window)
-            mf = mirofish(window, k)
+            k = structure(window)
+            mf = ensemble(window, k)
             cons = mf["consensus"]
             if cons < 0.60 and cons > 0.40:
                 continue                       # no directional call
@@ -529,12 +529,12 @@ def main():
         json.dump({"results": results, "backtest": bt, "as_of": "see raw_ohlcv meta.regularMarketTime"}, f, indent=2)
     # print a compact audit
     for r in results:
-        mf = r["mirofish"]
+        mf = r["ensemble"]
         tl = r["trade"]
         cn = r["cone"] or {}
         print(f"{r['symbol']:10s} {r['last']:>12.4f} {r['chg_pct']:+6.2f}%  conv={r['conviction']:3d}  "
               f"{tl['direction']:5s} rr={tl['rr']}  swarm={mf['consensus_pct']:5.1f}%  "
-              f"cone B/B/B={cn.get('bull')}/{cn.get('base')}/{cn.get('bear')}  trend={r['kronos']['trend']}")
+              f"cone B/B/B={cn.get('bull')}/{cn.get('base')}/{cn.get('bear')}  trend={r['structure']['trend']}")
     print(f"\nBACKTEST (walk-forward, {bt['horizon_bars']}-bar horizon): "
           f"hit_rate={bt['universe_hit_rate']} over {bt['total_calls']} calls")
 

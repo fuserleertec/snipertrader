@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Terminal — Kronos + MiroFish + Cone | SniperTrader.ai</title>
+<title>Market Terminal — conviction-ranked scanner | SniperTrader.ai</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;900&family=Space+Mono:wght@400;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet"/>
@@ -65,6 +65,13 @@
 
   /* section titles */
   .sec{font-family:var(--font-d);font-size:13px;letter-spacing:.14em;color:var(--muted);margin:28px 0 12px;display:flex;align-items:center;gap:10px}
+  .secdesc{font-family:var(--font-m);font-size:12px;color:var(--muted);margin:-4px 0 14px;max-width:780px;line-height:1.55}
+  .tvbox{grid-column:1/-1}
+  .tvbox h4{display:flex;align-items:center;justify-content:space-between}
+  .tv-holder{height:340px;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:var(--panel-2)}
+  .tv-holder iframe{width:100%;height:100%;border:0}
+  .tvlink{font-family:var(--font-m);font-size:11px;color:var(--cyan);text-decoration:none;font-weight:400;text-transform:none;letter-spacing:0}
+  .tvlink:hover{text-decoration:underline}
   .sec .num{color:var(--cyan);font-family:var(--font-m);font-size:12px}
 
   /* asset-class filter */
@@ -169,11 +176,12 @@
 
   <div class="banner">
     <div class="head">ABOUT THIS TERMINAL <span id="modebadge" style="margin-left:10px;font-family:var(--font-m);font-size:10px;letter-spacing:.06em;padding:3px 10px;border-radius:20px;border:1px solid var(--border2);color:var(--emerald)">STATIC SNAPSHOT</span></div>
-    <p>Welcome to the SniperTrader market desk. This page watches the largest stocks, major
-       cryptocurrencies, and key futures, reads each one's recent price action, and surfaces the setups
-       with the strongest technical case, ranked by conviction. Click any name to open the full reasoning
-       behind the call — how the market structure is shaping up, how confident the read is, and where a
-       sensible entry, stop, and target would sit.</p>
+    <p>Welcome to the SniperTrader market desk. Here's what it does, in plain terms: it watches the
+       biggest stocks, the major cryptocurrencies, and the key futures contracts, pulls each one's recent
+       price history, and reads that price action to judge which way each market is leaning and how
+       strongly. It then ranks every market from highest to lowest conviction and, for each, maps out where
+       a reasonable entry, a protective stop, and a profit target would sit. Click any row to open the full
+       read — the reasoning, the exact levels, and a live chart.</p>
     <p style="margin:0;color:var(--muted);font-size:13px">Everything here is calculated from real, current
        market data, refreshed live on the page. <b style="color:var(--gold)">This is an educational study
        tool — it is not financial advice.</b> &nbsp; <span style="font-family:var(--font-m);font-size:11px">Data as of
@@ -183,6 +191,7 @@
   <div class="stats" id="stats"></div>
 
   <div class="sec"><span class="num">01</span> DECISION SURFACE — ranked by conviction · click a row to audit</div>
+  <div class="secdesc">Every market we scanned this cycle, ranked strongest-first. Click a row to see the full read — how the market is structured, how confident the call is, and the exact entry, stop and target levels — plus a live chart.</div>
   <div class="filters" id="filters">
     <span class="lbl">Asset class</span>
     <button class="fbtn active" data-f="all" onclick="setFilter('all')">All <span class="cnt"></span></button>
@@ -192,10 +201,11 @@
   </div>
   <div class="board" id="board"></div>
 
-  <div class="sec"><span class="num">02</span> ENSEMBLE HEALTH — does the swarm actually work?</div>
+  <div class="sec"><span class="num">02</span> ENSEMBLE HEALTH — does the read actually work?</div>
   <div class="health" id="health"></div>
 
   <div class="sec"><span class="num">03</span> DROP AUDIT — scanned but no edge this cycle</div>
+  <div class="secdesc">Markets we looked at this cycle that didn't clear the bar for a high-conviction, well-structured setup. We show them here in plain sight instead of hiding the misses.</div>
   <div class="board" id="dropped"></div>
 
   <div class="foot" id="foot"></div>
@@ -204,8 +214,7 @@
 <script id="data" type="application/json">__DATA__</script>
 <script>
 /* ════════════════════════════════════════════════════════════════════════
-   LIVE ENGINE — client-side port of teardown/compute_engine.py.
-   Every number is a deterministic function of OHLCV fetched live:
+   LIVE ENGINE — client-side calculation over OHLCV fetched live:
      crypto  → Binance public klines (CORS-open, key-less)
      equity  → /api/stocks/klines (Alpaca, server-side key)
      futures → no key-less feed (excluded from the live universe)
@@ -237,7 +246,7 @@ function obvSeries(bars){ const o=[]; let run=0; bars.forEach((b,i)=>{ if(i===0)
 function swingPivots(bars,k=3){ const p=[]; for(let i=k;i<bars.length-k;i++){ let h=true,l=true; for(let j=i-k;j<=i+k;j++){ if(bars[j].h>bars[i].h)h=false; if(bars[j].l<bars[i].l)l=false; } if(h)p.push({i,kind:'H',price:bars[i].h}); if(l)p.push({i,kind:'L',price:bars[i].l}); } return p; }
 function fwdReturns(bars,n=5){ const o=[]; for(let i=0;i<bars.length-n;i++) o.push(bars[i+n].c/bars[i].c-1); return o; }
 
-function kronos(bars){
+function structure(bars){
   const c=bars[bars.length-1].c, piv=swingPivots(bars);
   const pH=piv.filter(p=>p.kind==='H'), pL=piv.filter(p=>p.kind==='L');
   const vwap=rollingVwap(bars);
@@ -263,7 +272,7 @@ function kronos(bars){
     trend, mss, fvg, order_block:ob, sweep, support:+support.toFixed(4), resistance:+resistance.toFixed(4)};
 }
 
-function mirofish(bars,k){
+function ensemble(bars,k){
   const closes=bars.map(b=>b.c), ema12=emaSeries(closes,12), ema26=emaSeries(closes,26);
   const e12=ema12[ema12.length-1], e26=ema26[ema26.length-1];
   const sma50=sma(closes,50), sma200=sma(closes,closes.length>=200?200:closes.length);
@@ -278,11 +287,11 @@ function mirofish(bars,k){
   const emaSig=e12>e26?'bull':'bear'; let stack=0; if(sma50&&sma200){ if(c>sma50&&sma50>sma200)stack=1; else if(c<sma50&&sma50<sma200)stack=-1; }
   const spread=e26?(e12/e26-1):0, tSig=(emaSig==='bull'&&stack>=0)?'bull':((emaSig==='bear'&&stack<=0)?'bear':'neutral');
   A.push({name:'Trend',signal:tSig,confidence:conf(Math.abs(spread)*40+0.3*stack),why:`EMA12/26 ${e12>e26?'above':'below'}, close vs SMA50 ${sma50?(c>sma50?'>':'<'):'?'} ${(sma50&&sma200)?(sma50>sma200?'>':'<'):''} SMA200`});
-  if(k.vwap){ const d=(c/k.vwap-1)*100; A.push({name:'VWAP',signal:d>0?'bull':'bear',confidence:conf(Math.abs(d)/3),why:`close ${d>=0?'+':''}${d.toFixed(2)}% vs 20-bar VWAP`}); }
-  else A.push({name:'VWAP',signal:'neutral',confidence:0,why:'no VWAP'});
+  if(k.vwap){ const d=(c/k.vwap-1)*100; A.push({name:'Avg Price',signal:d>0?'bull':'bear',confidence:conf(Math.abs(d)/3),why:`close ${d>=0?'+':''}${d.toFixed(2)}% vs 20-bar avg price`}); }
+  else A.push({name:'Avg Price',signal:'neutral',confidence:0,why:'no avg price'});
   if(k.order_block){ const obd=k.order_block.dir, zl=k.order_block.zone[0], zh=k.order_block.zone[1], prox=(c-zl)/(zh-zl||1);
-    A.push({name:'Order Block',signal:(obd==='bull'&&c>zl)?'bull':((obd==='bear'&&c<zh)?'bear':'neutral'),confidence:conf(1-Math.min(Math.abs(prox),1)),why:`near ${obd} OB [${zl.toFixed(2)}–${zh.toFixed(2)}]`}); }
-  else A.push({name:'Order Block',signal:'neutral',confidence:0,why:'no OB'});
+    A.push({name:'Key Level',signal:(obd==='bull'&&c>zl)?'bull':((obd==='bear'&&c<zh)?'bear':'neutral'),confidence:conf(1-Math.min(Math.abs(prox),1)),why:`near ${obd} key [${zl.toFixed(2)}–${zh.toFixed(2)}]`}); }
+  else A.push({name:'Key Level',signal:'neutral',confidence:0,why:'no key level'});
   if(atrNow&&atrSma){ const vr=atrNow/atrSma; let sig='neutral'; if(vr>1.25)sig=sma50?(c>sma50?'bull':'bear'):'bull';
     A.push({name:'Volatility',signal:sig,confidence:conf((vr-1)/1.5),why:`ATR ${vr.toFixed(2)}x its 20-bar mean`}); }
   else A.push({name:'Volatility',signal:'neutral',confidence:0,why:'no ATR'});
@@ -293,7 +302,7 @@ function mirofish(bars,k){
   else A.push({name:'Mean Rev',signal:'neutral',confidence:0,why:'no RSI'});
   let st=0; if(k.trend==='up')st+=1; else if(k.trend==='down')st-=1; if(k.mss==='bullish')st+=1; else if(k.mss==='bearish')st-=1;
   if(k.sweep&&k.sweep.dir==='bull')st+=0.5; else if(k.sweep&&k.sweep.dir==='bear')st-=0.5;
-  A.push({name:'Structure',signal:st>=1?'bull':(st<=-1?'bear':'neutral'),confidence:conf(Math.abs(st)/2.5),why:`trend=${k.trend} mss=${k.mss} sweep=${k.sweep?k.sweep.dir:'—'}`});
+  A.push({name:'Structure',signal:st>=1?'bull':(st<=-1?'bear':'neutral'),confidence:conf(Math.abs(st)/2.5),why:`trend=${k.trend} break=${k.mss} sweep=${k.sweep?k.sweep.dir:'—'}`});
   const bull=A.filter(a=>a.signal==='bull').reduce((s,a)=>s+a.confidence,0), bear=A.filter(a=>a.signal==='bear').reduce((s,a)=>s+a.confidence,0);
   const nBull=A.filter(a=>a.signal==='bull').length, nBear=A.filter(a=>a.signal==='bear').length, nNeu=A.filter(a=>a.signal==='neutral').length;
   const consensus=+((bull+0.5)/(bull+bear+1.0)).toFixed(3);
@@ -333,10 +342,10 @@ function conviction(cons,k){ let kick=0; if(k.trend==='up')kick+=4; else if(k.tr
 
 function analyzeSymbol(sym,bars){
   if(!bars||bars.length<60) return null;
-  const k=kronos(bars), mf=mirofish(bars,k), cn=cone(bars), tl=tradeLevels(bars,k,mf.consensus);
+  const k=structure(bars), mf=ensemble(bars,k), cn=cone(bars), tl=tradeLevels(bars,k,mf.consensus);
   const prev=bars[bars.length-2]?bars[bars.length-2].c:bars[bars.length-1].c, chg=(bars[bars.length-1].c/prev-1)*100;
   return {symbol:sym, yahoo:'', currency:'', last:bars[bars.length-1].c, chg_pct:+chg.toFixed(2),
-    kronos:k, mirofish:mf, cone:cn, trade:tl, conviction:conviction(mf.consensus,k), n_bars:bars.length};
+    structure:k, ensemble:mf, cone:cn, trade:tl, conviction:conviction(mf.consensus,k), n_bars:bars.length};
 }
 
 async function fetchBinance(sym,limit=1000){ const r=await fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${sym}&interval=1h&limit=${limit}`);
@@ -370,6 +379,13 @@ EQUITY.forEach(s => CLS[s] = 'equity');
 CRYPTO.forEach(s => CLS[s] = 'crypto');
 FUTURES.forEach(s => CLS[s] = 'futures');
 
+function dispSym(sym){ return CLS[sym]==='futures' ? '/'+sym : sym; }
+function tvSymbol(sym){
+  if(CLS[sym]==='futures') return {CL:'NYMEX:CL1!',GC:'COMEX:GC1!',ES:'CME_MINI:ES1!',NQ:'CME_MINI:NQ1!',HG:'COMEX:HG1!',SI:'COMEX:SI1!',NG:'NYMEX:NG1!',ZN:'CBOT:ZN1!',ZB:'CBOT:ZB1!',ZF:'CBOT:ZF1!',PL:'NYMEX:PL1!',KC:'NYBOT:KC1!'}[sym] || sym;
+  if(CLS[sym]==='crypto') return 'BINANCE:'+sym;
+  return sym; // equities resolve by bare ticker on TradingView
+}
+
 const fmt = (n, dec=2) => (n==null?'—':Number(n).toFixed(dec));
 const fmtPx = (n, sym) => (n==null?'—': Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}));
 
@@ -383,9 +399,9 @@ function sigLabel(s){ return s==='bull'?'▲':(s==='bear'?'▼':'·'); }
 function structureTags(k){
   const tags=[];
   tags.push(['trend '+(k.trend==='up'?'↗':k.trend==='down'?'↘':'→'), k.trend!=='range']);
-  tags.push(['mss '+(k.mss?k.mss:'—'), !!k.mss]);
-  tags.push(['fvg '+(k.fvg?k.fvg.dir[0]:'—'), !!k.fvg]);
-  tags.push(['ob '+(k.order_block?k.order_block.dir[0]:'—'), !!k.order_block]);
+  tags.push(['break '+(k.mss?k.mss:'—'), !!k.mss]);
+  tags.push(['gap '+(k.fvg?k.fvg.dir[0]:'—'), !!k.fvg]);
+  tags.push(['key '+(k.order_block?k.order_block.dir[0]:'—'), !!k.order_block]);
   tags.push(['sweep '+(k.sweep?k.sweep.dir[0]:'—'), !!k.sweep]);
   return tags.map(t=>`<span class="tag ${t[1]?'on':''}">${t[0]}</span>`).join('');
 }
@@ -418,24 +434,24 @@ function catalystBox(r){
   </div>`;
 }
 
-function detailHtml(r){
-  const k=r.kronos, mf=r.mirofish, c=r.cone, t=r.trade;
+function detailHtml(r,i){
+  const k=r.structure, mf=r.ensemble, c=r.cone, t=r.trade;
   return `<div class="detail">
     <div class="dgrid">
       <div class="dbox">
-        <h4>Kronos — structural levels</h4>
+        <h4>Market structure</h4>
         <div class="lv"><span class="n">close</span><span class="v">${fmtPx(k.close,r.symbol)}</span></div>
-        <div class="lv"><span class="n">20-bar VWAP</span><span class="v">${fmtPx(k.vwap,r.symbol)} <span class="fl">(${k.vwap_pct==null?'':(k.vwap_pct>0?'+':'')+k.vwap_pct+'%'})</span></span></div>
+        <div class="lv"><span class="n">20-bar avg price</span><span class="v">${fmtPx(k.vwap,r.symbol)} <span class="fl">(${k.vwap_pct==null?'':(k.vwap_pct>0?'+':'')+k.vwap_pct+'%'})</span></span></div>
         <div class="lv"><span class="n">nearest support</span><span class="v">${fmtPx(k.support,r.symbol)}</span></div>
         <div class="lv"><span class="n">nearest resistance</span><span class="v">${fmtPx(k.resistance,r.symbol)}</span></div>
         <div class="lv"><span class="n">trend structure</span><span class="v ${k.trend==='up'?'up':k.trend==='down'?'dn':'fl'}">${k.trend}</span></div>
-        <div class="lv"><span class="n">MSS</span><span class="v">${k.mss||'—'}</span></div>
-        <div class="lv"><span class="n">FVG</span><span class="v">${k.fvg?k.fvg.dir+' '+fmt(k.fvg.zone[0])+'–'+fmt(k.fvg.zone[1]):'—'}</span></div>
-        <div class="lv"><span class="n">order block</span><span class="v">${k.order_block?k.order_block.dir+' '+fmt(k.order_block.zone[0])+'–'+fmt(k.order_block.zone[1]):'—'}</span></div>
-        <div class="lv"><span class="n">liquidity sweep</span><span class="v">${k.sweep?k.sweep.dir+' @ '+fmt(k.sweep.level):'—'}</span></div>
+        <div class="lv"><span class="n">Break</span><span class="v">${k.mss||'—'}</span></div>
+        <div class="lv"><span class="n">Gap</span><span class="v">${k.fvg?k.fvg.dir+' '+fmt(k.fvg.zone[0])+'–'+fmt(k.fvg.zone[1]):'—'}</span></div>
+        <div class="lv"><span class="n">Key level</span><span class="v">${k.order_block?k.order_block.dir+' '+fmt(k.order_block.zone[0])+'–'+fmt(k.order_block.zone[1]):'—'}</span></div>
+        <div class="lv"><span class="n">Sweep</span><span class="v">${k.sweep?k.sweep.dir+' @ '+fmt(k.sweep.level):'—'}</span></div>
       </div>
       <div class="dbox">
-        <h4>MiroFish — 8 deterministic agents</h4>
+        <h4>Model read</h4>
         <div class="cbar" style="margin-bottom:10px"><div class="b" style="width:${mf.n_bull/8*100}%">${mf.n_bull}B</div><div class="f" style="width:${mf.n_neu/8*100}%">${mf.n_neu}N</div><div class="r" style="width:${mf.n_bear/8*100}%">${mf.n_bear}R</div></div>
         ${agentRows(mf.agents)}
       </div>
@@ -450,26 +466,30 @@ function detailHtml(r){
         <div class="lv"><span class="n">entry / stop / target</span><span class="v">${fmtPx(t.entry,r.symbol)} / ${fmtPx(t.stop,r.symbol)} / ${fmtPx(t.target,r.symbol)}</span></div>
       </div>
       ${catalystBox(r)}
+      <div class="dbox tvbox">
+        <h4>Quick chart — TradingView <a class="tvlink" href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent(tvSymbol(r.symbol))}" target="_blank" rel="noopener">open full chart ↗</a></h4>
+        <div class="tv-holder" id="tvph-${i}" data-sym="${r.symbol}" data-tv="${tvSymbol(r.symbol)}"></div>
+      </div>
     </div>
   </div>`;
 }
 
 function rowHtml(r,i){
-  const mf=r.mirofish, c=r.cone, t=r.trade;
+  const mf=r.ensemble, c=r.cone, t=r.trade;
   const dir=t.direction;
   const dirCls = dir==='LONG'?'up':dir==='SHORT'?'dn':'fl';
   const convClr = r.conviction>=60?'var(--bull)':r.conviction<=40?'var(--bear)':'var(--flat)';
   const chgCls = r.chg_pct>=0?'up':'dn';
   return `<div class="row" onclick="toggle(${i})">
     <span class="rk">${i+1}</span>
-    <span class="sym">${r.symbol}<span class="cls">${CLS[r.symbol]||''}${r.source==='LIVE'?' · <span style="color:var(--emerald);font-weight:700">LIVE</span>':''}</span></span>
+    <span class="sym">${dispSym(r.symbol)}<span class="cls">${CLS[r.symbol]||''}${r.source==='LIVE'?' · <span style="color:var(--emerald);font-weight:700">LIVE</span>':''}</span></span>
     <span class="px">${fmtPx(r.last,r.symbol)}</span>
     <span class="chg ${chgCls}">${r.chg_pct>=0?'+':''}${fmt(r.chg_pct)}%</span>
     <span class="bias"><span class="pct">${mf.consensus_pct}% ${sigLabel(mf.consensus>=0.6?'bull':mf.consensus<=0.4?'bear':'neutral')}</span>
       <span class="bar"><span class="b" style="width:${mf.consensus_pct}%"></span><span class="r" style="width:${100-mf.consensus_pct}%"></span></span></span>
     <span class="setup ${dirCls}">${dir}${t.rr?` <span class="rr">${t.rr}</span>`:''}</span>
     <span class="conv" style="color:${convClr}">${r.conviction}<div class="bar2"><i style="width:${r.conviction}%;background:${convClr}"></i></div></span>
-    <span class="cone">${structureTags(r.kronos)}</span>
+    <span class="cone">${structureTags(r.structure)}</span>
   </div>`;
 }
 
@@ -477,7 +497,7 @@ function render(){
   const list = filteredResults();
   updateFilterCounts();
   document.getElementById('board').innerHTML =
-    `<div class="row head"><span>#</span><span>Symbol</span><span>Last</span><span>Chg</span><span>Bias (swarm)</span><span>Setup</span><span>Conviction</span><span>Structure</span></div>` +
+    `<div class="row head"><span>#</span><span>Symbol</span><span>Last</span><span>Chg</span><span>Bias</span><span>Setup</span><span>Conviction</span><span>Structure</span></div>` +
     list.map((r,i)=>rowHtml(r,i)+detailHtml(r,i)).join('');
 
   // stats
@@ -501,8 +521,8 @@ function render(){
     return `<div class="r"><span>${c.config}</span><span>${c.n}</span><span>${c.win_rate}%</span><span>${c.expectancy_R>=0?'+':''}${c.expectancy_R.toFixed(3)}</span><span class="${pfCls}">${c.profit_factor!=null?c.profit_factor.toFixed(2):'—'}</span><span>${c.total_R>=0?'+':''}${c.total_R.toFixed(0)}</span></div>`;
   }).join('') : '';
   const conc = tb && tb.configs[4] ? (()=>{
-    const top = tb.configs[4].top5.map(([s,p])=>`<div class="l"><span>${s}</span><span class="pf-pos">${p.toFixed(2)}</span></div>`).join('');
-    const bot = tb.configs[4].bottom5.map(([s,p])=>`<div class="l"><span>${s}</span><span class="pf-neg">${p.toFixed(2)}</span></div>`).join('');
+    const top = tb.configs[4].top5.map(([s,p])=>`<div class="l"><span>${dispSym(s)}</span><span class="pf-pos">${p.toFixed(2)}</span></div>`).join('');
+    const bot = tb.configs[4].bottom5.map(([s,p])=>`<div class="l"><span>${dispSym(s)}</span><span class="pf-neg">${p.toFixed(2)}</span></div>`).join('');
     return `<div class="conc"><div><h5>best 5 · profit factor</h5>${top}</div><div><h5>worst 5 · profit factor</h5>${bot}</div></div>`;
   })() : '';
   document.getElementById('health').innerHTML = `
@@ -522,28 +542,27 @@ function render(){
   // dropped
   const dropped = list.filter(r=>r.trade.direction==='HOLD');
   document.getElementById('dropped').innerHTML = dropped.length? dropped.map((r,i)=>{
-    const mf=r.mirofish; const k=r.kronos;
+    const mf=r.ensemble; const k=r.structure;
     const reason = mf.consensus>0.6 ? 'bullish bias but poor R:R — overhead resistance too close' :
                    mf.consensus<0.4 ? 'bearish bias but poor R:R — support too close below' :
-                   'no directional edge (swarm near 50/50)';
+                   'no directional edge (signals near 50/50)';
     return `<div class="row" style="cursor:default;grid-template-columns:1fr 1.2fr 2fr 1fr">
       <span class="rk">${i+1}</span>
-      <span class="sym">${r.symbol}<span class="cls">${CLS[r.symbol]||''}</span></span>
+      <span class="sym">${dispSym(r.symbol)}<span class="cls">${CLS[r.symbol]||''}</span></span>
       <span class="fl" style="font-family:var(--font-m);font-size:12px">${reason}</span>
       <span class="fl" style="font-family:var(--font-m);font-size:12px;text-align:right">bias ${mf.consensus_pct}% · conv ${r.conviction}</span>
     </div>`;
   }).join('') : '<div class="row" style="cursor:default"><span class="fl">All names pass — no drops this cycle.</span></div>';
 
   document.getElementById('foot').innerHTML =
-    `<b>Methodology (auditable):</b> live OHLCV = Binance public klines (crypto, CORS key-less) + Alpaca via
-     <span class="fl">/api/stocks/klines</span> (equity, server-side key). Futures (CL/GC/ES/NQ) have no key-less feed, so they
-     are shown from the snapshot. Kronos levels =
-     anchored VWAP (20-bar), Fair Value Gaps (gated &gt;0.3%), order blocks, liquidity sweeps, market-structure shift — all
-     standard definitions in <span class="fl">compute_engine.py</span>. MiroFish = 8 independent deterministic models
-     (momentum, trend, VWAP, order-block, volatility, volume, mean-reversion, structure), consensus = confidence-weighted vote
-     with a uniform prior. Cone = empirical distribution of ${backtest.horizon_bars}-bar forward returns → P(bull/base/bear).
-     Backtest = walk-forward, no lookahead, TP/SL sim with costs. &nbsp; <span class="risknote">Educational only — not financial
-     advice. Paper desk. live_trading=false.</span>`;
+    `<b>Methodology:</b> live prices = public exchange data (crypto, key-less) + a market-data feed via
+     <span class="fl">/api/stocks/klines</span> (equities, server-side key). Futures have no key-less feed, so they
+     are shown from the snapshot. Market structure = anchored average price, price gaps, key levels, and
+     break/run markers — all standard, public definitions. The read = several independent signals over the same
+     price history, combined into one consensus score. Forecast = the empirical distribution of
+     ${backtest.horizon_bars}-bar forward returns → P(up/flat/down). Backtest = walk-forward, no lookahead, TP/SL
+     sim with costs. &nbsp; <span class="risknote">Educational only — not financial advice. Paper desk.
+     live_trading=false.</span>`;
 
   // canonical site footer
   const foot = document.getElementById('foot');
@@ -590,6 +609,16 @@ function toggle(i){
   rows[i].classList.add('open');
   openRow = i;
   rows[i].scrollIntoView({block:'nearest',behavior:'smooth'});
+  lazyChart(i);
+}
+
+function lazyChart(i){
+  const ph = document.getElementById('tvph-'+i);
+  if(!ph || ph.dataset.loaded) return;
+  ph.dataset.loaded = '1';
+  const tv = ph.dataset.tv;
+  const theme = document.body.classList.contains('light-mode') ? 'light' : 'dark';
+  ph.innerHTML = `<iframe src="https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(tv)}&interval=D&hidesidetoolbar=1&symboledit=0&saveimage=0&theme=${theme}&style=1&locale=en&withdateranges=0" loading="lazy" title="${ph.dataset.sym} chart"></iframe>`;
 }
 
 function toggleTheme(){

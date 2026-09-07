@@ -9,7 +9,7 @@ let code = engineBlock.replace(/^<script>|<\/script>$/g, '');
 code = code.slice(code.indexOf('const CRYPTO'));
 code = code.slice(0, code.indexOf('async function fetchBinance'));
 
-eval(code); // defines analyzeSymbol, kronos, mirofish, cone, tradeLevels, conviction, ...
+eval(code); // defines analyzeSymbol, structure, ensemble, cone, tradeLevels, conviction, ...
 
 const raw = JSON.parse(fs.readFileSync(__dirname + '/raw_ohlcv.json', 'utf8'));
 const py = JSON.parse(fs.readFileSync(__dirname + '/results.json', 'utf8')).results;
@@ -22,16 +22,16 @@ for (const sym of ['AAPL', 'NVDA', 'BTCUSDT', 'CL', 'GC', 'DOGEUSDT', 'AMD']) {
   const js = analyzeSymbol(sym, bars);
   const p = pyMap[sym];
   const ok = js.conviction === p.conviction
-    && js.mirofish.consensus_pct === p.mirofish.consensus_pct
+    && js.ensemble.consensus_pct === p.ensemble.consensus_pct
     && js.trade.direction === p.trade.direction
-    && js.kronos.trend === p.kronos.trend
+    && js.structure.trend === p.structure.trend
     && js.trade.rr === p.trade.rr
     && (js.cone ? js.cone.bull === p.cone.bull : p.cone === null);
   if (!ok) allMatch = false;
   console.log((ok ? 'MATCH' : 'DIFF ') + ' ' + sym +
     '  conv ' + js.conviction + '/' + p.conviction +
-    '  cons ' + js.mirofish.consensus_pct + '/' + p.mirofish.consensus_pct +
-    '  trend ' + js.kronos.trend + '/' + p.kronos.trend +
+    '  cons ' + js.ensemble.consensus_pct + '/' + p.ensemble.consensus_pct +
+    '  trend ' + js.structure.trend + '/' + p.structure.trend +
     '  dir ' + js.trade.direction + '/' + p.trade.direction +
     '  rr ' + js.trade.rr + '/' + p.trade.rr +
     '  cone.bull ' + (js.cone ? js.cone.bull : 'null') + '/' + (p.cone ? p.cone.bull : 'null'));

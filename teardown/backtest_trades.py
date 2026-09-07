@@ -13,7 +13,7 @@ the full table so nothing is cherry-picked.
 """
 import json
 import itertools
-from compute_engine import kronos, mirofish, atr_series
+from compute_engine import structure, ensemble, atr_series
 
 RAW = "/Users/snipertrader/snipertrader/teardown/raw_ohlcv.json"
 FEAT = "/Users/snipertrader/snipertrader/teardown/features.json"
@@ -29,8 +29,8 @@ def precompute(raw, cache_path=FEAT):
         snap = []
         for i in range(MIN_HIST, len(bars)):
             window = bars[: i + 1]
-            k = kronos(window)
-            mf = mirofish(window, k)
+            k = structure(window)
+            mf = ensemble(window, k)
             atr = atr_series(window)
             snap.append({
                 "i": i,
