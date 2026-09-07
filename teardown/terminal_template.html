@@ -210,9 +210,9 @@
      equity  → /api/stocks/klines (Alpaca, server-side key)
      futures → no key-less feed (excluded from the live universe)
    ════════════════════════════════════════════════════════════════════════ */
-const CRYPTO = ['BTCUSDT','ETHUSDT','SOLUSDT','LINKUSDT','AVAXUSDT','DOGEUSDT','XRPUSDT','ADAUSDT','DOTUSDT','BNBUSDT','LTCUSDT','ATOMUSDT'];
-const EQUITY = ['AAPL','AMD','AMZN','AVGO','CRWD','META','MSFT','NVDA','PLTR','TSLA','GOOGL','NFLX','ADBE','ORCL','CRM','QCOM','INTC','TSM','MU','COIN'];
-const FUTURES = ['CL','GC','ES','NQ','HG','SI','NG','ZN'];
+const CRYPTO = ['BTCUSDT','ETHUSDT','SOLUSDT','LINKUSDT','AVAXUSDT','DOGEUSDT','XRPUSDT','ADAUSDT','DOTUSDT','BNBUSDT','LTCUSDT','ATOMUSDT','TRXUSDT','NEARUSDT','APTUSDT','ARBUSDT','SHIBUSDT','FILUSDT'];
+const EQUITY = ['AAPL','AMD','AMZN','AVGO','CRWD','META','MSFT','NVDA','PLTR','TSLA','GOOGL','NFLX','ADBE','ORCL','CRM','QCOM','INTC','TSM','MU','COIN','NOW','SNOW','UBER','ABNB','PYPL','SHOP','XYZ','DDOG','PANW','NET'];
+const FUTURES = ['CL','GC','ES','NQ','HG','SI','NG','ZN','ZB','ZF','PL','KC'];
 const ALL_SYMBOLS = [...EQUITY, ...CRYPTO, ...FUTURES];
 
 function sma(v,n){ if(v.length<n) return null; let s=0; for(let i=v.length-n;i<v.length;i++) s+=v[i]; return s/n; }

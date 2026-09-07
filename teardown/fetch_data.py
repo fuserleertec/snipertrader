@@ -10,20 +10,26 @@ import urllib.request
 import urllib.parse
 
 SYMBOLS = {
-    # equities (20)
+    # equities (30)
     "AAPL": "AAPL", "AMD": "AMD", "AMZN": "AMZN", "AVGO": "AVGO",
     "CRWD": "CRWD", "META": "META", "MSFT": "MSFT", "NVDA": "NVDA",
     "PLTR": "PLTR", "TSLA": "TSLA", "GOOGL": "GOOGL", "NFLX": "NFLX",
     "ADBE": "ADBE", "ORCL": "ORCL", "CRM": "CRM", "QCOM": "QCOM",
     "INTC": "INTC", "TSM": "TSM", "MU": "MU", "COIN": "COIN",
-    # crypto (12, Yahoo USD pairs)
+    "NOW": "NOW", "SNOW": "SNOW", "UBER": "UBER", "ABNB": "ABNB",
+    "PYPL": "PYPL", "SHOP": "SHOP", "XYZ": "XYZ", "DDOG": "DDOG",
+    "PANW": "PANW", "NET": "NET",
+    # crypto (18, Yahoo USD pairs)
     "BTCUSDT": "BTC-USD", "ETHUSDT": "ETH-USD", "SOLUSDT": "SOL-USD",
     "LINKUSDT": "LINK-USD", "AVAXUSDT": "AVAX-USD", "DOGEUSDT": "DOGE-USD",
     "XRPUSDT": "XRP-USD", "ADAUSDT": "ADA-USD", "DOTUSDT": "DOT-USD",
     "BNBUSDT": "BNB-USD", "LTCUSDT": "LTC-USD", "ATOMUSDT": "ATOM-USD",
-    # futures (8)
+    "TRXUSDT": "TRX-USD", "NEARUSDT": "NEAR-USD", "APTUSDT": "APT-USD",
+    "ARBUSDT": "ARB-USD", "SHIBUSDT": "SHIB-USD", "FILUSDT": "FIL-USD",
+    # futures (12)
     "CL": "CL=F", "GC": "GC=F", "ES": "ES=F", "NQ": "NQ=F",
     "HG": "HG=F", "SI": "SI=F", "NG": "NG=F", "ZN": "ZN=F",
+    "ZB": "ZB=F", "ZF": "ZF=F", "PL": "PL=F", "KC": "KC=F",
 }
 
 RANGE = "2y"

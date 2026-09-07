@@ -454,7 +454,8 @@ def conviction(cons, k):
         kicker += 4
     elif k["mss"] == "bearish":
         kicker -= 4
-    return round(max(0, min(100, cons * 100 + kicker)))
+    # round-half-up to match JS Math.round (Python round() is banker's: 42.5 -> 42)
+    return int(max(0, min(100, cons * 100 + kicker)) + 0.5)
 
 def analyze(raw):
     results = []

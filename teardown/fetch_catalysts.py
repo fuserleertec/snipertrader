@@ -12,7 +12,8 @@ import urllib.parse
 from datetime import datetime, timezone
 
 EQUITY = ["AAPL", "AMD", "AMZN", "AVGO", "CRWD", "META", "MSFT", "NVDA", "PLTR", "TSLA",
-          "GOOGL", "NFLX", "ADBE", "ORCL", "CRM", "QCOM", "INTC", "TSM", "MU", "COIN"]
+          "GOOGL", "NFLX", "ADBE", "ORCL", "CRM", "QCOM", "INTC", "TSM", "MU", "COIN",
+          "NOW", "SNOW", "UBER", "ABNB", "PYPL", "SHOP", "XYZ", "DDOG", "PANW", "NET"]
 
 UA = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 snipertrader-research@example.com",
       "Accept": "application/json, text/html;q=0.9"}
@@ -87,9 +88,11 @@ def main():
             accs = f["accessionNumber"]
             docs = f["primaryDocument"]
 
-            # earnings = 10-K / 10-Q (primary only, skip amendments)
+            # earnings = 10-K / 10-Q (US) or 20-F (foreign issuers, e.g. TSM ADR).
+            # NOTE: 6-K is NOT used — it's a catch-all for foreign current reports, too
+            # noisy to proxy earnings (TSM files ~1/day). Foreign issuers get annual-only.
             for i in range(len(forms)):
-                if forms[i] in ("10-K", "10-Q"):
+                if forms[i] in ("10-K", "10-Q", "20-F"):
                     rec["earnings_dates"].append(dates[i])
 
             # recent Form 4s (last 30 days), parse direction

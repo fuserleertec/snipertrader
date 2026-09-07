@@ -12,12 +12,17 @@ import urllib.parse
 CRYPTO = {"BTCUSDT": "BTCUSDT", "ETHUSDT": "ETHUSDT", "SOLUSDT": "SOLUSDT",
           "LINKUSDT": "LINKUSDT", "AVAXUSDT": "AVAXUSDT", "DOGEUSDT": "DOGEUSDT",
           "XRPUSDT": "XRPUSDT", "ADAUSDT": "ADAUSDT", "DOTUSDT": "DOTUSDT",
-          "BNBUSDT": "BNBUSDT", "LTCUSDT": "LTCUSDT", "ATOMUSDT": "ATOMUSDT"}
+          "BNBUSDT": "BNBUSDT", "LTCUSDT": "LTCUSDT", "ATOMUSDT": "ATOMUSDT",
+          "TRXUSDT": "TRXUSDT", "NEARUSDT": "NEARUSDT", "APTUSDT": "APTUSDT",
+          "ARBUSDT": "ARBUSDT", "SHIBUSDT": "SHIBUSDT", "FILUSDT": "FILUSDT"}
 EQUITY = {"AAPL": "AAPL", "AMD": "AMD", "AMZN": "AMZN", "AVGO": "AVGO",
           "CRWD": "CRWD", "META": "META", "MSFT": "MSFT", "NVDA": "NVDA",
           "PLTR": "PLTR", "TSLA": "TSLA", "GOOGL": "GOOGL", "NFLX": "NFLX",
           "ADBE": "ADBE", "ORCL": "ORCL", "CRM": "CRM", "QCOM": "QCOM",
-          "INTC": "INTC", "TSM": "TSM", "MU": "MU", "COIN": "COIN"}
+          "INTC": "INTC", "TSM": "TSM", "MU": "MU", "COIN": "COIN",
+          "NOW": "NOW", "SNOW": "SNOW", "UBER": "UBER", "ABNB": "ABNB",
+          "PYPL": "PYPL", "SHOP": "SHOP", "XYZ": "XYZ", "DDOG": "DDOG",
+          "PANW": "PANW", "NET": "NET"}
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
            "Accept": "application/json"}
