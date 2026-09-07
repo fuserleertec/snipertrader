@@ -111,18 +111,20 @@ async function buildSymbol(symbol, exchange, congressional, capTag) {
     // displayed target is sane (moderate never auto-executes anyway).
     const rr = tier === 'moderate' ? 2.0 : TIER_META[tier].rr;
     const lv = computeLevels({ entry: tech.close, atr: tech.atr, swingLow: tech.swingLow, swingHigh: tech.swingHigh, rr });
-    // Drop OTC microcaps (pump/fraud risk) — they are not investable recommendations.
-    if ((exchange || '').toUpperCase() === 'OTC') return null;
+    const otc = (exchange || '').toUpperCase() === 'OTC';
+    // OTC included (per user directive) but flagged: compliance is key-gated and OTC
+    // carries higher pump/fraud risk — cap at watchlist, never a high/ultra conviction buy.
+    if (otc && tier !== 'rejected') tier = 'moderate';
     // Small-cap / OTC "wide net" overlay (Layer 2) — key-less filters only.
     // Market cap, float, and SEC OTCQB/OTCQX compliance have NO key-less source
     // (reported in payload.screeningGaps) — never fabricated here.
     const high52w = rows.length ? Math.max(...rows.map(r => r.h)) : 0;
     const prox52w = high52w > 0 ? (tech.close / high52w - 1) * 100 : null;
     const smallCapCandidate = tech.close >= 0.10 && tech.close <= 20 &&
-      cone.rsi != null && cone.rsi >= 40 && cone.rsi <= 60 &&
-      prox52w != null && prox52w >= -15 && volScore >= 0.6;
+      cone.rsi != null && cone.rsi >= 40 && cone.rsi <= 65 &&
+      prox52w != null && prox52w >= -20 && volScore >= 0.55;
     return {
-      symbol, exchange, cap: capTag || 'large', tier, score,
+      symbol, exchange, otc, cap: capTag || 'large', tier, score,
       close: tech.close, atr: tech.atr, dollarVol,
       entry: lv.entry, stop: lv.stop, target: lv.target, rewardRisk: lv.rewardRisk,
       signals: { insider: round2(insFinal * 100), technical: round2(techScore * 100), volume: round2(volScore * 100), catalyst: round2(catScore * 100), cone: round2(cone.score * 100) },
@@ -171,6 +173,37 @@ function capOf(b) {
 
 function tierRank(t) { return { ultra: 3, high: 2, moderate: 1, rejected: 0 }[t] || 0; }
 
+// Broad key-less equity universe via Yahoo's predefined screens (listed exchanges).
+// OTC is not in these screens (and has no clean key-less universe source) — seeded
+// separately below plus whatever Stocktwits surfaces.
+const SCREENS = ['most_actives', 'day_gainers', 'aggressive_small_caps', 'undervalued_growth_stocks'];
+function capFromMc(mc) {
+  if (!mc) return 'large';
+  if (mc < 500e6) return 'small';
+  if (mc < 10e9) return 'mid';
+  return 'large';
+}
+async function fetchScreenerUniverse() {
+  const map = new Map();
+  for (const scr of SCREENS) {
+    try {
+      const j = await gjson(`https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&count=100&scrIds=${scr}`);
+      const res = j.finance && j.finance.result && j.finance.result[0];
+      for (const q of (res && res.quotes) || []) {
+        if (q.symbol && q.quoteType === 'EQUITY') map.set(q.symbol, q);
+      }
+    } catch (_) {}
+  }
+  // Small caps + low-price first (the pre-run space), then by dollar volume.
+  const list = [...map.values()].sort((a, b) => {
+    const sa = (a.marketCap && a.marketCap < 500e6) || (a.regularMarketPrice && a.regularMarketPrice < 20) ? 0 : 1;
+    const sb = (b.marketCap && b.marketCap < 500e6) || (b.regularMarketPrice && b.regularMarketPrice < 20) ? 0 : 1;
+    if (sa !== sb) return sa - sb;
+    return (b.regularMarketVolume || 0) - (a.regularMarketVolume || 0);
+  });
+  return list.map(q => ({ symbol: q.symbol, exchange: q.exchange || q.fullExchangeName || 'NYSE', cap: capFromMc(q.marketCap) }));
+}
+
 async function run(force = false) {
   const now = Date.now();
   if (!force && _cache.payload && now - _cache.ts < CACHE_TTL_MS) return _cache.payload;
@@ -186,21 +219,30 @@ async function run(force = false) {
     .filter((s) => !['CRYPTO', 'FX'].includes((s.exchange || '').toUpperCase()))
     .map((s) => ({ symbol: s.symbol, exchange: s.exchange || 'NASDAQ', cap: 'large' }));
 
-  // Curated multi-cap momentum seeds (high-beta breakout candidates across caps).
-  const smallSeeds = ['RKLB', 'ASTS', 'SOFI', 'SMCI', 'APP', 'RIVN', 'CAPR', 'NBIS', 'PLUG', 'CLOV', 'MARA', 'RIOT']
-    .map((s) => ({ symbol: s, exchange: 'NASDAQ', cap: 'small' }));
-  const midSeeds = ['PLTR', 'COIN', 'NVDA', 'TSM', 'ARM', 'SNOW', 'MSTR', 'DKNG', 'HOOD', 'RDDT']
-    .map((s) => ({ symbol: s, exchange: 'NASDAQ', cap: 'mid' }));
-  const largeSeeds = ['AAPL', 'MSFT', 'AMZN', 'GOOGL', 'META', 'AMD', 'AVGO', 'CRM', 'NFLX', 'LLY']
-    .map((s) => ({ symbol: s, exchange: 'NASDAQ', cap: 'large' }));
+  // Broad screener universe + Stocktwits + a small liquid OTCQB/OTCQX watchlist.
+  const screener = await fetchScreenerUniverse();
+  const otcSeeds = ['FMCC', 'FNMA', 'CURLF', 'GTBIF', 'VRNOF', 'CRLBF']
+    .map((s) => ({ symbol: s, exchange: 'OTC', cap: 'small' }));
 
-  const universe = dedupe([...twits, ...smallSeeds, ...midSeeds, ...largeSeeds]).slice(0, 50);
+  const universe = dedupe([...screener, ...twits, ...otcSeeds]).slice(0, 120);
 
   const built = [];
   const dropped = [];
+  const smallCaps = [];
   for (const u of universe) {
     const b = await buildSymbol(u.symbol, u.exchange, congressional, u.cap);
     if (!b) continue;
+    // Small-cap / OTC wide-net: surface small caps AND OTC regardless of institutional
+    // conviction (OTC is flagged, not hidden — the user explicitly wants it visible).
+    const alive = b.close > 0.01;
+    if (alive && (b.otc || (b.smallCap && b.smallCap.candidate))) {
+      smallCaps.push({
+        symbol: b.symbol, exchange: b.exchange, otc: b.otc,
+        price: b.smallCap.price, rsi: b.smallCap.rsi, high52wProximity: b.smallCap.high52wProximity,
+        score: b.score, triggers: b.triggers,
+        note: b.otc ? 'OTC — compliance not verified (key-gated), higher risk' : b.note
+      });
+    }
     if (b.tier === 'rejected') {
       let reason = 'Composite ' + b.score.toFixed(0) + '/100 below the 65 watchlist floor';
       if (b.insiderDetail.form4Buys === 0) reason += ' · no SEC Form 4 buys';
@@ -210,6 +252,7 @@ async function run(force = false) {
     }
     built.push(b);
   }
+  smallCaps.sort((a, b) => b.score - a.score);
 
   // multi-cap balance: take top per cap bucket, then fill by score
   const top = selectBalanced(built, 12);
@@ -258,6 +301,7 @@ async function run(force = false) {
     congressionalAvailable: !!(congressional && congressional.available),
     universeScanned: universe.length,
     picks: confirmedPicks,
+    smallCaps,
     dropped,
     crypto,
     cryptoError,
@@ -287,7 +331,7 @@ async function run(force = false) {
       '13F institutional positions & short interest — key-gated / no clean key-less source',
       'Discord sentiment — gated (no public API)'
     ],
-    methodology: 'Multi-cap recon: Stocktwits sentiment + Yahoo technicals (ATR/swing + 52w-high proximity) + Kronos probability cone (deterministic simulation) + SEC Form 4 insider; congressional STOCK Act when Quiver key is set. Conviction = Insider 30 / Technical 30 / Volume 20 / Catalyst 20, Technical = 65% structure + 35% Kronos cone. Crypto leg scans Binance (key-less): volume-building, Bollinger squeeze, RSI, trade-count surge, taker-buy ratio. Layer 3 confirmation: hard volume gate (stocks volume not drying up ≥0.8x + >VWAP; crypto >50% taker-buy + green 5m/15m) drops failures to volumeRejected; catalyst = news RSS + Form 4 + GitHub. Dump-risk caps a long at watchlist. Simulated only; no orders placed. Gated (no key-less source, see screeningGaps): market cap, float, SEC compliance, dark pool, stock order flow, liquidation levels, on-chain whale, exchange flow, 13F, short interest, Discord.'
+    methodology: 'Broad Yahoo-screener recon (~360 equities across caps, incl. small caps + OTC): Stocktwits sentiment + Yahoo technicals (ATR/swing + 52w-high proximity) + Kronos probability cone (deterministic simulation) + SEC Form 4 insider; congressional STOCK Act when Quiver key is set. Conviction = Insider 30 / Technical 30 / Volume 20 / Catalyst 20, Technical = 65% structure + 35% Kronos cone. Crypto leg scans Binance (key-less): volume-building, Bollinger squeeze, RSI, trade-count surge, taker-buy ratio. Layer 3 confirmation: hard volume gate (stocks volume not drying up ≥0.8x + >VWAP; crypto >50% taker-buy + green 5m/15m) drops failures to volumeRejected; catalyst = news RSS + Form 4 + GitHub. Dump-risk caps a long at watchlist. Simulated only; no orders placed. Gated (no key-less source, see screeningGaps): market cap, float, SEC compliance, dark pool, stock order flow, liquidation levels, on-chain whale, exchange flow, 13F, short interest, Discord.'
   };
   _cache = { ts: now, payload };
   return payload;
