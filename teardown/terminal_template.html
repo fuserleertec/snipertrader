@@ -72,6 +72,18 @@
   .tv-holder iframe{width:100%;height:100%;border:0}
   .tvlink{font-family:var(--font-m);font-size:11px;color:var(--cyan);text-decoration:none;font-weight:400;text-transform:none;letter-spacing:0}
   .tvlink:hover{text-decoration:underline}
+  .chartbtn{font-size:15px;cursor:pointer;text-align:center;opacity:.55;transition:opacity .12s;user-select:none;line-height:1}
+  .chartbtn:hover{opacity:1}
+  .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:9999;align-items:flex-start;justify-content:center;padding:40px 16px}
+  .modal.open{display:flex}
+  .modal-box{background:var(--card);border:1px solid var(--border);border-radius:14px;width:min(960px,96vw);overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border-soft)}
+  .modaltitle{font-family:var(--font-d);font-size:13px;letter-spacing:.08em;color:var(--fg)}
+  .modalclose{cursor:pointer;font-family:var(--font-m);font-size:14px;color:var(--muted);padding:2px 8px}
+  .modalclose:hover{color:var(--fg)}
+  .tvframe{height:560px;background:var(--panel-2)}
+  .tvframe iframe{width:100%;height:100%;border:0}
+  .modal-foot{padding:10px 16px;border-top:1px solid var(--border-soft);text-align:right}
   .sec .num{color:var(--cyan);font-family:var(--font-m);font-size:12px}
 
   /* asset-class filter */
@@ -84,7 +96,7 @@
 
   /* leaderboard */
   .board{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden}
-  .row{display:grid;grid-template-columns:34px 1.3fr .9fr .9fr 1.1fr .7fr 1.3fr 1.1fr;gap:10px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border-soft);cursor:pointer;transition:background .12s}
+  .row{display:grid;grid-template-columns:34px 1.3fr .9fr .9fr 1.1fr .7fr 1.3fr 1.1fr 30px;gap:10px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border-soft);cursor:pointer;transition:background .12s}
   .row:last-child{border-bottom:none}
   .row:hover{background:var(--panel-2)}
   .row.head{background:var(--panel-2);cursor:default;font-family:var(--font-m);font-size:10.5px;letter-spacing:.06em;color:var(--faint);text-transform:uppercase}
@@ -490,6 +502,7 @@ function rowHtml(r,i){
     <span class="setup ${dirCls}">${dir}${t.rr?` <span class="rr">${t.rr}</span>`:''}</span>
     <span class="conv" style="color:${convClr}">${r.conviction}<div class="bar2"><i style="width:${r.conviction}%;background:${convClr}"></i></div></span>
     <span class="cone">${structureTags(r.structure)}</span>
+    <span class="chartbtn" onclick="event.stopPropagation();openChart('${r.symbol}')" title="Quick chart">📈</span>
   </div>`;
 }
 
@@ -497,7 +510,7 @@ function render(){
   const list = filteredResults();
   updateFilterCounts();
   document.getElementById('board').innerHTML =
-    `<div class="row head"><span>#</span><span>Symbol</span><span>Last</span><span>Chg</span><span>Bias</span><span>Setup</span><span>Conviction</span><span>Structure</span></div>` +
+    `<div class="row head"><span>#</span><span>Symbol</span><span>Last</span><span>Chg</span><span>Bias</span><span>Setup</span><span>Conviction</span><span>Structure</span><span></span></div>` +
     list.map((r,i)=>rowHtml(r,i)+detailHtml(r,i)).join('');
 
   // stats
@@ -546,11 +559,12 @@ function render(){
     const reason = mf.consensus>0.6 ? 'bullish bias but poor R:R — overhead resistance too close' :
                    mf.consensus<0.4 ? 'bearish bias but poor R:R — support too close below' :
                    'no directional edge (signals near 50/50)';
-    return `<div class="row" style="cursor:default;grid-template-columns:1fr 1.2fr 2fr 1fr">
+    return `<div class="row" style="cursor:default;grid-template-columns:1fr 1.2fr 2fr 1fr 30px">
       <span class="rk">${i+1}</span>
       <span class="sym">${dispSym(r.symbol)}<span class="cls">${CLS[r.symbol]||''}</span></span>
       <span class="fl" style="font-family:var(--font-m);font-size:12px">${reason}</span>
       <span class="fl" style="font-family:var(--font-m);font-size:12px;text-align:right">bias ${mf.consensus_pct}% · conv ${r.conviction}</span>
+      <span class="chartbtn" onclick="event.stopPropagation();openChart('${r.symbol}')" title="Quick chart">📈</span>
     </div>`;
   }).join('') : '<div class="row" style="cursor:default"><span class="fl">All names pass — no drops this cycle.</span></div>';
 
@@ -621,6 +635,19 @@ function lazyChart(i){
   ph.innerHTML = `<iframe src="https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(tv)}&interval=D&hidesidetoolbar=1&symboledit=0&saveimage=0&theme=${theme}&style=1&locale=en&withdateranges=0" loading="lazy" title="${ph.dataset.sym} chart"></iframe>`;
 }
 
+function openChart(sym){
+  const tv = tvSymbol(sym);
+  const theme = document.body.classList.contains('light-mode') ? 'light' : 'dark';
+  document.getElementById('charttitle').textContent = dispSym(sym) + ' · TradingView';
+  document.getElementById('chartlink').href = 'https://www.tradingview.com/chart/?symbol=' + encodeURIComponent(tv);
+  document.getElementById('chartframe').innerHTML = `<iframe src="https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(tv)}&interval=D&hidesidetoolbar=1&symboledit=0&saveimage=0&theme=${theme}&style=1&locale=en&withdateranges=0"></iframe>`;
+  document.getElementById('chartmodal').classList.add('open');
+}
+function closeChart(){
+  document.getElementById('chartmodal').classList.remove('open');
+  document.getElementById('chartframe').innerHTML = '';
+}
+
 function toggleTheme(){
   const light = document.body.classList.toggle('light-mode');
   document.getElementById('themeLabel').textContent = light ? 'LIGHT' : 'DARK';
@@ -667,5 +694,16 @@ async function bootstrap(){
 
 bootstrap();
 </script>
+
+<div class="modal" id="chartmodal" onclick="if(event.target===this)closeChart()">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span class="modaltitle" id="charttitle">—</span>
+      <span class="modalclose" onclick="closeChart()" title="Close">✕</span>
+    </div>
+    <div class="tvframe" id="chartframe"></div>
+    <div class="modal-foot"><a class="tvlink" id="chartlink" href="#" target="_blank" rel="noopener">open full chart ↗</a></div>
+  </div>
+</div>
 </body>
 </html>
