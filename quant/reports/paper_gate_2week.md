@@ -165,3 +165,24 @@ curl -sS -X POST http://127.0.0.1:8001/paper/demo-fortnight
   S5 100% n=1; S6 7.1% n=14 — **not** a live target for the smoke book
 - **Production:** off. `live_trading` stays **false**.
 - **Phase 4 prep** (templates only, no live): [`phase4_prep/README.md`](phase4_prep/README.md)
+
+## Check-in log
+
+### Day 3 — 2026-09-07 (weekday, America/New_York)
+
+**Status: WATCH / infra.** `live_trading` is **false**. No enable switch. No broker.
+
+The kickoff paper API was **in-memory and ephemeral**. There is still **no durable `QUANT_API_BASE`** ingesting ML `POST /risk/validate` → `POST /signals` publishes, so the **continuous** 14-day book has not accumulated fills.
+
+Do **not** treat `POST /paper/demo-fortnight` smoke numbers (12 closed, WR 50%, avg R +0.470) as the continuous book.
+
+| Continuous book (validate → signals → lifecycle) | Value |
+|---|---|
+| As-of | **2026-09-07 ET** (Day 3 of 14; gate 2026-09-05 → 2026-09-19) |
+| `live_trading` | **false** |
+| Closed since kickoff | **0** |
+| Open | **0** |
+| Per-setup WF ±15pp / ±0.50R | **N/A** (`n_closed < 20` on every `setup_type`; informational only) |
+| Action | Standing paper API required for remaining gate days so ML publishes persist |
+
+Need a long-lived paper process (same clock: `POST /paper/gate/start` if the host is new; do not reset the 2026-09-05 → 2026-09-19 window) wired as `QUANT_API_BASE` before W1 (2026-09-12). **Do not** set `live_trading` true.
