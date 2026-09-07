@@ -13,7 +13,19 @@ const https = require('https');
 const SEC_HEADERS = { 'User-Agent': 'snipertrader-recon research@example.com', 'Accept': 'application/json' };
 const SEC_HTML_HEADERS = { 'User-Agent': 'snipertrader-recon research@example.com', 'Accept': 'text/html' };
 
-function getJSON(url, headers = SEC_HEADERS, timeoutMs = 15000) {
+// SEC asks for ≤10 req/s. Pace ALL SEC requests through a shared limiter (~8.3/s)
+// so a concurrent scan cannot burst and trigger 403 rate-limiting. Without this,
+// a 12-way parallel scan would fire ~24+ SEC req/s and get throttled to zero.
+let _secNext = 0;
+function secThrottle() {
+  const now = Date.now();
+  const wait = Math.max(0, _secNext - now);
+  _secNext = Math.max(now, _secNext) + 120; // 120ms spacing ≈ 8.3 req/s
+  return new Promise((r) => setTimeout(r, wait));
+}
+
+async function getJSON(url, headers = SEC_HEADERS, timeoutMs = 15000) {
+  await secThrottle();
   return new Promise((resolve, reject) => {
     const req = https.get(url, { headers }, (res) => {
       if (res.statusCode !== 200) { res.resume(); return reject(new Error('HTTP ' + res.statusCode + ' ' + url)); }
@@ -27,7 +39,8 @@ function getJSON(url, headers = SEC_HEADERS, timeoutMs = 15000) {
   });
 }
 
-function getText(url, headers = SEC_HTML_HEADERS, timeoutMs = 15000) {
+async function getText(url, headers = SEC_HTML_HEADERS, timeoutMs = 15000) {
+  await secThrottle();
   return new Promise((resolve, reject) => {
     const req = https.get(url, { headers }, (res) => {
       if (res.statusCode !== 200) { res.resume(); return reject(new Error('HTTP ' + res.statusCode + ' ' + url)); }

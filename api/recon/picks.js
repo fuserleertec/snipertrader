@@ -41,6 +41,21 @@ function yahoo(symbol) {
   return gjson(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=1y&interval=1d`);
 }
 
+// Concurrency-limited map: runs up to `limit` async jobs at once, order-preserving.
+function mapLimit(items, limit, fn) {
+  return new Promise((resolve) => {
+    const out = new Array(items.length);
+    let i = 0;
+    const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+      while (i < items.length) {
+        const idx = i++;
+        out[idx] = await fn(items[idx], idx);
+      }
+    });
+    Promise.all(workers).then(() => resolve(out));
+  });
+}
+
 // Technical sub-score (0..1): breakout/BOS/swing structure + ATR expansion.
 function technicalSignal(rows) {
   if (!rows || rows.length < 21) return { score: 0, atr: 0, swingLow: 0, swingHigh: 0, close: 0, triggers: [] };
@@ -76,7 +91,7 @@ function volumeSignal(rows) {
   return { score, dollarVol: avg * avgClose };
 }
 
-async function buildSymbol(symbol, exchange, congressional, capTag) {
+async function buildSymbol(symbol, exchange, congressional, capTag, opts = {}) {
   try {
     const j = await yahoo(symbol);
     const res = j.chart.result[0];
@@ -90,7 +105,12 @@ async function buildSymbol(symbol, exchange, congressional, capTag) {
     const cone = coneSignal(rows);
     const vol = volumeSignal(rows);
     const volScore = vol.score, dollarVol = vol.dollarVol;
-    const ins = await insiderFor(symbol, 7);
+    // Insider (SEC) is rate-limited (~10 req/s) so it cannot scale to the full
+    // universe. skipInsider runs the broad technical pass; SEC insider is then
+    // fetched only for the ranked candidates where it can tip a decision.
+    const ins = opts.skipInsider
+      ? { present: false, buys: 0, sells: 0, recentForms: 0, error: 'deferred (SEC rate-limited)' }
+      : await insiderFor(symbol, 7);
     const insStr = insiderStrength(ins);
     const congStr = congressionalStrength(congressional, symbol);
     // insider sub-score = max(SEC Form 4, congressional) so either boosts it
@@ -177,6 +197,7 @@ function tierRank(t) { return { ultra: 3, high: 2, moderate: 1, rejected: 0 }[t]
 // OTC is not in these screens (and has no clean key-less universe source) — seeded
 // separately below plus whatever Stocktwits surfaces.
 const SCREENS = ['most_actives', 'day_gainers', 'aggressive_small_caps', 'undervalued_growth_stocks'];
+const UNIVERSE_CAP = 360; // full Yahoo-screener breadth (small caps first)
 function capFromMc(mc) {
   if (!mc) return 'large';
   if (mc < 500e6) return 'small';
@@ -224,14 +245,28 @@ async function run(force = false) {
   const otcSeeds = ['FMCC', 'FNMA', 'CURLF', 'GTBIF', 'VRNOF', 'CRLBF']
     .map((s) => ({ symbol: s, exchange: 'OTC', cap: 'small' }));
 
-  const universe = dedupe([...otcSeeds, ...screener, ...twits]).slice(0, 120);
+  const universe = dedupe([...otcSeeds, ...screener, ...twits]).slice(0, UNIVERSE_CAP);
 
+  // Phase A — broad key-less technical scan (Yahoo only, parallel). SEC insider is
+  // rate-limited so it runs in Phase B on the ranked candidates, not the full set.
   const built = [];
   const dropped = [];
   const smallCaps = [];
-  for (const u of universe) {
-    const b = await buildSymbol(u.symbol, u.exchange, congressional, u.cap);
-    if (!b) continue;
+  const scanned = (await mapLimit(universe, 12, (u) =>
+    buildSymbol(u.symbol, u.exchange, congressional, u.cap, { skipInsider: true })
+  )).filter(Boolean);
+
+  // Phase B — SEC insider enrichment on the ranked top (rate-limited via insider.js).
+  scanned.sort((a, b) => b.score - a.score);
+  const ENRICH = Math.min(80, scanned.length);
+  if (ENRICH > 0) {
+    const enriched = await mapLimit(scanned.slice(0, ENRICH), 4, (b) =>
+      buildSymbol(b.symbol, b.exchange, congressional, b.cap).catch(() => b)
+    );
+    for (let i = 0; i < ENRICH; i++) scanned[i] = enriched[i];
+  }
+
+  for (const b of scanned) {
     // Small-cap / OTC wide-net: surface small caps AND OTC regardless of institutional
     // conviction (OTC is flagged, not hidden — the user explicitly wants it visible).
     const alive = b.close > 0.01;
@@ -331,7 +366,7 @@ async function run(force = false) {
       '13F institutional positions & short interest — key-gated / no clean key-less source',
       'Discord sentiment — gated (no public API)'
     ],
-    methodology: 'Broad Yahoo-screener recon (~360 equities across caps, incl. small caps + OTC): Stocktwits sentiment + Yahoo technicals (ATR/swing + 52w-high proximity) + Kronos probability cone (deterministic simulation) + SEC Form 4 insider; congressional STOCK Act when Quiver key is set. Conviction = Insider 30 / Technical 30 / Volume 20 / Catalyst 20, Technical = 65% structure + 35% Kronos cone. Crypto leg scans Binance (key-less): volume-building, Bollinger squeeze, RSI, trade-count surge, taker-buy ratio. Layer 3 confirmation: hard volume gate (stocks volume not drying up ≥0.8x + >VWAP; crypto >50% taker-buy + green 5m/15m) drops failures to volumeRejected; catalyst = news RSS + Form 4 + GitHub. Dump-risk caps a long at watchlist. Simulated only; no orders placed. Gated (no key-less source, see screeningGaps): market cap, float, SEC compliance, dark pool, stock order flow, liquidation levels, on-chain whale, exchange flow, 13F, short interest, Discord.'
+    methodology: 'Broad Yahoo-screener recon (~360 equities across caps, incl. small caps + OTC): Stocktwits sentiment + Yahoo technicals (ATR/swing + 52w-high proximity) + Kronos probability cone (deterministic simulation) + SEC Form 4 insider (enriched on top-80 ranked candidates; SEC rate-limited) + congressional STOCK Act when Quiver key is set; Conviction = Insider 30 / Technical 30 / Volume 20 / Catalyst 20, Technical = 65% structure + 35% Kronos cone. Crypto leg scans Binance (key-less): volume-building, Bollinger squeeze, RSI, trade-count surge, taker-buy ratio. Layer 3 confirmation: hard volume gate (stocks volume not drying up ≥0.8x + >VWAP; crypto >50% taker-buy + green 5m/15m) drops failures to volumeRejected; catalyst = news RSS + Form 4 + GitHub. Dump-risk caps a long at watchlist. Simulated only; no orders placed. Gated (no key-less source, see screeningGaps): market cap, float, SEC compliance, dark pool, stock order flow, liquidation levels, on-chain whale, exchange flow, 13F, short interest, Discord.'
   };
   _cache = { ts: now, payload };
   return payload;
