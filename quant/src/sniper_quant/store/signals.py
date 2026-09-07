@@ -261,7 +261,9 @@ class TimescaleSignalStore:
     async def start(self) -> None:
         import asyncpg
 
-        self._pool = await asyncpg.create_pool(self.dsn, min_size=1, max_size=4)
+        self._pool = await asyncpg.create_pool(
+            self.dsn, min_size=1, max_size=4, ssl=False
+        )
 
     async def _conn(self):
         if self._pool is None:

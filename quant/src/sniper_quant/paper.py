@@ -11,12 +11,23 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+import os
 from typing import Any
 
 from sniper_quant.models import Side, SignalStatus, StoredSignal
 
 DAY_MS = 86_400_000
 GATE_DAYS = 14
+
+
+def _env_ms(name: str) -> int | None:
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except ValueError:
+        return None
 
 
 def _iso(ts_ms: int | None) -> str | None:
@@ -63,6 +74,17 @@ class PaperEngine:
             self.gate_ends_at_ms = None
 
     def start_gate(self, *, now_ms: int | None = None, days: int = GATE_DAYS) -> None:
+        """Stamp the 14-day paper clock. Never enables live trading.
+
+        If both ``PAPER_GATE_STARTED_AT_MS`` and ``PAPER_GATE_ENDS_AT_MS`` are
+        set, restore that window (host cutover). Otherwise ``now + 14d``.
+        """
+        started = _env_ms("PAPER_GATE_STARTED_AT_MS")
+        ends = _env_ms("PAPER_GATE_ENDS_AT_MS")
+        if started is not None and ends is not None:
+            self.gate_started_at_ms = started
+            self.gate_ends_at_ms = ends
+            return
         now = now_ms if now_ms is not None else int(datetime.now(timezone.utc).timestamp() * 1000)
         self.gate_started_at_ms = now
         self.gate_ends_at_ms = now + days * DAY_MS

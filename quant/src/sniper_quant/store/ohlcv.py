@@ -115,7 +115,9 @@ class TimescaleOHLCVLoader:
     async def start(self) -> None:
         import asyncpg
 
-        self._pool = await asyncpg.create_pool(self.dsn, min_size=1, max_size=4)
+        self._pool = await asyncpg.create_pool(
+            self.dsn, min_size=1, max_size=4, ssl=False
+        )
 
     async def upsert(self, bar: OHLCVBar) -> None:
         if self._pool is None:

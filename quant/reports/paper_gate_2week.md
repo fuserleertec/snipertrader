@@ -118,6 +118,26 @@ curl -sS -X POST http://127.0.0.1:8001/paper/gate/start
 curl -sS -X POST http://127.0.0.1:8001/paper/demo-fortnight
 ```
 
+If **compose inter-container TCP is broken** (docker bridge cannot reach
+`timescaledb:5432` from `risk-api`), run host `sniper-quant api` — do **not**
+enable `live_trading`:
+
+```bash
+export USE_INMEMORY=false
+export DATABASE_URL=postgresql://sniper:sniper@127.0.0.1:5432/market
+export KAFKA_BOOTSTRAP=127.0.0.1:19092
+# restore kickoff window 2026-09-05 07:33:14Z → 2026-09-19 07:33:14Z
+export PAPER_GATE_STARTED_AT_MS=1757057594000
+export PAPER_GATE_ENDS_AT_MS=1758267194000
+sniper-quant api --host 127.0.0.1 --port 8001
+curl -sS -X POST http://127.0.0.1:8001/paper/gate/start
+```
+
+Timescale is non-SSL; Quant pools use `ssl=False`. `02-signals.sql`
+(`signals` hypertable, `account_daily`, `signal_performance`) is mounted
+next to `init.sql` in `data_engineering/docker-compose.yml` (fresh volumes
+only — existing DB needs `psql -f`).
+
 `GET /performance/summary` `by_setup` keys (locked product strings):
 
 `1_liquidity_sweep_vwap_reclaim` · `2_fvg_mitigation_vwap` ·

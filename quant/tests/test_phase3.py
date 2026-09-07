@@ -189,6 +189,28 @@ def test_paper_fortnight_and_account():
     assert started["gate_started_at_utc"]
 
 
+def test_paper_gate_start_restores_window_from_env(monkeypatch):
+    """Host cutover: restore the original 2-week window instead of now+14d."""
+    start_ms = 1_757_057_594_000
+    end_ms = 1_758_267_194_000
+    monkeypatch.setenv("PAPER_GATE_STARTED_AT_MS", str(start_ms))
+    monkeypatch.setenv("PAPER_GATE_ENDS_AT_MS", str(end_ms))
+    http = _client()
+    started = http.post("/paper/gate/start").json()
+    assert started["live_trading"] is False
+    assert started["gate_started_at_ms"] == start_ms
+    assert started["gate_ends_at_ms"] == end_ms
+    monkeypatch.delenv("PAPER_GATE_ENDS_AT_MS", raising=False)
+    partial = http.post("/paper/gate/start").json()
+    assert partial["live_trading"] is False
+    assert partial["gate_started_at_ms"] != start_ms
+    assert partial["gate_ends_at_ms"] - partial["gate_started_at_ms"] == 14 * 86_400_000
+    monkeypatch.delenv("PAPER_GATE_STARTED_AT_MS", raising=False)
+    fallback = http.post("/paper/gate/start").json()
+    assert fallback["live_trading"] is False
+    assert fallback["gate_ends_at_ms"] - fallback["gate_started_at_ms"] == 14 * 86_400_000
+
+
 def test_api_key_auth_default_off_and_on():
     open_http = _client()
     assert open_http.get("/v1/setups").status_code == 200
