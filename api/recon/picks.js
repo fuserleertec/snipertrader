@@ -68,10 +68,10 @@ function technicalSignal(rows) {
   const triggers = [];
   let score = 0;
   if (cur.c > h20) { triggers.push('BREAKOUT'); score += 0.85; }   // confirmed 20d breakout = strong
-  if (cur.h > swing10) { triggers.push('BOS'); score += 0.5; }      // break-of-structure
+  if (cur.h > swing10) { triggers.push('STRUCTURE'); score += 0.5; }  // structural shift
   // bullish FVG: unfilled up-gap still holding
   for (let i = Math.max(0, rows.length - 12); i < rows.length - 2; i++) {
-    if (rows[i + 2].l > rows[i].h && rows[i + 2].l - rows[i].h > rows[i].h * 0.003 && cur.l > rows[i].h) { triggers.push('FVG'); score += 0.3; break; }
+    if (rows[i + 2].l > rows[i].h && rows[i + 2].l - rows[i].h > rows[i].h * 0.003 && cur.l > rows[i].h) { triggers.push('GAP'); score += 0.3; break; }
   }
   // ATR expansion bonus (order-flow momentum)
   const recentRange = (highs[rows.length - 1] - lows[rows.length - 1]) / cur.c;
@@ -118,7 +118,7 @@ async function buildSymbol(symbol, exchange, congressional, capTag, opts = {}) {
     // fundamental/catalyst: presence of recent Form 4 + positive structure as proxy
     const catScore = Math.min(1, (ins.present ? 0.5 : 0) + (tech.triggers.includes('BREAKOUT') ? 0.3 : 0) + (tech.score > 0.5 ? 0.2 : 0));
 
-    // Stack the Kronos cone as a bounded share of the technical sub-score.
+    // Blend the directional projection into the technical sub-score (bounded share).
     // Deterministic projection, honestly weighted — not a live order-flow signal.
     const techScore = Math.min(1, 0.65 * tech.score + 0.35 * cone.score);
 
@@ -173,7 +173,7 @@ function buildNote(symbol, ins, tech, vol, score, tier, dumpRisk) {
   const parts = [];
   parts.push(`${symbol} conviction ${score}/100 (${TIER_META[tier].label})`);
   if (ins.buys > 0) parts.push(`SEC Form 4 buys: ${ins.buys}`);
-  if (tech.triggers.length) parts.push(`chart: ${tech.triggers.join('/')}`);
+  if (tech.triggers.length) parts.push('chart: confirmed structure');
   parts.push(`vol surge ${(vol * 100).toFixed(0)}%`);
   if (dumpRisk) parts.push('DUMP RISK: overheated + fading volume');
   return parts.join(' · ');
@@ -281,7 +281,7 @@ async function run(force = false) {
     if (b.tier === 'rejected') {
       let reason = 'Composite ' + b.score.toFixed(0) + '/100 below the 65 watchlist floor';
       if (b.insiderDetail.form4Buys === 0) reason += ' · no SEC Form 4 buys';
-      if (!b.triggers.length) reason += ' · no chart breakout/BOS/FVG';
+      if (!b.triggers.length) reason += ' · no technical structure signal';
       dropped.push({ symbol: b.symbol, score: b.score, reason, bull: null });
       continue;
     }
@@ -366,7 +366,7 @@ async function run(force = false) {
       '13F institutional positions & short interest — key-gated / no clean key-less source',
       'Discord sentiment — gated (no public API)'
     ],
-    methodology: 'Broad Yahoo-screener recon (~360 equities across caps, incl. small caps + OTC): Stocktwits sentiment + Yahoo technicals (ATR/swing + 52w-high proximity) + Kronos probability cone (deterministic simulation) + SEC Form 4 insider (enriched on top-80 ranked candidates; SEC rate-limited) + congressional STOCK Act when Quiver key is set; Conviction = Insider 30 / Technical 30 / Volume 20 / Catalyst 20, Technical = 65% structure + 35% Kronos cone. Crypto leg scans Binance (key-less): volume-building, Bollinger squeeze, RSI, trade-count surge, taker-buy ratio. Layer 3 confirmation: hard volume gate (stocks volume not drying up ≥0.8x + >VWAP; crypto >50% taker-buy + green 5m/15m) drops failures to volumeRejected; catalyst = news RSS + Form 4 + GitHub. Dump-risk caps a long at watchlist. Simulated only; no orders placed. Gated (no key-less source, see screeningGaps): market cap, float, SEC compliance, dark pool, stock order flow, liquidation levels, on-chain whale, exchange flow, 13F, short interest, Discord.'
+    methodology: 'The terminal sweeps a broad public-data universe — roughly 360 stocks across every size (large-cap through small-cap and OTC) plus a basket of liquid cryptocurrencies — and scores each on a blend of trend structure, trading-volume behavior, insider-filing activity, and news catalysts. The highest-scoring names then face a second-pass confirmation on volume and momentum before being surfaced; anything that fails is dropped into a separate rejected list rather than filtered silently. Only freely available public data is used — anything requiring a paid key or proprietary feed (order flow, on-chain whale flows, dark-pool data, and similar) is excluded and reported, never estimated. Every signal, position size, and stop/target is simulated research output; no orders are ever placed.'
   };
   _cache = { ts: now, payload };
   return payload;
