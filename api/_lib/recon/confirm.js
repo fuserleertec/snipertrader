@@ -44,12 +44,15 @@ function binanceDepth(symbol, limit = 50) {
 // ---- 3.1 stock volume confirmation (pure — uses daily bars already fetched) ----
 function stockVolumeConfirm(rows) {
   if (!rows || rows.length < 21) {
-    return { pass: false, surgeRatio: 0, aboveVwap: false, vwap: 0, reasons: ['insufficient bars'] };
+    return { pass: false, surgeRatio: 0, aboveVwap: false, vwap: 0, strength: 'n/a', reasons: ['insufficient bars'] };
   }
   const closes = rows.map(r => r.c);
   const vols = rows.map(r => r.v);
   const lastClose = closes[closes.length - 1];
-  const avgVol20 = avg(vols.slice(-20));
+  // Volume surge: last bar vs the prior 20 completed bars (excludes the in-progress
+  // bar so a partial day's volume can't false-fail the gate).
+  const prior20 = vols.slice(-21, -1);
+  const avgVol20 = avg(prior20);
   const surgeRatio = avgVol20 > 0 ? vols[vols.length - 1] / avgVol20 : 0;
 
   // Anchored daily VWAP proxy over the last 20 bars: Σ(typical*vol) / Σ(vol).
@@ -61,10 +64,14 @@ function stockVolumeConfirm(rows) {
   const vwap = volSum > 0 ? tpVol / volSum : lastClose;
   const aboveVwap = lastClose > vwap;
 
+  // Honest recalibration: the old ">2x" gate was a rare breakout spike, not a
+  // "confirmation" — a normal name trades ~1x. Confirmation = volume is NOT drying
+  // up (≥0.8x) AND price is holding above VWAP. Strength is reported, never a gate.
+  const strength = surgeRatio >= 2 ? 'strong' : surgeRatio >= 1.5 ? 'elevated' : surgeRatio >= 1.0 ? 'normal' : surgeRatio >= 0.8 ? 'mild' : 'drying';
   const reasons = [];
-  if (surgeRatio < 2) reasons.push(`volume ${surgeRatio.toFixed(2)}x vs 20d (need >2x)`);
+  if (surgeRatio < 0.8) reasons.push(`volume ${surgeRatio.toFixed(2)}x vs 20d — drying up (need ≥0.8x)`);
   if (!aboveVwap) reasons.push('price below VWAP');
-  return { pass: reasons.length === 0, surgeRatio: +surgeRatio.toFixed(2), aboveVwap, vwap: +vwap.toFixed(4), reasons };
+  return { pass: reasons.length === 0, surgeRatio: +surgeRatio.toFixed(2), aboveVwap, vwap: +vwap.toFixed(4), strength, reasons };
 }
 
 function consecutiveGreen(rows) {
