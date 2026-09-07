@@ -24,7 +24,15 @@ from sniper_quant.backtest.detectors import (
 from sniper_quant.backtest.engine import BacktestSignal
 from sniper_quant.backtest.params import DEFAULT_PARAMS, KZ_CONVICTION_BONUS, with_params
 from sniper_quant.backtest.synthetic_setups import synthetic_setup_tape
-from sniper_quant.models import AssetClass, CandidateSignal, OHLCVBar, Side, StoredSignal
+from sniper_quant.models import (
+    AssetClass,
+    CandidateSignal,
+    FeatureRankComponents,
+    OHLCVBar,
+    RankComponents,
+    Side,
+    StoredSignal,
+)
 from sniper_quant.news import STUB_EARNINGS_TS_MS, calendar_anchor_events
 from sniper_quant.risk.engine import RiskEngine, RiskState
 from sniper_quant.setups import DORMANT_SETUP_TYPES, SETUP_TYPES, WALKFORWARD_S4_S6
@@ -159,6 +167,29 @@ def test_contributing_factors_publish_only_string_array():
     pub = spec["components"]["schemas"]["PublishBody"]["properties"]
     assert "ensemble_score" in pub
     assert "rank_components" in pub
+    assert "publish_only_0_100_confluence" in (pub["rank_components"].get("description") or "")
+    rc_schema = spec["components"]["schemas"]["RankComponents"]["properties"]
+    assert {"setup_quality", "confluence", "kill_zone", "volume", "freshness", "risk_adjusted"} <= set(
+        rc_schema
+    )
+
+    def _schema_max(prop: dict) -> float | None:
+        if "maximum" in prop:
+            return prop["maximum"]
+        for item in prop.get("anyOf") or prop.get("oneOf") or []:
+            if isinstance(item, dict) and "maximum" in item:
+                return item["maximum"]
+        return None
+
+    assert _schema_max(rc_schema["confluence"]) == 100
+    assert _schema_max(rc_schema["setup_quality"]) == 100
+    feat = spec["components"]["schemas"]["FeatureRankComponents"]["properties"]
+    assert _schema_max(feat["confluence"]) == 100
+    health = http.get("/health").json()
+    assert health["rank_components"] == "publish_only_0_100_confluence"
+    assert health["live_trading"] is False
+    setups = http.get("/v1/setups").json()
+    assert setups["rank_components"] == "publish_only_0_100_confluence"
     items = spec["components"]["schemas"]["PublishBody"]["properties"]["contributing_factors"]["items"]
     assert items["type"] == "string"
     view = spec["components"]["schemas"]["SignalView"]["properties"]
@@ -190,6 +221,32 @@ def test_contributing_factors_publish_only_string_array():
     assert "rank_components" in dash["properties"]
     assert "ensemble_score" not in validate["properties"]
     assert "rank_components" not in validate["properties"]
+
+
+def test_rank_components_fe_ml_lock_confluence_alias_and_mean():
+    via_new = RankComponents.model_validate({"confluence": 80, "setup_quality": 40})
+    assert via_new.confluence == 80
+    assert via_new.risk_adjusted == 80
+    via_legacy = RankComponents.model_validate({"risk_adjusted": 70, "kill_zone": 10})
+    assert via_legacy.confluence == 70
+    assert via_legacy.risk_adjusted == 70
+    both = RankComponents.model_validate({"confluence": 90, "risk_adjusted": 10})
+    assert both.confluence == 90
+    assert both.risk_adjusted == 90
+    unit = RankComponents(setup_quality=0.5, confluence=0.5)
+    assert unit.mean() == 0.5
+    hundred = RankComponents(setup_quality=80, confluence=60, volume=40)
+    assert hundred.mean() == 60
+    with pytest.raises(ValidationError):
+        RankComponents.model_validate({"confluence": 101})
+    with pytest.raises(ValidationError):
+        RankComponents.model_validate({"setup_quality": 50, "unknown_factor": 1})
+    ignored = FeatureRankComponents.model_validate(
+        {"confluence": 50, "extra_ml_field": 9, "setup_quality": 40}
+    )
+    assert ignored.confluence == 50
+    assert ignored.risk_adjusted == 50
+    assert "extra_ml_field" not in ignored.model_dump()
 
 
 def test_s4_s6_enum_and_detectors_exclude_dormant():

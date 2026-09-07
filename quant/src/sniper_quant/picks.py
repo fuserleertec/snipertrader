@@ -266,20 +266,23 @@ def _score_symbol_book(
     )
     approved = [r for r in rows if _is_approved(r)]
     published = [float(r.ensemble_score) for r in approved if r.ensemble_score is not None]
-    comp_scores = [
-        score_from_components(r.rank_components)
-        for r in approved
-        if r.rank_components is not None
-    ]
-    comp_scores = [s for s in comp_scores if s is not None]
+    mean_scores: list[float] = []
+    for row in approved:
+        rc = row.rank_components
+        if rc is None:
+            continue
+        mean = rc.mean()
+        if mean is None:
+            continue
+        mean_scores.append(mean if mean > 1.0 else 100.0 * mean)
     bucket = refresh_bucket(as_of_ts_ms, refresh_sec)
     if published:
         score = max(published)
         source = "ensemble_score"
         confidence = mean_conf
         notes = f"ensemble_score={score:.3f} conf={mean_conf:.3f} n={len(published)}"
-    elif comp_scores:
-        score = sum(comp_scores) / len(comp_scores)
+    elif mean_scores:
+        score = sum(mean_scores) / len(mean_scores)
         source = "rank_components"
         confidence = mean_conf
         notes = f"rank_components={score:.3f} conf={mean_conf:.3f}"

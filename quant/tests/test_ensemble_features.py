@@ -75,7 +75,7 @@ def test_topic_name_and_weights_locked():
     }
 
 
-def test_score_from_components_unit_point_and_publisher_100():
+def test_score_from_components_unit_and_publisher_100():
     unit = FeatureRankComponents(
         setup_quality=1.0,
         confluence=1.0,
@@ -84,18 +84,19 @@ def test_score_from_components_unit_point_and_publisher_100():
         freshness=1.0,
     )
     assert score_from_components(unit) == 100.0
-    points = FeatureRankComponents(
+    # 1<v≤100 → weight*(v/100). 40/20/15/15/10 → 16+4+2.25+2.25+1 = 25.5
+    mid = FeatureRankComponents(
         setup_quality=40.0,
         risk_adjusted=20.0,
         kill_zone=15.0,
         volume=15.0,
         freshness=10.0,
     )
-    assert points.confluence == 20.0
-    assert score_from_components(points) == 100.0
+    assert mid.confluence == 20.0
+    assert mid.risk_adjusted == 20.0
+    assert abs(score_from_components(mid) - 25.5) < 0.01
     half = FeatureRankComponents(setup_quality=0.5, confluence=0.5)
     assert score_from_components(half) == 30.0
-    # ML publisher 0–100 (setup_quality=80 > weight 40 → 0–100 scale)
     ml = FeatureRankComponents(
         setup_quality=80,
         confluence=70,
@@ -104,6 +105,8 @@ def test_score_from_components_unit_point_and_publisher_100():
         freshness=50,
     )
     assert abs(score_from_components(ml) - 72.0) < 0.01
+    over = FeatureRankComponents.model_construct(setup_quality=140)
+    assert score_from_components(over) == 40.0
 
 
 @pytest.mark.asyncio
@@ -197,7 +200,7 @@ def test_recompute_when_ensemble_score_omitted():
     store.upsert(parse_ensemble_features(payload))
     body = http.get("/picks/ensemble", params={"as_of_ts_ms": 1_700_000_400_000}).json()
     nq = next(row for row in body["items"] if row["symbol"] == "NQ")
-    assert nq["score"] == 78.0  # 32+16+12+10+8
+    assert nq["score"] == 20.1  # 1<v≤100: 40*0.32 + 20*0.16 + 15*0.12 + 15*0.10 + 10*0.08
     assert "recomputed" in (nq["notes"] or "")
 
 
@@ -261,6 +264,10 @@ def test_openapi_documents_ensemble_features_contract():
     assert setups["ensemble_features_topic"] == "ensemble_features"
     assert setups["ensemble_features_key"] == "symbol"
     assert setups["ensemble_refresh_sec"] == 900
+    assert setups["rank_components"] == "publish_only_0_100_confluence"
+    health = http.get("/health").json()
+    assert health["rank_components"] == "publish_only_0_100_confluence"
+    assert health["live_trading"] is False
     uni = http.get("/paper/universe").json()
     assert uni["live_trading"] is False
     assert uni["ensemble_features"]["topic"] == "ensemble_features"

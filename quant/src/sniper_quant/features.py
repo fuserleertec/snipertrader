@@ -45,33 +45,39 @@ def _component_raw(components: Any, name: str) -> float | None:
     return None if raw is None else float(raw)
 
 
+def _component_contrib(raw: float, weight: float) -> float:
+    """Map one component onto its locked weight.
+
+    * ``v ≤ 1`` → unit scale: ``weight * v``
+    * ``1 < v ≤ 100`` → FE/ML 0–100: ``weight * (v / 100)``
+    * else → ``min(v, weight)``
+    """
+    if raw <= 1.0:
+        return weight * raw
+    if raw <= 100.0:
+        return weight * (raw / 100.0)
+    return min(raw, weight)
+
+
 def score_from_components(components: FeatureRankComponents | RankComponents | None) -> float | None:
     """Recompute 0–100 from ML ``rank_components``. None if no values.
 
-    Publisher lock is **0–100** per field (``confluence`` not
-    ``risk_adjusted``). Also accepts:
-
-    * unit 0–1 (legacy Quant publish) → ``weight * value``
-    * point scale (≤ weight, e.g. setup_quality ≤ 40) → sum points
-    * 0–100 (any value > its weight) → ``weight * value / 100``
+    FE/ML lock is **0–100** per field. Canonical slot is ``confluence``
+    (``risk_adjusted`` is a legacy alias). Unit values ≤1 still map as
+    ``weight * v``.
     """
     if components is None:
         return None
-    pairs: list[tuple[float, float]] = []
+    total = 0.0
+    n = 0
     for name, weight in FEATURE_WEIGHTS.items():
         raw = _component_raw(components, name)
         if raw is None:
             continue
-        pairs.append((raw, weight))
-    if not pairs:
+        total += _component_contrib(raw, weight)
+        n += 1
+    if n == 0:
         return None
-    vals = [v for v, _ in pairs]
-    if all(v <= 1.0 for v in vals):
-        total = sum(w * v for v, w in pairs)
-    elif any(v > w for v, w in pairs):
-        total = sum(w * (min(v, 100.0) / 100.0) for v, w in pairs)
-    else:
-        total = sum(min(v, w) for v, w in pairs)
     return max(0.0, min(100.0, total))
 
 

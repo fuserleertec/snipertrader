@@ -99,6 +99,8 @@ def test_validate_reject_shape_conflict():
 def test_openapi_and_health():
     http, _ = _client()
     assert http.get("/health").json()["ok"] is True
+    assert http.get("/health").json()["rank_components"] == "publish_only_0_100_confluence"
+    assert http.get("/health").json()["live_trading"] is False
     spec = http.get("/openapi.json").json()
     assert "/risk/validate" in spec["paths"]
     assert "post" in spec["paths"]["/risk/validate"]

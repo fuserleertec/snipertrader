@@ -177,11 +177,12 @@ def _sync_confluence_alias(data: Any) -> Any:
 
 
 class RankComponents(BaseModel):
-    """Publish-only ML ``rank_components`` (0–100). Not on ``POST /risk/validate``.
+    """Publish-only FE/ML ``rank_components`` lock (0–100).
 
-    Canonical keys: ``setup_quality``, ``confluence``, ``kill_zone``,
-    ``volume``, ``freshness``. ``risk_adjusted`` is accepted as an alias
-    for ``confluence`` (legacy Quant 0–1 / point-scale payloads still parse).
+    Not on ``POST /risk/validate``. Canonical keys: ``setup_quality``,
+    ``confluence``, ``kill_zone``, ``volume``, ``freshness``.
+    ``risk_adjusted`` is a legacy alias for ``confluence`` (synced either
+    way). Unit values ≤1 still parse.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -387,12 +388,11 @@ class SignalListResponse(BaseModel):
 
 
 class FeatureRankComponents(BaseModel):
-    """ML ``ensemble_features`` ``rank_components`` — publisher 0–100 lock.
+    """ML ``ensemble_features`` ``rank_components`` — FE/ML 0–100 lock.
 
     Canonical: ``setup_quality``, ``confluence``, ``kill_zone``, ``volume``,
-    ``freshness`` each 0–100. ``risk_adjusted`` aliases ``confluence``.
-    Legacy unit (0–1) and point-scale (0–40/20/15/15/10) values still parse.
-    Extra ML fields are ignored.
+    ``freshness`` each 0–100. ``risk_adjusted`` aliases ``confluence``
+    (synced either way). Unit values ≤1 still ok. Extra ML fields ignored.
     """
 
     model_config = ConfigDict(extra="ignore")

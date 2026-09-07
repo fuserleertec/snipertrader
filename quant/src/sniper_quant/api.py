@@ -195,7 +195,11 @@ class PublishBody(CandidateSignal):
     )
     rank_components: RankComponents | None = Field(
         default=None,
-        description="Publish-only ML 0–100 {setup_quality, confluence, kill_zone, volume, freshness}. risk_adjusted aliases confluence.",
+        description=(
+            "publish_only_0_100_confluence. FE/ML 0–100 "
+            "{setup_quality, confluence, kill_zone, volume, freshness}. "
+            "risk_adjusted aliases confluence. Unit ≤1 still ok. Not on validate."
+        ),
     )
 
 
@@ -345,6 +349,8 @@ def create_app(
             "ok": True,
             "inmemory": isinstance(app.state.signals, InMemorySignalStore),
             "schema_version": "1.1",
+            "rank_components": "publish_only_0_100_confluence",
+            "live_trading": False,
         }
 
     @app.get("/risk/params")
