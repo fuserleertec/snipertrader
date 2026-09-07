@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pre-Run Detection Terminal — SniperTrader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/theme.css">
+<style>
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--obs);color:var(--text);font-family:var(--font-body);}
+  main{max-width:1180px;margin:0 auto;padding:100px 24px 60px;}
+  .mono{font-family:var(--font-mono);}
+  h1{font-family:var(--font-display);font-size:24px;letter-spacing:2px;margin:0 0 4px;}
+  h1 span{color:var(--emerald);}
+  .sub{color:var(--text3);font-size:13px;margin:0 0 28px;font-family:var(--font-mono);}
+  .sim-banner{display:flex;align-items:center;gap:10px;background:var(--gold-dim);border:1px solid var(--gold-border);border-radius:12px;padding:12px 16px;margin-bottom:24px;font-family:var(--font-mono);font-size:11px;color:var(--gold);letter-spacing:.5px;}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:28px;}
+  .stat{background:linear-gradient(145deg,var(--obs3),var(--obs2));border:1px solid var(--border);border-radius:14px;padding:14px 16px;}
+  .stat .v{font-family:var(--font-display);font-size:22px;color:var(--emerald);}
+  .stat .l{font-family:var(--font-mono);font-size:9px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;margin-top:4px;}
+  section{margin-bottom:32px;}
+  .panel{background:linear-gradient(145deg,var(--obs3),var(--obs2));border:1px solid var(--border);border-radius:16px;padding:20px;}
+  .panel h2{font-family:var(--font-display);font-size:12px;letter-spacing:2px;color:var(--text2);text-transform:uppercase;margin:0 0 16px;display:flex;align-items:center;gap:8px;}
+  .panel h2::before{content:'';width:8px;height:8px;border-radius:2px;background:var(--emerald);box-shadow:0 0 10px var(--emerald);}
+  table{width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:12px;}
+  th{color:var(--text3);text-align:left;font-weight:400;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border);}
+  td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  .sym{font-weight:700;color:var(--text);letter-spacing:1px;}
+  .sig{display:inline-block;font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:1px;padding:3px 10px;border-radius:20px;}
+  .sig.buy{color:var(--green);background:var(--green-dim);border:1px solid var(--green);}
+  .sig.hold{color:var(--gold);background:var(--gold-dim);border:1px solid var(--gold-border);}
+  .sig.sell{color:var(--red);background:var(--red-dim);border:1px solid var(--red);}
+  .dim{color:var(--text3);}
+  .alert{background:var(--red-dim);border:1px solid var(--red);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-family:var(--font-mono);font-size:12px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;}
+  .alert .lvl{color:var(--red);font-weight:700;letter-spacing:1px;font-size:10px;}
+  .gate{color:var(--text3);font-family:var(--font-mono);font-size:11px;padding:5px 0;border-bottom:1px dashed var(--border);}
+  .gate:last-child{border-bottom:none;}
+  .note{color:var(--text3);font-family:var(--font-mono);font-size:12px;line-height:1.6;}
+  .empty{color:var(--text4);font-family:var(--font-mono);font-size:13px;padding:18px;}
+  .badge{display:inline-block;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:3px 8px;border-radius:6px;border:1px solid var(--border2);color:var(--text3);}
+  .badge.gate{color:var(--gold);border-color:var(--gold-border);}
+  .refresh{background:var(--obs3);border:1px solid var(--border2);color:var(--text2);font-family:var(--font-mono);font-size:10px;letter-spacing:1px;padding:8px 16px;border-radius:20px;cursor:pointer;}
+  .refresh:hover{border-color:var(--emerald);color:var(--emerald);}
+  .head-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+</style>
+</head>
+<body>
+<nav class="kf-nav">
+  <a class="nav-logo" href="/index.html">SNIPER<span>TRADER</span></a>
+  <div class="nav-links">
+    <a href="/stock_picks.html">Stock Picks</a>
+    <a class="nav-pill" href="/recon_dashboard.html">Pre-Run Terminal</a>
+  </div>
+  <button class="kf-theme-toggle" id="themeToggle" onclick="document.body.classList.toggle('light-mode')">◐ LIGHT</button>
+</nav>
+
+<main>
+  <div class="head-row">
+    <div>
+      <h1>PRE-RUN <span>DETECTION</span> TERMINAL</h1>
+      <p class="sub" id="metaLine">loading /api/recon/picks …</p>
+    </div>
+    <button class="refresh" onclick="load()">⟳ REFRESH</button>
+  </div>
+
+  <div class="sim-banner" id="simBanner" style="display:none"></div>
+
+  <div class="stats" id="stats"></div>
+
+  <section>
+    <div class="panel">
+      <h2>Decisions</h2>
+      <div id="decisions"><div class="empty">Loading …</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="panel">
+      <h2>Dump / Exit Alerts</h2>
+      <div id="alerts"><div class="empty">Loading …</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="panel">
+      <h2>Excluded Inputs (key-gated — never fabricated)</h2>
+      <div id="gated"><div class="empty">Loading …</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="panel">
+      <h2>Methodology</h2>
+      <p class="note" id="methodology">—</p>
+    </div>
+  </section>
+</main>
+
+<script>
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function n(x,d){return (x==null||x===''||Number.isNaN(+x))?(d||'—'):(+x).toLocaleString(undefined,{maximumFractionDigits:2});}
+function sigCls(s){return s==='BUY'?'buy':(s==='SELL'?'sell':'hold');}
+
+async function load(){
+  const meta=document.getElementById('metaLine');
+  try{
+    const r=await fetch('/api/recon/picks',{headers:{'Accept':'application/json'},cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    render(d);
+  }catch(e){
+    meta.textContent='could not reach /api/recon/picks — '+e.message;
+    document.getElementById('decisions').innerHTML='<div class="empty">No data. The endpoint is served by the same-origin Vercel function — run it locally with <code>node api/_server.js</code> on :8787 or deploy to snipertrader.ai.</div>';
+  }
+}
+
+function render(d){
+  document.getElementById('metaLine').textContent='generated '+fmtTime(d.generatedAt)+' · scanned '+d.universeScanned+' assets · '+(d.methodology?'see methodology below':'');
+  // simulation banner
+  const sb=document.getElementById('simBanner');
+  sb.style.display='flex';
+  sb.innerHTML='<span class="badge gate">SIMULATION</span> '+esc((d.simulation&&d.simulation.note)||'paper only — no live orders.')+' · equity $'+(d.simulation&&d.simulation.equity?d.simulation.equity:'—');
+
+  // stats
+  const picks=(d.picks||[]), crypto=(d.crypto||[]), alerts=(d.sellAlerts||[]), rejected=(d.volumeRejected||[]), orders=(d.simulatedOrders||[]);
+  const stats=[
+    ['Stock candidates', picks.length],
+    ['Crypto scanned', crypto.length],
+    ['Simulated orders', orders.length],
+    ['Dump alerts', alerts.length],
+    ['Volume-rejected', rejected.length],
+    ['Missing factors', (d.screeningGaps||[]).length+(d.dumpGated||[]).length]
+  ];
+  document.getElementById('stats').innerHTML=stats.map(s=>'<div class="stat"><div class="v">'+s[1]+'</div><div class="l">'+s[0]+'</div></div>').join('');
+
+  // decisions table: stocks + confirmed crypto
+  const rows=[];
+  picks.forEach(p=>rows.push(decisionRow(p,'stock')));
+  crypto.forEach(c=>{ if(c.confirmation) rows.push(decisionRow(c,'crypto')); });
+  if(!rows.length){
+    document.getElementById('decisions').innerHTML='<div class="empty">Zero candidates survived all confirmation gates this cycle — the funnel is working (see methodology for the thresholds).</div>';
+  } else {
+    const head='<table><thead><tr><th>Symbol</th><th>Signal</th><th>Conviction</th><th>Weighted</th><th>Volume</th><th>Catalyst</th><th>Size</th><th>Stop / TP1</th><th>Missing</th></tr></thead><tbody>';
+    document.getElementById('decisions').innerHTML=head+rows.join('')+'</tbody></table>';
+  }
+
+  // alerts
+  if(!alerts.length){
+    document.getElementById('alerts').innerHTML='<div class="empty">No dump/exit signals on the current universe.</div>';
+  } else {
+    document.getElementById('alerts').innerHTML=alerts.map(a=>
+      '<div class="alert"><span class="sym">'+esc(a.symbol)+'</span> ['+esc(a.assetType)+'] '+
+      a.alerts.map(x=>'<span><span class="lvl">'+esc(x.level)+'</span> '+esc(x.msg)+'</span>').join(' · ')+'</div>'
+    ).join('');
+  }
+
+  // gated
+  const gaps=(d.screeningGaps||[]).concat((d.dumpGated||[]).map(g=>g+' (dump)'));
+  document.getElementById('gated').innerHTML= gaps.length?gaps.map(g=>'<div class="gate">▸ '+esc(g)+'</div>').join(''):'<div class="empty">None.</div>';
+
+  document.getElementById('methodology').textContent=d.methodology||'—';
+}
+
+function decisionRow(p,type){
+  const dec=p.decision||{};
+  const conf=p.confirmation||{};
+  const cat=p.catalyst||{};
+  const size=dec.sizing||{};
+  const ex=dec.exits||{};
+  const score=p.score!=null?p.score:(p.signals?p.signals.technical:'—');
+  return '<tr>'+
+    '<td><span class="sym">'+esc(p.symbol)+'</span> <span class="dim">['+type+']</span></td>'+
+    '<td><span class="sig '+sigCls(dec.signal)+'">'+esc(dec.signal||'—')+'</span></td>'+
+    '<td>'+n(score)+'</td>'+
+    '<td>'+n(dec.weightedScore)+' <span class="dim">/100</span></td>'+
+    '<td>'+volCell(conf)+'</td>'+
+    '<td>'+n(cat.score)+'</td>'+
+    '<td>$'+n(size.dollars)+' <span class="dim">('+n(size.positionPct)+'%)</span></td>'+
+    '<td>'+n(ex.stop)+' / '+n(ex.tp1)+'</td>'+
+    '<td class="dim">'+(dec.missingFactors&&dec.missingFactors.length?dec.missingFactors.join(', '):'—')+'</td>'+
+    '</tr>';
+}
+
+function volCell(conf){
+  if(!conf||conf.pass==null) return '<span class="dim">—</span>';
+  if(conf.pass) return '<span style="color:var(--green)">✓ pass</span>';
+  return '<span style="color:var(--red)">✗ '+esc((conf.reasons&&conf.reasons[0])||'fail')+'</span>';
+}
+
+function fmtTime(iso){ try{return new Date(iso).toLocaleString('en-US',{hour:'2-digit',minute:'2-digit',month:'short',day:'numeric'});}catch(_){return '—';} }
+
+load();
+setInterval(load, 30*60*1000);
+</script>
+</body>
+</html>

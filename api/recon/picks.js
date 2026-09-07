@@ -12,6 +12,12 @@ const https = require('https');
 const { convictionScore, tierOf, TIER_META, computeLevels } = require('../_lib/recon/engine');
 const { insiderFor, insiderStrength } = require('../_lib/recon/insider');
 const { congressionalRecent, congressionalStrength } = require('../_lib/recon/congressional');
+const { coneSignal } = require('../_lib/recon/kronos_cone');
+const { scanCrypto } = require('../_lib/recon/crypto_scan');
+const { stockVolumeConfirm, cryptoConfirm } = require('../_lib/recon/confirm');
+const { catalystScore } = require('../_lib/recon/catalyst');
+const { stockDumpSignals, GATED: DUMP_GATED } = require('../_lib/recon/dump');
+const { decideFull, SIM_EQUITY } = require('../_lib/recon/decision');
 
 const UA = { 'User-Agent': 'Mozilla/5.0 (research; snipertrader.ai recon pipeline)' };
 const CACHE_TTL_MS = 30 * 60 * 1000;
@@ -32,7 +38,7 @@ function gjson(url, headers = UA, timeoutMs = 20000) {
 }
 
 function yahoo(symbol) {
-  return gjson(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=3mo&interval=1d`);
+  return gjson(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=1y&interval=1d`);
 }
 
 // Technical sub-score (0..1): breakout/BOS/swing structure + ATR expansion.
@@ -81,6 +87,7 @@ async function buildSymbol(symbol, exchange, congressional, capTag) {
       rows.push({ t: ts[i], o: q.open[i], h: q.high[i], l: q.low[i], c: q.close[i], v: q.volume[i] });
     }
     const tech = technicalSignal(rows);
+    const cone = coneSignal(rows);
     const vol = volumeSignal(rows);
     const volScore = vol.score, dollarVol = vol.dollarVol;
     const ins = await insiderFor(symbol, 7);
@@ -91,34 +98,62 @@ async function buildSymbol(symbol, exchange, congressional, capTag) {
     // fundamental/catalyst: presence of recent Form 4 + positive structure as proxy
     const catScore = Math.min(1, (ins.present ? 0.5 : 0) + (tech.triggers.includes('BREAKOUT') ? 0.3 : 0) + (tech.score > 0.5 ? 0.2 : 0));
 
-    const score = convictionScore({ insider: insFinal, technical: tech.score, volume: volScore, catalyst: catScore });
-    const tier = tierOf(score);
+    // Stack the Kronos cone as a bounded share of the technical sub-score.
+    // Deterministic projection, honestly weighted — not a live order-flow signal.
+    const techScore = Math.min(1, 0.65 * tech.score + 0.35 * cone.score);
+
+    const score = convictionScore({ insider: insFinal, technical: techScore, volume: volScore, catalyst: catScore });
+    let tier = tierOf(score);
+    // "Before it gets dumped": overheated + fading volume caps a long at watchlist.
+    const dumpRisk = !!cone.distribution;
+    if (dumpRisk && tier !== 'rejected') tier = 'moderate';
     // For executable tiers use the tier's R:R; for moderate (paper) use 2.0 so the
     // displayed target is sane (moderate never auto-executes anyway).
     const rr = tier === 'moderate' ? 2.0 : TIER_META[tier].rr;
     const lv = computeLevels({ entry: tech.close, atr: tech.atr, swingLow: tech.swingLow, swingHigh: tech.swingHigh, rr });
     // Drop OTC microcaps (pump/fraud risk) — they are not investable recommendations.
     if ((exchange || '').toUpperCase() === 'OTC') return null;
+    // Small-cap / OTC "wide net" overlay (Layer 2) — key-less filters only.
+    // Market cap, float, and SEC OTCQB/OTCQX compliance have NO key-less source
+    // (reported in payload.screeningGaps) — never fabricated here.
+    const high52w = rows.length ? Math.max(...rows.map(r => r.h)) : 0;
+    const prox52w = high52w > 0 ? (tech.close / high52w - 1) * 100 : null;
+    const smallCapCandidate = tech.close >= 0.10 && tech.close <= 20 &&
+      cone.rsi != null && cone.rsi >= 40 && cone.rsi <= 60 &&
+      prox52w != null && prox52w >= -15 && volScore >= 0.6;
     return {
       symbol, exchange, cap: capTag || 'large', tier, score,
       close: tech.close, atr: tech.atr, dollarVol,
       entry: lv.entry, stop: lv.stop, target: lv.target, rewardRisk: lv.rewardRisk,
-      signals: { insider: round2(insFinal * 100), technical: round2(tech.score * 100), volume: round2(volScore * 100), catalyst: round2(catScore * 100) },
+      signals: { insider: round2(insFinal * 100), technical: round2(techScore * 100), volume: round2(volScore * 100), catalyst: round2(catScore * 100), cone: round2(cone.score * 100) },
       triggers: tech.triggers,
+      cone: { upPct: cone.upPct, p50ret: cone.p50ret, p25ret: cone.p25ret, p75ret: cone.p75ret, nearLowerBound: cone.nearLowerBound, rsi: cone.rsi, priceVsMa20: cone.priceVsMa20, ict: cone.ict, parabolic: cone.parabolic, distribution: cone.distribution },
+      smallCap: {
+        candidate: smallCapCandidate,
+        price: round2(tech.close),
+        rsi: cone.rsi,
+        high52wProximity: prox52w != null ? round2(prox52w) : null,
+        floatScreened: false,   // gated (no key-less source)
+        secCompliance: null      // gated (OTC Markets API is key-gated)
+      },
+      confirmation: stockVolumeConfirm(rows),
+      dumpSignals: stockDumpSignals({ rows, cone, insider: ins }),
+      dumpRisk, dumpReason: dumpRisk ? 'RSI>72 + >15% over MA20 + fading volume (late/dump risk)' : null,
       insiderDetail: { form4Buys: ins.buys || 0, form4Sells: ins.sells || 0, recentForms: ins.recentForms || 0, congressional: congressional && congressional.available },
-      note: buildNote(symbol, ins, tech, volScore, score, tier)
+      note: buildNote(symbol, ins, tech, volScore, score, tier, dumpRisk)
     };
   } catch (e) {
     return null; // skip symbols that error
   }
 }
 
-function buildNote(symbol, ins, tech, vol, score, tier) {
+function buildNote(symbol, ins, tech, vol, score, tier, dumpRisk) {
   const parts = [];
   parts.push(`${symbol} conviction ${score}/100 (${TIER_META[tier].label})`);
   if (ins.buys > 0) parts.push(`SEC Form 4 buys: ${ins.buys}`);
   if (tech.triggers.length) parts.push(`chart: ${tech.triggers.join('/')}`);
   parts.push(`vol surge ${(vol * 100).toFixed(0)}%`);
+  if (dumpRisk) parts.push('DUMP RISK: overheated + fading volume');
   return parts.join(' · ');
 }
 
@@ -178,14 +213,81 @@ async function run(force = false) {
 
   // multi-cap balance: take top per cap bucket, then fill by score
   const top = selectBalanced(built, 12);
+  // Layer 2 crypto leg — key-less Binance scan (OHLCV + trade count + taker buy/sell).
+  let crypto = [], cryptoError = null;
+  try { crypto = await scanCrypto(24); } catch (e) { cryptoError = String(e.message || e); }
+  // Layer 3 confirmation — hard volume gate + catalyst on RANKED candidates only.
+  const volumeRejected = [];
+  const confirmedPicks = [];
+  for (const p of top) {
+    try { p.catalyst = await catalystScore({ symbol: p.symbol, assetType: 'stock', insiderStrength: (p.signals.insider || 0) / 100 }); }
+    catch (e) { p.catalyst = { score: 0, min50Met: false, breakdown: {}, error: String(e.message || e) }; }
+    if (p.confirmation && !p.confirmation.pass) {
+      volumeRejected.push({ symbol: p.symbol, assetType: 'stock', score: p.score, reasons: p.confirmation.reasons, note: p.note });
+    } else {
+      confirmedPicks.push(p);
+    }
+  }
+  // Crypto: confirm the top 10 by score (5m/15m green + depth + taker-buy) + catalyst.
+  const topCrypto = crypto.slice(0, 10);
+  await Promise.all(topCrypto.map(async (c) => {
+    c.confirmed = true;
+    try { c.confirmation = await cryptoConfirm(c.symbol, c.takerBuyRatio); }
+    catch (e) { c.confirmation = { pass: false, reasons: [String(e.message || e)], orderFlow: {}, unavailable: {} }; }
+    try { c.catalyst = await catalystScore({ symbol: c.symbol, assetType: 'crypto' }); }
+    catch (e) { c.catalyst = { score: 0, min50Met: false, breakdown: {}, error: String(e.message || e) }; }
+    if (!c.confirmation.pass) volumeRejected.push({ symbol: c.symbol, assetType: 'crypto', score: c.score, reasons: c.confirmation.reasons, setup: c.setup });
+  }));
+  // Layer 4 — aggregate dump/exit alerts (ALERTS ONLY, no execution).
+  const sellAlerts = [];
+  for (const p of top) if (p.dumpSignals && p.dumpSignals.length) sellAlerts.push({ symbol: p.symbol, assetType: 'stock', alerts: p.dumpSignals });
+  for (const c of crypto) if (c.dumpSignals && c.dumpSignals.length) sellAlerts.push({ symbol: c.symbol, assetType: 'crypto', alerts: c.dumpSignals });
+  // Layer 5 — decision matrix + sizing + exits (SIMULATION ONLY, no live orders).
+  const decisions = [], simulatedOrders = [];
+  const applyDecision = (c, assetType, entryPrice, volPct) => {
+    const d = decideFull(c, assetType, { close: entryPrice, volPct });
+    c.decision = d;
+    decisions.push({ symbol: c.symbol, assetType, signal: d.signal, weightedScore: d.weightedScore, rawScore: d.rawScore, maxAchievable: d.maxAchievable, missingFactors: d.missingFactors, sizing: d.sizing, exits: d.exits, simulated: true });
+    if (d.signal === 'BUY') simulatedOrders.push({ symbol: c.symbol, assetType, signal: 'BUY', weightedScore: d.weightedScore, sizing: d.sizing, exits: d.exits, simulated: true });
+  };
+  for (const p of top) applyDecision(p, 'stock', p.close, p.atr && p.close ? p.atr / p.close : 0.03);
+  for (const c of topCrypto) if (c.confirmation) applyDecision(c, 'crypto', c.price, (c.cone && c.cone.vol) || 0.06);
   const payload = {
     generatedAt: new Date().toISOString(),
     nextRefreshHint: '13:00 & 22:00 UTC (08:00 & 17:00 ET)',
     congressionalAvailable: !!(congressional && congressional.available),
     universeScanned: universe.length,
-    picks: top,
+    picks: confirmedPicks,
     dropped,
-    methodology: 'Multi-cap recon: Stocktwits sentiment + Yahoo technicals (ATR/swing) + SEC Form 4 insider; congressional STOCK Act when Quiver key is set. 0-100 conviction = Insider 30 / Technical 30 / Volume 20 / Catalyst 20. Simulated only; no orders placed.'
+    crypto,
+    cryptoError,
+    volumeRejected,
+    sellAlerts,
+    dumpGated: DUMP_GATED,
+    decisions,
+    simulatedOrders,
+    simulation: { equity: SIM_EQUITY, note: 'paper only — decision/sizing/exit logic is simulated; no live orders and no brokerage execution endpoint.' },
+    riskRules: [
+      'Stop-loss always set (15% stocks / 10% crypto) — ENFORCED in exits',
+      'Max 2% portfolio risk per trade — ENFORCED (position% × stop distance; see decision.risk)',
+      'Max 10 concurrent positions — PORTFOLIO rule (not enforced in a per-candidate scout)',
+      'Take profits incrementally (1/3 @ +25%, 1/3 @ +50%, rest trails) — ENFORCED in exits',
+      'Pump-and-dump caution — OTC dropped + dump-signal alerts — ENFORCED',
+      'Tool, not a crystal ball (OHLCV only; no order flow / dark pool) — core philosophy'
+    ],
+    backtest: 'teardown/backtest_summary.json (2026-09-06): NO systematic edge — win rate 36-55%, profit factor ~0.87-1.13 (within noise), structure-anchored R:R a net loser, edge concentrated in ~5 symbols. Full sweep in teardown/.',
+    screeningGaps: [
+      'Stock market cap (<$500M) — no key-less source (Yahoo quoteSummary is crumb-gated)',
+      'Stock float (<20M shares) — no key-less source',
+      'SEC OTCQB/OTCQX compliance — OTC Markets API is key-gated',
+      'Crypto whale on-chain accumulation — key-gated (Whale Alert/Nansen/Glassnode)',
+      'Stock dark-pool selling & trade count — no key-less source',
+      'Stock order flow (NinjaTrader OF+/delta) — desktop software, no API',
+      'Crypto liquidation levels & exchange inflow/outflow — key-gated (Glassnode/CryptoQuant)',
+      '13F institutional positions & short interest — key-gated / no clean key-less source',
+      'Discord sentiment — gated (no public API)'
+    ],
+    methodology: 'Multi-cap recon: Stocktwits sentiment + Yahoo technicals (ATR/swing + 52w-high proximity) + Kronos probability cone (deterministic simulation) + SEC Form 4 insider; congressional STOCK Act when Quiver key is set. Conviction = Insider 30 / Technical 30 / Volume 20 / Catalyst 20, Technical = 65% structure + 35% Kronos cone. Crypto leg scans Binance (key-less): volume-building, Bollinger squeeze, RSI, trade-count surge, taker-buy ratio. Layer 3 confirmation: hard volume gate (stocks >2x vol + >VWAP; crypto >60% taker-buy + green 5m/15m) drops failures to volumeRejected; catalyst = news RSS + Form 4 + GitHub. Dump-risk caps a long at watchlist. Simulated only; no orders placed. Gated (no key-less source, see screeningGaps): market cap, float, SEC compliance, dark pool, stock order flow, liquidation levels, on-chain whale, exchange flow, 13F, short interest, Discord.'
   };
   _cache = { ts: now, payload };
   return payload;
