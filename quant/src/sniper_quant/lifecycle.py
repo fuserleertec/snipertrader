@@ -109,7 +109,10 @@ class LifecycleMonitor:
             if row is None:
                 continue
             updated.append(row)
-            await self.hub.publish("signal.status", SignalView.from_stored(row))
+            try:
+                await self.hub.publish("signal.status", SignalView.from_stored(row))
+            except Exception:
+                log.exception("lifecycle hub.publish failed id=%s", row.id)
             log.info(
                 "lifecycle %s %s %s r=%.3f",
                 row.id,

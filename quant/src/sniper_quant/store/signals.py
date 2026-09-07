@@ -5,7 +5,8 @@ from __future__ import annotations
 import json
 import time
 from collections.abc import Sequence
-from typing import Protocol
+from enum import Enum
+from typing import Any, Protocol
 
 from sniper_quant.models import (
     AssetClass,
@@ -13,6 +14,7 @@ from sniper_quant.models import (
     Side,
     SignalStatus,
     StoredSignal,
+    coerce_signal_timeframe,
     normalize_symbol,
 )
 
@@ -32,6 +34,15 @@ def decode_cursor(cursor: str) -> tuple[int, str]:
 
 def setup_type_value(setup_type: SetupType | str) -> str:
     return SetupType(setup_type).value if not isinstance(setup_type, SetupType) else setup_type.value
+
+
+def _db_enum_value(value: Any) -> str | None:
+    """Persist ``.value`` — never ``str(enum)`` (Py 3.13 → ``Class.MEMBER``)."""
+    if value is None:
+        return None
+    if isinstance(value, Enum):
+        return value.value
+    return str(value)
 
 
 class SignalStore(Protocol):
@@ -211,7 +222,7 @@ def _row_to_signal(r) -> StoredSignal:
         entry=r["entry"],
         stop=r["stop_px"],
         target=r["target"],
-        timeframe=r["timeframe"],
+        timeframe=coerce_signal_timeframe(r["timeframe"]),
         trigger_event_ids=_decode_ids(r["trigger_event_ids"]),
         session_type=r["session_type"],
         position_size=r["position_size"],
@@ -281,7 +292,7 @@ class TimescaleSignalStore:
                 signal.schema_version,
                 signal.symbol,
                 signal.asset_class.value,
-                signal.setup_type,
+                _db_enum_value(signal.setup_type),
                 signal.side.value,
                 signal.confidence,
                 signal.ref_vwap,
@@ -289,9 +300,9 @@ class TimescaleSignalStore:
                 signal.entry,
                 signal.stop,
                 signal.target,
-                str(signal.timeframe) if signal.timeframe is not None else None,
+                _db_enum_value(coerce_signal_timeframe(signal.timeframe)),
                 json.dumps(list(signal.trigger_event_ids or [])),
-                str(signal.session_type) if signal.session_type is not None else None,
+                _db_enum_value(signal.session_type),
                 signal.position_size,
                 signal.status.value,
                 signal.closed_ts_ms,

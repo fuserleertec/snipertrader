@@ -173,3 +173,41 @@ def test_close_fields_on_list_detail_and_cancelled_null():
     assert cancelled["status"] == "CANCELLED"
     assert cancelled["realized_r"] is None
     assert cancelled["r_multiple"] is None
+
+
+def test_get_and_patch_coerce_legacy_timeframe_string():
+    from sniper_quant.models import AssetClass, Side, SignalStatus, StoredSignal
+
+    settings = make_settings()
+    engine = RiskEngine(settings=settings, state=RiskState(equity=100_000))
+    store = InMemorySignalStore()
+    row = StoredSignal(
+        id="legacy-tf",
+        symbol="ES",
+        asset_class=AssetClass.FUTURES,
+        setup_type="sweep_reclaim",
+        side=Side.LONG,
+        ts_ms=1_000,
+        entry=100.0,
+        stop=96.0,
+        target=108.0,
+        position_size=1.0,
+        timeframe="SignalTimeframe.M5",
+        status=SignalStatus.ACTIVE,
+        trigger_event_ids=["evt-1"],
+    )
+    store.rows[row.id] = row
+    http = TestClient(create_app(settings=settings, signals=store, engine=engine))
+    got = http.get("/signals/legacy-tf")
+    assert got.status_code == 200
+    assert got.json()["timeframe"] == "5m"
+    listed = http.get("/signals")
+    assert listed.status_code == 200
+    assert listed.json()["items"][0]["timeframe"] == "5m"
+    patched = http.patch("/signals/legacy-tf", json={"status": "TP_HIT"})
+    assert patched.status_code == 200
+    body = patched.json()
+    assert body["timeframe"] == "5m"
+    assert body["status"] == "TP_HIT"
+    assert http.get("/paper/account").json()["live_trading"] is False
+    assert http.get("/paper/account").json()["closed_trades"] == 1

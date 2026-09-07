@@ -136,8 +136,9 @@ class PaperEngine:
         if row.status is SignalStatus.ACTIVE:
             self.open_from_signal(row)
         elif row.status in {SignalStatus.TP_HIT, SignalStatus.SL_HIT, SignalStatus.CANCELLED}:
-            if row.id in self.positions:
-                self.close_from_signal(row)
+            if row.id not in self.positions:
+                self.open_from_signal(row)
+            self.close_from_signal(row)
 
     @property
     def realized_pnl(self) -> float:

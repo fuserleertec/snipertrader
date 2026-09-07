@@ -211,6 +211,102 @@ def test_paper_gate_start_restores_window_from_env(monkeypatch):
     assert fallback["gate_ends_at_ms"] - fallback["gate_started_at_ms"] == 14 * 86_400_000
 
 
+def test_paper_mark_signal_hydrates_missing_open_on_close():
+    from sniper_quant.models import AssetClass, Side, SignalStatus, StoredSignal
+    from sniper_quant.paper import PaperEngine
+
+    book = PaperEngine(starting_equity=100_000.0)
+    row = StoredSignal(
+        id="missed-open",
+        symbol="ES",
+        asset_class=AssetClass.FUTURES,
+        setup_type="sweep_reclaim",
+        side=Side.LONG,
+        ts_ms=1_000,
+        entry=100.0,
+        stop=96.0,
+        target=108.0,
+        position_size=2.0,
+        status=SignalStatus.TP_HIT,
+        exit_px=108.0,
+        r_multiple=2.0,
+        closed_ts_ms=2_000,
+    )
+    book.mark_signal(row)
+    snap = book.snapshot()
+    assert snap["live_trading"] is False
+    assert snap["open_positions"] == 0
+    assert snap["closed_trades"] == 1
+    assert snap["closed"][0]["status"] == "TP_HIT"
+    assert snap["realized_pnl"] == 16.0
+
+
+async def test_lifespan_hydrates_paper_then_starts_gate(monkeypatch):
+    from fastapi import FastAPI
+
+    from sniper_quant.api import lifespan
+    from sniper_quant.models import AssetClass, Side, SignalStatus, StoredSignal
+    from sniper_quant.risk.engine import RiskEngine, RiskState
+    from sniper_quant.store.ohlcv import InMemoryOHLCVLoader
+    from sniper_quant.store.signals import InMemorySignalStore
+
+    settings = make_settings()
+    store = InMemorySignalStore()
+    await store.insert(
+        StoredSignal(
+            id="boot-open",
+            symbol="NQ",
+            asset_class=AssetClass.FUTURES,
+            setup_type="fvg_entry",
+            side=Side.LONG,
+            ts_ms=1_000,
+            entry=50.0,
+            stop=49.0,
+            target=53.0,
+            position_size=1.0,
+            status=SignalStatus.ACTIVE,
+        )
+    )
+    await store.insert(
+        StoredSignal(
+            id="boot-closed",
+            symbol="ES",
+            asset_class=AssetClass.FUTURES,
+            setup_type="sweep_reclaim",
+            side=Side.LONG,
+            ts_ms=1_100,
+            entry=100.0,
+            stop=96.0,
+            target=108.0,
+            position_size=1.0,
+            status=SignalStatus.SL_HIT,
+            exit_px=96.0,
+            r_multiple=-1.0,
+            closed_ts_ms=2_000,
+        )
+    )
+    ohlcv = InMemoryOHLCVLoader()
+    engine = RiskEngine(settings=settings, state=RiskState(equity=100_000))
+    monkeypatch.setattr("sniper_quant.api.get_settings", lambda: settings)
+    monkeypatch.setattr(
+        "sniper_quant.api._build_stores", lambda _settings: (store, ohlcv, engine)
+    )
+    start_ms = 1_757_057_594_000
+    end_ms = 1_758_267_194_000
+    monkeypatch.setenv("PAPER_GATE_STARTED_AT_MS", str(start_ms))
+    monkeypatch.setenv("PAPER_GATE_ENDS_AT_MS", str(end_ms))
+    app = FastAPI()
+    async with lifespan(app):
+        snap = app.state.paper.snapshot()
+        assert snap["live_trading"] is False
+        assert snap["open_positions"] == 1
+        assert snap["closed_trades"] == 1
+        assert snap["positions"][0]["signal_id"] == "boot-open"
+        assert snap["closed"][0]["signal_id"] == "boot-closed"
+        assert snap["gate_started_at_ms"] == start_ms
+        assert snap["gate_ends_at_ms"] == end_ms
+
+
 def test_api_key_auth_default_off_and_on():
     open_http = _client()
     assert open_http.get("/v1/setups").status_code == 200

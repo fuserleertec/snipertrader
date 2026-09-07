@@ -105,6 +105,38 @@ class SignalTimeframe(str, Enum):
     M15 = "15m"
 
 
+def coerce_signal_timeframe(raw: Any) -> SignalTimeframe | None:
+    """Parse ``5m``, member name ``M5``, or legacy ``SignalTimeframe.M5``.
+
+    Python 3.13 ``str(SignalTimeframe.M5)`` is ``'SignalTimeframe.M5'``, not
+    ``'5m'``. Rows written that way must still round-trip.
+    """
+    if raw is None:
+        return None
+    if isinstance(raw, SignalTimeframe):
+        return raw
+    if isinstance(raw, Enum):
+        raw = raw.value
+    text = str(raw).strip()
+    if not text:
+        return None
+    try:
+        return SignalTimeframe(text)
+    except ValueError:
+        pass
+    if text in SignalTimeframe.__members__:
+        return SignalTimeframe[text]
+    if "." in text:
+        suffix = text.rsplit(".", 1)[-1]
+        if suffix in SignalTimeframe.__members__:
+            return SignalTimeframe[suffix]
+        try:
+            return SignalTimeframe(suffix)
+        except ValueError:
+            pass
+    raise ValueError(f"unknown signal timeframe: {raw!r}")
+
+
 class SessionType(str, Enum):
     """Same session windows as ``data_engineering`` / ``session_levels``."""
 
@@ -317,9 +349,7 @@ class SignalView(BaseModel):
         setup = row.setup_type
         if not isinstance(setup, SetupType):
             setup = SetupType(str(setup))
-        tf = row.timeframe
-        if tf is not None and not isinstance(tf, SignalTimeframe):
-            tf = SignalTimeframe(str(tf))
+        tf = coerce_signal_timeframe(row.timeframe)
         closed = row.status in {SignalStatus.TP_HIT, SignalStatus.SL_HIT}
         realized = row.r_multiple if closed else None
         exit_price = row.exit_px

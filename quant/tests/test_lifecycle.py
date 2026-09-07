@@ -115,3 +115,53 @@ def test_lifecycle_bar_endpoint():
     listed = http.get("/signals", params={"status": "TP_HIT"}).json()["items"]
     assert listed[0]["realized_r"] == 2.0
     assert listed[0]["exit_price"] == 108.0
+
+
+async def test_apply_bar_returns_closed_when_status_publish_fails(monkeypatch):
+    store = InMemorySignalStore()
+    await store.insert(_active())
+
+    def boom(*_args, **_kwargs):
+        raise ValueError("SignalTimeframe.M5")
+
+    monkeypatch.setattr("sniper_quant.lifecycle.SignalView.from_stored", boom)
+    monitor = LifecycleMonitor(store, SignalHub())
+    closed = await monitor.apply_bar(_bar(high=109.0, low=99.0, close=108.5))
+    assert len(closed) == 1
+    assert closed[0].status is SignalStatus.TP_HIT
+    row = await store.get("live-1")
+    assert row is not None
+    assert row.status is SignalStatus.TP_HIT
+
+
+def test_lifecycle_bar_legacy_timeframe_closes_paper_book():
+    settings = make_settings()
+    engine = RiskEngine(settings=settings, state=RiskState(equity=100_000))
+    store = InMemorySignalStore()
+    row = _active(timeframe="SignalTimeframe.M5")
+    store.rows[row.id] = row
+    app = create_app(settings=settings, signals=store, engine=engine)
+    http = TestClient(app)
+    bar = {
+        "symbol": "BTCUSDT",
+        "asset_class": "crypto",
+        "timeframe": "1m",
+        "open_ts_ms": 1_700_000_060_000,
+        "close_ts_ms": 1_700_000_119_999,
+        "open": 100.0,
+        "high": 109.0,
+        "low": 99.5,
+        "close": 108.5,
+        "volume": 10,
+    }
+    resp = http.post("/v1/lifecycle/bar", json=bar)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["closed"] == 1
+    assert body["signals"][0]["status"] == "TP_HIT"
+    assert body["signals"][0]["timeframe"] == "5m"
+    acct = http.get("/paper/account").json()
+    assert acct["live_trading"] is False
+    assert acct["closed_trades"] == 1
+    assert acct["open_positions"] == 0
+    assert http.get("/signals/live-1").json()["status"] == "TP_HIT"

@@ -29,6 +29,7 @@ from sniper_quant.models import (
     SignalTimeframe,
     SignalView,
     StoredSignal,
+    coerce_signal_timeframe,
     normalize_symbol,
 )
 from sniper_quant.risk.engine import RiskEngine
@@ -133,9 +134,7 @@ class SignalValidationService:
             entry=stored.entry,
             stop=stored.stop,
             target=stored.target,
-            timeframe=stored.timeframe
-            if isinstance(stored.timeframe, SignalTimeframe)
-            else SignalTimeframe(str(stored.timeframe or "5m")),
+            timeframe=coerce_signal_timeframe(stored.timeframe) or SignalTimeframe.M5,
             trigger_event_ids=list(stored.trigger_event_ids or []),
             session_type=stored.session_type
             if stored.session_type is None or isinstance(stored.session_type, SessionType)
@@ -166,7 +165,7 @@ class SignalValidationService:
             entry=payload.get("entry"),
             stop=payload.get("stop") if payload.get("stop") is not None else payload.get("stop_px"),
             target=payload.get("target"),
-            timeframe=_enum_or_none(SignalTimeframe, tf) or tf,
+            timeframe=coerce_signal_timeframe(tf),
             trigger_event_ids=list(payload.get("trigger_event_ids") or []),
             session_type=_enum_or_none(SessionType, session) or session,
             position_size=payload.get("position_size"),

@@ -1,7 +1,15 @@
 from __future__ import annotations
 
-from sniper_quant.models import AssetClass, Side, SignalStatus, StoredSignal
-from sniper_quant.store.signals import InMemorySignalStore
+from sniper_quant.models import (
+    AssetClass,
+    Side,
+    SignalStatus,
+    SignalTimeframe,
+    SignalView,
+    StoredSignal,
+    coerce_signal_timeframe,
+)
+from sniper_quant.store.signals import InMemorySignalStore, _db_enum_value
 
 
 def _sig(i: str, symbol: str = "AAPL", status: SignalStatus = SignalStatus.ACTIVE, ts: int = 100) -> StoredSignal:
@@ -53,3 +61,29 @@ async def test_status_transitions():
         row = await store.update_status("x", st, closed_ts_ms=9)
         assert row.status is st
         assert row.closed_ts_ms == 9
+
+
+def test_coerce_signal_timeframe_values_names_and_legacy_str():
+    assert coerce_signal_timeframe("5m") is SignalTimeframe.M5
+    assert coerce_signal_timeframe("1m") is SignalTimeframe.M1
+    assert coerce_signal_timeframe("15m") is SignalTimeframe.M15
+    assert coerce_signal_timeframe("M5") is SignalTimeframe.M5
+    assert coerce_signal_timeframe("SignalTimeframe.M5") is SignalTimeframe.M5
+    assert coerce_signal_timeframe(SignalTimeframe.M5) is SignalTimeframe.M5
+    assert coerce_signal_timeframe(None) is None
+    assert coerce_signal_timeframe(str(SignalTimeframe.M5)) is SignalTimeframe.M5
+    assert SignalTimeframe.M5.value == "5m"
+
+
+def test_db_enum_value_uses_value_not_str_enum():
+    assert _db_enum_value(SignalTimeframe.M5) == "5m"
+    assert _db_enum_value(None) is None
+    assert _db_enum_value("5m") == "5m"
+
+
+def test_from_stored_coerces_legacy_timeframe_string():
+    row = _sig("legacy-tf")
+    row = row.model_copy(update={"timeframe": "SignalTimeframe.M5"})
+    view = SignalView.from_stored(row)
+    assert view.timeframe is SignalTimeframe.M5
+    assert view.timeframe.value == "5m"

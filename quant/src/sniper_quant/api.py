@@ -238,6 +238,9 @@ async def lifespan(app: FastAPI):
     app.state.monitor = LifecycleMonitor(signals, app.state.hub, ohlcv)
     app.state.alerts = AlertService()
     app.state.paper = PaperEngine(starting_equity=settings.default_equity)
+    for row in await signals.all():
+        app.state.paper.mark_signal(row)
+    app.state.paper.start_gate()
     from sniper_quant.features import EnsembleFeatureService, InMemoryEnsembleStore
 
     app.state.features = InMemoryEnsembleStore()
