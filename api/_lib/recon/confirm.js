@@ -97,16 +97,19 @@ async function cryptoConfirm(symbol, takerBuyRatio) {
     depthRatio = askDepth > 0 ? bidDepth / askDepth : null;
   }
 
-  // HARD GATE = volume confirmation (3.1) only.
+  // HARD GATE = volume confirmation (3.1) only — recalibrated like the stock gate:
+  // "buy-side not drying up" (>50% taker-buy) + "momentum not reversing" (green 5m/15m).
+  const flowStrength = buyDominance >= 0.60 ? 'strong-accumulation' : buyDominance >= 0.55 ? 'elevated' : buyDominance >= 0.50 ? 'buy-side-lean' : 'seller-dominated';
   const reasons = [];
-  if (buyDominance <= 0.60) reasons.push(`buy dominance ${(buyDominance * 100).toFixed(0)}% (need >60%)`);
-  if (green5 < 3) reasons.push(`5m green run ${green5} (need >=3)`);
-  if (green15 < 3) reasons.push(`15m green run ${green15} (need >=3)`);
+  if (buyDominance <= 0.50) reasons.push(`buy dominance ${(buyDominance * 100).toFixed(0)}% (need >50%)`);
+  if (green5 < 1) reasons.push(`5m green run ${green5} (need >=1)`);
+  if (green15 < 1) reasons.push(`15m green run ${green15} (need >=1)`);
 
   return {
     pass: reasons.length === 0,
     buyDominance: +buyDominance.toFixed(3),
     green5, green15,
+    flowStrength,
     orderFlow: { // supplementary (3.2) — reported, never drops
       bidDepth: +bidDepth.toFixed(4),
       askDepth: +askDepth.toFixed(4),
