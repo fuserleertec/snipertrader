@@ -4,7 +4,7 @@ import re
 from enum import Enum
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from sniper_quant.setups import SESSION_TYPES, SETUP_TYPES, SIGNAL_TIMEFRAMES
 
@@ -126,23 +126,57 @@ class FactorBreakdownRow(BaseModel):
     note: str | None = None
 
 
+def _sync_confluence_alias(data: Any) -> Any:
+    """ML publisher lock: ``confluence`` is canonical; ``risk_adjusted`` is alias."""
+    if not isinstance(data, dict):
+        return data
+    confluence = data.get("confluence")
+    legacy = data.get("risk_adjusted")
+    if confluence is None and legacy is not None:
+        data = dict(data)
+        data["confluence"] = legacy
+    elif legacy is None and confluence is not None:
+        data = dict(data)
+        data["risk_adjusted"] = confluence
+    elif confluence is not None:
+        data = dict(data)
+        data["risk_adjusted"] = confluence
+    return data
+
+
 class RankComponents(BaseModel):
-    """Publish-only 0–1 ranking inputs. Not on ``POST /risk/validate``."""
+    """Publish-only ML ``rank_components`` (0–100). Not on ``POST /risk/validate``.
+
+    Canonical keys: ``setup_quality``, ``confluence``, ``kill_zone``,
+    ``volume``, ``freshness``. ``risk_adjusted`` is accepted as an alias
+    for ``confluence`` (legacy Quant 0–1 / point-scale payloads still parse).
+    """
 
     model_config = ConfigDict(extra="forbid")
 
-    setup_quality: float | None = Field(default=None, ge=0, le=1)
-    risk_adjusted: float | None = Field(default=None, ge=0, le=1)
-    kill_zone: float | None = Field(default=None, ge=0, le=1)
-    volume: float | None = Field(default=None, ge=0, le=1)
-    freshness: float | None = Field(default=None, ge=0, le=1)
+    setup_quality: float | None = Field(default=None, ge=0, le=100)
+    confluence: float | None = Field(default=None, ge=0, le=100)
+    kill_zone: float | None = Field(default=None, ge=0, le=100)
+    volume: float | None = Field(default=None, ge=0, le=100)
+    freshness: float | None = Field(default=None, ge=0, le=100)
+    risk_adjusted: float | None = Field(
+        default=None,
+        ge=0,
+        le=100,
+        description="Legacy alias for confluence. Prefer confluence.",
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _alias(cls, data: Any) -> Any:
+        return _sync_confluence_alias(data)
 
     def mean(self) -> float | None:
         vals = [
             v
             for v in (
                 self.setup_quality,
-                self.risk_adjusted,
+                self.confluence if self.confluence is not None else self.risk_adjusted,
                 self.kill_zone,
                 self.volume,
                 self.freshness,
@@ -275,7 +309,7 @@ class SignalView(BaseModel):
     )
     rank_components: RankComponents | None = Field(
         default=None,
-        description="Publish-only 0–1 components. Not on POST /risk/validate.",
+        description="Publish-only ML 0–100 components (setup_quality/confluence/kill_zone/volume/freshness). Not on POST /risk/validate.",
     )
 
     @classmethod
@@ -323,20 +357,32 @@ class SignalListResponse(BaseModel):
 
 
 class FeatureRankComponents(BaseModel):
-    """ML ``ensemble_features`` rank_components (point scale, sum ~100).
+    """ML ``ensemble_features`` ``rank_components`` — publisher 0–100 lock.
 
-    ``setup_quality`` 0–40, ``risk_adjusted`` (confluence) 0–20,
-    ``kill_zone`` 0–15, ``volume`` 0–15, ``freshness`` 0–10.
+    Canonical: ``setup_quality``, ``confluence``, ``kill_zone``, ``volume``,
+    ``freshness`` each 0–100. ``risk_adjusted`` aliases ``confluence``.
+    Legacy unit (0–1) and point-scale (0–40/20/15/15/10) values still parse.
     Extra ML fields are ignored.
     """
 
     model_config = ConfigDict(extra="ignore")
 
-    setup_quality: float | None = Field(default=None, ge=0, le=40)
-    risk_adjusted: float | None = Field(default=None, ge=0, le=20)
-    kill_zone: float | None = Field(default=None, ge=0, le=15)
-    volume: float | None = Field(default=None, ge=0, le=15)
-    freshness: float | None = Field(default=None, ge=0, le=10)
+    setup_quality: float | None = Field(default=None, ge=0, le=100)
+    confluence: float | None = Field(default=None, ge=0, le=100)
+    kill_zone: float | None = Field(default=None, ge=0, le=100)
+    volume: float | None = Field(default=None, ge=0, le=100)
+    freshness: float | None = Field(default=None, ge=0, le=100)
+    risk_adjusted: float | None = Field(
+        default=None,
+        ge=0,
+        le=100,
+        description="Legacy alias for confluence.",
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _alias(cls, data: Any) -> Any:
+        return _sync_confluence_alias(data)
 
 
 class EnsembleFeatures(BaseModel):
@@ -486,7 +532,7 @@ class StoredSignal(BaseModel):
     )
     rank_components: RankComponents | None = Field(
         default=None,
-        description="Publish-only 0–1 components. Not on POST /risk/validate.",
+        description="Publish-only ML 0–100 components (setup_quality/confluence/kill_zone/volume/freshness). Not on POST /risk/validate.",
     )
 
     @field_validator("symbol", mode="before")

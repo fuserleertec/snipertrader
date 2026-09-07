@@ -24,13 +24,14 @@
     "rank_components": {
       "type": ["object", "null"],
       "additionalProperties": true,
-      "description": "Point scale summing ~100: setup_quality 0–40, risk_adjusted (confluence) 0–20, kill_zone 0–15, volume 0–15, freshness 0–10. Kept raw on the pick.",
+      "description": "ML publisher 0–100 lock: setup_quality, confluence, kill_zone, volume, freshness. risk_adjusted is a legacy alias for confluence. Quant recomputes ensemble_score with weights 40/20/15/15/10 when ensemble_score is omitted.",
       "properties": {
-        "setup_quality": { "type": ["number", "null"], "minimum": 0, "maximum": 40 },
-        "risk_adjusted": { "type": ["number", "null"], "minimum": 0, "maximum": 20 },
-        "kill_zone": { "type": ["number", "null"], "minimum": 0, "maximum": 15 },
-        "volume": { "type": ["number", "null"], "minimum": 0, "maximum": 15 },
-        "freshness": { "type": ["number", "null"], "minimum": 0, "maximum": 10 }
+        "setup_quality": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "confluence": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "risk_adjusted": { "type": ["number", "null"], "minimum": 0, "maximum": 100, "description": "Legacy alias for confluence." },
+        "kill_zone": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "volume": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "freshness": { "type": ["number", "null"], "minimum": 0, "maximum": 100 }
       }
     },
     "best_confidence": {

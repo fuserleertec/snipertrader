@@ -186,3 +186,25 @@ Do **not** treat `POST /paper/demo-fortnight` smoke numbers (12 closed, WR 50%, 
 | Action | Standing paper API required for remaining gate days so ML publishes persist |
 
 Need a long-lived paper process (same clock: `POST /paper/gate/start` if the host is new; do not reset the 2026-09-05 → 2026-09-19 window) wired as `QUANT_API_BASE` before W1 (2026-09-12). **Do not** set `live_trading` true.
+
+### Day 3 — 2026-09-07 joint-smoke (continuous book, **not** demo-fortnight)
+
+**Status: continuous fills started.** `live_trading` is **false**. Smoke `demo-fortnight` numbers are **not** this book.
+
+Joint ML → Quant smoke on the paper path (`POST /risk/validate` → `POST /signals` → lifecycle). Still **no public `QUANT_API_BASE`** for durable off-box ingest — this session was ephemeral. Standing paper API still required for remaining gate days.
+
+| Step | Result |
+|---|---|
+| `POST /risk/validate` | **4/4** approved |
+| `POST /signals` | **NQ + ES** opened |
+| `POST /signals` CL / GC | **409** `position_size_exceeds_limit` |
+| NQ | **TP_HIT** R ≈ **+2.93** |
+| ES | **SL_HIT** R = **−1** |
+| Closed | **2** |
+| Open | **0** |
+| `realized_pnl` | ≈ **+3,859.9** |
+| `equity` | ≈ **92,140** |
+| `live_trading` | **false** |
+| Per-setup WF ±15pp / ±0.50R | **N/A** (`n_closed < 20`) |
+
+**`rank_components` scale mismatch (fixed in this PR):** ML publisher uses **0–100** fields `setup_quality` / `confluence` / `kill_zone` / `volume` / `freshness` (ensemble_features lock). Quant previously expected **0–1** + `risk_adjusted` on publish (and a 0–40/20/15/15/10 point cap on `ensemble_features`). Quant now accepts the ML 0–100 / `confluence` lock; `risk_adjusted` remains a legacy alias. **Do not** send 0–1 as if it were the publisher scale.

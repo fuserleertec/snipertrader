@@ -5,8 +5,9 @@ Topic key = ``symbol``. Latest snapshot per symbol drives
 
 ``active_levels=false`` rows are skipped. Prefer ML ``ensemble_score``;
 otherwise recompute from ``rank_components`` with locked weights
-(setup_quality 40, confluence/risk_adjusted 20, kill_zone 15, volume 15,
-freshness 10). Raw components are kept on the pick.
+(setup_quality 40, confluence 20, kill_zone 15, volume 15, freshness 10).
+ML publisher scale is **0–100** per field (canonical key ``confluence``;
+``risk_adjusted`` is a legacy alias). Raw components are kept on the pick.
 
 In-memory bus/store for tests. ``live_trading`` stays false.
 """
@@ -19,42 +20,58 @@ from typing import Any
 
 from sniper_quant.bus import ENSEMBLE_FEATURES_TOPIC, InMemoryBus, consume_keyed_topic
 from sniper_quant.config import Settings, get_settings
-from sniper_quant.models import EnsembleFeatures, FeatureRankComponents, normalize_symbol
+from sniper_quant.models import EnsembleFeatures, FeatureRankComponents, RankComponents, normalize_symbol
 
 log = logging.getLogger(__name__)
 
-# Locked recompute weights (points). risk_adjusted = confluence.
+# Locked recompute weights (points on a 0–100 score). confluence is canonical;
+# risk_adjusted is a legacy alias handled in score_from_components.
 FEATURE_WEIGHTS: dict[str, float] = {
     "setup_quality": 40.0,
-    "risk_adjusted": 20.0,
+    "confluence": 20.0,
     "kill_zone": 15.0,
     "volume": 15.0,
     "freshness": 10.0,
 }
 
 
-def score_from_components(components: FeatureRankComponents | None) -> float | None:
-    """Recompute 0–100 from raw rank_components. None if no values.
+def _component_raw(components: Any, name: str) -> float | None:
+    if name == "confluence":
+        raw = getattr(components, "confluence", None)
+        if raw is None:
+            raw = getattr(components, "risk_adjusted", None)
+        return None if raw is None else float(raw)
+    raw = getattr(components, name, None)
+    return None if raw is None else float(raw)
 
-    Point-scale values (``> 1``) are summed (already weighted).
-    Unit values (``≤ 1``) are multiplied by the locked weights.
+
+def score_from_components(components: FeatureRankComponents | RankComponents | None) -> float | None:
+    """Recompute 0–100 from ML ``rank_components``. None if no values.
+
+    Publisher lock is **0–100** per field (``confluence`` not
+    ``risk_adjusted``). Also accepts:
+
+    * unit 0–1 (legacy Quant publish) → ``weight * value``
+    * point scale (≤ weight, e.g. setup_quality ≤ 40) → sum points
+    * 0–100 (any value > its weight) → ``weight * value / 100``
     """
     if components is None:
         return None
-    total = 0.0
-    used = False
+    pairs: list[tuple[float, float]] = []
     for name, weight in FEATURE_WEIGHTS.items():
-        raw = getattr(components, name, None)
+        raw = _component_raw(components, name)
         if raw is None:
             continue
-        used = True
-        value = float(raw)
-        if value <= 1.0:
-            total += weight * value
-        else:
-            total += min(value, weight)
-    if not used:
+        pairs.append((raw, weight))
+    if not pairs:
         return None
+    vals = [v for v, _ in pairs]
+    if all(v <= 1.0 for v in vals):
+        total = sum(w * v for v, w in pairs)
+    elif any(v > w for v, w in pairs):
+        total = sum(w * (min(v, 100.0) / 100.0) for v, w in pairs)
+    else:
+        total = sum(min(v, w) for v, w in pairs)
     return max(0.0, min(100.0, total))
 
 

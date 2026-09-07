@@ -68,17 +68,17 @@ def test_topic_name_and_weights_locked():
     assert ENSEMBLE_FEATURES_TOPIC == "ensemble_features"
     assert FEATURE_WEIGHTS == {
         "setup_quality": 40.0,
-        "risk_adjusted": 20.0,
+        "confluence": 20.0,
         "kill_zone": 15.0,
         "volume": 15.0,
         "freshness": 10.0,
     }
 
 
-def test_score_from_components_unit_and_point_scale():
+def test_score_from_components_unit_point_and_publisher_100():
     unit = FeatureRankComponents(
         setup_quality=1.0,
-        risk_adjusted=1.0,
+        confluence=1.0,
         kill_zone=1.0,
         volume=1.0,
         freshness=1.0,
@@ -91,9 +91,19 @@ def test_score_from_components_unit_and_point_scale():
         volume=15.0,
         freshness=10.0,
     )
+    assert points.confluence == 20.0
     assert score_from_components(points) == 100.0
-    half = FeatureRankComponents(setup_quality=0.5, risk_adjusted=0.5)
+    half = FeatureRankComponents(setup_quality=0.5, confluence=0.5)
     assert score_from_components(half) == 30.0
+    # ML publisher 0–100 (setup_quality=80 > weight 40 → 0–100 scale)
+    ml = FeatureRankComponents(
+        setup_quality=80,
+        confluence=70,
+        kill_zone=100,
+        volume=40,
+        freshness=50,
+    )
+    assert abs(score_from_components(ml) - 72.0) < 0.01
 
 
 @pytest.mark.asyncio
@@ -131,6 +141,7 @@ def test_ensemble_maps_score_and_confidence_and_extras():
     assert es["score"] == 81.5
     assert es["confidence"] == 0.88
     assert es["rank_components"]["setup_quality"] == 32.0
+    assert es["rank_components"]["confluence"] == 16.0
     assert es["rank_components"]["risk_adjusted"] == 16.0
     assert es["contributing_factors"] == ["kz_align", "2s_tag"]
     assert es["confluence_count"] == 2
@@ -243,7 +254,7 @@ def test_openapi_documents_ensemble_features_contract():
     assert "contributing_factors" in pick["properties"]
     assert "confluence_count" in pick["properties"]
     feat = spec["components"]["schemas"]["FeatureRankComponents"]
-    assert {"setup_quality", "risk_adjusted", "kill_zone", "volume", "freshness"} <= set(
+    assert {"setup_quality", "confluence", "kill_zone", "volume", "freshness"} <= set(
         feat["properties"]
     )
     setups = http.get("/v1/setups").json()

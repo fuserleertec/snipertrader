@@ -123,8 +123,9 @@ Dormant `mss_break` / `order_block` / `sweep_mss` and
 locked). Consumes Kafka **`ensemble_features`** (key=`symbol`, 15m).
 Mapping: `score` ← `ensemble_score`, `confidence` ← `best_confidence`.
 Skip `active_levels=false`. Prefer ML `ensemble_score`; else recompute
-from `rank_components` (weights: setup_quality 40,
-confluence/risk_adjusted 20, kill_zone 15, volume 15, freshness 10).
+from `rank_components` (ML 0–100 lock: setup_quality 40,
+confluence 20, kill_zone 15, volume 15, freshness 10;
+`risk_adjusted` aliases confluence).
 `refresh_sec` **900**. Fallback only if DE is unreachable:
 `DEMO_SYMBOLS` / paper file / `DE_UNIVERSE` (**includes ES, CL, GC,
 NQ**). `SETUP_UNIVERSE` does **not** narrow the ranking book.
@@ -194,7 +195,7 @@ class PublishBody(CandidateSignal):
     )
     rank_components: RankComponents | None = Field(
         default=None,
-        description="Publish-only {setup_quality, risk_adjusted, kill_zone, volume, freshness} each 0–1.",
+        description="Publish-only ML 0–100 {setup_quality, confluence, kill_zone, volume, freshness}. risk_adjusted aliases confluence.",
     )
 
 
@@ -383,7 +384,7 @@ def create_app(
             "s6_anchors": list(S6_ANCHOR_TYPES),
             "contributing_factors": "publish_only",
             "ensemble_score": "publish_only_0_100",
-            "rank_components": "publish_only_0_1",
+            "rank_components": "publish_only_0_100_confluence",
             "paper_universe": "quant/config/paper_universe.json",
             "setup_universe_env": "SETUP_UNIVERSE",
             "demo_symbols_env": "DEMO_SYMBOLS",

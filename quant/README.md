@@ -411,7 +411,7 @@ JSON Schema: [`schemas/ensemble_features.schema.json`](../schemas/ensemble_featu
 | `ts_ms` | Snapshot time (15m) |
 | `ensemble_score` | Preferred pick `score` (0–100) |
 | `best_confidence` | Pick `confidence` (0–1) |
-| `rank_components` | Raw points: setup_quality 0–40, risk_adjusted/confluence 0–20, kill_zone 0–15, volume 0–15, freshness 0–10 (sum ~100) |
+| `rank_components` | ML 0–100 lock: `setup_quality`, `confluence`, `kill_zone`, `volume`, `freshness`. `risk_adjusted` aliases `confluence`. Recompute weights 40/20/15/15/10. |
 | `active_levels` | **`false` → skip** (symbol is not ranked) |
 | `skip_reason` | Echoed in `notes` when present |
 | `contributing_factors` | Optional pick extra |
@@ -429,9 +429,11 @@ JSON Schema: [`schemas/ensemble_features.schema.json`](../schemas/ensemble_featu
 | `confluence_count` | passthrough |
 
 Recompute weights (only when `ensemble_score` is omitted):
-`setup_quality` **40**, confluence/`risk_adjusted` **20**, `kill_zone`
-**15**, `volume` **15**, `freshness` **10**. Unit values (≤1) are
-multiplied by those weights; point-scale values are summed.
+`setup_quality` **40**, `confluence` **20**, `kill_zone`
+**15**, `volume` **15**, `freshness` **10**. Publisher scale is **0–100**
+per field (`confluence` canonical; `risk_adjusted` alias). Unit values
+(≤1) are multiplied by those weights; values ≤ weight are treated as
+legacy points; values above the weight are 0–100 (`weight × value/100`).
 
 `GET /picks/categorized` uses the **same** snapshots (≤20).
 `refresh_sec` is **900**. `live_trading` stays **false**.
@@ -452,7 +454,8 @@ Per symbol, `score` is:
    above). Raw components stay on the pick.
 3. Else **published book `ensemble_score`** (0–100) — max across approved
    (non-`CANCELLED`) signals. Publish-only; **422 on validate**.
-4. Else **mean of book `rank_components`** × 100 (0–1 publish fields).
+4. Else **book `rank_components`** scored with the same 40/20/15/15/10
+   weights (ML 0–100 lock; unit 0–1 still accepted).
 5. Else book mix (when the symbol has approved signals but no ML score):
 
 ```
@@ -494,7 +497,9 @@ next page.
 `exit_price` (optional), `closed_ts_ms` (optional),
 `contributing_factors` (optional `string[]`), `factor_breakdown`
 (optional `{name, weight, score, note?}[]`), `ensemble_score`
-(optional 0–100), `rank_components` (optional 0–1 object). The last
+(optional 0–100), `rank_components` (optional 0–100 object:
+`setup_quality` / `confluence` / `kill_zone` / `volume` / `freshness`;
+`risk_adjusted` aliases `confluence`). The last
 four are publish-only — not on `POST /risk/validate`.
 
 ```js

@@ -256,7 +256,7 @@ def test_rank_components_synthesize_and_setup_universe_not_ranking():
         confidence=0.80,
         rank_components={
             "setup_quality": 0.9,
-            "risk_adjusted": 0.7,
+            "confluence": 0.7,
             "kill_zone": 1.0,
             "volume": 0.4,
             "freshness": 0.5,
@@ -266,8 +266,31 @@ def test_rank_components_synthesize_and_setup_universe_not_ranking():
     assert http.post("/signals", json=body).status_code == 201
     picks = http.get("/picks/ensemble", params={"as_of_ts_ms": as_of}).json()
     nvda = next(r for r in picks["items"] if r["symbol"] == "NVDA")
-    assert abs(nvda["score"] - 70.0) < 0.01
+    # Weighted 40/20/15/15/10 on unit scale: 36+14+15+6+5 = 76
+    assert abs(nvda["score"] - 76.0) < 0.01
     assert "rank_components" in (nvda["notes"] or "")
+
+    ml100 = _payload(
+        symbol="MSFT",
+        asset_class="equity",
+        setup_type="vwap_pullback_cont",
+        ts_ms=as_of,
+        confidence=0.80,
+        rank_components={
+            "setup_quality": 90,
+            "confluence": 70,
+            "kill_zone": 100,
+            "volume": 40,
+            "freshness": 50,
+        },
+    )
+    assert http.post("/signals", json=ml100).status_code == 201
+    msft = next(
+        r
+        for r in http.get("/picks/ensemble", params={"as_of_ts_ms": as_of}).json()["items"]
+        if r["symbol"] == "MSFT"
+    )
+    assert abs(msft["score"] - 76.0) < 0.01
 
     uni = http.get("/paper/universe").json()
     assert uni["live_trading"] is False

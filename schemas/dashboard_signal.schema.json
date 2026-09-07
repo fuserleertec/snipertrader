@@ -94,13 +94,14 @@
     "rank_components": {
       "type": ["object", "null"],
       "additionalProperties": false,
-      "description": "Publish-only 0–1 components. Not on POST /risk/validate.",
+      "description": "Publish-only ML 0–100 components (setup_quality, confluence, kill_zone, volume, freshness). risk_adjusted aliases confluence. Not on POST /risk/validate.",
       "properties": {
-        "setup_quality": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
-        "risk_adjusted": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
-        "kill_zone": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
-        "volume": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
-        "freshness": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
+        "setup_quality": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "confluence": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "risk_adjusted": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "kill_zone": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "volume": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "freshness": { "type": ["number", "null"], "minimum": 0, "maximum": 100 }
       }
     }
   }
