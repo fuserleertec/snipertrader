@@ -224,7 +224,7 @@ async function run(force = false) {
   const otcSeeds = ['FMCC', 'FNMA', 'CURLF', 'GTBIF', 'VRNOF', 'CRLBF']
     .map((s) => ({ symbol: s, exchange: 'OTC', cap: 'small' }));
 
-  const universe = dedupe([...screener, ...twits, ...otcSeeds]).slice(0, 120);
+  const universe = dedupe([...otcSeeds, ...screener, ...twits]).slice(0, 120);
 
   const built = [];
   const dropped = [];
