@@ -96,6 +96,8 @@
   .fbtn:hover{color:var(--fg);border-color:var(--cyan)}
   .fbtn.active{color:var(--emerald);border-color:var(--emerald);background:color-mix(in srgb,var(--emerald) 10%,var(--panel))}
   .fbtn .cnt{opacity:.6;margin-left:5px;font-size:10px}
+  .refresh-btn{font-family:var(--font-m);font-size:11px;letter-spacing:.05em;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:6px 14px;cursor:pointer;transition:all .15s;text-transform:uppercase;margin-left:auto;display:inline-flex;align-items:center;gap:6px}
+  .refresh-btn:hover{color:var(--fg);border-color:var(--cyan)}
 
   /* leaderboard */
   .board{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden}
@@ -184,7 +186,6 @@
     <a href="/traderedge_prop_firms_command_center.html">Prop Firm Center</a>
     <a href="/usme_products.html">Products</a>
   </div>
-  <button class="tt-btn" id="refreshBtn" onclick="refreshData()" title="Refresh live data"><span class="rf-icon">↻</span> <span class="rf-label">REFRESH</span></button>
   <button class="tt-btn" onclick="toggleTheme()"><span class="tt-icon">☀️</span> <span id="themeLabel">LIGHT</span></button>
 </nav>
 
@@ -214,6 +215,7 @@
     <button class="fbtn" data-f="equity" onclick="setFilter('equity')">Equities <span class="cnt"></span></button>
     <button class="fbtn" data-f="crypto" onclick="setFilter('crypto')">Crypto <span class="cnt"></span></button>
     <button class="fbtn" data-f="futures" onclick="setFilter('futures')">Futures <span class="cnt"></span></button>
+    <button class="refresh-btn" id="refreshBtn" onclick="refreshData()" title="Refresh live data"><span class="rf-icon">↻</span> <span class="rf-label">REFRESH</span></button>
   </div>
   <div class="board" id="board"></div>
 
