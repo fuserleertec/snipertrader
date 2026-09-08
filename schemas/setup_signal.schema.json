@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snipertrader.ai/schemas/setup_signal.schema.json",
+  "title": "SetupSignal",
+  "description": "Downstream setup signal topic (Phase 2 stub contract). Topic: setup_signals.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "symbol",
+    "asset_class",
+    "setup_type",
+    "side",
+    "ts_ms"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.1" },
+    "id": { "type": "string" },
+    "symbol": { "type": "string", "pattern": "^[A-Z0-9]+$" },
+    "asset_class": { "type": "string", "enum": ["crypto", "equity", "futures"] },
+    "setup_type": { "type": "string" },
+    "side": { "type": "string", "enum": ["long", "short"] },
+    "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+    "ref_vwap": { "type": ["number", "null"] },
+    "ref_session": { "type": ["string", "null"] },
+    "ts_ms": { "type": "integer" }
+  }
+}

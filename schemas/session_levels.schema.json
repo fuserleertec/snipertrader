@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snipertrader.ai/schemas/session_levels.schema.json",
+  "title": "SessionLevels",
+  "description": "Running OHLC for an asset-class-specific session window. Redis key: session:{symbol}:{session_type}",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "symbol",
+    "asset_class",
+    "session_type",
+    "session_start_ms",
+    "session_end_ms",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume",
+    "updated_ts_ms"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.1" },
+    "symbol": { "type": "string", "pattern": "^[A-Z0-9]+$" },
+    "asset_class": { "type": "string", "enum": ["crypto", "equity", "futures"] },
+    "session_type": {
+      "type": "string",
+      "enum": ["asia", "london", "ny_am", "ny_pm", "rth", "eth", "globex"]
+    },
+    "session_start_ms": { "type": "integer" },
+    "session_end_ms": { "type": "integer" },
+    "open": { "type": "number" },
+    "high": { "type": "number" },
+    "low": { "type": "number" },
+    "close": { "type": "number" },
+    "volume": { "type": "number", "minimum": 0 },
+    "updated_ts_ms": { "type": "integer" }
+  }
+}

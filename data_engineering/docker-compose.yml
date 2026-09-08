@@ -1,0 +1,107 @@
+# Local Phase 1 stack: Redpanda (Kafka API) + TimescaleDB + Redis + demo pipeline + API.
+#
+#   cd data_engineering
+#   docker compose up --build
+#
+# API:      http://localhost:8000/docs
+# Kafka:    localhost:19092  (external) / redpanda:9092 (in-network)
+# Redis:    localhost:6379
+# Postgres: localhost:5432   user/pass/db = sniper/sniper/market
+
+services:
+  redpanda:
+    image: redpandadata/redpanda:v24.3.3
+    command:
+      - redpanda
+      - start
+      - --overprovisioned
+      - --smp=1
+      - --memory=512M
+      - --reserve-memory=0M
+      - --node-id=0
+      - --check=false
+      - --kafka-addr=internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr=internal://redpanda:9092,external://localhost:19092
+      - --rpc-addr=0.0.0.0:33145
+      - --advertise-rpc-addr=redpanda:33145
+      - --mode=dev-container
+    ports:
+      - "19092:19092"
+      - "18081:18081"
+    healthcheck:
+      test: ["CMD", "rpk", "cluster", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  timescaledb:
+    image: timescale/timescaledb:2.17.2-pg16
+    environment:
+      POSTGRES_USER: sniper
+      POSTGRES_PASSWORD: sniper
+      POSTGRES_DB: market
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sniper -d market"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  pipeline:
+    build: .
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+    environment:
+      SNIPER_ENV: demo
+      KAFKA_BOOTSTRAP: redpanda:9092
+      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: postgresql://sniper:sniper@timescaledb:5432/market
+      DEMO_SYMBOLS: BTCUSDT,AAPL,ES
+      TICK_INTERVAL_MS: 80
+      ROLLING_VWAP_PERIODS: 20
+      FVG_TTL_SECONDS: 172800
+    command: ["sniper-data", "pipeline"]
+    restart: unless-stopped
+
+  api:
+    build: .
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      KAFKA_BOOTSTRAP: redpanda:9092
+      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: postgresql://sniper:sniper@timescaledb:5432/market
+    ports:
+      - "8000:8000"
+    command: ["sniper-data", "api", "--host", "0.0.0.0", "--port", "8000"]
+
+  evict:
+    build: .
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    # Periodic safety net if Redis TTL is unreliable.
+    command: ["sh", "-c", "while true; do sniper-data evict; sleep 60; done"]
+    restart: unless-stopped
