@@ -192,7 +192,7 @@ only — existing DB needs `psql -f`).
 
 **Status: WATCH / infra.** `live_trading` is **false**. No enable switch. No broker.
 
-The kickoff paper API was **in-memory and ephemeral**. There is still **no durable `QUANT_API_BASE`** ingesting ML `POST /risk/validate` → `POST /signals` publishes, so the **continuous** 14-day book has not accumulated fills.
+The kickoff paper API was **in-memory and ephemeral**. Morning check: still **no durable `QUANT_API_BASE`**, so the **continuous** 14-day book had not accumulated fills yet. Later the same day, joint-smoke / DB path produced fills (closed=2); see the joint-smoke note below and **Day 4**.
 
 Do **not** treat `POST /paper/demo-fortnight` smoke numbers (12 closed, WR 50%, avg R +0.470) as the continuous book.
 
@@ -211,7 +211,7 @@ Need a long-lived paper process (same clock: `POST /paper/gate/start` if the hos
 
 **Status: continuous fills started.** `live_trading` is **false**. Smoke `demo-fortnight` numbers are **not** this book.
 
-Joint ML → Quant smoke on the paper path (`POST /risk/validate` → `POST /signals` → lifecycle). Still **no public `QUANT_API_BASE`** for durable off-box ingest — this session was ephemeral. Standing paper API still required for remaining gate days.
+Joint ML → Quant smoke on the paper path (`POST /risk/validate` → `POST /signals` → lifecycle). The in-memory API process was ephemeral; signal rows that landed in Timescale were later hydrated on the **Day 4** host restore. Public `QUANT_API_BASE` for off-box ingest was still missing at this check-in.
 
 | Step | Result |
 |---|---|
@@ -228,3 +228,26 @@ Joint ML → Quant smoke on the paper path (`POST /risk/validate` → `POST /sig
 | Per-setup WF ±15pp / ±0.50R | **N/A** (`n_closed < 20`) |
 
 **`rank_components` scale mismatch (fixed in this PR):** ML publisher uses **0–100** fields `setup_quality` / `confluence` / `kill_zone` / `volume` / `freshness` (ensemble_features lock). Quant previously expected **0–1** + `risk_adjusted` on publish (and a 0–40/20/15/15/10 point cap on `ensemble_features`). Quant now accepts the ML 0–100 / `confluence` lock; `risk_adjusted` remains a legacy alias. **Do not** send 0–1 as if it were the publisher scale.
+
+### Day 4 — 2026-09-08 (weekday, America/New_York)
+
+**Status: WATCH → restored.** `live_trading` is **false**. No broker / Alpaca live.
+
+Shared-box churn took `:8001` down (no docker socket / run tree). sniperteam restored **host DB-backed** `sniper-quant` on `QUANT_API_BASE=http://127.0.0.1:8001` with host-net Timescale / redis / redpanda (no compose `risk-api`). Gate env preserved: **2026-09-05T07:33:14Z → 2026-09-19T07:33:14Z** (no `POST /paper/gate/start` reset).
+
+Quant verify after restore:
+
+- `GET /health` → ok, `inmemory=false`
+- `POST /risk/validate` → 200 (~3ms) approved
+- `GET /signals` → 200
+- `POST /signals` with FE/ML `rank_components` 0–100 + `confluence` → 201 (probe CANCELLED)
+
+| Continuous book | Value |
+|---|---|
+| As-of | **2026-09-08 ET** (Day ~4 of 14; gate 2026-09-05 → 2026-09-19) |
+| `live_trading` | **false** |
+| sniperteam note at bring-up | fresh paper snapshot closed=0 equity=100000 (prior volume loss; new `sniper-ts-data` volume persists going forward) |
+| Quant post-hydrate from durable signals | closed=**2**, realized≈**+3859.9**, equity≈**92140**, open=**0** |
+| Per-setup WF ±15pp / ±0.50R | **N/A** (`n_closed < 20`; informational only) |
+
+ML resuming continuous emit to `http://127.0.0.1:8001`. Public tunnel / Railway still optional for off-box clients. **Do not** set `live_trading` true.
