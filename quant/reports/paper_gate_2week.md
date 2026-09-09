@@ -283,4 +283,31 @@ Earlier same-day rows (morning thin book closed=2 / `closed_trades=3`; mid-day d
 | `5_vwap_pullback_cont` | `vwap_pullback_cont` | 20 | 70% | 1.744 | 100% / +4.091 | **−30pp** | **−2.35** | **FAIL** |
 | `6_avwap_ob_confluence` | `avwap_ob_confluence` | 20 | 70% | 1.419 | 7.1% / −1.150 | **+62.9pp** | **+2.57** | **FAIL** |
 
-Caveat: WF OOS n was **1–14 synthetic 5m**; paper densify is **n=20/setup**. Formal gate still flags all six. S4/S6 paper look hot vs a 0% / 7.1% OOS tape; S1–S3/S5 look cold vs 100% OOS on tiny n. API `drift_warning` stays false (pooled WR 67.5% is not under 45%). **Do not** set `live_trading` true.
+Caveat: WF OOS n was **1–14 synthetic 5m**; paper densify is **n=20/setup**. Formal gate still flags all six. S4/S6 paper look hot vs a 0% / 7.1% OOS tape; S1–S3/S5 look cold vs 100% OOS on tiny n. API `drift_warning` stays false (pooled WR 67.5% is not under 45%). **This book was later lost** in the ~15:00 ET box churn — see Day 5 afternoon. **Do not** set `live_trading` true.
+
+### Day 5 afternoon — 2026-09-09 ~15:00–15:07 ET (America/New_York)
+
+**Status: WATCH / infra (restored).** `live_trading` is **false**. No broker / Alpaca live.
+
+At ~15:00 ET shared-box churn took host `:8001` down again (connection refused; `sniper-quant-run` + docker socket missing). sniperteam restored host DB-backed API:
+
+- `QUANT_API_BASE=http://127.0.0.1:8001`
+- `GET /health` → ok, `inmemory=false`
+- `POST /risk/validate` → 200 (~2.5ms)
+- Gate env **preserved**: **2026-09-05T07:33:14Z → 2026-09-19T07:33:14Z** (no `POST /paper/gate/start` reset)
+- Deps: Timescale / redis / redpanda; no compose `risk-api`
+
+**Volume / book persistence failure:** despite preferring `sniper-ts-data`, the continuous paper book **did not survive**. Verified post-restore:
+
+| Field | Value |
+|---|---|
+| `live_trading` | **false** |
+| `closed_trades` | **0** |
+| equity | **100000** |
+| `realized_pnl` | **0** |
+| open | **0** |
+| signals | **0** |
+
+Last good pre-outage densify (~11:27 ET / earlier Day 5 formal WF): closed≈**133**, S1–S6 n≈**22**, formal WF **FAIL-all-six** at n=20 — **lost**. ML re-densifying from an empty book.
+
+**Action / risk:** treat Timescale volume + paper in-memory ledger as **not durable across box churn**. Need a restore playbook that actually rehydrates signals + paper (or an external snapshot) before calling the gate book continuous. **Do not** set `live_trading` true.
