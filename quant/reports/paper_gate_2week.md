@@ -254,9 +254,9 @@ ML resuming continuous emit to `http://127.0.0.1:8001`. Public tunnel / Railway 
 
 ### Day 5 — 2026-09-09 (weekday, America/New_York)
 
-**Status: OK / thin book.** `live_trading` is **false**. No broker / Alpaca live. `:8001` healthy, `inmemory=false`.
+**Status: OK / thin book** (morning). `live_trading` is **false**. No broker / Alpaca live. `:8001` healthy, `inmemory=false`. Later the same day the continuous book densified; see the addendum below.
 
-Continuous book unchanged vs Day 4 hydrate (same two TP/SL fills). Paper `closed_trades=3` includes the Day 4 CANCELLED probe; `GET /performance/summary` still counts **n_closed=2**. Do **not** mix that with `demo-fortnight` smoke.
+Continuous book at this morning check was unchanged vs Day 4 hydrate (same two TP/SL fills). Paper `closed_trades=3` includes the Day 4 CANCELLED probe; `GET /performance/summary` still counted **n_closed=2**. Do **not** mix that with `demo-fortnight` smoke.
 
 | Continuous book | Value |
 |---|---|
@@ -273,3 +273,32 @@ Continuous book unchanged vs Day 4 hydrate (same two TP/SL fills). Paper `closed
 | Blockers | none; continuous still thin |
 
 **Do not** set `live_trading` true.
+
+### Day 5 — 2026-09-09 denser book (continuous, **not** demo-fortnight)
+
+**Status: OK / denser book.** `live_trading` is **false**. Verified on `QUANT_API_BASE=http://127.0.0.1:8001`. Gate **unchanged**: 2026-09-05T07:33:14Z → 2026-09-19T07:33:14Z. Morning thin-book row above is the earlier snapshot; this is the later continuous book.
+
+`GET /paper/account`:
+
+| | Value |
+|---|---|
+| As-of | **2026-09-09 ET** (Day ~5 of 14) |
+| `live_trading` | **false** |
+| `closed_trades` | **23** (TP=**17**, SL=**5**, CANCELLED=**1**) |
+| `realized_pnl` | ≈**+51,374.96** |
+| `equity` | ≈**97,015.04** |
+| open | **0** |
+| Gate | **2026-09-05T07:33:14Z → 2026-09-19T07:33:14Z** |
+
+`GET /performance/summary`: n_signals=**23**, n_closed=**22**, win_rate≈**77.3%**, average_rr≈**1.848**, sharpe≈**12.4**, max_drawdown_pct≈**0.02**, drift_warning=**false**, signals_today=**20**.
+
+| by_setup | `setup_type` | n_closed | WR | avg R |
+|---|---|---:|---:|---:|
+| `1_liquidity_sweep_vwap_reclaim` | `sweep_reclaim` | 5 | 80% | 1.817 |
+| `2_fvg_mitigation_vwap` | `fvg_entry` | 4 | 75% | 1.531 |
+| `3_po3_asia_range_sweep` | `po3_judas` | 5 | 100% | 2.801 |
+| `4_sd_extension_fade` | `sd_extension_fade` | 4 | 75% | 1.480 |
+| `5_vwap_pullback_cont` | `vwap_pullback_cont` | 4 | 50% | 1.380 |
+| `6_avwap_ob_confluence` | `avwap_ob_confluence` | 0 | — | — |
+
+**WF gate:** max n_closed=**5** `< 20` on every setup → ±15pp WR / ±0.50R **not applied** (informational Δ only). No formal drift flag. S4 paper WR 75% vs WF OOS 0% looks hot but n=4. **Do not** set `live_trading` true.
