@@ -301,4 +301,4 @@ Continuous book at this morning check was unchanged vs Day 4 hydrate (same two T
 | `5_vwap_pullback_cont` | `vwap_pullback_cont` | 4 | 50% | 1.380 |
 | `6_avwap_ob_confluence` | `avwap_ob_confluence` | 0 | — | — |
 
-**WF gate:** max n_closed=**5** `< 20` on every setup → ±15pp WR / ±0.50R **not applied** (informational Δ only). No formal drift flag. S4 paper WR 75% vs WF OOS 0% looks hot but n=4. **Do not** set `live_trading` true.
+**WF gate:** max n_closed=**5** (`n_closed < 20` on every setup) → ±15pp WR / ±0.50R **not applied** (informational Δ only). No formal drift flag. S4 paper WR 75% vs WF OOS 0% looks hot but n=4. **Do not** set `live_trading` true.
