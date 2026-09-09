@@ -649,9 +649,11 @@ export PAPER_GATE_ENDS_AT_MS=1758267194000
 sniper-quant api --port 8001
 ```
 
-Lifespan hydrates the paper book from `PAPER_SNAPSHOT_PATH` when the file
-exists; otherwise it replays Timescale `signals`. `PAPER_GATE_*` keeps the
-2-week window (2026-09-05 → 2026-09-19). `live_trading` stays false.
+Lifespan hydrates via `PaperEngine.load_snapshot(path)` on
+`PAPER_SNAPSHOT_PATH` when the file exists (`{meta, account}` or account
+JSON); otherwise it replays Timescale `signals`. Snapshots with
+`live_trading=true` are refused (signals fallback). `PAPER_GATE_*` keeps
+the 2-week window (2026-09-05 → 2026-09-19). `live_trading` stays false.
 See `quant/reports/paper_gate_2week.md`.
 
 ## Layout

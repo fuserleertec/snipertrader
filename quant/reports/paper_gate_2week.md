@@ -139,12 +139,15 @@ next to `init.sql` in `data_engineering/docker-compose.yml` (fresh volumes
 only — existing DB needs `psql -f`).
 
 **Paper hydrate on start** (box churn): `PaperEngine` is in-process RAM.
-On lifespan (host `USE_INMEMORY=false`) the API loads
-`PAPER_SNAPSHOT_PATH` (default `/workspace/quant-data/backups/paper/LATEST.json`)
-when that file exists, else replays `signals.all()` from Timescale.
-Then `start_gate()` so `PAPER_GATE_STARTED_AT_MS` /
-`PAPER_GATE_ENDS_AT_MS` keep **2026-09-05 → 2026-09-19** (env wins over
-snapshot gate). Missing / unreadable snapshot does **not** crash the API.
+On lifespan (host `USE_INMEMORY=false`) the API calls
+`PaperEngine.load_snapshot(path)` on `PAPER_SNAPSHOT_PATH` (default
+`/workspace/quant-data/backups/paper/LATEST.json`) when that file exists
+(`{meta, account}` or `GET /paper/account` JSON). Snapshots with
+`live_trading=true` are **refused** and the API falls back to
+`signals.all()` + `mark_signal`. Then `start_gate()` so
+`PAPER_GATE_STARTED_AT_MS` / `PAPER_GATE_ENDS_AT_MS` keep
+**2026-09-05 → 2026-09-19** (env wins over snapshot gate). Missing /
+unreadable / refused snapshot does **not** crash the API.
 Do **not** enable `live_trading`.
 
 `GET /performance/summary` `by_setup` keys (locked product strings):

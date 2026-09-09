@@ -11,7 +11,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+import json
 import os
+from pathlib import Path
 from typing import Any
 
 from sniper_quant.models import Side, SignalStatus, StoredSignal
@@ -58,6 +60,30 @@ def _opt_int(value: Any) -> int | None:
     if value is None or value == "":
         return None
     return int(value)
+
+
+class LiveTradingSnapshotError(ValueError):
+    """Raised when a snapshot claims ``live_trading`` is enabled."""
+
+
+def _truthy_live(value: Any) -> bool:
+    if value is True:
+        return True
+    if isinstance(value, str) and value.strip().lower() in {"1", "true", "yes"}:
+        return True
+    return False
+
+
+def _assert_paper_only(data: dict[str, Any]) -> None:
+    flags = [data.get("live_trading")]
+    inner = data.get("account")
+    if isinstance(inner, dict):
+        flags.append(inner.get("live_trading"))
+    meta = data.get("meta")
+    if isinstance(meta, dict):
+        flags.append(meta.get("live_trading"))
+    if any(_truthy_live(flag) for flag in flags):
+        raise LiveTradingSnapshotError("refusing snapshot with live_trading=true")
 
 
 def paper_position_from_dict(raw: dict[str, Any]) -> PaperPosition | None:
@@ -155,14 +181,24 @@ class PaperEngine:
         self.gate_started_at_ms = now
         self.gate_ends_at_ms = now + days * DAY_MS
 
-    def load_snapshot(self, data: dict[str, Any]) -> None:
-        """Rebuild the in-memory book from a paper account snapshot.
+    def load_snapshot(self, source: str | Path | dict[str, Any]) -> None:
+        """Rebuild the in-memory book from a snapshot path or dict.
 
-        Accepts ``GET /paper/account`` JSON or a ``{meta, account}`` bundle.
-        Never sets ``live_trading`` true. Gate fields restore from the
-        snapshot only when ``PAPER_GATE_*`` env is not fully set.
+        Accepts a JSON file path (``PAPER_SNAPSHOT_PATH`` /
+        ``{meta, account}``) or ``GET /paper/account`` JSON. Refuses
+        ``live_trading=true``. Gate fields restore from the snapshot only
+        when ``PAPER_GATE_*`` env is not fully set.
         """
-        acct = _account_body(data)
+        if isinstance(source, (str, Path)):
+            payload = json.loads(Path(source).read_text(encoding="utf-8"))
+        elif isinstance(source, dict):
+            payload = source
+        else:
+            raise TypeError("load_snapshot expects a path or dict")
+        if not isinstance(payload, dict):
+            raise TypeError("paper snapshot JSON must be an object")
+        _assert_paper_only(payload)
+        acct = _account_body(payload)
         starting = acct.get("starting_equity")
         if starting is not None:
             self.starting_equity = float(starting)
@@ -194,9 +230,9 @@ class PaperEngine:
             if ends is not None:
                 self.gate_ends_at_ms = int(ends)
 
-    def from_snapshot(self, data: dict[str, Any]) -> "PaperEngine":
+    def from_snapshot(self, source: str | Path | dict[str, Any]) -> "PaperEngine":
         """Alias for :meth:`load_snapshot`. Returns ``self``."""
-        self.load_snapshot(data)
+        self.load_snapshot(source)
         return self
 
     def open_from_signal(self, row: StoredSignal) -> PaperPosition | None:

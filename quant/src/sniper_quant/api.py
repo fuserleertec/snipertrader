@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 from sniper_quant.alerts import CHANNELS, AlertService
 from sniper_quant.auth import ApiKeyRateLimitMiddleware
 from sniper_quant.config import Settings, get_settings
-from sniper_quant.paper import PaperEngine
+from sniper_quant.paper import LiveTradingSnapshotError, PaperEngine
 from sniper_quant.lifecycle import LifecycleMonitor, resolve_close_patch
 from sniper_quant.live import SignalHub
 from sniper_quant.models import (
@@ -236,7 +236,9 @@ async def hydrate_paper_book(
 ) -> str:
     """Restore the paper book from snapshot JSON, else Timescale/in-memory signals.
 
-    Missing or unreadable ``PAPER_SNAPSHOT_PATH`` does not raise. Always call
+    ``PAPER_SNAPSHOT_PATH`` → ``PaperEngine.load_snapshot(path)``. Snapshots
+    with ``live_trading=true`` are refused. Missing / unreadable / refused
+    files fall back to ``signals.all()`` + ``mark_signal``. Always call
     ``start_gate(keep_existing=True)`` after this so ``PAPER_GATE_*`` wins.
     """
     source = "signals"
@@ -245,9 +247,14 @@ async def hydrate_paper_book(
         snap_path = Path(path)
         if snap_path.is_file():
             try:
-                payload = json.loads(snap_path.read_text(encoding="utf-8"))
-                paper.load_snapshot(payload)
+                paper.load_snapshot(snap_path)
                 source = "snapshot"
+            except LiveTradingSnapshotError:
+                log.warning(
+                    "paper snapshot refused live_trading=true path=%s; falling back to signals",
+                    path,
+                )
+                source = "signals"
             except Exception:
                 log.exception(
                     "paper snapshot unreadable path=%s; falling back to signals",

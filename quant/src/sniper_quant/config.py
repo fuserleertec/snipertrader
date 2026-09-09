@@ -88,8 +88,9 @@ class Settings(BaseSettings):
         alias="PAPER_SNAPSHOT_PATH",
         description=(
             "Optional JSON snapshot of GET /paper/account (or {meta, account}). "
-            "Lifespan hydrates PaperEngine from this file when present; else "
-            "replays Timescale signals. Missing file does not crash the API."
+            "Lifespan calls PaperEngine.load_snapshot(path) when present; else "
+            "replays Timescale signals. live_trading=true snapshots are refused. "
+            "Missing / refused file does not crash the API."
         ),
     )
 
