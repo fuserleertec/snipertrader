@@ -138,6 +138,15 @@ Timescale is non-SSL; Quant pools use `ssl=False`. `02-signals.sql`
 next to `init.sql` in `data_engineering/docker-compose.yml` (fresh volumes
 only — existing DB needs `psql -f`).
 
+**Paper hydrate on start** (box churn): `PaperEngine` is in-process RAM.
+On lifespan (host `USE_INMEMORY=false`) the API loads
+`PAPER_SNAPSHOT_PATH` (default `/workspace/quant-data/backups/paper/LATEST.json`)
+when that file exists, else replays `signals.all()` from Timescale.
+Then `start_gate()` so `PAPER_GATE_STARTED_AT_MS` /
+`PAPER_GATE_ENDS_AT_MS` keep **2026-09-05 → 2026-09-19** (env wins over
+snapshot gate). Missing / unreadable snapshot does **not** crash the API.
+Do **not** enable `live_trading`.
+
 `GET /performance/summary` `by_setup` keys (locked product strings):
 
 `1_liquidity_sweep_vwap_reclaim` · `2_fvg_mitigation_vwap` ·

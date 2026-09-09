@@ -307,6 +307,215 @@ async def test_lifespan_hydrates_paper_then_starts_gate(monkeypatch):
         assert snap["gate_ends_at_ms"] == end_ms
 
 
+def test_paper_load_snapshot_round_trip_and_bundle(monkeypatch):
+    from sniper_quant.paper import PaperEngine, PaperPosition
+
+    book = PaperEngine(starting_equity=100_000.0)
+    book.cash = 94_019.24
+    book.gate_started_at_ms = 1_757_057_594_000
+    book.gate_ends_at_ms = 1_758_267_194_000
+    book.closed.append(
+        PaperPosition(
+            signal_id="nq-1",
+            symbol="NQ",
+            setup_type="po3_judas",
+            side="long",
+            size=1.0,
+            entry=20_000.0,
+            stop=19_900.0,
+            target=20_200.0,
+            opened_ts_ms=1_000,
+            status="TP_HIT",
+            exit_price=20_200.0,
+            realized_pnl=200.0,
+            realized_r=2.0,
+            closed_ts_ms=2_000,
+        )
+    )
+    book.positions["es-open"] = PaperPosition(
+        signal_id="es-open",
+        symbol="ES",
+        setup_type="sweep_reclaim",
+        side="long",
+        size=2.0,
+        entry=5_000.0,
+        stop=4_980.0,
+        target=5_040.0,
+        opened_ts_ms=3_000,
+    )
+    raw = book.snapshot()
+    raw["live_trading"] = True
+    restored = PaperEngine()
+    restored.load_snapshot(raw)
+    snap = restored.snapshot()
+    assert snap["live_trading"] is False
+    assert snap["cash"] == raw["cash"]
+    assert snap["starting_equity"] == raw["starting_equity"]
+    assert snap["closed_trades"] == 1
+    assert snap["open_positions"] == 1
+    assert snap["equity"] == raw["equity"]
+    assert snap["gate_started_at_ms"] == 1_757_057_594_000
+    assert snap["gate_ends_at_ms"] == 1_758_267_194_000
+    assert snap["closed"][0]["signal_id"] == "nq-1"
+    assert snap["positions"][0]["signal_id"] == "es-open"
+
+    monkeypatch.setenv("PAPER_GATE_STARTED_AT_MS", "111")
+    monkeypatch.setenv("PAPER_GATE_ENDS_AT_MS", "222")
+    env_wins = PaperEngine()
+    env_wins.load_snapshot(raw)
+    env_wins.start_gate(keep_existing=True)
+    env_snap = env_wins.snapshot()
+    assert env_snap["live_trading"] is False
+    assert env_snap["gate_started_at_ms"] == 111
+    assert env_snap["gate_ends_at_ms"] == 222
+    monkeypatch.delenv("PAPER_GATE_STARTED_AT_MS")
+    monkeypatch.delenv("PAPER_GATE_ENDS_AT_MS")
+
+    bundled = PaperEngine()
+    bundled.load_snapshot({"meta": {"written_at": "2026-09-09"}, "account": raw})
+    assert bundled.snapshot()["closed_trades"] == 1
+    assert bundled.snapshot()["live_trading"] is False
+
+
+async def test_lifespan_prefers_paper_snapshot_file(tmp_path, monkeypatch):
+    import json
+
+    from fastapi import FastAPI
+
+    from sniper_quant.api import lifespan
+    from sniper_quant.paper import PaperEngine, PaperPosition
+    from sniper_quant.risk.engine import RiskEngine, RiskState
+    from sniper_quant.store.ohlcv import InMemoryOHLCVLoader
+    from sniper_quant.store.signals import InMemorySignalStore
+
+    seed = PaperEngine(starting_equity=100_000.0)
+    seed.cash = 97_015.04
+    seed.gate_started_at_ms = 1_700_000_000_000
+    seed.gate_ends_at_ms = 1_701_000_000_000
+    seed.closed.append(
+        PaperPosition(
+            signal_id="from-file",
+            symbol="CL",
+            setup_type="fvg_entry",
+            side="long",
+            size=1.0,
+            entry=80.0,
+            stop=79.0,
+            target=83.0,
+            opened_ts_ms=10,
+            status="SL_HIT",
+            exit_price=79.0,
+            realized_pnl=-1.0,
+            realized_r=-1.0,
+            closed_ts_ms=20,
+        )
+    )
+    path = tmp_path / "LATEST.json"
+    path.write_text(json.dumps({"meta": {}, "account": seed.snapshot()}), encoding="utf-8")
+    settings = make_settings(PAPER_SNAPSHOT_PATH=str(path))
+    store = InMemorySignalStore()
+    ohlcv = InMemoryOHLCVLoader()
+    engine = RiskEngine(settings=settings, state=RiskState(equity=100_000))
+    monkeypatch.setattr("sniper_quant.api.get_settings", lambda: settings)
+    monkeypatch.setattr(
+        "sniper_quant.api._build_stores", lambda _settings: (store, ohlcv, engine)
+    )
+    monkeypatch.setenv("PAPER_GATE_STARTED_AT_MS", "1757057594000")
+    monkeypatch.setenv("PAPER_GATE_ENDS_AT_MS", "1758267194000")
+    app = FastAPI()
+    async with lifespan(app):
+        snap = app.state.paper.snapshot()
+        assert snap["live_trading"] is False
+        assert snap["closed_trades"] == 1
+        assert snap["closed"][0]["signal_id"] == "from-file"
+        assert snap["cash"] == 97_015.04
+        assert snap["gate_started_at_ms"] == 1_757_057_594_000
+        assert snap["gate_ends_at_ms"] == 1_758_267_194_000
+
+
+async def test_lifespan_snapshot_missing_falls_back_to_signals(tmp_path, monkeypatch):
+    from fastapi import FastAPI
+
+    from sniper_quant.api import lifespan
+    from sniper_quant.models import AssetClass, Side, SignalStatus, StoredSignal
+    from sniper_quant.risk.engine import RiskEngine, RiskState
+    from sniper_quant.store.ohlcv import InMemoryOHLCVLoader
+    from sniper_quant.store.signals import InMemorySignalStore
+
+    missing = tmp_path / "nope.json"
+    settings = make_settings(PAPER_SNAPSHOT_PATH=str(missing))
+    store = InMemorySignalStore()
+    await store.insert(
+        StoredSignal(
+            id="sig-fallback",
+            symbol="GC",
+            asset_class=AssetClass.FUTURES,
+            setup_type="sweep_reclaim",
+            side=Side.LONG,
+            ts_ms=1_000,
+            entry=10.0,
+            stop=9.0,
+            target=13.0,
+            position_size=1.0,
+            status=SignalStatus.ACTIVE,
+        )
+    )
+    ohlcv = InMemoryOHLCVLoader()
+    engine = RiskEngine(settings=settings, state=RiskState(equity=100_000))
+    monkeypatch.setattr("sniper_quant.api.get_settings", lambda: settings)
+    monkeypatch.setattr(
+        "sniper_quant.api._build_stores", lambda _settings: (store, ohlcv, engine)
+    )
+    app = FastAPI()
+    async with lifespan(app):
+        snap = app.state.paper.snapshot()
+        assert snap["live_trading"] is False
+        assert snap["open_positions"] == 1
+        assert snap["positions"][0]["signal_id"] == "sig-fallback"
+
+
+async def test_lifespan_corrupt_snapshot_falls_back_to_signals(tmp_path, monkeypatch):
+    from fastapi import FastAPI
+
+    from sniper_quant.api import lifespan
+    from sniper_quant.models import AssetClass, Side, SignalStatus, StoredSignal
+    from sniper_quant.risk.engine import RiskEngine, RiskState
+    from sniper_quant.store.ohlcv import InMemoryOHLCVLoader
+    from sniper_quant.store.signals import InMemorySignalStore
+
+    bad = tmp_path / "LATEST.json"
+    bad.write_text("{not-json", encoding="utf-8")
+    settings = make_settings(PAPER_SNAPSHOT_PATH=str(bad))
+    store = InMemorySignalStore()
+    await store.insert(
+        StoredSignal(
+            id="after-corrupt",
+            symbol="ES",
+            asset_class=AssetClass.FUTURES,
+            setup_type="sweep_reclaim",
+            side=Side.LONG,
+            ts_ms=1_000,
+            entry=10.0,
+            stop=9.0,
+            target=13.0,
+            position_size=1.0,
+            status=SignalStatus.ACTIVE,
+        )
+    )
+    ohlcv = InMemoryOHLCVLoader()
+    engine = RiskEngine(settings=settings, state=RiskState(equity=100_000))
+    monkeypatch.setattr("sniper_quant.api.get_settings", lambda: settings)
+    monkeypatch.setattr(
+        "sniper_quant.api._build_stores", lambda _settings: (store, ohlcv, engine)
+    )
+    app = FastAPI()
+    async with lifespan(app):
+        snap = app.state.paper.snapshot()
+        assert snap["live_trading"] is False
+        assert snap["open_positions"] == 1
+        assert snap["positions"][0]["signal_id"] == "after-corrupt"
+
+
 def test_api_key_auth_default_off_and_on():
     open_http = _client()
     assert open_http.get("/v1/setups").status_code == 200

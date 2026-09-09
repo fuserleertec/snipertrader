@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+import logging
 import uuid
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
@@ -46,6 +48,8 @@ from sniper_quant.store.signals import (
     TimescaleSignalStore,
     encode_cursor,
 )
+
+log = logging.getLogger(__name__)
 
 API_DESCRIPTION = """
 # SniperTrader Quant API — Phase 3 / Rev. 1.1
@@ -225,6 +229,49 @@ def _build_stores(settings: Settings) -> tuple[SignalStore, OHLCVLoader, RiskEng
     return signals, ohlcv, engine
 
 
+async def hydrate_paper_book(
+    paper: PaperEngine,
+    signals: SignalStore,
+    settings: Settings,
+) -> str:
+    """Restore the paper book from snapshot JSON, else Timescale/in-memory signals.
+
+    Missing or unreadable ``PAPER_SNAPSHOT_PATH`` does not raise. Always call
+    ``start_gate(keep_existing=True)`` after this so ``PAPER_GATE_*`` wins.
+    """
+    source = "signals"
+    path = (getattr(settings, "paper_snapshot_path", None) or "").strip()
+    if path:
+        snap_path = Path(path)
+        if snap_path.is_file():
+            try:
+                payload = json.loads(snap_path.read_text(encoding="utf-8"))
+                paper.load_snapshot(payload)
+                source = "snapshot"
+            except Exception:
+                log.exception(
+                    "paper snapshot unreadable path=%s; falling back to signals",
+                    path,
+                )
+                source = "signals"
+        else:
+            log.info("paper snapshot missing path=%s; signals fallback", path)
+    if source != "snapshot":
+        for row in await signals.all():
+            paper.mark_signal(row)
+        source = "signals"
+    paper.start_gate(keep_existing=True)
+    snap = paper.snapshot()
+    log.info(
+        "paper hydrate source=%s closed_trades=%s equity=%s live_trading=%s",
+        source,
+        snap["closed_trades"],
+        snap["equity"],
+        snap["live_trading"],
+    )
+    return source
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
@@ -242,9 +289,7 @@ async def lifespan(app: FastAPI):
     app.state.monitor = LifecycleMonitor(signals, app.state.hub, ohlcv)
     app.state.alerts = AlertService()
     app.state.paper = PaperEngine(starting_equity=settings.default_equity)
-    for row in await signals.all():
-        app.state.paper.mark_signal(row)
-    app.state.paper.start_gate()
+    await hydrate_paper_book(app.state.paper, signals, settings)
     from sniper_quant.features import EnsembleFeatureService, InMemoryEnsembleStore
 
     app.state.features = InMemoryEnsembleStore()

@@ -643,8 +643,16 @@ Host-side API against compose infra:
 
 ```bash
 export DATABASE_URL=postgresql://sniper:sniper@localhost:5432/market
+export PAPER_SNAPSHOT_PATH=/workspace/quant-data/backups/paper/LATEST.json
+export PAPER_GATE_STARTED_AT_MS=1757057594000
+export PAPER_GATE_ENDS_AT_MS=1758267194000
 sniper-quant api --port 8001
 ```
+
+Lifespan hydrates the paper book from `PAPER_SNAPSHOT_PATH` when the file
+exists; otherwise it replays Timescale `signals`. `PAPER_GATE_*` keeps the
+2-week window (2026-09-05 → 2026-09-19). `live_trading` stays false.
+See `quant/reports/paper_gate_2week.md`.
 
 ## Layout
 

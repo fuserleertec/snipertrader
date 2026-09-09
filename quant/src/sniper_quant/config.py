@@ -83,6 +83,15 @@ class Settings(BaseSettings):
         alias="DE_API_BASE",
         description="DE HTTP origin for /v1/universe/top (15m ranking) and /v1/ohlcv/{symbol} (1m/5m bars). Empty disables live DE clients.",
     )
+    paper_snapshot_path: str = Field(
+        default="/workspace/quant-data/backups/paper/LATEST.json",
+        alias="PAPER_SNAPSHOT_PATH",
+        description=(
+            "Optional JSON snapshot of GET /paper/account (or {meta, account}). "
+            "Lifespan hydrates PaperEngine from this file when present; else "
+            "replays Timescale signals. Missing file does not crash the API."
+        ),
+    )
 
 
 @lru_cache(maxsize=1)

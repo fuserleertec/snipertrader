@@ -30,6 +30,7 @@ def make_settings(**overrides) -> Settings:
         DE_API_BASE="",
         SETUP_UNIVERSE="",
         PAPER_UNIVERSE="",
+        PAPER_SNAPSHOT_PATH="",
     )
     base.update(overrides)
     return Settings(**base)
