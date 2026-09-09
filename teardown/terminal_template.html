@@ -397,7 +397,7 @@ EQUITY.forEach(s => CLS[s] = 'equity');
 CRYPTO.forEach(s => CLS[s] = 'crypto');
 FUTURES.forEach(s => CLS[s] = 'futures');
 
-function dispSym(sym){ return sym; }
+function dispSym(sym){ return CLS[sym]==='futures' ? sym+'1!' : sym; }
 function tvSymbol(sym){
   if(CLS[sym]==='futures') return {CL:'NYMEX:CL1!',GC:'COMEX:GC1!',ES:'CME_MINI:ES1!',NQ:'CME_MINI:NQ1!',HG:'COMEX:HG1!',SI:'COMEX:SI1!',NG:'NYMEX:NG1!',ZN:'CBOT:ZN1!',ZB:'CBOT:ZB1!',ZF:'CBOT:ZF1!',PL:'NYMEX:PL1!',KC:'NYBOT:KC1!'}[sym] || sym;
   if(CLS[sym]==='crypto') return 'BINANCE:'+sym;
