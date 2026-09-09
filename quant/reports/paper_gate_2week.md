@@ -251,3 +251,25 @@ Quant verify after restore:
 | Per-setup WF ±15pp / ±0.50R | **N/A** (`n_closed < 20`; informational only) |
 
 ML resuming continuous emit to `http://127.0.0.1:8001`. Public tunnel / Railway still optional for off-box clients. **Do not** set `live_trading` true.
+
+### Day 5 — 2026-09-09 (weekday, America/New_York)
+
+**Status: OK / thin book.** `live_trading` is **false**. No broker / Alpaca live. `:8001` healthy, `inmemory=false`.
+
+Continuous book unchanged vs Day 4 hydrate (same two TP/SL fills). Paper `closed_trades=3` includes the Day 4 CANCELLED probe; `GET /performance/summary` still counts **n_closed=2**. Do **not** mix that with `demo-fortnight` smoke.
+
+| Continuous book | Value |
+|---|---|
+| As-of | **2026-09-09 ET** (Day ~5 of 14; gate 2026-09-05 → 2026-09-19) |
+| Gate | **2026-09-05T07:33:14Z → 2026-09-19T07:33:14Z** (~9.8d left) |
+| `live_trading` | **false** |
+| equity / realized_pnl | ≈**92140** / ≈**+3859.9** |
+| open | **0** |
+| TP/SL closed | **2** (NQ `po3_judas` TP R≈2.93; ES `sweep_reclaim` SL R=−1) |
+| paper `closed_trades` | **3** (includes 1 CANCELLED probe) |
+| performance summary | n_closed=**2**, WR=**50%**, avg_rr≈**0.965**, drift_warning=null |
+| by_setup | S1 n=1 WR=0% avgR=−1; S3 n=1 WR=100% avgR≈2.93; S2/S4/S5/S6 n=0 |
+| WF ±15pp / ±0.50R | **N/A** (all `n_closed < 20`; informational only) |
+| Blockers | none; continuous still thin |
+
+**Do not** set `live_trading` true.
