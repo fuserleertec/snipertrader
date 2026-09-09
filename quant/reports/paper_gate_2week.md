@@ -252,31 +252,11 @@ Quant verify after restore:
 
 ML resuming continuous emit to `http://127.0.0.1:8001`. Public tunnel / Railway still optional for off-box clients. **Do not** set `live_trading` true.
 
-### Day 5 — 2026-09-09 (weekday, America/New_York)
+### Day 5 — 2026-09-09 (weekday, America/New_York) — formal WF (supersedes earlier Day 5 snapshots)
 
-**Status: OK / thin book** (morning). `live_trading` is **false**. No broker / Alpaca live. `:8001` healthy, `inmemory=false`. Later the same day the continuous book densified; see the addendum below.
+**Status: formal WF FAIL (all six).** `live_trading` is **false**. No broker / Alpaca live. Verified on `http://127.0.0.1:8001`. Gate **unchanged**: 2026-09-05T07:33:14Z → 2026-09-19T07:33:14Z.
 
-Continuous book at this morning check was unchanged vs Day 4 hydrate (same two TP/SL fills). Paper `closed_trades=3` includes the Day 4 CANCELLED probe; `GET /performance/summary` still counted **n_closed=2**. Do **not** mix that with `demo-fortnight` smoke.
-
-| Continuous book | Value |
-|---|---|
-| As-of | **2026-09-09 ET** (Day ~5 of 14; gate 2026-09-05 → 2026-09-19) |
-| Gate | **2026-09-05T07:33:14Z → 2026-09-19T07:33:14Z** (~9.8d left) |
-| `live_trading` | **false** |
-| equity / realized_pnl | ≈**92140** / ≈**+3859.9** |
-| open | **0** |
-| TP/SL closed | **2** (NQ `po3_judas` TP R≈2.93; ES `sweep_reclaim` SL R=−1) |
-| paper `closed_trades` | **3** (includes 1 CANCELLED probe) |
-| performance summary | n_closed=**2**, WR=**50%**, avg_rr≈**0.965**, drift_warning=null |
-| by_setup | S1 n=1 WR=0% avgR=−1; S3 n=1 WR=100% avgR≈2.93; S2/S4/S5/S6 n=0 |
-| WF ±15pp / ±0.50R | **N/A** (all `n_closed < 20`; informational only) |
-| Blockers | none; continuous still thin |
-
-**Do not** set `live_trading` true.
-
-### Day 5 — 2026-09-09 denser book (continuous, **not** demo-fortnight)
-
-**Status: OK / denser book.** `live_trading` is **false**. Verified on `QUANT_API_BASE=http://127.0.0.1:8001`. Gate **unchanged**: 2026-09-05T07:33:14Z → 2026-09-19T07:33:14Z. Morning thin-book row above is the earlier snapshot; this is the later continuous book.
+Earlier same-day rows (morning thin book closed=2 / `closed_trades=3`; mid-day denser `closed_trades=23`, max n=5) are **superseded**. This snapshot is the continuous book after densify to **n_closed=20 per setup**. Do **not** mix with `demo-fortnight` smoke.
 
 `GET /paper/account`:
 
@@ -284,21 +264,23 @@ Continuous book at this morning check was unchanged vs Day 4 hydrate (same two T
 |---|---|
 | As-of | **2026-09-09 ET** (Day ~5 of 14) |
 | `live_trading` | **false** |
-| `closed_trades` | **23** (TP=**17**, SL=**5**, CANCELLED=**1**) |
-| `realized_pnl` | ≈**+51,374.96** |
-| `equity` | ≈**97,015.04** |
+| `closed_trades` | **121** (TP=**81**, SL=**39**, CANCELLED=**1**) |
+| `realized_pnl` | ≈**+75,048.76** |
+| `equity` | ≈**94,019.24** |
 | open | **0** |
 | Gate | **2026-09-05T07:33:14Z → 2026-09-19T07:33:14Z** |
 
-`GET /performance/summary`: n_signals=**23**, n_closed=**22**, win_rate≈**77.3%**, average_rr≈**1.848**, sharpe≈**12.4**, max_drawdown_pct≈**0.02**, drift_warning=**false**, signals_today=**20**.
+`GET /performance/summary`: n_signals=**121**, n_closed=**120**, win_rate=**67.5%**, average_rr≈**1.427**, sharpe≈**11.48**, max_drawdown_pct≈**0.04**, `drift_warning`=**false** (API rolling-20 WR flag; overall WR ≥ 45%), signals_today=**118**.
 
-| by_setup | `setup_type` | n_closed | WR | avg R |
-|---|---|---:|---:|---:|
-| `1_liquidity_sweep_vwap_reclaim` | `sweep_reclaim` | 5 | 80% | 1.817 |
-| `2_fvg_mitigation_vwap` | `fvg_entry` | 4 | 75% | 1.531 |
-| `3_po3_asia_range_sweep` | `po3_judas` | 5 | 100% | 2.801 |
-| `4_sd_extension_fade` | `sd_extension_fade` | 4 | 75% | 1.480 |
-| `5_vwap_pullback_cont` | `vwap_pullback_cont` | 4 | 50% | 1.380 |
-| `6_avwap_ob_confluence` | `avwap_ob_confluence` | 0 | — | — |
+**WF gate now applies** (sample floor `n_closed ≥ 20` on every `setup_type`). Compare to synthetic WF OOS in this file. **All six FAIL** ±15pp WR and ±0.50R.
 
-**WF gate:** max n_closed=**5** (`n_closed < 20` on every setup) → ±15pp WR / ±0.50R **not applied** (informational Δ only). No formal drift flag. S4 paper WR 75% vs WF OOS 0% looks hot but n=4. **Do not** set `live_trading` true.
+| by_setup | `setup_type` | n | paper WR | paper avg R | WF OOS WR / avg R | WR_DRIFT | R_DRIFT | Gate |
+|---|---|---:|---:|---:|---|---:|---:|---|
+| `1_liquidity_sweep_vwap_reclaim` | `sweep_reclaim` | 20 | 65% | 1.171 | 100% / +1.898 | **−35pp** | **−0.73** | **FAIL** |
+| `2_fvg_mitigation_vwap` | `fvg_entry` | 20 | 65% | 1.156 | 100% / +2.214 | **−35pp** | **−1.06** | **FAIL** |
+| `3_po3_asia_range_sweep` | `po3_judas` | 20 | 70% | 1.677 | 100% / +2.256 | **−30pp** | **−0.58** | **FAIL** |
+| `4_sd_extension_fade` | `sd_extension_fade` | 20 | 65% | 1.392 | 0% / −1.396 | **+65pp** | **+2.79** | **FAIL** |
+| `5_vwap_pullback_cont` | `vwap_pullback_cont` | 20 | 70% | 1.744 | 100% / +4.091 | **−30pp** | **−2.35** | **FAIL** |
+| `6_avwap_ob_confluence` | `avwap_ob_confluence` | 20 | 70% | 1.419 | 7.1% / −1.150 | **+62.9pp** | **+2.57** | **FAIL** |
+
+Caveat: WF OOS n was **1–14 synthetic 5m**; paper densify is **n=20/setup**. Formal gate still flags all six. S4/S6 paper look hot vs a 0% / 7.1% OOS tape; S1–S3/S5 look cold vs 100% OOS on tiny n. API `drift_warning` stays false (pooled WR 67.5% is not under 45%). **Do not** set `live_trading` true.
