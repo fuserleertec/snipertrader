@@ -13,7 +13,7 @@ the full table so nothing is cherry-picked.
 """
 import json
 import itertools
-from compute_engine import structure, ensemble, atr_series, cross_sectional
+from compute_engine import structure, ensemble, atr_series, cross_sectional, MOM_WINDOW, MOM_SKIP
 
 RAW = "/Users/snipertrader/snipertrader/teardown/raw_ohlcv.json"
 FEAT = "/Users/snipertrader/snipertrader/teardown/features.json"
@@ -23,7 +23,7 @@ MIN_HIST = 60
 def precompute(raw, cache_path=FEAT):
     """Point-in-time features per symbol per bar (>= MIN_HIST). Computed once,
     cached. This is the O(n^2) part; the sweep reads from here and is fast."""
-    roc_series, stats = cross_sectional(raw)
+    roc_series, stats = cross_sectional(raw, window=MOM_WINDOW, skip=MOM_SKIP)
     feats = {}
     for sym, rec in raw.items():
         bars = rec["bars"]

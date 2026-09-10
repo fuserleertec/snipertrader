@@ -2,13 +2,15 @@
 """Long/short momentum-factor backtest — the correct test for cross-sectional
 relative momentum (an ALLOCATION signal, not a timing signal).
 
-At each rebalance date, rank the universe by `window`-bar rate-of-change
-(point-in-time, no lookahead), go long the top `top_frac`, short the bottom
-`top_frac`, equal-weight, and hold to the next rebalance.  Reports the long/short
-spread: total return, hit rate, t-stat, Sharpe, turnover, and net-of-cost.
+At each rebalance date, rank the universe by the `window`-bar rate-of-change
+(skipping the most recent `skip` bars — the classic momentum-factor convention),
+go long the top `top_frac`, short the bottom `top_frac`, equal-weight, and hold
+to the next rebalance.  Rebalancing is on a CALENDAR grid (`rebalance_days`),
+so "monthly" really is ~30 days.  No lookahead: signal uses data <= rebalance
+time, returns are measured over the following holding period.
 
-This is the honest test of whether "relative strength vs the universe" has edge —
-distinct from the per-symbol TP/SL timing backtest in backtest_trades.py.
+Reports the long/short spread: total return, hit rate, t-stat, Sharpe, turnover,
+and net-of-cost.  Distinct from the per-symbol TP/SL timing backtest.
 """
 import json
 import math
@@ -33,6 +35,13 @@ def _close_at(cm, sym, t):
     return cl[i] if i >= 0 else None
 
 
+def _compound(rets):
+    x = 1.0
+    for r in rets:
+        x *= (1.0 + r)
+    return x - 1.0
+
+
 def _sharpe(rets, periods_per_year):
     n = len(rets)
     if n < 3:
@@ -45,23 +54,24 @@ def _sharpe(rets, periods_per_year):
     return m / sd * math.sqrt(periods_per_year)
 
 
-def factor_backtest(raw, window=20, top_frac=0.2, rebalance_every=1, cost_side=0.0005):
-    roc_series, _ = cross_sectional(raw, window)
+def factor_backtest(raw, window=20, top_frac=0.2, rebalance_days=1, cost_side=0.0005, skip=0):
+    roc_series, _ = cross_sectional(raw, window, skip=skip)
     cm = _close_lookup(raw)
     t_lists = {sym: [x[0] for x in ser] for sym, ser in roc_series.items()}
     r_lists = {sym: [x[1] for x in ser] for sym, ser in roc_series.items()}
-    times = sorted({t for ser in roc_series.values() for (t, _) in ser})
+    all_ts = sorted({t for ser in roc_series.values() for (t, _) in ser})
+    t0, t1 = all_ts[0], all_ts[-1]
+    interval = rebalance_days * 86400
+    grid = list(range(t0, t1 + 1, interval))
 
     spread_rets, long_rets, short_rets = [], [], []
     turnovers = []
     prev_long, prev_short = set(), set()
     k = 0
 
-    for j in range(0, len(times) - 1, rebalance_every):
-        t = times[j]
-        t_next = times[min(j + rebalance_every, len(times) - 1)]
-        if t_next <= t:
-            continue
+    for idx in range(len(grid) - 1):
+        t = grid[idx]
+        t_next = grid[idx + 1]
         scored = []
         for sym in roc_series:
             i = bisect_right(t_lists[sym], t) - 1
@@ -74,10 +84,15 @@ def factor_backtest(raw, window=20, top_frac=0.2, rebalance_every=1, cost_side=0
         longs = [s for s, _ in scored[-k:]]
         shorts = [s for s, _ in scored[:k]]
 
-        lr = [(_close_at(cm, s, t_next) / c0 - 1) for s in longs
-              if (c0 := _close_at(cm, s, t)) and _close_at(cm, s, t_next) is not None and c0 > 0]
-        sr = [(_close_at(cm, s, t_next) / c0 - 1) for s in shorts
-              if (c0 := _close_at(cm, s, t)) and _close_at(cm, s, t_next) is not None and c0 > 0]
+        lr, sr = [], []
+        for s in longs:
+            c0, c1 = _close_at(cm, s, t), _close_at(cm, s, t_next)
+            if c0 and c1 is not None and c0 > 0:
+                lr.append(c1 / c0 - 1)
+        for s in shorts:
+            c0, c1 = _close_at(cm, s, t), _close_at(cm, s, t_next)
+            if c0 and c1 is not None and c0 > 0:
+                sr.append(c1 / c0 - 1)
         if not lr or not sr:
             continue
 
@@ -89,7 +104,6 @@ def factor_backtest(raw, window=20, top_frac=0.2, rebalance_every=1, cost_side=0
 
         cur_long, cur_short = set(longs), set(shorts)
         if prev_long:
-            # fraction of each leg replaced since last rebalance (round-trip turnover)
             turn = (len(cur_long - prev_long) + len(cur_short - prev_short)) / (2.0 * k)
             turnovers.append(turn)
         prev_long, prev_short = cur_long, cur_short
@@ -98,29 +112,21 @@ def factor_backtest(raw, window=20, top_frac=0.2, rebalance_every=1, cost_side=0
     if n == 0:
         return {"n": 0}
 
-    days = (times[-1] - times[0]) / 86400.0
-    ppy = (n / days) * 365.0 if days > 0 else 252.0
+    days = (t1 - t0) / 86400.0
+    ppy = 365.0 / rebalance_days
 
     m = sum(spread_rets) / n
     sd = math.sqrt(sum((r - m) ** 2 for r in spread_rets) / n)
     t_stat = (m / (sd / math.sqrt(n))) if sd > 1e-12 else 0.0
     hits = sum(1 for r in spread_rets if r > 0)
 
-    def _compound(rets):
-        x = 1.0
-        for r in rets:
-            x *= (1.0 + r)
-        return x - 1.0
-
     gross_ret = _compound(spread_rets)
-    long_ret = _compound(long_rets) if long_rets else None
-    short_ret = _compound(short_rets) if short_rets else None
+    long_ret = _compound(long_rets)
+    short_ret = _compound(short_rets)
 
     avg_turn = sum(turnovers) / len(turnovers) if turnovers else 0.0
-    # net: each rebalance costs (turnover of both legs) * cost_side
     net_rets = [r - (2.0 * avg_turn * cost_side) for r in spread_rets]
     net_ret = _compound(net_rets)
-    net_m = sum(net_rets) / n
 
     sharpe = _sharpe(spread_rets, ppy)
 
@@ -128,7 +134,8 @@ def factor_backtest(raw, window=20, top_frac=0.2, rebalance_every=1, cost_side=0
         "n": n,
         "days": round(days, 0),
         "window": window,
-        "rebalance_every": rebalance_every,
+        "skip": skip,
+        "rebalance_days": rebalance_days,
         "top_frac": top_frac,
         "cost_side": cost_side,
         "leg_size": k,
@@ -139,9 +146,8 @@ def factor_backtest(raw, window=20, top_frac=0.2, rebalance_every=1, cost_side=0
         "gross_return_pct": round(gross_ret * 100, 1),
         "avg_turnover": round(avg_turn, 3),
         "net_return_pct": round(net_ret * 100, 1),
-        "net_mean_bps": round(net_m * 10000, 1),
-        "long_return_pct": round(long_ret * 100, 1) if long_ret is not None else None,
-        "short_return_pct": round(short_ret * 100, 1) if short_ret is not None else None,
+        "long_return_pct": round(long_ret * 100, 1),
+        "short_return_pct": round(short_ret * 100, 1),
     }
 
 
@@ -150,21 +156,24 @@ def main():
     print(f"universe: {len(raw)} symbols, "
           f"{min(len(r['bars']) for r in raw.values())}-{max(len(r['bars']) for r in raw.values())} bars/symbol\n")
     configs = [
-        (20, 1, 0.2, 0.0005),
-        (20, 5, 0.2, 0.0005),
-        (60, 5, 0.2, 0.0005),
-        (20, 1, 0.2, 0.0010),
+        # (window, skip, rebalance_days, top_frac, cost_side)
+        (20,   0,  1, 0.2, 0.0005),   # 1-month momentum, daily (reversal baseline)
+        (60,  20,  7, 0.2, 0.0005),   # 3-month momentum, 1-month skip, weekly
+        (120, 20,  7, 0.2, 0.0005),   # 6-month momentum, 1-month skip, weekly
+        (120, 20, 30, 0.2, 0.0005),   # 6-month momentum, 1-month skip, monthly
+        (180, 20, 30, 0.2, 0.0005),   # 9-month momentum, 1-month skip, monthly
+        (240, 20, 30, 0.2, 0.0005),   # 12-month momentum, 1-month skip, monthly (thin sample)
     ]
-    for window, every, frac, cost in configs:
-        r = factor_backtest(raw, window=window, rebalance_every=every, top_frac=frac, cost_side=cost)
+    for window, skip, rebal, frac, cost in configs:
+        r = factor_backtest(raw, window=window, skip=skip, rebalance_days=rebal, top_frac=frac, cost_side=cost)
         if r["n"] == 0:
-            print(f"window={window} every={every}: no trades")
+            print(f"window={window} skip={skip} rebal={rebal}d: no trades")
             continue
-        print(f"window={window:2d} rebal={every} top_frac={frac} cost={cost:.4f}  leg={r['leg_size']}  n={r['n']:4d}")
+        print(f"window={window:3d} skip={skip:2d} rebal={rebal:2d}d top_frac={frac} cost={cost:.4f}  leg={r['leg_size']}  n={r['n']:4d}")
         print(f"    spread {r['mean_spread_bps']:+.1f} bps/rebal  t={r['t_stat']:+.2f}  "
               f"hit={r['hit_rate']:.0%}  Sharpe(gross)={r['sharpe_gross']}")
         print(f"    gross {r['gross_return_pct']:+.1f}%  net {r['net_return_pct']:+.1f}%  "
-              f"turnover {r['avg_turnover']:.0%}/rebal")
+              f"long {r['long_return_pct']:+.1f}% / short {r['short_return_pct']:+.1f}%  turnover {r['avg_turnover']:.0%}/rebal")
         print()
 
 

@@ -16,11 +16,12 @@ const py = JSON.parse(fs.readFileSync(__dirname + '/results.json', 'utf8')).resu
 const pyMap = {};
 py.forEach(r => pyMap[r.symbol] = r);
 
-// snapshot cross-section (mirror Python analyze()): median/MAD of each symbol's latest 20-bar ROC
+// snapshot cross-section (mirror Python analyze()): median/MAD of each symbol's 120d momentum (skip 20d).
+// Literals match compute_engine's MOM_WINDOW=120 / MOM_SKIP=20 (const in eval'd block doesn't leak here).
 const latestRocs = [];
 for (const sym in raw) {
   const closes = raw[sym].bars.map(b => b.c);
-  if (closes.length >= 21) latestRocs.push(closes[closes.length-1]/closes[closes.length-21]-1);
+  if (closes.length >= 121) latestRocs.push(closes[closes.length-1-20]/closes[closes.length-1-120]-1);
 }
 const med = median(latestRocs), mad = median(latestRocs.map(r => Math.abs(r-med)));
 const u = { cs_median: med, cs_mad: mad };

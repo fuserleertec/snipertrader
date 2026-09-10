@@ -236,6 +236,7 @@ const CRYPTO = ['BTCUSDT','ETHUSDT','SOLUSDT','LINKUSDT','AVAXUSDT','DOGEUSDT','
 const EQUITY = ['AAPL','AMD','AMZN','AVGO','CRWD','META','MSFT','NVDA','PLTR','TSLA','GOOGL','NFLX','ADBE','ORCL','CRM','QCOM','INTC','TSM','MU','COIN','NOW','SNOW','UBER','ABNB','PYPL','SHOP','XYZ','DDOG','PANW','NET'];
 const FUTURES = ['CL','GC','ES','NQ','HG','SI','NG','ZN','ZB','ZF','PL','KC'];
 const ALL_SYMBOLS = [...EQUITY, ...CRYPTO, ...FUTURES];
+const MOM_WINDOW=120, MOM_SKIP=20;   // cross-sectional momentum lookback (daily ≈ 6mo) + 1-month skip
 
 function sma(v,n){ if(v.length<n) return null; let s=0; for(let i=v.length-n;i<v.length;i++) s+=v[i]; return s/n; }
 function emaSeries(v,n){ const k=2/(n+1); let prev=null; const o=[]; for(const x of v){ prev=prev==null?x:x*k+prev*(1-k); o.push(prev);} return o; }
@@ -305,12 +306,12 @@ function ensemble(bars,k,u){
   const tDir=(e12>e26?1:-1)+stack;
   push('Trend',tDir,`EMA12/26 ${e12>e26?'above':'below'}${(sma50&&sma200)?`, SMA50 ${c>sma50?'>':'<'} SMA200`:''}`);
 
-  // 2) Rel Momentum — cross-sectional relative strength (vs the universe)
-  if(n>=21){ const roc=closes[closes.length-1]/closes[closes.length-21]-1;
-    if(u&&u.cs_mad!=null){ const denom=1.4826*u.cs_mad; const rel=denom>1e-12?(roc-u.cs_median)/denom:0;
-      push('Rel Momentum',rel,`20-bar ROC ${(roc*100)>=0?'+':''}${(roc*100).toFixed(1)}% vs universe z ${rel>=0?'+':''}${rel.toFixed(1)}`); }
-    else { const rocs=[]; for(let i=20;i<n;i++) rocs.push(closes[i]/closes[i-20]-1); const z=zlast(rocs);
-      push('Rel Momentum',z,`20-bar ROC z ${z>=0?'+':''}${z.toFixed(1)}`); } }
+  // 2) Rel Momentum — cross-sectional relative strength (vs the universe). 120d lookback, skip 20d.
+  if(n>=MOM_WINDOW+1){ const mom=closes[closes.length-1-MOM_SKIP]/closes[closes.length-1-MOM_WINDOW]-1;
+    if(u&&u.cs_mad!=null){ const denom=1.4826*u.cs_mad; const rel=denom>1e-12?(mom-u.cs_median)/denom:0;
+      push('Rel Momentum',rel,`${MOM_WINDOW}d momentum (skip ${MOM_SKIP}d) ${(mom*100)>=0?'+':''}${(mom*100).toFixed(1)}% vs universe z ${rel>=0?'+':''}${rel.toFixed(1)}`); }
+    else { const moms=[]; for(let i=MOM_WINDOW;i<n;i++) moms.push(closes[i-MOM_SKIP]/closes[i-MOM_WINDOW]-1); const z=zlast(moms);
+      push('Rel Momentum',z,`${MOM_WINDOW}d momentum z ${z>=0?'+':''}${z.toFixed(1)}`); } }
   else push('Rel Momentum',0,'insufficient bars');
 
   // 3) Mean Rev — Bollinger z (contrarian)
@@ -382,10 +383,10 @@ function analyzeSymbol(sym,bars,u){
     structure:k, ensemble:mf, cone:cn, trade:tl, conviction:conviction(mf.consensus,k), n_bars:bars.length};
 }
 
-async function fetchBinance(sym,limit=1000){ const r=await fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${sym}&interval=1h&limit=${limit}`);
+async function fetchBinance(sym,limit=1000){ const r=await fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${sym}&interval=1d&limit=${limit}`);
   if(!r.ok){ let m='Binance HTTP '+r.status; try{const e=await r.json(); if(e&&e.msg)m='Binance: '+e.msg;}catch(_){} throw new Error(m); }
   return (await r.json()).map(k=>({o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]})); }
-async function fetchAlpaca(sym,limit=512){ const r=await fetch(`/api/stocks/klines?symbol=${sym}&timeframe=1h&limit=${limit}`);
+async function fetchAlpaca(sym,limit=512){ const r=await fetch(`/api/stocks/klines?symbol=${sym}&timeframe=1d&limit=${limit}`);
   if(!r.ok){ let m='Stocks API HTTP '+r.status; try{const e=await r.json(); if(e&&e.error)m=e.error;}catch(_){} throw new Error(m); }
   return (await r.json()).map(b=>({o:+b.open,h:+b.high,l:+b.low,c:+b.close,v:+b.volume})); }
 
@@ -396,9 +397,9 @@ async function fetchLive(){
     ...CRYPTO.map(async sym=>{ try{ barMap[sym]=await fetchBinance(sym); sources[sym]='binance'; }catch(e){ sources[sym]='error'; } }),
     ...EQUITY.map(async sym=>{ try{ barMap[sym]=await fetchAlpaca(sym); sources[sym]='alpaca'; }catch(e){ sources[sym]='error'; } })
   ]);
-  // pass 2: cross-sectional 20-bar ROC over the fetched universe
+  // pass 2: cross-sectional 120d momentum (skip 20d) over the fetched universe
   const rocs=[];
-  for(const sym of ALL_SYMBOLS){ const bars=barMap[sym]; if(bars&&bars.length>=21) rocs.push(bars[bars.length-1].c/bars[bars.length-21].c-1); }
+  for(const sym of ALL_SYMBOLS){ const bars=barMap[sym]; if(bars&&bars.length>=MOM_WINDOW+1) rocs.push(bars[bars.length-1-MOM_SKIP].c/bars[bars.length-1-MOM_WINDOW].c-1); }
   const med=median(rocs), mad=median(rocs.map(r=>Math.abs(r-med)));
   const u={cs_median:med, cs_mad:mad};
   // pass 3: analyze with the cross-sectional context

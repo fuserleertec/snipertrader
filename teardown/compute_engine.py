@@ -27,6 +27,8 @@ ATR_N = 14
 VWAP_N = 20
 PIVOT_K = 3
 FWD_BARS = 5
+MOM_WINDOW = 120   # cross-sectional momentum lookback (daily bars ≈ 6 months)
+MOM_SKIP = 20      # skip the most recent month (Jegadeesh-Titman momentum convention)
 
 # --------------------------------------------------------------------------- #
 # Indicators (standard definitions)
@@ -134,14 +136,16 @@ def _median(vals):
     return s[n // 2] if n % 2 else (s[n // 2 - 1] + s[n // 2]) / 2.0
 
 
-def cross_sectional(raw, window=20):
+def cross_sectional(raw, window=20, skip=0):
     """Precompute point-in-time cross-sectional momentum statistics.
 
-    For each symbol, the `window`-bar rate-of-change at every bar (i >= window),
-    keyed by that bar's timestamp.  For every unique timestamp across the whole
-    universe, the cross-sectional median + MAD of the LATEST known ROC per
-    symbol (no lookahead).  Returns:
-      roc_series: {sym: [(t, roc), ...]}
+    For each symbol, the rate-of-change from `i-window` to `i-skip` at every bar
+    (i >= window), keyed by that bar's timestamp.  `skip` = most recent bars to
+    exclude (momentum-factor convention: skip the last month to avoid short-term
+    reversal; default 0 = plain ROC).  For every unique timestamp across the
+    whole universe, the cross-sectional median + MAD of the LATEST known signal
+    per symbol (no lookahead).  Returns:
+      roc_series: {sym: [(t, signal), ...]}
       stats:      {t: (median, mad)}
     """
     roc_series = {}
@@ -152,7 +156,7 @@ def cross_sectional(raw, window=20):
         ts = [b["t"] for b in bars]
         ser = []
         for i in range(window, len(bars)):
-            ser.append((ts[i], closes[i] / closes[i - window] - 1.0))
+            ser.append((ts[i], closes[i - skip] / closes[i - window] - 1.0))
             all_t.add(ts[i])
         roc_series[sym] = ser
     times = sorted(all_t)
@@ -322,17 +326,19 @@ def ensemble(bars, k, u=None):
          f"EMA12/26 {'above' if e12 > e26 else 'below'}"
          + (f", SMA50 {'>' if c > sma50 else '<'} SMA200" if (sma50 and sma200) else ""))
 
-    # 2) Rel Momentum — cross-sectional relative strength (vs the universe)
-    if n >= 21:
-        roc = closes[-1] / closes[-21] - 1.0
+    # 2) Rel Momentum — cross-sectional relative strength (vs the universe).
+    #    120d lookback, skip 20d (~1mo) — the Jegadeesh-Titman momentum convention,
+    #    which the factor backtest showed is where edge (if any) lives.
+    if n >= MOM_WINDOW + 1:
+        mom = closes[-1 - MOM_SKIP] / closes[-1 - MOM_WINDOW] - 1.0
         if u and u.get("cs_mad") is not None:
             denom = 1.4826 * u["cs_mad"]
-            rel = (roc - u["cs_median"]) / denom if denom > 1e-12 else 0.0
-            push("Rel Momentum", rel, f"20-bar ROC {roc * 100:+.1f}% vs universe z {rel:+.1f}")
+            rel = (mom - u["cs_median"]) / denom if denom > 1e-12 else 0.0
+            push("Rel Momentum", rel, f"{MOM_WINDOW}d momentum (skip {MOM_SKIP}d) {mom * 100:+.1f}% vs universe z {rel:+.1f}")
         else:
-            rocs = [closes[i] / closes[i - 20] - 1 for i in range(20, n)]
-            z = _zlast(rocs)
-            push("Rel Momentum", z, f"20-bar ROC z {z:+.1f}")
+            moms = [closes[i - MOM_SKIP] / closes[i - MOM_WINDOW] - 1 for i in range(MOM_WINDOW, n)]
+            z = _zlast(moms)
+            push("Rel Momentum", z, f"{MOM_WINDOW}d momentum z {z:+.1f}")
     else:
         push("Rel Momentum", 0.0, "insufficient bars")
 
@@ -491,7 +497,7 @@ def conviction(cons, k):
     return int(cons * 100 + 0.5)
 
 def analyze(raw):
-    roc_series, _ = cross_sectional(raw)
+    roc_series, _ = cross_sectional(raw, window=MOM_WINDOW, skip=MOM_SKIP)
     latest_rocs = [ser[-1][1] for ser in roc_series.values() if ser]
     med = _median(latest_rocs)
     mad = _median([abs(r - med) for r in latest_rocs])
@@ -531,7 +537,7 @@ def backtest(raw):
     call, then measure the forward FWD_BARS return.  Aggregates hit rate across the
     universe — the honest replacement for the dashboard's unsourced 'walk-forward 61%'.
     Rel Momentum uses point-in-time cross-sectional context (no lookahead)."""
-    roc_series, stats = cross_sectional(raw)
+    roc_series, stats = cross_sectional(raw, window=MOM_WINDOW, skip=MOM_SKIP)
     hits = calls = 0
     per_symbol = {}
     for key, rec in raw.items():
