@@ -40,10 +40,49 @@ body.light-mode{
   --font-body:'Plus Jakarta Sans',sans-serif;
 }
 
+/* ── Canonical header wordmark (homepage index.html .logo) ──
+   Markup everywhere:
+   <a class="st-logo" href="/index.html"><b>SNIPERTRADER</b><span>.ai</span></a>
+   .ai is always gold. Do not split SNIPER/TRADER or recolor TRADER. */
+a.st-logo,.st-logo{
+  display:flex;align-items:baseline;gap:1px;
+  font-family:var(--font-display,'Playfair Display',Georgia,serif);
+  font-weight:600;font-size:1.22rem;letter-spacing:.01em;
+  color:var(--text,#FFFFFF);text-decoration:none;white-space:nowrap;
+}
+a.st-logo:hover,a.st-logo:focus{color:var(--text,#FFFFFF);text-decoration:none;}
+.st-logo b,a.st-logo b{font-weight:700;}
+.st-logo span,a.st-logo span{
+  color:var(--gold,#F0C040);font-size:.82rem;
+  font-family:var(--font-mono,'Space Mono',ui-monospace,monospace);
+  letter-spacing:.04em;margin-left:2px;
+}
+a.st-logo:hover span,a.st-logo:focus span{color:var(--gold,#F0C040);}
+.st-logo-bar{
+  position:sticky;top:0;z-index:300;
+  display:flex;align-items:center;
+  width:100%;box-sizing:border-box;
+  padding:12px 24px;
+  background:var(--nav-bg,rgba(2,4,8,.94));
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border,rgba(240,192,64,.18));
+}
+.st-logo-bar .st-logo{margin-right:0;}
+
 /* ── Shared nav (drop-in; override per page palette as needed) ── */
 .kf-nav{position:fixed;top:0;left:0;right:0;z-index:200;padding:16px 48px;display:flex;align-items:center;justify-content:space-between;background:var(--nav-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
-.kf-nav .nav-logo{font-family:var(--font-display);font-weight:900;font-size:15px;letter-spacing:3px;color:var(--text);text-decoration:none;}
-.kf-nav .nav-logo span{color:var(--emerald);}
+.kf-nav .nav-logo,.kf-nav .st-logo{
+  display:flex;align-items:baseline;gap:1px;margin-right:26px;
+  font-family:var(--font-display,'Playfair Display',Georgia,serif);
+  font-weight:600;font-size:1.22rem;letter-spacing:.01em;
+  color:var(--text);text-decoration:none;white-space:nowrap;
+}
+.kf-nav .nav-logo b,.kf-nav .st-logo b{font-weight:700;}
+.kf-nav .nav-logo span,.kf-nav .st-logo span{
+  color:var(--gold);font-size:.82rem;
+  font-family:var(--font-mono,'Space Mono',ui-monospace,monospace);
+  letter-spacing:.04em;margin-left:2px;
+}
 .kf-nav .nav-links{display:flex;gap:22px;align-items:center;}
 .kf-nav .nav-links a{font-family:var(--font-mono);font-size:9px;letter-spacing:2px;color:var(--text3);text-decoration:none;text-transform:uppercase;transition:color .2s;}
 .kf-nav .nav-links a:hover{color:var(--text);}
