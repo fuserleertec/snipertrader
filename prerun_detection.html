@@ -45,6 +45,12 @@
   .gate{color:var(--text3);font-family:var(--font-mono);font-size:11px;padding:5px 0;border-bottom:1px dashed var(--border);}
   .gate:last-child{border-bottom:none;}
   .note{color:var(--text3);font-family:var(--font-mono);font-size:12px;line-height:1.6;}
+  .what-list{display:flex;flex-direction:column;}
+  .what-list .row{padding:11px 0;border-bottom:1px dashed var(--border);}
+  .what-list .row:last-child{border-bottom:none;}
+  .what-list .k{display:block;font-family:var(--font-mono);font-size:9px;letter-spacing:1.5px;color:var(--emerald);text-transform:uppercase;margin-bottom:4px;}
+  .what-list .v{display:block;font-size:13px;line-height:1.65;color:var(--text2);}
+  .what-list .v strong{color:var(--text);font-weight:700;}
   .empty{color:var(--text4);font-family:var(--font-mono);font-size:13px;padding:18px;}
   .badge{display:inline-block;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:3px 8px;border-radius:6px;border:1px solid var(--border2);color:var(--text3);}
   .badge.gate{color:var(--gold);border-color:var(--gold-border);}
@@ -153,6 +159,22 @@
     <div class="panel">
       <h2>Methodology</h2>
       <p class="note" id="methodology">—</p>
+    </div>
+  </section>
+
+  <section id="sec-what">
+    <div class="panel">
+      <h2>Here's What This Terminal Actually Does</h2>
+      <p class="sec-desc">The plain-English version — what the pipeline really does, and where its limits are.</p>
+      <div class="what-list">
+        <div class="row"><span class="k">Universe</span><span class="v">Sweeps <strong>~350 stocks</strong> across every size — large-cap down to small-cap and OTC — plus <strong>24 liquid Binance crypto pairs</strong>, all on free public data.</span></div>
+        <div class="row"><span class="k">Scoring</span><span class="v">Scores each name on a blend of <strong>trend structure, trading volume, insider filings, and news catalysts</strong>, with a bounded directional projection folded in.</span></div>
+        <div class="row"><span class="k">Confirmation</span><span class="v">Runs a <strong>second-pass volume-and-momentum gate</strong> before anything is surfaced — failures go to a rejected list, never dropped silently.</span></div>
+        <div class="row"><span class="k">Output</span><span class="v">A short, ranked watchlist with <strong>plain-English reasons, conviction, position size, and stop/target levels</strong> — all simulated.</span></div>
+        <div class="row"><span class="k">Alerts</span><span class="v">Flags <strong>dump / exit setups</strong> — overheated or fading-volume moves — so a late chase is visible before you take it.</span></div>
+        <div class="row"><span class="k">Honesty</span><span class="v">Every input it can't reach (order flow, dark pool, whale flows) is listed under <strong>Excluded Inputs</strong> — reported, never estimated.</span></div>
+        <div class="row"><span class="k">No orders</span><span class="v"><strong>Radar, not a broker.</strong> Everything is research and simulation; no orders are ever placed and no edge is claimed.</span></div>
+      </div>
     </div>
   </section>
 </main>
