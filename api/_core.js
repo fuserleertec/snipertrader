@@ -148,10 +148,10 @@ function computeSwarm(config) {
   return { agents, consensusUp: +consensusUp.toFixed(3), netBias: +(consensusUp - 0.5).toFixed(3),
     aggAct: +agents.reduce((s, a) => s + a.weight * a.activity, 0).toFixed(3) };
 }
-function buildConfluence(bands, swarm) {
+function buildConfluence(bands, swarm, newsShock = 0) {
   const F = bands.p50.length;
   const bend = (swarm.netBias) * 2 * 0.10;
-  const tailAmp = 0.05 + (swarm.newsShock || 0) / 100 * 0.30;
+  const tailAmp = 0.05 + (newsShock || 0) / 100 * 0.30;
   const primary = [], secondary = [], tailRisk = [];
   for (let j = 0; j < F; j++) {
     const t = (j + 1) / F;
@@ -189,7 +189,7 @@ function detectICT(bars) {
 async function runModelFull({ history, config, requestedBars }) {
   const base = await runModel({ history, config, requestedBars });
   const swarm = computeSwarm(config);
-  const confluence = buildConfluence(base.bands, swarm);
+  const confluence = buildConfluence(base.bands, swarm, config.newsShock);
   const ict = detectICT(base.history);
   return { ...base, mirofish: swarm, confluence, ict };
 }

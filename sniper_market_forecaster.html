@@ -149,6 +149,9 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .log .e .t{color:var(--text4);}
 .log .e.sm{color:var(--emerald);} .log .e.mm{color:var(--cyan);} .log .e.ret{color:var(--gold);} .log .e.qf{color:var(--red);}
 .log .e.fill{color:var(--emerald);} .log .e.sweep{color:var(--red);}
+.log .e.sim-badge{display:block;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border2);color:var(--gold);font-size:8.5px;letter-spacing:.4px;opacity:.92;}
+.log .e.sim-note{color:var(--text4);}
+.sim-tag{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1px;color:var(--gold);border:1px solid var(--gold);border-radius:20px;padding:2px 8px;background:rgba(240,192,64,0.06);font-weight:700;}
 /* NARRATIVE */
 .kgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;}
 .kcard{background:var(--obs3);border:1px solid var(--border);border-radius:12px;padding:10px 12px;position:relative;overflow:hidden;}
@@ -307,7 +310,7 @@ textarea#narrative{width:100%;min-height:64px;background:var(--obs4);color:var(-
         <span><i style="background:var(--gold)"></i>Primary cone</span>
         <span><i style="background:var(--cyan)"></i>Secondary cone</span>
         <span><i style="background:rgba(255,68,85,.7)"></i>Tail risk</span>
-        <span><i style="background:rgba(240,192,64,.4)"></i>Kronos P25–P75</span>
+        <span><i style="background:rgba(240,192,64,.4)"></i>68% band (P25–P75)</span>
       </div>
       <div class="readout">
         <div class="stat"><div class="k">Consensus Up</div><div class="v neu" id="stConsensus">—</div></div>
@@ -331,13 +334,13 @@ textarea#narrative{width:100%;min-height:64px;background:var(--obs4);color:var(-
     <div class="side">
       <div class="panel">
         <h3>Swarm Intelligence · Agent Archetypes</h3>
-        <div class="sub">Live long/short positioning bias per agent class</div>
+        <div class="sub">Simulated long/short positioning bias per agent class (illustrative)</div>
         <div id="swarmBox"></div>
         <div style="display:flex;justify-content:space-between;margin-top:10px;font-family:'Space Mono',monospace;font-size:9px;color:var(--text4);">
           <span>NET SWARM BIAS <b id="netBias" style="color:var(--gold)">0.0%</b></span>
           <span>AGGREGATE ACTIVITY <b id="netAct" style="color:var(--cyan)">0%</b></span>
         </div>
-        <h3 style="margin-top:16px;">Agent Event Log · Liquidity-Pool Interactions</h3>
+        <h3 style="margin-top:16px;">Agent Event Log · Liquidity-Pool Interactions <span class="sim-tag">ILLUSTRATIVE</span></h3>
         <div class="log" id="agentLog"></div>
       </div>
 
@@ -375,7 +378,7 @@ textarea#narrative{width:100%;min-height:64px;background:var(--obs4);color:var(-
           <div class="ctrl"><label>Context Bars <b id="vBars">80</b></label><input type="range" id="sBars" min="8" max="200" step="1" value="80"></div>
           <div class="ctrl"><label>Forecast Horizon <b id="vHorizon">24</b></label><input type="range" id="sHorizon" min="4" max="60" step="1" value="24"></div>
           <div class="ctrl"><label>Sampled Paths <b id="vPaths">24</b></label><input type="range" id="sPaths" min="1" max="64" step="1" value="24"></div>
-          <div class="ctrl"><label>Volatility σ (Kronos) <b id="vVol">1.8%</b></label><input type="range" id="sVol" min="0.3" max="6" step="0.1" value="1.8"></div>
+          <div class="ctrl"><label>Volatility σ <b id="vVol">1.8%</b></label><input type="range" id="sVol" min="0.3" max="6" step="0.1" value="1.8"></div>
           <div class="ctrl"><label>Drift Bias <b id="vDrift">+0.02%</b></label><input type="range" id="sDrift" min="-0.4" max="0.4" step="0.02" value="0.02"></div>
           <div class="ctrl"><label>Temperature <b id="vTemp">1.00</b></label><input type="range" id="sTemp" min="0.1" max="2.5" step="0.05" value="1.0"></div>
         </div>
@@ -616,7 +619,7 @@ async function loadRealData(){
       try{ bars=await fetchAlpaca(S.symbol,S.interval,S.limit); }
       catch(e){
         const hint=/credentials not configured|not found|502|HTTP 4|HTTP 5/i.test(e.message)
-          ? `Alpaca stocks need the Kronos backend hosted with ALPACA_API_KEY set. ${e.message} — using simulator.`
+          ? `Alpaca stocks need the hosted backend with ALPACA_API_KEY set. ${e.message} — using simulator.`
           : e.message;
         S.history=null; S.source='sim';
         note.textContent='✖ '+hint+' — reverted to simulator'; note.style.color='var(--red)';
@@ -995,21 +998,26 @@ function renderSwarm(swarm){
 function buildAgentLog(swarm){
   const log=document.getElementById('agentLog'); if(!log) return;
   const ict=chart&&chart.$k?chart.$k.ict:null;
-  const pools=(ict&&ict.liq.length)?ict.liq:[{type:'buy',price:swarm.consensusUp>=0.5?90000:88000}];
+  const pools=(ict&&ict.liq&&ict.liq.length)?ict.liq:null;
   const verbs=['filled','swept','absorbed','stacked','faded','accumulated'];
   const clsMap={MM:'mm',SM:'sm',RET:'ret',QF:'qf'};
   let html='';
-  const rng=mulberry32((S.seed^0x55)^S.bars);
-  for(let i=0;i<14;i++){
-    const a=swarm.agents[Math.floor(rng()*swarm.agents.length)];
-    const pool=pools[Math.floor(rng()*pools.length)];
-    const v=verbs[Math.floor(rng()*verbs.length)];
-    const side= rng()<a.longBias?'long':'short';
-    const sz=(rng()*3+0.2).toFixed(1);
-    const act = (v==='swept'||v==='filled')?'fill':(v==='faded'?'sweep':'');
-    const t='+'+(i*2+1)+'m';
-    html+=`<span class="e ${clsMap[a.id]} ${act}"><span class="t">${t}</span> ${a.id} ${v} ${sz}M ${side} @ liq ${pool.price.toFixed(0)} (${pool.type}side)</span>`;
+  if(!pools){
+    html+='<span class="e sim-note">No liquidity pools detected in the loaded data — nothing to render.</span>';
+  } else {
+    const rng=mulberry32((S.seed^0x55)^S.bars);
+    for(let i=0;i<14;i++){
+      const a=swarm.agents[Math.floor(rng()*swarm.agents.length)];
+      const pool=pools[Math.floor(rng()*pools.length)];
+      const v=verbs[Math.floor(rng()*verbs.length)];
+      const side= rng()<a.longBias?'long':'short';
+      const act = (v==='swept'||v==='filled')?'fill':(v==='faded'?'sweep':'');
+      const t='+'+(i*2+1)+'m';
+      const px=pool.price.toFixed(pool.price>=1000?0:2);
+      html+=`<span class="e ${clsMap[a.id]} ${act}"><span class="t">${t}</span> ${a.id} ${v} ${side} @ ${pool.type}-side liq ${px}</span>`;
+    }
   }
+  html+='<span class="e sim-badge">ILLUSTRATIVE SIMULATION — agent behavior at detected liquidity levels, not live order flow.</span>';
   log.innerHTML=html;
 }
 
@@ -1193,7 +1201,7 @@ window.addEventListener('DOMContentLoaded',()=>{
     csvRow.style.display = (v==='csv') ? '' : 'none';
     if(v==='sim'){ S.history=null; S.source='sim'; dn.textContent='Simulator active. Switch source and Load to pull live market OHLCV.'; dn.style.color='var(--text4)'; }
     else if(v==='binance'){ dn.textContent='Binance = crypto pairs (BTC, ETH, SOL, BTC/USDT…). Equities like TSLA → Alpaca or CSV.'; dn.style.color='var(--text3)'; }
-    else if(v==='alpaca'){ dn.textContent='Alpaca stocks (AAPL, TSLA, SPY…). Needs the Kronos backend hosted with ALPACA_API_KEY set; otherwise falls back to simulator.'; dn.style.color='var(--text3)'; }
+    else if(v==='alpaca'){ dn.textContent='Alpaca stocks (AAPL, TSLA, SPY…). Needs the hosted backend with ALPACA_API_KEY set; otherwise falls back to simulator.'; dn.style.color='var(--text3)'; }
     else if(v==='coingecko'){ dn.textContent='CoinGecko = crypto (BTC, ETH, SOL…). Equities like TSLA → Alpaca or CSV.'; dn.style.color='var(--text3)'; }
     else if(v==='csv'){ dn.textContent='Upload OHLCV CSV: time,open,high,low,close,volume (equities OK).'; dn.style.color='var(--text3)'; }
   });
