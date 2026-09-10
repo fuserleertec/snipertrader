@@ -17,6 +17,7 @@ const { scanCrypto } = require('../_lib/recon/crypto_scan');
 const { stockVolumeConfirm, cryptoConfirm } = require('../_lib/recon/confirm');
 const { catalystScore } = require('../_lib/recon/catalyst');
 const { stockDumpSignals, GATED: DUMP_GATED } = require('../_lib/recon/dump');
+const { stockOrderFlow, ORDERFLOW_GATED } = require('../_lib/recon/orderflow');
 const { decideFull, SIM_EQUITY } = require('../_lib/recon/decision');
 
 const UA = { 'User-Agent': 'Mozilla/5.0 (research; snipertrader.ai recon pipeline)' };
@@ -119,8 +120,10 @@ async function buildSymbol(symbol, exchange, congressional, capTag, opts = {}) {
     const catScore = Math.min(1, (ins.present ? 0.5 : 0) + (tech.triggers.includes('BREAKOUT') ? 0.3 : 0) + (tech.score > 0.5 ? 0.2 : 0));
 
     // Blend the directional projection into the technical sub-score (bounded share).
-    // Deterministic projection, honestly weighted — not a live order-flow signal.
-    const techScore = Math.min(1, 0.65 * tech.score + 0.35 * cone.score);
+    // Deterministic Monte-Carlo projection of the trailing trend — a *projection*
+    // of momentum, NOT order flow — capped at 20% so it can never dominate the
+    // structure/breakout score that carries the actual pre-run signal.
+    const techScore = Math.min(1, 0.80 * tech.score + 0.20 * cone.score);
 
     const score = convictionScore({ insider: insFinal, technical: techScore, volume: volScore, catalyst: catScore });
     let tier = tierOf(score);
@@ -300,6 +303,10 @@ async function run(force = false) {
   for (const p of top) {
     try { p.catalyst = await catalystScore({ symbol: p.symbol, assetType: 'stock', insiderStrength: (p.signals.insider || 0) / 100 }); }
     catch (e) { p.catalyst = { score: 0, min50Met: false, breakdown: {}, error: String(e.message || e) }; }
+    // KEY-GATED order flow (Alpaca/Polygon tape) — fetched only for ranked names.
+    // Returns {available:false} fast when unconfigured; never fabricated.
+    try { p.orderFlow = await stockOrderFlow(p.symbol); }
+    catch (e) { p.orderFlow = { available: false, reason: String(e.message || e) }; }
     if (p.confirmation && !p.confirmation.pass) {
       volumeRejected.push({ symbol: p.symbol, assetType: 'stock', score: p.score, reasons: p.confirmation.reasons, note: p.note });
     } else {
@@ -343,6 +350,7 @@ async function run(force = false) {
     volumeRejected,
     sellAlerts,
     dumpGated: DUMP_GATED,
+    orderFlowGated: ORDERFLOW_GATED,
     decisions,
     simulatedOrders,
     simulation: { equity: SIM_EQUITY, note: 'paper only — decision/sizing/exit logic is simulated; no live orders and no brokerage execution endpoint.' },
@@ -361,12 +369,12 @@ async function run(force = false) {
       'SEC OTCQB/OTCQX compliance — OTC Markets API is key-gated',
       'Crypto whale on-chain accumulation — key-gated (Whale Alert/Nansen/Glassnode)',
       'Stock dark-pool selling & trade count — no key-less source',
-      'Stock order flow (NinjaTrader OF+/delta) — desktop software, no API',
+      'Stock order flow (Alpaca/Polygon trade tape) — key-gated (ALPACA_API_KEY / POLYGON_API_KEY); wired in api/_lib/recon/orderflow.js',
       'Crypto liquidation levels & exchange inflow/outflow — key-gated (Glassnode/CryptoQuant)',
       '13F institutional positions & short interest — key-gated / no clean key-less source',
       'Discord sentiment — gated (no public API)'
     ],
-    methodology: 'The terminal sweeps a broad public-data universe — roughly 360 stocks across every size (large-cap through small-cap and OTC) plus a basket of liquid cryptocurrencies — and scores each on a blend of trend structure, trading-volume behavior, insider-filing activity, and news catalysts. The highest-scoring names then face a second-pass confirmation on volume and momentum before being surfaced; anything that fails is dropped into a separate rejected list rather than filtered silently. Only freely available public data is used — anything requiring a paid key or proprietary feed (order flow, on-chain whale flows, dark-pool data, and similar) is excluded and reported, never estimated. Every signal, position size, and stop/target is simulated research output; no orders are ever placed.'
+    methodology: 'The terminal sweeps a broad public-data universe — roughly 360 stocks across every size (large-cap through small-cap and OTC) plus a basket of liquid cryptocurrencies — and scores each on a blend of trend structure, trading-volume behavior, insider-filing activity, and news catalysts. A bounded directional projection (a transparent Monte-Carlo simulation of the trailing trend) contributes at most 20% of the technical score and is surfaced for audit — it is a projection of momentum, not order flow. When a paid data key is present (Alpaca/Polygon), real trade-tape order flow — buyer-vs-seller aggression — is folded in as its own gated factor; without the key it is reported unavailable and never estimated. The highest-scoring names then face a second-pass confirmation on volume and momentum before being surfaced; anything that fails is dropped into a separate rejected list rather than filtered silently. Anything else requiring a paid key or proprietary feed (dark-pool data, on-chain whale flows, and similar) is excluded and reported, never estimated. Every signal, position size, and stop/target is simulated research output; no orders are ever placed.'
   };
   _cache = { ts: now, payload };
   return payload;

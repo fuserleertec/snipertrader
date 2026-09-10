@@ -4,10 +4,11 @@
 // Layer 5 — trade decision matrix (5.1), position sizing (5.2), exit rules (5.3).
 // SIMULATION ONLY: emits decision + sizing + exits for audit. NEVER places orders.
 //
-// Honest handling of gated factors: whale (10%) and stock order-flow (20%) are
-// key-gated. The weighted score is renormalized over AVAILABLE factors and both
-// the raw score (gated=0) and `missingFactors` are reported — so a BUY can only
-// fire on the signals we actually have, never on padded/imagined ones.
+// Honest handling of gated factors: whale (10%) is key-gated; stock order-flow
+// (20%) is key-gated but NOW fills from the Alpaca/Polygon trade tape when a key
+// is present (orderflow.js). The weighted score is renormalized over AVAILABLE
+// factors and both the raw score (gated=0) and `missingFactors` are reported —
+// so a BUY can only fire on the signals we actually have, never padded ones.
 // ---------------------------------------------------------------------------
 
 const SIM_EQUITY = 25000; // simulated portfolio equity (no live account exists)
@@ -23,10 +24,14 @@ function decide(c, assetType) {
   const catalyst = c.catalyst && Number.isFinite(c.catalyst.score) ? clamp(c.catalyst.score, 0, 100) : 0;
   const dumpTriggered = !!(c.dumpSignals && c.dumpSignals.length);
 
-  // Order flow: stocks gated (no key-less delta); crypto uses taker-buy as a proxy.
+  // Order flow: crypto uses taker-buy as a proxy; stocks use the KEY-GATED
+  // Alpaca/Polygon trade-tape aggressor imbalance (orderflow.js) when a key is
+  // present — otherwise it stays null and is renormalized out + reported.
   let orderFlow = null;
   if (assetType === 'crypto' && Number.isFinite(c.takerBuyRatio)) {
     orderFlow = clamp((c.takerBuyRatio - 0.5) * 2 * 100, 0, 100); // 0.5 → 0, 1.0 → 100
+  } else if (c.orderFlow && c.orderFlow.available && Number.isFinite(c.orderFlow.buyPressure)) {
+    orderFlow = clamp(c.orderFlow.buyPressure * 100, 0, 100); // 0.5 → 50, 1.0 → 100
   }
   const whale = null; // key-gated
 
