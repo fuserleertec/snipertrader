@@ -6,23 +6,23 @@
 <title>Market Terminal — conviction-ranked scanner | SniperTrader.ai</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;900&family=Space+Mono:wght@400;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/assets/theme.css"/>
 <style>
   :root{
-    --bg:#06090f; --panel:#0a1018; --panel-2:#0d1420; --card:#111a2b;
-    --border:rgba(0,229,160,.14); --border-soft:rgba(0,229,160,.08);
-    --fg:#dbe6f2; --muted:#8aa0b8; --faint:#5f7790;
+    --bg:#020408; --panel:#06090F; --panel-2:#0A1018; --card:#0A1018;
+    --border:rgba(0,229,160,.13); --border-soft:rgba(0,229,160,.08);
+    --fg:#FFFFFF; --muted:#9BB5C8; --faint:#5A7888;
     --emerald:#00e5a0; --cyan:#00d4ff; --gold:#f0c040; --red:#ff4455;
-    --bull:#00e5a0; --bear:#ff4455; --flat:#8aa0b8;
-    --font-d:"Orbitron",sans-serif; --font-m:"Space Mono",monospace; --font-b:"Syne",sans-serif;
+    --bull:#00e5a0; --bear:#ff4455; --flat:#9BB5C8;
+    --font-d:'Playfair Display',serif; --font-m:'Space Mono',monospace; --font-b:'Plus Jakarta Sans',sans-serif;
   }
   body.light-mode{
-    --bg:#f4f7fb; --panel:#ffffff; --panel-2:#f1f5f9; --card:#ffffff;
-    --border:rgba(15,40,70,.14); --border-soft:rgba(15,40,70,.08);
-    --fg:#0f1f33; --muted:#5b6b80; --faint:#8a99ad;
-    --emerald:#007a44; --cyan:#0a6fb0; --gold:#9a6e00; --red:#c02030;
-    --bull:#007a44; --bear:#c02030; --flat:#5b6b80;
+    --bg:#F0F4F8; --panel:#E4EBF2; --panel-2:#D8E2EC; --card:#D8E2EC;
+    --border:rgba(0,150,110,.18); --border-soft:rgba(0,150,110,.10);
+    --fg:#070E18; --muted:#2A4460; --faint:#4A6278;
+    --emerald:#008F6A; --cyan:#0080AA; --gold:#9A6E00; --red:#C02030;
+    --bull:#008F6A; --bear:#C02030; --flat:#2A4460;
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
@@ -33,17 +33,7 @@
   }
   .wrap{max-width:1180px;margin:0 auto;padding:96px 22px 80px}
 
-  /* nav (canonical .kf-nav, page-specific glass override) */
-  .kf-nav{display:flex;align-items:center;gap:18px;padding:14px 18px;position:fixed;top:0;left:0;right:0;z-index:40;background:rgba(6,9,15,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
-  body.light-mode .kf-nav{background:rgba(255,255,255,.88)}
-  .kf-nav .brand{font-family:var(--font-d);font-weight:700;letter-spacing:.5px;color:var(--fg);font-size:15px;text-decoration:none}
-  .kf-nav .brand b{color:var(--emerald)}
-  .kf-nav .links{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
-  .kf-nav .links a{font-family:var(--font-m);font-size:10px;letter-spacing:1px;color:var(--muted);text-decoration:none;text-transform:uppercase;transition:color .2s}
-  .kf-nav .links a:hover{color:var(--fg)}
-  .kf-nav .links a.active{color:var(--emerald)}
-  .tt-btn{margin-left:auto;background:var(--panel-2);border:1px solid var(--border);color:var(--fg);border-radius:10px;padding:7px 12px;cursor:pointer;font-family:var(--font-m);font-size:12px;display:flex;align-items:center;gap:6px}
-  .tt-btn:hover{border-color:var(--cyan)}
+  /* nav — canonical .kf-nav from /assets/theme.css (nav-logo / nav-links / nav-pill / kf-theme-toggle) */
 
   /* provenance banner */
   .banner{border:1px solid var(--border);background:var(--panel);border-radius:12px;padding:14px 16px;margin:18px 0 20px;display:flex;flex-direction:column;gap:10px}
@@ -107,7 +97,7 @@
   .row.head{background:var(--panel-2);cursor:default;font-family:var(--font-m);font-size:10.5px;letter-spacing:.06em;color:var(--faint);text-transform:uppercase}
   .row.head:hover{background:var(--panel-2)}
   .rk{font-family:var(--font-m);color:var(--faint);font-size:12px}
-  .sym{font-family:var(--font-d);font-weight:600;letter-spacing:.04em}
+  .sym{font-family:var(--font-m);font-weight:700;letter-spacing:.04em}
   .sym .cls{display:block;font-family:var(--font-m);font-size:10.5px;color:var(--faint);font-weight:400;letter-spacing:0}
   .px{font-family:var(--font-m);font-size:14px}
   .chg{font-family:var(--font-m);font-size:12.5px}
@@ -176,17 +166,16 @@
 </head>
 <body class="light-mode">
 <nav class="kf-nav">
-  <a href="/index.html"><span class="brand">SNIPER<b>TRADER</b></span></a>
-  <div class="links">
+  <a class="nav-logo" href="/index.html">SNIPER<span>TRADER</span></a>
+  <div class="nav-links">
+    <a class="nav-pill" href="/market_terminal.html">Daily Market Picks</a>
+    <a href="/prerun_detection.html">Pre-Run Detection</a>
+    <a href="/traderedge_preflight.html">Pre-Flight Protocols</a>
+    <a href="https://chart-ai.snipertrader.ai">AI Chart Analyzer</a>
     <a href="/sniper_market_forecaster.html">Market Forecaster</a>
-    <a href="/market_terminal.html" class="active">Conviction Terminal</a>
-    <a href="/market_terminal.html">Daily Stock Picks</a>
-    <a href="/traderedge_chartai.html">AI Chart</a>
-    <a href="/traderedge_preflight.html">⬡ Pre-Flight Protocols</a>
-    <a href="/traderedge_prop_firms_command_center.html">Prop Firm Center</a>
     <a href="/usme_products.html">Products</a>
   </div>
-  <button class="tt-btn" onclick="toggleTheme()"><span class="tt-icon">☀️</span> <span id="themeLabel">LIGHT</span></button>
+  <button class="kf-theme-toggle" onclick="toggleTheme()"><span class="tt-icon">☀️</span> <span id="themeLabel">LIGHT</span></button>
 </nav>
 
 <div class="wrap">
