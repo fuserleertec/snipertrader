@@ -609,6 +609,22 @@ function render(){
      sim with costs. &nbsp; <span class="risknote">Educational only — not financial advice. Paper desk.
      live_trading=false.</span>`;
 
+  // ── how to read this terminal (plain-English guide) ──
+  document.getElementById('foot').innerHTML += `<div style="margin-top:26px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px 20px">
+    <div style="font-family:var(--font-d);font-size:12px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:10px">How to read this terminal</div>
+    <div style="font-family:var(--font-m);font-size:12px;color:var(--muted);line-height:1.7">
+      <b style="color:var(--fg)">What it does.</b> Every cycle it scans ~${results.length} markets (equities, crypto, futures). For each, it runs seven separate signals over the real price history, folds them into one consensus score, maps the market structure, and draws an empirical probability cone from actual forward returns. It ranks everything by conviction — or by trailing backtest profit factor — and tells you honestly whether the read has an edge.
+      <br><br>
+      <b style="color:var(--fg)">Reading a row.</b> <b style="color:var(--fg)">Bias</b> = the confidence-weighted consensus (how bullish the seven signals are, 0–100%). <b style="color:var(--fg)">Setup</b> = LONG / SHORT / HOLD with its reward:risk. <b style="color:var(--fg)">Conviction</b> = 0–100, the same consensus — a conviction, not a win probability. <b style="color:var(--fg)">Structure</b> = trend ↗ / gap / key level / liquidity sweep tags.
+      <br><br>
+      <b style="color:var(--fg)">Click a row</b> to open the full audit: each of the seven signals with its vote, confidence, and a plain-English reason, plus the probability cone, entry / stop / target, the SEC EDGAR catalyst (insider activity + earnings dates), and a live chart.
+      <br><br>
+      <b style="color:var(--fg)">Ensemble Health (02)</b> is the honest scoreboard: a walk-forward backtest of the actual signals — win rate, expectancy, profit factor, best/worst names, and a plain verdict — so you can see whether the read works net of costs. <b style="color:var(--fg)">Drop Audit (03)</b> lists the names scanned but that didn't clear the bar, shown in the open instead of hidden.
+      <br><br>
+      <b style="color:var(--fg)">Sort.</b> <b style="color:var(--fg)">Conviction</b> ranks by the model's confidence; <b style="color:var(--fg)">Edge (trailing PF)</b> ranks by the backtest's trailing profit factor, so you can see where the edge (if any) has actually been.
+    </div>
+  </div>`;
+
   // canonical site footer
   const foot = document.getElementById('foot');
   foot.innerHTML += `<div style="margin-top:26px;padding-top:18px;border-top:1px solid var(--border-soft);display:flex;gap:20px;flex-wrap:wrap">
