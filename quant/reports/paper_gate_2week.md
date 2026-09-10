@@ -323,3 +323,19 @@ At ~15:00 ET shared-box churn took host `:8001` down again (connection refused; 
 Last good pre-outage densify (~11:27 ET / earlier Day 5 formal WF): closed≈**133**, S1–S6 n≈**22**, formal WF **FAIL-all-six** at n=20 — **lost**. ML re-densifying from an empty book.
 
 **Action / risk:** treat Timescale volume + paper in-memory ledger as **not durable across box churn**. Need a restore playbook that actually rehydrates signals + paper (or an external snapshot) before calling the gate book continuous. **Do not** set `live_trading` true.
+
+### Day 6 — 2026-09-10 (weekday, America/New_York)
+
+**Status: OK / accruing.** `live_trading` false. `:8001` healthy, inmemory=false. Hydrate-on-start on PR #2 ready (live process not bounced). LATEST.json + Timescale bind present.
+
+| Continuous | Value |
+|---|---|
+| closed_trades | **127** (TP=94, SL=32, CXL=1) |
+| open | **0** |
+| equity / realized | ≈**103518** / ≈**+32190** |
+| perf n_closed | **126**, WR≈74.6%, avg_rr≈1.73 |
+| by_setup | all n=**21** |
+| formal WF ±15pp/±0.50R | **FAIL all six** vs synthetic WF OOS (advisory per PM; keep accruing) |
+| Blockers | none |
+
+Gate **unchanged**: 2026-09-05T07:33:14Z → 2026-09-19T07:33:14Z. **Do not** set `live_trading` true.
