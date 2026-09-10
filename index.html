@@ -344,6 +344,27 @@ h2{font-size:clamp(1.7rem,3.2vw,2.6rem);margin-bottom:14px;}
 .ab-stat .n{font-family:var(--ff-d);font-size:1.4rem;font-weight:600;color:var(--gold);min-width:54px;}
 .ab-stat .t{font-size:.86rem;color:var(--text3);line-height:1.45;}
 
+/* ── Adaptive Trading Psychology Ecosystem (ATPE) ─────────── */
+#atpe{padding:96px 0;}
+.atpe-head{max-width:780px;margin:0 auto 44px;text-align:center;}
+.atpe-head .eyebrow{justify-content:center;}
+.atpe-head h2{margin-bottom:14px;}
+.atpe-head .lede{margin:0 auto 22px;}
+.roadmap-badge{display:inline-flex;align-items:center;gap:8px;padding:7px 16px;border-radius:20px;border:1px solid var(--border2);background:var(--card);font-family:var(--ff-m);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);}
+.roadmap-badge i{width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px var(--gold);animation:blink 1.8s ease-in-out infinite;}
+.layers{display:flex;flex-direction:column;gap:14px;max-width:820px;margin:0 auto;}
+.layer-card{display:flex;gap:22px;align-items:flex-start;border:1px solid var(--border);background:var(--card);border-radius:16px;padding:24px 26px;transition:border-color .25s,transform .25s;}
+.layer-card:hover{transform:translateX(4px);border-color:var(--border2);}
+.layer-card .lc-n{flex-shrink:0;font-family:var(--ff-m);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);padding:8px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--card2);min-width:86px;text-align:center;}
+.layer-card .lc-body{flex:1;}
+.layer-card .lc-body h3{font-size:1.14rem;margin-bottom:6px;line-height:1.3;}
+.layer-card .lc-body p{font-size:.86rem;color:var(--text3);line-height:1.6;}
+.atpe-foundation{margin-top:32px;max-width:820px;margin-left:auto;margin-right:auto;padding:20px 24px;border-radius:16px;border:1px dashed var(--border2);background:var(--card);display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.atpe-foundation .af-dot{width:9px;height:9px;border-radius:50%;background:var(--emerald);box-shadow:0 0 10px var(--emerald);animation:blink 1.8s ease-in-out infinite;flex-shrink:0;}
+.atpe-foundation p{font-size:.88rem;color:var(--text2);line-height:1.6;flex:1;min-width:240px;}
+.atpe-foundation a{color:var(--gold);font-weight:600;white-space:nowrap;}
+@media(max-width:640px){.layer-card{flex-direction:column;gap:14px;}.layer-card .lc-n{min-width:0;align-self:flex-start;}}
+
 /* ── Footer ───────────────────────────────────────────────── */
 footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 36px;transition:background .4s;}
 .footer-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1fr;gap:40px;margin-bottom:52px;}
@@ -599,11 +620,52 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
   <div class="container">
     <div class="eyebrow reveal">Market Intelligence Engine</div>
     <h2 class="reveal">See the market <em style="color:var(--gold)">before</em> it moves.</h2>
-    <p class="lede reveal">Two flagship modules — the AI Chart Analyzer and the Sniper Market Forecaster — turn raw price action into a calm, readable read on structure and probable targets.</p>
+    <p class="lede reveal">Four modules turn raw price action — and your own readiness — into a calm, readable read on structure, probable targets, and the setups worth taking.</p>
     <div class="featured-grid">
       <div class="glass feature-card reveal">
         <div class="fc-top">
-          <div class="fc-icon">◈</div>
+          <div class="fc-icon">&#9670;</div>
+          <span class="tag gold">ML Screener</span>
+        </div>
+        <h3>Daily Market Picks</h3>
+        <p>A real-time screener surfacing high-probability swing and day setups scored by machine learning — with exact invalidation levels and risk-to-reward targets.</p>
+        <div class="fc-viz">
+          <div class="viz-row"><div><div class="vr-sym">NVDA</div><div class="vr-name">Semiconductors</div></div><div style="min-width:110px"><div class="vt-v sage" style="text-align:right">86%</div><div class="viz-bar"><span style="width:86%"></span></div></div></div>
+          <div class="viz-row"><div><div class="vr-sym">AAPL</div><div class="vr-name">Technology</div></div><div style="min-width:110px"><div class="vt-v sage" style="text-align:right">78%</div><div class="viz-bar"><span style="width:78%"></span></div></div></div>
+          <div class="viz-row"><div><div class="vr-sym">TSLA</div><div class="vr-name">Automotive</div></div><div style="min-width:110px"><div class="vt-v sage" style="text-align:right">64%</div><div class="viz-bar"><span style="width:64%"></span></div></div></div>
+        </div>
+        <div class="fc-tags">
+          <span class="tag gold">Probability-rated</span>
+          <span class="tag">Invalidation levels</span>
+        </div>
+        <a class="fc-cta" href="/market_terminal.html">View Today's Scored Picks <span>&#8594;</span></a>
+      </div>
+      <div class="glass feature-card reveal">
+        <div class="fc-top">
+          <div class="fc-icon">&#9673;</div>
+          <span class="tag sage">Pre-Market Scan</span>
+        </div>
+        <h3>Daily Pre-Run Detection</h3>
+        <p>A pre-market scan across the full watchlist — flags the setups forming before the open, so you walk in with a plan instead of a scramble.</p>
+        <div class="fc-viz">
+          <div class="viz-status"><span class="live-dot"></span><div><div class="vs-t">Watchlist scanned</div><div class="vs-s">4 flags &#183; 2 confluent</div></div></div>
+          <div style="height:12px"></div>
+          <div class="viz-grid">
+            <div class="viz-tile"><div class="vt-l">Scan</div><div class="vt-v sage">Pre-market</div></div>
+            <div class="viz-tile"><div class="vt-l">Flags</div><div class="vt-v gold">4</div></div>
+            <div class="viz-tile"><div class="vt-l">Confluent</div><div class="vt-v">2</div></div>
+            <div class="viz-tile"><div class="vt-l">Window</div><div class="vt-v gold">09:30 ET</div></div>
+          </div>
+        </div>
+        <div class="fc-tags">
+          <span class="tag sage">Full watchlist</span>
+          <span class="tag">Pre-bell flags</span>
+        </div>
+        <a class="fc-cta" href="/prerun_detection.html">Run Pre-Run Detection <span>&#8594;</span></a>
+      </div>
+      <div class="glass feature-card reveal">
+        <div class="fc-top">
+          <div class="fc-icon">&#9672;</div>
           <span class="tag sage">Structural AI</span>
         </div>
         <h3>AI Chart Analyzer</h3>
@@ -620,29 +682,30 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
           <span class="tag gold">Real-time Bias: Bullish Liquidity Seek</span>
           <span class="tag">Zero-lag recognition</span>
         </div>
-        <a class="fc-cta" href="https://chart-ai.snipertrader.ai">Open Chart Analyzer <span>→</span></a>
+        <a class="fc-cta" href="https://chart-ai.snipertrader.ai">Open Chart Analyzer <span>&#8594;</span></a>
       </div>
       <div class="glass feature-card reveal">
         <div class="fc-top">
-          <div class="fc-icon">◉</div>
-          <span class="tag gold">Macro Forecasting</span>
+          <div class="fc-icon">&#10070;</div>
+          <span class="tag sage">Psychology Gate</span>
         </div>
-        <h3>Sniper Market Forecaster</h3>
-        <p>Macro forecasting algorithms chart price projection corridors and high-probability reversal windows — time-and-price alignment instead of guesswork.</p>
+        <h3>Pre-Flight Protocol</h3>
+        <p>One consolidated pre-market gate — log your Neural Baseline, then clear nine technical and discipline gates before you're authorized to enter.</p>
         <div class="fc-viz">
-          <svg viewBox="0 0 460 150" width="100%" height="150" preserveAspectRatio="none" role="img" aria-label="Forecast corridor">
-            <path d="M0,120 C60,112 120,84 180,80 C240,76 300,56 360,50 C400,46 430,40 460,34" fill="none" stroke="#00E5A0" stroke-width="2"/>
-            <path d="M0,132 C70,124 130,100 190,96 C250,92 310,72 370,66 C410,62 440,56 460,50" fill="none" stroke="#F0C040" stroke-width="1.4" stroke-dasharray="2 6"/>
-            <path d="M0,108 C70,100 130,68 190,64 C250,60 310,40 370,34 C410,30 440,24 460,18" fill="none" stroke="#F0C040" stroke-width="1.4" stroke-dasharray="2 6"/>
-            <rect x="402" y="14" width="58" height="48" rx="6" fill="rgba(240,192,64,.16)" stroke="#F0C040" stroke-opacity=".55"/>
-            <circle cx="460" cy="34" r="3.6" fill="#F0C040"/>
-          </svg>
+          <div class="viz-gauge"><div class="vg-track" style="--p:72%"></div><div class="vg-val">Ready</div></div>
+          <div style="height:16px"></div>
+          <div class="viz-grid">
+            <div class="viz-tile"><div class="vt-l">Neural state</div><div class="vt-v sage">Focused</div></div>
+            <div class="viz-tile"><div class="vt-l">Gates</div><div class="vt-v gold">9</div></div>
+            <div class="viz-tile"><div class="vt-l">Heart rate</div><div class="vt-v">72 bpm</div></div>
+            <div class="viz-tile"><div class="vt-l">Authorization</div><div class="vt-v gold">Pending</div></div>
+          </div>
         </div>
         <div class="fc-tags">
-          <span class="tag sage">Simulated projection</span>
-          <span class="tag sage">Pivot windows</span>
+          <span class="tag gold">Neural baseline</span>
+          <span class="tag">9-gate clearance</span>
         </div>
-        <a class="fc-cta" href="/sniper_market_forecaster.html">Explore Market Forecasts <span>→</span></a>
+        <a class="fc-cta" href="/traderedge_preflight.html">Launch Pre-Flight Protocol <span>&#8594;</span></a>
       </div>
     </div>
   </div>
@@ -727,6 +790,45 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- ATPE: Adaptive Trading Psychology Ecosystem (roadmap) -->
+<section id="atpe">
+  <div class="container">
+    <div class="atpe-head reveal">
+      <div class="eyebrow">Adaptive Trading Psychology Ecosystem</div>
+      <h2>Beyond the checklist.</h2>
+      <p class="lede">The Pre-Flight Protocol's Neural Baseline and physiological readiness score are live today. The five layers below are the roadmap that turns a single pre-market gate into a continuous, bidirectional feedback loop — one that learns your edge and intervenes <em style="color:var(--gold)">before</em> a decision degrades.</p>
+      <div class="roadmap-badge"><i></i> Roadmap &#183; In development</div>
+    </div>
+    <div class="layers">
+      <div class="layer-card reveal">
+        <span class="lc-n">Layer 01</span>
+        <div class="lc-body"><h3>Temporal Data Stream</h3><p>A continuous feed of your psychological state, market context, and trade outcomes — the raw signal the ecosystem learns from.</p></div>
+      </div>
+      <div class="layer-card reveal">
+        <span class="lc-n">Layer 02</span>
+        <div class="lc-body"><h3>Relational Graph Engine</h3><p>Maps how your state, market conditions, and performance relate — surfacing the conditions that reliably sharpen or degrade your edge.</p></div>
+      </div>
+      <div class="layer-card reveal">
+        <span class="lc-n">Layer 03</span>
+        <div class="lc-body"><h3>Neuromorphic Processing &#183; Real-Time Intervention</h3><p>Processing that learns and intervenes in the moment — nudging you before a decision degrades, not after the fact.</p></div>
+      </div>
+      <div class="layer-card reveal">
+        <span class="lc-n">Layer 04</span>
+        <div class="lc-body"><h3>Physiological&#8211;Behavioral Fusion Gate</h3><p>Fuses physiological signals — stress, sleep, focus, heart rate — with your behavior to gate readiness continuously, not just at the open.</p></div>
+      </div>
+      <div class="layer-card reveal">
+        <span class="lc-n">Layer 05</span>
+        <div class="lc-body"><h3>Fingerprint Evolution &#38; Causal Hygiene</h3><p>Your trader fingerprint refines with every session; causal hygiene separates what genuinely predicts outcomes from noise.</p></div>
+      </div>
+    </div>
+    <div class="atpe-foundation reveal">
+      <span class="af-dot"></span>
+      <p><strong>Foundation live today:</strong> the Neural Baseline and physiological readiness score (stress &#183; sleep &#183; focus &#183; heart rate) are already inside the Pre-Flight Protocol.</p>
+      <a href="/traderedge_preflight.html">Try the Pre-Flight Protocol &#8594;</a>
     </div>
   </div>
 </section>
@@ -932,6 +1034,7 @@ var CATALOG={
     items:[
       {name:'Preflight Protocol',desc:'Daily automated bias assessment, key liquidity pools, and the volatility catalyst calendar.',hl:['Institutional daily bias score','News sentiment heatmaps','Automated key-level mapping'],cta:'Launch Preflight Playbook',href:'/traderedge_preflight.html',viz:'bias'},
       {name:'Daily Market Picks',desc:'A real-time screener surfacing high-probability swing and day setups scored by machine learning.',hl:['Probability rating','Exact invalidation levels','Risk-to-reward targets'],cta:"View Today's Scored Picks",href:'/market_terminal.html',viz:'picks'},
+      {name:'Daily Pre-Run Detection',desc:'Pre-market scan across the full watchlist — flags the setups forming before the open.',hl:['Full watchlist pre-market scan','Pre-bell setup flags','Risk & confluency scoring'],cta:'Run Pre-Run Detection',href:'/prerun_detection.html',viz:'prerun'},
       {name:'AI Chart Analyzer',desc:'Instant automated structural analysis — fair value gaps, order blocks, and market structure breaks.',hl:['Zero-lag pattern recognition','Multi-timeframe structural overlay','Automated target zones'],cta:'Open Chart Analyzer',href:'https://chart-ai.snipertrader.ai',viz:'chart'},
       {name:'Sniper Market Forecaster',desc:'Macro forecasting curves charting price projection corridors and high-probability reversal windows.',hl:['Time-and-price cycle alignment','Liquidity sweep projections','Macro sentiment correlation'],cta:'Explore Market Forecasts',href:'/sniper_market_forecaster.html',viz:'forecast'}
     ]
@@ -966,6 +1069,14 @@ function vizHTML(type){
   if(type==='picks'){
     var rows=[['NVDA','Semiconductors',86],['AAPL','Technology',78],['TSLA','Automotive',64]];
     return rows.map(function(r){return '<div class="viz-row"><div><div class="vr-sym">'+r[0]+'</div><div class="vr-name">'+r[1]+'</div></div><div style="min-width:110px"><div class="vt-v sage" style="text-align:right">'+r[2]+'%</div><div class="viz-bar"><span style="width:'+r[2]+'%"></span></div></div></div>';}).join('');
+  }
+  if(type==='prerun'){
+    return '<div class="viz-status"><span class="live-dot"></span><div><div class="vs-t">Watchlist scanned</div><div class="vs-s">4 flags · 2 confluent</div></div></div>'+
+      '<div style="height:12px"></div><div class="viz-grid">'+
+      '<div class="viz-tile"><div class="vt-l">Scan</div><div class="vt-v sage">Pre-market</div></div>'+
+      '<div class="viz-tile"><div class="vt-l">Flags</div><div class="vt-v gold">4</div></div>'+
+      '<div class="viz-tile"><div class="vt-l">Confluent</div><div class="vt-v">2</div></div>'+
+      '<div class="viz-tile"><div class="vt-l">Window</div><div class="vt-v gold">09:30 ET</div></div></div>';
   }
   if(type==='chart'){
     return '<div class="pw-viz-label">M15 STRUCTURE</div>'+
