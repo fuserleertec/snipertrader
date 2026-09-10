@@ -86,6 +86,9 @@
   .fbtn:hover{color:var(--fg);border-color:var(--cyan)}
   .fbtn.active{color:var(--emerald);border-color:var(--emerald);background:color-mix(in srgb,var(--emerald) 10%,var(--panel))}
   .fbtn .cnt{opacity:.6;margin-left:5px;font-size:10px}
+  .sbtn{font-family:var(--font-m);font-size:11px;letter-spacing:.05em;background:var(--panel);color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:6px 14px;cursor:pointer;transition:all .15s;text-transform:uppercase}
+  .sbtn:hover{color:var(--fg);border-color:var(--cyan)}
+  .sbtn.active{color:var(--emerald);border-color:var(--emerald);background:color-mix(in srgb,var(--emerald) 10%,var(--panel))}
   .refresh-btn{font-family:var(--font-m);font-size:11px;letter-spacing:.05em;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:6px 14px;cursor:pointer;transition:all .15s;text-transform:uppercase;margin-left:auto;display:inline-flex;align-items:center;gap:6px}
   .refresh-btn:hover{color:var(--fg);border-color:var(--cyan)}
 
@@ -204,6 +207,9 @@
     <button class="fbtn" data-f="equity" onclick="setFilter('equity')">Equities <span class="cnt"></span></button>
     <button class="fbtn" data-f="crypto" onclick="setFilter('crypto')">Crypto <span class="cnt"></span></button>
     <button class="fbtn" data-f="futures" onclick="setFilter('futures')">Futures <span class="cnt"></span></button>
+    <span class="lbl" style="margin-left:14px">Sort</span>
+    <button class="sbtn active" data-s="conviction" onclick="setSort('conviction')">Conviction</button>
+    <button class="sbtn" data-s="edge" onclick="setSort('edge')">Edge (trailing PF)</button>
     <button class="refresh-btn" id="refreshBtn" onclick="refreshData()" title="Refresh live data"><span class="rf-icon">↻</span> <span class="rf-label">REFRESH</span></button>
   </div>
   <div class="board" id="board"></div>
@@ -279,39 +285,61 @@ function structure(bars){
     trend, mss, fvg, order_block:ob, sweep, support:+support.toFixed(4), resistance:+resistance.toFixed(4)};
 }
 
-function ensemble(bars,k){
-  const closes=bars.map(b=>b.c), ema12=emaSeries(closes,12), ema26=emaSeries(closes,26);
+function zlast(v){ if(!v||v.length<8) return 0; let m=v.reduce((a,b)=>a+b,0)/v.length; let va=v.reduce((a,x)=>a+(x-m)*(x-m),0)/v.length; let sd=Math.sqrt(va); return sd>1e-12?(v[v.length-1]-m)/sd:0; }
+function median(v){ const s=v.slice().sort((a,b)=>a-b); const n=s.length; if(!n) return 0; return n%2 ? s[Math.floor(n/2)] : (s[n/2-1]+s[n/2])/2; }
+
+function ensemble(bars,k,u){
+  const closes=bars.map(b=>b.c), n=closes.length, c=closes[closes.length-1];
+  const A=[];
+  const push=(name,strength,why)=>{ const sig=strength>0.4?'bull':(strength<-0.4?'bear':'neutral');
+    A.push({name,signal:sig,confidence:+Math.max(0,Math.min(1,Math.abs(strength))).toFixed(3),why}); };
+  const ema12=emaSeries(closes,12), ema26=emaSeries(closes,26);
   const e12=ema12[ema12.length-1], e26=ema26[ema26.length-1];
-  const sma50=sma(closes,50), sma200=sma(closes,closes.length>=200?200:closes.length);
-  const atr=atrSeries(bars), atrNow=atr?atr[atr.length-1]:null, atrSma=atr?sma(atr.filter(v=>v!=null),20):null;
+  const sma50=sma(closes,50), sma200=sma(closes,n>=200?200:n);
+  const atr=atrSeries(bars), atrNow=atr?atr[atr.length-1]:null, atrVals=atr?atr.filter(v=>v!=null):[];
   const rsi=rsiSeries(bars), rsiNow=rsi?rsi[rsi.length-1]:null;
   const obv=obvSeries(bars), obvSlope=obv.length>=10?(obv[obv.length-1]-obv[obv.length-10])/(obv[obv.length-10]||1):0;
-  const c=closes[closes.length-1], conf=(x,cap=1)=>+Math.max(0,Math.min(cap,Math.abs(x))).toFixed(3);
-  const A=[];
-  if(closes.length>=11){ const roc=(c/closes[closes.length-11]-1)*100, sig=roc>0.5?'bull':(roc<-0.5?'bear':'neutral');
-    A.push({name:'Momentum',signal:sig,confidence:conf(roc/6),why:`10-bar ROC ${roc>=0?'+':''}${roc.toFixed(1)}%`}); }
-  else A.push({name:'Momentum',signal:'neutral',confidence:0,why:'insufficient bars'});
-  const emaSig=e12>e26?'bull':'bear'; let stack=0; if(sma50&&sma200){ if(c>sma50&&sma50>sma200)stack=1; else if(c<sma50&&sma50<sma200)stack=-1; }
-  const spread=e26?(e12/e26-1):0, tSig=(emaSig==='bull'&&stack>=0)?'bull':((emaSig==='bear'&&stack<=0)?'bear':'neutral');
-  A.push({name:'Trend',signal:tSig,confidence:conf(Math.abs(spread)*40+0.3*stack),why:`EMA12/26 ${e12>e26?'above':'below'}, close vs SMA50 ${sma50?(c>sma50?'>':'<'):'?'} ${(sma50&&sma200)?(sma50>sma200?'>':'<'):''} SMA200`});
-  if(k.vwap){ const d=(c/k.vwap-1)*100; A.push({name:'Avg Price',signal:d>0?'bull':'bear',confidence:conf(Math.abs(d)/3),why:`close ${d>=0?'+':''}${d.toFixed(2)}% vs 20-bar avg price`}); }
-  else A.push({name:'Avg Price',signal:'neutral',confidence:0,why:'no avg price'});
-  if(k.order_block){ const obd=k.order_block.dir, zl=k.order_block.zone[0], zh=k.order_block.zone[1], prox=(c-zl)/(zh-zl||1);
-    A.push({name:'Key Level',signal:(obd==='bull'&&c>zl)?'bull':((obd==='bear'&&c<zh)?'bear':'neutral'),confidence:conf(1-Math.min(Math.abs(prox),1)),why:`near ${obd} key [${zl.toFixed(2)}–${zh.toFixed(2)}]`}); }
-  else A.push({name:'Key Level',signal:'neutral',confidence:0,why:'no key level'});
-  if(atrNow&&atrSma){ const vr=atrNow/atrSma; let sig='neutral'; if(vr>1.25)sig=sma50?(c>sma50?'bull':'bear'):'bull';
-    A.push({name:'Volatility',signal:sig,confidence:conf((vr-1)/1.5),why:`ATR ${vr.toFixed(2)}x its 20-bar mean`}); }
-  else A.push({name:'Volatility',signal:'neutral',confidence:0,why:'no ATR'});
-  const vSig=obvSlope>0.02?'bull':(obvSlope<-0.02?'bear':'neutral');
-  A.push({name:'Volume',signal:vSig,confidence:conf(Math.abs(obvSlope)*5),why:`OBV 10-bar slope ${obvSlope>=0?'+':''}${obvSlope.toFixed(3)}`});
-  if(rsiNow!=null){ let sig,cf; if(rsiNow>70){sig='bear';cf=(rsiNow-70)/30;} else if(rsiNow<30){sig='bull';cf=(30-rsiNow)/30;} else {sig='neutral';cf=0;}
-    A.push({name:'Mean Rev',signal:sig,confidence:conf(cf),why:`RSI ${rsiNow.toFixed(0)}`}); }
-  else A.push({name:'Mean Rev',signal:'neutral',confidence:0,why:'no RSI'});
-  let st=0; if(k.trend==='up')st+=1; else if(k.trend==='down')st-=1; if(k.mss==='bullish')st+=1; else if(k.mss==='bearish')st-=1;
+
+  // 1) Trend — EMA12/26 + SMA50/200 stack (single trend read)
+  let stack=0; if(sma50&&sma200){ if(c>sma50&&sma50>sma200)stack=1; else if(c<sma50&&sma50<sma200)stack=-1; }
+  const tDir=(e12>e26?1:-1)+stack;
+  push('Trend',tDir,`EMA12/26 ${e12>e26?'above':'below'}${(sma50&&sma200)?`, SMA50 ${c>sma50?'>':'<'} SMA200`:''}`);
+
+  // 2) Rel Momentum — cross-sectional relative strength (vs the universe)
+  if(n>=21){ const roc=closes[closes.length-1]/closes[closes.length-21]-1;
+    if(u&&u.cs_mad!=null){ const denom=1.4826*u.cs_mad; const rel=denom>1e-12?(roc-u.cs_median)/denom:0;
+      push('Rel Momentum',rel,`20-bar ROC ${(roc*100)>=0?'+':''}${(roc*100).toFixed(1)}% vs universe z ${rel>=0?'+':''}${rel.toFixed(1)}`); }
+    else { const rocs=[]; for(let i=20;i<n;i++) rocs.push(closes[i]/closes[i-20]-1); const z=zlast(rocs);
+      push('Rel Momentum',z,`20-bar ROC z ${z>=0?'+':''}${z.toFixed(1)}`); } }
+  else push('Rel Momentum',0,'insufficient bars');
+
+  // 3) Mean Rev — Bollinger z (contrarian)
+  const bbz=n>=20?zlast(closes.slice(-20)):0;
+  push('Mean Rev',-bbz,`BB z ${bbz>=0?'+':''}${bbz.toFixed(1)}${rsiNow!=null?`, RSI ${rsiNow.toFixed(0)}`:''}`);
+
+  // 4) Vol Regime — ATR percentile (low-vol continuation tilt, high-vol caution)
+  if(atrNow!=null&&atrVals.length){ let pct=0; for(const v of atrVals) if(v<=atrNow)pct++; pct/=atrVals.length;
+    push('Vol Regime',(0.5-pct)*2,`ATR ${(pct*100).toFixed(0)}th pct`); }
+  else push('Vol Regime',0,'no ATR');
+
+  // 5) Volume — OBV 10-bar slope, z-scored
+  if(obv.length>=18){ const slopes=[]; for(let i=10;i<obv.length;i++) slopes.push((obv[i]-obv[i-10])/(obv[i-10]||1));
+    push('Volume',zlast(slopes),`OBV 10-bar slope ${obvSlope>=0?'+':''}${obvSlope.toFixed(3)}`); }
+  else push('Volume',0,'insufficient bars');
+
+  // 6) Key Level — ATR-distance to nearest support/resistance
+  if(atrNow&&atrNow>0&&k.support&&k.resistance){ const dSup=(c-k.support)/atrNow, dRes=(k.resistance-c)/atrNow, near=Math.min(Math.abs(dSup),Math.abs(dRes));
+    let kl=0; if(near<=2) kl=(1-near/2)*(dSup<dRes?1:-1);
+    push('Key Level',kl,`${near.toFixed(1)} ATR to S/R`); }
+  else push('Key Level',0,'no level');
+
+  // 7) Structure — MSS + sweep (break/run, NOT trend which is agent #1)
+  let st=0; if(k.mss==='bullish')st+=1; else if(k.mss==='bearish')st-=1;
   if(k.sweep&&k.sweep.dir==='bull')st+=0.5; else if(k.sweep&&k.sweep.dir==='bear')st-=0.5;
-  A.push({name:'Structure',signal:st>=1?'bull':(st<=-1?'bear':'neutral'),confidence:conf(Math.abs(st)/2.5),why:`trend=${k.trend} break=${k.mss} sweep=${k.sweep?k.sweep.dir:'—'}`});
+  push('Structure',st,`break=${k.mss} sweep=${k.sweep?k.sweep.dir:'—'}`);
+
   const bull=A.filter(a=>a.signal==='bull').reduce((s,a)=>s+a.confidence,0), bear=A.filter(a=>a.signal==='bear').reduce((s,a)=>s+a.confidence,0);
-  const nBull=A.filter(a=>a.signal==='bull').length, nBear=A.filter(a=>a.signal==='bear').length, nNeu=A.filter(a=>a.signal==='neutral').length;
+  const nBull=A.filter(a=>a.signal==='bull'&&a.confidence>0.05).length, nBear=A.filter(a=>a.signal==='bear'&&a.confidence>0.05).length, nNeu=A.length-nBull-nBear;
   const consensus=+((bull+0.5)/(bull+bear+1.0)).toFixed(3);
   return {agents:A, bull:+bull.toFixed(3), bear:+bear.toFixed(3), n_bull:nBull, n_bear:nBear, n_neu:nNeu, consensus, consensus_pct:+(consensus*100).toFixed(1)};
 }
@@ -344,12 +372,11 @@ function tradeLevels(bars,k,cons){
   return {direction,entry,stop,target,rr};
 }
 
-function conviction(cons,k){ let kick=0; if(k.trend==='up')kick+=4; else if(k.trend==='down')kick-=4; if(k.mss==='bullish')kick+=4; else if(k.mss==='bearish')kick-=4;
-  return Math.max(0,Math.min(100,Math.round(cons*100+kick))); }
+function conviction(cons,k){ return Math.round(cons*100); }
 
-function analyzeSymbol(sym,bars){
+function analyzeSymbol(sym,bars,u){
   if(!bars||bars.length<60) return null;
-  const k=structure(bars), mf=ensemble(bars,k), cn=cone(bars), tl=tradeLevels(bars,k,mf.consensus);
+  const k=structure(bars), mf=ensemble(bars,k,u), cn=cone(bars), tl=tradeLevels(bars,k,mf.consensus);
   const prev=bars[bars.length-2]?bars[bars.length-2].c:bars[bars.length-1].c, chg=(bars[bars.length-1].c/prev-1)*100;
   return {symbol:sym, yahoo:'', currency:'', last:bars[bars.length-1].c, chg_pct:+chg.toFixed(2),
     structure:k, ensemble:mf, cone:cn, trade:tl, conviction:conviction(mf.consensus,k), n_bars:bars.length};
@@ -363,11 +390,19 @@ async function fetchAlpaca(sym,limit=512){ const r=await fetch(`/api/stocks/klin
   return (await r.json()).map(b=>({o:+b.open,h:+b.high,l:+b.low,c:+b.close,v:+b.volume})); }
 
 async function fetchLive(){
-  const out=[], sources={};
+  const out=[], sources={}, barMap={};
+  // pass 1: fetch all bars (cross-sectional momentum needs the whole universe first)
   await Promise.all([
-    ...CRYPTO.map(async sym=>{ try{ const r=analyzeSymbol(sym,await fetchBinance(sym)); if(r){out.push(r);sources[sym]='binance';} }catch(e){ sources[sym]='error'; } }),
-    ...EQUITY.map(async sym=>{ try{ const r=analyzeSymbol(sym,await fetchAlpaca(sym)); if(r){out.push(r);sources[sym]='alpaca';} }catch(e){ sources[sym]='error'; } })
+    ...CRYPTO.map(async sym=>{ try{ barMap[sym]=await fetchBinance(sym); sources[sym]='binance'; }catch(e){ sources[sym]='error'; } }),
+    ...EQUITY.map(async sym=>{ try{ barMap[sym]=await fetchAlpaca(sym); sources[sym]='alpaca'; }catch(e){ sources[sym]='error'; } })
   ]);
+  // pass 2: cross-sectional 20-bar ROC over the fetched universe
+  const rocs=[];
+  for(const sym of ALL_SYMBOLS){ const bars=barMap[sym]; if(bars&&bars.length>=21) rocs.push(bars[bars.length-1].c/bars[bars.length-21].c-1); }
+  const med=median(rocs), mad=median(rocs.map(r=>Math.abs(r-med)));
+  const u={cs_median:med, cs_mad:mad};
+  // pass 3: analyze with the cross-sectional context
+  for(const sym of ALL_SYMBOLS){ const bars=barMap[sym]; if(!bars) continue; const r=analyzeSymbol(sym,bars,u); if(r) out.push(r); }
   out.sort((a,b)=>((a.trade.direction!=='HOLD'?0:1)-(b.trade.direction!=='HOLD'?0:1)) || (b.conviction-a.conviction));
   return {results:out, sources, liveCount:out.length};
 }
@@ -459,7 +494,7 @@ function detailHtml(r,i){
       </div>
       <div class="dbox">
         <h4>Model read</h4>
-        <div class="cbar" style="margin-bottom:10px"><div class="b" style="width:${mf.n_bull/8*100}%">${mf.n_bull}B</div><div class="f" style="width:${mf.n_neu/8*100}%">${mf.n_neu}N</div><div class="r" style="width:${mf.n_bear/8*100}%">${mf.n_bear}R</div></div>
+        <div class="cbar" style="margin-bottom:10px"><div class="b" style="width:${mf.n_bull/7*100}%">${mf.n_bull}B</div><div class="f" style="width:${mf.n_neu/7*100}%">${mf.n_neu}N</div><div class="r" style="width:${mf.n_bear/7*100}%">${mf.n_bear}R</div></div>
         ${agentRows(mf.agents)}
       </div>
       <div class="dbox">
@@ -591,9 +626,27 @@ let openRow = -1;
 
 // ── asset-class filter ──
 let FILTER = 'all';
+let SORT = 'conviction';
+const EDGE_PF = (DATA.trade_backtest && DATA.trade_backtest.per_symbol_pf) || {};
+function sortResults(list){
+  if(SORT === 'edge'){
+    return list.slice().sort((a,b)=>{
+      const pa = EDGE_PF[a.symbol]!=null ? EDGE_PF[a.symbol] : -1;
+      const pb = EDGE_PF[b.symbol]!=null ? EDGE_PF[b.symbol] : -1;
+      return (pb - pa) || (b.conviction - a.conviction);
+    });
+  }
+  return list.slice().sort((a,b)=>((a.trade.direction!=='HOLD'?0:1)-(b.trade.direction!=='HOLD'?0:1)) || (b.conviction-a.conviction));
+}
 function filteredResults(){
-  if(FILTER === 'all') return results;
-  return results.filter(r => CLS[r.symbol] === FILTER);
+  const base = (FILTER === 'all') ? results : results.filter(r => CLS[r.symbol] === FILTER);
+  return sortResults(base);
+}
+function setSort(s){
+  SORT = s;
+  openRow = -1;
+  document.querySelectorAll('.sbtn').forEach(b => b.classList.toggle('active', b.dataset.s === s));
+  render();
 }
 function setFilter(f){
   FILTER = f;

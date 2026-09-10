@@ -16,10 +16,19 @@ const py = JSON.parse(fs.readFileSync(__dirname + '/results.json', 'utf8')).resu
 const pyMap = {};
 py.forEach(r => pyMap[r.symbol] = r);
 
+// snapshot cross-section (mirror Python analyze()): median/MAD of each symbol's latest 20-bar ROC
+const latestRocs = [];
+for (const sym in raw) {
+  const closes = raw[sym].bars.map(b => b.c);
+  if (closes.length >= 21) latestRocs.push(closes[closes.length-1]/closes[closes.length-21]-1);
+}
+const med = median(latestRocs), mad = median(latestRocs.map(r => Math.abs(r-med)));
+const u = { cs_median: med, cs_mad: mad };
+
 let allMatch = true;
 for (const sym of ['AAPL', 'NVDA', 'BTCUSDT', 'CL', 'GC', 'DOGEUSDT', 'AMD']) {
   const bars = raw[sym].bars.map(b => ({ o: b.o, h: b.h, l: b.l, c: b.c, v: b.v }));
-  const js = analyzeSymbol(sym, bars);
+  const js = analyzeSymbol(sym, bars, u);
   const p = pyMap[sym];
   const ok = js.conviction === p.conviction
     && js.ensemble.consensus_pct === p.ensemble.consensus_pct

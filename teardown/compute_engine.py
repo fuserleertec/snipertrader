@@ -9,9 +9,10 @@ Three engines:
   1. KRONOS  — structural detection from the actual k-lines:
      anchored VWAP, Fair Value Gaps, order blocks, liquidity sweeps,
      Market Structure Shift, trend structure.
-  2. MIROFISH — an ensemble of 8 deterministic technical models, each casting
-     a traceable Bull/Neutral/Bear vote with a confidence from a real formula.
-     The "swarm" is the honest aggregate of those real votes (NOT random).
+  2. MIROFISH — an ensemble of 7 de-correlated deterministic technical models,
+     each casting a traceable Bull/Neutral/Bear vote with a confidence equal to
+     its z-scored signal strength (no hand-tuned divisors).  The "swarm" is the
+     honest aggregate of those real votes (NOT random).
   3. CONE    — volatility-anchored probability: empirical distribution of
      forward returns over the lookback -> P(bull/base/bear). Not a simulated
      Monte-Carlo draw.
@@ -20,6 +21,7 @@ Outputs results.json consumed by the HTML prototype.
 """
 import json
 import math
+from bisect import bisect_right
 
 ATR_N = 14
 VWAP_N = 20
@@ -120,6 +122,53 @@ def fwd_returns(bars, n=FWD_BARS):
         out.append(closes[i + n] / closes[i] - 1.0)
     return out
 
+
+# --------------------------------------------------------------------------- #
+# Cross-sectional momentum — relative strength vs the universe
+# --------------------------------------------------------------------------- #
+def _median(vals):
+    s = sorted(vals)
+    n = len(s)
+    if n == 0:
+        return 0.0
+    return s[n // 2] if n % 2 else (s[n // 2 - 1] + s[n // 2]) / 2.0
+
+
+def cross_sectional(raw, window=20):
+    """Precompute point-in-time cross-sectional momentum statistics.
+
+    For each symbol, the `window`-bar rate-of-change at every bar (i >= window),
+    keyed by that bar's timestamp.  For every unique timestamp across the whole
+    universe, the cross-sectional median + MAD of the LATEST known ROC per
+    symbol (no lookahead).  Returns:
+      roc_series: {sym: [(t, roc), ...]}
+      stats:      {t: (median, mad)}
+    """
+    roc_series = {}
+    all_t = set()
+    for sym, rec in raw.items():
+        bars = rec["bars"]
+        closes = [b["c"] for b in bars]
+        ts = [b["t"] for b in bars]
+        ser = []
+        for i in range(window, len(bars)):
+            ser.append((ts[i], closes[i] / closes[i - window] - 1.0))
+            all_t.add(ts[i])
+        roc_series[sym] = ser
+    times = sorted(all_t)
+    t_lists = {sym: [x[0] for x in ser] for sym, ser in roc_series.items()}
+    r_lists = {sym: [x[1] for x in ser] for sym, ser in roc_series.items()}
+    stats = {}
+    for t in times:
+        rocs = []
+        for sym in roc_series:
+            i = bisect_right(t_lists[sym], t) - 1
+            if i >= 0:
+                rocs.append(r_lists[sym][i])
+        med = _median(rocs)
+        stats[t] = (med, _median([abs(r - med) for r in rocs]))
+    return roc_series, stats
+
 # --------------------------------------------------------------------------- #
 # KRONOS — structural detection
 # --------------------------------------------------------------------------- #
@@ -219,133 +268,125 @@ def structure(bars):
 # --------------------------------------------------------------------------- #
 # MIROFISH — 8 deterministic agents (real votes, traceable)
 # --------------------------------------------------------------------------- #
-def _conf(x, cap=1.0):
-    return round(max(0.0, min(cap, abs(x))), 3)
+def _zlast(vals):
+    """Population z-score of the LAST value vs the series (0 if too short/flat)."""
+    if not vals or len(vals) < 8:
+        return 0.0
+    m = sum(vals) / len(vals)
+    sd = math.sqrt(sum((x - m) ** 2 for x in vals) / len(vals))
+    return (vals[-1] - m) / sd if sd > 1e-12 else 0.0
 
-def ensemble(bars, k):
+
+def ensemble(bars, k, u=None):
+    """7 de-correlated agents, each casting one Bull/Neutral/Bear vote with a
+    confidence = clamp(|signal strength|, 0, 1).  Strengths are z-scored against
+    the symbol's own history or the cross-section (no hand-tuned divisors), so
+    the votes are comparable and the ensemble is no longer four echo copies of
+    one trend read.  Trend, Rel Momentum (cross-sectional relative strength),
+    Mean Rev, Vol Regime, Volume, Key Level (ATR-distance), Structure (MSS+sweep).
+
+    `u` = optional cross-sectional context {"cs_median": float, "cs_mad": float}
+    for the Rel Momentum agent (point-in-time, supplied by the caller)."""
     closes = [b["c"] for b in bars]
-    ema12 = ema_series(closes, 12)[-1]
-    ema26 = ema_series(closes, 26)[-1]
+    n = len(closes)
+    c = closes[-1]
+    A = []
+
+    def push(name, strength, why):
+        sig = "bull" if strength > 0.4 else ("bear" if strength < -0.4 else "neutral")
+        conf = round(max(0.0, min(1.0, abs(strength))), 3)
+        A.append({"name": name, "signal": sig, "confidence": conf, "why": why})
+
+    ema12 = ema_series(closes, 12)
+    ema26 = ema_series(closes, 26)
+    e12, e26 = ema12[-1], ema26[-1]
     sma50 = sma(closes, 50)
-    sma200 = sma(closes, 200) if len(closes) >= 200 else sma(closes, len(closes))
+    sma200 = sma(closes, 200) if n >= 200 else sma(closes, n)
     atr = atr_series(bars)
     atr_now = atr[-1] if atr else None
-    atr_sma = sma([a for a in atr if a is not None], 20) if atr else None
+    atr_vals = [a for a in atr if a is not None] if atr else []
     rsi = rsi_series(bars)
     rsi_now = rsi[-1] if rsi else None
     obv = obv_series(bars)
     obv_slope = (obv[-1] - obv[-10]) / (obv[-10] or 1) if len(obv) >= 10 else 0.0
-    c = closes[-1]
 
-    agents = []
-
-    # 1. Momentum (10-bar ROC)
-    if len(closes) >= 11:
-        roc = (c / closes[-11] - 1) * 100
-        sig = "bull" if roc > 0.5 else ("bear" if roc < -0.5 else "neutral")
-        agents.append({"name": "Momentum", "signal": sig, "confidence": _conf(roc / 6), "why": f"10-bar ROC {roc:+.1f}%"})
-    else:
-        agents.append({"name": "Momentum", "signal": "neutral", "confidence": 0, "why": "insufficient bars"})
-
-    # 2. Trend (EMA12 vs EMA26 + SMA50/200 stack)
-    ema_sig = "bull" if ema12 > ema26 else "bear"
+    # 1) Trend — EMA12/26 + SMA50/200 stack (the single trend read)
     stack = 0
     if sma50 and sma200:
-        if c > sma50 > sma200:
+        if c > sma50 and sma50 > sma200:
             stack = 1
-        elif c < sma50 < sma200:
+        elif c < sma50 and sma50 < sma200:
             stack = -1
-    spread = (ema12 / ema26 - 1) if ema26 else 0
-    sig = "bull" if (ema_sig == "bull" and stack >= 0) else ("bear" if (ema_sig == "bear" and stack <= 0) else "neutral")
-    agents.append({"name": "Trend", "signal": sig, "confidence": _conf(abs(spread) * 40 + 0.3 * stack),
-                   "why": f"EMA12/26 {'above' if ema12 > ema26 else 'below'}, close vs SMA50 {('>' if c > sma50 else '<') if sma50 else '?'} " +
-                           ((">" if sma50 > sma200 else "<") if (sma50 and sma200) else "") + " SMA200"})
+    t_dir = (1 if e12 > e26 else -1) + stack          # int in [-2, 2]
+    push("Trend", t_dir,
+         f"EMA12/26 {'above' if e12 > e26 else 'below'}"
+         + (f", SMA50 {'>' if c > sma50 else '<'} SMA200" if (sma50 and sma200) else ""))
 
-    # 3. VWAP (close vs anchored VWAP)
-    if k["vwap"]:
-        d = (c / k["vwap"] - 1) * 100
-        sig = "bull" if d > 0 else "bear"
-        agents.append({"name": "Avg Price", "signal": sig, "confidence": _conf(abs(d) / 3),
-                       "why": f"close {d:+.2f}% vs 20-bar avg price"})
-    else:
-        agents.append({"name": "Avg Price", "signal": "neutral", "confidence": 0, "why": "no avg price"})
-
-    # 4. Order block (proximity to nearest OB)
-    if k["order_block"]:
-        obd = k["order_block"]["dir"]
-        zl, zh = k["order_block"]["zone"]
-        prox = (c - zl) / (zh - zl) if zh > zl else 0
-        if obd == "bull" and c > zl:
-            sig = "bull"
-        elif obd == "bear" and c < zh:
-            sig = "bear"
+    # 2) Rel Momentum — cross-sectional relative strength (vs the universe)
+    if n >= 21:
+        roc = closes[-1] / closes[-21] - 1.0
+        if u and u.get("cs_mad") is not None:
+            denom = 1.4826 * u["cs_mad"]
+            rel = (roc - u["cs_median"]) / denom if denom > 1e-12 else 0.0
+            push("Rel Momentum", rel, f"20-bar ROC {roc * 100:+.1f}% vs universe z {rel:+.1f}")
         else:
-            sig = "neutral"
-        agents.append({"name": "Key Level", "signal": sig, "confidence": _conf(1 - min(abs(prox), 1)),
-                       "why": f"near {obd} key [{zl:.2f}–{zh:.2f}]"})
+            rocs = [closes[i] / closes[i - 20] - 1 for i in range(20, n)]
+            z = _zlast(rocs)
+            push("Rel Momentum", z, f"20-bar ROC z {z:+.1f}")
     else:
-        agents.append({"name": "Key Level", "signal": "neutral", "confidence": 0, "why": "no key level"})
+        push("Rel Momentum", 0.0, "insufficient bars")
 
-    # 5. Volatility regime (ATR vs 20-bar ATR)
-    if atr_now and atr_sma:
-        vr = atr_now / atr_sma
-        sig = "neutral"
-        if vr > 1.25 and (c > sma50 if sma50 else True):
-            sig = "bull"
-        elif vr > 1.25:
-            sig = "bear"
-        agents.append({"name": "Volatility", "signal": sig, "confidence": _conf((vr - 1) / 1.5),
-                       "why": f"ATR {vr:.2f}x its 20-bar mean"})
+    # 3) Mean Rev — Bollinger z (contrarian)
+    bbz = _zlast(closes[-20:]) if n >= 20 else 0.0
+    push("Mean Rev", -bbz, f"BB z {bbz:+.1f}" + (f", RSI {rsi_now:.0f}" if rsi_now is not None else ""))
+
+    # 4) Vol Regime — ATR percentile (low-vol continuation tilt, high-vol caution)
+    if atr_now is not None and atr_vals:
+        pct = sum(1 for v in atr_vals if v <= atr_now) / len(atr_vals)
+        push("Vol Regime", (0.5 - pct) * 2.0, f"ATR {pct * 100:.0f}th pct")
     else:
-        agents.append({"name": "Volatility", "signal": "neutral", "confidence": 0, "why": "no ATR"})
+        push("Vol Regime", 0.0, "no ATR")
 
-    # 6. Volume (OBV slope)
-    sig = "bull" if obv_slope > 0.02 else ("bear" if obv_slope < -0.02 else "neutral")
-    agents.append({"name": "Volume", "signal": sig, "confidence": _conf(abs(obv_slope) * 5),
-                   "why": f"OBV 10-bar slope {obv_slope:+.3f}"})
-
-    # 7. Mean reversion (RSI contrarian)
-    if rsi_now is not None:
-        if rsi_now > 70:
-            sig = "bear"
-            conf = (rsi_now - 70) / 30
-        elif rsi_now < 30:
-            sig = "bull"
-            conf = (30 - rsi_now) / 30
-        else:
-            sig = "neutral"
-            conf = 0
-        agents.append({"name": "Mean Rev", "signal": sig, "confidence": _conf(conf), "why": f"RSI {rsi_now:.0f}"})
+    # 5) Volume — OBV 10-bar slope, z-scored
+    if len(obv) >= 18:
+        slopes = [(obv[i] - obv[i - 10]) / (obv[i - 10] or 1) for i in range(10, len(obv))]
+        push("Volume", _zlast(slopes), f"OBV 10-bar slope {obv_slope:+.3f}")
     else:
-        agents.append({"name": "Mean Rev", "signal": "neutral", "confidence": 0, "why": "no RSI"})
+        push("Volume", 0.0, "insufficient bars")
 
-    # 8. Structure (trend + MSS + sweep)
-    st = 0
-    if k["trend"] == "up":
-        st += 1
-    elif k["trend"] == "down":
-        st -= 1
+    # 6) Key Level — ATR-distance to nearest support/resistance
+    if atr_now and atr_now > 0 and k["support"] and k["resistance"]:
+        d_sup = (c - k["support"]) / atr_now
+        d_res = (k["resistance"] - c) / atr_now
+        near = min(abs(d_sup), abs(d_res))
+        kl = 0.0
+        if near <= 2.0:
+            kl = (1.0 - near / 2.0) * (1 if d_sup < d_res else -1)
+        push("Key Level", kl, f"{near:.1f} ATR to S/R")
+    else:
+        push("Key Level", 0.0, "no level")
+
+    # 7) Structure — MSS + sweep (break/run, NOT trend which is agent #1)
+    st = 0.0
     if k["mss"] == "bullish":
-        st += 1
+        st += 1.0
     elif k["mss"] == "bearish":
-        st -= 1
+        st -= 1.0
     if k["sweep"] and k["sweep"]["dir"] == "bull":
         st += 0.5
     elif k["sweep"] and k["sweep"]["dir"] == "bear":
         st -= 0.5
-    sig = "bull" if st >= 1 else ("bear" if st <= -1 else "neutral")
-    agents.append({"name": "Structure", "signal": sig, "confidence": _conf(abs(st) / 2.5),
-                   "why": f"trend={k['trend']} break={k['mss']} sweep={k['sweep']['dir'] if k['sweep'] else '—'}"})
+    push("Structure", st, f"break={k['mss']} sweep={k['sweep']['dir'] if k['sweep'] else '—'}")
 
     # Consensus: confidence-weighted, with a uniform prior so a finite ensemble
     # never reads a fake 0% or 100%.  (NEU casts no directional vote.)
-    bull = sum(a["confidence"] for a in agents if a["signal"] == "bull")
-    bear = sum(a["confidence"] for a in agents if a["signal"] == "bear")
-    n_bull = sum(1 for a in agents if a["signal"] == "bull")
-    n_bear = sum(1 for a in agents if a["signal"] == "bear")
-    n_neu = sum(1 for a in agents if a["signal"] == "neutral")
+    bull = sum(a["confidence"] for a in A if a["signal"] == "bull")
+    bear = sum(a["confidence"] for a in A if a["signal"] == "bear")
+    n_bull = sum(1 for a in A if a["signal"] == "bull" and a["confidence"] > 0.05)
+    n_bear = sum(1 for a in A if a["signal"] == "bear" and a["confidence"] > 0.05)
+    n_neu = len(A) - n_bull - n_bear
     consensus = round((bull + 0.5) / (bull + bear + 1.0), 3)
-    return {"agents": agents, "bull": round(bull, 3), "bear": round(bear, 3),
+    return {"agents": A, "bull": round(bull, 3), "bear": round(bear, 3),
             "n_bull": n_bull, "n_bear": n_bear, "n_neu": n_neu,
             "consensus": consensus, "consensus_pct": round(consensus * 100, 1)}
 
@@ -444,27 +485,24 @@ def trade_levels(bars, k, cons):
 # Analyze all symbols
 # --------------------------------------------------------------------------- #
 def conviction(cons, k):
-    # conviction = consensus-driven, small structure kicker
-    kicker = 0
-    if k["trend"] == "up":
-        kicker += 4
-    elif k["trend"] == "down":
-        kicker -= 4
-    if k["mss"] == "bullish":
-        kicker += 4
-    elif k["mss"] == "bearish":
-        kicker -= 4
-    # round-half-up to match JS Math.round (Python round() is banker's: 42.5 -> 42)
-    return int(max(0, min(100, cons * 100 + kicker)) + 0.5)
+    # conviction = the consensus itself.  No separate trend/MSS kicker — Structure
+    # is already one of the ensemble votes, so a kicker would double-count trend.
+    # round-half-up to match JS Math.round (Python round() is banker's: 42.5 -> 42).
+    return int(cons * 100 + 0.5)
 
 def analyze(raw):
+    roc_series, _ = cross_sectional(raw)
+    latest_rocs = [ser[-1][1] for ser in roc_series.values() if ser]
+    med = _median(latest_rocs)
+    mad = _median([abs(r - med) for r in latest_rocs])
+    u = {"cs_median": med, "cs_mad": mad}
     results = []
     for key, rec in raw.items():
         bars = rec["bars"]
         if not bars or len(bars) < 60:
             continue
         k = structure(bars)
-        mf = ensemble(bars, k)
+        mf = ensemble(bars, k, u)
         cn = cone(bars)
         cons = mf["consensus"]
         tl = trade_levels(bars, k, cons)
@@ -491,7 +529,9 @@ def analyze(raw):
 def backtest(raw):
     """Walk-forward: at each bar (>=60 history), compute the ensemble's directional
     call, then measure the forward FWD_BARS return.  Aggregates hit rate across the
-    universe — the honest replacement for the dashboard's unsourced 'walk-forward 61%'."""
+    universe — the honest replacement for the dashboard's unsourced 'walk-forward 61%'.
+    Rel Momentum uses point-in-time cross-sectional context (no lookahead)."""
+    roc_series, stats = cross_sectional(raw)
     hits = calls = 0
     per_symbol = {}
     for key, rec in raw.items():
@@ -500,8 +540,9 @@ def backtest(raw):
         closes = [b["c"] for b in bars]
         for i in range(60, len(bars) - FWD_BARS):
             window = bars[: i + 1]
+            med, mad = stats.get(bars[i]["t"], (0.0, 0.0))
             k = structure(window)
-            mf = ensemble(window, k)
+            mf = ensemble(window, k, {"cs_median": med, "cs_mad": mad})
             cons = mf["consensus"]
             if cons < 0.60 and cons > 0.40:
                 continue                       # no directional call

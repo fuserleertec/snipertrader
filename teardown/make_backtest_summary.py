@@ -70,6 +70,7 @@ def headline(feats, raw, threshold, horizon, gate, rr_mode, cost_r, tag):
         "total_R": round(sum(rs), 1),
         "top5": [(s, p) for s, p in pfs[-5:]],
         "bottom5": [(s, p) for s, p in pfs[:5]],
+        "per_symbol_pf": {s: pf(rl) for s, rl in syms.items() if pf(rl) is not None},
     }
 
 
@@ -145,11 +146,39 @@ else:
     insider_s = (f"Insider Form 4 (30d): zero open-market purchases across the universe — "
                  f"insiders are net sellers ({tot_sells} sales)")
 
-verdict = (f"No systematic edge on EITHER timeframe. Fixed 2:1 R:R shows a small positive profit "
-           f"factor at zero cost (a cost-free artifact) that collapses to ~breakeven at a realistic "
-           f"0.05R round-trip cost — daily 2y ≈ PF 1.03, intraday 1h ≈ PF 1.05, both within noise. "
-           f"The edge concentrates in ~5 symbols while roughly half the universe loses money, and "
-           f"structure-anchored R:R is a net loser on both timeframes. Catalyst overlays (SEC EDGAR): "
+configs = [
+    headline(feats_d, raw_d, 0.70, 20, "none", "fixed2", 0.0, "1d"),
+    headline(feats_d, raw_d, 0.70, 20, "none", "fixed2", 0.05, "1d"),
+    headline(feats_d, raw_d, 0.70, 20, "none", "structure", 0.05, "1d"),
+    headline(feats_h, raw_h, 0.75, 20, "none", "fixed2", 0.0, "1h"),
+    headline(feats_h, raw_h, 0.75, 20, "none", "fixed2", 0.05, "1h"),
+    headline(feats_h, raw_h, 0.70, 20, "none", "structure", 0.05, "1h"),
+]
+per_symbol_pf = (configs[1] or {}).pop("per_symbol_pf", {})   # daily fixed2 @0.05R covers the full universe
+
+
+def _pf(x):
+    return x["profit_factor"] if (x and x.get("profit_factor") is not None) else None
+
+
+def _pfs(x):
+    return f"{x:.2f}" if x is not None else "n/a"
+
+
+pf_d0, pf_d1, pf_ds = _pf(configs[0]), _pf(configs[1]), _pf(configs[2])
+pf_h0, pf_h1, pf_hs = _pf(configs[3]), _pf(configs[4]), _pf(configs[5])
+intraday_desc = "below breakeven" if (pf_h1 is not None and pf_h1 < 1.0) else "marginal"
+
+edge_s = (
+    f"Fixed 2:1 R:R shows a positive profit factor at zero cost (daily ≈ PF {_pfs(pf_d0)}, "
+    f"intraday ≈ PF {_pfs(pf_h0)}) that erodes at a realistic 0.05R round-trip cost — daily "
+    f"≈ PF {_pfs(pf_d1)}, intraday ≈ PF {_pfs(pf_h1)} ({intraday_desc}) — so the zero-cost edge "
+    f"is a cost artifact, not a tradeable edge. Structure-anchored R:R is a net loser on both "
+    f"timeframes (daily ≈ PF {_pfs(pf_ds)}, intraday ≈ PF {_pfs(pf_hs)}), and the edge "
+    f"concentrates in a handful of symbols while roughly half the universe loses money."
+)
+
+verdict = (f"No systematic edge on EITHER timeframe. {edge_s} Catalyst overlays (SEC EDGAR): "
            f"{drift_s}. {insider_s}. Next: validate the drift out-of-sample with the actual 8-K "
            f"earnings-release date (not the lagged filing date).")
 
@@ -159,14 +188,8 @@ summary = {
         "calls": bt["total_calls"],
         "horizon": bt["horizon_bars"],
     },
-    "configs": [
-        headline(feats_d, raw_d, 0.70, 20, "none", "fixed2", 0.0, "1d"),
-        headline(feats_d, raw_d, 0.70, 20, "none", "fixed2", 0.05, "1d"),
-        headline(feats_d, raw_d, 0.70, 20, "none", "structure", 0.05, "1d"),
-        headline(feats_h, raw_h, 0.75, 20, "none", "fixed2", 0.0, "1h"),
-        headline(feats_h, raw_h, 0.75, 20, "none", "fixed2", 0.05, "1h"),
-        headline(feats_h, raw_h, 0.70, 20, "none", "structure", 0.05, "1h"),
-    ],
+    "configs": configs,
+    "per_symbol_pf": per_symbol_pf,
     "verdict": verdict,
 }
 
