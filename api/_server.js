@@ -14,6 +14,7 @@ const propApi = require('./prop/[action]');
 const reconPicks = require('./recon/picks');
 const reconRefresh = require('./recon/refresh');
 const reconHealth = require('./recon/health');
+const traderedge = require('./traderedge/[action]');
 
 const PORT = process.env.KRONOS_PORT || 8787;
 
@@ -57,8 +58,8 @@ const server = http.createServer((req, res) => {
   if (url.pathname === '/api/review_loop/analyze' && req.method === 'POST') {
     return buildReviewLoop(req, res);
   }
-  if (url.pathname === '/api/traderedge/preflight' && req.method === 'POST') {
-    return buildPreflight(req, res);
+  if (url.pathname.startsWith('/api/traderedge/')) {
+    return traderedge(req, vc(res));
   }
   if (url.pathname.startsWith('/api/admin')) {
     return buildAdmin(req, res, url);

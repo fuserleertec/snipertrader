@@ -297,6 +297,35 @@ footer{border-top:1px solid var(--grid-border);background:var(--obs);padding:64p
 .footer-col a:hover{color:var(--text);transform:translateX(2px);}
 .footer-bottom{border-top:1px solid var(--grid-border);padding-top:24px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-family:'Space Mono',monospace;font-size:10px;color:var(--text4);}
 .footer-disclaimer{max-width:820px;font-size:10px;color:var(--text4);line-height:1.65;margin-top:16px;opacity:.8;}
+/* ── ATPE ADAPTIVE LOOP ── */
+.fp-panel{border-color:var(--border-cyan);}
+.fp-tag{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:1px;color:var(--cyan);background:var(--cyan-dim);border:1px solid rgba(0,212,255,.25);padding:2px 7px;border-radius:20px;margin-left:8px;text-transform:uppercase;vertical-align:middle;}
+.fp-hint{font-size:9.5px;color:var(--text4);line-height:1.55;margin:8px 0 10px;font-family:'Space Mono',monospace;}
+.fp-list{display:flex;flex-direction:column;gap:6px;}
+.fp-empty{font-size:9.5px;color:var(--text4);line-height:1.5;font-style:italic;}
+.fp-row{display:flex;align-items:center;gap:8px;padding:7px 9px;background:var(--obs4);border:1px solid var(--grid-border);border-radius:8px;}
+.fp-state{font-family:'Playfair Display',sans-serif;font-size:10px;font-weight:700;letter-spacing:.5px;flex:1;text-transform:uppercase;}
+.fp-pct{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;}
+.fp-n{font-family:'Space Mono',monospace;font-size:7.5px;color:var(--text4);white-space:nowrap;}
+.atpe-result{margin-top:10px;border:1px solid var(--border-cyan);border-radius:14px;background:var(--card-bg);padding:14px 16px;}
+.atpe-result-head{font-family:'Playfair Display',sans-serif;font-size:11px;font-weight:700;color:var(--text);letter-spacing:.5px;margin-bottom:9px;}
+.atpe-result-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.ar-btn{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;border-radius:8px;padding:9px 16px;text-transform:uppercase;transition:all .2s;border:1px solid transparent;}
+.ar-btn.win{background:var(--green-dim);color:var(--green);border-color:rgba(0,255,157,.3);}
+.ar-btn.win:hover{box-shadow:0 0 16px rgba(0,255,157,.25);}
+.ar-btn.loss{background:var(--red-dim);color:var(--red);border-color:rgba(255,51,102,.3);}
+.ar-btn.loss:hover{box-shadow:0 0 16px rgba(255,51,102,.25);}
+.ar-chk{display:inline-flex;align-items:center;gap:5px;font-family:'Space Mono',monospace;font-size:8.5px;color:var(--text3);cursor:pointer;margin-left:4px;}
+.ar-chk input{accent-color:var(--cyan);cursor:pointer;}
+.atpe-result-msg{font-family:'Space Mono',monospace;font-size:8.5px;color:var(--text4);margin-top:8px;min-height:11px;}
+.atpe-banner{position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:900;width:min(560px,92vw);}
+.atpe-banner-inner{display:flex;align-items:flex-start;gap:12px;background:var(--card-bg);border:1px solid var(--red);border-radius:14px;padding:14px 16px;box-shadow:0 16px 48px rgba(0,0,0,.55);}
+.atpe-banner-ico{font-size:22px;line-height:1;}
+.atpe-banner-txt{flex:1;}
+.atpe-banner-title{font-family:'Playfair Display',sans-serif;font-size:11px;font-weight:900;color:var(--red);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;}
+.atpe-banner-msg{font-size:11.5px;color:var(--text2);line-height:1.55;}
+.atpe-banner-close{background:transparent;border:none;color:var(--text4);font-size:14px;cursor:pointer;padding:2px 6px;}
+.atpe-banner-close:hover{color:var(--red);}
 </style>
 </head>
 <body>
@@ -349,6 +378,18 @@ footer{border-top:1px solid var(--grid-border);background:var(--obs);padding:64p
     </div>
   </div>
 
+  <!-- ATPE INTERVENTION BANNER (fixed) -->
+  <div class="atpe-banner" id="atpeBanner" style="display:none;">
+    <div class="atpe-banner-inner">
+      <span class="atpe-banner-ico" id="atpeBannerIco">🛡</span>
+      <div class="atpe-banner-txt">
+        <div class="atpe-banner-title" id="atpeBannerTitle">Guardrail</div>
+        <div class="atpe-banner-msg" id="atpeBannerMsg"></div>
+      </div>
+      <button class="atpe-banner-close" onclick="closeBanner()">✕</button>
+    </div>
+  </div>
+
   <!-- SPLIT VIEW -->
   <div class="app">
     <!-- COMMAND SIDEBAR -->
@@ -374,6 +415,12 @@ footer{border-top:1px solid var(--grid-border);background:var(--obs);padding:64p
           <span class="c-head">Awaiting input</span>
           <span class="c-line">Select your neural state and the coach responds in real time.</span>
         </div>
+      </div>
+
+      <div class="sb-panel fp-panel">
+        <div class="sb-title">Adaptive Fingerprint<span class="fp-tag">ATP</span></div>
+        <div class="fp-hint">Your win-rate by neural state, learned from logged outcomes. Honest Bayesian posteriors — n + confidence shown, no bare percentages.</div>
+        <div class="fp-list" id="fpList"><span class="fp-empty">No outcomes logged yet. Finish a session and log a win / loss to start building your fingerprint.</span></div>
       </div>
 
       <div class="sb-panel">
@@ -470,6 +517,17 @@ footer{border-top:1px solid var(--grid-border);background:var(--obs);padding:64p
         </div>
         <button class="btn btn-lock" id="lockBtn" onclick="lockIn()">▶ LOCK IN SESSION</button>
         <button class="btn-unlock" id="unlockBtn" onclick="unlockSession()" style="display:none;">↺ Reset Session</button>
+      </div>
+
+      <!-- ATPE SESSION RESULT (closes the adaptive loop) -->
+      <div class="atpe-result" id="atpeResult" style="display:none;">
+        <div class="atpe-result-head">Session complete? Close the adaptive loop.</div>
+        <div class="atpe-result-row">
+          <button class="ar-btn win" onclick="logOutcome(true)">✅ Win</button>
+          <button class="ar-btn loss" onclick="logOutcome(false)">❌ Loss</button>
+          <label class="ar-chk"><input type="checkbox" id="impulsiveChk"> impulsive entry</label>
+        </div>
+        <div class="atpe-result-msg" id="atpeResultMsg"></div>
       </div>
     </main>
   </div>
@@ -1030,6 +1088,7 @@ function applyLock(l){
   document.getElementById('lockTitle').textContent='Session Protocol Locked';
   document.getElementById('lockSub').textContent='Locked at '+new Date(l.ts).toLocaleTimeString()+'. Form inputs are frozen for the session. '+(l.posted?'Payload posted to backend.':'Payload pending (offline — will retry on next lock).');
   document.getElementById('unlockBtn').style.display='inline-block';
+  document.getElementById('atpeResult').style.display='block';
   document.querySelectorAll('#stateRow .pill, .gate-cell, .mic-btn').forEach(el=>el.style.pointerEvents='none');
   ['stressSlider','sleepSlider','focusSlider','hrSlider','journalEntry'].forEach(id=>{document.getElementById(id).disabled=true;});
 }
@@ -1060,6 +1119,7 @@ async function lockIn(){
   try{localStorage.setItem(LS_LOCK,JSON.stringify({active:true,ts:Date.now(),posted}));}catch(e){}
   applyLock({active:true,ts:Date.now(),posted});
   loadStats();
+  checkIntervention();
 }
 
 /* ── SESSION TELEMETRY (localStorage only — honest, no demo) ── */
@@ -1096,6 +1156,76 @@ function toggleMic(){
   rec.onerror=()=>{btn.classList.remove('rec');lbl.textContent='DUMP';rec=null;};
   rec.start();
 }
+
+/* ── ATPE ADAPTIVE LOOP (Supabase-backed, honest posteriors) ── */
+const LS_RESULTS='st-pf-results';
+function traderId(){return localStorage.getItem('st-userId')||'local-trader';}
+
+function losingStreak(){
+  try{
+    const r=JSON.parse(localStorage.getItem(LS_RESULTS)||'[]');
+    let s=0;for(let i=r.length-1;i>=0;i--){if(r[i].win)break;s++;}
+    return s;
+  }catch(e){return 0;}
+}
+
+async function refreshFingerprint(){
+  const list=document.getElementById('fpList');if(!list)return;
+  try{
+    const res=await fetch('/api/traderedge/graph?traderId='+encodeURIComponent(traderId()));
+    if(!res.ok)throw new Error('http '+res.status);
+    const d=await res.json();
+    const edges=(d.posteriors||[]).filter(e=>e.from.startsWith('ps:'));
+    if(!edges.length){list.innerHTML='<span class="fp-empty">No outcomes logged yet. Finish a session and log a win / loss to start building your fingerprint.</span>';return;}
+    list.innerHTML=edges.map(e=>{
+      const st=e.from.slice(3);
+      const pct=Math.round(e.mean*100);
+      const col=e.mean>=0.5?'var(--green)':'var(--red)';
+      return '<div class="fp-row"><span class="fp-state" style="color:'+col+'">'+st+'</span>'
+        +'<span class="fp-pct" style="color:'+col+'">'+pct+'%</span>'
+        +'<span class="fp-n">n='+e.n+' · '+e.evidence+'</span></div>';
+    }).join('');
+  }catch(e){list.innerHTML='<span class="fp-empty">Fingerprint offline — backend not reachable.</span>';}
+}
+
+function logOutcome(win){
+  const chk=document.getElementById('impulsiveChk');
+  const impulsive=chk?chk.checked:false;
+  const rec={win,state:state.neuralState||'NEUTRAL',impulsive,ts:new Date().toISOString()};
+  try{const r=JSON.parse(localStorage.getItem(LS_RESULTS)||'[]');r.push(rec);if(r.length>200)r.shift();localStorage.setItem(LS_RESULTS,JSON.stringify(r));}catch(e){}
+  const msg=document.getElementById('atpeResultMsg');
+  if(msg)msg.textContent='Logging '+(win?'win':'loss')+'…';
+  fetch('/api/traderedge/outcome',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    win,state:state.neuralState||'NEUTRAL',impulsive,regime:'unclassified',traderId:traderId()
+  })}).then(r=>{
+    if(msg)msg.textContent=r.ok?('Logged. Fingerprint updated — keep logging to tighten confidence.'):'Backend unreachable — saved locally only.';
+    refreshFingerprint();
+  }).catch(()=>{if(msg)msg.textContent='Backend unreachable — saved locally only.';});
+}
+
+async function checkIntervention(){
+  try{
+    const streak=losingStreak();
+    const res=await fetch('/api/traderedge/intervene',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      state:state.neuralState||'NEUTRAL',stress:state.stress,sleep:state.sleep,focus:state.focus,hr:state.hr,
+      losingStreak:streak,sizeUp:false,planDeviation:false,regime:'unclassified',traderId:traderId()
+    })});
+    if(!res.ok)return;
+    const d=await res.json();
+    if(d&&d.level>0)showBanner(d);
+  }catch(e){}
+}
+
+function showBanner(d){
+  const b=document.getElementById('atpeBanner');if(!b)return;
+  const lvl={1:'Nudge',2:'Friction',3:'Gate'}[d.level]||'Guardrail';
+  const ico={1:'💡',2:'⚠️',3:'🛑'}[d.level]||'🛡';
+  document.getElementById('atpeBannerIco').textContent=ico;
+  document.getElementById('atpeBannerTitle').textContent=lvl+' — adaptive guardrail';
+  document.getElementById('atpeBannerMsg').textContent=d.message||'';
+  b.style.display='block';
+}
+function closeBanner(){const b=document.getElementById('atpeBanner');if(b)b.style.display='none';}
 
 /* ── PARTICLES ── */
 (function(){
@@ -1137,6 +1267,7 @@ function toggleMic(){
   updateHUD();
   renderCoach();
   loadStats();
+  refreshFingerprint();
   document.getElementById('journalEntry').addEventListener('input',()=>{state.journal=document.getElementById('journalEntry').value;saveDraft();});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeStack();}});
 })();
