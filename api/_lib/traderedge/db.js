@@ -47,6 +47,18 @@ function cfg() {
 
 function isConfigured() { return !!(URL_CONN || (HOST && PASSWORD)); }
 
+// Non-secret diagnostic of the resolved connection config (no password).
+function diag() {
+  return {
+    separateVars: !!(HOST && PASSWORD),
+    host: HOST || null,
+    user: process.env.SUPABASE_USER || null,
+    port: process.env.SUPABASE_PORT || null,
+    database: process.env.SUPABASE_DB || null,
+    hasUrl: !!URL_CONN
+  };
+}
+
 let pool = null;
 function getPool() {
   if (!pool) pool = new Pool({ ...cfg(), max: 4, connectionTimeoutMillis: 8000 });
@@ -68,4 +80,4 @@ async function query(text, params) {
   return getPool().query(text, params);
 }
 
-module.exports = { query, isConfigured, cfg };
+module.exports = { query, isConfigured, cfg, diag };

@@ -8,6 +8,7 @@
 const stream = require('./stream');
 const graphMod = require('./graph');
 const policy = require('./policy');
+const db = require('./db');
 
 function respond(res, code, obj) {
   res.writeHead(code, { 'Content-Type': 'application/json' });
@@ -57,8 +58,13 @@ async function graphHandler(req, res) {
       honest: 'association edges only — no causal claims yet (see blueprint §6, §11)'
     });
   } catch (e) {
-    respond(res, 500, { error: 'graph read failed', detail: e.message });
+    respond(res, 500, { error: 'graph read failed', detail: e.message, diag: db.diag() });
   }
+}
+
+// GET /api/traderedge/diag — non-secret connection config (debugging aid)
+function diagHandler(req, res) {
+  respond(res, 200, { ok: true, ...db.diag() });
 }
 
 // POST /api/traderedge/intervene — fusion-gated, graduated intervention
@@ -120,4 +126,4 @@ async function override(req, res) {
   }
 }
 
-module.exports = { ingest, graph: graphHandler, intervene, outcome, override, readBody, respond, stream, graphMod, policy };
+module.exports = { ingest, graph: graphHandler, intervene, outcome, override, diag: diagHandler, readBody, respond, stream, graphMod, policy };

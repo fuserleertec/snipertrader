@@ -42,6 +42,9 @@ module.exports = async (req, res) => {
       case 'override':
         if (req.method !== 'POST') { res.status(404).json({ error: 'not found — POST /api/traderedge/override' }); return; }
         return engine.override(req, res);
+      case 'diag':
+        if (req.method !== 'GET') { res.status(404).json({ error: 'not found — GET /api/traderedge/diag' }); return; }
+        return engine.diag(req, res);
       default:
         res.status(404).json({ error: 'unknown traderedge action: ' + action });
     }
