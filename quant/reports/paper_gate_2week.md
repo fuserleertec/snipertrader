@@ -339,3 +339,19 @@ Last good pre-outage densify (~11:27 ET / earlier Day 5 formal WF): closed≈**1
 | Blockers | none |
 
 Gate **unchanged**: 2026-09-05T07:33:14Z → 2026-09-19T07:33:14Z. **Do not** set `live_trading` true.
+
+### Day 7 — 2026-09-11 (weekday, America/New_York)
+
+**Status: OK / accruing.** `live_trading` false. `:8001` healthy, inmemory=false. Hydrate-on-start ready (live process not bounced). LATEST.json + Timescale bind present.
+
+| Continuous | Value |
+|---|---|
+| closed_trades | **169** (TP=122, SL=46, CXL=1) |
+| open | **0** |
+| equity / realized | ≈**105226** / ≈**+37954** |
+| perf n_closed | **168**, WR≈72.6%, avg_rr≈1.59 |
+| by_setup | all n=**28** |
+| formal WF ±15pp/±0.50R | **FAIL all six** vs synthetic WF OOS (advisory; keep accruing) |
+| Blockers | none |
+
+Gate **unchanged**: 2026-09-05T07:33:14Z → 2026-09-19T07:33:14Z. **Do not** set `live_trading` true.
