@@ -2,9 +2,13 @@
 /**
  * api/_lib/traderedge/db.js — Supabase Postgres connection helper (pg).
  *
- * Connects to SUPABASE_DATABASE_URL. Local dev uses a long-lived Pool; Vercel
- * serverless uses a short-lived Client per call (pools don't survive the
- * invocation). Mirrors the zero-dep .env loader already used in _core.js.
+ * Connection config accepts EITHER:
+ *   SUPABASE_DATABASE_URL                      (full postgres:// URI)
+ *   SUPABASE_HOST / SUPABASE_PORT / SUPABASE_USER / SUPABASE_PASSWORD / SUPABASE_DB
+ *
+ * Separate vars are PREFERRED when present — they avoid URL-encoding pitfalls
+ * for passwords containing special characters (e.g. '*'), and they let Vercel
+ * store the password verbatim.
  */
 const { Pool, Client } = require('pg');
 
@@ -22,12 +26,30 @@ const { Pool, Client } = require('pg');
   } catch (_) {}
 })();
 
-const CONN = process.env.SUPABASE_DATABASE_URL;
 const SSL = { rejectUnauthorized: false };
+const URL_CONN = process.env.SUPABASE_DATABASE_URL;
+const HOST = process.env.SUPABASE_HOST;
+const PASSWORD = process.env.SUPABASE_PASSWORD;
+
+function cfg() {
+  if (HOST && PASSWORD) {
+    return {
+      host: HOST,
+      port: Number(process.env.SUPABASE_PORT) || 5432,
+      user: process.env.SUPABASE_USER || 'postgres',
+      password: PASSWORD,
+      database: process.env.SUPABASE_DB || 'postgres',
+      ssl: SSL
+    };
+  }
+  return { connectionString: URL_CONN, ssl: SSL };
+}
+
+function isConfigured() { return !!(URL_CONN || (HOST && PASSWORD)); }
 
 let pool = null;
 function getPool() {
-  if (!pool) pool = new Pool({ connectionString: CONN, ssl: SSL, max: 4, connectionTimeoutMillis: 8000 });
+  if (!pool) pool = new Pool({ ...cfg(), max: 4, connectionTimeoutMillis: 8000 });
   return pool;
 }
 
@@ -36,9 +58,9 @@ function getPool() {
  * On Vercel: fresh Client per call. Locally: reuse the pool.
  */
 async function query(text, params) {
-  if (!CONN) throw new Error('SUPABASE_DATABASE_URL not configured');
+  if (!isConfigured()) throw new Error('SUPABASE_DATABASE_URL (or SUPABASE_HOST + SUPABASE_PASSWORD) not configured');
   if (process.env.VERCEL) {
-    const c = new Client({ connectionString: CONN, ssl: SSL, connectionTimeoutMillis: 8000 });
+    const c = new Client({ ...cfg(), connectionTimeoutMillis: 8000 });
     await c.connect();
     try { return await c.query(text, params); }
     finally { await c.end(); }
@@ -46,6 +68,4 @@ async function query(text, params) {
   return getPool().query(text, params);
 }
 
-function isConfigured() { return !!CONN; }
-
-module.exports = { query, isConfigured, CONN };
+module.exports = { query, isConfigured, cfg };
