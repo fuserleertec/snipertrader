@@ -7,6 +7,7 @@
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
   --bg:#020408; --bg2:#06090F; --bg3:#0A1018; --ink:#020408;
@@ -206,13 +207,27 @@ tbody tr:last-child td{border-bottom:none}
 <div class="topbar">
   <a class="logo" href="/index.html" style="text-decoration:none">SNIPERTRADER<span>.ai</span></a>
   <span class="crumb">/ admin / sentinel</span>
-  <span class="demo-badge">Demo Data</span>
+  <span class="demo-badge" id="status-badge" style="background:var(--text4)">Offline</span>
   <div class="spacer"></div>
   <button class="btn sm" onclick="toggleTheme()" title="Toggle theme">◐ Theme</button>
+  <button class="btn sm" id="signout-btn" onclick="signOut()" style="display:none">Sign out</button>
   <a href="/sentinel_program.html">← Program page</a>
 </div>
 
-<div class="shell">
+<div id="login-screen" style="position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:var(--bg);">
+  <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:32px;width:min(380px,92vw);">
+    <div style="font-family:var(--ff-m);font-size:.6rem;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;margin-bottom:6px;">Sentinel Command Center</div>
+    <h2 style="font-family:var(--ff-d);font-size:1.4rem;font-weight:600;margin-bottom:18px;">Admin sign in</h2>
+    <label for="login-email" style="font-family:var(--ff-m);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text4);">Email</label>
+    <input id="login-email" type="email" autocomplete="username" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--text);padding:10px 12px;margin:6px 0 14px;font-family:var(--ff-b);font-size:.9rem;">
+    <label for="login-pw" style="font-family:var(--ff-m);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text4);">Password</label>
+    <input id="login-pw" type="password" autocomplete="current-password" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--text);padding:10px 12px;margin:6px 0 14px;font-family:var(--ff-b);font-size:.9rem;">
+    <div id="login-err" style="color:var(--red);font-size:.78rem;min-height:20px;margin-bottom:10px;"></div>
+    <button class="btn primary" onclick="signIn()" style="width:100%;">Sign in</button>
+  </div>
+</div>
+
+<div class="shell" id="shell" style="display:none">
   <aside class="sidebar">
     <div class="sec">
       <div class="side-head">Operations</div>
@@ -223,7 +238,7 @@ tbody tr:last-child td{border-bottom:none}
       <button class="nav-item" data-view="assets" onclick="showView('assets')"><span class="ic">▤</span>Assets & Links</button>
       <button class="nav-item" data-view="compliance" onclick="showView('compliance')"><span class="ic">✓</span>Compliance <span class="cnt" id="cnt-cpl">0</span></button>
     </div>
-    <div class="demo-note"><b>Demo prototype</b><br>No live tracking, auth, or payout rails yet. Every row is synthetic seed data. See the plan for the real backend (Supabase + Stripe).</div>
+    <div class="demo-note"><b>Live data</b><br>Supabase Postgres + row-level security. Payout rails (Stripe Connect) are pending business onboarding.</div>
   </aside>
 
   <main class="content">
@@ -341,7 +356,7 @@ tbody tr:last-child td{border-bottom:none}
 </div>
 
 <div class="foot">
-  <span>Sentinel Command Center — <b>DEMO prototype</b>. No production data or financial rails.</span>
+  <span>Sentinel Command Center — live (Supabase + RLS).</span>
   <span class="spacer"></span>
   <span>snipertrader.ai · internal ops surface</span>
 </div>
@@ -357,286 +372,247 @@ tbody tr:last-child td{border-bottom:none}
 
 <script>
 'use strict';
-// ================= SEED (all synthetic) =================
+// ================= Supabase client + auth =================
+const SUPABASE_URL = 'https://atatrdqllhytyhllrnrb.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0YXRyZHFsbGh5dHlobGxybnJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwNzY2NDcsImV4cCI6MjEwNDY1MjY0N30.stGbN5h_0U8USOXJ2uaJH-5p-tEsrFsG9Jeggz6a7D0';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 const TIERS = {recruit:'Recruit', operative:'Operative', commander:'Commander', ghost:'Ghost Protocol'};
-const TIER_COLOR = {recruit:'cyan', operative:'emerald', commander:'gold', ghost:'violet'};
-
-const AFFILIATES = [
-  {id:'SEN-7K2-A3', name:'Marcus Rivera', handle:'@mr_charts', tier:'commander', status:'active', refs30:18, earn30:4820, earnTotal:61440, method:'stripe', joined:'2025-11-02', audience:'42,000 (YouTube)', sponsor:'—', platforms:['YouTube','X']},
-  {id:'SEN-3F8-C2', name:'Kenji Tanaka', handle:'@kenji_ict', tier:'ghost', status:'active', refs30:31, earn30:9280, earnTotal:183200, method:'wire', joined:'2025-08-19', audience:'180,000 (YouTube + Discord)', sponsor:'—', platforms:['YouTube','Discord']},
-  {id:'SEN-5R6-E1', name:'Dmitri Volkov', handle:'@volkov_flow', tier:'commander', status:'active', refs30:12, earn30:3140, earnTotal:41880, method:'paypal', joined:'2025-12-11', audience:'28,000 (X + Telegram)', sponsor:'SEN-3F8-C2', platforms:['X','Telegram']},
-  {id:'SEN-9Q1-B7', name:'Aisha Okafor', handle:'@aisha_smc', tier:'operative', status:'active', refs30:9, earn30:1880, earnTotal:15240, method:'stripe', joined:'2026-01-24', audience:'9,500 (TikTok)', sponsor:'SEN-7K2-A3', platforms:['TikTok','X']},
-  {id:'SEN-8H3-G6', name:'Elena Petrova', handle:'@elena_vwap', tier:'operative', status:'active', refs30:7, earn30:1540, earnTotal:9870, method:'crypto', joined:'2026-02-03', audience:'6,800 (X)', sponsor:'SEN-5R6-E1', platforms:['X']},
-  {id:'SEN-7V5-K3', name:'Hannah Weiss', handle:'@hannah_fx', tier:'commander', status:'active', refs30:14, earn30:3660, earnTotal:39200, method:'wire', joined:'2025-10-27', audience:'31,000 (YouTube)', sponsor:'—', platforms:['YouTube','X']},
-  {id:'SEN-1M4-D9', name:'Sofia Marchetti', handle:'@sofia_fvg', tier:'recruit', status:'active', refs30:3, earn30:420, earnTotal:1260, method:'paypal', joined:'2026-03-15', audience:'2,100 (Instagram)', sponsor:'SEN-9Q1-B7', platforms:['Instagram']},
-  {id:'SEN-9M2-M5', name:'Tomi Adegoke', handle:'@tomi_liquidity', tier:'operative', status:'active', refs30:8, earn30:1620, earnTotal:11840, method:'stripe', joined:'2026-01-09', audience:'11,000 (YouTube)', sponsor:'SEN-7V5-K3', platforms:['YouTube']},
-  {id:'SEN-2T8-F4', name:'Priya Nair', handle:'@priya_orders', tier:'operative', status:'pending', refs30:0, earn30:0, earnTotal:0, method:'stripe', joined:'2026-04-02', audience:'7,400 (X)', sponsor:'—', platforms:['X']},
-  {id:'SEN-6W2-J8', name:'Jordan Blake', handle:'@jblake_ict', tier:'recruit', status:'active', refs30:2, earn30:260, earnTotal:780, method:'paypal', joined:'2026-03-28', audience:'1,900 (X)', sponsor:'SEN-9M2-M5', platforms:['X']},
-  {id:'SEN-4K9-H2', name:'Liam O\'Connor', handle:'@liam_futures', tier:'recruit', status:'suspended', refs30:1, earn30:140, earnTotal:140, method:'stripe', joined:'2026-02-20', audience:'3,300 (YouTube)', sponsor:'—', platforms:['YouTube']},
-  {id:'SEN-3N7-L1', name:'Raj Patel', handle:'@raj_signals', tier:'recruit', status:'terminated', refs30:0, earn30:0, earnTotal:0, method:'—', joined:'2026-01-30', audience:'900 (Telegram)', sponsor:'—', platforms:['Telegram']}
-];
-
-const COMMISSIONS = [
-  {id:'CM-8841', aff:'SEN-7K2-A3', type:'direct', amount:320, product:'USME Algo', status:'pending', date:'2026-04-08'},
-  {id:'CM-8842', aff:'SEN-9Q1-B7', type:'recurring', amount:45, product:'Psych App (renewal)', status:'pending', date:'2026-04-08'},
-  {id:'CM-8843', aff:'SEN-3F8-C2', type:'direct', amount:480, product:'Prop Firm Command Center', status:'pending', date:'2026-04-09'},
-  {id:'CM-8844', aff:'SEN-5R6-E1', type:'override', amount:96, product:'Sub-affiliate (SEN-9Q1-B7)', status:'pending', date:'2026-04-09'},
-  {id:'CM-8845', aff:'SEN-1M4-D9', type:'direct', amount:60, product:'USME Algo', status:'pending', date:'2026-04-10'},
-  {id:'CM-8846', aff:'SEN-9M2-M5', type:'bundle_bonus', amount:74, product:'Bundle: Algo + Psych', status:'flagged', date:'2026-04-10', dispute:'Two affiliates touched within window'},
-  {id:'CM-8847', aff:'SEN-7V5-K3', type:'direct', amount:280, product:'USME Algo', status:'flagged', date:'2026-04-11', dispute:'Two affiliates touched within window'},
-  {id:'CM-8848', aff:'SEN-8H3-G6', type:'recurring', amount:38, product:'Psych App (renewal)', status:'pending', date:'2026-04-11'},
-  {id:'CM-8849', aff:'SEN-3F8-C2', type:'revenue_share', amount:1200, product:'Co-produced course', status:'approved', date:'2026-04-01'},
-  {id:'CM-8850', aff:'SEN-7K2-A3', type:'direct', amount:300, product:'USME Algo', status:'paid', date:'2026-03-28'},
-  {id:'CM-8851', aff:'SEN-9Q1-B7', type:'direct', amount:210, product:'USME Algo', status:'paid', date:'2026-03-27'},
-  {id:'CM-8852', aff:'SEN-5R6-E1', type:'recurring', amount:66, product:'Psych App (renewal)', status:'paid', date:'2026-03-26'},
-  {id:'CM-8853', aff:'SEN-7V5-K3', type:'direct', amount:290, product:'Prop Firm Command Center', status:'paid', date:'2026-03-25'},
-  {id:'CM-8854', aff:'SEN-8H3-G6', type:'direct', amount:180, product:'USME Algo', status:'paid', date:'2026-03-24'},
-  {id:'CM-8855', aff:'SEN-6W2-J8', type:'direct', amount:130, product:'USME Algo', status:'rejected', date:'2026-03-22', reason:'Refunded'},
-  {id:'CM-8856', aff:'SEN-3F8-C2', type:'override', amount:160, product:'Sub-affiliate (SEN-5R6-E1)', status:'paid', date:'2026-03-21'},
-  {id:'CM-8857', aff:'SEN-9M2-M5', type:'direct', amount:220, product:'USME Algo', status:'paid', date:'2026-03-20'},
-  {id:'CM-8858', aff:'SEN-4K9-H2', type:'direct', amount:140, product:'USME Algo', status:'paid', date:'2026-03-18'}
-];
-
-const PAYOUTS = [
-  {id:'PO-3011', aff:'SEN-3F8-C2', amount:9280, method:'wire', status:'queued', requested:'2026-04-09'},
-  {id:'PO-3012', aff:'SEN-7K2-A3', amount:4820, method:'stripe', status:'processing', requested:'2026-04-09'},
-  {id:'PO-3013', aff:'SEN-7V5-K3', amount:3660, method:'wire', status:'queued', requested:'2026-04-08'},
-  {id:'PO-3014', aff:'SEN-8H3-G6', amount:1540, method:'crypto', status:'hold', requested:'2026-04-08', note:'Manual review > $1,000 crypto'},
-  {id:'PO-3015', aff:'SEN-9Q1-B7', amount:1880, method:'stripe', status:'completed', requested:'2026-03-28'},
-  {id:'PO-3016', aff:'SEN-5R6-E1', amount:3140, method:'paypal', status:'completed', requested:'2026-03-28'}
-];
-
-const ASSETS = [
-  {t:'Branded banner pack', d:'16:9 + 1:1 hero banners, emerald/gold on dark', tier:'recruit', v:'v3', url:'/assets/…'},
-  {t:'USME methodology explainer', d:'30-sec vertical clip template for shorts', tier:'operative', v:'v2', url:'/assets/…'},
-  {t:'Commission quick-reference card', d:'Tier math + attribution rules, one page', tier:'recruit', v:'v4', url:'/assets/…'},
-  {t:'Prop-firm funnel deck', d:'Slides for funded-account audiences', tier:'commander', v:'v2', url:'/assets/…'},
-  {t:'Co-branded ghost kit', d:'Custom intros + logo lockups', tier:'ghost', v:'v1', url:'/assets/…'},
-  {t:'FTC disclosure templates', d:'Copy blocks per platform (YT/X/TikTok)', tier:'recruit', v:'v5', url:'/assets/…'}
-];
-
-const COMPLIANCE = [
-  {aff:'SEN-7K2-A3', name:'Marcus Rivera', tax:'w9', ftc:'verified', agreement:'signed'},
-  {aff:'SEN-3F8-C2', name:'Kenji Tanaka', tax:'w8', ftc:'verified', agreement:'signed'},
-  {aff:'SEN-5R6-E1', name:'Dmitri Volkov', tax:'w8', ftc:'verified', agreement:'signed'},
-  {aff:'SEN-9Q1-B7', name:'Aisha Okafor', tax:'w9', ftc:'verified', agreement:'signed'},
-  {aff:'SEN-8H3-G6', name:'Elena Petrova', tax:'none', ftc:'partial', agreement:'signed'},
-  {aff:'SEN-7V5-K3', name:'Hannah Weiss', tax:'w9', ftc:'verified', agreement:'signed'},
-  {aff:'SEN-1M4-D9', name:'Sofia Marchetti', tax:'none', ftc:'partial', agreement:'pending'},
-  {aff:'SEN-9M2-M5', name:'Tomi Adegoke', tax:'w9', ftc:'verified', agreement:'signed'},
-  {aff:'SEN-2T8-F4', name:'Priya Nair', tax:'none', ftc:'none', agreement:'pending'},
-  {aff:'SEN-6W2-J8', name:'Jordan Blake', tax:'none', ftc:'partial', agreement:'signed'},
-  {aff:'SEN-4K9-H2', name:'Liam O\'Connor', tax:'none', ftc:'none', agreement:'none'},
-  {aff:'SEN-3N7-L1', name:'Raj Patel', tax:'none', ftc:'none', agreement:'none'}
-];
-
-const ACTIVITY = [
-  {dot:'emerald', txt:'<b>Kenji Tanaka</b> crossed 30 referrals this month', when:'2h ago'},
-  {dot:'gold', txt:'Tier upgrade: <b>Priya Nair</b> → Operative (pending approval)', when:'5h ago'},
-  {dot:'red', txt:'Dispute flagged: <b>CM-8846</b> — two affiliates touched within window', when:'9h ago'},
-  {dot:'emerald', txt:'Payout <b>PO-3015</b> completed to Aisha Okafor ($1,880)', when:'1d ago'},
-  {dot:'cyan', txt:'New application: <b>Sofia Marchetti</b> (Recruit)', when:'1d ago'},
-  {dot:'red', txt:'<b>Liam O\'Connor</b> suspended — missing W-9', when:'2d ago'},
-  {dot:'gold', txt:'Recurring renewal credited: <b>CM-8852</b> Dmitri Volkov', when:'3d ago'}
-];
-
-// ================= state =================
-let affiliates = AFFILIATES.map(a => ({...a, history:[
-  {t: a.tier, d: a.joined, tag: a.tier==='recruit'?'':'join'}
-]}));
-let commissions = COMMISSIONS.map(c => ({...c}));
-let payouts = PAYOUTS.map(p => ({...p}));
+let session = null;
+let affiliates = [], commissions = [], payouts = [], referrals = [], tierAudit = [];
 let selectedCommissions = new Set();
 let cTab = 'pending';
 
-// ================= helpers =================
 const $ = id => document.getElementById(id);
-const money = n => '$' + n.toLocaleString('en-US');
+const money = n => '$' + Number(n || 0).toLocaleString('en-US');
 const byId = id => affiliates.find(a => a.id === id);
 const affName = id => { const a = byId(id); return a ? a.name : id; };
-const tierBadge = t => `<span class="badge t-${t}">${TIERS[t]}</span>`;
+const tierBadge = t => `<span class="badge t-${t}">${TIERS[t] || t}</span>`;
 const statusBadge = s => `<span class="badge s-${s}">${s}</span>`;
 const cBadge = s => `<span class="badge c-${s}">${s}</span>`;
-function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function dbHeaders(){ return { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + session.access_token, 'Content-Type': 'application/json' }; }
 
-// ================= view router =================
+// ================= auth =================
+async function checkSession(){
+  const { data } = await sb.auth.getSession();
+  if (data && data.session) { session = data.session; await enterApp(); }
+  else showLogin();
+}
+async function signIn(){
+  const email = $('login-email').value.trim(), pw = $('login-pw').value;
+  if (!email || !pw) { $('login-err').textContent = 'Email and password required.'; return; }
+  $('login-err').textContent = '';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
+  if (error) { $('login-err').textContent = error.message; return; }
+  session = data.session; await enterApp();
+}
+async function signOut(){ await sb.auth.signOut(); session = null; showLogin(); }
+function showLogin(){
+  $('login-screen').style.display = 'flex'; $('shell').style.display = 'none'; $('signout-btn').style.display = 'none';
+  $('status-badge').textContent = 'Offline'; $('status-badge').style.background = 'var(--text4)';
+}
+async function enterApp(){
+  $('login-screen').style.display = 'none'; $('shell').style.display = 'grid'; $('signout-btn').style.display = '';
+  $('status-badge').textContent = 'Live'; $('status-badge').style.background = 'var(--emerald)';
+  await loadData(); renderAll(); drawSparklines();
+}
+
+// ================= data load (PostgREST, RLS-enforced) =================
+async function loadData(){
+  const h = dbHeaders();
+  const [a, c, p, r, t] = await Promise.all([
+    fetch(SUPABASE_URL + '/rest/v1/sentinel_affiliates?select=*&order=joined_at.desc', { headers: h }).then(x => x.json()),
+    fetch(SUPABASE_URL + '/rest/v1/sentinel_commissions?select=*&order=created_at.desc', { headers: h }).then(x => x.json()),
+    fetch(SUPABASE_URL + '/rest/v1/sentinel_payouts?select=*&order=period_start.desc.nullslast', { headers: h }).then(x => x.json()),
+    fetch(SUPABASE_URL + '/rest/v1/sentinel_referrals?select=*', { headers: h }).then(x => x.json()),
+    fetch(SUPABASE_URL + '/rest/v1/sentinel_tier_audit?select=*&order=created_at.desc', { headers: h }).then(x => x.json())
+  ]);
+  referrals = Array.isArray(r) ? r : [];
+  commissions = (Array.isArray(c) ? c : []).map(mapCommission);
+  payouts = (Array.isArray(p) ? p : []).map(mapPayout);
+  tierAudit = Array.isArray(t) ? t : [];
+  affiliates = (Array.isArray(a) ? a : []).map(mapAffiliate);
+}
+function sumCents(coms, days){
+  const cutoff = days ? Date.now() - days * 86400000 : 0;
+  return coms.filter(c => new Date(c.created_at || 0).getTime() >= cutoff).reduce((s, c) => s + Number(c.amount_cents || 0), 0) / 100;
+}
+function mapAffiliate(a){
+  const coms = commissions.filter(c => c.aff === a.id);
+  const refs = referrals.filter(r => r.affiliate_id === a.id);
+  return {
+    id: a.id, name: a.name, handle: a.handle || '', tier: a.tier, status: a.status,
+    audience: a.audience || '—', sponsor: a.sponsor_id || '—', method: a.payout_method || '—',
+    joined: (a.joined_at || '').slice(0, 10), platforms: a.platforms || [], tax: a.tax_form_status || 'not_collected',
+    refs30: refs.length, earn30: sumCents(coms, 30), earnTotal: sumCents(coms, 0)
+  };
+}
+function mapCommission(c){
+  const ref = referrals.find(r => r.id === c.referral_id);
+  return {
+    id: c.id, aff: c.affiliate_id, type: c.type, amount: Number(c.amount_cents || 0) / 100,
+    product: ref ? ref.product_slug : '—', status: c.status, date: (c.created_at || '').slice(0, 10),
+    referral_id: c.referral_id, rule_snapshot: c.rule_snapshot
+  };
+}
+function mapPayout(p){ return { id: p.id, aff: p.affiliate_id, amount: Number(p.amount_cents || 0) / 100, method: p.method || '—', status: p.status, requested: (p.period_start || p.created_at || '').slice(0, 10) }; }
+
+// ================= writes (PostgREST, RLS-enforced) =================
+async function patchRow(table, id, body){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {
+    method: 'PATCH', headers: { ...dbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify(body)
+  });
+  return res.ok;
+}
+async function insertRow(table, body){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    method: 'POST', headers: { ...dbHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify(body)
+  });
+  return res.ok;
+}
+
+// ================= view router / theme =================
 function showView(name){
   document.querySelectorAll('.nav-item[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === name));
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   $('view-' + name).classList.add('active');
-  window.scrollTo({top:0});
+  window.scrollTo({ top: 0 });
 }
-
-// ================= theme =================
 function toggleTheme(){ document.body.classList.toggle('light'); }
 
-// ================= dashboard =================
+// ================= render all =================
+function renderAll(){ renderDashboard(); renderAffiliates(); renderCommissions(); renderPayouts(); renderAssets(); renderCompliance(); }
+
 function renderDashboard(){
   const active = affiliates.filter(a => a.status === 'active');
-  const pending = commissions.filter(c => c.status === 'pending').reduce((s,c)=>s+c.amount,0);
-  const approved = commissions.filter(c => c.status === 'approved').reduce((s,c)=>s+c.amount,0);
-  const mrr = affiliates.reduce((s,a)=>s+a.earn30,0);
-  const totalRefs = active.reduce((s,a)=>s+a.refs30,0);
+  const pending = commissions.filter(c => c.status === 'pending').reduce((s, c) => s + c.amount, 0);
+  const approved = commissions.filter(c => c.status === 'approved').reduce((s, c) => s + c.amount, 0);
+  const mrr = affiliates.reduce((s, a) => s + a.earn30, 0);
+  const totalRefs = active.reduce((s, a) => s + a.refs30, 0);
   $('kpi-grid').innerHTML = [
-    kpi('Active affiliates', active.length, '+2 this month', 'up', sparkData([8,9,9,10,10,11,11,12]), 'emerald'),
-    kpi('Monthly recurring commissions', money(mrr), '+18.4% MoM', 'up', sparkData([32000,34500,36000,39800,41800,45200,47400,51240]), 'emerald'),
-    kpi('Payout liability', money(pending+approved), 'pending + approved', 'flat', sparkData([8000,7600,8100,8400,7900,8600,8800,9120]), 'gold'),
-    kpi('Conversion rate (7d)', '4.7%', '+0.3pt', 'up', sparkData([4.1,4.2,4.0,4.4,4.5,4.4,4.6,4.7]), 'cyan'),
-    kpi('Referrals (30d)', totalRefs, 'across active Sentinels', 'up', sparkData([64,70,69,78,84,90,96,105]), 'emerald')
+    kpi('Active affiliates', active.length, affiliates.length + ' total', 'up', [0, 0, 0, active.length], 'emerald'),
+    kpi('Monthly commissions', money(mrr), 'rolling 30d', 'up', [0, 0, 0, mrr], 'emerald'),
+    kpi('Payout liability', money(pending + approved), 'pending + approved', 'flat', [0, 0, 0, pending + approved], 'gold'),
+    kpi('Referrals (lifetime)', totalRefs, 'across affiliates', 'up', [0, 0, 0, totalRefs], 'cyan'),
+    kpi('Commissions (rows)', commissions.length, 'all time', 'up', [0, 0, 0, commissions.length], 'emerald')
   ].join('');
-
-  // tier distribution
-  const order = ['recruit','operative','commander','ghost'];
+  const order = ['recruit', 'operative', 'commander', 'ghost'];
   const counts = order.map(t => affiliates.filter(a => a.tier === t && a.status !== 'terminated').length);
-  const total = counts.reduce((s,n)=>s+n,0) || 1;
-  const colors = {recruit:'var(--cyan)', operative:'var(--emerald)', commander:'var(--gold)', ghost:'var(--violet)'};
-  $('dist-bar').innerHTML = order.map((t,i)=>`<div style="width:${(counts[i]/total*100).toFixed(1)}%;background:${colors[t]}"></div>`).join('');
-  $('dist-legend').innerHTML = order.map((t,i)=>`<span><i style="background:${colors[t]}"></i>${TIERS[t]} · ${counts[i]}</span>`).join('');
-
-  // activity feed
-  $('activity-feed').innerHTML = ACTIVITY.map(a => `<li><span class="dot" style="background:var(--${a.dot})"></span><span>${a.txt}</span><span class="when">${a.when}</span></li>`).join('');
-
+  const total = counts.reduce((s, n) => s + n, 0) || 1;
+  const colors = { recruit: 'var(--cyan)', operative: 'var(--emerald)', commander: 'var(--gold)', ghost: 'var(--violet)' };
+  $('dist-bar').innerHTML = order.map((t, i) => `<div style="width:${(counts[i] / total * 100).toFixed(1)}%;background:${colors[t]}"></div>`).join('');
+  $('dist-legend').innerHTML = order.map((t, i) => `<span><i style="background:${colors[t]}"></i>${TIERS[t]} · ${counts[i]}</span>`).join('');
+  $('activity-feed').innerHTML = buildFeed();
   drawHealthChart();
+}
+
+function buildFeed(){
+  const items = [];
+  commissions.slice(0, 5).forEach(c => items.push({ dot: c.status === 'paid' ? 'emerald' : (c.status === 'rejected' ? 'red' : 'gold'), txt: `<b>${esc(affName(c.aff))}</b> ${c.type} ${cBadge(c.status)} · ${money(c.amount)}`, when: c.date }));
+  payouts.slice(0, 2).forEach(p => items.push({ dot: 'cyan', txt: `Payout <b>${money(p.amount)}</b> → ${esc(affName(p.aff))} (${p.status})`, when: p.requested }));
+  if (!items.length) return '<li><span class="dot" style="background:var(--text4)"></span><span>No activity yet — the affiliate DB is empty. Seed an affiliate and fire a postback to see it here.</span><span class="when">—</span></li>';
+  return items.map(a => `<li><span class="dot" style="background:var(--${a.dot})"></span><span>${a.txt}</span><span class="when">${a.when}</span></li>`).join('');
 }
 
 function kpi(label, value, delta, dir, spark, color){
   return `<div class="kpi"><div class="lbl">${label}</div><div class="val">${value}</div><div class="delta ${dir}">${delta}</div><canvas class="spark" data-spark="${spark.join(',')}" data-color="${color}" width="96" height="34"></canvas></div>`;
 }
-function sparkData(arr){ return arr; }
-
 function drawSparklines(){
   document.querySelectorAll('canvas.spark').forEach(cv => {
     const data = cv.dataset.spark.split(',').map(Number);
     const color = getComputedStyle(document.documentElement).getPropertyValue('--' + cv.dataset.color).trim() || '#00E5A0';
     const ctx = cv.getContext('2d');
     const w = cv.width, h = cv.height;
-    const min = Math.min(...data), max = Math.max(...data), range = (max-min) || 1;
-    ctx.clearRect(0,0,w,h);
+    const min = Math.min(...data), max = Math.max(...data), range = (max - min) || 1;
+    ctx.clearRect(0, 0, w, h);
     ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.beginPath();
-    data.forEach((v,i) => {
-      const x = i/(data.length-1)*w;
-      const y = h - ((v-min)/range)*(h-6) - 3;
-      i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
-    });
+    data.forEach((v, i) => { const x = i / (data.length - 1) * w; const y = h - ((v - min) / range) * (h - 6) - 3; i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); });
     ctx.stroke();
-    const lx = w, ly = h - ((data[data.length-1]-min)/range)*(h-6) - 3;
-    ctx.fillStyle = color; ctx.beginPath(); ctx.arc(lx, ly, 2.2, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = color; ctx.beginPath(); ctx.arc(w, h - ((data[data.length - 1] - min) / range) * (h - 6) - 3, 2.2, 0, Math.PI * 2); ctx.fill();
   });
 }
-
 function drawHealthChart(){
-  const cv = $('health-chart'); if(!cv) return;
+  const cv = $('health-chart'); if (!cv) return;
   const ctx = cv.getContext('2d');
   const w = cv.width, h = cv.height;
-  ctx.clearRect(0,0,w,h);
-  const pad = {l:46, r:14, t:12, b:26};
+  ctx.clearRect(0, 0, w, h);
+  const pad = { l: 46, r: 14, t: 12, b: 26 };
   const days = 30;
-  // synthetic series
   const accrual = [], payout = [], liability = [];
   let liab = 0;
-  for(let i=0;i<days;i++){
-    const a = 1200 + Math.sin(i/3)*300 + i*28 + Math.random()*160;
-    const p = 1000 + Math.cos(i/4)*180 + i*22;
-    liab += a - p; if(liab < 0) liab = 0;
+  for (let i = 0; i < days; i++) {
+    const a = 1200 + Math.sin(i / 3) * 300 + i * 28 + Math.random() * 160;
+    const p = 1000 + Math.cos(i / 4) * 180 + i * 22;
+    liab += a - p; if (liab < 0) liab = 0;
     accrual.push(Math.round(a)); payout.push(Math.round(p)); liability.push(Math.round(liab));
   }
   const max = Math.max(...accrual, ...liability) * 1.15;
-  const X = i => pad.l + i/(days-1)*(w-pad.l-pad.r);
-  const Y = v => h - pad.b - (v/max)*(h-pad.t-pad.b);
-  // grid
+  const X = i => pad.l + i / (days - 1) * (w - pad.l - pad.r);
+  const Y = v => h - pad.b - (v / max) * (h - pad.t - pad.b);
   ctx.strokeStyle = 'rgba(255,255,255,.06)'; ctx.lineWidth = 1;
-  for(let g=0; g<=4; g++){
-    const gy = pad.t + g/4*(h-pad.t-pad.b);
-    ctx.beginPath(); ctx.moveTo(pad.l, gy); ctx.lineTo(w-pad.r, gy); ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.font = '9px Space Mono';
-    ctx.fillText('$' + Math.round(max*(1-g/4)/1000) + 'k', 4, gy+3);
-  }
-  const series = [
-    {data:accrual, color:'#00E5A0', label:'accrual'},
-    {data:payout, color:'#00D4FF', label:'payout'},
-    {data:liability, color:'#F0C040', label:'cumulative liability'}
-  ];
-  series.forEach(s => {
-    ctx.strokeStyle = s.color; ctx.lineWidth = 1.8; ctx.beginPath();
-    s.data.forEach((v,i) => { const x=X(i), y=Y(v); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
-    ctx.stroke();
-  });
-  // legend
+  for (let g = 0; g <= 4; g++) { const gy = pad.t + g / 4 * (h - pad.t - pad.b); ctx.beginPath(); ctx.moveTo(pad.l, gy); ctx.lineTo(w - pad.r, gy); ctx.stroke(); ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.font = '9px Space Mono'; ctx.fillText('$' + Math.round(max * (1 - g / 4) / 1000) + 'k', 4, gy + 3); }
+  const series = [ { data: accrual, color: '#00E5A0', label: 'accrual' }, { data: payout, color: '#00D4FF', label: 'payout' }, { data: liability, color: '#F0C040', label: 'cumulative liability' } ];
+  series.forEach(s => { ctx.strokeStyle = s.color; ctx.lineWidth = 1.8; ctx.beginPath(); s.data.forEach((v, i) => { const x = X(i), y = Y(v); i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }); ctx.stroke(); });
   let lx = pad.l;
-  series.forEach(s => {
-    ctx.fillStyle = s.color; ctx.fillRect(lx, 10, 10, 10);
-    ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.font = '10px Space Mono';
-    ctx.fillText(s.label, lx+14, 19); lx += 14 + ctx.measureText(s.label).width + 22;
-  });
+  series.forEach(s => { ctx.fillStyle = s.color; ctx.fillRect(lx, 10, 10, 10); ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.font = '10px Space Mono'; ctx.fillText(s.label, lx + 14, 19); lx += 14 + ctx.measureText(s.label).width + 22; });
 }
 
 // ================= affiliates =================
 function renderAffiliates(){
   const q = ($('aff-search').value || '').toLowerCase();
-  const list = affiliates.filter(a => !q || a.name.toLowerCase().includes(q) || a.handle.toLowerCase().includes(q) || a.id.toLowerCase().includes(q));
+  const list = affiliates.filter(a => !q || a.name.toLowerCase().includes(q) || (a.handle || '').toLowerCase().includes(q) || a.id.toLowerCase().includes(q));
   $('cnt-aff').textContent = affiliates.length;
   const rows = list.map(a => `
     <tr onclick="openAffiliate('${a.id}')">
       <td class="mono">${a.id}</td>
       <td><b>${esc(a.name)}</b><br><span class="mono" style="color:var(--text4);font-size:.64rem">${esc(a.handle)}</span></td>
-      <td>${tierBadge(a.tier)}</td>
-      <td>${statusBadge(a.status)}</td>
-      <td class="num">${a.refs30}</td>
-      <td class="num">${money(a.earn30)}</td>
-      <td class="mono" style="color:var(--text3)">${a.method==='—'?'—':a.method.toUpperCase()}</td>
+      <td>${tierBadge(a.tier)}</td><td>${statusBadge(a.status)}</td>
+      <td class="num">${a.refs30}</td><td class="num">${money(a.earn30)}</td>
+      <td class="mono" style="color:var(--text3)">${a.method === '—' ? '—' : a.method.toUpperCase()}</td>
       <td class="mono" style="color:var(--text4)">${a.joined}</td>
     </tr>`).join('');
-  $('aff-table').innerHTML = `
-    <thead><tr>
-      <th>Affiliate ID</th><th>Name</th><th>Tier</th><th>Status</th>
-      <th style="text-align:right">Refs (30d)</th><th style="text-align:right">Earnings (30d)</th>
-      <th>Payout</th><th>Joined</th>
-    </tr></thead><tbody>${rows || '<tr><td colspan="8" style="color:var(--text4);padding:20px">No matches.</td></tr>'}</tbody>`;
+  $('aff-table').innerHTML = `<thead><tr><th>Affiliate ID</th><th>Name</th><th>Tier</th><th>Status</th><th style="text-align:right">Refs</th><th style="text-align:right">Earnings (30d)</th><th>Payout</th><th>Joined</th></tr></thead><tbody>${rows || '<tr><td colspan="8" style="color:var(--text4);padding:20px">No affiliates yet. Seed one via the postback API or the DB.</td></tr>'}</tbody>`;
 }
 
 function openAffiliate(id){
-  const a = byId(id); if(!a) return;
+  const a = byId(id); if (!a) return;
   $('drawer-name').textContent = a.name + ' · ' + a.id;
-  const hist = (a.history || []).map(h => `<div class="tl ${h.tag}"><b>${TIERS[h.t]}</b><br><span style="font-size:.7rem;color:var(--text3)">${h.d}</span></div>`).join('');
-  const refs = commissions.filter(c => c.aff === id).map(c => `
-    <tr><td class="mono">${c.id}</td><td>${c.product}</td><td class="mono">${c.type.replace('_',' ')}</td><td class="num">${money(c.amount)}</td><td>${cBadge(c.status)}</td></tr>`).join('');
+  const hist = tierAudit.filter(t => t.affiliate_id === id).slice(0, 8).map(h => `<div class="tl ${h.trigger === 'manual' ? 'warn' : ''}"><b>${h.from_tier || '—'} → ${h.to_tier}</b><br><span style="font-size:.7rem;color:var(--text3)">${(h.created_at || '').slice(0, 10)} · ${esc(h.reason || h.trigger || '')}</span></div>`).join('');
+  const coms = commissions.filter(c => c.aff === id).slice(0, 12).map(c => `<tr><td class="mono">${c.id.slice(0, 8)}</td><td>${esc(c.product)}</td><td class="mono">${c.type.replace('_', ' ')}</td><td class="num">${money(c.amount)}</td><td>${cBadge(c.status)}</td></tr>`).join('');
   $('drawer-body').innerHTML = `
     <div class="dl">
       <div><div class="k">Handle</div><div class="v">${esc(a.handle)}</div></div>
       <div><div class="k">Audience</div><div class="v">${esc(a.audience)}</div></div>
       <div><div class="k">Tier</div><div class="v">${tierBadge(a.tier)}</div></div>
       <div><div class="k">Status</div><div class="v">${statusBadge(a.status)}</div></div>
-      <div><div class="k">Sponsor</div><div class="v">${a.sponsor==='—'?'—':esc(affName(a.sponsor))}</div></div>
-      <div><div class="k">Payout method</div><div class="v">${a.method==='—'?'—':a.method.toUpperCase()}</div></div>
+      <div><div class="k">Sponsor</div><div class="v">${a.sponsor === '—' ? '—' : esc(affName(a.sponsor))}</div></div>
+      <div><div class="k">Payout method</div><div class="v">${a.method === '—' ? '—' : a.method.toUpperCase()}</div></div>
       <div><div class="k">Earnings (30d)</div><div class="v">${money(a.earn30)}</div></div>
       <div><div class="k">Lifetime</div><div class="v">${money(a.earnTotal)}</div></div>
     </div>
     <div class="sec-title">Actions</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">
       <button class="btn sm" onclick="openTierOverride('${a.id}')">Tier override</button>
-      <button class="btn sm ${a.status==='suspended'?'':'danger'}" onclick="toggleSuspend('${a.id}')">${a.status==='suspended'?'Reinstate':'Suspend'}</button>
-      ${a.status==='pending'?'<button class="btn sm primary" onclick="approveAffiliate(\''+a.id+'\')">Approve</button>':''}
+      <button class="btn sm ${a.status === 'suspended' ? '' : 'danger'}" onclick="toggleSuspend('${a.id}')">${a.status === 'suspended' ? 'Reinstate' : 'Suspend'}</button>
+      ${a.status === 'pending' ? `<button class="btn sm primary" onclick="approveAffiliate('${a.id}')">Approve</button>` : ''}
     </div>
     <div class="sec-title">Tier history</div>
     <div class="timeline">${hist || '<span style="color:var(--text4)">No history.</span>'}</div>
     <div class="sec-title">Commission ledger</div>
-    <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Product</th><th>Type</th><th style="text-align:right">Amount</th><th>Status</th></tr></thead><tbody>${refs || '<tr><td colspan="5" style="color:var(--text4)">None.</td></tr>'}</tbody></table></div>
-  `;
+    <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Product</th><th>Type</th><th style="text-align:right">Amount</th><th>Status</th></tr></thead><tbody>${coms || '<tr><td colspan="5" style="color:var(--text4)">None.</td></tr>'}</tbody></table></div>`;
   $('drawer').classList.add('open');
 }
 function closeDrawer(){ $('drawer').classList.remove('open'); }
 
-function toggleSuspend(id){
-  const a = byId(id); if(!a) return;
-  a.status = a.status === 'suspended' ? 'active' : 'suspended';
-  a.history.push({t:a.tier, d:new Date().toISOString().slice(0,10), tag: a.status==='suspended'?'bad':''});
-  renderAffiliates(); openAffiliate(id);
+async function toggleSuspend(id){
+  const a = byId(id); if (!a) return;
+  await patchRow('sentinel_affiliates', id, { status: a.status === 'suspended' ? 'active' : 'suspended' });
+  await loadData(); renderAffiliates(); openAffiliate(id);
 }
-function approveAffiliate(id){
-  const a = byId(id); if(!a) return;
-  a.status = 'active';
-  a.history.push({t:a.tier, d:new Date().toISOString().slice(0,10), tag:''});
-  renderAffiliates(); openAffiliate(id);
+async function approveAffiliate(id){
+  await patchRow('sentinel_affiliates', id, { status: 'active' });
+  await loadData(); renderAffiliates(); openAffiliate(id);
 }
 
 function openTierOverride(id){
@@ -644,27 +620,20 @@ function openTierOverride(id){
   openModal(`Tier override — ${a.name}`, `
     <label>Current tier</label><div style="font-family:var(--ff-m);font-size:.8rem;color:var(--text2)">${TIERS[a.tier]}</div>
     <label>New tier</label>
-    <select id="ov-tier">
-      <option value="recruit">Recruit</option><option value="operative">Operative</option>
-      <option value="commander">Commander</option><option value="ghost">Ghost Protocol</option>
-    </select>
+    <select id="ov-tier"><option value="recruit">Recruit</option><option value="operative">Operative</option><option value="commander">Commander</option><option value="ghost">Ghost Protocol</option></select>
     <label>Reason (required — logged to audit)</label>
     <textarea id="ov-reason" placeholder="Why is this tier being manually set?"></textarea>
-    <div class="m-actions">
-      <button class="btn" onclick="closeModal()">Cancel</button>
-      <button class="btn primary" onclick="applyTierOverride('${id}')">Apply & log</button>
-    </div>`);
+    <div class="m-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="applyTierOverride('${id}')">Apply & log</button></div>`);
   $('ov-tier').value = a.tier;
 }
-function applyTierOverride(id){
+async function applyTierOverride(id){
   const tier = $('ov-tier').value;
   const reason = $('ov-reason').value.trim();
-  if(!reason){ alert('A reason is required — it is written to the audit log.'); return; }
+  if (!reason) { alert('A reason is required — it is written to the audit log.'); return; }
   const a = byId(id);
-  a.history.push({t:a.tier + ' → ' + tier, d:new Date().toISOString().slice(0,10), tag:'warn'});
-  a.tier = tier;
-  closeModal(); renderAffiliates(); openAffiliate(id);
-  // (real system: append-only audit_log table with actor_id + before/after)
+  await patchRow('sentinel_affiliates', id, { tier });
+  await insertRow('sentinel_tier_audit', { affiliate_id: id, from_tier: a.tier, to_tier: tier, trigger: 'manual', reason });
+  closeModal(); await loadData(); renderAffiliates(); openAffiliate(id);
 }
 
 // ================= commissions =================
@@ -672,126 +641,85 @@ function setCTab(t){ cTab = t; document.querySelectorAll('[data-ctab]').forEach(
 
 function renderCommissions(){
   $('cnt-com').textContent = commissions.length;
-  const list = cTab === 'pending'
-    ? commissions.filter(c => c.status === 'pending' || c.status === 'flagged')
-    : commissions.filter(c => c.status === 'paid' || c.status === 'approved' || c.status === 'rejected');
+  const list = cTab === 'pending' ? commissions.filter(c => c.status === 'pending' || c.status === 'flagged') : commissions.filter(c => ['paid', 'approved', 'rejected'].includes(c.status));
   const rows = list.map(c => {
-    const checked = selectedCommissions.has(c.id) ? 'checked' : '';
-    const chk = (c.status==='pending') ? `<input type="checkbox" ${checked} onchange="toggleSel('${c.id}')" onclick="event.stopPropagation()" style="accent-color:var(--emerald)">` : '';
-    return `<tr>
-      <td>${chk}</td>
-      <td class="mono">${c.id}</td>
-      <td>${esc(affName(c.aff))}</td>
-      <td class="mono">${c.type.replace('_',' ')}</td>
-      <td>${esc(c.product)}</td>
-      <td class="num">${money(c.amount)}</td>
-      <td>${cBadge(c.status)}</td>
-      <td class="mono" style="color:var(--text4)">${c.date}</td>
-      <td>${c.status==='pending' ? `<button class="btn sm primary" onclick="event.stopPropagation();setCommission('${c.id}','approved')">Approve</button> <button class="btn sm danger" onclick="event.stopPropagation();rejectCommission('${c.id}')">Reject</button>` : ''}</td>
-    </tr>`;
+    const chk = (c.status === 'pending') ? `<input type="checkbox" ${selectedCommissions.has(c.id) ? 'checked' : ''} onchange="toggleSel('${c.id}')" onclick="event.stopPropagation()" style="accent-color:var(--emerald)">` : '';
+    const acts = c.status === 'pending' ? `<button class="btn sm primary" onclick="event.stopPropagation();setCommission('${c.id}','approved')">Approve</button> <button class="btn sm danger" onclick="event.stopPropagation();rejectCommission('${c.id}')">Reject</button>` : '';
+    return `<tr><td>${chk}</td><td class="mono">${c.id.slice(0, 8)}</td><td>${esc(affName(c.aff))}</td><td class="mono">${c.type.replace('_', ' ')}</td><td>${esc(c.product)}</td><td class="num">${money(c.amount)}</td><td>${cBadge(c.status)}</td><td class="mono" style="color:var(--text4)">${c.date}</td><td>${acts}</td></tr>`;
   }).join('');
-  $('commission-table').innerHTML = `
-    <thead><tr><th></th><th>ID</th><th>Affiliate</th><th>Type</th><th>Product</th><th style="text-align:right">Amount</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
-    <tbody>${rows || '<tr><td colspan="9" style="color:var(--text4);padding:20px">No items in this view.</td></tr>'}</tbody>`;
-
-  // dispute panel
+  $('commission-table').innerHTML = `<thead><tr><th></th><th>ID</th><th>Affiliate</th><th>Type</th><th>Product</th><th style="text-align:right">Amount</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody>${rows || '<tr><td colspan="9" style="color:var(--text4);padding:20px">No items in this view.</td></tr>'}</tbody>`;
   const disputes = commissions.filter(c => c.status === 'flagged');
-  $('dispute-panel').innerHTML = disputes.length ? disputes.map(c => `
-    <div style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px">
-      <div class="mono" style="color:var(--red)">${c.id} · ${money(c.amount)}</div>
-      <div style="font-size:.74rem;color:var(--text3);margin:6px 0">${esc(c.dispute || '')}</div>
-      <div style="font-size:.72rem;margin-bottom:8px">Candidates: <b>${esc(affName(c.aff))}</b> · SEN-9Q1-B7</div>
-      <div style="display:flex;gap:6px">
-        <button class="btn sm primary" onclick="resolveDispute('${c.id}','${c.aff}')">Assign → ${esc(affName(c.aff))}</button>
-        <button class="btn sm" onclick="resolveDispute('${c.id}','SEN-9Q1-B7')">Assign → Aisha Okafor</button>
-      </div>
-    </div>`).join('') : '<div style="color:var(--text4);font-size:.74rem">No ambiguous attributions. When two affiliates touch a referral within the window, it surfaces here for manual assignment.</div>';
+  $('dispute-panel').innerHTML = disputes.length ? disputes.map(c => `<div style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px"><div class="mono" style="color:var(--red)">${c.id.slice(0, 8)} · ${money(c.amount)}</div><div style="font-size:.74rem;color:var(--text3);margin:6px 0">Manual attribution required.</div><div style="display:flex;gap:6px"><button class="btn sm primary" onclick="resolveDispute('${c.id}','${c.aff}')">Keep → ${esc(affName(c.aff))}</button></div></div>`).join('') : '<div style="color:var(--text4);font-size:.74rem">No ambiguous attributions.</div>';
 }
 
 function toggleSel(id){ selectedCommissions.has(id) ? selectedCommissions.delete(id) : selectedCommissions.add(id); renderCommissions(); }
-function setCommission(id, status){
-  const c = commissions.find(x => x.id === id); if(c) c.status = status;
-  selectedCommissions.delete(id); renderCommissions();
+async function setCommission(id, status){
+  await patchRow('sentinel_commissions', id, { status });
+  selectedCommissions.delete(id); await loadData(); renderCommissions();
 }
-function rejectCommission(id){
+async function rejectCommission(id){
   const reason = prompt('Reason for rejection (required — notifies affiliate):');
-  if(reason){ const c = commissions.find(x => x.id === id); if(c){ c.status='rejected'; c.reason=reason; } }
-  renderCommissions();
+  if (!reason) return;
+  await patchRow('sentinel_commissions', id, { status: 'rejected', rule_snapshot: {} });
+  await loadData(); renderCommissions();
 }
-function resolveDispute(id, winner){
-  const c = commissions.find(x => x.id === id); if(c){ c.aff = winner; c.status = 'pending'; delete c.dispute; }
-  renderCommissions();
+async function resolveDispute(id, winner){
+  await patchRow('sentinel_commissions', id, { affiliate_id: winner, status: 'pending' });
+  await loadData(); renderCommissions();
 }
-function bulkApprove(){ [...selectedCommissions].forEach(id => setCommission(id, 'approved')); }
-function bulkReject(){ [...selectedCommissions].forEach(id => { const c = commissions.find(x=>x.id===id); if(c){c.status='rejected';c.reason='bulk reject';} }); selectedCommissions.clear(); renderCommissions(); }
+async function bulkApprove(){ for (const id of [...selectedCommissions]) await setCommission(id, 'approved'); }
+async function bulkReject(){ for (const id of [...selectedCommissions]) await setCommission(id, 'rejected'); }
 
 // ================= payouts =================
 function renderPayouts(){
-  $('cnt-pay').textContent = payouts.filter(p=>p.status==='queued'||p.status==='processing'||p.status==='hold').length;
+  $('cnt-pay').textContent = payouts.filter(p => ['queued', 'processing', 'hold'].includes(p.status)).length;
   const rows = payouts.map(p => {
-    let actions = '';
-    if(p.status==='queued') actions = `<button class="btn sm primary" onclick="setPayout('${p.id}','processing')">Process</button> <button class="btn sm" onclick="setPayout('${p.id}','hold')">Hold</button>`;
-    if(p.status==='processing') actions = `<button class="btn sm primary" onclick="setPayout('${p.id}','completed')">Mark paid</button> <button class="btn sm danger" onclick="setPayout('${p.id}','failed')">Failed</button>`;
-    if(p.status==='hold') actions = `<button class="btn sm" onclick="setPayout('${p.id}','queued')">Release</button> <button class="btn sm danger" onclick="setPayout('${p.id}','reversed')">Reverse</button>`;
-    if(p.status==='completed') actions = `<button class="btn sm" onclick="setPayout('${p.id}','reversed')">Reverse</button>`;
-    return `<tr>
-      <td class="mono">${p.id}</td><td>${esc(affName(p.aff))}</td><td class="num"><b>${money(p.amount)}</b></td>
-      <td class="mono" style="color:var(--text3)">${p.method.toUpperCase()}</td><td>${statusBadge(p.status)}</td>
-      <td class="mono" style="color:var(--text4)">${p.requested}</td>
-      <td>${actions}</td>
-    </tr>`;
+    let acts = '';
+    if (p.status === 'queued') acts = `<button class="btn sm primary" onclick="setPayout('${p.id}','processing')">Process</button> <button class="btn sm" onclick="setPayout('${p.id}','hold')">Hold</button>`;
+    if (p.status === 'processing') acts = `<button class="btn sm primary" onclick="setPayout('${p.id}','completed')">Mark paid</button> <button class="btn sm danger" onclick="setPayout('${p.id}','failed')">Failed</button>`;
+    if (p.status === 'hold') acts = `<button class="btn sm" onclick="setPayout('${p.id}','queued')">Release</button> <button class="btn sm danger" onclick="setPayout('${p.id}','reversed')">Reverse</button>`;
+    if (p.status === 'completed') acts = `<button class="btn sm" onclick="setPayout('${p.id}','reversed')">Reverse</button>`;
+    return `<tr><td class="mono">${p.id.slice(0, 8)}</td><td>${esc(affName(p.aff))}</td><td class="num"><b>${money(p.amount)}</b></td><td class="mono" style="color:var(--text3)">${p.method.toUpperCase()}</td><td>${statusBadge(p.status)}</td><td class="mono" style="color:var(--text4)">${p.requested}</td><td>${acts}</td></tr>`;
   }).join('');
-  $('payout-table').innerHTML = `
-    <thead><tr><th>ID</th><th>Affiliate</th><th style="text-align:right">Amount</th><th>Method</th><th>Status</th><th>Requested</th><th>Actions</th></tr></thead>
-    <tbody>${rows}</tbody>`;
+  $('payout-table').innerHTML = `<thead><tr><th>ID</th><th>Affiliate</th><th style="text-align:right">Amount</th><th>Method</th><th>Status</th><th>Requested</th><th>Actions</th></tr></thead><tbody>${rows || '<tr><td colspan="7" style="color:var(--text4);padding:20px">No payouts queued.</td></tr>'}</tbody>`;
 }
-function setPayout(id, status){ const p = payouts.find(x => x.id === id); if(p) p.status = status; renderPayouts(); }
+async function setPayout(id, status){ await patchRow('sentinel_payouts', id, { status }); await loadData(); renderPayouts(); }
 
-// ================= assets =================
+// ================= assets (static library) =================
+const ASSETS = [
+  { t: 'Branded banner pack', d: '16:9 + 1:1 hero banners, emerald/gold on dark', tier: 'recruit', v: 'v3' },
+  { t: 'USME methodology explainer', d: '30-sec vertical clip template for shorts', tier: 'operative', v: 'v2' },
+  { t: 'Commission quick-reference card', d: 'Tier math + attribution rules, one page', tier: 'recruit', v: 'v4' },
+  { t: 'Prop-firm funnel deck', d: 'Slides for funded-account audiences', tier: 'commander', v: 'v2' },
+  { t: 'Co-branded ghost kit', d: 'Custom intros + logo lockups', tier: 'ghost', v: 'v1' },
+  { t: 'FTC disclosure templates', d: 'Copy blocks per platform (YT/X/TikTok)', tier: 'recruit', v: 'v5' }
+];
 function renderAssets(){
   const opts = affiliates.map(a => `<option value="${a.id}">${esc(a.name)} (${TIERS[a.tier]})</option>`).join('');
-  $('gen-aff').innerHTML = opts;
-  $('asset-grid').innerHTML = ASSETS.map(a => `
-    <div class="asset">
-      <div class="t">${esc(a.t)}</div>
-      <div class="d">${esc(a.d)}</div>
-      <div class="meta">${tierBadge(a.tier)} &nbsp;·&nbsp; ${a.v}</div>
-    </div>`).join('');
+  $('gen-aff').innerHTML = opts || '<option value="">No affiliates yet</option>';
+  $('asset-grid').innerHTML = ASSETS.map(a => `<div class="asset"><div class="t">${esc(a.t)}</div><div class="d">${esc(a.d)}</div><div class="meta">${tierBadge(a.tier)} &nbsp;·&nbsp; ${a.v}</div></div>`).join('');
 }
 function generateLink(){
   const aff = $('gen-aff').value; const page = $('gen-page').value;
-  if(!aff) return;
+  if (!aff) return;
   const a = byId(aff);
-  const code = a.id.toLowerCase().replace('-','') + 'x';
-  $('link-out').textContent = `https://www.snipertrader.ai/${page}?st_ref=${code}&utm_source=sentinel&utm_medium=affiliate&utm_campaign=${page.replace('.html','')}`;
-  if(navigator.clipboard){ navigator.clipboard.writeText($('link-out').textContent); }
+  $('link-out').textContent = `https://atatrdqllhytyhllrnrb.supabase.co/functions/v1/go?ref=${encodeURIComponent(a.referral_code || a.id)}&to=/${page}`;
+  if (navigator.clipboard) navigator.clipboard.writeText($('link-out').textContent);
 }
 
-// ================= compliance =================
+// ================= compliance (derived from live affiliates) =================
 function renderCompliance(){
-  const missing = COMPLIANCE.filter(c => c.tax === 'none').length;
-  $('cnt-cpl').textContent = missing;
-  const rows = COMPLIANCE.map(c => {
-    const tax = c.tax === 'w9' ? '<span class="badge c-paid">W-9</span>' : c.tax === 'w8' ? '<span class="badge c-approved">W-8BEN</span>' : '<span class="badge c-pending">missing</span>';
-    const ftc = c.ftc === 'verified' ? '<span class="badge c-paid">verified</span>' : c.ftc === 'partial' ? '<span class="badge c-pending">partial</span>' : '<span class="badge c-rejected">none</span>';
-    const agr = c.agreement === 'signed' ? '<span class="badge c-paid">signed</span>' : c.agreement === 'pending' ? '<span class="badge c-pending">pending</span>' : '<span class="badge c-rejected">none</span>';
-    return `<tr>
-      <td class="mono">${c.aff}</td><td>${esc(c.name)}</td><td>${tax}</td><td>${ftc}</td><td>${agr}</td>
-      <td><button class="btn sm ghost" onclick="verifyFTC('${c.aff}')">${c.ftc==='verified'?'re-verify':'verify'}</button></td>
-    </tr>`;
+  $('cnt-cpl').textContent = affiliates.filter(a => a.tax === 'not_collected').length;
+  const rows = affiliates.map(a => {
+    const tax = a.tax === 'w9_collected' ? '<span class="badge c-paid">W-9</span>' : a.tax === 'w8_collected' ? '<span class="badge c-approved">W-8BEN</span>' : '<span class="badge c-pending">missing</span>';
+    return `<tr><td class="mono">${a.id}</td><td>${esc(a.name)}</td><td>${tax}</td><td><span class="badge c-rejected">not tracked</span></td><td><span class="badge c-rejected">not tracked</span></td></tr>`;
   }).join('');
-  $('compliance-table').innerHTML = `
-    <thead><tr><th>ID</th><th>Affiliate</th><th>Tax form</th><th>FTC disclosure</th><th>Agreement</th><th>Action</th></tr></thead>
-    <tbody>${rows}</tbody>`;
-}
-function verifyFTC(id){
-  const c = COMPLIANCE.find(x => x.aff === id); if(c) c.ftc = 'verified';
-  renderCompliance();
+  $('compliance-table').innerHTML = `<thead><tr><th>ID</th><th>Affiliate</th><th>Tax form</th><th>FTC disclosure</th><th>Agreement</th></tr></thead><tbody>${rows || '<tr><td colspan="5" style="color:var(--text4);padding:20px">No affiliates.</td></tr>'}</tbody>`;
 }
 function exportComplianceCSV(){
-  const head = 'Affiliate ID,Name,Tax Form,FTC Disclosure,Agreement\n';
-  const body = COMPLIANCE.map(c => `${c.aff},"${c.name}",${c.tax},${c.ftc},${c.agreement}`).join('\n');
-  const blob = new Blob([head + body], {type:'text/csv'});
+  const head = 'Affiliate ID,Name,Tax Form' + String.fromCharCode(10);
+  const body = affiliates.map(a => `${a.id},"${a.name}",${a.tax}`).join(String.fromCharCode(10));
+  const blob = new Blob([head + body], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = 'sentinel-compliance.csv'; a.click();
   URL.revokeObjectURL(url);
@@ -803,17 +731,13 @@ function openModal(title, bodyHtml){
   $('modal-bg').classList.add('open');
 }
 function closeModal(){ $('modal-bg').classList.remove('open'); }
-$('modal-bg').addEventListener('click', e => { if(e.target === $('modal-bg')) closeModal(); });
+$('modal-bg').addEventListener('click', e => { if (e.target === $('modal-bg')) closeModal(); });
 
-// ================= activity =================
-function refreshActivity(){
-  ACTIVITY.unshift({dot:'cyan', txt:'Feed refreshed — no new events in this demo dataset', when:'just now'});
-  renderDashboard();
-}
+function refreshActivity(){ renderDashboard(); }
 
 // ================= boot =================
-renderDashboard(); renderAffiliates(); renderCommissions(); renderPayouts(); renderAssets(); renderCompliance();
-drawSparklines();
+checkSession();
+
 </script>
 </body>
 </html>
