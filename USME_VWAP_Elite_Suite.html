@@ -185,8 +185,20 @@ h2 em{font-style:italic;color:var(--gold);}
 .dm .v.gold{color:var(--gold);}.dm .v.sage{color:var(--emerald);}
 .dash-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;}
 
-/* ── What's new (v2.0) ────────────────────────────────────── */
-#v2{padding:96px 0;background:var(--bg2);}
+/* Hero intro (video + product pill) */
+.hero-pill{display:inline-flex;align-items:center;gap:12px;flex-wrap:wrap;padding:9px 18px;border-radius:40px;border:1px solid var(--border2);background:var(--card);margin-bottom:26px;font-family:var(--ff-m);font-size:.68rem;letter-spacing:.08em;color:var(--text2);}
+.hero-pill .hp-dot{width:7px;height:7px;border-radius:50%;background:var(--emerald);box-shadow:0 0 8px var(--emerald);animation:blink 1.8s ease-in-out infinite;flex-shrink:0;}
+.hero-pill .hp-text{color:var(--gold);text-transform:uppercase;letter-spacing:.14em;font-weight:700;}
+.hero-pill .hp-plat{color:var(--text4);letter-spacing:.06em;}
+.hero-media{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow);background:var(--bg3);}
+.hero-media::before{content:'';position:absolute;inset:0;border-radius:16px;padding:1px;background:linear-gradient(135deg,rgba(240,192,64,.35),transparent 40%,rgba(0,229,160,.25));-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;z-index:2;}
+.hero-media video{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;}
+.hero-media .hm-caption{position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;background:linear-gradient(180deg,transparent,rgba(2,4,8,.85));}
+.hero-media .hm-caption .hm-label{font-family:var(--ff-m);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);}
+.hero-media .hm-caption .hm-tag{font-family:var(--ff-m);font-size:.62rem;letter-spacing:.06em;color:var(--emerald);display:flex;align-items:center;gap:6px;}
+
+/* ── Daily workflow ───────────────────────────────────────── */
+#workflow{padding:96px 0;background:var(--bg2);}
 .v2-head{max-width:780px;margin:0 auto 44px;text-align:center;}
 .v2-head .eyebrow{justify-content:center;}
 .v2-head h2{margin-bottom:14px;}
@@ -443,7 +455,7 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
       <span class="tick-item"><span class="t-gold">◆</span> BOS · CHOCH · SOTD</span>
       <span class="tick-item"><span class="t-gold">◆</span> Tiers: WATCH · PRIME · ELITE</span>
       <span class="tick-item"><span class="t-gold">◆</span> Session plays: SB · NYDef · Asia</span>
-      <span class="tick-item"><span class="t-gold">◆</span> ~20 inputs — down from 50+</span>
+      <span class="tick-item"><span class="t-gold">◆</span> Fair value → trend → structure → tier</span>
       <span class="tick-item"><span class="t-gold">◆</span> ThinkorSwim · TradingView · NinjaTrader</span>
       <span class="tick-item"><span class="t-gold">◆</span> Anchored VWAP + 3 deviation bands</span>
       <span class="tick-item"><span class="t-gold">◆</span> EMA trend cloud — directional filter</span>
@@ -451,7 +463,7 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
       <span class="tick-item"><span class="t-gold">◆</span> BOS · CHOCH · SOTD</span>
       <span class="tick-item"><span class="t-gold">◆</span> Tiers: WATCH · PRIME · ELITE</span>
       <span class="tick-item"><span class="t-gold">◆</span> Session plays: SB · NYDef · Asia</span>
-      <span class="tick-item"><span class="t-gold">◆</span> ~20 inputs — down from 50+</span>
+      <span class="tick-item"><span class="t-gold">◆</span> Fair value → trend → structure → tier</span>
       <span class="tick-item"><span class="t-gold">◆</span> ThinkorSwim · TradingView · NinjaTrader</span>
     </div>
   </div>
@@ -462,90 +474,64 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
   <div class="hero-bg"><div class="grid"></div><div class="glow1"></div><div class="glow2"></div></div>
   <div class="container hero-inner">
     <div>
-      <div class="eyebrow">USME VWAP Suite — v2.0</div>
-      <h1 class="hero-title">Anchored to fair value. <em>Graded for conviction.</em></h1>
-      <p class="hero-sub">Anchored VWAP with three deviation bands, an EMA trend cloud, and non-repainting market-structure signals — all in one chart. Every setup is graded <strong style="color:var(--text2)">WATCH, PRIME, or ELITE</strong>, so you know exactly how much conviction is behind the signal before you risk a dollar.</p>
+      <div class="hero-pill">
+        <span class="hp-dot"></span>
+        <span class="hp-text">USME VWAP Suite · v2.0</span>
+        <span class="hp-plat">ThinkorSwim · TradingView · NinjaTrader</span>
+      </div>
+      <h1 class="hero-title">Anchor to fair value. Follow the setup. <em>Size to the tier.</em></h1>
+      <p class="hero-sub">One clean read every session — where fair value sits, which way the trend cloud points, where structure broke, and a <strong style="color:var(--text2)">WATCH, PRIME, or ELITE</strong> tier that tells you exactly how much conviction to put behind the trade.</p>
       <div class="hero-cta">
         <a class="btn btn-primary" href="/checkout.html">Start 2-Week Free Trial</a>
-        <a class="btn btn-outline" href="#engine">Explore the Engine</a>
+        <a class="btn btn-outline" href="#workflow">See How It Trades</a>
       </div>
       <div class="hero-trust">
-        <div class="trust-item"><span class="t-label">Inputs</span><span class="t-value">~20 (was 50+)</span></div>
-        <div class="trust-item"><span class="t-label">Signals</span><span class="t-value">Non-repainting</span></div>
-        <div class="trust-item"><span class="t-label">Tiers</span><span class="t-value">WATCH · PRIME · ELITE</span></div>
+        <div class="trust-item"><span class="t-label">Fair value</span><span class="t-value">VWAP + 3 bands</span></div>
+        <div class="trust-item"><span class="t-label">Trend</span><span class="t-value">Directional cloud</span></div>
+        <div class="trust-item"><span class="t-label">Conviction</span><span class="t-value">WATCH · PRIME · ELITE</span></div>
       </div>
     </div>
-    <div class="glass hero-card">
-      <div class="dash-top">
-        <div class="dash-dots"><i></i><i></i><i></i></div>
-        <span class="dash-title">USME VWAP Suite</span>
-        <span class="dash-live"><span class="live-dot"></span>Live</span>
-      </div>
-      <div class="dash-asset">
-        <span class="sym">NQ 1D — Anchored VWAP</span>
-        <span class="px">21,247<small>+0.68%</small></span>
-      </div>
-      <div class="dash-viz">
-        <svg viewBox="0 0 520 200" width="100%" height="200" preserveAspectRatio="none" role="img" aria-label="Anchored VWAP with deviation bands and a PRIME tier signal">
-          <defs>
-            <linearGradient id="cloudG" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#00E5A0" stop-opacity=".10"/><stop offset="1" stop-color="#00E5A0" stop-opacity="0"/>
-            </linearGradient>
-          </defs>
-          <path d="M0,120 C50,116 90,104 140,106 C190,108 230,96 280,98 C330,100 380,90 430,92 C470,93 500,88 520,86 L520,130 L0,130 Z" fill="url(#cloudG)"/>
-          <path d="M0,60 C60,56 110,44 170,46 C230,48 280,34 340,36 C400,38 450,26 520,22" fill="none" stroke="#F0C040" stroke-width="1.2" stroke-dasharray="4 6" opacity=".55"/>
-          <path d="M0,150 C60,146 110,138 170,140 C230,142 280,132 340,134 C400,136 450,128 520,124" fill="none" stroke="#F0C040" stroke-width="1.2" stroke-dasharray="4 6" opacity=".55"/>
-          <path d="M0,120 C50,116 90,104 140,106 C190,108 230,96 280,98 C330,100 380,90 430,92 C470,93 500,88 520,86" fill="none" stroke="#00E5A0" stroke-width="2.2"/>
-          <path d="M0,74 C60,70 110,58 170,60 C230,62 280,48 340,50 C400,52 450,40 520,36" fill="none" stroke="#DCE8F2" stroke-width="1.8"/>
-          <circle cx="280" cy="98" r="5" fill="#00E5A0"/>
-          <path d="M280,98 L280,132" stroke="#00E5A0" stroke-width="1.4" stroke-dasharray="2 4"/>
-          <rect x="300" y="74" width="78" height="30" rx="8" fill="rgba(240,192,64,.16)" stroke="#F0C040" stroke-opacity=".6" stroke-width="1"/>
-          <text x="312" y="93" font-family="Space Mono,monospace" font-size="12" fill="#F0C040">PRIME ★</text>
-        </svg>
-      </div>
-      <div class="dash-metrics">
-        <div class="dm"><div class="l">Price vs VWAP</div><div class="v sage">Above +0.4σ</div></div>
-        <div class="dm"><div class="l">Trend cloud</div><div class="v sage">Bullish</div></div>
-        <div class="dm"><div class="l">SOTD tier</div><div class="v gold">PRIME</div></div>
-      </div>
-      <div class="dash-tags">
-        <span class="tag sage">EMA 9/14/21 aligned</span>
-        <span class="tag gold">±1σ retest</span>
-        <span class="tag">Non-repaint pivot</span>
+    <div class="hero-media">
+      <video autoplay muted loop playsinline preload="metadata" aria-label="USME VWAP Suite intro video">
+        <source src="/assets/usme_vwap_intro.mp4" type="video/mp4">
+      </video>
+      <div class="hm-caption">
+        <span class="hm-label">USME VWAP Suite — Intro</span>
+        <span class="hm-tag"><span class="live-dot"></span>muted · loop</span>
       </div>
     </div>
   </div>
 </section>
 
-<!-- WHAT'S NEW IN v2.0 -->
-<section id="v2">
+<!-- DAILY WORKFLOW -->
+<section id="workflow">
   <div class="container">
     <div class="v2-head reveal">
-      <div class="eyebrow">What's New — v2.0</div>
-      <h2>Rebuilt to trade. <em>Not to configure.</em></h2>
-      <p class="lede">We rebuilt the entire suite around one idea: you should spend your time reading the market, not tuning an indicator. Fewer knobs, cleaner logic, and signals that don't move after they print.</p>
+      <div class="eyebrow">The Daily Workflow</div>
+      <h2>From chart to decision. <em>In four steps.</em></h2>
+      <p class="lede">You don't need to know how the script is built — you need to know how to trade it. Every session follows the same four-step read, so a setup becomes a decision in under a minute.</p>
     </div>
     <div class="layers">
       <div class="layer-card reveal">
-        <span class="lc-n">~20 inputs</span>
-        <div class="lc-body"><h3>Cut from 50+ to ~20</h3><p>The settings panel was stripped to the essentials. Load it, pick your session, and trade — the defaults are already the recommended setup.</p></div>
+        <span class="lc-n">Step 01</span>
+        <div class="lc-body"><h3>Anchor to fair value</h3><p>Pick your session or day anchor. The VWAP line and its three deviation bands mark institutional fair value — so you can see at a glance whether price is at value or stretched away from it.</p></div>
       </div>
       <div class="layer-card reveal">
-        <span class="lc-n">One ladder</span>
-        <div class="lc-body"><h3>One clean SOTD state machine</h3><p>Signal-of-the-Day logic is now a single ladder — WATCH → PRIME → ELITE — that upgrades once and stays. No scattered rules, no contradictions.</p></div>
+        <span class="lc-n">Step 02</span>
+        <div class="lc-body"><h3>Read the trend cloud</h3><p>The EMA cloud is your directional filter. Green means look for longs, red means look for shorts. No setup is ever taken against the cloud.</p></div>
       </div>
       <div class="layer-card reveal">
-        <span class="lc-n">No repaint</span>
-        <div class="lc-body"><h3>Pivots that stay where they printed</h3><p>Every swing pivot confirms on closed bars before it appears. Once a BOS, CHOCH, or reversal bubble prints, it does not move or vanish.</p></div>
+        <span class="lc-n">Step 03</span>
+        <div class="lc-body"><h3>Wait for structure</h3><p>BOS and CHOCH confirm the shift before you act — and every pivot prints on a closed bar and stays there. No repainting, no disappearing signals.</p></div>
       </div>
       <div class="layer-card reveal">
-        <span class="lc-n">Directional</span>
-        <div class="lc-body"><h3>A trend cloud that means something</h3><p>The EMA cloud is now a hard directional filter. Longs are only offered when the cloud is bullish, shorts only when it's bearish — no more signals against the trend.</p></div>
+        <span class="lc-n">Step 04</span>
+        <div class="lc-body"><h3>Take the tier</h3><p>The Signal-of-the-Day engine grades the setup WATCH, PRIME, or ELITE — with a matching alert and a matching size. More conviction, more size; less conviction, less.</p></div>
       </div>
     </div>
     <div class="v2-note reveal">
       <span class="af-dot"></span>
-      <p><strong>All signals confirm on closed bars.</strong> The suite evaluates conditions at bar close — never mid-candle — so what you see is what actually happened.</p>
+      <p><strong>One setup = one decision.</strong> Fair value, trend, structure, and tier all agree before you risk a dollar — and each fires its own alert so you never have to guess.</p>
     </div>
   </div>
 </section>
@@ -799,7 +785,7 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
     <div class="eyebrow center reveal">FAQ</div>
     <h2 class="reveal" style="text-align:center">Answered.</h2>
     <div class="faq-list">
-      <div class="faq-item reveal"><button class="faq-q">What changed in v2.0? <span class="faq-icon">+</span></button><div class="faq-a">We cut the inputs from 50+ down to ~20, consolidated the SOTD logic into one clean tier ladder, made all pivots non-repainting, and turned the trend cloud into a hard directional filter. The result: less setup, cleaner signals, and no moving bubbles.</div></div>
+      <div class="faq-item reveal"><button class="faq-q">How do I use it in a typical session? <span class="faq-icon">+</span></button><div class="faq-a">Four steps, every time: anchor to the session VWAP, read the trend cloud for direction, wait for a BOS/CHOCH confirmation, then take the tier the Signal-of-the-Day engine assigns — WATCH, PRIME, or ELITE — and size to match.</div></div>
       <div class="faq-item reveal"><button class="faq-q">What platforms are supported? <span class="faq-icon">+</span></button><div class="faq-a">ThinkorSwim, TradingView (Pine Script), and NinjaTrader 8. All three share identical scoring and tier logic, so signals match across platforms.</div></div>
       <div class="faq-item reveal"><button class="faq-q">Are the signals really non-repainting? <span class="faq-icon">+</span></button><div class="faq-a">Yes. Every pivot, structure break, and tier label confirms on a closed bar and does not move or vanish afterward. There is no mid-candle signal and no redraw.</div></div>
       <div class="faq-item reveal"><button class="faq-q">Is there a free trial? <span class="faq-icon">+</span></button><div class="faq-a">The monthly plan includes a 2-week free trial — no credit card required. The annual plan carries a 14-day money-back guarantee.</div></div>
