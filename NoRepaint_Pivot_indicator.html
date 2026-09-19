@@ -166,26 +166,13 @@ h2 em{font-style:italic;color:var(--gold);}
 .trust-item .t-label{font-family:var(--ff-m);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text4);}
 .trust-item .t-value{font-size:.92rem;font-weight:600;color:var(--text2);}
 
-/* Hero dashboard card */
-.hero-card{position:relative;padding:26px;}
-.hero-card::before{content:'';position:absolute;inset:-1px;border-radius:16px;padding:1px;background:linear-gradient(135deg,rgba(240,192,64,.35),transparent 40%,rgba(0,229,160,.25));-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;}
-.dash-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
-.dash-dots{display:flex;gap:7px;}
-.dash-dots i{width:10px;height:10px;border-radius:50%;display:block;}
-.dash-dots i:nth-child(1){background:#FF4455}.dash-dots i:nth-child(2){background:#F0C040}.dash-dots i:nth-child(3){background:#00E5A0}
-.dash-title{font-family:var(--ff-m);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);}
-.dash-live{display:flex;align-items:center;gap:6px;font-family:var(--ff-m);font-size:.66rem;color:var(--emerald);}
-.dash-asset{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px;}
-.dash-asset .sym{font-family:var(--ff-d);font-size:1.05rem;font-weight:600;color:var(--text);}
-.dash-asset .px{font-size:1.5rem;font-weight:700;color:var(--text);}
-.dash-asset .px small{font-size:.8rem;color:var(--emerald);margin-left:8px;font-family:var(--ff-m);}
-.dash-viz{margin:14px 0 18px;border:1px solid var(--border);border-radius:14px;background:var(--card);padding:14px;}
-.dash-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-.dm{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;}
-.dm .l{font-family:var(--ff-m);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text4);}
-.dm .v{font-size:1rem;font-weight:700;color:var(--text);margin-top:3px;}
-.dm .v.gold{color:var(--gold);}.dm .v.sage{color:var(--emerald);}
-.dash-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;}
+/* Hero intro media (video) */
+.hero-media{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow);background:var(--bg3);}
+.hero-media::before{content:'';position:absolute;inset:0;border-radius:16px;padding:1px;background:linear-gradient(135deg,rgba(240,192,64,.35),transparent 40%,rgba(0,229,160,.25));-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;z-index:2;}
+.hero-media video{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;}
+.hero-media .hm-caption{position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;background:linear-gradient(180deg,transparent,rgba(2,4,8,.85));}
+.hero-media .hm-caption .hm-label{font-family:var(--ff-m);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);}
+.hero-media .hm-caption .hm-tag{font-family:var(--ff-m);font-size:.62rem;letter-spacing:.06em;color:var(--emerald);display:flex;align-items:center;gap:6px;}
 
 /* Hero intro pill */
 .hero-pill{display:inline-flex;align-items:center;gap:12px;flex-wrap:wrap;padding:9px 18px;border-radius:40px;border:1px solid var(--border2);background:var(--card);margin-bottom:26px;font-family:var(--ff-m);font-size:.68rem;letter-spacing:.08em;color:var(--text2);}
@@ -355,7 +342,7 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
 /* ── Responsive ───────────────────────────────────────────── */
 @media (max-width:1080px){
   .hero-inner{grid-template-columns:1fr;gap:40px;}
-  .hero-card{max-width:560px;}
+  .hero-media{max-width:560px;}
   .featured-grid{grid-template-columns:1fr;}
   .tier-grid,.session-grid,.input-grid{grid-template-columns:1fr;}
   .cta-band{grid-template-columns:1fr;padding:44px 34px;}
@@ -377,7 +364,6 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
   .footer-grid{grid-template-columns:1fr 1fr;}
   .footer-brand{grid-column:1/-1;}
   .hero-cta .btn{width:100%;justify-content:center;}
-  .dash-metrics{grid-template-columns:1fr 1fr;}
   .ticker-status{display:none;}
 }
 </style>
@@ -496,50 +482,13 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
         <div class="trust-item"><span class="t-label">Structure</span><span class="t-value">Confirmed pivots</span></div>
       </div>
     </div>
-    <div class="glass hero-card">
-      <div class="dash-top">
-        <div class="dash-dots"><i></i><i></i><i></i></div>
-        <span class="dash-title">No Repaint Indicator</span>
-        <span class="dash-live"><span class="live-dot"></span>LIVE</span>
-      </div>
-      <div class="dash-asset">
-        <span class="sym">NQ 1m · Nasdaq Futures</span>
-        <span class="px">21,484.50<small>+0.8%</small></span>
-      </div>
-      <div class="dash-viz">
-        <svg viewBox="0 0 460 230" width="100%" height="190" preserveAspectRatio="none" role="img" aria-label="Chart showing confirmed swing pivots, an anchored VWAP with three deviation bands, and a trend cloud">
-          <g stroke="rgba(255,255,255,.04)">
-            <line x1="0" y1="57" x2="460" y2="57"/>
-            <line x1="0" y1="115" x2="460" y2="115"/>
-            <line x1="0" y1="173" x2="460" y2="173"/>
-          </g>
-          <path d="M0,95 C60,90 120,80 180,76 C240,72 300,60 360,52 C400,47 440,40 460,37 L460,120 C400,116 340,106 280,101 C220,97 160,105 100,112 C60,117 20,121 0,120 Z" fill="rgba(0,229,160,.10)"/>
-          <path d="M0,50 C60,46 120,40 180,38 C240,36 300,28 360,24 C400,21 440,18 460,17" fill="none" stroke="#9BB5C8" stroke-width="1" stroke-dasharray="3 5" opacity=".55"/>
-          <path d="M0,172 C60,168 120,162 180,160 C240,158 300,150 360,146 C400,143 440,140 460,139" fill="none" stroke="#9BB5C8" stroke-width="1" stroke-dasharray="3 5" opacity=".55"/>
-          <path d="M0,68 C60,64 120,58 180,56 C240,54 300,46 360,42 C400,39 440,36 460,35" fill="none" stroke="#F0C040" stroke-width="1" stroke-dasharray="4 6" opacity=".6"/>
-          <path d="M0,152 C60,148 120,142 180,140 C240,138 300,130 360,126 C400,123 440,120 460,119" fill="none" stroke="#F0C040" stroke-width="1" stroke-dasharray="4 6" opacity=".6"/>
-          <path d="M0,88 C60,84 120,78 180,76 C240,74 300,66 360,62 C400,59 440,56 460,55" fill="none" stroke="#F0C040" stroke-width="1.1" stroke-dasharray="2 4"/>
-          <path d="M0,132 C60,128 120,122 180,120 C240,118 300,110 360,106 C400,103 440,100 460,99" fill="none" stroke="#F0C040" stroke-width="1.1" stroke-dasharray="2 4"/>
-          <path d="M0,110 C60,106 120,100 180,98 C240,96 300,88 360,84 C400,81 440,78 460,77" fill="none" stroke="#F0C040" stroke-width="2"/>
-          <path d="M0,130 C30,120 60,85 110,70 C150,60 190,110 230,140 C270,165 310,90 350,55 C390,35 430,70 460,85" fill="none" stroke="#DCE8F2" stroke-width="1.8"/>
-          <path d="M110,58 L116,70 L104,70 Z" fill="#FF4455"/>
-          <text x="124" y="66" font-family="Space Mono,monospace" font-size="11" fill="#FF4455">H</text>
-          <path d="M230,152 L224,140 L236,140 Z" fill="#00E5A0"/>
-          <text x="196" y="150" font-family="Space Mono,monospace" font-size="11" fill="#00E5A0">L</text>
-          <text x="8" y="20" font-family="Space Mono,monospace" font-size="9" fill="#9BB5C8">+3σ</text>
-          <text x="8" y="176" font-family="Space Mono,monospace" font-size="9" fill="#9BB5C8">−3σ</text>
-        </svg>
-      </div>
-      <div class="dash-metrics">
-        <div class="dm"><div class="l">Trend</div><div class="v sage">BULL</div></div>
-        <div class="dm"><div class="l">VWAP</div><div class="v">21,412.30</div></div>
-        <div class="dm"><div class="l">σ</div><div class="v gold">1.87</div></div>
-      </div>
-      <div class="dash-tags">
-        <span class="tag gold">Confirmed Swing</span>
-        <span class="tag sage">±3σ bands</span>
-        <span class="tag">EMA 9/21/50</span>
-        <span class="tag">Bar-close</span>
+    <div class="hero-media">
+      <video autoplay muted loop playsinline preload="metadata" aria-label="No Repaint Indicator intro video">
+        <source src="/assets/no_repaint_pivot_intro.mp4" type="video/mp4">
+      </video>
+      <div class="hm-caption">
+        <span class="hm-label">No Repaint Indicator — Intro</span>
+        <span class="hm-tag"><span class="live-dot"></span>muted · loop</span>
       </div>
     </div>
   </div>
