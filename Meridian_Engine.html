@@ -177,26 +177,13 @@ h2 em{font-style:italic;color:var(--violet);}
 .trust-item .t-label{font-family:var(--ff-m);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text4);}
 .trust-item .t-value{font-size:.92rem;font-weight:600;color:var(--text2);}
 
-/* Hero dashboard card */
-.hero-card{position:relative;padding:26px;}
-.hero-card::before{content:'';position:absolute;inset:-1px;border-radius:16px;padding:1px;background:linear-gradient(135deg,rgba(167,139,250,.42),transparent 40%,rgba(34,211,238,.30));-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;}
-.dash-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
-.dash-dots{display:flex;gap:7px;}
-.dash-dots i{width:10px;height:10px;border-radius:50%;display:block;}
-.dash-dots i:nth-child(1){background:#FB7185}.dash-dots i:nth-child(2){background:#FBBF24}.dash-dots i:nth-child(3){background:#22D3EE}
-.dash-title{font-family:var(--ff-m);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);}
-.dash-live{display:flex;align-items:center;gap:6px;font-family:var(--ff-m);font-size:.66rem;color:var(--cyan);}
-.dash-asset{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px;}
-.dash-asset .sym{font-family:var(--ff-d);font-size:1.05rem;font-weight:600;color:var(--text);}
-.dash-asset .px{font-size:1.5rem;font-weight:700;color:var(--text);}
-.dash-asset .px small{font-size:.8rem;color:var(--cyan);margin-left:8px;font-family:var(--ff-m);}
-.dash-viz{margin:14px 0 18px;border:1px solid var(--border);border-radius:14px;background:var(--card);padding:14px;}
-.dash-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-.dm{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;}
-.dm .l{font-family:var(--ff-m);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text4);}
-.dm .v{font-size:1rem;font-weight:700;color:var(--text);margin-top:3px;}
-.dm .v.north{color:var(--cyan);}.dm .v.brand{color:var(--violet);}.dm .v.south{color:var(--fuchsia);}
-.dash-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;}
+/* Hero media (intro video) */
+.hero-media{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow);background:var(--bg3);}
+.hero-media::before{content:'';position:absolute;inset:0;border-radius:16px;padding:1px;background:linear-gradient(135deg,rgba(167,139,250,.42),transparent 40%,rgba(34,211,238,.30));-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;z-index:2;}
+.hero-media video{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;}
+.hero-media .hm-caption{position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;background:linear-gradient(180deg,transparent,rgba(6,7,15,.88));}
+.hero-media .hm-caption .hm-label{font-family:var(--ff-m);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);}
+.hero-media .hm-caption .hm-tag{font-family:var(--ff-m);font-size:.62rem;letter-spacing:.06em;color:var(--cyan);display:flex;align-items:center;gap:6px;}
 
 /* ── Hero pill ─────────────────────────────────────────────── */
 .hero-pill{display:inline-flex;align-items:center;gap:12px;flex-wrap:wrap;padding:9px 18px;border-radius:40px;border:1px solid var(--border2);background:var(--card);margin-bottom:26px;font-family:var(--ff-m);font-size:.68rem;letter-spacing:.08em;color:var(--text2);}
@@ -349,7 +336,7 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
 /* ── Responsive ────────────────────────────────────────────── */
 @media (max-width:1080px){
   .hero-inner{grid-template-columns:1fr;gap:40px;}
-  .hero-card{max-width:560px;}
+  .hero-media{max-width:560px;}
   .featured-grid{grid-template-columns:1fr;}
   .tier-grid,.session-grid{grid-template-columns:1fr 1fr;}
   .cta-band{grid-template-columns:1fr;padding:44px 34px;}
@@ -371,7 +358,6 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
   .footer-grid{grid-template-columns:1fr 1fr;}
   .footer-brand{grid-column:1/-1;}
   .hero-cta .btn{width:100%;justify-content:center;}
-  .dash-metrics{grid-template-columns:1fr 1fr;}
   .ticker-status{display:none;}
 }
 </style>
@@ -494,35 +480,13 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
         <div class="trust-item"><span class="t-label">Path</span><span class="t-value">Break · Confirm</span></div>
       </div>
     </div>
-    <div class="glass hero-card">
-      <div class="dash-top">
-        <div class="dash-dots"><i></i><i></i><i></i></div>
-        <span class="dash-title">Meridian Dashboard</span>
-        <span class="dash-live"><span class="live-dot"></span>LIVE</span>
-      </div>
-      <div class="dash-asset"><span class="sym">NQ · 5m</span><span class="px">18,642<small>+0.42%</small></span></div>
-      <div class="dash-viz">
-        <svg viewBox="0 0 460 150" width="100%" height="150" preserveAspectRatio="none" role="img" aria-label="VWAP with deviation bands, liquidity magnets and lattice events">
-          <path d="M0,78 C50,74 100,60 150,64 C200,68 250,56 300,60 C350,64 400,52 460,50" fill="none" stroke="#22D3EE" stroke-width="2"/>
-          <path d="M0,90 C50,86 100,74 150,78 C200,82 250,70 300,74 C350,78 400,66 460,64" fill="none" stroke="#A78BFA" stroke-width="1.2" stroke-dasharray="4 6"/>
-          <path d="M0,66 C50,62 100,46 150,50 C200,54 250,42 300,46 C350,50 400,38 460,36" fill="none" stroke="#A78BFA" stroke-width="1.2" stroke-dasharray="4 6"/>
-          <line x1="150" y1="64" x2="240" y2="64" stroke="#22D3EE" stroke-width="1" stroke-dasharray="2 4" opacity=".55"/>
-          <circle cx="150" cy="64" r="4" fill="#22D3EE"/>
-          <line x1="300" y1="60" x2="390" y2="60" stroke="#E879F9" stroke-width="1" stroke-dasharray="2 4" opacity=".55"/>
-          <circle cx="300" cy="60" r="4" fill="#E879F9"/>
-          <circle cx="120" cy="70" r="3" fill="#22D3EE"/><circle cx="210" cy="58" r="3" fill="#22D3EE"/><circle cx="340" cy="52" r="3" fill="#E879F9"/>
-        </svg>
-      </div>
-      <div class="dash-metrics">
-        <div class="dm"><div class="l">Regime</div><div class="v north">TREND</div></div>
-        <div class="dm"><div class="l">Bias</div><div class="v brand">BULL</div></div>
-        <div class="dm"><div class="l">Lattice</div><div class="v south">ELITE</div></div>
-      </div>
-      <div class="dash-tags">
-        <span class="tag brand">SINGULAR</span>
-        <span class="tag north">Armed</span>
-        <span class="tag south">SB</span>
-        <span class="tag">Path CONFIRM</span>
+    <div class="hero-media">
+      <video autoplay muted loop playsinline preload="metadata" aria-label="Meridian Engine intro video">
+        <source src="/assets/Meridian_Engine_Intro.mp4" type="video/mp4">
+      </video>
+      <div class="hm-caption">
+        <span class="hm-label">Meridian Engine — Regime · Liquidity · Path</span>
+        <span class="hm-tag"><span class="live-dot"></span>muted · loop</span>
       </div>
     </div>
   </div>
