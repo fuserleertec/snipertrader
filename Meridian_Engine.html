@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meridian Engine — Regime-Aware SMC · Liquidity Memory Map | SniperTrader.ai</title>
+<meta name="description" content="Meridian Engine — a regime-aware Pine Script v6 indicator that maps decaying liquidity magnets, grades setups WATCH→PRIME→ELITE→SINGULAR, and tracks every trade path from entry to TP3.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   Meridian Engine — SniperTrader.ai product page
+   Follows the index.html "Precision Over Prediction" design
+   system (glassmorphism, Playfair + Plus Jakarta + Space Mono),
+   with a UNIQUE aurora palette: violet apex + cyan/fuchsia
+   magnetic poles. Distinct from the gold/sage USME suite and
+   the green/cyan traderedge family.
+   ============================================================ */
+
+:root{
+  --bg:#06070F; --bg2:#0A0C18; --bg3:#0E1222; --ink:#05060D;
+  --card:rgba(255,255,255,.03); --card2:rgba(255,255,255,.055);
+  --glass:rgba(14,18,34,.68);
+  --text:#FFFFFF; --text2:#E9ECF7; --text3:#9CA5C4; --text4:#5D6890;
+  --violet:#A78BFA; --violet2:#8B5CF6; --violet-dim:rgba(167,139,250,.12);
+  --cyan:#22D3EE; --cyan2:#0EA5C9; --cyan-dim:rgba(34,211,238,.10);
+  --fuchsia:#E879F9; --fuchsia2:#C026D3; --fuchsia-dim:rgba(232,121,249,.10);
+  --red:#FB7185; --red-dim:rgba(251,113,133,.10);
+  --amber:#FBBF24; --amber-dim:rgba(251,191,36,.10);
+  --border:rgba(167,139,250,.15); --border2:rgba(167,139,250,.32);
+  --border-cyan:rgba(34,211,238,.16);
+  --nav-bg:rgba(6,7,15,.94);
+  --shadow:0 30px 80px rgba(0,0,0,.6);
+  --ff-d:'Playfair Display',serif;
+  --ff-b:'Plus Jakarta Sans',sans-serif;
+  --ff-m:'Space Mono',monospace;
+}
+body.light{
+  --bg:#F2F3FB; --bg2:#E9EBF6; --bg3:#DEE1F0; --ink:#FFFFFF;
+  --card:rgba(255,255,255,.6); --card2:rgba(255,255,255,.82);
+  --glass:rgba(255,255,255,.55);
+  --text:#0A0C18; --text2:#1C2240; --text3:#3A4470; --text4:#5A6690;
+  --violet:#6D28D9; --violet2:#5B21B6; --violet-dim:rgba(124,58,237,.10);
+  --cyan:#0086A8; --cyan2:#006E8A; --cyan-dim:rgba(0,150,200,.12);
+  --fuchsia:#C026D3; --fuchsia2:#A21CAF; --fuchsia-dim:rgba(192,38,211,.10);
+  --red:#BE1E3C; --red-dim:rgba(190,30,60,.08);
+  --amber:#8A5B00; --amber-dim:rgba(138,91,0,.10);
+  --border:rgba(109,40,217,.18); --border2:rgba(109,40,217,.34);
+  --border-cyan:rgba(0,150,200,.18);
+  --nav-bg:rgba(242,243,251,.96);
+  --shadow:0 30px 70px rgba(60,70,110,.20);
+}
+body.light [stroke="#E9ECF7"]{stroke:#1C2240;}
+body.light [stroke="#22D3EE"]{stroke:#0086A8;}
+body.light [stroke="#A78BFA"]{stroke:#6D28D9;}
+body.light [stroke="#E879F9"]{stroke:#C026D3;}
+body.light [stroke="#FB7185"]{stroke:#BE1E3C;}
+body.light [stroke="#FBBF24"]{stroke:#8A5B00;}
+body.light [fill="#22D3EE"]{fill:#0086A8;}
+body.light [fill="#A78BFA"]{fill:#6D28D9;}
+body.light [fill="#E879F9"]{fill:#C026D3;}
+body.light [fill="#FB7185"]{fill:#BE1E3C;}
+body.light [fill="#FBBF24"]{fill:#8A5B00;}
+body.light [fill="#9CA5C4"]{fill:#3A4470;}
+
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg); color:var(--text); font-family:var(--ff-b);
+  line-height:1.6; overflow-x:hidden; cursor:none;
+  -webkit-font-smoothing:antialiased; transition:background .4s,color .4s;
+}
+a{text-decoration:none;color:inherit;}
+button{font-family:inherit;cursor:none;border:none;background:none;color:inherit;}
+::selection{background:var(--violet);color:var(--bg);}
+::-webkit-scrollbar{width:9px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:8px;}
+::-webkit-scrollbar-thumb:hover{background:var(--text4);}
+img,svg{display:block;max-width:100%;}
+
+/* ── Precision scope cursor (aurora poles) ───────────────── */
+#scope{position:fixed;top:0;left:0;pointer-events:none;z-index:9990;width:240px;height:240px;transform:translate(-50%,-50%);will-change:transform;}
+#scope .s-ring{position:absolute;border-radius:50%;pointer-events:none;}
+#scope .s-r1{inset:0;border:1px solid rgba(167,139,250,.22);}
+#scope .s-r2{inset:36px;border:1px dashed rgba(34,211,238,.26);}
+#scope .s-h{position:absolute;left:0;right:0;top:50%;height:1px;transform:translateY(-50%);background:linear-gradient(90deg,transparent,rgba(167,139,250,.36) 30%,rgba(167,139,250,.36) 70%,transparent);}
+#scope .s-v{position:absolute;top:0;bottom:0;left:50%;width:1px;transform:translateX(-50%);background:linear-gradient(180deg,transparent,rgba(167,139,250,.36) 30%,rgba(167,139,250,.36) 70%,transparent);}
+#scope .s-center{position:absolute;top:50%;left:50%;width:8px;height:8px;transform:translate(-50%,-50%);border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan),0 0 22px rgba(34,211,238,.5);}
+#scope-ring{position:fixed;top:0;left:0;pointer-events:none;z-index:9991;width:32px;height:32px;border-radius:50%;border:1.5px solid var(--cyan);box-shadow:0 0 12px var(--cyan),0 0 28px rgba(34,211,238,.32);transform:translate(-50%,-50%);will-change:transform;}
+#scope-dot{position:fixed;top:0;left:0;pointer-events:none;z-index:9992;width:5px;height:5px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);transform:translate(-50%,-50%);}
+
+/* ── Nav ──────────────────────────────────────────────────── */
+nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;align-items:center;gap:8px;padding:0 40px;height:70px;background:var(--nav-bg);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border-bottom:1px solid var(--border);transition:background .4s,border-color .4s;}
+.logo{display:flex;align-items:baseline;gap:1px;font-family:var(--ff-d);font-weight:600;font-size:1.22rem;letter-spacing:.01em;color:var(--text);margin-right:26px;}
+.logo b{font-weight:700;}
+.logo span{color:var(--violet);font-size:.82rem;font-family:var(--ff-m);letter-spacing:.04em;margin-left:2px;}
+.nav-menu{display:flex;align-items:center;gap:4px;list-style:none;flex:1;}
+.nav-link{display:flex;align-items:center;gap:7px;padding:10px 14px;font-size:.86rem;font-weight:500;color:var(--text3);border-radius:10px;transition:color .2s,background .2s;letter-spacing:.01em;}
+.nav-link:hover{color:var(--text);background:var(--card2);}
+.nav-link .caret{transition:transform .25s;}
+.nav-item.open .nav-link{color:var(--text);background:var(--card2);}
+.nav-item.open .nav-link .caret{transform:rotate(180deg);}
+.nav-item{position:relative;}
+.nav-link.active{color:var(--violet);}
+.dropdown{position:absolute;top:calc(100% + 10px);left:0;min-width:280px;background:var(--glass);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid var(--border);border-radius:16px;padding:8px;opacity:0;visibility:hidden;transform:translateY(-8px);transition:all .22s ease;box-shadow:var(--shadow);}
+.nav-item.open .dropdown,.nav-item:hover .dropdown{opacity:1;visibility:visible;transform:translateY(0);}
+.dropdown a{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:11px;transition:background .18s;}
+.dropdown a:hover{background:var(--card2);}
+.dropdown a .d-name{font-size:.9rem;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;}
+.dropdown a .d-name::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--violet);flex-shrink:0;}
+.dropdown a.active .d-name{color:var(--violet);}
+.dropdown a .d-sub{font-size:.78rem;color:var(--text3);line-height:1.45;}
+.nav-right{display:flex;align-items:center;gap:12px;margin-left:auto;}
+.theme-toggle{display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:24px;border:1px solid var(--border);color:var(--text3);font-size:.78rem;font-weight:500;transition:border-color .2s,color .2s;}
+.theme-toggle:hover{border-color:var(--violet);color:var(--violet);}
+.nav-cta{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:24px;background:linear-gradient(135deg,var(--violet),var(--cyan));color:#05060D;font-weight:700;font-size:.84rem;letter-spacing:.01em;transition:transform .2s,box-shadow .2s;box-shadow:0 6px 22px rgba(167,139,250,.25);}
+.nav-cta:hover{transform:translateY(-1px);box-shadow:0 10px 30px rgba(167,139,250,.36);}
+.nav-burger{display:none;flex-direction:column;gap:5px;padding:10px;border-radius:10px;border:1px solid var(--border);}
+.nav-burger span{width:18px;height:1.5px;background:var(--text2);}
+.mobile-menu{display:none;position:fixed;top:70px;left:0;right:0;z-index:499;background:var(--nav-bg);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);padding:16px 24px 24px;max-height:calc(100vh - 70px);overflow-y:auto;}
+.mobile-menu.open{display:block;}
+.mobile-menu a.mm-link{display:block;padding:13px 6px;font-size:1rem;font-weight:600;color:var(--text);border-bottom:1px solid var(--border);}
+.mobile-menu .mm-group{font-family:var(--ff-m);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--violet);margin:18px 6px 6px;}
+.mobile-menu a.mm-sub{display:block;padding:9px 6px;font-size:.9rem;color:var(--text3);}
+.mobile-menu a.mm-sub:hover{color:var(--text);}
+
+/* ── Ticker ───────────────────────────────────────────────── */
+.ticker{position:fixed;top:70px;left:0;right:0;z-index:499;height:34px;background:var(--nav-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;overflow:hidden;transition:background .4s,border-color .4s;}
+.ticker-status{flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 18px;font-family:var(--ff-m);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);border-right:1px solid var(--border);height:100%;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);animation:blink 1.6s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.ticker-track{flex:1;overflow:hidden;}
+.ticker-inner{display:flex;gap:44px;width:max-content;animation:scrollTick 40s linear infinite;padding-left:20px;}
+.ticker:hover .ticker-inner{animation-play-state:paused;}
+@keyframes scrollTick{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.tick-item{display:flex;align-items:center;gap:8px;white-space:nowrap;font-family:var(--ff-m);font-size:.68rem;color:var(--text3);}
+.tick-item .t-brand{color:var(--violet);}
+
+/* ── Shared ───────────────────────────────────────────────── */
+.container{max-width:1280px;margin:0 auto;padding:0 40px;}
+section{position:relative;}
+.eyebrow{display:flex;align-items:center;gap:12px;font-family:var(--ff-m);font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;color:var(--violet);margin-bottom:18px;}
+.eyebrow::before{content:'';width:30px;height:1px;background:var(--violet);opacity:.6;}
+.eyebrow.center{justify-content:center;}
+h1,h2,h3{font-family:var(--ff-d);font-weight:600;line-height:1.12;letter-spacing:-.01em;}
+h2{font-size:clamp(1.7rem,3.2vw,2.6rem);margin-bottom:14px;}
+h2 em{font-style:italic;color:var(--violet);}
+.lede{color:var(--text3);font-size:1.02rem;max-width:560px;line-height:1.7;margin-bottom:40px;}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:14px 30px;border-radius:14px;font-size:.9rem;font-weight:600;letter-spacing:.01em;transition:transform .2s,box-shadow .2s,border-color .2s,background .2s;}
+.btn:hover{transform:translateY(-2px);}
+.btn-primary{background:linear-gradient(135deg,var(--violet),var(--cyan));color:#05060D;box-shadow:0 10px 28px rgba(167,139,250,.22);}
+.btn-primary:hover{box-shadow:0 16px 40px rgba(167,139,250,.34);}
+.btn-outline{border:1px solid var(--border2);color:var(--text);background:var(--card);}
+.btn-outline:hover{border-color:var(--violet);color:var(--violet);}
+.tag{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-family:var(--ff-m);font-size:.66rem;letter-spacing:.04em;border:1px solid var(--border);color:var(--text3);background:var(--card);}
+.tag.brand{border-color:var(--border2);color:var(--violet);background:var(--violet-dim);}
+.tag.north{border-color:var(--border-cyan);color:var(--cyan);background:var(--cyan-dim);}
+.tag.south{border-color:rgba(232,121,249,.26);color:var(--fuchsia);background:var(--fuchsia-dim);}
+.glass{background:var(--glass);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid var(--border);border-radius:16px;}
+
+/* ── Hero ─────────────────────────────────────────────────── */
+#hero{min-height:100vh;display:flex;align-items:center;padding:140px 0 70px;overflow:hidden;}
+.hero-bg{position:absolute;inset:0;pointer-events:none;}
+.hero-bg .grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:76px 76px;mask-image:radial-gradient(ellipse 75% 75% at 50% 40%,black,transparent 80%);}
+.hero-bg .glow1{position:absolute;top:-15%;left:-8%;width:60%;height:70%;background:radial-gradient(ellipse,rgba(167,139,250,.08),transparent 62%);}
+.hero-bg .glow2{position:absolute;bottom:-12%;right:-6%;width:46%;height:58%;background:radial-gradient(ellipse,rgba(34,211,238,.07),transparent 62%);}
+.hero-inner{position:relative;z-index:2;display:grid;grid-template-columns:1.08fr 1fr;gap:56px;align-items:center;}
+.hero-title{font-size:clamp(2.4rem,4.8vw,3.9rem);margin-bottom:22px;}
+.hero-title em{font-style:italic;color:var(--violet);}
+.hero-sub{font-size:1.08rem;color:var(--text3);line-height:1.75;max-width:520px;margin-bottom:36px;}
+.hero-sub strong{color:var(--text2);font-weight:600;}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:40px;}
+.hero-trust{display:flex;gap:34px;flex-wrap:wrap;padding-top:26px;border-top:1px solid var(--border);}
+.trust-item{display:flex;flex-direction:column;gap:4px;}
+.trust-item .t-label{font-family:var(--ff-m);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text4);}
+.trust-item .t-value{font-size:.92rem;font-weight:600;color:var(--text2);}
+
+/* Hero dashboard card */
+.hero-card{position:relative;padding:26px;}
+.hero-card::before{content:'';position:absolute;inset:-1px;border-radius:16px;padding:1px;background:linear-gradient(135deg,rgba(167,139,250,.42),transparent 40%,rgba(34,211,238,.30));-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;}
+.dash-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.dash-dots{display:flex;gap:7px;}
+.dash-dots i{width:10px;height:10px;border-radius:50%;display:block;}
+.dash-dots i:nth-child(1){background:#FB7185}.dash-dots i:nth-child(2){background:#FBBF24}.dash-dots i:nth-child(3){background:#22D3EE}
+.dash-title{font-family:var(--ff-m);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);}
+.dash-live{display:flex;align-items:center;gap:6px;font-family:var(--ff-m);font-size:.66rem;color:var(--cyan);}
+.dash-asset{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px;}
+.dash-asset .sym{font-family:var(--ff-d);font-size:1.05rem;font-weight:600;color:var(--text);}
+.dash-asset .px{font-size:1.5rem;font-weight:700;color:var(--text);}
+.dash-asset .px small{font-size:.8rem;color:var(--cyan);margin-left:8px;font-family:var(--ff-m);}
+.dash-viz{margin:14px 0 18px;border:1px solid var(--border);border-radius:14px;background:var(--card);padding:14px;}
+.dash-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.dm{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;}
+.dm .l{font-family:var(--ff-m);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text4);}
+.dm .v{font-size:1rem;font-weight:700;color:var(--text);margin-top:3px;}
+.dm .v.north{color:var(--cyan);}.dm .v.brand{color:var(--violet);}.dm .v.south{color:var(--fuchsia);}
+.dash-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;}
+
+/* ── Hero pill ─────────────────────────────────────────────── */
+.hero-pill{display:inline-flex;align-items:center;gap:12px;flex-wrap:wrap;padding:9px 18px;border-radius:40px;border:1px solid var(--border2);background:var(--card);margin-bottom:26px;font-family:var(--ff-m);font-size:.68rem;letter-spacing:.08em;color:var(--text2);}
+.hero-pill .hp-dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);animation:blink 1.8s ease-in-out infinite;flex-shrink:0;}
+.hero-pill .hp-text{color:var(--violet);text-transform:uppercase;letter-spacing:.14em;font-weight:700;}
+.hero-pill .hp-plat{color:var(--text4);letter-spacing:.06em;}
+
+/* ── Workflow ──────────────────────────────────────────────── */
+#workflow{padding:96px 0;background:var(--bg2);}
+.v2-head{max-width:780px;margin:0 auto 44px;text-align:center;}
+.v2-head .eyebrow{justify-content:center;}
+.v2-head h2{margin-bottom:14px;}
+.v2-head .lede{margin:0 auto 22px;}
+.layers{display:flex;flex-direction:column;gap:14px;max-width:820px;margin:0 auto;}
+.layer-card{display:flex;gap:22px;align-items:flex-start;border:1px solid var(--border);background:var(--card);border-radius:16px;padding:24px 26px;transition:border-color .25s,transform .25s;}
+.layer-card:hover{transform:translateX(4px);border-color:var(--border2);}
+.layer-card .lc-n{flex-shrink:0;font-family:var(--ff-m);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--violet);padding:8px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--card2);min-width:96px;text-align:center;}
+.layer-card .lc-body{flex:1;}
+.layer-card .lc-body h3{font-size:1.14rem;margin-bottom:6px;line-height:1.3;}
+.layer-card .lc-body p{font-size:.86rem;color:var(--text3);line-height:1.6;}
+.v2-note{margin-top:32px;max-width:820px;margin-left:auto;margin-right:auto;padding:20px 24px;border-radius:16px;border:1px dashed var(--border2);background:var(--card);display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.v2-note .af-dot{width:9px;height:9px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);animation:blink 1.8s ease-in-out infinite;flex-shrink:0;}
+.v2-note p{font-size:.88rem;color:var(--text2);line-height:1.6;flex:1;min-width:240px;}
+
+/* ── Engine (feature cards) ───────────────────────────────── */
+#engine{padding:96px 0;}
+.featured-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px;}
+.feature-card{padding:34px;position:relative;overflow:hidden;transition:transform .3s,box-shadow .3s,border-color .3s;}
+.feature-card:hover{transform:translateY(-4px);box-shadow:var(--shadow);border-color:var(--border2);}
+.feature-card .fc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.feature-card .fc-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--card2);border:1px solid var(--border);font-size:1.2rem;}
+.feature-card h3{font-size:1.5rem;margin-bottom:10px;}
+.feature-card p{font-size:.92rem;color:var(--text3);line-height:1.65;margin-bottom:20px;}
+.feature-card .fc-viz{border:1px solid var(--border);border-radius:14px;background:var(--card);padding:18px;margin-bottom:20px;}
+.feature-card .fc-tags{display:flex;gap:8px;flex-wrap:wrap;}
+.viz-chips{display:flex;gap:8px;flex-wrap:wrap;}
+.viz-chips span{padding:5px 12px;border-radius:20px;border:1px solid var(--border);font-family:var(--ff-m);font-size:.62rem;color:var(--text3);}
+.viz-chips span.on{border-color:var(--border2);color:var(--violet);}
+
+/* ── Grades (4 tiers) ──────────────────────────────────────── */
+#grades{padding:96px 0;background:var(--bg2);}
+.tier-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:8px;}
+.tier-card{position:relative;padding:30px 26px;border:1px solid var(--border);background:var(--card);border-radius:16px;overflow:hidden;transition:transform .25s,border-color .25s;}
+.tier-card:hover{transform:translateY(-4px);border-color:var(--border2);}
+.tier-card .tc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.tier-card .tc-name{font-family:var(--ff-d);font-size:1.28rem;font-weight:600;}
+.tier-card .tc-icon{font-size:1.4rem;}
+.tier-card .tc-score{font-family:var(--ff-m);font-size:.7rem;letter-spacing:.04em;color:var(--text3);margin-bottom:6px;}
+.tier-card .tc-alert{display:inline-flex;align-items:center;gap:6px;font-family:var(--ff-m);font-size:.64rem;letter-spacing:.06em;color:var(--text2);padding:5px 12px;border-radius:20px;background:var(--card2);border:1px solid var(--border);margin-bottom:14px;}
+.tier-card p{font-size:.85rem;color:var(--text3);line-height:1.6;}
+.tier-card.singular{border-top:3px solid var(--violet);}
+.tier-card.elite{border-top:3px solid var(--cyan);}
+.tier-card.prime{border-top:3px solid var(--fuchsia);}
+.tier-card.watch{border-top:3px solid var(--text4);}
+.tier-meter{height:6px;border-radius:3px;background:var(--bg3);overflow:hidden;margin-top:18px;}
+.tier-meter span{display:block;height:100%;border-radius:3px;}
+
+/* ── Sessions ──────────────────────────────────────────────── */
+#sessions{padding:96px 0;}
+.session-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:8px;}
+.session-card{padding:28px 24px;border:1px solid var(--border);background:var(--card);border-radius:16px;transition:transform .25s,border-color .25s;}
+.session-card:hover{transform:translateY(-4px);border-color:var(--border2);}
+.session-card .sc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.session-card .sc-badge{font-family:var(--ff-m);font-size:.66rem;letter-spacing:.08em;padding:5px 12px;border-radius:20px;background:var(--card2);border:1px solid var(--border);color:var(--violet);}
+.session-card h3{font-size:1.22rem;margin-bottom:8px;}
+.session-card .sc-window{font-family:var(--ff-m);font-size:.66rem;letter-spacing:.06em;color:var(--cyan);margin-bottom:12px;}
+.session-card p{font-size:.86rem;color:var(--text3);line-height:1.6;}
+
+/* ── Comparison ────────────────────────────────────────────── */
+#compare{padding:96px 0;background:var(--bg2);}
+.compare-wrap{margin-top:8px;border:1px solid var(--border);border-radius:16px;overflow:hidden;overflow-x:auto;}
+.compare-table{width:100%;border-collapse:collapse;font-size:.86rem;min-width:640px;}
+.compare-table th,.compare-table td{padding:15px 18px;text-align:left;border-bottom:1px solid var(--border);}
+.compare-table thead th{font-family:var(--ff-m);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text4);background:var(--card2);}
+.compare-table tbody tr:last-child td{border-bottom:none;}
+.compare-table td.cap{color:var(--text2);font-weight:600;}
+.compare-table th:first-child,.compare-table td:first-child{width:32%;}
+.compare-table .yes{color:var(--cyan);font-weight:700;}
+.compare-table .partial{color:var(--amber);font-weight:600;}
+.compare-table .no{color:var(--text4);}
+.compare-table .sig{color:var(--violet);font-weight:700;}
+.compare-table .meridian-col{background:var(--violet-dim);}
+.compare-table th.meridian-col{color:var(--violet);}
+
+/* ── Path / labels ─────────────────────────────────────────── */
+#path{padding:96px 0;}
+.label-wrap{margin-top:8px;border:1px solid var(--border);border-radius:16px;overflow:hidden;}
+.label-head,.label-row{display:grid;grid-template-columns:1.1fr 2fr 1fr;padding:16px 24px;gap:16px;align-items:center;}
+.label-head{background:var(--card2);border-bottom:1px solid var(--border);}
+.label-head span{font-family:var(--ff-m);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text4);}
+.label-row{border-bottom:1px solid var(--border);}
+.label-row:last-child{border-bottom:none;}
+.label-row .ll-name{font-weight:700;font-size:.95rem;color:var(--text);}
+.label-row .ll-name.brand{color:var(--violet);}
+.label-row .ll-desc{font-size:.84rem;color:var(--text3);line-height:1.5;}
+.label-row .ll-alert{font-size:.8rem;color:var(--text2);}
+.alert-note{margin-top:20px;display:flex;align-items:center;gap:14px;padding:18px 22px;border-radius:14px;border:1px solid var(--border2);background:var(--card);}
+.alert-note .an-ic{font-size:1.2rem;}
+.alert-note p{font-size:.9rem;color:var(--text2);line-height:1.6;}
+
+/* ── How to use ────────────────────────────────────────────── */
+#howto{padding:96px 0;background:var(--bg2);}
+.howto-steps{margin-top:8px;max-width:820px;margin-left:auto;margin-right:auto;display:flex;flex-direction:column;gap:14px;}
+
+/* ── FAQ ───────────────────────────────────────────────────── */
+#faq{padding:96px 0;}
+.faq-list{max-width:760px;margin:8px auto 0;}
+.faq-item{border:1px solid var(--border);background:var(--card);border-radius:14px;margin-bottom:12px;overflow:hidden;transition:border-color .2s;}
+.faq-item.open{border-color:var(--border2);}
+.faq-q{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 22px;font-size:.98rem;font-weight:600;color:var(--text);width:100%;text-align:left;}
+.faq-icon{font-size:1.1rem;color:var(--violet);transition:transform .2s;}
+.faq-item.open .faq-icon{transform:rotate(45deg);}
+.faq-a{display:none;padding:0 22px 20px;font-size:.88rem;color:var(--text3);line-height:1.7;}
+.faq-item.open .faq-a{display:block;}
+
+/* ── CTA band ──────────────────────────────────────────────── */
+#cta{padding:96px 0;background:var(--bg2);}
+.cta-band{position:relative;overflow:hidden;padding:64px 60px;border-radius:22px;display:grid;grid-template-columns:1.4fr 1fr;gap:40px;align-items:center;}
+.cta-band::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 120% at 15% 20%,rgba(167,139,250,.12),transparent 55%),radial-gradient(ellipse 70% 120% at 90% 80%,rgba(34,211,238,.12),transparent 55%);pointer-events:none;}
+.cta-band .cb-copy{position:relative;z-index:1;}
+.cta-band h2{font-size:clamp(1.8rem,3vw,2.5rem);margin-bottom:16px;}
+.cta-band p{color:var(--text3);font-size:1rem;line-height:1.7;margin-bottom:28px;max-width:520px;}
+.cta-band .cb-ctas{display:flex;gap:14px;flex-wrap:wrap;}
+.cta-band .cb-meta{position:relative;z-index:1;display:flex;flex-direction:column;gap:12px;}
+.cb-stat{display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:14px;background:var(--card);border:1px solid var(--border);}
+.cb-stat .n{font-family:var(--ff-d);font-size:1.3rem;font-weight:600;color:var(--violet);min-width:60px;}
+.cb-stat .t{font-size:.86rem;color:var(--text3);line-height:1.45;}
+
+/* ── Footer ────────────────────────────────────────────────── */
+footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 36px;transition:background .4s;}
+.footer-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1fr;gap:40px;margin-bottom:52px;}
+.footer-brand .f-logo{font-family:var(--ff-d);font-size:1.25rem;font-weight:600;color:var(--text);margin-bottom:14px;display:block;}
+.footer-brand .f-logo span{color:var(--violet);}
+.footer-brand .f-mission{font-size:.9rem;color:var(--text3);line-height:1.65;margin-bottom:20px;max-width:230px;}
+.f-status{display:inline-flex;align-items:center;gap:9px;padding:8px 14px;border-radius:20px;border:1px solid var(--border);background:var(--card);font-size:.74rem;color:var(--text2);margin-bottom:22px;}
+.f-status i{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);animation:blink 1.8s ease-in-out infinite;}
+.f-social{display:flex;gap:10px;}
+.f-social a{display:inline-flex;align-items:center;padding:7px 13px;border-radius:20px;border:1px solid var(--border);font-size:.76rem;color:var(--text3);transition:all .2s;}
+.f-social a:hover{border-color:var(--border2);color:var(--violet);}
+.footer-col h4{font-family:var(--ff-m);font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--violet);margin-bottom:18px;font-weight:700;}
+.footer-col a{display:block;font-size:.86rem;color:var(--text3);margin-bottom:11px;transition:color .18s,transform .18s;}
+.footer-col a:hover{color:var(--text);transform:translateX(2px);}
+.footer-bottom{border-top:1px solid var(--border);padding-top:24px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-family:var(--ff-m);font-size:.68rem;color:var(--text4);}
+.footer-disclaimer{max-width:820px;font-size:.72rem;color:var(--text4);line-height:1.65;margin-top:16px;opacity:.8;}
+
+/* ── Reveal ────────────────────────────────────────────────── */
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .65s ease,transform .65s ease;}
+.reveal.in{opacity:1;transform:translateY(0);}
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width:1080px){
+  .hero-inner{grid-template-columns:1fr;gap:40px;}
+  .hero-card{max-width:560px;}
+  .featured-grid{grid-template-columns:1fr;}
+  .tier-grid,.session-grid{grid-template-columns:1fr 1fr;}
+  .cta-band{grid-template-columns:1fr;padding:44px 34px;}
+  .footer-grid{grid-template-columns:1fr 1fr 1fr;}
+}
+@media (max-width:820px){
+  .nav-menu{display:none;}
+  .nav-burger{display:flex;}
+  .nav-cta{display:none;}
+  #scope,#scope-ring,#scope-dot{display:none;}
+  body{cursor:auto;}
+  button,a{cursor:pointer;}
+  .container{padding:0 22px;}
+  nav{padding:0 22px;}
+  .tier-grid,.session-grid{grid-template-columns:1fr;}
+  .label-head,.label-row{grid-template-columns:1fr;gap:8px;}
+}
+@media (max-width:640px){
+  .footer-grid{grid-template-columns:1fr 1fr;}
+  .footer-brand{grid-column:1/-1;}
+  .hero-cta .btn{width:100%;justify-content:center;}
+  .dash-metrics{grid-template-columns:1fr 1fr;}
+  .ticker-status{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- Precision scope cursor (transparent — no blur) -->
+<div id="scope" aria-hidden="true">
+  <span class="s-ring s-r1"></span>
+  <span class="s-ring s-r2"></span>
+  <span class="s-h"></span>
+  <span class="s-v"></span>
+  <span class="s-center"></span>
+</div>
+<div id="scope-ring"></div>
+<div id="scope-dot"></div>
+
+<!-- NAV -->
+<nav>
+  <a class="logo" href="/index.html"><b>SNIPERTRADER</b><span>.ai</span></a>
+  <ul class="nav-menu">
+    <li class="nav-item" data-drop>
+      <button class="nav-link" onclick="toggleDrop(this)">Market Intelligence <span class="caret">▾</span></button>
+      <div class="dropdown">
+        <a href="/traderedge_preflight.html"><span class="d-name">Preflight Protocol</span><span class="d-sub">Daily pre-market playbook &amp; bias calibration</span></a>
+        <a href="/market_terminal.html"><span class="d-name">Daily Market Picks</span><span class="d-sub">High-probability setups scored by ML</span></a>
+        <a href="/prerun_detection.html"><span class="d-name">Daily Pre-Run Detection</span><span class="d-sub">Pre-market scan across the full watchlist</span></a>
+        <a href="https://chart-ai.snipertrader.ai"><span class="d-name">AI Chart Analyzer</span><span class="d-sub">Automated structure, liquidity &amp; order blocks</span></a>
+        <a href="/sniper_market_forecaster.html"><span class="d-name">Sniper Market Forecaster</span><span class="d-sub">Macro price targets &amp; pivot windows</span></a>
+      </div>
+    </li>
+    <li class="nav-item" data-drop>
+      <button class="nav-link active" onclick="toggleDrop(this)">Proprietary Algos <span class="caret">▾</span></button>
+      <div class="dropdown">
+        <a href="/NoRepaint_Pivot_indicator.html"><span class="d-name">No Repaint Indicator</span><span class="d-sub">Confirmed-at-close signal execution</span></a>
+        <a href="/USME_ICT_Foundation.html"><span class="d-name">USME ICT Foundation Engine</span><span class="d-sub">Smart Money Concepts automation</span></a>
+        <a href="/USME_VWAP_Elite_Suite.html"><span class="d-name">USME VWAP Suite Engine</span><span class="d-sub">Institutional volume-weighted targeting</span></a>
+        <a href="/Meridian_Engine.html" class="active"><span class="d-name">Meridian Engine</span><span class="d-sub">Regime-aware lattice + liquidity memory map</span></a>
+        <a href="/usme_products.html"><span class="d-name">All Products</span></a>
+      </div>
+    </li>
+    <li class="nav-item" data-drop>
+      <button class="nav-link" onclick="toggleDrop(this)">Prop Firm <span class="caret">▾</span></button>
+      <div class="dropdown">
+        <a href="/traderedge_prop_firms_command_center.html"><span class="d-name">Command Center</span><span class="d-sub">Live account matrix &amp; rule guardrails</span></a>
+        <a href="/prop_firm_dashboard.html"><span class="d-name">Prop Firm Intelligence</span><span class="d-sub">Ranked firms by Sniper Score™</span></a>
+        <a href="/Prop_firm_MasterPlan.html"><span class="d-name">Prop Firm Master Plan</span><span class="d-sub">The funded-trader roadmap</span></a>
+      </div>
+    </li>
+    <li class="nav-item"><a class="nav-link" href="https://discord.com/servers/zeiierman-trading-764500290614591538">Discord</a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="theme-toggle" id="theme-btn" aria-label="Toggle light/dark mode">☾ <span id="theme-label">Light</span></button>
+    <a class="nav-cta" href="/admin.html">LOGIN</a>
+    <button class="nav-burger" id="burger" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<!-- Mobile menu -->
+<div class="mobile-menu" id="mobileMenu">
+  <div class="mm-group">Market Intelligence</div>
+  <a class="mm-sub" href="/traderedge_preflight.html">Preflight Protocol</a>
+  <a class="mm-sub" href="/market_terminal.html">Daily Market Picks</a>
+  <a class="mm-sub" href="https://chart-ai.snipertrader.ai">AI Chart Analyzer</a>
+  <a class="mm-sub" href="/sniper_market_forecaster.html">Sniper Market Forecaster</a>
+  <div class="mm-group">Proprietary Algos</div>
+  <a class="mm-sub" href="/NoRepaint_Pivot_indicator.html">No Repaint Indicator</a>
+  <a class="mm-sub" href="/USME_ICT_Foundation.html">USME ICT Foundation Engine</a>
+  <a class="mm-sub" href="/USME_VWAP_Elite_Suite.html">USME VWAP Suite Engine</a>
+  <a class="mm-sub" href="/Meridian_Engine.html">Meridian Engine</a>
+  <div class="mm-group">Academy</div>
+  <a class="mm-link" href="/USME_ICT_Foundation_Course.html">Sniper Academy</a>
+  <a class="mm-link" href="/market_terminal.html">Open Terminal</a>
+</div>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-status"><span class="live-dot"></span>Meridian Engine v2</div>
+  <div class="ticker-track">
+    <div class="ticker-inner">
+      <span class="tick-item"><span class="t-brand">◆</span> Regime Engine — TREND · RANGE · TRANSITION</span>
+      <span class="tick-item"><span class="t-brand">◆</span> Liquidity Memory Map — decaying magnets</span>
+      <span class="tick-item"><span class="t-brand">◆</span> Event Lattice — WATCH → SINGULAR</span>
+      <span class="tick-item"><span class="t-brand">◆</span> 3-Gate Core — bias → armed → zone</span>
+      <span class="tick-item"><span class="t-brand">◆</span> Dynamic Risk Geometry — SL + TP1–3</span>
+      <span class="tick-item"><span class="t-brand">◆</span> Path Integrity — confirm / break</span>
+      <span class="tick-item"><span class="t-brand">◆</span> Session DNA — SB · NY · London · Asia</span>
+      <span class="tick-item"><span class="t-brand">◆</span> TradingView Pine Script v6</span>
+      <span class="tick-item"><span class="t-brand">◆</span> Regime Engine — TREND · RANGE · TRANSITION</span>
+      <span class="tick-item"><span class="t-brand">◆</span> Liquidity Memory Map — decaying magnets</span>
+      <span class="tick-item"><span class="t-brand">◆</span> Event Lattice — WATCH → SINGULAR</span>
+      <span class="tick-item"><span class="t-brand">◆</span> 3-Gate Core — bias → armed → zone</span>
+      <span class="tick-item"><span class="t-brand">◆</span> Dynamic Risk Geometry — SL + TP1–3</span>
+      <span class="tick-item"><span class="t-brand">◆</span> Path Integrity — confirm / break</span>
+      <span class="tick-item"><span class="t-brand">◆</span> Session DNA — SB · NY · London · Asia</span>
+      <span class="tick-item"><span class="t-brand">◆</span> TradingView Pine Script v6</span>
+    </div>
+  </div>
+</div>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-bg"><div class="grid"></div><div class="glow1"></div><div class="glow2"></div></div>
+  <div class="container hero-inner">
+    <div>
+      <div class="hero-pill">
+        <span class="hp-dot"></span>
+        <span class="hp-text">Meridian Engine · v2</span>
+        <span class="hp-plat">TradingView Pine Script v6</span>
+      </div>
+      <h1 class="hero-title">Read the regime. Map the liquidity. <em>Trade the lattice.</em></h1>
+      <p class="hero-sub">Meridian replaces flat scores and rigid AND-gates with a <strong>regime-aware lattice</strong>, a live <strong>liquidity memory map</strong>, and <strong>path-integrity tracking</strong> — so every signal carries a grade, a regime, and a managed trade from entry to TP3.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="/checkout.html">Get the Meridian Engine</a>
+        <a class="btn btn-outline" href="#workflow">See How It Trades</a>
+      </div>
+      <div class="hero-trust">
+        <div class="trust-item"><span class="t-label">Regime</span><span class="t-value">TREND · RANGE · TRANSITION</span></div>
+        <div class="trust-item"><span class="t-label">Conviction</span><span class="t-value">WATCH → SINGULAR</span></div>
+        <div class="trust-item"><span class="t-label">Path</span><span class="t-value">Break · Confirm</span></div>
+      </div>
+    </div>
+    <div class="glass hero-card">
+      <div class="dash-top">
+        <div class="dash-dots"><i></i><i></i><i></i></div>
+        <span class="dash-title">Meridian Dashboard</span>
+        <span class="dash-live"><span class="live-dot"></span>LIVE</span>
+      </div>
+      <div class="dash-asset"><span class="sym">NQ · 5m</span><span class="px">18,642<small>+0.42%</small></span></div>
+      <div class="dash-viz">
+        <svg viewBox="0 0 460 150" width="100%" height="150" preserveAspectRatio="none" role="img" aria-label="VWAP with deviation bands, liquidity magnets and lattice events">
+          <path d="M0,78 C50,74 100,60 150,64 C200,68 250,56 300,60 C350,64 400,52 460,50" fill="none" stroke="#22D3EE" stroke-width="2"/>
+          <path d="M0,90 C50,86 100,74 150,78 C200,82 250,70 300,74 C350,78 400,66 460,64" fill="none" stroke="#A78BFA" stroke-width="1.2" stroke-dasharray="4 6"/>
+          <path d="M0,66 C50,62 100,46 150,50 C200,54 250,42 300,46 C350,50 400,38 460,36" fill="none" stroke="#A78BFA" stroke-width="1.2" stroke-dasharray="4 6"/>
+          <line x1="150" y1="64" x2="240" y2="64" stroke="#22D3EE" stroke-width="1" stroke-dasharray="2 4" opacity=".55"/>
+          <circle cx="150" cy="64" r="4" fill="#22D3EE"/>
+          <line x1="300" y1="60" x2="390" y2="60" stroke="#E879F9" stroke-width="1" stroke-dasharray="2 4" opacity=".55"/>
+          <circle cx="300" cy="60" r="4" fill="#E879F9"/>
+          <circle cx="120" cy="70" r="3" fill="#22D3EE"/><circle cx="210" cy="58" r="3" fill="#22D3EE"/><circle cx="340" cy="52" r="3" fill="#E879F9"/>
+        </svg>
+      </div>
+      <div class="dash-metrics">
+        <div class="dm"><div class="l">Regime</div><div class="v north">TREND</div></div>
+        <div class="dm"><div class="l">Bias</div><div class="v brand">BULL</div></div>
+        <div class="dm"><div class="l">Lattice</div><div class="v south">ELITE</div></div>
+      </div>
+      <div class="dash-tags">
+        <span class="tag brand">SINGULAR</span>
+        <span class="tag north">Armed</span>
+        <span class="tag south">SB</span>
+        <span class="tag">Path CONFIRM</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3-GATE WORKFLOW -->
+<section id="workflow">
+  <div class="container">
+    <div class="v2-head reveal">
+      <div class="eyebrow">The 3-Gate Core</div>
+      <h2>From regime to managed path. <em>In three gates.</em></h2>
+      <p class="lede">Meridian never takes a trade off one signal. Three gates must clear in order — a regime-aware bias, a liquidity arm, and an untapped zone retest — before the engine commits a managed path from entry to TP3.</p>
+    </div>
+    <div class="layers">
+      <div class="layer-card reveal">
+        <span class="lc-n">Gate 01</span>
+        <div class="lc-body"><h3>Bias — regime-aware</h3><p>The engine classifies every bar TREND, RANGE, or TRANSITION. In TREND it trades only with the ribbon and cloud; in RANGE it fades premium and discount extremes; in TRANSITION it demands a denser lattice before anything fires.</p></div>
+      </div>
+      <div class="layer-card reveal">
+        <span class="lc-n">Gate 02</span>
+        <div class="lc-body"><h3>Armed — liquidity swept</h3><p>A setup only arms on a confirmed liquidity sweep, a volume-backed VWAP reclaim, or a bullish/bearish CHoCH. The arm expires after a preset number of bars — stale setups are dropped automatically.</p></div>
+      </div>
+      <div class="layer-card reveal">
+        <span class="lc-n">Gate 03</span>
+        <div class="lc-body"><h3>Zone retest — lattice graded</h3><p>Price must tap an untapped FVG (or order block) while the event lattice reads at least your minimum grade. No-chase blocks stretched entries in TREND; RANGE gets a fade-into-extremes exception.</p></div>
+      </div>
+      <div class="layer-card reveal">
+        <span class="lc-n">Manage</span>
+        <div class="lc-body"><h3>Path — entry to TP3</h3><p>On entry, Meridian plots a structural stop and three targets. PATH CONFIRM fires when TP1 is touched; PATH BREAK fires if price closes beyond the stop first. One path per direction, tracked live.</p></div>
+      </div>
+    </div>
+    <div class="v2-note reveal">
+      <span class="af-dot"></span>
+      <p><strong>Mutual exclusion built in.</strong> If both long and short fire on the same bar, Meridian keeps the higher-density side — or stands aside entirely on a tie. It will not hand you a conflicting pair.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ENGINE -->
+<section id="engine">
+  <div class="container">
+    <div class="eyebrow reveal">The Engine</div>
+    <h2 class="reveal">Six pillars. <em>One lattice.</em></h2>
+    <p class="lede reveal">Each pillar replaces a flat rule with a dynamic read — regime context, a decaying memory of liquidity, clustered evidence, and a tracked trade path.</p>
+    <div class="featured-grid">
+      <div class="glass feature-card reveal">
+        <div class="fc-top">
+          <div class="fc-icon">◎</div>
+          <span class="tag brand">Regime</span>
+        </div>
+        <h3>Regime Engine</h3>
+        <p>Every bar is classified TREND, RANGE, or TRANSITION from ATR relative strength, a manual ADX(14), and EMA ribbon 9/21/50 alignment. Bias, risk-reward, and no-chase logic all shift with the regime.</p>
+        <div class="fc-viz">
+          <div class="viz-chips" style="margin-bottom:12px">
+            <span class="on">TREND</span><span>RANGE</span><span>TRANSITION</span>
+          </div>
+          <svg viewBox="0 0 460 90" width="100%" height="90" preserveAspectRatio="none" role="img" aria-label="Regime classification bands">
+            <path d="M0,58 C70,54 140,40 210,44 C280,48 350,30 460,26" fill="none" stroke="#22D3EE" stroke-width="2"/>
+            <rect x="0" y="0" width="153" height="90" fill="rgba(34,211,238,.05)"/>
+            <rect x="307" y="0" width="153" height="90" fill="rgba(167,139,250,.05)"/>
+            <text x="46" y="24" font-family="Space Mono,monospace" font-size="10" fill="#9CA5C4">TREND</text>
+            <text x="200" y="24" font-family="Space Mono,monospace" font-size="10" fill="#9CA5C4">RANGE</text>
+            <text x="356" y="24" font-family="Space Mono,monospace" font-size="10" fill="#9CA5C4">TRANSITION</text>
+          </svg>
+        </div>
+        <div class="fc-tags">
+          <span class="tag north">ATR relative strength</span>
+          <span class="tag">ADX(14)</span>
+          <span class="tag">EMA 9/21/50</span>
+        </div>
+      </div>
+      <div class="glass feature-card reveal">
+        <div class="fc-top">
+          <div class="fc-icon">◈</div>
+          <span class="tag north">Signature</span>
+        </div>
+        <h3>Liquidity Memory Map</h3>
+        <p>Confirmed sweeps push liquidity pools into a rolling memory — each with a price, direction, intensity, and a decaying magnet. Revisit with volume and the magnet strengthens; TP3 can target the opposing pool.</p>
+        <div class="fc-viz">
+          <svg viewBox="0 0 460 90" width="100%" height="90" preserveAspectRatio="none" role="img" aria-label="Liquidity magnets above and below price">
+            <path d="M0,46 C60,44 120,52 180,48 C240,44 300,52 360,48 C400,46 440,42 460,40" fill="none" stroke="#E9ECF7" stroke-width="1.6"/>
+            <line x1="120" y1="48" x2="200" y2="48" stroke="#22D3EE" stroke-width="1" stroke-dasharray="2 4"/>
+            <circle cx="120" cy="48" r="4" fill="#22D3EE"/>
+            <line x1="320" y1="48" x2="400" y2="48" stroke="#E879F9" stroke-width="1" stroke-dasharray="2 4"/>
+            <circle cx="320" cy="48" r="4" fill="#E879F9"/>
+            <text x="126" y="34" font-family="Space Mono,monospace" font-size="9" fill="#22D3EE">buy-side pool</text>
+            <text x="326" y="70" font-family="Space Mono,monospace" font-size="9" fill="#E879F9">sell-side pool</text>
+          </svg>
+        </div>
+        <div class="fc-tags">
+          <span class="tag south">Decaying magnet</span>
+          <span class="tag">Cap 20 pools</span>
+        </div>
+      </div>
+      <div class="glass feature-card reveal">
+        <div class="fc-top">
+          <div class="fc-icon">⬡</div>
+          <span class="tag south">Confluence</span>
+        </div>
+        <h3>Event Lattice</h3>
+        <p>Not a flat score. Sweeps, CHoCH, BOS, VWAP reclaims, band touches, and session tags land in a rolling lattice. Density is measured in time and price — each event type counted once — then graded WATCH to SINGULAR.</p>
+        <div class="fc-viz">
+          <svg viewBox="0 0 460 90" width="100%" height="90" preserveAspectRatio="none" role="img" aria-label="Clustered lattice events">
+            <circle cx="80" cy="50" r="4" fill="#22D3EE"/><circle cx="120" cy="44" r="4" fill="#22D3EE"/><circle cx="160" cy="52" r="4" fill="#22D3EE"/>
+            <circle cx="110" cy="66" r="4" fill="#E879F9"/><circle cx="150" cy="38" r="4" fill="#A78BFA"/>
+            <circle cx="300" cy="46" r="4" fill="#E879F9"/><circle cx="340" cy="40" r="4" fill="#E879F9"/><circle cx="380" cy="48" r="4" fill="#E879F9"/>
+            <path d="M70,70 C120,72 160,68 200,64" stroke="#22D3EE" stroke-width="1" stroke-dasharray="3 5" opacity=".5"/>
+            <path d="M290,66 C320,64 350,60 390,54" stroke="#E879F9" stroke-width="1" stroke-dasharray="3 5" opacity=".5"/>
+            <text x="76" y="86" font-family="Space Mono,monospace" font-size="9" fill="#9CA5C4">dense = high grade</text>
+            <text x="296" y="86" font-family="Space Mono,monospace" font-size="9" fill="#9CA5C4">sparse = low grade</text>
+          </svg>
+        </div>
+        <div class="fc-tags">
+          <span class="tag brand">WATCH → SINGULAR</span>
+          <span class="tag">Type-dedup</span>
+        </div>
+      </div>
+      <div class="glass feature-card reveal">
+        <div class="fc-top">
+          <div class="fc-icon">▤</div>
+          <span class="tag brand">Risk</span>
+        </div>
+        <h3>Dynamic Risk Geometry</h3>
+        <p>Entry at the close, a structural stop beyond the sweep or zone invalidation, and three targets: TP1 at VWAP or the nearest sigma band, TP2 by risk × RR, and TP3 at the opposing magnet or 1.5× TP2.</p>
+        <div class="fc-viz">
+          <svg viewBox="0 0 460 90" width="100%" height="90" preserveAspectRatio="none" role="img" aria-label="Entry, stop and three targets">
+            <line x1="30" y1="45" x2="430" y2="45" stroke="#E9ECF7" stroke-width="1.4"/>
+            <line x1="120" y1="66" x2="400" y2="66" stroke="#FB7185" stroke-width="1.4"/><text x="30" y="82" font-family="Space Mono,monospace" font-size="9" fill="#FB7185">SL</text>
+            <line x1="120" y1="26" x2="400" y2="26" stroke="#FBBF24" stroke-width="1.4"/><text x="30" y="20" font-family="Space Mono,monospace" font-size="9" fill="#FBBF24">TP1</text>
+            <line x1="160" y1="14" x2="400" y2="14" stroke="#22D3EE" stroke-width="1.4"/><text x="30" y="8" font-family="Space Mono,monospace" font-size="9" fill="#22D3EE">TP2</text>
+            <line x1="200" y1="4" x2="400" y2="4" stroke="#A78BFA" stroke-width="1.2" stroke-dasharray="3 4"/><text x="30" y="1" font-family="Space Mono,monospace" font-size="9" fill="#A78BFA">TP3</text>
+            <circle cx="120" cy="45" r="4" fill="#22D3EE"/><text x="132" y="60" font-family="Space Mono,monospace" font-size="9" fill="#9CA5C4">entry</text>
+          </svg>
+        </div>
+        <div class="fc-tags">
+          <span class="tag north">Structural SL</span>
+          <span class="tag">TP1–TP3</span>
+        </div>
+      </div>
+      <div class="glass feature-card reveal">
+        <div class="fc-top">
+          <div class="fc-icon">↯</div>
+          <span class="tag south">Integrity</span>
+        </div>
+        <h3>Path Integrity Tracker</h3>
+        <p>On every signal Meridian stores the entry, stop, and targets, then follows the trade. TP1 touched first is a PATH CONFIRM; price closing beyond the stop first is a PATH BREAK. Both print labels and fire alerts.</p>
+        <div class="fc-viz">
+          <div class="viz-chips" style="margin-bottom:12px">
+            <span class="on">PATH CONFIRM</span><span>PATH BREAK</span>
+          </div>
+          <svg viewBox="0 0 460 80" width="100%" height="80" preserveAspectRatio="none" role="img" aria-label="Path confirm versus break">
+            <path d="M0,60 C60,58 120,40 180,42 C240,44 300,30 360,22" fill="none" stroke="#22D3EE" stroke-width="2"/>
+            <path d="M0,18 C60,20 120,38 180,36 C240,34 300,52 360,60" fill="none" stroke="#FB7185" stroke-width="2"/>
+            <text x="150" y="12" font-family="Space Mono,monospace" font-size="9" fill="#22D3EE">TP1 touched → CONFIRM</text>
+            <text x="150" y="78" font-family="Space Mono,monospace" font-size="9" fill="#FB7185">SL beyond → BREAK</text>
+          </svg>
+        </div>
+        <div class="fc-tags">
+          <span class="tag north">Bar-close only</span>
+          <span class="tag">Alerts</span>
+        </div>
+      </div>
+      <div class="glass feature-card reveal">
+        <div class="fc-top">
+          <div class="fc-icon">◷</div>
+          <span class="tag north">Session</span>
+        </div>
+        <h3>Session DNA</h3>
+        <p>America/New_York windows — Asia, London, the NY killzone, and a configurable Silver Bullet — act as amplifiers, not mandatory AND-gates. A setup in-window gets a lattice density boost, never a forced wait.</p>
+        <div class="fc-viz">
+          <svg viewBox="0 0 460 80" width="100%" height="80" preserveAspectRatio="none" role="img" aria-label="Session windows timeline">
+            <rect x="10" y="30" width="70" height="20" rx="4" fill="rgba(34,211,238,.14)"/>
+            <rect x="130" y="30" width="70" height="20" rx="4" fill="rgba(167,139,250,.14)"/>
+            <rect x="250" y="30" width="70" height="20" rx="4" fill="rgba(232,121,249,.14)"/>
+            <rect x="370" y="30" width="80" height="20" rx="4" fill="rgba(251,191,36,.14)"/>
+            <text x="24" y="24" font-family="Space Mono,monospace" font-size="9" fill="#9CA5C4">Asia</text>
+            <text x="142" y="24" font-family="Space Mono,monospace" font-size="9" fill="#9CA5C4">London</text>
+            <text x="262" y="24" font-family="Space Mono,monospace" font-size="9" fill="#9CA5C4">NY KZ</text>
+            <text x="386" y="24" font-family="Space Mono,monospace" font-size="9" fill="#9CA5C4">SB</text>
+            <text x="10" y="70" font-family="Space Mono,monospace" font-size="9" fill="#9CA5C4">amplify ×1.25</text>
+          </svg>
+        </div>
+        <div class="fc-tags">
+          <span class="tag brand">Amplifier tags</span>
+          <span class="tag">Not AND-gates</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- GRADES -->
+<section id="grades">
+  <div class="container">
+    <div class="eyebrow center reveal">Event Lattice Grades</div>
+    <h2 class="reveal" style="text-align:center">Four grades. <em>One density.</em></h2>
+    <p class="lede reveal" style="text-align:center;margin-left:auto;margin-right:auto">The lattice counts how many different kinds of confluence cluster near price — then grades the setup. Session windows amplify, and a high-magnet pool in range can push a setup to the top.</p>
+    <div class="tier-grid">
+      <div class="tier-card singular reveal">
+        <div class="tc-head"><span class="tc-name">SINGULAR</span><span class="tc-icon">✶</span></div>
+        <div class="tc-score">5+ event types</div>
+        <span class="tc-alert">🔔 Ring alert</span>
+        <p>Five or more distinct event types clustered in time and price — with a high-magnet pool in range. The rarest, highest-conviction read. Maximum size and RR.</p>
+        <div class="tier-meter"><span style="width:100%;background:linear-gradient(90deg,var(--violet),var(--fuchsia))"></span></div>
+      </div>
+      <div class="tier-card elite reveal">
+        <div class="tc-head"><span class="tc-name">ELITE</span><span class="tc-icon">⚡</span></div>
+        <div class="tc-score">4 event types</div>
+        <span class="tc-alert">🔔 Chimes alert</span>
+        <p>Four event types in the lattice — sweep, structure, VWAP, and session alignment converging at one level. Full position size.</p>
+        <div class="tier-meter"><span style="width:84%;background:linear-gradient(90deg,var(--cyan),var(--cyan2))"></span></div>
+      </div>
+      <div class="tier-card prime reveal">
+        <div class="tc-head"><span class="tc-name">PRIME</span><span class="tc-icon">★</span></div>
+        <div class="tc-score">3 event types</div>
+        <span class="tc-alert">🔔 Bell alert</span>
+        <p>The standard smart-money stack — a sweep, a structure shift, and a fresh imbalance. Standard position size.</p>
+        <div class="tier-meter"><span style="width:68%;background:linear-gradient(90deg,var(--fuchsia),var(--fuchsia2))"></span></div>
+      </div>
+      <div class="tier-card watch reveal">
+        <div class="tc-head"><span class="tc-name">WATCH</span><span class="tc-icon">◈</span></div>
+        <div class="tc-score">2 event types</div>
+        <span class="tc-alert">👁 Watchlist</span>
+        <p>Core confirmation only. Valid for research and tracking — raise the minimum grade to PRIME before taking live size.</p>
+        <div class="tier-meter"><span style="width:52%;background:linear-gradient(90deg,var(--text4),var(--text3))"></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SESSIONS -->
+<section id="sessions">
+  <div class="container">
+    <div class="eyebrow reveal">Session DNA</div>
+    <h2 class="reveal">Four windows. <em>Amplified, never forced.</em></h2>
+    <p class="lede reveal">Each institutional session tags the lattice for a density boost. Unlike rigid AND-gates, a setup never has to wait for the "right" window — it simply scores higher inside one.</p>
+    <div class="session-grid">
+      <div class="session-card reveal">
+        <div class="sc-top"><span class="sc-badge">SB</span><span class="tag north">Configurable</span></div>
+        <h3>Silver Bullet</h3>
+        <div class="sc-window">8:00–9:00 AM ET</div>
+        <p>A sweep of the prior London high or low inside the Silver Bullet window, tagged for a lattice boost. A clean reversal read.</p>
+      </div>
+      <div class="session-card reveal">
+        <div class="sc-top"><span class="sc-badge">NYDef</span><span class="tag brand">NY</span></div>
+        <h3>NY Defense Leg</h3>
+        <div class="sc-window">9:30 AM–12:00 PM ET</div>
+        <p>A volume-spike test of the prior New York extreme with trend alignment — institutional defense of a session high or low.</p>
+      </div>
+      <div class="session-card reveal">
+        <div class="sc-top"><span class="sc-badge">LDN</span><span class="tag south">London</span></div>
+        <h3>London Window</h3>
+        <div class="sc-window">2:00–5:00 AM ET</div>
+        <p>The London session's range and liquidity form the reference for the Silver Bullet sweep later in the morning.</p>
+      </div>
+      <div class="session-card reveal">
+        <div class="sc-top"><span class="sc-badge">Asia</span><span class="tag">Post-open</span></div>
+        <h3>Asia Breakout</h3>
+        <div class="sc-window">20:00–00:00 ET</div>
+        <p>A break of the prior Asia range after it closes, with structure alignment — the earliest read on the day's directional intent.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARISON -->
+<section id="compare">
+  <div class="container">
+    <div class="eyebrow reveal">Why Meridian</div>
+    <h2 class="reveal">Beyond the <em>Pro v3 and USME v2.</em></h2>
+    <p class="lede reveal">Meridian isn't a reskin — it's a synthesis that keeps what both engines do well and replaces their flat scoring with a regime-aware lattice, a liquidity memory map, and path tracking.</p>
+    <div class="compare-wrap reveal">
+      <table class="compare-table">
+        <thead>
+          <tr><th>Capability</th><th>Pro v3</th><th>USME v2</th><th class="meridian-col">Meridian</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="cap">3-gate bias → arm → zone</td><td class="yes">✓ Yes</td><td class="no">No — flat AND</td><td class="meridian-col sig">✦ Regime-aware</td></tr>
+          <tr><td class="cap">True VWAP σ bands (vPV2)</td><td class="yes">✓ Yes</td><td class="yes">✓ Yes</td><td class="meridian-col sig">✦ + anchors</td></tr>
+          <tr><td class="cap">No-chase / band confluence</td><td class="yes">✓ Yes</td><td class="partial">◐ Partial</td><td class="meridian-col sig">✦ + RANGE fade</td></tr>
+          <tr><td class="cap">BOS / CHoCH</td><td class="no">— No</td><td class="yes">✓ AND gates</td><td class="meridian-col sig">✦ Lattice &amp; arm</td></tr>
+          <tr><td class="cap">Conviction grading</td><td class="no">— No</td><td class="partial">◐ Flat score</td><td class="meridian-col sig">✦ Lattice → SINGULAR</td></tr>
+          <tr><td class="cap">Session SB / NYDef / Asia</td><td class="no">— No</td><td class="partial">◐ AND-heavy</td><td class="meridian-col sig">✦ Amplifier tags</td></tr>
+          <tr><td class="cap">Liquidity memory</td><td class="no">— No</td><td class="no">— No</td><td class="meridian-col sig">✦ Signature</td></tr>
+          <tr><td class="cap">Path integrity</td><td class="no">— No</td><td class="no">— No</td><td class="meridian-col sig">✦ Yes</td></tr>
+          <tr><td class="cap">Structural SL + TP1–3</td><td class="partial">◐ ATR only</td><td class="no">Labels only</td><td class="meridian-col sig">✦ Dynamic geometry</td></tr>
+          <tr><td class="cap">Regime engine</td><td class="no">— No</td><td class="no">— No</td><td class="meridian-col sig">✦ TREND / RANGE / TRANSITION</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- PATH / LABELS -->
+<section id="path">
+  <div class="container">
+    <div class="eyebrow reveal">Signal &amp; Path Labels</div>
+    <h2 class="reveal">Every label. <em>Explained.</em></h2>
+    <p class="lede reveal">Nothing is left to interpretation. Each bubble, arrow, and path marker has a fixed meaning and a matching alert.</p>
+    <div class="label-wrap reveal">
+      <div class="label-head"><span>Label</span><span>What it means</span><span>Alert</span></div>
+      <div class="label-row"><div class="ll-name brand">BUY / SELL</div><div class="ll-desc">The master signal — a fully-graded setup confirmed at bar close, with grade, regime, and preset on the label.</div><div class="ll-alert">Dedicated chime</div></div>
+      <div class="label-row"><div class="ll-name">S · ARMED</div><div class="ll-desc">A liquidity sweep arms the direction. The arm expires after a preset number of bars if no zone retests.</div><div class="ll-alert">Sweep arm</div></div>
+      <div class="label-row"><div class="ll-name">VWAP↑ / VWAP↓</div><div class="ll-desc">A volume-backed reclaim or rejection of VWAP — an alternate arm signal to a sweep.</div><div class="ll-alert">VWAP arm</div></div>
+      <div class="label-row"><div class="ll-name">CHoCH</div><div class="ll-desc">A change of character — the first break of structure against the prior trend. A valid arm and lattice event.</div><div class="ll-alert">CHoCH marker</div></div>
+      <div class="label-row"><div class="ll-name brand">PATH CONFIRM</div><div class="ll-desc">TP1 touched first. The path is on track; manage toward TP2 and TP3.</div><div class="ll-alert">Confirm alert</div></div>
+      <div class="label-row"><div class="ll-name">PATH BREAK</div><div class="ll-desc">Price closed beyond the stop before TP1 was reached. The path is invalidated.</div><div class="ll-alert">Break alert</div></div>
+    </div>
+    <div class="alert-note reveal">
+      <span class="an-ic">⚠️</span>
+      <p><strong>Bar-close only.</strong> Entry signals confirm on a closed bar — no mid-candle signal that can vanish before the close. Arm bubbles and stage indicators update live by design, but they are state reads, never trade triggers.</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW TO USE -->
+<section id="howto">
+  <div class="container">
+    <div class="v2-head reveal">
+      <div class="eyebrow">How To Use</div>
+      <h2>On the chart. <em>In five minutes.</em></h2>
+      <p class="lede">Add the script, let the Auto preset derive your timeframe, and trade the read — regime, then arm, then zone.</p>
+    </div>
+    <div class="howto-steps">
+      <div class="layer-card reveal">
+        <span class="lc-n">Step 01</span>
+        <div class="lc-body"><h3>Add the script</h3><p>Paste <code style="font-family:var(--ff-m);color:var(--cyan);font-size:.82rem">Meridian_Engine.pine</code> into the TradingView Pine v6 editor, save, and add it to your chart.</p></div>
+      </div>
+      <div class="layer-card reveal">
+        <span class="lc-n">Step 02</span>
+        <div class="lc-body"><h3>Start on Preset = Auto</h3><p>Auto derives Scalp, Intraday, Swing, or Position from your chart timeframe — so stop, RR, and lattice sensitivity match the timeframe you're actually trading.</p></div>
+      </div>
+      <div class="layer-card reveal">
+        <span class="lc-n">Step 03</span>
+        <div class="lc-body"><h3>Set minimum grade to PRIME</h3><p>PRIME filters out weak lattices for live trading. Keep WATCH for research, and let ELITE and SINGULAR surface your highest-conviction reads.</p></div>
+      </div>
+      <div class="layer-card reveal">
+        <span class="lc-n">Step 04</span>
+        <div class="lc-body"><h3>Trade the alignment</h3><p>Enter only when the dashboard shows <strong>Armed</strong> + a matching <strong>Lattice</strong> grade + an aligned <strong>Regime and Bias</strong>. Then manage via Path Confirm and Break.</p></div>
+      </div>
+      <div class="layer-card reveal">
+        <span class="lc-n">Step 05</span>
+        <div class="lc-body"><h3>Wire the alerts</h3><p>Create alerts from the script's alertconditions — BUY/SELL, sweep arm, ELITE/SINGULAR, Path Break/Confirm, regime change, and bias flip.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="container">
+    <div class="eyebrow center reveal">FAQ</div>
+    <h2 class="reveal" style="text-align:center">Answered.</h2>
+    <div class="faq-list">
+      <div class="faq-item reveal"><button class="faq-q">How is this different from the USME VWAP Suite? <span class="faq-icon">+</span></button><div class="faq-a">Meridian keeps the VWAP σ bands and structure logic, but replaces flat scoring and rigid AND-gates with three new engines — a regime classifier (TREND/RANGE/TRANSITION), a liquidity memory map with decaying magnets, and an event lattice that grades WATCH → PRIME → ELITE → SINGULAR. It also adds path-integrity tracking that neither predecessor had.</div></div>
+      <div class="faq-item reveal"><button class="faq-q">What platform does it run on? <span class="faq-icon">+</span></button><div class="faq-a">TradingView only, as a Pine Script v6 indicator. Paste the script into the Pine editor, save, and add it to any chart. It is an indicator — not a strategy — so it plots signals and manages paths visually, without broker orders or backtest fills.</div></div>
+      <div class="faq-item reveal"><button class="faq-q">Are the signals non-repainting? <span class="faq-icon">+</span></button><div class="faq-a">Entry signals confirm on a closed bar and do not vanish afterward. Stage bubbles (S / ARMED / VWAP / CHoCH) update live by design because they are state indicators, not trade triggers. The path tracker, structure marks, and lattice grades are confirmed-at-close.</div></div>
+      <div class="faq-item reveal"><button class="faq-q">What is a "liquidity magnet"? <span class="faq-icon">+</span></button><div class="faq-a">When a sweep confirms, Meridian records that price level as a liquidity pool with a direction and intensity. Its "magnet" decays bar by bar, and strengthens when price revisits and reverses with volume. High-magnet pools add lattice weight and can become the TP3 target.</div></div>
+      <div class="faq-item reveal"><button class="faq-q">Which markets work best? <span class="faq-icon">+</span></button><div class="faq-a">NQ, ES, YM, gold, forex majors, and crypto. The session logic assumes America/New_York hours, but crypto symbols automatically get a full-day VWAP window instead of losing bands for most of the day.</div></div>
+      <div class="faq-item reveal"><button class="faq-q">Should I backtest before going live? <span class="faq-icon">+</span></button><div class="faq-a">Yes — this is a ~30-parameter indicator. Use the companion backtest strategy script to measure win rate, profit factor, and drawdown across several symbols and timeframes before trusting it live, and raise the minimum grade or widen FVG filters if low-timeframe noise inflates grades.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta">
+  <div class="container">
+    <div class="glass cta-band reveal">
+      <div class="cb-copy">
+        <div class="eyebrow">Start Today</div>
+        <h2>Trade with <em>regime-aware</em> conviction.</h2>
+        <p>Read the regime, follow the liquidity, and let every signal carry a grade and a tracked path — from entry to TP3. Built for TradingView Pine Script v6.</p>
+        <div class="cb-ctas">
+          <a class="btn btn-primary" href="/checkout.html">Get the Meridian Engine</a>
+          <a class="btn btn-outline" href="#workflow">See How It Trades</a>
+        </div>
+      </div>
+      <div class="cb-meta">
+        <div class="cb-stat"><span class="n">6</span><span class="t">Pillars working as one lattice.</span></div>
+        <div class="cb-stat"><span class="n">4</span><span class="t">Grades — WATCH to SINGULAR.</span></div>
+        <div class="cb-stat"><span class="n">3</span><span class="t">Regimes — TREND · RANGE · TRANSITION.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a class="f-logo" href="/index.html">SniperTrader<span>.ai</span></a>
+        <p class="f-mission">Precision market systems &amp; algorithmic engines — calm, surgical execution for the disciplined trader.</p>
+        <div class="f-status"><i></i> System Status: Operational</div>
+        <div class="f-social">
+          <a href="#">X</a><a href="#">YouTube</a><a href="#">Discord</a><a href="#">Telegram</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Intelligence</h4>
+        <a href="/traderedge_preflight.html">Preflight Protocol</a>
+        <a href="/market_terminal.html">Daily Market Picks</a>
+        <a href="/prerun_detection.html">Daily Pre-Run Detection</a>
+        <a href="https://chart-ai.snipertrader.ai">AI Chart Analyzer</a>
+        <a href="/sniper_market_forecaster.html">Market Forecaster</a>
+      </div>
+      <div class="footer-col">
+        <h4>Proprietary Algos</h4>
+        <a href="/NoRepaint_Pivot_indicator.html">No Repaint Engine</a>
+        <a href="/USME_ICT_Foundation.html">USME ICT Engine</a>
+        <a href="/USME_VWAP_Elite_Suite.html">USME VWAP Suite</a>
+        <a href="/Meridian_Engine.html">Meridian Engine</a>
+        <a href="/usme_products.html">TradingView Suite</a>
+      </div>
+      <div class="footer-col">
+        <h4>Academy</h4>
+        <a href="/USME_ICT_Foundation_Course.html">Courses</a>
+        <a href="/Traders_Couch.html">Live Labs</a>
+        <a href="/about.html">Mentorship</a>
+        <a href="/about.html">Community</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="/about.html">About Us</a>
+        <a href="/checkout.html">Pricing</a>
+        <a href="/about.html">Contact</a>
+        <a href="/terms.html">Terms</a>
+        <a href="/privacy.html">Privacy</a>
+        <a href="/disclaimer.html">Legal</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 SniperTrader.ai — All rights reserved.</span>
+      <span>Calm. Precise. Deliberate.</span>
+    </div>
+    <p class="footer-disclaimer">DISCLAIMER: Trading involves substantial risk of loss and is not suitable for every investor. Past performance does not guarantee future results. The Meridian Engine is an educational and analytical tool, not financial advice. All content on this site is for educational purposes only and does not constitute financial or investment advice.</p>
+  </div>
+</footer>
+
+<script>
+/* ── Precision scope cursor ──────────────────────────────── */
+(function(){
+  var scope=document.getElementById('scope'), ring=document.getElementById('scope-ring'), dot=document.getElementById('scope-dot');
+  var mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my;
+  document.addEventListener('mousemove',function(e){
+    mx=e.clientX;my=e.clientY;
+    if(dot){dot.style.left=mx+'px';dot.style.top=my+'px';}
+    if(scope){scope.style.left=mx+'px';scope.style.top=my+'px';}
+  });
+  (function loop(){
+    rx+=(mx-rx)*0.16; ry+=(my-ry)*0.16;
+    if(ring){ring.style.left=rx+'px';ring.style.top=ry+'px';}
+    requestAnimationFrame(loop);
+  })();
+})();
+
+/* ── Theme toggle ────────────────────────────────────────── */
+(function(){
+  var btn=document.getElementById('theme-btn'), label=document.getElementById('theme-label');
+  var light=false;
+  function apply(l){
+    light=l; document.body.classList.toggle('light',l);
+    if(btn) btn.childNodes[0].nodeValue = l ? '☀ ' : '☾ ';
+    if(label) label.textContent = l ? 'Dark' : 'Light';
+  }
+  if(btn) btn.addEventListener('click',function(){apply(!light);});
+  apply(false);
+})();
+
+/* ── Nav dropdowns + mobile menu ─────────────────────────── */
+function toggleDrop(btn){
+  var item=btn.closest('.nav-item');
+  var wasOpen=item.classList.contains('open');
+  document.querySelectorAll('.nav-item.open').forEach(function(i){i.classList.remove('open');});
+  if(!wasOpen) item.classList.add('open');
+}
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.nav-item')) document.querySelectorAll('.nav-item.open').forEach(function(i){i.classList.remove('open');});
+});
+(function(){
+  var burger=document.getElementById('burger'), menu=document.getElementById('mobileMenu');
+  if(burger&&menu) burger.addEventListener('click',function(){menu.classList.toggle('open');});
+})();
+
+/* ── FAQ accordion ───────────────────────────────────────── */
+document.querySelectorAll('.faq-item').forEach(function(item){
+  var q=item.querySelector('.faq-q');
+  if(q) q.addEventListener('click',function(){
+    var wasOpen=item.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(function(i){i.classList.remove('open');});
+    if(!wasOpen) item.classList.add('open');
+  });
+});
+
+/* ── Smooth scroll for in-page anchors ───────────────────── */
+document.querySelectorAll('a[href^="#"]').forEach(function(anchor){
+  anchor.addEventListener('click',function(e){
+    var target=document.querySelector(this.getAttribute('href'));
+    if(target){ e.preventDefault(); target.scrollIntoView({behavior:'smooth',block:'start'}); }
+  });
+});
+
+/* ── Scroll reveal ───────────────────────────────────────── */
+(function(){
+  var obs=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)e.target.classList.add('in');});},{threshold:.08});
+  document.querySelectorAll('.reveal').forEach(function(el){obs.observe(el);});
+})();
+</script>
+</body>
+</html>
