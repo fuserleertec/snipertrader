@@ -3,288 +3,1031 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>USME NoRepaint Pivot — Institutional Swing Points | No Repainting, Pure Structure</title>
+<title>No Repaint Indicator — Non-Repaint Pivot + Anchored VWAP Bands + Trend Cloud + Triple EMA | SniperTrader.ai</title>
+<meta name="description" content="Non-repainting swing pivots, an anchored VWAP with ±1σ/±2σ/±3σ bands, and a triple-EMA trend cloud — one clean read that tells you where fair value sits, which way the trend points, and where structure actually turned.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --black:   #040609;
-  --deep:    #070b12;
-  --panel:   #0c1220;
-  --surface: #111827;
-  --border:  rgba(0,229,255,0.10);
-  --cyan:    #00e5ff;
-  --cyan2:   #00b8cc;
-  --gold:    #f0c040;
-  --gold2:   #b8882a;
-  --green:   #00e5a0;
-  --red:     #ff4d6a;
-  --white:   #edf2fb;
-  --sub:     rgba(237,242,251,0.72);
-  --muted:   rgba(237,242,251,0.42);
-  --ff-disp: 'Orbitron', monospace;
-  --ff-mono: 'Space Mono', monospace;
-  --ff-body: 'Syne', sans-serif;
+/* ============================================================
+   No Repaint Indicator v2.0 — SniperTrader.ai product page
+   Follows the index.html "Precision Over Prediction" design
+   system (Obsidian + champagne gold + sage, glassmorphism).
+   ============================================================ */
+
+:root{
+  --bg:#020408; --bg2:#06090F; --bg3:#0A1018; --ink:#020408;
+  --card:rgba(255,255,255,.03); --card2:rgba(255,255,255,.055);
+  --glass:rgba(10,16,24,.66);
+  --text:#FFFFFF; --text2:#DCE8F2; --text3:#9BB5C8; --text4:#5A7888;
+  --emerald:#00E5A0; --emerald-dim:rgba(0,229,160,.09);
+  --gold:#F0C040; --gold2:#C9A84C; --gold-dim:rgba(240,192,64,.10);
+  --red:#FF4455; --red-dim:rgba(255,68,85,.10);
+  --cyan:#00D4FF; --cyan2:#00A8CC; --cyan-dim:rgba(0,212,255,.10);
+  --border:rgba(0,229,160,.13); --border2:rgba(0,229,160,.26);
+  --nav-bg:rgba(2,4,8,.94);
+  --shadow:0 30px 80px rgba(0,0,0,.55);
+  --ff-d:'Playfair Display',serif;
+  --ff-b:'Plus Jakarta Sans',sans-serif;
+  --ff-m:'Space Mono',monospace;
 }
-html { scroll-behavior: smooth; }
-body {
-  background: var(--black);
-  color: var(--white);
-  font-family: var(--ff-body);
-  overflow-x: hidden;
-  cursor: none;
+body.light{
+  --bg:#F0F4F8; --bg2:#E4EBF2; --bg3:#D8E2EC; --ink:#FFFFFF;
+  --card:rgba(255,255,255,.6); --card2:rgba(255,255,255,.82);
+  --glass:rgba(255,255,255,.55);
+  --text:#070E18; --text2:#12243A; --text3:#2A4460; --text4:#4A6278;
+  --emerald:#008F6A; --emerald-dim:rgba(0,180,130,.12);
+  --gold:#9A6E00; --gold2:#7A5A00; --gold-dim:rgba(160,120,0,.10);
+  --red:#C02030; --red-dim:rgba(200,50,60,.08);
+  --cyan:#0080AA; --cyan2:#0077AA; --cyan-dim:rgba(0,160,200,.12);
+  --border:rgba(0,150,110,.18); --border2:rgba(0,150,110,.35);
+  --nav-bg:rgba(240,244,248,.96);
+  --shadow:0 30px 70px rgba(60,90,110,.20);
 }
-#cur { position: fixed; width: 8px; height: 8px; background: var(--cyan); border-radius: 50%; pointer-events: none; z-index: 9999; transform: translate(-50%, -50%); box-shadow: 0 0 12px var(--cyan), 0 0 30px rgba(0,229,255,.35); transition: width .15s, height .15s; }
-#cur-ring { position: fixed; width: 32px; height: 32px; border: 1px solid rgba(0,229,255,.4); border-radius: 50%; pointer-events: none; z-index: 9998; transform: translate(-50%, -50%); transition: transform .08s ease, width .2s, height .2s; }
-body:has(a:hover) #cur { width: 14px; height: 14px; }
-body:has(button:hover) #cur { background: var(--gold); box-shadow: 0 0 14px var(--gold); }
-.grid-bg {
-  position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background-image: linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
-  background-size: 60px 60px;
-  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+body.light [stroke="#DCE8F2"]{stroke:#12243A;}
+body.light [stroke="#00E5A0"]{stroke:#008F6A;}
+body.light [stroke="#F0C040"]{stroke:#9A6E00;}
+body.light [stroke="#FF4455"]{stroke:#C02030;}
+body.light [stroke="#9BB5C8"]{stroke:#2A4460;}
+body.light [fill="#00E5A0"]{fill:#008F6A;}
+body.light [fill="#F0C040"]{fill:#9A6E00;}
+body.light [fill="#FF4455"]{fill:#C02030;}
+body.light [fill="#9BB5C8"]{fill:#2A4460;}
+
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg); color:var(--text); font-family:var(--ff-b);
+  line-height:1.6; overflow-x:hidden; cursor:none;
+  -webkit-font-smoothing:antialiased; transition:background .4s,color .4s;
 }
-nav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
-  padding: 18px 60px; display: flex; align-items: center; justify-content: space-between;
-  background: linear-gradient(180deg, rgba(4,6,9,.96) 0%, transparent 100%);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(0,229,255,0.07);
+a{text-decoration:none;color:inherit;}
+button{font-family:inherit;cursor:none;border:none;background:none;color:inherit;}
+::selection{background:var(--gold);color:var(--bg);}
+::-webkit-scrollbar{width:9px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:8px;}
+::-webkit-scrollbar-thumb:hover{background:var(--text4);}
+img,svg{display:block;max-width:100%;}
+
+/* ── Precision scope cursor ──────────────────────────────── */
+#scope{position:fixed;top:0;left:0;pointer-events:none;z-index:9990;width:240px;height:240px;transform:translate(-50%,-50%);will-change:transform;}
+#scope .s-ring{position:absolute;border-radius:50%;pointer-events:none;}
+#scope .s-r1{inset:0;border:1px solid rgba(0,229,160,.20);}
+#scope .s-r2{inset:36px;border:1px dashed rgba(0,212,255,.24);}
+#scope .s-h{position:absolute;left:0;right:0;top:50%;height:1px;transform:translateY(-50%);background:linear-gradient(90deg,transparent,rgba(0,229,160,.32) 30%,rgba(0,229,160,.32) 70%,transparent);}
+#scope .s-v{position:absolute;top:0;bottom:0;left:50%;width:1px;transform:translateX(-50%);background:linear-gradient(180deg,transparent,rgba(0,229,160,.32) 30%,rgba(0,229,160,.32) 70%,transparent);}
+#scope .s-center{position:absolute;top:50%;left:50%;width:8px;height:8px;transform:translate(-50%,-50%);border-radius:50%;background:var(--emerald);box-shadow:0 0 10px var(--emerald),0 0 22px rgba(0,229,160,.5);}
+#scope-ring{position:fixed;top:0;left:0;pointer-events:none;z-index:9991;width:32px;height:32px;border-radius:50%;border:1.5px solid var(--emerald);box-shadow:0 0 12px var(--emerald),0 0 28px rgba(0,229,160,.32);transform:translate(-50%,-50%);will-change:transform;}
+#scope-dot{position:fixed;top:0;left:0;pointer-events:none;z-index:9992;width:5px;height:5px;border-radius:50%;background:var(--emerald);box-shadow:0 0 8px var(--emerald);transform:translate(-50%,-50%);}
+
+/* ── Nav ──────────────────────────────────────────────────── */
+nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;align-items:center;gap:8px;padding:0 40px;height:70px;background:var(--nav-bg);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border-bottom:1px solid var(--border);transition:background .4s,border-color .4s;}
+.logo{display:flex;align-items:baseline;gap:1px;font-family:var(--ff-d);font-weight:600;font-size:1.22rem;letter-spacing:.01em;color:var(--text);margin-right:26px;}
+.logo b{font-weight:700;}
+.logo span{color:var(--gold);font-size:.82rem;font-family:var(--ff-m);letter-spacing:.04em;margin-left:2px;}
+.nav-menu{display:flex;align-items:center;gap:4px;list-style:none;flex:1;}
+.nav-link{display:flex;align-items:center;gap:7px;padding:10px 14px;font-size:.86rem;font-weight:500;color:var(--text3);border-radius:10px;transition:color .2s,background .2s;letter-spacing:.01em;}
+.nav-link:hover{color:var(--text);background:var(--card2);}
+.nav-link .caret{transition:transform .25s;}
+.nav-item.open .nav-link{color:var(--text);background:var(--card2);}
+.nav-item.open .nav-link .caret{transform:rotate(180deg);}
+.nav-item{position:relative;}
+.nav-link.active{color:var(--gold);}
+.dropdown{position:absolute;top:calc(100% + 10px);left:0;min-width:280px;background:var(--glass);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid var(--border);border-radius:16px;padding:8px;opacity:0;visibility:hidden;transform:translateY(-8px);transition:all .22s ease;box-shadow:var(--shadow);}
+.nav-item.open .dropdown,.nav-item:hover .dropdown{opacity:1;visibility:visible;transform:translateY(0);}
+.dropdown a{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:11px;transition:background .18s;}
+.dropdown a:hover{background:var(--card2);}
+.dropdown a .d-name{font-size:.9rem;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;}
+.dropdown a .d-name::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;}
+.dropdown a.active .d-name{color:var(--gold);}
+.dropdown a .d-sub{font-size:.78rem;color:var(--text3);line-height:1.45;}
+.nav-right{display:flex;align-items:center;gap:12px;margin-left:auto;}
+.theme-toggle{display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:24px;border:1px solid var(--border);color:var(--text3);font-size:.78rem;font-weight:500;transition:border-color .2s,color .2s;}
+.theme-toggle:hover{border-color:var(--gold);color:var(--gold);}
+.nav-cta{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:24px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#020408;font-weight:700;font-size:.84rem;letter-spacing:.01em;transition:transform .2s,box-shadow .2s;box-shadow:0 6px 22px rgba(240,192,64,.22);}
+.nav-cta:hover{transform:translateY(-1px);box-shadow:0 10px 30px rgba(240,192,64,.32);}
+.nav-burger{display:none;flex-direction:column;gap:5px;padding:10px;border-radius:10px;border:1px solid var(--border);}
+.nav-burger span{width:18px;height:1.5px;background:var(--text2);}
+.mobile-menu{display:none;position:fixed;top:70px;left:0;right:0;z-index:499;background:var(--nav-bg);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);padding:16px 24px 24px;max-height:calc(100vh - 70px);overflow-y:auto;}
+.mobile-menu.open{display:block;}
+.mobile-menu a.mm-link{display:block;padding:13px 6px;font-size:1rem;font-weight:600;color:var(--text);border-bottom:1px solid var(--border);}
+.mobile-menu .mm-group{font-family:var(--ff-m);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin:18px 6px 6px;}
+.mobile-menu a.mm-sub{display:block;padding:9px 6px;font-size:.9rem;color:var(--text3);}
+.mobile-menu a.mm-sub:hover{color:var(--text);}
+
+/* ── Ticker ───────────────────────────────────────────────── */
+.ticker{position:fixed;top:70px;left:0;right:0;z-index:499;height:34px;background:var(--nav-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;overflow:hidden;transition:background .4s,border-color .4s;}
+.ticker-status{flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 18px;font-family:var(--ff-m);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);border-right:1px solid var(--border);height:100%;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--emerald);box-shadow:0 0 8px var(--emerald);animation:blink 1.6s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.ticker-track{flex:1;overflow:hidden;}
+.ticker-inner{display:flex;gap:44px;width:max-content;animation:scrollTick 40s linear infinite;padding-left:20px;}
+.ticker:hover .ticker-inner{animation-play-state:paused;}
+@keyframes scrollTick{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.tick-item{display:flex;align-items:center;gap:8px;white-space:nowrap;font-family:var(--ff-m);font-size:.68rem;color:var(--text3);}
+.tick-item .t-gold{color:var(--gold);}
+
+/* ── Shared ───────────────────────────────────────────────── */
+.container{max-width:1280px;margin:0 auto;padding:0 40px;}
+section{position:relative;}
+.eyebrow{display:flex;align-items:center;gap:12px;font-family:var(--ff-m);font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:18px;}
+.eyebrow::before{content:'';width:30px;height:1px;background:var(--gold);opacity:.6;}
+.eyebrow.center{justify-content:center;}
+h1,h2,h3{font-family:var(--ff-d);font-weight:600;line-height:1.12;letter-spacing:-.01em;}
+h2{font-size:clamp(1.7rem,3.2vw,2.6rem);margin-bottom:14px;}
+h2 em{font-style:italic;color:var(--gold);}
+.lede{color:var(--text3);font-size:1.02rem;max-width:560px;line-height:1.7;margin-bottom:40px;}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:14px 30px;border-radius:14px;font-size:.9rem;font-weight:600;letter-spacing:.01em;transition:transform .2s,box-shadow .2s,border-color .2s,background .2s;}
+.btn:hover{transform:translateY(-2px);}
+.btn-primary{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#020408;box-shadow:0 10px 28px rgba(240,192,64,.2);}
+.btn-primary:hover{box-shadow:0 16px 40px rgba(240,192,64,.32);}
+.btn-outline{border:1px solid var(--border2);color:var(--text);background:var(--card);}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold);}
+.tag{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-family:var(--ff-m);font-size:.66rem;letter-spacing:.04em;border:1px solid var(--border);color:var(--text3);background:var(--card);}
+.tag.gold{border-color:var(--border2);color:var(--gold);background:var(--gold-dim);}
+.tag.sage{border-color:rgba(0,229,160,.25);color:var(--emerald);background:var(--emerald-dim);}
+.tag.red{border-color:rgba(255,68,85,.28);color:var(--red);background:var(--red-dim);}
+.glass{background:var(--glass);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid var(--border);border-radius:16px;}
+
+/* ── Hero ─────────────────────────────────────────────────── */
+#hero{min-height:100vh;display:flex;align-items:center;padding:140px 0 70px;overflow:hidden;}
+.hero-bg{position:absolute;inset:0;pointer-events:none;}
+.hero-bg .grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:76px 76px;mask-image:radial-gradient(ellipse 75% 75% at 50% 40%,black,transparent 80%);}
+.hero-bg .glow1{position:absolute;top:-15%;left:-8%;width:60%;height:70%;background:radial-gradient(ellipse,rgba(240,192,64,.06),transparent 62%);}
+.hero-bg .glow2{position:absolute;bottom:-12%;right:-6%;width:46%;height:58%;background:radial-gradient(ellipse,rgba(0,229,160,.06),transparent 62%);}
+.hero-inner{position:relative;z-index:2;display:grid;grid-template-columns:1.08fr 1fr;gap:56px;align-items:center;}
+.hero-title{font-size:clamp(2.4rem,4.8vw,3.9rem);margin-bottom:22px;}
+.hero-title em{font-style:italic;color:var(--gold);}
+.hero-sub{font-size:1.08rem;color:var(--text3);line-height:1.75;max-width:520px;margin-bottom:36px;}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:40px;}
+.hero-trust{display:flex;gap:34px;flex-wrap:wrap;padding-top:26px;border-top:1px solid var(--border);}
+.trust-item{display:flex;flex-direction:column;gap:4px;}
+.trust-item .t-label{font-family:var(--ff-m);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text4);}
+.trust-item .t-value{font-size:.92rem;font-weight:600;color:var(--text2);}
+
+/* Hero dashboard card */
+.hero-card{position:relative;padding:26px;}
+.hero-card::before{content:'';position:absolute;inset:-1px;border-radius:16px;padding:1px;background:linear-gradient(135deg,rgba(240,192,64,.35),transparent 40%,rgba(0,229,160,.25));-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;}
+.dash-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.dash-dots{display:flex;gap:7px;}
+.dash-dots i{width:10px;height:10px;border-radius:50%;display:block;}
+.dash-dots i:nth-child(1){background:#FF4455}.dash-dots i:nth-child(2){background:#F0C040}.dash-dots i:nth-child(3){background:#00E5A0}
+.dash-title{font-family:var(--ff-m);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);}
+.dash-live{display:flex;align-items:center;gap:6px;font-family:var(--ff-m);font-size:.66rem;color:var(--emerald);}
+.dash-asset{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px;}
+.dash-asset .sym{font-family:var(--ff-d);font-size:1.05rem;font-weight:600;color:var(--text);}
+.dash-asset .px{font-size:1.5rem;font-weight:700;color:var(--text);}
+.dash-asset .px small{font-size:.8rem;color:var(--emerald);margin-left:8px;font-family:var(--ff-m);}
+.dash-viz{margin:14px 0 18px;border:1px solid var(--border);border-radius:14px;background:var(--card);padding:14px;}
+.dash-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.dm{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;}
+.dm .l{font-family:var(--ff-m);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text4);}
+.dm .v{font-size:1rem;font-weight:700;color:var(--text);margin-top:3px;}
+.dm .v.gold{color:var(--gold);}.dm .v.sage{color:var(--emerald);}
+.dash-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;}
+
+/* Hero intro pill */
+.hero-pill{display:inline-flex;align-items:center;gap:12px;flex-wrap:wrap;padding:9px 18px;border-radius:40px;border:1px solid var(--border2);background:var(--card);margin-bottom:26px;font-family:var(--ff-m);font-size:.68rem;letter-spacing:.08em;color:var(--text2);}
+.hero-pill .hp-dot{width:7px;height:7px;border-radius:50%;background:var(--emerald);box-shadow:0 0 8px var(--emerald);animation:blink 1.8s ease-in-out infinite;flex-shrink:0;}
+.hero-pill .hp-text{color:var(--gold);text-transform:uppercase;letter-spacing:.14em;font-weight:700;}
+.hero-pill .hp-plat{color:var(--text4);letter-spacing:.06em;}
+
+/* ── Daily workflow ───────────────────────────────────────── */
+#workflow{padding:96px 0;background:var(--bg2);}
+.v2-head{max-width:780px;margin:0 auto 44px;text-align:center;}
+.v2-head .eyebrow{justify-content:center;}
+.v2-head h2{margin-bottom:14px;}
+.v2-head .lede{margin:0 auto 22px;}
+.layers{display:flex;flex-direction:column;gap:14px;max-width:820px;margin:0 auto;}
+.layer-card{display:flex;gap:22px;align-items:flex-start;border:1px solid var(--border);background:var(--card);border-radius:16px;padding:24px 26px;transition:border-color .25s,transform .25s;}
+.layer-card:hover{transform:translateX(4px);border-color:var(--border2);}
+.layer-card .lc-n{flex-shrink:0;font-family:var(--ff-m);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);padding:8px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--card2);min-width:96px;text-align:center;}
+.layer-card .lc-body{flex:1;}
+.layer-card .lc-body h3{font-size:1.14rem;margin-bottom:6px;line-height:1.3;}
+.layer-card .lc-body p{font-size:.86rem;color:var(--text3);line-height:1.6;}
+.v2-note{margin-top:32px;max-width:820px;margin-left:auto;margin-right:auto;padding:20px 24px;border-radius:16px;border:1px dashed var(--border2);background:var(--card);display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.v2-note .af-dot{width:9px;height:9px;border-radius:50%;background:var(--emerald);box-shadow:0 0 10px var(--emerald);animation:blink 1.8s ease-in-out infinite;flex-shrink:0;}
+.v2-note p{font-size:.88rem;color:var(--text2);line-height:1.6;flex:1;min-width:240px;}
+
+/* ── Engine (feature cards) ───────────────────────────────── */
+#engine{padding:96px 0;}
+.featured-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px;}
+.feature-card{padding:34px;position:relative;overflow:hidden;transition:transform .3s,box-shadow .3s,border-color .3s;}
+.feature-card:hover{transform:translateY(-4px);box-shadow:var(--shadow);border-color:var(--border2);}
+.feature-card .fc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.feature-card .fc-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--card2);border:1px solid var(--border);font-size:1.2rem;}
+.feature-card h3{font-size:1.5rem;margin-bottom:10px;}
+.feature-card p{font-size:.92rem;color:var(--text3);line-height:1.65;margin-bottom:20px;}
+.feature-card .fc-viz{border:1px solid var(--border);border-radius:14px;background:var(--card);padding:18px;margin-bottom:20px;}
+.feature-card .fc-tags{display:flex;gap:8px;flex-wrap:wrap;}
+.viz-chips{display:flex;gap:8px;flex-wrap:wrap;}
+.viz-chips span{padding:5px 12px;border-radius:20px;border:1px solid var(--border);font-family:var(--ff-m);font-size:.62rem;color:var(--text3);}
+.viz-chips span.on{border-color:var(--border2);color:var(--gold);}
+
+/* ── Trend states ─────────────────────────────────────────── */
+#trend{padding:96px 0;background:var(--bg2);}
+.tier-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:8px;}
+.tier-card{position:relative;padding:32px 28px;border:1px solid var(--border);background:var(--card);border-radius:16px;overflow:hidden;transition:transform .25s,border-color .25s;}
+.tier-card:hover{transform:translateY(-4px);border-color:var(--border2);}
+.tier-card .tc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.tier-card .tc-name{font-family:var(--ff-d);font-size:1.5rem;font-weight:600;}
+.tier-card .tc-icon{font-size:1.5rem;}
+.tier-card .tc-cond{font-family:var(--ff-m);font-size:.72rem;letter-spacing:.04em;color:var(--text3);margin-bottom:6px;line-height:1.6;}
+.tier-card .tc-alert{display:inline-flex;align-items:center;gap:6px;font-family:var(--ff-m);font-size:.66rem;letter-spacing:.06em;color:var(--text2);padding:5px 12px;border-radius:20px;background:var(--card2);border:1px solid var(--border);margin-bottom:16px;}
+.tier-card p{font-size:.88rem;color:var(--text3);line-height:1.6;}
+.tier-card.bull{border-top:3px solid var(--emerald);}
+.tier-card.bear{border-top:3px solid var(--red);}
+.tier-card.range{border-top:3px solid var(--text4);}
+
+/* ── Anchor modes ─────────────────────────────────────────── */
+#anchors{padding:96px 0;}
+.session-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-top:8px;}
+.session-card{padding:30px 28px;border:1px solid var(--border);background:var(--card);border-radius:16px;transition:transform .25s,border-color .25s;}
+.session-card:hover{transform:translateY(-4px);border-color:var(--border2);}
+.session-card .sc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.session-card .sc-badge{font-family:var(--ff-m);font-size:.66rem;letter-spacing:.08em;padding:5px 12px;border-radius:20px;background:var(--card2);border:1px solid var(--border);color:var(--gold);}
+.session-card h3{font-size:1.3rem;margin-bottom:8px;}
+.session-card .sc-window{font-family:var(--ff-m);font-size:.68rem;letter-spacing:.06em;color:var(--cyan);margin-bottom:12px;}
+.session-card p{font-size:.88rem;color:var(--text3);line-height:1.6;}
+
+/* ── Inputs ───────────────────────────────────────────────── */
+#inputs{padding:96px 0;background:var(--bg2);}
+.input-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:8px;}
+.input-card{padding:26px 24px;border:1px solid var(--border);background:var(--card);border-radius:16px;transition:border-color .25s,transform .25s;}
+.input-card:hover{border-color:var(--border2);transform:translateY(-3px);}
+.input-card .in-title{font-family:var(--ff-m);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.input-card .in-title::before{content:'';width:18px;height:1px;background:var(--gold);opacity:.6;}
+.input-card .in-note{font-size:.76rem;color:var(--text4);margin-top:12px;line-height:1.55;}
+.input-row{display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-bottom:1px solid var(--border);font-size:.82rem;}
+.input-row:last-of-type{border-bottom:none;}
+.input-row .in-name{color:var(--text3);}
+.input-row .in-val{font-family:var(--ff-m);font-size:.74rem;color:var(--text2);text-align:right;}
+
+/* ── Alerts ───────────────────────────────────────────────── */
+#alerts{padding:96px 0;}
+.label-wrap{margin-top:8px;border:1px solid var(--border);border-radius:16px;overflow:hidden;}
+.label-head,.label-row{display:grid;grid-template-columns:1.1fr 2fr 1.2fr;padding:16px 24px;gap:16px;align-items:center;}
+.label-head{background:var(--card2);border-bottom:1px solid var(--border);}
+.label-head span{font-family:var(--ff-m);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text4);}
+.label-row{border-bottom:1px solid var(--border);}
+.label-row:last-child{border-bottom:none;}
+.label-row .ll-name{font-weight:700;font-size:.95rem;color:var(--text);}
+.label-row .ll-desc{font-size:.84rem;color:var(--text3);line-height:1.5;}
+.label-row .ll-alert{font-size:.76rem;color:var(--text2);font-family:var(--ff-m);}
+.alert-note{margin-top:20px;display:flex;align-items:center;gap:14px;padding:18px 22px;border-radius:14px;border:1px solid var(--border2);background:var(--card);}
+.alert-note .an-ic{font-size:1.2rem;}
+.alert-note p{font-size:.9rem;color:var(--text2);line-height:1.6;}
+
+/* ── Course modules ───────────────────────────────────────── */
+#course{padding:96px 0;background:var(--bg2);}
+.module-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:8px;}
+.module-card{padding:26px 24px;border:1px solid var(--border);background:var(--card);border-radius:16px;transition:transform .25s,border-color .25s;}
+.module-card:hover{transform:translateY(-4px);border-color:var(--border2);}
+.module-card .m-num{font-family:var(--ff-m);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;}
+.module-card h3{font-size:1.12rem;margin-bottom:8px;line-height:1.3;}
+.module-card .m-time{font-family:var(--ff-m);font-size:.66rem;color:var(--cyan);margin-bottom:10px;}
+.module-card p{font-size:.84rem;color:var(--text3);line-height:1.6;}
+
+/* ── Pricing ──────────────────────────────────────────────── */
+#pricing{padding:96px 0;}
+.pricing-grid{display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-top:8px;}
+.price-card{flex:1;min-width:280px;max-width:400px;padding:40px 34px;position:relative;}
+.price-card.annual::after{content:"SAVE $349";position:absolute;top:18px;right:22px;background:var(--gold);color:#020408;font-size:.6rem;font-weight:700;letter-spacing:.06em;padding:5px 12px;border-radius:20px;}
+.price-tier{font-family:var(--ff-m);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;}
+.price-amount{font-family:var(--ff-d);font-size:3rem;font-weight:600;color:var(--text);line-height:1;}
+.price-amount sup{font-size:.4em;vertical-align:super;color:var(--gold);}
+.price-cadence{font-size:.86rem;color:var(--text3);margin:8px 0 18px;}
+.price-trial{display:inline-flex;align-items:center;gap:8px;font-size:.82rem;color:var(--emerald);padding:6px 14px;border-radius:20px;background:var(--emerald-dim);border:1px solid rgba(0,229,160,.25);margin-bottom:20px;}
+.price-features{list-style:none;display:flex;flex-direction:column;gap:12px;margin-bottom:26px;}
+.price-features li{display:flex;align-items:flex-start;gap:10px;font-size:.88rem;color:var(--text2);line-height:1.5;}
+.price-features li::before{content:'✓';color:var(--emerald);font-weight:700;flex-shrink:0;}
+.price-cta{width:100%;justify-content:center;}
+.price-note{text-align:center;font-size:.74rem;color:var(--text4);margin-top:14px;}
+.platform-badge{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:32px;}
+.platform-badge span{padding:8px 18px;border-radius:24px;border:1px solid var(--border);background:var(--card);font-family:var(--ff-m);font-size:.68rem;color:var(--text3);}
+
+/* ── FAQ ──────────────────────────────────────────────────── */
+#faq{padding:96px 0;background:var(--bg2);}
+.faq-list{max-width:760px;margin:8px auto 0;}
+.faq-item{border:1px solid var(--border);background:var(--card);border-radius:14px;margin-bottom:12px;overflow:hidden;transition:border-color .2s;}
+.faq-item.open{border-color:var(--border2);}
+.faq-q{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 22px;font-size:.98rem;font-weight:600;color:var(--text);width:100%;text-align:left;}
+.faq-icon{font-size:1.1rem;color:var(--gold);transition:transform .2s;}
+.faq-item.open .faq-icon{transform:rotate(45deg);}
+.faq-a{display:none;padding:0 22px 20px;font-size:.88rem;color:var(--text3);line-height:1.7;}
+.faq-item.open .faq-a{display:block;}
+
+/* ── CTA band ─────────────────────────────────────────────── */
+#cta{padding:96px 0;}
+.cta-band{position:relative;overflow:hidden;padding:64px 60px;border-radius:22px;display:grid;grid-template-columns:1.4fr 1fr;gap:40px;align-items:center;}
+.cta-band::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 120% at 15% 20%,rgba(0,229,160,.10),transparent 55%),radial-gradient(ellipse 70% 120% at 90% 80%,rgba(240,192,64,.10),transparent 55%);pointer-events:none;}
+.cta-band .cb-copy{position:relative;z-index:1;}
+.cta-band h2{font-size:clamp(1.8rem,3vw,2.5rem);margin-bottom:16px;}
+.cta-band p{color:var(--text3);font-size:1rem;line-height:1.7;margin-bottom:28px;max-width:520px;}
+.cta-band .cb-ctas{display:flex;gap:14px;flex-wrap:wrap;}
+.cta-band .cb-meta{position:relative;z-index:1;display:flex;flex-direction:column;gap:12px;}
+.cb-stat{display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:14px;background:var(--card);border:1px solid var(--border);}
+.cb-stat .n{font-family:var(--ff-d);font-size:1.3rem;font-weight:600;color:var(--gold);min-width:60px;}
+.cb-stat .t{font-size:.86rem;color:var(--text3);line-height:1.45;}
+
+/* ── Footer ───────────────────────────────────────────────── */
+footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 36px;transition:background .4s;}
+.footer-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1fr;gap:40px;margin-bottom:52px;}
+.footer-brand .f-logo{font-family:var(--ff-d);font-size:1.25rem;font-weight:600;color:var(--text);margin-bottom:14px;display:block;}
+.footer-brand .f-logo span{color:var(--gold);}
+.footer-brand .f-mission{font-size:.9rem;color:var(--text3);line-height:1.65;margin-bottom:20px;max-width:230px;}
+.f-status{display:inline-flex;align-items:center;gap:9px;padding:8px 14px;border-radius:20px;border:1px solid var(--border);background:var(--card);font-size:.74rem;color:var(--text2);margin-bottom:22px;}
+.f-status i{width:7px;height:7px;border-radius:50%;background:var(--emerald);box-shadow:0 0 8px var(--emerald);animation:blink 1.8s ease-in-out infinite;}
+.f-social{display:flex;gap:10px;}
+.f-social a{display:inline-flex;align-items:center;padding:7px 13px;border-radius:20px;border:1px solid var(--border);font-size:.76rem;color:var(--text3);transition:all .2s;}
+.f-social a:hover{border-color:var(--border2);color:var(--gold);}
+.footer-col h4{font-family:var(--ff-m);font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:18px;font-weight:700;}
+.footer-col a{display:block;font-size:.86rem;color:var(--text3);margin-bottom:11px;transition:color .18s,transform .18s;}
+.footer-col a:hover{color:var(--text);transform:translateX(2px);}
+.footer-bottom{border-top:1px solid var(--border);padding-top:24px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-family:var(--ff-m);font-size:.68rem;color:var(--text4);}
+.footer-disclaimer{max-width:820px;font-size:.72rem;color:var(--text4);line-height:1.65;margin-top:16px;opacity:.8;}
+
+/* ── Reveal ───────────────────────────────────────────────── */
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .65s ease,transform .65s ease;}
+.reveal.in{opacity:1;transform:translateY(0);}
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width:1080px){
+  .hero-inner{grid-template-columns:1fr;gap:40px;}
+  .hero-card{max-width:560px;}
+  .featured-grid{grid-template-columns:1fr;}
+  .tier-grid,.session-grid,.input-grid{grid-template-columns:1fr;}
+  .cta-band{grid-template-columns:1fr;padding:44px 34px;}
+  .footer-grid{grid-template-columns:1fr 1fr 1fr;}
 }
-.nav-logo { font-family: var(--ff-disp); font-size: .85rem; font-weight: 900; color: var(--white); letter-spacing: .18em; text-decoration: none; }
-.nav-logo span { color: var(--cyan); }
-.nav-badge { font-family: var(--ff-mono); font-size: .5rem; letter-spacing: .2em; color: var(--cyan); background: rgba(0,229,255,.08); border: 1px solid rgba(0,229,255,.2); border-radius: 3px; padding: 3px 7px; margin-left: 10px; vertical-align: middle; }
-.nav-links { list-style: none; display: flex; gap: 32px; }
-.nav-links a { font-family: var(--ff-mono); font-size: .6rem; letter-spacing: .12em; text-transform: uppercase; color: var(--sub); text-decoration: none; transition: color .2s; }
-.nav-links a:hover { color: var(--cyan); }
-.nav-cta { font-family: var(--ff-mono); font-size: .6rem; letter-spacing: .15em; text-transform: uppercase; padding: 11px 22px; background: linear-gradient(135deg, var(--cyan), var(--cyan2)); color: #000; border: none; border-radius: 4px; cursor: none; font-weight: 700; transition: opacity .2s, transform .15s; }
-.nav-cta:hover { opacity: .85; transform: translateY(-1px); }
-/* ----- BANNER (ICT foundation - TOS - PINE - NINJA) ----- */
-.platform-banner {
-  position: relative;
-  z-index: 100;
-  background: linear-gradient(90deg, rgba(0,229,255,0.08), rgba(240,192,64,0.08));
-  border-top: 1px solid rgba(0,229,255,0.12);
-  border-bottom: 1px solid rgba(0,229,255,0.12);
-  padding: 12px 0;
-  margin-top: 74px;
-  text-align: center;
-  font-family: var(--ff-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--cyan);
-  backdrop-filter: blur(4px);
+@media (max-width:820px){
+  .nav-menu{display:none;}
+  .nav-burger{display:flex;}
+  .nav-cta{display:none;}
+  #scope,#scope-ring,#scope-dot{display:none;}
+  body{cursor:auto;}
+  button,a{cursor:pointer;}
+  .container{padding:0 22px;}
+  nav{padding:0 22px;}
+  .module-grid{grid-template-columns:1fr;}
+  .label-head,.label-row{grid-template-columns:1fr;gap:8px;}
 }
-.platform-banner span {
-  color: var(--gold);
-  font-weight: 700;
-  margin: 0 6px;
+@media (max-width:640px){
+  .footer-grid{grid-template-columns:1fr 1fr;}
+  .footer-brand{grid-column:1/-1;}
+  .hero-cta .btn{width:100%;justify-content:center;}
+  .dash-metrics{grid-template-columns:1fr 1fr;}
+  .ticker-status{display:none;}
 }
-.platform-banner .separator {
-  color: var(--muted);
-  margin: 0 12px;
-}
-#hero {
-  min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 80px 60px 80px; position: relative; overflow: hidden;
-}
-.hero-glow { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 900px; height: 900px; border-radius: 50%; background: radial-gradient(ellipse, rgba(0,229,255,.06) 0%, transparent 65%); pointer-events: none; }
-.version-pill { display: inline-flex; align-items: center; gap: 8px; font-family: var(--ff-mono); font-size: .55rem; letter-spacing: .25em; text-transform: uppercase; background: rgba(0,229,255,.07); border: 1px solid rgba(0,229,255,.18); border-radius: 40px; padding: 7px 18px; margin-bottom: 28px; color: var(--cyan); opacity: 0; animation: fadeUp .7s .1s forwards; }
-.version-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
-.hero-eyebrow { font-family: var(--ff-mono); font-size: .6rem; letter-spacing: .3em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; opacity: 0; animation: fadeUp .7s .25s forwards; }
-h1.hero-title { font-family: var(--ff-disp); font-size: clamp(2.8rem, 6vw, 5.5rem); font-weight: 900; line-height: 1.05; letter-spacing: .04em; margin-bottom: 12px; opacity: 0; animation: fadeUp .8s .35s forwards; }
-h1.hero-title .accent { color: var(--cyan); }
-h1.hero-title .v-num { font-size: .45em; vertical-align: middle; color: var(--gold); letter-spacing: .1em; }
-.hero-sub-title { font-family: var(--ff-body); font-size: 1.1rem; color: var(--sub); font-weight: 300; margin-bottom: 20px; max-width: 640px; line-height: 1.7; opacity: 0; animation: fadeUp .8s .5s forwards; }
-.hero-course-tag { font-family: var(--ff-mono); font-size: .58rem; letter-spacing: .15em; color: var(--gold); text-transform: uppercase; margin-bottom: 40px; opacity: 0; animation: fadeUp .7s .6s forwards; }
-.hero-ctas { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; opacity: 0; animation: fadeUp .8s .7s forwards; margin-bottom: 60px; }
-.btn-primary { font-family: var(--ff-mono); font-size: .65rem; letter-spacing: .14em; text-transform: uppercase; padding: 16px 36px; background: linear-gradient(135deg, var(--cyan), var(--cyan2)); color: #000; border: none; border-radius: 5px; cursor: none; font-weight: 700; transition: transform .15s, box-shadow .2s; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(0,229,255,.3); }
-.btn-secondary { font-family: var(--ff-mono); font-size: .65rem; letter-spacing: .14em; text-transform: uppercase; padding: 15px 28px; background: transparent; color: var(--white); border: 1px solid rgba(237,242,251,.2); border-radius: 5px; cursor: none; transition: border-color .2s, transform .15s; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
-.btn-secondary:hover { border-color: var(--cyan); transform: translateY(-2px); }
-.trial-badge { display: inline-flex; align-items: center; gap: 10px; font-family: var(--ff-mono); font-size: .55rem; letter-spacing: .1em; color: var(--green); background: rgba(0,229,160,.07); border: 1px solid rgba(0,229,160,.2); border-radius: 4px; padding: 8px 16px; opacity: 0; animation: fadeUp .7s .85s forwards; }
-.hero-stats { display: flex; gap: 48px; justify-content: center; flex-wrap: wrap; padding: 28px 0 0; border-top: 1px solid rgba(0,229,255,.07); opacity: 0; animation: fadeUp .8s 1s forwards; }
-.hstat { text-align: center; }
-.hstat-n { font-family: var(--ff-disp); font-size: 1.6rem; font-weight: 900; color: var(--cyan); letter-spacing: .05em; }
-.hstat-l { font-family: var(--ff-mono); font-size: .5rem; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
-.scroll-arrow { position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--muted); font-family: var(--ff-mono); font-size: .5rem; letter-spacing: .18em; animation: scrollPulse 2.5s ease-in-out infinite; opacity: 0; animation: fadeIn 1s 1.4s forwards, scrollPulse 2.5s 2.4s ease-in-out infinite; }
-section { position: relative; z-index: 1; max-width: 1320px; margin: 0 auto; padding: 100px 60px; }
-.section-label { font-family: var(--ff-mono); font-size: .52rem; letter-spacing: .28em; text-transform: uppercase; color: var(--cyan); margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
-.section-label::before { content: ''; display: block; width: 28px; height: 1px; background: var(--cyan); }
-h2.section-title { font-family: var(--ff-disp); font-size: clamp(1.8rem, 3.5vw, 3rem); font-weight: 900; line-height: 1.1; letter-spacing: .04em; margin-bottom: 16px; }
-h2.section-title em { font-style: normal; color: var(--cyan); }
-h2.section-title .gold { color: var(--gold); }
-p.section-sub { font-size: 1rem; color: var(--sub); line-height: 1.8; font-weight: 300; max-width: 560px; }
-.divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(0,229,255,.18), transparent); max-width: 1320px; margin: 0 auto; }
-.what-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; margin-top: 56px; }
-.what-text p { font-size: .95rem; color: var(--sub); line-height: 1.9; margin-bottom: 20px; font-weight: 300; }
-.what-text p strong { color: var(--white); font-weight: 600; }
-.engine-visual { position: relative; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 36px; overflow: hidden; }
-.ev-title { font-family: var(--ff-disp); font-size: .65rem; letter-spacing: .2em; color: var(--cyan); margin-bottom: 24px; text-transform: uppercase; }
-.subsystem { display: flex; align-items: flex-start; gap: 14px; padding: 14px 0; border-bottom: 1px solid rgba(0,229,255,.06); }
-.subsystem:last-child { border-bottom: none; }
-.ss-icon { width: 36px; height: 36px; border-radius: 6px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
-.ss-icon.c { background: rgba(0,229,255,.1); }
-.ss-name { font-family: var(--ff-mono); font-size: .6rem; font-weight: 700; letter-spacing: .1em; color: var(--white); text-transform: uppercase; margin-bottom: 4px; }
-.ss-desc { font-size: .8rem; color: var(--sub); line-height: 1.5; }
-.tier-stack { display: flex; flex-direction: column; gap: 14px; }
-.tier-card { border-radius: 10px; padding: 20px 24px; display: flex; align-items: center; gap: 18px; border: 1px solid; transition: transform .2s; cursor: none; position: relative; overflow: hidden; }
-.tier-card:hover { transform: translateX(4px); }
-.tier-card.elite { background: rgba(240,192,64,.05); border-color: rgba(240,192,64,.2); }
-.tier-card.prime { background: rgba(0,229,255,.05); border-color: rgba(0,229,255,.2); }
-.tier-card.standard { background: rgba(237,242,251,.03); border-color: rgba(237,242,251,.1); }
-.tier-icon { font-size: 1.6rem; flex-shrink: 0; }
-.tier-name { font-family: var(--ff-disp); font-size: .7rem; font-weight: 900; letter-spacing: .15em; text-transform: uppercase; margin-bottom: 4px; }
-.tier-name.elite { color: var(--gold); }
-.tier-name.prime { color: var(--cyan); }
-.tier-name.standard { color: var(--sub); }
-.tier-score { font-family: var(--ff-mono); font-size: .55rem; letter-spacing: .1em; color: var(--muted); margin-bottom: 6px; }
-.tier-desc { font-size: .82rem; color: var(--sub); line-height: 1.5; }
-.tier-badge-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
-.tbadge { font-family: var(--ff-mono); font-size: .45rem; letter-spacing: .12em; text-transform: uppercase; padding: 2px 7px; border-radius: 3px; }
-.tbadge.gold { background: rgba(240,192,64,.1); color: var(--gold); border: 1px solid rgba(240,192,64,.2); }
-.tbadge.cyan { background: rgba(0,229,255,.1); color: var(--cyan); border: 1px solid rgba(0,229,255,.2); }
-.sotd-info { display: flex; flex-direction: column; gap: 24px; }
-.score-bar-wrap { margin-top: 6px; }
-.score-label { font-family: var(--ff-mono); font-size: .5rem; letter-spacing: .1em; color: var(--muted); display: flex; justify-content: space-between; margin-bottom: 6px; }
-.score-bar { height: 6px; background: rgba(255,255,255,.07); border-radius: 3px; overflow: hidden; }
-.score-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--cyan), var(--cyan2)); transition: width 1.5s ease; }
-.module-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; margin-top: 48px; }
-.mod-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 24px 22px; transition: border-color .25s, transform .2s; cursor: none; }
-.mod-card:hover { border-color: rgba(0,229,255,.28); transform: translateY(-3px); }
-.mod-num { font-family: var(--ff-disp); font-size: .55rem; letter-spacing: .2em; color: var(--muted); margin-bottom: 10px; }
-.mod-title { font-family: var(--ff-body); font-size: .95rem; font-weight: 700; color: var(--white); margin-bottom: 8px; }
-.mod-time { font-family: var(--ff-mono); font-size: .52rem; letter-spacing: .1em; color: var(--cyan); margin-bottom: 12px; }
-.mod-desc { font-size: .82rem; color: var(--sub); line-height: 1.6; }
-.mod-tag { display: inline-block; margin-top: 12px; font-family: var(--ff-mono); font-size: .48rem; letter-spacing: .15em; text-transform: uppercase; padding: 3px 8px; border-radius: 3px; background: rgba(0,229,255,.1); color: var(--cyan); border: 1px solid rgba(0,229,255,.2); }
-.wf-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 0; margin-top: 56px; position: relative; }
-.wf-step { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 12px; position: relative; z-index: 1; }
-.wf-circle { width: 56px; height: 56px; border-radius: 50%; background: var(--panel); border: 1px solid rgba(0,229,255,.2); display: flex; align-items: center; justify-content: center; font-family: var(--ff-disp); font-size: .6rem; font-weight: 900; color: var(--cyan); margin-bottom: 16px; transition: background .25s; }
-.wf-name { font-size: .88rem; font-weight: 700; color: var(--white); margin-bottom: 6px; }
-.wf-desc { font-size: .78rem; color: var(--sub); line-height: 1.5; }
-.vs-wrap { margin-top: 50px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-.vs-header { display: grid; grid-template-columns: 1fr 1fr 1fr; background: var(--panel); padding: 20px 28px; border-bottom: 1px solid var(--border); }
-.vs-col-h { font-family: var(--ff-mono); font-size: .58rem; letter-spacing: .18em; text-transform: uppercase; text-align: center; }
-.vs-col-h:first-child { text-align: left; color: var(--muted); }
-.vs-col-h.new { color: var(--cyan); }
-.vs-row { display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 16px 28px; border-bottom: 1px solid rgba(0,229,255,.05); }
-.vs-feature { font-size: .88rem; color: var(--sub); display: flex; align-items: center; gap: 8px; }
-.vs-val { text-align: center; font-family: var(--ff-mono); font-size: .72rem; }
-.vs-val .check { color: var(--green); }
-.vs-val .cross { color: var(--red); }
-.price-grid { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; margin-top: 56px; }
-.price-card { background: var(--panel); border: 1px solid rgba(0,229,255,.2); border-radius: 16px; padding: 40px 32px; width: 320px; position: relative; transition: transform .2s; }
-.price-card:hover { transform: translateY(-4px); border-color: rgba(0,229,255,.4); }
-.price-tier { font-family: var(--ff-mono); font-size: .55rem; letter-spacing: .25em; text-transform: uppercase; color: var(--cyan); margin-bottom: 20px; }
-.price-name { font-family: var(--ff-disp); font-size: 1.2rem; font-weight: 900; margin-bottom: 8px; }
-.price-amount { font-family: var(--ff-disp); font-size: 3rem; font-weight: 900; color: var(--cyan); line-height: 1; margin-bottom: 4px; }
-.price-amount sup { font-size: .4em; vertical-align: super; }
-.price-cadence { font-family: var(--ff-mono); font-size: .55rem; letter-spacing: .15em; color: var(--muted); margin-bottom: 8px; }
-.price-trial { font-family: var(--ff-mono); font-size: .55rem; color: var(--green); background: rgba(0,229,160,.07); border: 1px solid rgba(0,229,160,.2); border-radius: 4px; padding: 7px 14px; display: inline-block; margin: 20px 0; }
-.price-features { list-style: none; text-align: left; margin: 20px 0 28px; display: flex; flex-direction: column; gap: 10px; }
-.price-features li { display: flex; gap: 10px; font-size: .85rem; color: var(--sub); }
-.price-features li .chk { color: var(--green); flex-shrink: 0; }
-.price-cta { width: 100%; padding: 14px; font-family: var(--ff-mono); font-size: .65rem; letter-spacing: .18em; text-transform: uppercase; background: linear-gradient(135deg, var(--cyan), var(--cyan2)); color: #000; border: none; border-radius: 6px; cursor: none; font-weight: 700; transition: opacity .2s; }
-.price-cta:hover { opacity: .85; }
-.prereq-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; margin-top: 48px; }
-.prereq-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 28px 24px; text-align: center; }
-.prereq-icon { font-size: 2rem; margin-bottom: 14px; }
-.prereq-title { font-size: .95rem; font-weight: 700; margin-bottom: 8px; color: var(--white); }
-.prereq-desc { font-size: .83rem; color: var(--sub); line-height: 1.6; }
-.faq-list { max-width: 760px; margin: 48px auto 0; }
-.faq-item { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; overflow: hidden; cursor: none; }
-.faq-q { padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; font-weight: 600; color: var(--white); }
-.faq-icon { color: var(--cyan); font-size: 1.2rem; transition: transform .2s; }
-.faq-item.open .faq-icon { transform: rotate(45deg); }
-.faq-a { display: none; padding: 0 24px 20px; font-size: .88rem; color: var(--sub); line-height: 1.8; border-top: 1px solid rgba(0,229,255,.06); padding-top: 16px; }
-.faq-item.open .faq-a { display: block; }
-#ctaband { text-align: center; padding: 100px 60px; background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(0,229,255,.05), transparent 70%); }
-footer { border-top: 1px solid rgba(0,229,255,.07); padding: 60px 60px 32px; max-width: 1320px; margin: 0 auto; }
-.footer-logo { font-family: var(--ff-disp); font-size: .85rem; font-weight: 900; letter-spacing: .18em; margin-bottom: 36px; }
-.footer-logo span { color: var(--cyan); }
-.footer-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 40px; margin-bottom: 48px; }
-.footer-col-title { font-family: var(--ff-mono); font-size: .52rem; letter-spacing: .25em; text-transform: uppercase; color: var(--cyan); margin-bottom: 14px; border-bottom: 1px solid rgba(0,229,255,.1); }
-.footer-col a { display: block; font-size: .82rem; color: var(--sub); text-decoration: none; padding: 4px 0; transition: color .2s; }
-.footer-col a:hover { color: var(--white); }
-.footer-disclaimer { font-family: var(--ff-mono); font-size: .48rem; letter-spacing: .08em; color: var(--muted); max-width: 600px; line-height: 1.7; margin-top: 24px; }
-.reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s ease, transform .7s ease; }
-.reveal.visible { opacity: 1; transform: translateY(0); }
-.ticker-wrap { background: rgba(11,14,26,.9); border-top: 1px solid rgba(0,229,255,.07); border-bottom: 1px solid rgba(0,229,255,.07); overflow: hidden; padding: 10px 0; position: sticky; top: 72px; z-index: 100; backdrop-filter: blur(8px); }
-.ticker { display: flex; gap: 0; white-space: nowrap; animation: ticker 30s linear infinite; }
-.ticker-item { font-family: var(--ff-mono); font-size: .55rem; letter-spacing: .12em; color: var(--sub); padding: 0 36px; display: flex; align-items: center; gap: 8px; }
-@keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes scrollPulse { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(6px); } }
-@media (max-width: 1024px) { .what-grid, .module-grid { grid-template-columns: 1fr; } .wf-grid { grid-template-columns: repeat(3,1fr); gap: 24px; } .prereq-grid { grid-template-columns: 1fr; } .footer-grid { grid-template-columns: repeat(2,1fr); } }
-@media (max-width: 768px) { nav { padding: 14px 24px; } .nav-links { display: none; } section { padding: 80px 24px; } .hero-stats { gap: 28px; } .wf-grid { grid-template-columns: 1fr; gap: 32px; } .price-grid { flex-direction: column; align-items: center; } .platform-banner { font-size: 0.55rem; letter-spacing: 0.15em; } }
 </style>
 </head>
 <body>
-<div id="cur"></div><div id="cur-ring"></div><div class="grid-bg"></div>
-<nav><a href="/index.html" class="nav-logo">SNIPER<span>TRADER</span><span class="nav-badge">NoRepaint Pivot</span></a>
-  <ul class="nav-links"><li><a href="#what">Overview</a></li><li><a href="#engine">Pivot Engine</a></li><li><a href="#modules">Course</a></li><li><a href="#pricing">Pricing</a></li><li><a href="#faq">FAQ</a></li></ul>
-  <button class="nav-cta" onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'})">Start Free Trial</button>
+
+<!-- Precision scope cursor (transparent — no blur) -->
+<div id="scope" aria-hidden="true">
+  <span class="s-ring s-r1"></span>
+  <span class="s-ring s-r2"></span>
+  <span class="s-h"></span>
+  <span class="s-v"></span>
+  <span class="s-center"></span>
+</div>
+<div id="scope-ring"></div>
+<div id="scope-dot"></div>
+
+<!-- NAV -->
+<nav>
+  <a class="logo" href="/index.html"><b>SNIPERTRADER</b><span>.ai</span></a>
+  <ul class="nav-menu">
+    <li class="nav-item" data-drop>
+      <button class="nav-link" onclick="toggleDrop(this)">Market Intelligence <span class="caret">▾</span></button>
+      <div class="dropdown">
+        <a href="/traderedge_preflight.html"><span class="d-name">Preflight Protocol</span><span class="d-sub">Daily pre-market playbook &amp; bias calibration</span></a>
+        <a href="/market_terminal.html"><span class="d-name">Daily Market Picks</span><span class="d-sub">High-probability setups scored by ML</span></a>
+        <a href="/prerun_detection.html"><span class="d-name">Daily Pre-Run Detection</span><span class="d-sub">Pre-market scan across the full watchlist</span></a>
+        <a href="https://chart-ai.snipertrader.ai"><span class="d-name">AI Chart Analyzer</span><span class="d-sub">Automated structure, liquidity &amp; order blocks</span></a>
+        <a href="/sniper_market_forecaster.html"><span class="d-name">Sniper Market Forecaster</span><span class="d-sub">Macro price targets &amp; pivot windows</span></a>
+      </div>
+    </li>
+    <li class="nav-item" data-drop>
+      <button class="nav-link active" onclick="toggleDrop(this)">Proprietary Algos <span class="caret">▾</span></button>
+      <div class="dropdown">
+        <a href="/NoRepaint_Pivot_indicator.html" class="active"><span class="d-name">No Repaint Indicator</span><span class="d-sub">Confirmed-at-close swing structure</span></a>
+        <a href="/USME_ICT_Foundation.html"><span class="d-name">USME ICT Foundation Engine</span><span class="d-sub">Smart Money Concepts automation</span></a>
+        <a href="/USME_VWAP_Elite_Suite.html"><span class="d-name">USME VWAP Suite Engine</span><span class="d-sub">Institutional volume-weighted targeting</span></a>
+        <a href="/usme_products.html"><span class="d-name">All Products</span></a>
+      </div>
+    </li>
+    <li class="nav-item" data-drop>
+      <button class="nav-link" onclick="toggleDrop(this)">Prop Firm <span class="caret">▾</span></button>
+      <div class="dropdown">
+        <a href="/traderedge_prop_firms_command_center.html"><span class="d-name">Command Center</span><span class="d-sub">Live account matrix &amp; rule guardrails</span></a>
+        <a href="/prop_firm_dashboard.html"><span class="d-name">Prop Firm Intelligence</span><span class="d-sub">Ranked firms by Sniper Score™</span></a>
+        <a href="/Prop_firm_MasterPlan.html"><span class="d-name">Prop Firm Master Plan</span><span class="d-sub">The funded-trader roadmap</span></a>
+      </div>
+    </li>
+    <li class="nav-item"><a class="nav-link" href="https://discord.com/servers/zeiierman-trading-764500290614591538">Discord</a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="theme-toggle" id="theme-btn" aria-label="Toggle light/dark mode">☾ <span id="theme-label">Light</span></button>
+    <a class="nav-cta" href="/admin.html">LOGIN</a>
+    <button class="nav-burger" id="burger" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
 </nav>
 
-<!-- NEW BANNER: ICT foundation - TOS - PINE - NINJA -->
-<div class="platform-banner">
-  🔺 <span>ICT FOUNDATION</span> <span class="separator">|</span> TOS <span class="separator">|</span> PINE <span class="separator">|</span> <span>NINJA</span> 🔻
+<!-- Mobile menu -->
+<div class="mobile-menu" id="mobileMenu">
+  <div class="mm-group">Market Intelligence</div>
+  <a class="mm-sub" href="/traderedge_preflight.html">Preflight Protocol</a>
+  <a class="mm-sub" href="/market_terminal.html">Daily Market Picks</a>
+  <a class="mm-sub" href="https://chart-ai.snipertrader.ai">AI Chart Analyzer</a>
+  <a class="mm-sub" href="/sniper_market_forecaster.html">Sniper Market Forecaster</a>
+  <div class="mm-group">Proprietary Algos</div>
+  <a class="mm-sub" href="/NoRepaint_Pivot_indicator.html">No Repaint Indicator</a>
+  <a class="mm-sub" href="/USME_ICT_Foundation.html">USME ICT Foundation Engine</a>
+  <a class="mm-sub" href="/USME_VWAP_Elite_Suite.html">USME VWAP Suite Engine</a>
+  <div class="mm-group">Academy</div>
+  <a class="mm-link" href="/USME_ICT_Foundation_Course.html">Sniper Academy</a>
+  <a class="mm-link" href="/market_terminal.html">Open Terminal</a>
 </div>
 
-<div class="ticker-wrap"><div class="ticker"><span class="ticker-item"><span class="t-acc">🔺</span> NoRepaint Pivot – Confirmed Arrows Never Disappear</span><span class="ticker-item"><span class="t-gold">🔻</span> Elite Pivot Score – Multi‑TF Alignment</span><span class="ticker-item"><span class="t-green">✓</span> 2‑Week Free Trial – $79/mo or $599/year</span><span class="ticker-item"><span class="t-acc">◈</span> ToS + TradingView Ready</span><span class="ticker-item"><span class="t-gold">◈</span> Divergence Scanner + Structural Breaks</span><span class="ticker-item"><span class="t-green">◈</span> USME NoRepaint Pivot Suite</span><span class="ticker-item"><span class="t-acc">◈</span> No Repaint, No Backpainting – Pure Structure</span><span class="ticker-item"><span class="t-gold">◈</span> 6 Core Modules & Trade Playbooks</span></div></div>
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-status"><span class="live-dot"></span>No Repaint Indicator · v2.0</div>
+  <div class="ticker-track">
+    <div class="ticker-inner">
+      <span class="tick-item"><span class="t-gold">◆</span> Non-repainting pivots — bar-close confirmed</span>
+      <span class="tick-item"><span class="t-gold">◆</span> Anchored VWAP + 1σ / 2σ / 3σ bands</span>
+      <span class="tick-item"><span class="t-gold">◆</span> Triple EMA 9 / 21 / 50 + 200 filter</span>
+      <span class="tick-item"><span class="t-gold">◆</span> Trend cloud — BULL / BEAR / RANGE</span>
+      <span class="tick-item"><span class="t-gold">◆</span> 4 VWAP anchor modes</span>
+      <span class="tick-item"><span class="t-gold">◆</span> 6 bar-close alerts</span>
+      <span class="tick-item"><span class="t-gold">◆</span> ThinkorSwim · TradingView</span>
+      <span class="tick-item"><span class="t-gold">◆</span> Non-repainting pivots — bar-close confirmed</span>
+      <span class="tick-item"><span class="t-gold">◆</span> Anchored VWAP + 1σ / 2σ / 3σ bands</span>
+      <span class="tick-item"><span class="t-gold">◆</span> Triple EMA 9 / 21 / 50 + 200 filter</span>
+      <span class="tick-item"><span class="t-gold">◆</span> Trend cloud — BULL / BEAR / RANGE</span>
+      <span class="tick-item"><span class="t-gold">◆</span> 4 VWAP anchor modes</span>
+      <span class="tick-item"><span class="t-gold">◆</span> 6 bar-close alerts</span>
+      <span class="tick-item"><span class="t-gold">◆</span> ThinkorSwim · TradingView</span>
+    </div>
+  </div>
+</div>
 
-<section id="hero"><div class="hero-glow"></div>
-  <div class="version-pill"><span class="version-dot"></span> New Release — NoRepaint Pivot v2.0</div>
-  <p class="hero-eyebrow">SniperTrader | Precision Swing Definition</p>
-  <h1 class="hero-title">USME <span class="v-num">NoRepaint</span><br><span class="accent">Pivot Edge.</span><br>Static. Confirmed. Elite.</h1>
-  <p class="hero-sub-title">Swing points that never repaint. Institutional‑grade pivot detection with multi‑timeframe confluence scoring. Trade with real structure.</p>
-  <p class="hero-course-tag"><a href="/NoRepaint_Pivot_Indicator_framework.html">The Complete Pivot & Reversal Intelligence Course</a></p>
-  <div class="hero-ctas"><a href="/checkout.html" class="btn-primary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>Start 2-Week Free Trial</a><a href="#modules" class="btn-secondary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>Explore Pivot Course</a></div>
-  <div class="trial-badge">✓ &nbsp;2 weeks free · $79/month or $599/year · cancel anytime</div>
-  <div class="hero-stats"><div class="hstat"><div class="hstat-n">0%</div><div class="hstat-l">Repaint Risk</div></div><div class="hstat"><div class="hstat-n">3</div><div class="hstat-l">Pivot Tiers (Elite/Prime/Std)</div></div><div class="hstat"><div class="hstat-n">6</div><div class="hstat-l">Confluence Factors</div></div><div class="hstat"><div class="hstat-n">2</div><div class="hstat-l">Platforms (ToS + TV)</div></div></div>
-  <div class="scroll-arrow"><span>SCROLL</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div>
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-bg"><div class="grid"></div><div class="glow1"></div><div class="glow2"></div></div>
+  <div class="container hero-inner">
+    <div>
+      <div class="hero-pill">
+        <span class="hp-dot"></span>
+        <span class="hp-text">No Repaint Indicator · v2.0</span>
+        <span class="hp-plat">ThinkorSwim · TradingView</span>
+      </div>
+      <h1 class="hero-title">Anchor to fair value. Confirm the swing. <em>Trade the trend.</em></h1>
+      <p class="hero-sub">Non-repainting pivots, an anchored VWAP with three deviation bands, and a triple-EMA trend cloud — one clean read that tells you <strong style="color:var(--text2)">where fair value sits</strong>, which way the trend points, and where structure actually turned.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="/checkout.html">Start 2-Week Free Trial</a>
+        <a class="btn btn-outline" href="#workflow">See How It Trades</a>
+      </div>
+      <div class="hero-trust">
+        <div class="trust-item"><span class="t-label">Fair value</span><span class="t-value">VWAP + 3σ bands</span></div>
+        <div class="trust-item"><span class="t-label">Trend</span><span class="t-value">EMA 9/21/50 cloud</span></div>
+        <div class="trust-item"><span class="t-label">Structure</span><span class="t-value">Confirmed pivots</span></div>
+      </div>
+    </div>
+    <div class="glass hero-card">
+      <div class="dash-top">
+        <div class="dash-dots"><i></i><i></i><i></i></div>
+        <span class="dash-title">No Repaint Indicator</span>
+        <span class="dash-live"><span class="live-dot"></span>LIVE</span>
+      </div>
+      <div class="dash-asset">
+        <span class="sym">NQ 1m · Nasdaq Futures</span>
+        <span class="px">21,484.50<small>+0.8%</small></span>
+      </div>
+      <div class="dash-viz">
+        <svg viewBox="0 0 460 230" width="100%" height="190" preserveAspectRatio="none" role="img" aria-label="Chart showing confirmed swing pivots, an anchored VWAP with three deviation bands, and a trend cloud">
+          <g stroke="rgba(255,255,255,.04)">
+            <line x1="0" y1="57" x2="460" y2="57"/>
+            <line x1="0" y1="115" x2="460" y2="115"/>
+            <line x1="0" y1="173" x2="460" y2="173"/>
+          </g>
+          <path d="M0,95 C60,90 120,80 180,76 C240,72 300,60 360,52 C400,47 440,40 460,37 L460,120 C400,116 340,106 280,101 C220,97 160,105 100,112 C60,117 20,121 0,120 Z" fill="rgba(0,229,160,.10)"/>
+          <path d="M0,50 C60,46 120,40 180,38 C240,36 300,28 360,24 C400,21 440,18 460,17" fill="none" stroke="#9BB5C8" stroke-width="1" stroke-dasharray="3 5" opacity=".55"/>
+          <path d="M0,172 C60,168 120,162 180,160 C240,158 300,150 360,146 C400,143 440,140 460,139" fill="none" stroke="#9BB5C8" stroke-width="1" stroke-dasharray="3 5" opacity=".55"/>
+          <path d="M0,68 C60,64 120,58 180,56 C240,54 300,46 360,42 C400,39 440,36 460,35" fill="none" stroke="#F0C040" stroke-width="1" stroke-dasharray="4 6" opacity=".6"/>
+          <path d="M0,152 C60,148 120,142 180,140 C240,138 300,130 360,126 C400,123 440,120 460,119" fill="none" stroke="#F0C040" stroke-width="1" stroke-dasharray="4 6" opacity=".6"/>
+          <path d="M0,88 C60,84 120,78 180,76 C240,74 300,66 360,62 C400,59 440,56 460,55" fill="none" stroke="#F0C040" stroke-width="1.1" stroke-dasharray="2 4"/>
+          <path d="M0,132 C60,128 120,122 180,120 C240,118 300,110 360,106 C400,103 440,100 460,99" fill="none" stroke="#F0C040" stroke-width="1.1" stroke-dasharray="2 4"/>
+          <path d="M0,110 C60,106 120,100 180,98 C240,96 300,88 360,84 C400,81 440,78 460,77" fill="none" stroke="#F0C040" stroke-width="2"/>
+          <path d="M0,130 C30,120 60,85 110,70 C150,60 190,110 230,140 C270,165 310,90 350,55 C390,35 430,70 460,85" fill="none" stroke="#DCE8F2" stroke-width="1.8"/>
+          <path d="M110,58 L116,70 L104,70 Z" fill="#FF4455"/>
+          <text x="124" y="66" font-family="Space Mono,monospace" font-size="11" fill="#FF4455">H</text>
+          <path d="M230,152 L224,140 L236,140 Z" fill="#00E5A0"/>
+          <text x="196" y="150" font-family="Space Mono,monospace" font-size="11" fill="#00E5A0">L</text>
+          <text x="8" y="20" font-family="Space Mono,monospace" font-size="9" fill="#9BB5C8">+3σ</text>
+          <text x="8" y="176" font-family="Space Mono,monospace" font-size="9" fill="#9BB5C8">−3σ</text>
+        </svg>
+      </div>
+      <div class="dash-metrics">
+        <div class="dm"><div class="l">Trend</div><div class="v sage">BULL</div></div>
+        <div class="dm"><div class="l">VWAP</div><div class="v">21,412.30</div></div>
+        <div class="dm"><div class="l">σ</div><div class="v gold">1.87</div></div>
+      </div>
+      <div class="dash-tags">
+        <span class="tag gold">Confirmed Swing</span>
+        <span class="tag sage">±3σ bands</span>
+        <span class="tag">EMA 9/21/50</span>
+        <span class="tag">Bar-close</span>
+      </div>
+    </div>
+  </div>
 </section>
-<div class="divider"></div>
 
-<section id="what"><div class="section-label">Core Promise</div><div class="what-grid"><div class="what-text"><h2 class="section-title">NoRepaint Pivot<br><em>Structure That Stays</em></h2><p>Traditional pivot indicators repaint: arrows appear, then vanish as new data arrives. The <strong>USME NoRepaint Pivot</strong> engine uses strict right‑bar confirmation: once a swing high/low is printed, the label is final. No backpainting. No recalculation.</p><p>Every signal includes a <strong>Pivot Strength Score (0–100)</strong> based on multi‑timeframe alignment, volume confirmation, and distance to key MAs. The indicator automatically detects breakouts, failed breaks, and divergence setups.</p><p>Available for ThinkorSwim and TradingView – identical logic across both platforms.</p></div><div class="engine-visual"><div class="ev-title">USME NoRepaint Pivot — Core Architecture</div><div class="subsystem"><div class="ss-icon c">🔺</div><div><div class="ss-name">Confirmed Swing Highs</div><div class="ss-desc">Requires N bars of lower highs on both sides – arrow prints once confirmation window closes.</div></div></div><div class="subsystem"><div class="ss-icon c">🔻</div><div><div class="ss-name">Confirmed Swing Lows</div><div class="ss-desc">Lower low followed by higher lows; static label remains even after continued price action.</div></div></div><div class="subsystem"><div class="ss-icon g">📊</div><div><div class="ss-name">Pivot Confluence Engine™</div><div class="ss-desc">Scores each pivot based on HTF structure, volume surge, and breakaway gaps. ELITE/PRIME/STANDARD tiers.</div></div></div><div class="subsystem"><div class="ss-icon gr">🧠</div><div><div class="ss-name">Divergence Ready</div><div class="ss-desc">Auto‑pivot labels feed RSI/MACD divergence alerts – hidden & regular divergences highlighted.</div></div></div></div></div></section>
-<div class="divider"></div>
+<!-- DAILY WORKFLOW -->
+<section id="workflow">
+  <div class="container">
+    <div class="v2-head reveal">
+      <div class="eyebrow">The Daily Workflow</div>
+      <h2>From chart to decision. <em>In four steps.</em></h2>
+      <p class="lede">You don't need to know how the script is built — you need to know how to trade it. Every session follows the same four-step read, so a setup becomes a decision in under a minute.</p>
+    </div>
+    <div class="layers">
+      <div class="layer-card reveal">
+        <span class="lc-n">Step 01</span>
+        <div class="lc-body"><h3>Anchor to fair value</h3><p>Choose your anchor mode — confirmed swing, session, day, or week. The VWAP line and its three deviation bands mark institutional fair value, so you can see at a glance whether price is at value or stretched away from it.</p></div>
+      </div>
+      <div class="layer-card reveal">
+        <span class="lc-n">Step 02</span>
+        <div class="lc-body"><h3>Read the trend cloud</h3><p>The triple-EMA cloud is your directional filter. Green means look for longs, red means look for shorts, grey means stand aside. No setup is ever taken against the cloud.</p></div>
+      </div>
+      <div class="layer-card reveal">
+        <span class="lc-n">Step 03</span>
+        <div class="lc-body"><h3>Confirm the swing</h3><p>A swing high or low only prints after two right-side bars close — and once printed, it stays. No repainting, no disappearing arrows, no quietly shifting stops.</p></div>
+      </div>
+      <div class="layer-card reveal">
+        <span class="lc-n">Step 04</span>
+        <div class="lc-body"><h3>Trade the band extremes</h3><p>A close back above VWAP signals impulse; a push through +3σ or −3σ signals a stretched move. Each event fires its own alert on bar close, so you never have to guess.</p></div>
+      </div>
+    </div>
+    <div class="v2-note reveal">
+      <span class="af-dot"></span>
+      <p><strong>One setup = one decision.</strong> Fair value, trend, and structure all agree before you risk a dollar — and each fires its own alert so the read is handed to you, not left to interpretation.</p>
+    </div>
+  </div>
+</section>
 
-<section id="engine"><div class="section-label">Pivot Scoring Engine</div><h2 class="section-title">Confluence‑Driven <em>Pivot Tier System</em> <span class="gold">— USME NoRepaint</span></h2><div class="sotd-wrap reveal" style="display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:start; margin-top:56px;"><div class="tier-stack"><div class="tier-card elite"><div class="tier-icon">👑</div><div><div class="tier-name elite">ELITE PIVOT</div><div class="tier-score">Score ≥ 92 · Gold Diamond Alert</div><div class="tier-desc">HTF pivot + volume spike + break of structural level + divergence confirmation. Max confluence for reversals/continuation.</div><div class="tier-badge-row"><span class="tbadge gold">Full Structure</span><span class="tbadge gold">Volume Confirmed</span></div></div></div><div class="tier-card prime"><div class="tier-icon">⚡</div><div><div class="tier-name prime">PRIME PIVOT</div><div class="tier-score">Score 80–91 · Cyan Alert</div><div class="tier-desc">Valid swing point with HTF alignment and at least two confluence factors (e.g., volume + MA touch). High probability.</div><div class="tier-badge-row"><span class="tbadge cyan">Multi‑TF</span><span class="tbadge cyan">Clean Structure</span></div></div></div><div class="tier-card standard"><div class="tier-icon">🔔</div><div><div class="tier-name standard">STANDARD PIVOT</div><div class="tier-score">Score 65–79 · White Alert</div><div class="tier-desc">Minimum confirmation: valid swing with right bars closed, no additional confluence. Reduce size or wait for extra signals.</div><div class="tier-badge-row"><span class="tbadge white">Baseline</span><span class="tbadge white">Confirmed Only</span></div></div></div></div><div class="sotd-info"><div class="score-bar-wrap"><div class="score-label"><span>Example Pivot Score (Prime)</span><span>86%</span></div><div class="score-bar"><div class="score-fill" id="scoreFillDemo" style="width:0%"></div></div></div><div class="sotd-kv"><div class="sotd-kv-label">NoRepaint Guarantee</div><div class="sotd-kv-val">The arrow prints <strong>after</strong> the confirmation bars have closed. If you see a pivot, it will stay at that price forever. Perfect for building trading systems.</div></div><div class="sotd-kv"><div class="sotd-kv-label">Multi‑Timeframe Cascade</div><div class="sotd-kv-val">Weekly → Daily → 4H pivots define the bias; 1H → 15M pivots become execution zones. The indicator overlays pivots from three timeframes.</div></div></div></div></section>
-<div class="divider"></div>
+<!-- ENGINE -->
+<section id="engine">
+  <div class="container">
+    <div class="eyebrow reveal">The Engine</div>
+    <h2 class="reveal">One chart. <em>Every answer.</em></h2>
+    <p class="lede reveal">Three layers stack into a single read — where fair value is, which way the market is biased, and where structure actually turned — with alerts that fire only on a confirmed bar close.</p>
+    <div class="featured-grid">
+      <div class="glass feature-card reveal">
+        <div class="fc-top">
+          <div class="fc-icon">&#9650;</div>
+          <span class="tag gold">Structure</span>
+        </div>
+        <h3>Non-repainting pivots</h3>
+        <p>A swing detector built on left-bar lookback plus right-bar confirmation. A candidate swing high needs <strong style="color:var(--text2)">5 bars of lower highs to its left</strong> and <strong style="color:var(--text2)">2 confirmation bars to its right</strong> — and the arrow prints at the true pivot bar, not where it was first suspected.</p>
+        <div class="fc-viz">
+          <div class="viz-chips" style="margin-bottom:12px">
+            <span class="on">Lookback 5</span><span class="on">Confirm 2</span><span>Alternating H/L</span>
+          </div>
+          <svg viewBox="0 0 460 90" width="100%" height="90" preserveAspectRatio="none" role="img" aria-label="Confirmed swing highs and lows with alternating markers">
+            <path d="M0,40 C40,44 80,20 120,24 C160,28 200,64 240,60 C280,56 320,24 360,28 C400,32 440,16 460,14" fill="none" stroke="#DCE8F2" stroke-width="1.8"/>
+            <path d="M120,24 L120,64" stroke="#00E5A0" stroke-width="1.4"/><circle cx="120" cy="24" r="4" fill="#00E5A0"/>
+            <path d="M240,60 L240,22" stroke="#FF4455" stroke-width="1.4"/><circle cx="240" cy="60" r="4" fill="#FF4455"/>
+            <text x="132" y="30" font-family="Space Mono,monospace" font-size="10" fill="#00E5A0">H</text>
+            <text x="252" y="40" font-family="Space Mono,monospace" font-size="10" fill="#FF4455">L</text>
+          </svg>
+        </div>
+        <div class="fc-tags">
+          <span class="tag sage">Bar-close confirmed</span>
+          <span class="tag">Never redraws</span>
+        </div>
+      </div>
+      <div class="glass feature-card reveal">
+        <div class="fc-top">
+          <div class="fc-icon">&#9642;</div>
+          <span class="tag gold">Value</span>
+        </div>
+        <h3>Anchored VWAP + 3σ bands</h3>
+        <p>A volume-weighted fair-value line with three standard-deviation bands, accumulated from your chosen anchor. The cloud between ±1σ and ±2σ marks the value area, and ±3σ marks where price is stretched to a statistical extreme.</p>
+        <div class="fc-viz">
+          <svg viewBox="0 0 460 130" width="100%" height="130" preserveAspectRatio="none" role="img" aria-label="Anchored VWAP with three deviation bands">
+            <path d="M0,80 C50,76 100,66 150,68 C200,70 250,62 300,64 C350,66 400,60 460,58" fill="none" stroke="#00E5A0" stroke-width="2"/>
+            <path d="M0,92 C50,88 100,80 150,82 C200,84 250,76 300,78 C350,80 400,74 460,72" fill="none" stroke="#F0C040" stroke-width="1.2" stroke-dasharray="4 6"/>
+            <path d="M0,68 C50,64 100,52 150,54 C200,56 250,48 300,50 C350,52 400,46 460,44" fill="none" stroke="#F0C040" stroke-width="1.2" stroke-dasharray="4 6"/>
+            <path d="M0,104 C50,100 100,94 150,96 C200,98 250,90 300,92 C350,94 400,88 460,86" fill="none" stroke="#F0C040" stroke-width="1" stroke-dasharray="2 6" opacity=".5"/>
+            <path d="M0,56 C50,52 100,40 150,42 C200,44 250,36 300,38 C350,40 400,34 460,32" fill="none" stroke="#F0C040" stroke-width="1" stroke-dasharray="2 6" opacity=".5"/>
+          </svg>
+        </div>
+        <div class="fc-tags">
+          <span class="tag sage">±1σ / ±2σ / ±3σ</span>
+          <span class="tag">4 anchor modes</span>
+        </div>
+      </div>
+      <div class="glass feature-card reveal">
+        <div class="fc-top">
+          <div class="fc-icon">&#9643;</div>
+          <span class="tag sage">Filter</span>
+        </div>
+        <h3>Triple EMA + trend cloud</h3>
+        <p>A 9/21/50 EMA stack with a 200-period trend filter, rendered as a directional cloud between the fast and slow lines. The cloud is green only when the fast EMA is above the slow <em>and</em> price is above the 200 EMA — and red on the mirror condition.</p>
+        <div class="fc-viz">
+          <div class="viz-chips" style="margin-bottom:12px">
+            <span class="on">Cloud: BULLISH</span><span>Longs only</span><span>200 filter</span>
+          </div>
+          <svg viewBox="0 0 460 90" width="100%" height="90" preserveAspectRatio="none" role="img" aria-label="Bullish EMA trend cloud">
+            <path d="M0,60 C60,56 120,40 180,42 C240,44 300,28 360,30 C400,31 440,20 460,16 L460,70 L0,70 Z" fill="rgba(0,229,160,.12)"/>
+            <path d="M0,60 C60,56 120,40 180,42 C240,44 300,28 360,30 C400,31 440,20 460,16" fill="none" stroke="#00E5A0" stroke-width="1.6"/>
+            <path d="M0,48 C60,44 120,30 180,32 C240,34 300,20 360,22 C400,23 440,14 460,10" fill="none" stroke="#00D4FF" stroke-width="1.2" opacity=".7"/>
+          </svg>
+        </div>
+        <div class="fc-tags">
+          <span class="tag gold">Directional filter</span>
+          <span class="tag">EMA 9/21/50</span>
+        </div>
+      </div>
+      <div class="glass feature-card reveal">
+        <div class="fc-top">
+          <div class="fc-icon">&#128276;</div>
+          <span class="tag sage">Reliability</span>
+        </div>
+        <h3>Six bar-close alerts</h3>
+        <p>Six dedicated alert conditions — confirmed swing high/low, and close crossing above or below VWAP and the ±3σ bands. Every one fires once per bar close, never mid-candle, so the alert you act on matches the signal on screen.</p>
+        <div class="fc-viz">
+          <div class="viz-chips" style="margin-bottom:12px">
+            <span class="on">Swing HIGH / LOW</span><span class="on">VWAP cross</span><span class="on">±3σ cross</span>
+          </div>
+          <svg viewBox="0 0 460 90" width="100%" height="90" preserveAspectRatio="none" role="img" aria-label="Alert conditions">
+            <circle cx="40" cy="45" r="14" fill="none" stroke="#00E5A0" stroke-width="1.4"/><path d="M35 45 l4 5 l9 -11" fill="none" stroke="#00E5A0" stroke-width="1.6"/>
+            <text x="66" y="49" font-family="Space Mono,monospace" font-size="11" fill="#DCE8F2">Swing HIGH</text>
+            <circle cx="270" cy="45" r="14" fill="none" stroke="#F0C040" stroke-width="1.4"/><path d="M265 45 l4 5 l9 -11" fill="none" stroke="#F0C040" stroke-width="1.6"/>
+            <text x="296" y="49" font-family="Space Mono,monospace" font-size="11" fill="#DCE8F2">VWAP cross</text>
+            <path d="M0,80 L460,80" stroke="#9BB5C8" stroke-width="1" stroke-dasharray="2 5" opacity=".6"/>
+          </svg>
+        </div>
+        <div class="fc-tags">
+          <span class="tag gold">Once per bar close</span>
+          <span class="tag">6 conditions</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
-<section id="modules"><div><div class="section-label">Pivot Mastery Course</div><h2 class="section-title">Learn the <em>NoRepaint Edge</em></h2><p class="section-sub">Six focused modules covering detection, scoring, and execution. Real trade walkthroughs and quiz checkpoints.</p></div><div class="module-grid reveal"><div class="mod-card"><div class="mod-num">MODULE 01</div><div class="mod-title">NoRepaint Mechanics & Pivot Basics</div><div class="mod-time">⏱ 45 min</div><div class="mod-desc">How repaint kills consistency. The right‑bar confirmation rule. Swing high/low definitions, parameters left/right bars.</div><span class="mod-tag">Core</span></div><div class="mod-card"><div class="mod-num">MODULE 02</div><div class="mod-title">Reading Pivot Structure & Breaks</div><div class="mod-time">⏱ 55 min</div><div class="mod-desc">Identifying higher‑high sequences, change of character (CHoCH), break retest setups using static pivots.</div><span class="mod-tag">Core</span></div><div class="mod-card"><div class="mod-num">MODULE 03</div><div class="mod-title">Pivot Confluence Scoring Deep Dive</div><div class="mod-time">⏱ 70 min</div><div class="mod-desc">ELITE/PRIME/STANDARD breakdown. How volume, HTF alignment, and momentum affect score. Using score for position sizing.</div><span class="mod-tag">Advanced</span></div><div class="mod-card"><div class="mod-num">MODULE 04</div><div class="mod-title">Divergence with Non‑Repaint Pivots</div><div class="mod-time">⏱ 50 min</div><div class="mod-desc">Combining RSI/MACD divergences with static pivot levels. Hidden divergence for trend continuation trades.</div><span class="mod-tag">Edge</span></div><div class="mod-card"><div class="mod-num">MODULE 05</div><div class="mod-title">Execution Protocols & Stop Placement</div><div class="mod-time">⏱ 60 min</div><div class="mod-desc">Setting stops beyond the confirmed pivot. Targeting next pivot layer. Scaling techniques.</div><span class="mod-tag">Execution</span></div><div class="mod-card"><div class="mod-num">RESOURCES</div><div class="mod-title">Pivot Cheat Sheets & Templates</div><div class="mod-time">Ongoing</div><div class="mod-desc">Quick reference pivot tier table, divergence checklist, trade log, and installation guides for ToS/TradingView.</div><span class="mod-tag">Bonus</span></div></div></section>
-<div class="divider"></div>
+<!-- TREND STATES -->
+<section id="trend">
+  <div class="container">
+    <div class="eyebrow center reveal">Trend States</div>
+    <h2 class="reveal" style="text-align:center">Three states. <em>One filter.</em></h2>
+    <p class="lede reveal" style="text-align:center;margin-left:auto;margin-right:auto">The triple-EMA cloud resolves every bar into one of three states. The state tells you which side of the market is allowed — so the cloud is the first gate every signal must pass.</p>
+    <div class="tier-grid">
+      <div class="tier-card bull reveal">
+        <div class="tc-head"><span class="tc-name">BULL</span><span class="tc-icon">▲</span></div>
+        <div class="tc-cond">EMA 9 &gt; EMA 21<br>AND close &gt; EMA 200</div>
+        <span class="tc-alert">Longs only</span>
+        <p>The fast EMA sits above the slow EMA and price holds above the 200-period trend filter. The cloud prints green — look for longs and reject short setups.</p>
+      </div>
+      <div class="tier-card bear reveal">
+        <div class="tc-head"><span class="tc-name">BEAR</span><span class="tc-icon">▼</span></div>
+        <div class="tc-cond">EMA 9 &lt; EMA 21<br>AND close &lt; EMA 200</div>
+        <span class="tc-alert">Shorts only</span>
+        <p>The fast EMA sits below the slow EMA and price holds below the 200-period trend filter. The cloud prints red — look for shorts and reject long setups.</p>
+      </div>
+      <div class="tier-card range reveal">
+        <div class="tc-head"><span class="tc-name">RANGE</span><span class="tc-icon">◈</span></div>
+        <div class="tc-cond">Neither condition holds</div>
+        <span class="tc-alert">Stand aside</span>
+        <p>The fast and slow EMAs are tangled or price is chopping around the 200 EMA. The cloud prints grey — no directional edge, so the filter keeps you out.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-<section id="workflow"><div class="section-label">Execution Framework</div><h2 class="section-title" style="text-align:center">The <em>Pivot Confidence Protocol</em></h2><p class="section-sub" style="text-align:center;margin:12px auto 0">Five checks before acting on any NoRepaint pivot signal.</p><div class="wf-grid reveal"><div class="wf-step"><div class="wf-circle">01</div><div class="wf-name">Pivot Validity</div><div class="wf-desc">Arrow printed? Right-bars closed? No repaint possible.</div></div><div class="wf-step"><div class="wf-circle">02</div><div class="wf-name">Tier Score</div><div class="wf-desc">ELITE/PRIME/STANDARD? Below 65% skip.</div></div><div class="wf-step"><div class="wf-circle">03</div><div class="wf-name">HTF Cascade</div><div class="wf-desc">Higher‑timeframe pivot direction aligns?</div></div><div class="wf-step"><div class="wf-circle">04</div><div class="wf-name">Volume / Delta</div><div class="wf-desc">Volume spike at pivot? Indicates institutional interest.</div></div><div class="wf-step"><div class="wf-circle">05</div><div class="wf-name">Break or Reject?</div><div class="wf-desc">Close beyond pivot = breakout; rejection w/bar = mean reversion.</div></div></div></section>
-<div class="divider"></div>
+<!-- ANCHOR MODES -->
+<section id="anchors">
+  <div class="container">
+    <div class="eyebrow reveal">VWAP Anchor Modes</div>
+    <h2 class="reveal">Four ways to <em>anchor value.</em></h2>
+    <p class="lede reveal">Where the VWAP starts matters as much as where it sits. Pick the anchor that matches how you trade, and the bands recalculate from there.</p>
+    <div class="session-grid">
+      <div class="session-card reveal">
+        <div class="sc-top"><span class="sc-badge">Confirmed Swing</span><span class="tag sage">Default</span></div>
+        <h3>Anchor to structure</h3>
+        <div class="sc-window">Resets on every confirmed pivot</div>
+        <p>Every time a swing high or low confirms, VWAP restarts from that pivot. The bands track the most recent structural leg — ideal for reading each move in isolation.</p>
+      </div>
+      <div class="session-card reveal">
+        <div class="sc-top"><span class="sc-badge">Session</span><span class="tag">Intraday</span></div>
+        <h3>Anchor to the session</h3>
+        <div class="sc-window">Resets on each session's first bar</div>
+        <p>VWAP restarts at the open of each session, giving you a fair-value reference that follows the institutional trading windows throughout the day.</p>
+      </div>
+      <div class="session-card reveal">
+        <div class="sc-top"><span class="sc-badge">Day</span><span class="tag">Daily</span></div>
+        <h3>Anchor to the day</h3>
+        <div class="sc-window">Resets on each new day</div>
+        <p>A clean daily reference. Price above day VWAP is intraday strength; price below is weakness — the classic mean-reversion yardstick.</p>
+      </div>
+      <div class="session-card reveal">
+        <div class="sc-top"><span class="sc-badge">Week</span><span class="tag gold">Swing</span></div>
+        <h3>Anchor to the week</h3>
+        <div class="sc-window">Resets on each new week</div>
+        <p>The longest-horizon anchor. Weekly VWAP smooths out daily noise and shows where larger players are accumulating or distributing over the full week.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-<section id="vs"><div class="section-label">Advantage</div><h2 class="section-title">USME NoRepaint vs.<br><span style="color:var(--muted)">Traditional Repainting Pivots</span></h2><div class="vs-wrap reveal"><div class="vs-header"><div class="vs-col-h">Feature</div><div class="vs-col-h old">Repainting Indicators</div><div class="vs-col-h new">USME NoRepaint</div></div><div class="vs-row"><div class="vs-feature">🕒 Pivot repaint on new bars</div><div class="vs-val old"><span class="cross">✗</span> Yes, arrows disappear</div><div class="vs-val new"><span class="check">✓</span> Never repaints</div></div><div class="vs-row"><div class="vs-feature">🎯 Confirmation rule</div><div class="vs-val old">None / lookahead</div><div class="vs-val new">Right‑bars closed, static label</div></div><div class="vs-row"><div class="vs-feature">🏷️ Tier scoring (Elite/Prime)</div><div class="vs-val old"><span class="cross">✗</span> No</div><div class="vs-val new"><span class="check">✓</span> Confluence scoring</div></div><div class="vs-row"><div class="vs-feature">🔄 Multi‑timeframe cascade</div><div class="vs-val old">Single TF</div><div class="vs-val new">3 TF overlays (configurable)</div></div><div class="vs-row"><div class="vs-feature">📈 Divergence automation</div><div class="vs-val old">Manual</div><div class="vs-val new">Auto pivot labels + divergence popups</div></div></div></div></section>
-<div class="divider"></div>
+<!-- INPUTS -->
+<section id="inputs">
+  <div class="container">
+    <div class="eyebrow reveal">Inputs</div>
+    <h2 class="reveal">The essentials. <em>Nothing extra.</em></h2>
+    <p class="lede reveal">Sixteen inputs across four groups. Every default is tuned to work out of the box — change them only if your method demands it.</p>
+    <div class="input-grid">
+      <div class="input-card reveal">
+        <div class="in-title">Pivots</div>
+        <div class="input-row"><span class="in-name">Show Swings</span><span class="in-val">true</span></div>
+        <div class="input-row"><span class="in-name">Swing Lookback (left)</span><span class="in-val">5</span></div>
+        <div class="input-row"><span class="in-name">Confirm Bars (right)</span><span class="in-val">2</span></div>
+        <div class="in-note">How many bars must confirm on each side before a swing prints.</div>
+      </div>
+      <div class="input-card reveal">
+        <div class="in-title">VWAP</div>
+        <div class="input-row"><span class="in-name">VWAP Source</span><span class="in-val">close</span></div>
+        <div class="input-row"><span class="in-name">Anchor Mode</span><span class="in-val">Confirmed Swing</span></div>
+        <div class="input-row"><span class="in-name">Show VWAP + Bands</span><span class="in-val">true</span></div>
+        <div class="input-row"><span class="in-name">Show VWAP Cloud</span><span class="in-val">true</span></div>
+        <div class="input-row"><span class="in-name">Band 1σ / 2σ / 3σ</span><span class="in-val">1.0 · 2.0 · 3.0</span></div>
+        <div class="in-note">Multipliers on the volume-weighted standard deviation.</div>
+      </div>
+      <div class="input-card reveal">
+        <div class="in-title">EMA / Trend</div>
+        <div class="input-row"><span class="in-name">EMA Fast</span><span class="in-val">9</span></div>
+        <div class="input-row"><span class="in-name">EMA Slow</span><span class="in-val">21</span></div>
+        <div class="input-row"><span class="in-name">EMA Trend</span><span class="in-val">50</span></div>
+        <div class="input-row"><span class="in-name">Trend Filter EMA</span><span class="in-val">200</span></div>
+        <div class="input-row"><span class="in-name">Show Trend Cloud</span><span class="in-val">true</span></div>
+        <div class="in-note">The 200 EMA is the long-horizon gate for BULL vs BEAR.</div>
+      </div>
+      <div class="input-card reveal">
+        <div class="in-title">Alerts</div>
+        <div class="input-row"><span class="in-name">Enable Alerts</span><span class="in-val">true</span></div>
+        <div class="input-row"><span class="in-name">Frequency</span><span class="in-val">once per bar close</span></div>
+        <div class="in-note">All six conditions fire once per bar close — never mid-candle.</div>
+      </div>
+    </div>
+  </div>
+</section>
 
-<section id="prereq"><div class="section-label">Requirements</div><h2 class="section-title">Get Started in Minutes</h2><div class="prereq-grid reveal"><div class="prereq-card"><div class="prereq-icon">📈</div><div class="prereq-title">Basic Charting Knowledge</div><div class="prereq-desc">Understanding swings, trends, support/resistance.</div></div><div class="prereq-card"><div class="prereq-icon">🖥</div><div class="prereq-title">ThinkorSwim or TradingView</div><div class="prereq-desc">Active account on either platform. Installation guide provided.</div></div><div class="prereq-card"><div class="prereq-icon">⚙️</div><div class="prereq-title">Indicator Installed</div><div class="prereq-desc">Add USME NoRepaint Pivot to chart. Takes 2 minutes.</div></div></div></section>
-<div class="divider"></div>
+<!-- ALERTS -->
+<section id="alerts">
+  <div class="container">
+    <div class="eyebrow reveal">Alerts</div>
+    <h2 class="reveal">Six alerts. <em>All bar-close.</em></h2>
+    <p class="lede reveal">Every alert condition is listed below, with the trigger and the exact message it fires. No mid-candle signals — what you hear is what you see.</p>
+    <div class="label-wrap reveal">
+      <div class="label-head"><span>Condition</span><span>Fires when</span><span>Alert message</span></div>
+      <div class="label-row"><div class="ll-name">Confirmed Swing HIGH</div><div class="ll-desc">A swing high passes its two right-side confirmation bars and the alternating-structure rule accepts it.</div><div class="ll-alert">Confirmed Swing HIGH</div></div>
+      <div class="label-row"><div class="ll-name">Confirmed Swing LOW</div><div class="ll-desc">A swing low passes its two right-side confirmation bars and the alternating-structure rule accepts it.</div><div class="ll-alert">Confirmed Swing LOW</div></div>
+      <div class="label-row"><div class="ll-name">Close crossed ABOVE VWAP</div><div class="ll-desc">Price closes up through the anchored VWAP — a shift from below value to above value.</div><div class="ll-alert">Close crossed ABOVE VWAP</div></div>
+      <div class="label-row"><div class="ll-name">Close crossed BELOW VWAP</div><div class="ll-desc">Price closes down through the anchored VWAP — a shift from above value to below value.</div><div class="ll-alert">Close crossed BELOW VWAP</div></div>
+      <div class="label-row"><div class="ll-name">Close crossed ABOVE +3σ VWAP</div><div class="ll-desc">Price closes above the upper third-deviation band — a statistically stretched move.</div><div class="ll-alert">Close crossed ABOVE +3σ VWAP</div></div>
+      <div class="label-row"><div class="ll-name">Close crossed BELOW −3σ VWAP</div><div class="ll-desc">Price closes below the lower third-deviation band — a statistically stretched move.</div><div class="ll-alert">Close crossed BELOW −3σ VWAP</div></div>
+    </div>
+    <div class="alert-note reveal">
+      <span class="an-ic">⚠️</span>
+      <p><strong>Bar-close only.</strong> Every condition above confirms on a closed bar. There is no mid-candle signal, no repainting, and no bubble that disappears after it prints.</p>
+    </div>
+  </div>
+</section>
 
-<section id="pricing"><div class="section-label">Pricing Plans</div><h2 class="section-title" style="text-align:center">Choose Your <em>Pivot Access</em></h2><div class="price-grid reveal"><div class="price-card"><div class="price-tier">🌙 MONTHLY</div><div class="price-name">Full Pivot Suite</div><div class="price-amount"><sup>$</sup>79</div><div class="price-cadence">per month · cancel anytime</div><div class="price-trial">2‑Week Free Trial</div><ul class="price-features"><li><span class="chk">✓</span> USME NoRepaint Pivot Indicator</li><li><span class="chk">✓</span> Elite/Prime/Standard Scoring</li><li><span class="chk">✓</span> Full 6‑module course + cheat sheets</li><li><span class="chk">✓</span> Divergence scanner integration</li><li><span class="chk">✓</span> ToS & TradingView scripts</li><li><span class="chk">✓</span> Community + trade examples</li></ul><a href="/checkout.html"><button class="price-cta">Start Free Trial</button></a></div><div class="price-card"><div class="price-tier">⭐ YEARLY (BEST VALUE)</div><div class="price-name">Annual Pivot Suite</div><div class="price-amount"><sup>$</sup>599</div><div class="price-cadence">billed yearly · save 37%</div><div class="price-trial">2‑Week Free Trial</div><ul class="price-features"><li><span class="chk">✓</span> All monthly features included</li><li><span class="chk">✓</span> 2 months free vs monthly</li><li><span class="chk">✓</span> Priority support & early updates</li><li><span class="chk">✓</span> Lifetime access to course materials</li><li><span class="chk">✓</span> Annual strategy playbooks</li></ul><a href="/checkout.html"><button class="price-cta">Start Yearly Trial</button></div></div></section></a>
-<div class="divider"></div>
+<!-- COURSE -->
+<section id="course">
+  <div class="container">
+    <div class="eyebrow reveal">Included Course</div>
+    <h2 class="reveal">Learn to read it. <em>In a weekend.</em></h2>
+    <p class="lede reveal">Six focused modules take you from "what is VWAP" to executing the full suite — plus reference sheets you can keep on your desk.</p>
+    <div class="module-grid">
+      <div class="module-card reveal"><div class="m-num">Module 01</div><h3>Non-Repaint Pivot Mechanics</h3><div class="m-time">45 min</div><p>Why repainting kills consistency, and how the left-lookback / right-confirm rule keeps a pivot static once it prints.</p></div>
+      <div class="module-card reveal"><div class="m-num">Module 02</div><h3>Anchored VWAP &amp; Deviation Bands</h3><div class="m-time">50 min</div><p>Selecting the right anchor and reading ±1σ/±2σ/±3σ for mean-reversion versus trend continuation.</p></div>
+      <div class="module-card reveal"><div class="m-num">Module 03</div><h3>Triple EMA &amp; Trend Cloud</h3><div class="m-time">55 min</div><p>Using the 9/21/50 stack and the 200 filter to read BULL, BEAR, and RANGE before committing to a side.</p></div>
+      <div class="module-card reveal"><div class="m-num">Module 04</div><h3>Reading Swing Structure</h3><div class="m-time">50 min</div><p>Higher-high / lower-low sequences, change of character, and break-and-retest setups built on static pivots.</p></div>
+      <div class="module-card reveal"><div class="m-num">Module 05</div><h3>Alerts &amp; Execution</h3><div class="m-time">60 min</div><p>The six alert conditions, stop placement beyond a confirmed pivot, and targets at the band extremes.</p></div>
+      <div class="module-card reveal"><div class="m-num">Resources</div><h3>Cheat Sheets &amp; Checklist</h3><div class="m-time">Reference</div><p>A deviation-band quick-reference and a trend-state decision checklist for every session.</p></div>
+    </div>
+  </div>
+</section>
 
-<section id="faq"><div class="section-label">Common Questions</div><h2 class="section-title" style="text-align:center">NoRepaint Pivot <em>Answers</em></h2><div class="faq-list"><div class="faq-item"><div class="faq-q">Does the indicator really never repaint?<span class="faq-icon">+</span></div><div class="faq-a">Yes. The arrow prints only after the required right‑side confirmation bars have closed. Once printed, the pivot level never moves, disappears, or changes. This is enforced by the script’s bar referencing logic.</div></div><div class="faq-item"><div class="faq-q">Which timeframes work best?<span class="faq-icon">+</span></div><div class="faq-a">5min, 15min, 1h, 4h for daytrading; Daily for swing. The indicator adapts to any timeframe because confirmation bars are relative.</div></div><div class="faq-item"><div class="faq-q">Can I use this for forex, indices, crypto?<span class="faq-icon">+</span></div><div class="faq-a">Absolutely. It's symbol‑agnostic – works on NQ, ES, Gold, EURUSD, BTCUSDT, and more. Pivot logic is pure price structure.</div></div><div class="faq-item"><div class="faq-q">Do I need to code or know Pine Script?<span class="faq-icon">+</span></div><div class="faq-a">No. The indicator comes ready to install: copy‑paste script for ThinkorSwim (Thinkscript) or TradingView (Pine). Step‑by‑step included.</div></div><div class="faq-item"><div class="faq-q">Is the $599/year option also eligible for 2‑week trial?<span class="faq-icon">+</span></div><div class="faq-a">Yes. Both monthly and yearly include the same 14‑day free trial. Cancel before the trial ends, no charge.</div></div></div></section>
-<div class="divider"></div>
+<!-- PRICING -->
+<section id="pricing">
+  <div class="container">
+    <div class="eyebrow center reveal">Plans</div>
+    <h2 class="reveal" style="text-align:center">Choose your access.</h2>
+    <p class="lede reveal" style="text-align:center;margin-left:auto;margin-right:auto">The full indicator on ThinkorSwim and TradingView, plus the complete interpretation course and every future update.</p>
+    <div class="pricing-grid">
+      <div class="glass price-card reveal">
+        <div class="price-tier">Monthly Flex</div>
+        <div class="price-amount"><sup>$</sup>79</div>
+        <div class="price-cadence">/ month · cancel anytime</div>
+        <div class="price-trial">✓ 2-Week Free Trial</div>
+        <ul class="price-features">
+          <li>Non-Repaint Pivot + VWAP + Trend Cloud indicator</li>
+          <li>Anchored VWAP with ±1σ / ±2σ / ±3σ bands</li>
+          <li>Triple EMA + trend cloud</li>
+          <li>Six bar-close alerts</li>
+          <li>ThinkorSwim + TradingView scripts</li>
+          <li>Complete interpretation course</li>
+        </ul>
+        <a class="btn btn-primary price-cta" href="/checkout.html">Start Free Trial</a>
+        <div class="price-note">No commitment · cancel before day 14</div>
+      </div>
+      <div class="glass price-card annual reveal">
+        <div class="price-tier">Annual</div>
+        <div class="price-amount"><sup>$</sup>599</div>
+        <div class="price-cadence">/ year · save 37%</div>
+        <div class="price-trial">✓ 14-day money-back guarantee</div>
+        <ul class="price-features">
+          <li>All monthly features included</li>
+          <li>Save $349 vs monthly</li>
+          <li>Priority support &amp; early updates</li>
+          <li>Lifetime course access</li>
+          <li>Annual strategy playbooks</li>
+        </ul>
+        <a class="btn btn-primary price-cta" href="/checkout.html">Start Annual Plan</a>
+        <div class="price-note">14-day money-back guarantee</div>
+      </div>
+    </div>
+    <div class="platform-badge reveal">
+      <span>📈 TradingView (Pine Script)</span><span>📊 ThinkorSwim (Thinkscript)</span>
+    </div>
+  </div>
+</section>
 
-<div id="ctaband"><h2 class="ctaband-title">Trade With <span style="color:var(--cyan)">Static Pivots</span></h2><p class="ctaband-sub">14 days full access, no credit card required. Experience pivot signals that never lie.</p><div style="display:flex;gap:16px;justify-content:center;"><a href="/checkout.html" class="btn-primary" style="font-size:.7rem;padding:18px 40px">Start Free Trial</a><a href="/checkout.html" class="btn-secondary" style="font-size:.7rem;">Explore NoRepaint Pivot Modules</a></div></div>
+<!-- FAQ -->
+<section id="faq">
+  <div class="container">
+    <div class="eyebrow center reveal">FAQ</div>
+    <h2 class="reveal" style="text-align:center">Answered.</h2>
+    <div class="faq-list">
+      <div class="faq-item reveal"><button class="faq-q">Are the pivots really non-repainting? <span class="faq-icon">+</span></button><div class="faq-a">Yes. A swing only prints after the two right-side confirmation bars have closed — and the arrow is drawn back at the true pivot bar. Once printed, the pivot never moves, disappears, or changes. The script enforces this by referencing only past bars.</div></div>
+      <div class="faq-item reveal"><button class="faq-q">How do I use it in a typical session? <span class="faq-icon">+</span></button><div class="faq-a">Four steps, every time: anchor to the VWAP, read the trend cloud for direction, wait for a confirmed swing high or low, then trade the VWAP and ±3σ band crosses — each of which fires its own bar-close alert.</div></div>
+      <div class="faq-item reveal"><button class="faq-q">Is this the same as the old USME NoRepaint Pivot with the ELITE/PRIME/STANDARD score? <span class="faq-icon">+</span></button><div class="faq-a">No — the 0–100 Pivot Strength Score, the ELITE/PRIME/STANDARD tiers, and the RSI/MACD divergence scanner from the earlier build are gone. This build replaces them with a cleaner fair-value read: an anchored VWAP with ±1σ/±2σ/±3σ bands plus a triple-EMA trend cloud. Pivots still never repaint; conviction now comes from the confluence of value, trend, and structure.</div></div>
+      <div class="faq-item reveal"><button class="faq-q">What platforms are supported? <span class="faq-icon">+</span></button><div class="faq-a">ThinkorSwim (Thinkscript) and TradingView (Pine Script v5). The page's source code is the TradingView Pine implementation; the logic is mirrored on ThinkorSwim so signals match across platforms.</div></div>
+      <div class="faq-item reveal"><button class="faq-q">Which markets and timeframes work best? <span class="faq-icon">+</span></button><div class="faq-a">NQ, ES, YM, gold, forex majors, and crypto (BTC/ETH). VWAP is volume-weighted, so it performs best in liquid markets. The pivot and EMA logic adapt to any timeframe from 5-minute up to daily.</div></div>
+      <div class="faq-item reveal"><button class="faq-q">Is there a free trial? <span class="faq-icon">+</span></button><div class="faq-a">The monthly plan includes a 2-week free trial — no credit card required. The annual plan carries a 14-day money-back guarantee.</div></div>
+    </div>
+  </div>
+</section>
 
-<footer><div class="footer-logo">SNIPER<span>TRADER</span></div><div class="footer-grid"><div class="footer-col"><div class="footer-col-title">Tools</div><a href="#">USME NoRepaint Pivot</a><a href="#">Pivot Confluence Scanner</a><a href="#">Divergence Panel</a><a href="#">Multi‑TF Pivot Matrix</a></div><div class="footer-col"><div class="footer-col-title">Resources</div><a href="/sentinel_program.html">Affiliate Program</a><a href="/Docs.html">Installation Guides</a><a href="/NoRepaint_Pivot_Indicator_framework.html">NoRepaint Pivot Indicator Framework</a><a href="/30_days_funded_challenge.html">30 Days Funded Challenge</a><a href="/Prop_firm_MasterPlan.html">Prop Firm Masterplan</a></div><div class="footer-col"><div class="footer-col-title">Platforms</div><a href="#">ThinkorSwim</a><a href="#">TradingView</a><a href="#">NinjaTrader</a></div><div class="footer-col"><div class="footer-col-title">Legal</div><a href="/terms.html">Terms</a><a href="/disclaimer.html">Disclaimer</a><a href="/privacy.html">Privacy</a></div></div><p class="footer-disclaimer">Trading involves risk. USME NoRepaint Pivot is an analytical tool – not financial advice. Past performance does not guarantee future results. All signals must be verified with proper risk management.</p></footer>
+<!-- CTA -->
+<section id="cta">
+  <div class="container">
+    <div class="glass cta-band reveal">
+      <div class="cb-copy">
+        <div class="eyebrow">Start Today</div>
+        <h2>Trade with <em>calm, surgical</em> conviction.</h2>
+        <p>Two weeks free on the monthly plan, or lock in annual savings. Available on ThinkorSwim and TradingView.</p>
+        <div class="cb-ctas">
+          <a class="btn btn-primary" href="/checkout.html">Start Free Trial</a>
+          <a class="btn btn-outline" href="/checkout.html">View Annual Plan</a>
+        </div>
+      </div>
+      <div class="cb-meta">
+        <div class="cb-stat"><span class="n">16</span><span class="t">Inputs — the essentials only.</span></div>
+        <div class="cb-stat"><span class="n">3</span><span class="t">Deviation bands — ±1σ / ±2σ / ±3σ.</span></div>
+        <div class="cb-stat"><span class="n">6</span><span class="t">Bar-close alerts, never mid-candle.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a class="f-logo" href="/index.html">SniperTrader<span>.ai</span></a>
+        <p class="f-mission">Precision market systems &amp; algorithmic engines — calm, surgical execution for the disciplined trader.</p>
+        <div class="f-status"><i></i> System Status: Operational</div>
+        <div class="f-social">
+          <a href="#">X</a><a href="#">YouTube</a><a href="#">Discord</a><a href="#">Telegram</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Intelligence</h4>
+        <a href="/traderedge_preflight.html">Preflight Protocol</a>
+        <a href="/market_terminal.html">Daily Market Picks</a>
+        <a href="/prerun_detection.html">Daily Pre-Run Detection</a>
+        <a href="https://chart-ai.snipertrader.ai">AI Chart Analyzer</a>
+        <a href="/sniper_market_forecaster.html">Market Forecaster</a>
+      </div>
+      <div class="footer-col">
+        <h4>Proprietary Algos</h4>
+        <a href="/NoRepaint_Pivot_indicator.html">No Repaint Engine</a>
+        <a href="/USME_ICT_Foundation.html">USME ICT Engine</a>
+        <a href="/USME_VWAP_Elite_Suite.html">USME VWAP Suite</a>
+        <a href="/usme_products.html">TradingView Suite</a>
+      </div>
+      <div class="footer-col">
+        <h4>Academy</h4>
+        <a href="/USME_ICT_Foundation_Course.html">Courses</a>
+        <a href="/Traders_Couch.html">Live Labs</a>
+        <a href="/about.html">Mentorship</a>
+        <a href="/about.html">Community</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="/about.html">About Us</a>
+        <a href="/checkout.html">Pricing</a>
+        <a href="/about.html">Contact</a>
+        <a href="/terms.html">Terms</a>
+        <a href="/privacy.html">Privacy</a>
+        <a href="/disclaimer.html">Legal</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 SniperTrader.ai — All rights reserved.</span>
+      <span>Calm. Precise. Deliberate.</span>
+    </div>
+    <p class="footer-disclaimer">DISCLAIMER: Trading involves substantial risk of loss and is not suitable for every investor. Past performance does not guarantee future results. The No Repaint Indicator is an educational and analytical tool, not financial advice. All content on this site is for educational purposes only and does not constitute financial or investment advice.</p>
+  </div>
+</footer>
 
 <script>
-const cur=document.getElementById('cur'),ring=document.getElementById('cur-ring'); let mx=0,my=0,rx=0,ry=0;
-document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px'});
-function animRing(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(animRing)} animRing();
-const revEls=document.querySelectorAll('.reveal'); const io=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');io.unobserve(e.target)}})},{threshold:0.12}); revEls.forEach(el=>io.observe(el));
-const scoreFill=document.getElementById('scoreFillDemo'); if(scoreFill){ const scoreObs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){scoreFill.style.width='86%';scoreObs.unobserve(e.target)}})},{threshold:.3}); scoreObs.observe(scoreFill);}
-document.querySelectorAll('.faq-item').forEach(item=>{item.querySelector('.faq-q').addEventListener('click',()=>{const wasOpen=item.classList.contains('open');document.querySelectorAll('.faq-item').forEach(i=>i.classList.remove('open'));if(!wasOpen) item.classList.add('open');})});
-document.querySelectorAll('a[href^="#"]').forEach(a=>{a.addEventListener('click',e=>{const t=document.querySelector(a.getAttribute('href'));if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth',block:'start'})}})});
+/* ── Precision scope cursor ──────────────────────────────── */
+(function(){
+  var scope=document.getElementById('scope'), ring=document.getElementById('scope-ring'), dot=document.getElementById('scope-dot');
+  var mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my;
+  document.addEventListener('mousemove',function(e){
+    mx=e.clientX;my=e.clientY;
+    if(dot){dot.style.left=mx+'px';dot.style.top=my+'px';}
+    if(scope){scope.style.left=mx+'px';scope.style.top=my+'px';}
+  });
+  (function loop(){
+    rx+=(mx-rx)*0.16; ry+=(my-ry)*0.16;
+    if(ring){ring.style.left=rx+'px';ring.style.top=ry+'px';}
+    requestAnimationFrame(loop);
+  })();
+})();
+
+/* ── Theme toggle ────────────────────────────────────────── */
+(function(){
+  var btn=document.getElementById('theme-btn'), label=document.getElementById('theme-label');
+  var light=false;
+  function apply(l){
+    light=l; document.body.classList.toggle('light',l);
+    if(btn) btn.childNodes[0].nodeValue = l ? '☀ ' : '☾ ';
+    if(label) label.textContent = l ? 'Dark' : 'Light';
+  }
+  if(btn) btn.addEventListener('click',function(){apply(!light);});
+  apply(false);
+})();
+
+/* ── Nav dropdowns + mobile menu ─────────────────────────── */
+function toggleDrop(btn){
+  var item=btn.closest('.nav-item');
+  var wasOpen=item.classList.contains('open');
+  document.querySelectorAll('.nav-item.open').forEach(function(i){i.classList.remove('open');});
+  if(!wasOpen) item.classList.add('open');
+}
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.nav-item')) document.querySelectorAll('.nav-item.open').forEach(function(i){i.classList.remove('open');});
+});
+(function(){
+  var burger=document.getElementById('burger'), menu=document.getElementById('mobileMenu');
+  if(burger&&menu) burger.addEventListener('click',function(){menu.classList.toggle('open');});
+})();
+
+/* ── FAQ accordion ───────────────────────────────────────── */
+document.querySelectorAll('.faq-item').forEach(function(item){
+  var q=item.querySelector('.faq-q');
+  if(q) q.addEventListener('click',function(){
+    var wasOpen=item.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(function(i){i.classList.remove('open');});
+    if(!wasOpen) item.classList.add('open');
+  });
+});
+
+/* ── Smooth scroll for in-page anchors ───────────────────── */
+document.querySelectorAll('a[href^="#"]').forEach(function(anchor){
+  anchor.addEventListener('click',function(e){
+    var target=document.querySelector(this.getAttribute('href'));
+    if(target){ e.preventDefault(); target.scrollIntoView({behavior:'smooth',block:'start'}); }
+  });
+});
+
+/* ── Scroll reveal ───────────────────────────────────────── */
+(function(){
+  var obs=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)e.target.classList.add('in');});},{threshold:.08});
+  document.querySelectorAll('.reveal').forEach(function(el){obs.observe(el);});
+})();
 </script>
 </body>
 </html>
