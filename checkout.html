@@ -3,1093 +3,937 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SniperTrader — Checkout</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<title>SniperTrader.ai — Pricing</title>
+<meta name="description" content="Four proprietary indicator engines and five market-intelligence services — priced with intent. Subscribe monthly or lock annual and keep two months.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ============================================================
+   SniperTrader.ai — Pricing  ("Precision Over Prediction" system)
+   Obsidian + champagne gold + sage. Per-product accent rings.
+   Follows /index.html, /Meridian_Engine.html, /NoRepaint_Pivot_indicator.html
+   ============================================================ */
+:root{
+  --bg:#020408; --bg2:#06090F; --bg3:#0A1018; --ink:#020408;
+  --card:rgba(255,255,255,.03); --card2:rgba(255,255,255,.055);
+  --glass:rgba(10,16,24,.66);
+  --text:#FFFFFF; --text2:#DCE8F2; --text3:#9BB5C8; --text4:#5A7888;
+  --emerald:#00E5A0; --emerald-dim:rgba(0,229,160,.09);
+  --gold:#F0C040; --gold2:#C9A84C; --gold-dim:rgba(240,192,64,.10);
+  --red:#FF4455; --red-dim:rgba(255,68,85,.10);
+  --cyan:#00D4FF; --cyan2:#00A8CC; --cyan-dim:rgba(0,212,255,.10);
+  --border:rgba(0,229,160,.13); --border2:rgba(0,229,160,.26);
+  --nav-bg:rgba(2,4,8,.94);
+  --shadow:0 30px 80px rgba(0,0,0,.55);
+  --ff-d:'Playfair Display',serif;
+  --ff-b:'Plus Jakarta Sans',sans-serif;
+  --ff-m:'Space Mono',monospace;
+}
+body.light{
+  --bg:#F0F4F8; --bg2:#E4EBF2; --bg3:#D8E2EC; --ink:#FFFFFF;
+  --card:rgba(255,255,255,.6); --card2:rgba(255,255,255,.82);
+  --glass:rgba(255,255,255,.55);
+  --text:#070E18; --text2:#12243A; --text3:#2A4460; --text4:#4A6278;
+  --emerald:#008F6A; --emerald-dim:rgba(0,180,130,.12);
+  --gold:#9A6E00; --gold2:#7A5A00; --gold-dim:rgba(160,120,0,.10);
+  --red:#C02030; --red-dim:rgba(200,50,60,.08);
+  --cyan:#0080AA; --cyan2:#0077AA; --cyan-dim:rgba(0,160,200,.12);
+  --border:rgba(0,150,110,.18); --border2:rgba(0,150,110,.35);
+  --nav-bg:rgba(240,244,248,.96);
+  --shadow:0 30px 70px rgba(60,90,110,.20);
+}
+body.light [stroke="#DCE8F2"]{stroke:#12243A;}
+body.light [stroke="#00E5A0"]{stroke:#008F6A;}
+body.light [stroke="#F0C040"]{stroke:#9A6E00;}
+body.light [stroke="#FF4455"]{stroke:#C02030;}
+body.light [fill="#00E5A0"]{fill:#008F6A;}
+body.light [fill="#F0C040"]{fill:#9A6E00;}
 
-:root {
-  --bg: #09090f;
-  --surface: #10121a;
-  --surface2: #181b26;
-  --surface3: #1e2230;
-  --border: rgba(255,255,255,.06);
-  --border-hi: rgba(255,255,255,.12);
-  --text: #c8ccd8;
-  --text-hi: #eef0f6;
-  --muted: #565c72;
-  --white: #ffffff;
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg); color:var(--text); font-family:var(--ff-b);
+  line-height:1.6; overflow-x:hidden; cursor:none;
+  -webkit-font-smoothing:antialiased; transition:background .4s,color .4s;
+}
+a{text-decoration:none;color:inherit;}
+button{font-family:inherit;cursor:none;border:none;background:none;color:inherit;}
+::selection{background:var(--gold);color:var(--bg);}
+::-webkit-scrollbar{width:9px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:8px;}
+::-webkit-scrollbar-thumb:hover{background:var(--text4);}
+img,svg{display:block;max-width:100%;}
 
-  --pivot-h: #00d2c8;
-  --pivot-dim: rgba(0,210,200,.08);
-  --pivot-glow: rgba(0,210,200,.22);
-  --pivot-border: rgba(0,210,200,.28);
+/* ── Precision scope cursor ──────────────────────────────── */
+#scope{position:fixed;top:0;left:0;pointer-events:none;z-index:9990;width:240px;height:240px;transform:translate(-50%,-50%);will-change:transform;}
+#scope .s-ring{position:absolute;border-radius:50%;pointer-events:none;}
+#scope .s-r1{inset:0;border:1px solid rgba(0,229,160,.20);}
+#scope .s-r2{inset:36px;border:1px dashed rgba(0,212,255,.24);}
+#scope .s-h{position:absolute;left:0;right:0;top:50%;height:1px;transform:translateY(-50%);background:linear-gradient(90deg,transparent,rgba(0,229,160,.32) 30%,rgba(0,229,160,.32) 70%,transparent);}
+#scope .s-v{position:absolute;top:0;bottom:0;left:50%;width:1px;transform:translateX(-50%);background:linear-gradient(180deg,transparent,rgba(0,229,160,.32) 30%,rgba(0,229,160,.32) 70%,transparent);}
+#scope .s-center{position:absolute;top:50%;left:50%;width:8px;height:8px;transform:translate(-50%,-50%);border-radius:50%;background:var(--emerald);box-shadow:0 0 10px var(--emerald),0 0 22px rgba(0,229,160,.5);}
+#scope-ring{position:fixed;top:0;left:0;pointer-events:none;z-index:9991;width:32px;height:32px;border-radius:50%;border:1.5px solid var(--emerald);box-shadow:0 0 12px var(--emerald),0 0 28px rgba(0,229,160,.32);transform:translate(-50%,-50%);will-change:transform;}
+#scope-dot{position:fixed;top:0;left:0;pointer-events:none;z-index:9992;width:5px;height:5px;border-radius:50%;background:var(--emerald);box-shadow:0 0 8px var(--emerald);transform:translate(-50%,-50%);}
 
-  --ict-h: #a78bfa;
-  --ict-dim: rgba(167,139,250,.08);
-  --ict-glow: rgba(167,139,250,.22);
-  --ict-border: rgba(167,139,250,.28);
+/* ── Nav ─────────────────────────────────────────────────── */
+nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;align-items:center;gap:8px;padding:0 40px;height:70px;background:var(--nav-bg);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border-bottom:1px solid var(--border);transition:background .4s,border-color .4s;}
+.logo{display:flex;align-items:baseline;gap:1px;font-family:var(--ff-d);font-weight:600;font-size:1.22rem;letter-spacing:.01em;color:var(--text);margin-right:26px;}
+.logo b{font-weight:700;}
+.logo span{color:var(--gold);font-size:.82rem;font-family:var(--ff-m);letter-spacing:.04em;margin-left:2px;}
+.nav-menu{display:flex;align-items:center;gap:4px;list-style:none;flex:1;}
+.nav-link{display:flex;align-items:center;gap:7px;padding:10px 14px;font-size:.86rem;font-weight:500;color:var(--text3);border-radius:10px;transition:color .2s,background .2s;letter-spacing:.01em;}
+.nav-link:hover{color:var(--text);background:var(--card2);}
+.nav-link .caret{transition:transform .25s;}
+.nav-item.open .nav-link{color:var(--text);background:var(--card2);}
+.nav-item.open .nav-link .caret{transform:rotate(180deg);}
+.nav-item{position:relative;}
+.dropdown{position:absolute;top:calc(100% + 10px);left:0;min-width:280px;background:var(--glass);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid var(--border);border-radius:16px;padding:8px;opacity:0;visibility:hidden;transform:translateY(-8px);transition:all .22s ease;box-shadow:var(--shadow);}
+.nav-item.open .dropdown,.nav-item:hover .dropdown{opacity:1;visibility:visible;transform:translateY(0);}
+.dropdown a{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:11px;transition:background .18s;}
+.dropdown a:hover{background:var(--card2);}
+.dropdown a .d-name{font-size:.9rem;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;}
+.dropdown a .d-name::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;}
+.dropdown a .d-sub{font-size:.78rem;color:var(--text3);line-height:1.45;}
+.nav-right{display:flex;align-items:center;gap:12px;margin-left:auto;}
+.theme-toggle{display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:24px;border:1px solid var(--border);color:var(--text3);font-size:.78rem;font-weight:500;transition:border-color .2s,color .2s;}
+.theme-toggle:hover{border-color:var(--gold);color:var(--gold);}
+.nav-cta{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:24px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#020408;font-weight:700;font-size:.84rem;letter-spacing:.01em;transition:transform .2s,box-shadow .2s;box-shadow:0 6px 22px rgba(240,192,64,.22);}
+.nav-cta:hover{transform:translateY(-1px);box-shadow:0 10px 30px rgba(240,192,64,.32);}
+.nav-burger{display:none;flex-direction:column;gap:5px;padding:10px;border-radius:10px;border:1px solid var(--border);}
+.nav-burger span{width:18px;height:1.5px;background:var(--text2);}
+.mobile-menu{display:none;position:fixed;top:70px;left:0;right:0;z-index:499;background:var(--nav-bg);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);padding:16px 24px 24px;max-height:calc(100vh - 70px);overflow-y:auto;}
+.mobile-menu.open{display:block;}
+.mobile-menu a.mm-link{display:block;padding:13px 6px;font-size:1rem;font-weight:600;color:var(--text);border-bottom:1px solid var(--border);}
+.mobile-menu .mm-group{font-family:var(--ff-m);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin:18px 6px 6px;}
+.mobile-menu a.mm-sub{display:block;padding:9px 6px;font-size:.9rem;color:var(--text3);}
+.mobile-menu a.mm-sub:hover{color:var(--text);}
 
-  --vwap-h: #fb923c;
-  --vwap-dim: rgba(251,146,60,.08);
-  --vwap-glow: rgba(251,146,60,.22);
-  --vwap-border: rgba(251,146,60,.28);
+/* ── Ticker (static product line) ─────────────────────────── */
+.ticker{position:fixed;top:70px;left:0;right:0;z-index:499;height:32px;background:var(--nav-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;overflow:hidden;transition:background .4s,border-color .4s;}
+.ticker-status{flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 18px;font-family:var(--ff-m);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);border-right:1px solid var(--border);height:100%;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--emerald);box-shadow:0 0 8px var(--emerald);animation:blink 1.6s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.ticker-track{flex:1;overflow:hidden;}
+.ticker-inner{display:flex;gap:44px;width:max-content;animation:scrollTick 48s linear infinite;padding-left:20px;}
+.ticker:hover .ticker-inner{animation-play-state:paused;}
+@keyframes scrollTick{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.tick-item{display:flex;align-items:center;gap:8px;white-space:nowrap;font-family:var(--ff-m);font-size:.68rem;color:var(--text3);}
+.tick-item i{width:5px;height:5px;border-radius:50%;background:var(--gold);opacity:.7;}
 
-  --gold: #f0b429;
-  --green: #34d399;
-  --red: #f87171;
+/* ── Shared ──────────────────────────────────────────────── */
+.container{max-width:1280px;margin:0 auto;padding:0 40px;}
+section{position:relative;}
+.eyebrow{display:flex;align-items:center;gap:12px;font-family:var(--ff-m);font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:18px;}
+.eyebrow::before{content:'';width:30px;height:1px;background:var(--gold);opacity:.6;}
+.eyebrow.center{justify-content:center;}
+h1,h2,h3{font-family:var(--ff-d);font-weight:600;line-height:1.12;letter-spacing:-.01em;}
+h2{font-size:clamp(1.7rem,3.2vw,2.6rem);margin-bottom:14px;}
+.lede{color:var(--text3);font-size:1.02rem;max-width:640px;line-height:1.7;margin-bottom:40px;}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:14px 30px;border-radius:14px;font-size:.9rem;font-weight:600;letter-spacing:.01em;transition:transform .2s,box-shadow .2s,border-color .2s,background .2s;color:inherit;}
+.btn:hover{transform:translateY(-2px);}
+.btn-primary{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#020408;box-shadow:0 10px 28px rgba(240,192,64,.2);}
+.btn-primary:hover{box-shadow:0 16px 40px rgba(240,192,64,.32);}
+.btn-outline{border:1px solid var(--border2);color:var(--text);background:var(--card);}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold);}
+.tag{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-family:var(--ff-m);font-size:.66rem;letter-spacing:.04em;border:1px solid var(--border);color:var(--text3);background:var(--card);}
+.tag.gold{border-color:var(--border2);color:var(--gold);background:var(--gold-dim);}
+.tag.sage{border-color:rgba(0,229,160,.25);color:var(--emerald);background:var(--emerald-dim);}
+.glass{background:var(--glass);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid var(--border);border-radius:16px;}
 
-  --psych-h: #a78bfa;
-  --psych-dim: rgba(167,139,250,.08);
-  --psych-glow: rgba(167,139,250,.22);
-  --psych-border: rgba(167,139,250,.28);
+/* ── Hero ────────────────────────────────────────────────── */
+#hero{padding:150px 0 70px;overflow:hidden;position:relative;}
+.hero-bg{position:absolute;inset:0;pointer-events:none;}
+.hero-bg .grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:76px 76px;mask-image:radial-gradient(ellipse 75% 75% at 50% 40%,black,transparent 80%);}
+.hero-bg .glow1{position:absolute;top:-15%;left:-8%;width:60%;height:70%;background:radial-gradient(ellipse,rgba(240,192,64,.06),transparent 62%);}
+.hero-bg .glow2{position:absolute;bottom:-12%;right:-6%;width:46%;height:58%;background:radial-gradient(ellipse,rgba(0,229,160,.06),transparent 62%);}
+.hero-inner{position:relative;z-index:2;max-width:760px;}
+.hero-title{font-size:clamp(2.4rem,4.6vw,3.8rem);margin-bottom:22px;}
+.hero-title em{font-style:italic;color:var(--gold);}
+.hero-sub{font-size:1.08rem;color:var(--text3);line-height:1.75;max-width:600px;margin-bottom:36px;}
+.hero-trust{display:flex;gap:34px;flex-wrap:wrap;padding-top:26px;border-top:1px solid var(--border);}
+.trust-item{display:flex;flex-direction:column;gap:4px;}
+.trust-item .t-label{font-family:var(--ff-m);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text4);}
+.trust-item .t-value{font-size:.92rem;font-weight:600;color:var(--text2);}
 
-  --ebook-h: #34d399;
-  --ebook-dim: rgba(52,211,153,.08);
-  --ebook-glow: rgba(52,211,153,.22);
-  --ebook-border: rgba(52,211,153,.28);
+/* ── Sections ────────────────────────────────────────────── */
+.sec{padding:96px 0;}
+.sec.alt{background:var(--bg2);}
+.sec-head{max-width:640px;margin-bottom:44px;}
+.sec-head.center{margin-left:auto;margin-right:auto;text-align:center;}
+.sec-head.center .lede{margin-left:auto;margin-right:auto;}
 
-  --bundle-h: #f0b429;
-  --bundle-dim: rgba(240,180,41,.08);
-  --bundle-glow: rgba(240,180,41,.28);
-  --bundle-border: rgba(240,180,41,.30);
-}
+/* ── Platform bar ────────────────────────────────────────── */
+.platform-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:32px;padding:14px 16px;border:1px solid var(--border);border-radius:14px;background:var(--card);}
+.platform-bar .pl-label{font-family:var(--ff-m);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text4);margin-right:6px;}
+.pfm-pill{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:24px;border:1px solid var(--border);background:var(--card2);color:var(--text3);font-size:.84rem;font-weight:600;transition:all .2s;}
+.pfm-pill:hover{border-color:var(--border2);color:var(--text);}
+.pfm-pill.selected{border-color:var(--gold);color:#020408;background:linear-gradient(135deg,var(--gold),var(--gold2));box-shadow:0 6px 18px rgba(240,192,64,.22);}
+.platform-hint{font-size:.82rem;color:var(--text4);margin:-18px 0 24px;font-family:var(--ff-m);}
 
-html { scroll-behavior: smooth; }
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'Inter', sans-serif;
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-}
+/* ── Pricing grid ────────────────────────────────────────── */
+.pricing-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;}
+@media(max-width:1120px){.pricing-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:620px){.pricing-grid{grid-template-columns:1fr;}}
+.mi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;}
+@media(max-width:1120px){.mi-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:620px){.mi-grid{grid-template-columns:1fr;}}
 
-/* ─── Topbar ─── */
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 40px;
-  height: 60px;
-  border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  background: rgba(9,9,15,.88);
-  backdrop-filter: blur(20px);
-  z-index: 200;
-}
-@media(max-width:680px){ .topbar { padding: 0 18px; } }
+/* ── Card ────────────────────────────────────────────────── */
+.card{border-radius:16px;overflow:hidden;border:1px solid var(--border);background:var(--card);position:relative;display:flex;flex-direction:column;transition:transform .25s,border-color .25s,box-shadow .25s;}
+.card:hover{transform:translateY(-4px);border-color:var(--acc-border,var(--border2));box-shadow:var(--shadow);}
+.card::before{content:'';display:block;height:3px;width:100%;background:linear-gradient(90deg,var(--acc,var(--gold)),transparent);}
+.card-body{padding:26px 24px 24px;display:flex;flex-direction:column;flex:1;}
+.card-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;}
+.card-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--acc-dim);border:1px solid var(--acc-border);font-size:1.15rem;flex-shrink:0;}
+.card-tier{font-family:var(--ff-m);font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;color:var(--acc);}
+.card h3{font-size:1.32rem;margin-bottom:8px;line-height:1.2;}
+.card-desc{font-size:.86rem;color:var(--text3);line-height:1.6;margin-bottom:16px;}
+.card-features{list-style:none;display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}
+.card-features li{display:flex;align-items:flex-start;gap:9px;font-size:.84rem;color:var(--text2);line-height:1.45;}
+.card-features li::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--acc);flex-shrink:0;margin-top:7px;}
+.card-platforms{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.plat-tag{font-family:var(--ff-m);font-size:.6rem;letter-spacing:.04em;padding:3px 9px;border-radius:20px;border:1px solid var(--border);color:var(--text4);}
 
-.logo {
-  font-family: 'Space Grotesk', sans-serif;
-  font-weight: 800;
-  font-size: 15px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--white);
-}
-.logo em { color: var(--pivot-h); font-style: normal; }
+/* plan toggle */
+.plan-toggle{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;margin-top:auto;}
+.plan-toggle.single{grid-template-columns:1fr;}
+.plan-opt{position:relative;padding:12px 10px;border-radius:12px;border:1.5px solid var(--border);background:var(--card2);text-align:center;transition:all .18s;}
+.plan-opt:hover{border-color:var(--border2);}
+.plan-opt.selected{border-color:var(--acc);background:var(--acc-dim);}
+.po-name{font-size:.78rem;font-weight:600;color:var(--text2);margin-bottom:4px;}
+.po-price{font-family:var(--ff-d);font-size:1.7rem;font-weight:600;color:var(--text);line-height:1;}
+.po-price sub{font-size:.72rem;font-weight:400;color:var(--text4);vertical-align:baseline;}
+.plan-opt.selected .po-price{color:var(--acc);}
+.po-note{font-size:.68rem;color:var(--text4);margin-top:3px;}
+.save-chip{position:absolute;top:-8px;right:8px;background:var(--acc);color:#020408;font-family:var(--ff-m);font-size:.58rem;font-weight:700;padding:2px 7px;border-radius:4px;letter-spacing:.5px;}
+.add-btn{width:100%;padding:11px;border:1.5px solid var(--acc-border);border-radius:11px;background:transparent;color:var(--acc);font-family:var(--ff-m);font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;transition:all .18s;font-weight:700;}
+.add-btn:hover{background:var(--acc-dim);border-color:var(--acc);}
+.add-btn.added{background:var(--emerald-dim);border-color:rgba(0,229,160,.4);color:var(--emerald);}
 
-.topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-.secure-tag {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-family: 'Space Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 1.5px;
-  color: var(--muted);
-}
-.pulse {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 0 0 rgba(52,211,153,.5);
-  animation: pulse 2s infinite;
-}
-@keyframes pulse {
-  0%   { box-shadow: 0 0 0 0 rgba(52,211,153,.5); }
-  70%  { box-shadow: 0 0 0 6px rgba(52,211,153,0); }
-  100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); }
-}
+/* per-product accents (dark) */
+.card.pivot{--acc:#FFB020;--acc-dim:rgba(255,176,32,.10);--acc-border:rgba(255,176,32,.32);}
+.card.ict{--acc:#A78BFA;--acc-dim:rgba(167,139,250,.10);--acc-border:rgba(167,139,250,.32);}
+.card.meridian{--acc:#22D3EE;--acc-dim:rgba(34,211,238,.10);--acc-border:rgba(34,211,238,.32);}
+.card.vwap{--acc:#E9C766;--acc-dim:rgba(233,199,102,.12);--acc-border:rgba(233,199,102,.32);}
+.card.mi{--acc:#00E5A0;--acc-dim:rgba(0,229,160,.10);--acc-border:rgba(0,229,160,.32);}
+.card.combo{--acc:#F0C040;--acc-dim:rgba(240,192,64,.12);--acc-border:rgba(240,192,64,.38);}
+.card.psych{--acc:#E879F9;--acc-dim:rgba(232,121,249,.10);--acc-border:rgba(232,121,249,.32);}
+.card.ebook{--acc:#34D399;--acc-dim:rgba(52,211,153,.10);--acc-border:rgba(52,211,153,.32);}
+.card.suite{--acc:#F0C040;--acc-dim:rgba(240,192,64,.12);--acc-border:rgba(240,192,64,.38);}
+body.light .card.pivot{--acc:#9A6E00;--acc-dim:rgba(154,110,0,.12);--acc-border:rgba(154,110,0,.35);}
+body.light .card.ict{--acc:#7C5CF0;--acc-dim:rgba(124,92,240,.12);--acc-border:rgba(124,92,240,.35);}
+body.light .card.meridian{--acc:#0EA5C9;--acc-dim:rgba(14,165,201,.12);--acc-border:rgba(14,165,201,.35);}
+body.light .card.vwap{--acc:#9A7A20;--acc-dim:rgba(154,122,32,.12);--acc-border:rgba(154,122,32,.35);}
+body.light .card.mi{--acc:#008F6A;--acc-dim:rgba(0,180,130,.12);--acc-border:rgba(0,180,130,.35);}
+body.light .card.combo{--acc:#9A6E00;--acc-dim:rgba(160,120,0,.12);--acc-border:rgba(160,120,0,.35);}
+body.light .card.psych{--acc:#C026D3;--acc-dim:rgba(192,38,211,.12);--acc-border:rgba(192,38,211,.35);}
+body.light .card.ebook{--acc:#007A44;--acc-dim:rgba(0,160,80,.12);--acc-border:rgba(0,160,80,.35);}
+body.light .card.suite{--acc:#9A6E00;--acc-dim:rgba(160,120,0,.12);--acc-border:rgba(160,120,0,.35);}
 
-/* ─── Page grid ─── */
-.page {
-  display: grid;
-  grid-template-columns: 1fr 360px;
-  min-height: calc(100vh - 60px);
-  align-items: start;
-}
-@media(max-width:960px) {
-  .page { grid-template-columns: 1fr; }
-}
+/* featured wide cards (combo + suite) */
+.card.wide{grid-column:1/-1;flex-direction:row;align-items:stretch;}
+.card.wide::before{height:4px;}
+.card.wide .card-body{flex:1;padding:40px 40px;}
+.card.wide h3{font-size:1.8rem;}
+.card.wide .card-desc{font-size:.95rem;max-width:560px;}
+.card.wide .wide-side{flex:0 0 360px;border-left:1px solid var(--border);background:var(--card);padding:32px 28px;display:flex;flex-direction:column;}
+@media(max-width:960px){.card.wide{flex-direction:column;}.card.wide .wide-side{border-left:none;border-top:1px solid var(--border);}}
+.badge-pop{position:absolute;top:14px;right:14px;font-family:var(--ff-m);font-size:.6rem;letter-spacing:.12em;padding:5px 11px;border-radius:20px;background:var(--acc-dim);color:var(--acc);border:1px solid var(--acc-border);z-index:2;}
 
-/* ─── Main panel ─── */
-.main {
-  padding: 48px 44px 80px;
-  border-right: 1px solid var(--border);
-}
-@media(max-width:680px) { .main { padding: 28px 18px 60px; } }
+/* à-la-carte breakdown panel */
+.breakdown{display:flex;flex-direction:column;gap:7px;}
+.breakdown-row{display:flex;align-items:center;justify-content:space-between;font-size:.82rem;color:var(--text3);padding:6px 0;border-bottom:1px solid var(--border);}
+.breakdown-row b{color:var(--text2);font-weight:600;}
+.breakdown-row .bd-price{font-family:var(--ff-m);font-size:.78rem;color:var(--text2);}
+.breakdown-save{margin-top:12px;font-family:var(--ff-m);font-size:.7rem;letter-spacing:.06em;color:var(--emerald);text-align:right;}
 
-/* ─── Progress track ─── */
-.progress-track {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  margin-bottom: 52px;
-}
-.pt-step {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.pt-num {
-  width: 26px; height: 26px;
-  border-radius: 50%;
-  border: 1.5px solid var(--border-hi);
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Space Mono', monospace;
-  font-size: 10px;
-  color: var(--muted);
-  flex-shrink: 0;
-  transition: all .3s;
-}
-.pt-label {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--muted);
-  letter-spacing: 0.2px;
-  transition: color .3s;
-  white-space: nowrap;
-}
-.pt-line {
-  flex: 1;
-  height: 1px;
-  background: var(--border);
-  margin: 0 14px;
-  position: relative;
-  overflow: hidden;
-}
-.pt-line::after {
-  content: '';
-  position: absolute;
-  left: -100%; top: 0; bottom: 0;
-  width: 100%;
-  background: var(--green);
-  opacity: .5;
-  transition: left .5s ease;
-}
-.pt-step.active .pt-num {
-  border-color: var(--pivot-h);
-  color: var(--pivot-h);
-  background: rgba(0,210,200,.06);
-}
-.pt-step.active .pt-label { color: var(--text-hi); }
-.pt-step.done .pt-num {
-  border-color: var(--green);
-  background: rgba(52,211,153,.08);
-  color: var(--green);
-  font-size: 12px;
-}
-.pt-step.done .pt-label { color: var(--green); }
-.pt-line.done::after { left: 0; }
+/* ── Cart bar (floating) ─────────────────────────────────── */
+.cart-bar{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(120px);z-index:800;display:flex;align-items:center;gap:22px;padding:12px 14px 12px 22px;border-radius:60px;background:var(--glass);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid var(--border2);box-shadow:var(--shadow);opacity:0;transition:transform .4s cubic-bezier(.34,1.4,.64,1),opacity .3s;max-width:calc(100vw - 32px);}
+.cart-bar.show{transform:translateX(-50%) translateY(0);opacity:1;}
+.cb-count{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 7px;border-radius:20px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#020408;font-family:var(--ff-m);font-size:.7rem;font-weight:700;}
+.cb-label{font-size:.86rem;color:var(--text3);margin-left:8px;}
+.cb-empty{font-size:.86rem;color:var(--text4);}
+.cb-total{font-family:var(--ff-d);font-size:1.4rem;font-weight:600;color:var(--text);margin-left:auto;white-space:nowrap;}
+.cb-btn{white-space:nowrap;}
+@media(max-width:620px){.cart-bar{gap:12px;padding:10px 12px 10px 16px;}.cb-label{display:none;}}
 
-/* ─── Section heads ─── */
-.sec-eyebrow {
-  font-family: 'Space Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 3px;
-  color: var(--muted);
-  text-transform: uppercase;
-  margin-bottom: 6px;
-}
-.sec-title {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--white);
-  margin-bottom: 4px;
-}
-.sec-sub {
-  font-size: 13px;
-  color: var(--muted);
-  margin-bottom: 26px;
-  line-height: 1.5;
-}
+/* ── Payment modal ───────────────────────────────────────── */
+.modal-overlay{position:fixed;inset:0;z-index:1000;background:rgba(8,9,11,.66);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s;}
+.modal-overlay.active{opacity:1;visibility:visible;}
+.checkout-card{width:100%;max-width:520px;background:var(--glass);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border:1px solid var(--border);border-radius:20px;padding:34px;position:relative;box-shadow:var(--shadow);transform:translateY(12px) scale(.98);transition:transform .3s;max-height:calc(100vh - 40px);overflow-y:auto;}
+.modal-overlay.active .checkout-card{transform:translateY(0) scale(1);}
+.matcher-close{position:absolute;top:18px;right:20px;width:34px;height:34px;border-radius:50%;border:1px solid var(--border);color:var(--text3);font-size:1.1rem;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.matcher-close:hover{border-color:var(--red);color:var(--red);}
+.matcher-kicker{font-family:var(--ff-m);font-size:.64rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;}
+.matcher-title{font-family:var(--ff-d);font-size:1.5rem;font-weight:600;line-height:1.2;margin-bottom:16px;}
+.co-items{display:flex;flex-direction:column;gap:0;margin-bottom:16px;border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+.co-item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:13px 16px;border-bottom:1px solid var(--border);background:var(--card);}
+.co-item:last-child{border-bottom:none;}
+.co-item-name{font-size:.9rem;font-weight:600;color:var(--text);line-height:1.35;}
+.co-item-meta{font-family:var(--ff-m);font-size:.68rem;color:var(--text4);letter-spacing:.04em;margin-top:2px;}
+.co-item-price{font-family:var(--ff-d);font-size:1rem;font-weight:600;color:var(--text);white-space:nowrap;}
+.co-remove{background:none;border:none;color:var(--text4);font-size:.85rem;cursor:pointer;transition:color .15s;padding:0;line-height:1;}
+.co-remove:hover{color:var(--red);}
+.co-total-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;padding-top:16px;border-top:1px solid var(--border2);}
+.co-total-row .l{font-size:.88rem;color:var(--text3);}
+.co-total-row .v{font-family:var(--ff-d);font-size:1.9rem;font-weight:600;color:var(--text);}
+.pay-section-label{font-family:var(--ff-m);font-size:.64rem;letter-spacing:.18em;color:var(--text4);text-transform:uppercase;margin-bottom:8px;}
+.pay-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.pay-opt{background:var(--card2);border:1.5px solid var(--border);border-radius:12px;padding:12px 10px;text-align:center;transition:all .18s;font-size:.84rem;color:var(--text3);font-weight:600;}
+.pay-opt .pi{display:block;font-size:1.2rem;margin-bottom:3px;}
+.pay-opt:hover{border-color:var(--border2);color:var(--text);}
+.pay-opt.active{border-color:var(--gold);background:var(--gold-dim);color:var(--gold);}
+.crypto-detail{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px;display:none;}
+.crypto-detail.visible{display:block;}
+.crypto-detail-head{font-family:var(--ff-m);font-size:.62rem;letter-spacing:.18em;color:var(--gold);margin-bottom:10px;opacity:.9;text-transform:uppercase;}
+.coin-row{display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap;}
+.coin-btn{padding:5px 12px;border-radius:8px;border:1px solid var(--border);font-family:var(--ff-m);font-size:.7rem;color:var(--text3);transition:all .16s;background:var(--card2);}
+.coin-btn:hover{border-color:var(--gold);color:var(--gold);}
+.coin-btn.active{border-color:var(--gold);color:var(--gold);background:var(--gold-dim);}
+.addr-label{font-size:.78rem;color:var(--text3);margin-bottom:6px;}
+.addr-box{background:var(--bg);border:1px solid var(--border2);border-radius:10px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.addr-text{font-family:var(--ff-m);font-size:.68rem;color:var(--text2);word-break:break-all;line-height:1.5;}
+.addr-copy{font-size:1rem;color:var(--emerald);flex-shrink:0;}
+.cta-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#020408;border:none;border-radius:12px;font-weight:700;font-size:.92rem;letter-spacing:.01em;transition:all .2s;}
+.cta-btn:hover{box-shadow:0 14px 34px rgba(240,192,64,.3);transform:translateY(-1px);}
+.trust-row{margin-top:12px;display:flex;justify-content:center;gap:6px;flex-wrap:wrap;}
+.trust-chip{font-family:var(--ff-m);font-size:.64rem;letter-spacing:.06em;color:var(--text4);padding:2px 0;display:flex;align-items:center;gap:4px;}
+.trust-chip::before{content:'·';opacity:.5;}
+.trust-chip:first-child::before{display:none;}
 
-/* ─── Platform pills ─── */
-.platform-row {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 48px;
-}
-.pfm-pill {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 20px;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all .2s;
-  user-select: none;
-  position: relative;
-}
-.pfm-pill:hover { border-color: var(--border-hi); background: var(--surface2); }
-.pfm-pill.selected {
-  border-color: var(--pivot-h);
-  background: var(--pivot-dim);
-  box-shadow: 0 0 0 1px var(--pivot-h) inset, 0 0 20px rgba(0,210,200,.06);
-}
-.pfm-icon { font-size: 20px; }
-.pfm-text {}
-.pfm-name {
-  font-family: 'Space Grotesk', sans-serif;
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--text-hi);
-  line-height: 1.2;
-}
-.pfm-lang {
-  font-family: 'Space Mono', monospace;
-  font-size: 9px;
-  color: var(--muted);
-  letter-spacing: 1px;
-}
-.pfm-pill.selected .pfm-name { color: var(--pivot-h); }
-.pfm-pill.selected .pfm-lang { color: rgba(0,210,200,.6); }
-.pfm-tick {
-  position: absolute;
-  top: -6px; right: -6px;
-  width: 16px; height: 16px;
-  border-radius: 50%;
-  background: var(--pivot-h);
-  color: #000;
-  font-size: 9px;
-  font-weight: 800;
-  display: flex; align-items: center; justify-content: center;
-  opacity: 0;
-  transform: scale(0);
-  transition: all .2s;
-}
-.pfm-pill.selected .pfm-tick { opacity: 1; transform: scale(1); }
+/* ── Footer ──────────────────────────────────────────────── */
+footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 36px;transition:background .4s;margin-top:0;}
+.footer-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1fr;gap:40px;margin-bottom:52px;}
+.footer-brand .f-logo{font-family:var(--ff-d);font-size:1.25rem;font-weight:600;color:var(--text);margin-bottom:14px;display:block;}
+.footer-brand .f-logo span{color:var(--gold);}
+.footer-brand .f-mission{font-size:.9rem;color:var(--text3);line-height:1.65;margin-bottom:20px;max-width:230px;}
+.f-status{display:inline-flex;align-items:center;gap:9px;padding:8px 14px;border-radius:20px;border:1px solid var(--border);background:var(--card);font-size:.74rem;color:var(--text2);margin-bottom:22px;}
+.f-status i{width:7px;height:7px;border-radius:50%;background:var(--emerald);box-shadow:0 0 8px var(--emerald);animation:blink 1.8s ease-in-out infinite;}
+.f-social{display:flex;gap:10px;}
+.f-social a{display:inline-flex;align-items:center;padding:7px 13px;border-radius:20px;border:1px solid var(--border);font-size:.76rem;color:var(--text3);transition:all .2s;}
+.f-social a:hover{border-color:var(--border2);color:var(--gold);}
+.footer-col h4{font-family:var(--ff-m);font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:18px;font-weight:700;}
+.footer-col a{display:block;font-size:.86rem;color:var(--text3);margin-bottom:11px;transition:color .18s,transform .18s;}
+.footer-col a:hover{color:var(--text);transform:translateX(2px);}
+.footer-bottom{border-top:1px solid var(--border);padding-top:24px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-family:var(--ff-m);font-size:.68rem;color:var(--text4);}
+.footer-disclaimer{max-width:820px;font-size:.72rem;color:var(--text4);line-height:1.65;margin-top:16px;opacity:.8;}
 
-/* ─── Section break ─── */
-.sec-break {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--border) 20%, var(--border) 80%, transparent);
-  margin: 40px 0;
-}
+/* ── Reveal ──────────────────────────────────────────────── */
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .65s ease,transform .65s ease;}
+.reveal.in{opacity:1;transform:translateY(0);}
 
-/* ─── Products grid ─── */
-#productsSection {
-  opacity: .35;
-  pointer-events: none;
-  transition: opacity .35s;
-  transform: translateY(8px);
-  transition: opacity .35s, transform .35s;
-}
-#productsSection.unlocked {
-  opacity: 1;
-  pointer-events: all;
-  transform: translateY(0);
-}
+/* ── Toast ───────────────────────────────────────────────── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(70px);opacity:0;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:11px 22px;border-radius:40px;font-size:.82rem;font-weight:500;z-index:999;transition:all .28s cubic-bezier(.34,1.56,.64,1);pointer-events:none;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
 
-.products-grid {
-  display: grid;
-  grid-template-columns: repeat(3,1fr);
-  gap: 16px;
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width:1080px){
+  .footer-grid{grid-template-columns:1fr 1fr 1fr;}
 }
-@media(max-width:1100px) { .products-grid { grid-template-columns: repeat(2,1fr); } }
-@media(max-width:680px)  { .products-grid { grid-template-columns: 1fr; } }
-
-/* ─── Product card ─── */
-.product-card {
-  border-radius: 18px;
-  border: 1.5px solid var(--border);
-  background: var(--surface);
-  overflow: hidden;
-  transition: transform .2s, border-color .2s;
-  position: relative;
+@media (max-width:820px){
+  .nav-menu{display:none;}
+  .nav-burger{display:flex;}
+  .nav-cta{display:none;}
+  #scope,#scope-ring,#scope-dot{display:none;}
+  body{cursor:auto;}
+  button,a{cursor:pointer;}
+  .container{padding:0 22px;}
+  nav{padding:0 22px;}
 }
-.product-card:hover { transform: translateY(-3px); }
-
-.product-card::before {
-  content: '';
-  display: block;
-  height: 3px;
-  width: 100%;
+@media (max-width:640px){
+  .footer-grid{grid-template-columns:1fr 1fr;}
+  .footer-brand{grid-column:1/-1;}
+  .ticker-status{display:none;}
+  .sec{padding:64px 0;}
+  #hero{padding:130px 0 50px;}
 }
-.product-card.pivot::before { background: linear-gradient(90deg, var(--pivot-h), rgba(0,210,200,.3)); }
-.product-card.ict::before   { background: linear-gradient(90deg, var(--ict-h), rgba(167,139,250,.3)); }
-.product-card.vwap::before   { background: linear-gradient(90deg, var(--vwap-h),  rgba(251,146,60,.3)); }
-.product-card.psych::before  { background: linear-gradient(90deg, var(--psych-h), rgba(167,139,250,.3)); }
-.product-card.ebook::before  { background: linear-gradient(90deg, var(--ebook-h), rgba(52,211,153,.3)); }
-.product-card.bundle::before { background: linear-gradient(90deg, var(--bundle-h),rgba(240,180,41,.3)); }
-
-.product-card.pivot { --acc: var(--pivot-h); --acc-dim: var(--pivot-dim); --acc-border: var(--pivot-border); --acc-glow: var(--pivot-glow); }
-.product-card.ict   { --acc: var(--ict-h);   --acc-dim: var(--ict-dim);   --acc-border: var(--ict-border);   --acc-glow: var(--ict-glow); }
-.product-card.vwap   { --acc: var(--vwap-h);   --acc-dim: var(--vwap-dim);   --acc-border: var(--vwap-border);   --acc-glow: var(--vwap-glow); }
-.product-card.psych  { --acc: var(--psych-h);  --acc-dim: var(--psych-dim);  --acc-border: var(--psych-border);  --acc-glow: var(--psych-glow); }
-.product-card.ebook  { --acc: var(--ebook-h);  --acc-dim: var(--ebook-dim);  --acc-border: var(--ebook-border);  --acc-glow: var(--ebook-glow); }
-.product-card.bundle { --acc: var(--bundle-h); --acc-dim: var(--bundle-dim); --acc-border: var(--bundle-border); --acc-glow: var(--bundle-glow); }
-
-.product-badge-pop {
-  position: absolute;
-  top: 14px; right: 14px;
-  font-family: 'Space Mono', monospace;
-  font-size: 8px;
-  letter-spacing: 1px;
-  padding: 3px 8px;
-  border-radius: 20px;
-  background: rgba(167,139,250,.1);
-  color: var(--ict-h);
-  border: 1px solid rgba(167,139,250,.3);
-}
-
-.product-header {
-  padding: 18px 18px 14px;
-}
-.product-icon-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-.product-icon {
-  width: 36px; height: 36px;
-  border-radius: 10px;
-  background: var(--acc-dim);
-  border: 1px solid var(--acc-border);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 16px;
-}
-.product-tier {
-  font-family: 'Space Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 2px;
-  color: var(--acc);
-  opacity: .8;
-}
-.product-name {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--white);
-  line-height: 1.3;
-  margin-bottom: 5px;
-}
-.product-desc {
-  font-size: 11px;
-  color: var(--muted);
-  line-height: 1.55;
-}
-
-.feature-list {
-  padding: 0 18px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-.feature-item {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 11px;
-  color: var(--text);
-}
-.feature-dot {
-  width: 4px; height: 4px;
-  border-radius: 50%;
-  background: var(--acc);
-  flex-shrink: 0;
-  opacity: .7;
-}
-
-.plan-section {
-  padding: 12px 18px 18px;
-  border-top: 1px solid var(--border);
-}
-.plan-toggle {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-.plan-opt {
-  padding: 10px 10px;
-  border-radius: 10px;
-  border: 1.5px solid var(--border);
-  background: var(--surface2);
-  cursor: pointer;
-  transition: all .18s;
-  text-align: center;
-  position: relative;
-}
-.plan-opt:hover { border-color: var(--border-hi); }
-.plan-opt.selected {
-  border-color: var(--acc);
-  background: var(--acc-dim);
-  box-shadow: inset 0 0 12px rgba(0,0,0,.15);
-}
-.plan-opt-name {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--text-hi);
-  margin-bottom: 3px;
-  letter-spacing: 0.2px;
-}
-.plan-opt-price {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--white);
-  line-height: 1;
-  margin-bottom: 2px;
-}
-.plan-opt-price sub {
-  font-size: 10px;
-  font-weight: 400;
-  color: var(--muted);
-  vertical-align: baseline;
-}
-.plan-opt.selected .plan-opt-price { color: var(--acc); }
-.plan-opt-note {
-  font-size: 9px;
-  color: var(--muted);
-}
-.plan-opt.selected .plan-opt-note { color: var(--acc); opacity: .7; }
-.plan-save-chip {
-  position: absolute;
-  top: -7px; right: 6px;
-  background: var(--acc);
-  color: #000;
-  font-family: 'Space Mono', monospace;
-  font-size: 8px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 4px;
-  letter-spacing: .5px;
-}
-
-.add-btn {
-  width: 100%;
-  padding: 10px;
-  border: 1.5px solid var(--acc-border);
-  border-radius: 9px;
-  background: transparent;
-  color: var(--acc);
-  font-family: 'Space Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 2.5px;
-  cursor: pointer;
-  transition: all .18s;
-  text-transform: uppercase;
-}
-.add-btn:hover { background: var(--acc-dim); border-color: var(--acc); }
-.add-btn.added {
-  background: rgba(52,211,153,.07);
-  border-color: rgba(52,211,153,.4);
-  color: var(--green);
-}
-.add-btn:disabled { opacity: .3; cursor: not-allowed; }
-
-/* ─── Sidebar ─── */
-.sidebar {
-  padding: 32px 28px 40px;
-  position: sticky;
-  top: 60px;
-  height: calc(100vh - 60px);
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  background: var(--surface);
-  border-left: 1px solid var(--border);
-}
-@media(max-width:960px){
-  .sidebar {
-    position: static;
-    height: auto;
-    border-left: none;
-    border-top: 1px solid var(--border);
-  }
-}
-
-.sidebar-title {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--white);
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.cart-badge {
-  background: var(--pivot-h);
-  color: #000;
-  font-family: 'Space Mono', monospace;
-  font-size: 9px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 20px;
-  min-width: 20px;
-  text-align: center;
-}
-
-.cart-scroll { flex: 1; min-height: 80px; }
-.cart-empty-state {
-  padding: 28px 16px;
-  text-align: center;
-  border: 1px dashed var(--border-hi);
-  border-radius: 12px;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.6;
-}
-.cart-empty-state span { display: block; font-size: 22px; margin-bottom: 8px; }
-
-.cart-item {
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border);
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
-  align-items: start;
-}
-.ci-name {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-hi);
-  line-height: 1.35;
-  margin-bottom: 2px;
-}
-.ci-meta {
-  font-family: 'Space Mono', monospace;
-  font-size: 9px;
-  color: var(--muted);
-  letter-spacing: .5px;
-}
-.ci-right { text-align: right; }
-.ci-price {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--white);
-  white-space: nowrap;
-}
-.ci-remove {
-  background: none;
-  border: none;
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 12px;
-  transition: color .15s;
-  padding: 0;
-  line-height: 1;
-  margin-top: 2px;
-  display: block;
-}
-.ci-remove:hover { color: var(--red); }
-
-.cart-total-block {
-  margin: 16px 0;
-  padding: 14px 0;
-  border-top: 1px solid var(--border-hi);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.ct-label { font-size: 11px; color: var(--muted); }
-.ct-amount {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 26px;
-  font-weight: 800;
-  color: var(--white);
-}
-
-.pay-section-label {
-  font-family: 'Space Mono', monospace;
-  font-size: 8px;
-  letter-spacing: 3px;
-  color: var(--muted);
-  text-transform: uppercase;
-  margin-bottom: 8px;
-}
-.pay-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 7px;
-  margin-bottom: 12px;
-}
-.pay-opt {
-  background: var(--surface2);
-  border: 1.5px solid var(--border);
-  border-radius: 10px;
-  padding: 9px 8px;
-  text-align: center;
-  cursor: pointer;
-  transition: all .18s;
-  font-size: 10px;
-  color: var(--muted);
-  font-weight: 500;
-}
-.pay-opt .pi { display: block; font-size: 17px; margin-bottom: 3px; }
-.pay-opt:hover { border-color: var(--border-hi); color: var(--text); }
-.pay-opt.active {
-  border-color: var(--pivot-h);
-  background: var(--pivot-dim);
-  color: var(--pivot-h);
-}
-
-.crypto-detail {
-  background: rgba(0,0,0,.35);
-  border: 1px solid rgba(240,180,41,.18);
-  border-radius: 12px;
-  padding: 14px;
-  margin-bottom: 14px;
-  display: none;
-}
-.crypto-detail.visible { display: block; }
-.crypto-detail-head {
-  font-family: 'Space Mono', monospace;
-  font-size: 8px;
-  letter-spacing: 3px;
-  color: var(--gold);
-  margin-bottom: 10px;
-  opacity: .8;
-}
-.coin-row {
-  display: flex;
-  gap: 5px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
-}
-.coin-btn {
-  padding: 4px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  font-family: 'Space Mono', monospace;
-  font-size: 9px;
-  color: var(--muted);
-  cursor: pointer;
-  transition: all .16s;
-  background: var(--surface2);
-}
-.coin-btn:hover { border-color: rgba(240,180,41,.3); color: var(--gold); }
-.coin-btn.active {
-  border-color: var(--gold);
-  color: var(--gold);
-  background: rgba(240,180,41,.07);
-}
-.addr-label { font-size: 10px; color: var(--muted); margin-bottom: 6px; }
-.addr-box {
-  background: rgba(0,0,0,.45);
-  border: 1px solid var(--border-hi);
-  border-radius: 8px;
-  padding: 9px 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  cursor: pointer;
-  transition: border-color .15s;
-}
-.addr-box:hover { border-color: rgba(255,255,255,.18); }
-.addr-text {
-  font-family: 'Space Mono', monospace;
-  font-size: 9px;
-  color: var(--text);
-  word-break: break-all;
-  line-height: 1.5;
-}
-.addr-copy { font-size: 14px; color: var(--pivot-h); flex-shrink: 0; }
-
-.cta-btn {
-  width: 100%;
-  padding: 14px;
-  background: var(--pivot-h);
-  color: #000;
-  border: none;
-  border-radius: 11px;
-  font-family: 'Space Grotesk', sans-serif;
-  font-weight: 700;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all .2s;
-  letter-spacing: 0.2px;
-}
-.cta-btn:hover:not(:disabled) {
-  background: #00f0e5;
-  transform: translateY(-1px);
-  box-shadow: 0 10px 28px rgba(0,210,200,.22);
-}
-.cta-btn:disabled {
-  background: var(--surface2);
-  color: var(--muted);
-  cursor: not-allowed;
-  box-shadow: none;
-  transform: none;
-}
-.trust-row {
-  margin-top: 10px;
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.trust-chip {
-  font-family: 'Space Mono', monospace;
-  font-size: 8px;
-  letter-spacing: 1px;
-  color: var(--muted);
-  padding: 2px 0;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.trust-chip::before { content:'·'; opacity:.4; }
-.trust-chip:first-child::before { display:none; }
-
-.toast {
-  position: fixed;
-  bottom: 24px; left: 50%;
-  transform: translateX(-50%) translateY(70px);
-  opacity: 0;
-  background: var(--surface3);
-  border: 1px solid var(--border-hi);
-  color: var(--white);
-  padding: 10px 20px;
-  border-radius: 40px;
-  font-size: 12px;
-  font-weight: 500;
-  z-index: 999;
-  transition: all .28s cubic-bezier(.34,1.56,.64,1);
-  pointer-events: none;
-  white-space: nowrap;
-}
-.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 4px; }
 </style>
 </head>
 <body>
 
-<!-- Topbar -->
-<header class="topbar">
-  <a href="/index.html"><div class="logo">SNIPER<em>TRADER</em>.AI</div></a>
-  <div class="topbar-right">
-    <div class="secure-tag"><div class="pulse"></div>SSL ENCRYPTED</div>
+<!-- Precision scope cursor -->
+<div id="scope" aria-hidden="true"><span class="s-ring s-r1"></span><span class="s-ring s-r2"></span><span class="s-h"></span><span class="s-v"></span><span class="s-center"></span></div>
+<div id="scope-ring"></div>
+<div id="scope-dot"></div>
+
+<!-- NAV -->
+<nav>
+  <a class="logo" href="/index.html"><b>SNIPERTRADER</b><span>.ai</span></a>
+  <ul class="nav-menu">
+    <li class="nav-item" data-drop>
+      <button class="nav-link" onclick="toggleDrop(this)">Market Intelligence <span class="caret">▾</span></button>
+      <div class="dropdown">
+        <a href="/traderedge_preflight.html"><span class="d-name">Preflight Protocol</span><span class="d-sub">Daily pre-market playbook &amp; bias calibration</span></a>
+        <a href="/market_terminal.html"><span class="d-name">Daily Market Picks</span><span class="d-sub">High-probability setups scored by ML</span></a>
+        <a href="/prerun_detection.html"><span class="d-name">Daily Pre-Run Detection</span><span class="d-sub">Pre-market scan across the full watchlist</span></a>
+        <a href="https://chart-ai.snipertrader.ai"><span class="d-name">AI Chart Analyzer</span><span class="d-sub">Automated structure, liquidity &amp; order blocks</span></a>
+        <a href="/sniper_market_forecaster.html"><span class="d-name">Sniper Market Forecaster</span><span class="d-sub">Macro price targets &amp; pivot windows</span></a>
+      </div>
+    </li>
+    <li class="nav-item" data-drop>
+      <button class="nav-link" onclick="toggleDrop(this)">Proprietary Algos <span class="caret">▾</span></button>
+      <div class="dropdown">
+        <a href="/NoRepaint_Pivot_indicator.html"><span class="d-name">No Repaint Indicator</span><span class="d-sub">Confirmed-at-close signal execution</span></a>
+        <a href="/USME_ICT_Foundation.html"><span class="d-name">USME ICT Foundation Engine</span><span class="d-sub">Smart Money Concepts automation</span></a>
+        <a href="/USME_VWAP_Elite_Suite.html"><span class="d-name">USME VWAP Suite Engine</span><span class="d-sub">Institutional volume-weighted targeting</span></a>
+        <a href="/Meridian_Engine.html"><span class="d-name">Meridian Engine</span><span class="d-sub">Regime-aware lattice + liquidity memory map</span></a>
+        <a href="/usme_products.html"><span class="d-name">All Products</span></a>
+      </div>
+    </li>
+    <li class="nav-item" data-drop>
+      <button class="nav-link" onclick="toggleDrop(this)">Prop Firm <span class="caret">▾</span></button>
+      <div class="dropdown">
+        <a href="/traderedge_prop_firms_command_center.html"><span class="d-name">Command Center</span><span class="d-sub">Live account matrix &amp; rule guardrails</span></a>
+        <a href="/prop_firm_dashboard.html"><span class="d-name">Prop Firm Intelligence</span><span class="d-sub">Ranked firms by Sniper Score™</span></a>
+        <a href="/Prop_firm_MasterPlan.html"><span class="d-name">Prop Firm Master Plan</span><span class="d-sub">The funded-trader roadmap</span></a>
+      </div>
+    </li>
+    <li class="nav-item"><a class="nav-link" href="https://discord.com/servers/zeiierman-trading-764500290614591538">Discord</a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="theme-toggle" id="theme-btn" aria-label="Toggle light/dark mode">☾ <span id="theme-label">Light</span></button>
+    <a class="nav-cta" href="/admin.html">LOGIN</a>
+    <button class="nav-burger" id="burger" aria-label="Menu"><span></span><span></span><span></span></button>
   </div>
-</header>
+</nav>
 
-<div class="page">
+<!-- Mobile menu -->
+<div class="mobile-menu" id="mobileMenu">
+  <div class="mm-group">Market Intelligence</div>
+  <a class="mm-sub" href="/traderedge_preflight.html">Preflight Protocol</a>
+  <a class="mm-sub" href="/market_terminal.html">Daily Market Picks</a>
+  <a class="mm-sub" href="https://chart-ai.snipertrader.ai">AI Chart Analyzer</a>
+  <a class="mm-sub" href="/sniper_market_forecaster.html">Sniper Market Forecaster</a>
+  <div class="mm-group">Proprietary Algos</div>
+  <a class="mm-sub" href="/NoRepaint_Pivot_indicator.html">No Repaint Indicator</a>
+  <a class="mm-sub" href="/USME_ICT_Foundation.html">USME ICT Foundation Engine</a>
+  <a class="mm-sub" href="/USME_VWAP_Elite_Suite.html">USME VWAP Suite Engine</a>
+  <a class="mm-sub" href="/Meridian_Engine.html">Meridian Engine</a>
+  <div class="mm-group">Academy</div>
+  <a class="mm-link" href="/USME_ICT_Foundation_Course.html">Sniper Academy</a>
+  <a class="mm-link" href="/market_terminal.html">Open Terminal</a>
+</div>
 
-  <!-- MAIN -->
-  <main class="main">
+<!-- TICKER (static product line) -->
+<div class="ticker">
+  <div class="ticker-status"><span class="live-dot"></span>Products</div>
+  <div class="ticker-track">
+    <div class="ticker-inner">
+      <span class="tick-item"><i></i>No Repaint Engine</span>
+      <span class="tick-item"><i></i>USME ICT Core</span>
+      <span class="tick-item"><i></i>Meridian Engine</span>
+      <span class="tick-item"><i></i>USME VWAP Suite</span>
+      <span class="tick-item"><i></i>Market Forecaster</span>
+      <span class="tick-item"><i></i>Daily Market Picks</span>
+      <span class="tick-item"><i></i>Pre-Run Detection</span>
+      <span class="tick-item"><i></i>AI Chart Analyzer</span>
+      <span class="tick-item"><i></i>Preflight Protocol</span>
+      <span class="tick-item"><i></i>No Repaint Engine</span>
+      <span class="tick-item"><i></i>USME ICT Core</span>
+      <span class="tick-item"><i></i>Meridian Engine</span>
+      <span class="tick-item"><i></i>USME VWAP Suite</span>
+      <span class="tick-item"><i></i>Market Forecaster</span>
+      <span class="tick-item"><i></i>Daily Market Picks</span>
+      <span class="tick-item"><i></i>Pre-Run Detection</span>
+      <span class="tick-item"><i></i>AI Chart Analyzer</span>
+      <span class="tick-item"><i></i>Preflight Protocol</span>
+    </div>
+  </div>
+</div>
 
-    <!-- Progress -->
-    <div class="progress-track">
-      <div class="pt-step active" id="pt1">
-        <div class="pt-num">1</div>
-        <div class="pt-label">Platform</div>
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-bg"><div class="grid"></div><div class="glow1"></div><div class="glow2"></div></div>
+  <div class="container hero-inner">
+    <div class="eyebrow">Pricing</div>
+    <h1 class="hero-title">Precision, <em>priced with intent.</em></h1>
+    <p class="hero-sub">Four proprietary engines. Five market-intelligence services. One honest menu — subscribe monthly, or lock annual and keep two months. No hidden fees, no forced bundles.</p>
+    <div class="hero-trust">
+      <div class="trust-item"><span class="t-label">Engines</span><span class="t-value">Non-repainting</span></div>
+      <div class="trust-item"><span class="t-label">Annual</span><span class="t-value">2 months free</span></div>
+      <div class="trust-item"><span class="t-label">Billing</span><span class="t-value">Cancel anytime</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- INDICATOR ENGINES -->
+<section class="sec alt" id="indicators">
+  <div class="container">
+    <div class="sec-head reveal">
+      <div class="eyebrow">Proprietary Engines</div>
+      <h2>Four indicators. <em>One edge each.</em></h2>
+      <p class="lede">Each engine is platform-specific and ships for your charting stack. Pick your platform, then add the engines you want — monthly or annual.</p>
+    </div>
+
+    <div class="platform-bar reveal">
+      <span class="pl-label">Your platform</span>
+      <button class="pfm-pill" data-platform="ThinkorSwim">ThinkorSwim</button>
+      <button class="pfm-pill" data-platform="TradingView">TradingView</button>
+      <button class="pfm-pill" data-platform="NinjaTrader">NinjaTrader</button>
+    </div>
+    <p class="platform-hint reveal" id="platformHint">Engines are delivered for the platform you select. Market Intelligence &amp; add-ons work on any platform.</p>
+
+    <div class="pricing-grid">
+
+      <!-- PIVOT -->
+      <div class="card pivot reveal">
+        <div class="card-body">
+          <div class="card-top">
+            <div class="card-icon">🎯</div>
+            <div class="card-tier">Engine 01</div>
+          </div>
+          <h3>No Repaint Pivot</h3>
+          <div class="card-desc">Confirmed-at-close pivot signals with anchored VWAP bands — bars never repaint.</div>
+          <ul class="card-features">
+            <li>100% non-repainting entry markers</li>
+            <li>Elite / Prime / Standard scoring</li>
+            <li>Trend cloud + triple EMA confluence</li>
+          </ul>
+          <div class="card-platforms">
+            <span class="plat-tag">ThinkorSwim</span><span class="plat-tag">TradingView</span>
+          </div>
+          <div class="plan-toggle">
+            <div class="plan-opt selected" data-product="No Repaint Pivot" data-plan="Monthly" data-price="79" data-cadence="/mo">
+              <div class="po-name">Monthly</div>
+              <div class="po-price">$79<sub>/mo</sub></div>
+            </div>
+            <div class="plan-opt" data-product="No Repaint Pivot" data-plan="Annual" data-price="599" data-cadence="/yr">
+              <span class="save-chip">SAVE 37%</span>
+              <div class="po-name">Annual</div>
+              <div class="po-price">$599<sub>/yr</sub></div>
+              <div class="po-note">≈ $49.92/mo</div>
+            </div>
+          </div>
+          <button class="add-btn" data-card="pivot">+ Add to order</button>
+        </div>
       </div>
-      <div class="pt-line" id="pl1"></div>
-      <div class="pt-step" id="pt2">
-        <div class="pt-num">2</div>
-        <div class="pt-label">Indicators</div>
+
+      <!-- ICT CORE -->
+      <div class="card ict reveal">
+        <div class="card-body">
+          <div class="card-top">
+            <div class="card-icon">🧠</div>
+            <div class="card-tier">Engine 02</div>
+          </div>
+          <h3>USME ICT Core</h3>
+          <div class="card-desc">Automated Smart Money Concepts — the 3-Gate model from context to entry.</div>
+          <ul class="card-features">
+            <li>3-Gate Model: Context → Liquidity → Entry</li>
+            <li>BUY / SELL · sweep · MSS alerts</li>
+            <li>Full 6-module course + cheat sheets</li>
+          </ul>
+          <div class="card-platforms">
+            <span class="plat-tag">ThinkorSwim</span><span class="plat-tag">TradingView</span><span class="plat-tag">NinjaTrader</span>
+          </div>
+          <div class="plan-toggle">
+            <div class="plan-opt selected" data-product="USME ICT Core" data-plan="Monthly" data-price="199" data-cadence="/mo">
+              <div class="po-name">Monthly</div>
+              <div class="po-price">$199<sub>/mo</sub></div>
+            </div>
+            <div class="plan-opt" data-product="USME ICT Core" data-plan="Annual" data-price="1999" data-cadence="/yr">
+              <span class="save-chip">SAVE 16%</span>
+              <div class="po-name">Annual</div>
+              <div class="po-price">$1,999<sub>/yr</sub></div>
+              <div class="po-note">≈ $166.58/mo</div>
+            </div>
+          </div>
+          <button class="add-btn" data-card="ict">+ Add to order</button>
+        </div>
       </div>
-      <div class="pt-line" id="pl2"></div>
-      <div class="pt-step" id="pt3">
-        <div class="pt-num">3</div>
-        <div class="pt-label">Checkout</div>
+
+      <!-- MERIDIAN -->
+      <div class="card meridian reveal">
+        <div class="badge-pop">NEW</div>
+        <div class="card-body">
+          <div class="card-top">
+            <div class="card-icon">🧭</div>
+            <div class="card-tier">Engine 03</div>
+          </div>
+          <h3>Meridian Engine</h3>
+          <div class="card-desc">Regime-aware event lattice with a liquidity memory map — graded WATCH to SINGULAR.</div>
+          <ul class="card-features">
+            <li>Regime-aware event lattice</li>
+            <li>Liquidity memory map + magnets</li>
+            <li>WATCH → PRIME → SINGULAR grading</li>
+          </ul>
+          <div class="card-platforms">
+            <span class="plat-tag">TradingView · Pine v6</span>
+          </div>
+          <div class="plan-toggle">
+            <div class="plan-opt selected" data-product="Meridian Engine" data-plan="Monthly" data-price="249" data-cadence="/mo">
+              <div class="po-name">Monthly</div>
+              <div class="po-price">$249<sub>/mo</sub></div>
+            </div>
+            <div class="plan-opt" data-product="Meridian Engine" data-plan="Annual" data-price="2490" data-cadence="/yr">
+              <span class="save-chip">SAVE 17%</span>
+              <div class="po-name">Annual</div>
+              <div class="po-price">$2,490<sub>/yr</sub></div>
+              <div class="po-note">≈ $207.50/mo</div>
+            </div>
+          </div>
+          <button class="add-btn" data-card="meridian">+ Add to order</button>
+        </div>
+      </div>
+
+      <!-- VWAP SUITE -->
+      <div class="card vwap reveal">
+        <div class="card-body">
+          <div class="card-top">
+            <div class="card-icon">📡</div>
+            <div class="card-tier">Engine 04</div>
+          </div>
+          <h3>USME VWAP Suite</h3>
+          <div class="card-desc">Multi-anchor VWAP with deviation bands and graded institutional conviction.</div>
+          <ul class="card-features">
+            <li>Session / weekly / custom anchors</li>
+            <li>±1σ / ±2σ deviation bands</li>
+            <li>WATCH / PRIME / ELITE alerts · all platforms</li>
+          </ul>
+          <div class="card-platforms">
+            <span class="plat-tag">ThinkorSwim</span><span class="plat-tag">TradingView</span><span class="plat-tag">NinjaTrader</span>
+          </div>
+          <div class="plan-toggle">
+            <div class="plan-opt selected" data-product="USME VWAP Suite" data-plan="Monthly" data-price="479" data-cadence="/mo">
+              <div class="po-name">Monthly</div>
+              <div class="po-price">$479<sub>/mo</sub></div>
+            </div>
+            <div class="plan-opt" data-product="USME VWAP Suite" data-plan="Annual" data-price="4700" data-cadence="/yr">
+              <span class="save-chip">SAVE 18%</span>
+              <div class="po-name">Annual</div>
+              <div class="po-price">$4,700<sub>/yr</sub></div>
+              <div class="po-note">≈ $391.67/mo</div>
+            </div>
+          </div>
+          <button class="add-btn" data-card="vwap">+ Add to order</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- MARKET INTELLIGENCE SUITE -->
+<section class="sec" id="intelligence">
+  <div class="container">
+    <div class="sec-head reveal">
+      <div class="eyebrow">Market Intelligence</div>
+      <h2>Five daily edges. <em>Or all five, together.</em></h2>
+      <p class="lede">Recurring daily and on-demand services — forecasts, picks, pre-run scans, chart analysis, and the preflight playbook. Subscribe each standalone, or take the suite and save.</p>
+    </div>
+
+    <!-- COMBO -->
+    <div class="card combo wide reveal">
+      <div class="badge-pop">BEST VALUE</div>
+      <div class="card-body">
+        <div class="card-top"><div class="card-icon">⚡</div><div class="card-tier">Market Intelligence Suite</div></div>
+        <h3>All five services. <em>One subscription.</em></h3>
+        <div class="card-desc">Market Forecaster + Daily Market Picks + Daily Pre-Run Detection + AI Chart Analyzer + Preflight Protocol — the full morning-to-close intelligence stack.</div>
+        <ul class="card-features">
+          <li>Market Forecaster — macro projection corridors</li>
+          <li>Daily Market Picks — ML-scored setups</li>
+          <li>Daily Pre-Run Detection — pre-market watchlist scan</li>
+          <li>AI Chart Analyzer — automated structure &amp; liquidity</li>
+          <li>Preflight Protocol — daily bias &amp; key levels</li>
+        </ul>
+        <div class="plan-toggle">
+          <div class="plan-opt selected" data-product="Market Intelligence Suite" data-plan="Monthly" data-price="199" data-cadence="/mo">
+            <div class="po-name">Monthly</div>
+            <div class="po-price">$199<sub>/mo</sub></div>
+          </div>
+          <div class="plan-opt" data-product="Market Intelligence Suite" data-plan="Annual" data-price="1990" data-cadence="/yr">
+            <span class="save-chip">SAVE 17%</span>
+            <div class="po-name">Annual</div>
+            <div class="po-price">$1,990<sub>/yr</sub></div>
+            <div class="po-note">≈ $165.83/mo</div>
+          </div>
+        </div>
+        <button class="add-btn" data-card="combo">+ Add the full suite</button>
+      </div>
+      <div class="wide-side">
+        <div class="card-tier" style="margin-bottom:12px;">À la carte · $365/mo</div>
+        <div class="breakdown">
+          <div class="breakdown-row"><span>Market Forecaster</span><span class="bd-price">$99</span></div>
+          <div class="breakdown-row"><span>Daily Market Picks</span><span class="bd-price">$79</span></div>
+          <div class="breakdown-row"><span>Daily Pre-Run Detection</span><span class="bd-price">$79</span></div>
+          <div class="breakdown-row"><span>AI Chart Analyzer</span><span class="bd-price">$59</span></div>
+          <div class="breakdown-row"><span>Preflight Protocol</span><span class="bd-price">$49</span></div>
+          <div class="breakdown-row" style="border-bottom:none;"><b>Suite price</b><b style="color:var(--acc);font-family:var(--ff-d);font-size:1.1rem;">$199/mo</b></div>
+        </div>
+        <div class="breakdown-save">SAVE $166/mo — 45% off</div>
       </div>
     </div>
 
-    <!-- Step 1: Platform -->
-    <div class="sec-eyebrow">Step 1 of 3</div>
-    <div class="sec-title">Choose your trading platform</div>
-    <div class="sec-sub">Indicators are platform-specific. Pick yours first.</div>
+    <!-- STANDALONE -->
+    <div class="mi-grid" style="margin-top:18px;">
 
-    <div class="platform-row" id="platformRow">
-      <div class="pfm-pill" data-platform="ThinkorSwim">
-        <div class="pfm-tick">✓</div>
-        <div class="pfm-icon">📊</div>
-        <div class="pfm-text">
-          <div class="pfm-name">ThinkorSwim</div>
-          <div class="pfm-lang">THINKSCRIPT</div>
+      <div class="card mi reveal">
+        <div class="card-body">
+          <div class="card-top"><div class="card-icon">🌅</div><div class="card-tier">Standalone</div></div>
+          <h3>Preflight Protocol</h3>
+          <div class="card-desc">Daily pre-market playbook — bias, key levels, catalysts.</div>
+          <div class="plan-toggle">
+            <div class="plan-opt selected" data-product="Preflight Protocol" data-plan="Monthly" data-price="49" data-cadence="/mo">
+              <div class="po-name">Monthly</div><div class="po-price">$49<sub>/mo</sub></div>
+            </div>
+            <div class="plan-opt" data-product="Preflight Protocol" data-plan="Annual" data-price="490" data-cadence="/yr">
+              <span class="save-chip">SAVE 17%</span>
+              <div class="po-name">Annual</div><div class="po-price">$490<sub>/yr</sub></div>
+            </div>
+          </div>
+          <button class="add-btn" data-card="preflight">+ Add</button>
         </div>
       </div>
-      <div class="pfm-pill" data-platform="TradingView">
-        <div class="pfm-tick">✓</div>
-        <div class="pfm-icon">📈</div>
-        <div class="pfm-text">
-          <div class="pfm-name">TradingView</div>
-          <div class="pfm-lang">PINE SCRIPT</div>
+
+      <div class="card mi reveal">
+        <div class="card-body">
+          <div class="card-top"><div class="card-icon">🤖</div><div class="card-tier">Standalone</div></div>
+          <h3>AI Chart Analyzer</h3>
+          <div class="card-desc">Automated structure, liquidity &amp; order-block analysis.</div>
+          <div class="plan-toggle">
+            <div class="plan-opt selected" data-product="AI Chart Analyzer" data-plan="Monthly" data-price="59" data-cadence="/mo">
+              <div class="po-name">Monthly</div><div class="po-price">$59<sub>/mo</sub></div>
+            </div>
+            <div class="plan-opt" data-product="AI Chart Analyzer" data-plan="Annual" data-price="590" data-cadence="/yr">
+              <span class="save-chip">SAVE 17%</span>
+              <div class="po-name">Annual</div><div class="po-price">$590<sub>/yr</sub></div>
+            </div>
+          </div>
+          <button class="add-btn" data-card="chartai">+ Add</button>
         </div>
       </div>
-      <div class="pfm-pill" data-platform="NinjaTrader">
-        <div class="pfm-tick">✓</div>
-        <div class="pfm-icon">⚡</div>
-        <div class="pfm-text">
-          <div class="pfm-name">NinjaTrader</div>
-          <div class="pfm-lang">NINJASCRIPT</div>
+
+      <div class="card mi reveal">
+        <div class="card-body">
+          <div class="card-top"><div class="card-icon">🎯</div><div class="card-tier">Standalone</div></div>
+          <h3>Daily Market Picks</h3>
+          <div class="card-desc">High-probability setups scored by machine learning.</div>
+          <div class="plan-toggle">
+            <div class="plan-opt selected" data-product="Daily Market Picks" data-plan="Monthly" data-price="79" data-cadence="/mo">
+              <div class="po-name">Monthly</div><div class="po-price">$79<sub>/mo</sub></div>
+            </div>
+            <div class="plan-opt" data-product="Daily Market Picks" data-plan="Annual" data-price="790" data-cadence="/yr">
+              <span class="save-chip">SAVE 17%</span>
+              <div class="po-name">Annual</div><div class="po-price">$790<sub>/yr</sub></div>
+            </div>
+          </div>
+          <button class="add-btn" data-card="picks">+ Add</button>
+        </div>
+      </div>
+
+      <div class="card mi reveal">
+        <div class="card-body">
+          <div class="card-top"><div class="card-icon">🔭</div><div class="card-tier">Standalone</div></div>
+          <h3>Daily Pre-Run Detection</h3>
+          <div class="card-desc">Pre-market scan across the full watchlist, before the open.</div>
+          <div class="plan-toggle">
+            <div class="plan-opt selected" data-product="Daily Pre-Run Detection" data-plan="Monthly" data-price="79" data-cadence="/mo">
+              <div class="po-name">Monthly</div><div class="po-price">$79<sub>/mo</sub></div>
+            </div>
+            <div class="plan-opt" data-product="Daily Pre-Run Detection" data-plan="Annual" data-price="790" data-cadence="/yr">
+              <span class="save-chip">SAVE 17%</span>
+              <div class="po-name">Annual</div><div class="po-price">$790<sub>/yr</sub></div>
+            </div>
+          </div>
+          <button class="add-btn" data-card="prerun">+ Add</button>
+        </div>
+      </div>
+
+      <div class="card mi reveal">
+        <div class="card-body">
+          <div class="card-top"><div class="card-icon">🌐</div><div class="card-tier">Standalone</div></div>
+          <h3>Market Forecaster</h3>
+          <div class="card-desc">Macro projection corridors and reversal windows.</div>
+          <div class="plan-toggle">
+            <div class="plan-opt selected" data-product="Market Forecaster" data-plan="Monthly" data-price="99" data-cadence="/mo">
+              <div class="po-name">Monthly</div><div class="po-price">$99<sub>/mo</sub></div>
+            </div>
+            <div class="plan-opt" data-product="Market Forecaster" data-plan="Annual" data-price="990" data-cadence="/yr">
+              <span class="save-chip">SAVE 17%</span>
+              <div class="po-name">Annual</div><div class="po-price">$990<sub>/yr</sub></div>
+            </div>
+          </div>
+          <button class="add-btn" data-card="forecaster">+ Add</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ADD-ONS -->
+<section class="sec alt" id="addons">
+  <div class="container">
+    <div class="sec-head reveal">
+      <div class="eyebrow">Add-ons</div>
+      <h2>Round out <em>the stack.</em></h2>
+      <p class="lede">A trade journal for discipline, and the playbook that ties the frameworks together.</p>
+    </div>
+    <div class="pricing-grid" style="grid-template-columns:repeat(2,1fr);">
+      <div class="card psych reveal">
+        <div class="card-body">
+          <div class="card-top"><div class="card-icon">🧠</div><div class="card-tier">Add-on · Journal</div></div>
+          <h3>PSYCH App SMC Journal</h3>
+          <div class="card-desc">AI-powered trade tracker with psychology &amp; discipline scoring. 7-day free trial on monthly.</div>
+          <ul class="card-features">
+            <li>SMC-based trade logging</li>
+            <li>Psychology &amp; discipline scoring</li>
+          </ul>
+          <div class="plan-toggle">
+            <div class="plan-opt selected" data-product="PSYCH App SMC Journal" data-plan="Monthly" data-price="29" data-cadence="/mo">
+              <div class="po-name">Monthly</div><div class="po-price">$29<sub>/mo</sub></div>
+              <div class="po-note">7-day trial</div>
+            </div>
+            <div class="plan-opt" data-product="PSYCH App SMC Journal" data-plan="Lifetime" data-price="199" data-cadence="">
+              <span class="save-chip">BEST VALUE</span>
+              <div class="po-name">Lifetime</div><div class="po-price">$199</div>
+            </div>
+          </div>
+          <button class="add-btn" data-card="psych">+ Add</button>
+        </div>
+      </div>
+      <div class="card ebook reveal">
+        <div class="card-body">
+          <div class="card-top"><div class="card-icon">📖</div><div class="card-tier">Add-on · eBook</div></div>
+          <h3>From Broke to Funded</h3>
+          <div class="card-desc">200+ page ICT/SMC playbook. Instant PDF download — no platform required.</div>
+          <ul class="card-features">
+            <li>200+ pages of ICT/SMC content</li>
+            <li>Full trade playbook &amp; setups</li>
+          </ul>
+          <div class="plan-toggle single">
+            <div class="plan-opt selected" data-product="From Broke to Funded eBook" data-plan="One-Time" data-price="19" data-cadence="">
+              <div class="po-name">One-Time Purchase</div><div class="po-price">$19</div>
+            </div>
+          </div>
+          <button class="add-btn" data-card="ebook">+ Add</button>
         </div>
       </div>
     </div>
+  </div>
+</section>
 
-    <div class="sec-break"></div>
-
-    <!-- Step 2: Products -->
-    <div id="productsSection">
-      <div class="sec-eyebrow">Step 2 of 3</div>
-      <div class="sec-title">Select your indicators</div>
-      <div class="sec-sub" id="pfmHint">Choose a plan for each indicator you want — or just one.</div>
-
-      <div class="products-grid">
-
-        <!-- PIVOT -->
-        <div class="product-card pivot">
-          <div class="product-header">
-            <div class="product-icon-row">
-              <div class="product-icon">🎯</div>
-              <div class="product-tier">TIER 01 · PIVOT</div>
-            </div>
-            <div class="product-name">NoRepaint Pivot<br>Indicator</div>
-            <div class="product-desc">Elite pivot scoring with multi-timeframe alignment. Bars never repaint.</div>
+<!-- FULL SUITE BUNDLE -->
+<section class="sec" id="suite">
+  <div class="container">
+    <div class="card suite wide reveal">
+      <div class="badge-pop">EVERYTHING</div>
+      <div class="card-body">
+        <div class="card-top"><div class="card-icon">🚀</div><div class="card-tier">Full Suite Bundle</div></div>
+        <h3>The complete <em>SniperTrader stack.</em></h3>
+        <div class="card-desc">All four engines + the full Market Intelligence Suite in one subscription — the calmest way to run every edge at once.</div>
+        <ul class="card-features">
+          <li>No Repaint Pivot · USME ICT Core · Meridian · VWAP Suite</li>
+          <li>All five Market Intelligence services</li>
+          <li>PSYCH App + From Broke to Funded eBook included</li>
+        </ul>
+        <div class="plan-toggle">
+          <div class="plan-opt selected" data-product="Full Suite Bundle" data-plan="Monthly" data-price="699" data-cadence="/mo">
+            <div class="po-name">Monthly</div>
+            <div class="po-price">$699<sub>/mo</sub></div>
           </div>
-          <div class="feature-list">
-            <div class="feature-item"><div class="feature-dot"></div>USME NoRepaint Pivot Indicator</div>
-            <div class="feature-item"><div class="feature-dot"></div>Elite / Prime / Standard scoring</div>
-            <div class="feature-item"><div class="feature-dot"></div>Community + trade examples</div>
-          </div>
-          <div class="plan-section">
-            <div class="plan-toggle">
-              <div class="plan-opt" data-product="NoRepaint Pivot Indicator" data-plan="Monthly" data-price="79">
-                <div class="plan-opt-name">Monthly</div>
-                <div class="plan-opt-price">$79<sub>/mo</sub></div>
-                <div class="plan-opt-note">Cancel anytime</div>
-              </div>
-              <div class="plan-opt" data-product="NoRepaint Pivot Indicator" data-plan="Annual" data-price="599">
-                <div class="plan-save-chip">SAVE 37%</div>
-                <div class="plan-opt-name">Annual</div>
-                <div class="plan-opt-price">$599<sub>/yr</sub></div>
-                <div class="plan-opt-note">≈ $49.92/mo</div>
-              </div>
-            </div>
-            <button class="add-btn" data-card="pivot">+ ADD TO ORDER</button>
+          <div class="plan-opt" data-product="Full Suite Bundle" data-plan="Annual" data-price="6990" data-cadence="/yr">
+            <span class="save-chip">SAVE 17%</span>
+            <div class="po-name">Annual</div>
+            <div class="po-price">$6,990<sub>/yr</sub></div>
+            <div class="po-note">≈ $582.50/mo</div>
           </div>
         </div>
-
-        <!-- ICT -->
-        <div class="product-card ict">
-          <div class="product-badge-pop">MOST POPULAR</div>
-          <div class="product-header">
-            <div class="product-icon-row">
-              <div class="product-icon">🧠</div>
-              <div class="product-tier">TIER 02 · ICT</div>
-            </div>
-            <div class="product-name">USME ICT<br>Foundation</div>
-            <div class="product-desc">Divergence scanner + structural breaks. Full 6-module course with cheat sheets.</div>
-          </div>
-          <div class="feature-list">
-            <div class="feature-item"><div class="feature-dot"></div>Full 6-module course + cheat sheets</div>
-            <div class="feature-item"><div class="feature-dot"></div>Divergence scanner integration</div>
-            <div class="feature-item"><div class="feature-dot"></div>ToS & TradingView scripts</div>
-          </div>
-          <div class="plan-section">
-            <div class="plan-toggle">
-              <div class="plan-opt" data-product="USME ICT Foundation" data-plan="Monthly" data-price="199">
-                <div class="plan-opt-name">Monthly</div>
-                <div class="plan-opt-price">$199<sub>/mo</sub></div>
-                <div class="plan-opt-note">Cancel anytime</div>
-              </div>
-              <div class="plan-opt" data-product="USME ICT Foundation" data-plan="Annual" data-price="1999">
-                <div class="plan-save-chip">SAVE 16%</div>
-                <div class="plan-opt-name">Annual</div>
-                <div class="plan-opt-price">$1,999<sub>/yr</sub></div>
-                <div class="plan-opt-note">≈ $166.58/mo</div>
-              </div>
-            </div>
-            <button class="add-btn" data-card="ict">+ ADD TO ORDER</button>
-          </div>
+        <button class="add-btn" data-card="suite">+ Add everything</button>
+      </div>
+      <div class="wide-side">
+        <div class="card-tier" style="margin-bottom:12px;">Everything à la carte ≈ $1,419/mo</div>
+        <div class="breakdown">
+          <div class="breakdown-row"><span>4 Engines (monthly)</span><span class="bd-price">$1,006</span></div>
+          <div class="breakdown-row"><span>Market Intelligence (5 services)</span><span class="bd-price">$365</span></div>
+          <div class="breakdown-row"><span>PSYCH App</span><span class="bd-price">$29</span></div>
+          <div class="breakdown-row"><span>eBook (one-time)</span><span class="bd-price">$19</span></div>
+          <div class="breakdown-row" style="border-bottom:none;"><b>Full Suite</b><b style="color:var(--acc);font-family:var(--ff-d);font-size:1.1rem;">$699/mo</b></div>
         </div>
-
-        <!-- VWAP -->
-        <div class="product-card vwap">
-          <div class="product-header">
-            <div class="product-icon-row">
-              <div class="product-icon">📡</div>
-              <div class="product-tier">TIER 03 · VWAP</div>
-            </div>
-            <div class="product-name">USME VWAP<br>Elite Suite</div>
-            <div class="product-desc">VWAP bands, session anchoring, and institutional flow detection.</div>
-          </div>
-          <div class="feature-list">
-            <div class="feature-item"><div class="feature-dot"></div>VWAP bands + session anchoring</div>
-            <div class="feature-item"><div class="feature-dot"></div>Institutional flow detection</div>
-            <div class="feature-item"><div class="feature-dot"></div>Priority support & early updates</div>
-          </div>
-          <div class="plan-section">
-            <div class="plan-toggle">
-              <div class="plan-opt" data-product="USME VWAP Elite Suite" data-plan="Monthly" data-price="479">
-                <div class="plan-opt-name">Monthly</div>
-                <div class="plan-opt-price">$479<sub>/mo</sub></div>
-                <div class="plan-opt-note">Cancel anytime</div>
-              </div>
-              <div class="plan-opt" data-product="USME VWAP Elite Suite" data-plan="Annual" data-price="4700">
-                <div class="plan-save-chip">SAVE 18%</div>
-                <div class="plan-opt-name">Annual</div>
-                <div class="plan-opt-price">$4,700<sub>/yr</sub></div>
-                <div class="plan-opt-note">≈ $391.67/mo</div>
-              </div>
-            </div>
-            <button class="add-btn" data-card="vwap">+ ADD TO ORDER</button>
-          </div>
-        </div>
-
-        <!-- PSYCH App -->
-        <div class="product-card psych">
-          <div class="product-header">
-            <div class="product-icon-row">
-              <div class="product-icon">🧠</div>
-              <div class="product-tier">ADD-ON · PSYCH APP</div>
-            </div>
-            <div class="product-name">PSYCH App<br>SMC Trade Journal</div>
-            <div class="product-desc">AI-powered trade tracker with psychology &amp; discipline tools. 7-day free trial included.</div>
-          </div>
-          <div class="feature-list">
-            <div class="feature-item"><div class="feature-dot"></div>SMC-based trade logging</div>
-            <div class="feature-item"><div class="feature-dot"></div>Psychology &amp; discipline scoring</div>
-            <div class="feature-item"><div class="feature-dot"></div>7-day free trial on monthly</div>
-          </div>
-          <div class="plan-section">
-            <div class="plan-toggle">
-              <div class="plan-opt" data-product="PSYCH App SMC Journal" data-plan="Monthly" data-price="29">
-                <div class="plan-opt-name">Monthly</div>
-                <div class="plan-opt-price">$29<sub>/mo</sub></div>
-                <div class="plan-opt-note">7-day free trial</div>
-              </div>
-              <div class="plan-opt" data-product="PSYCH App SMC Journal" data-plan="Lifetime" data-price="199">
-                <div class="plan-save-chip">BEST VALUE</div>
-                <div class="plan-opt-name">Lifetime</div>
-                <div class="plan-opt-price">$199</div>
-                <div class="plan-opt-note">Forever access</div>
-              </div>
-            </div>
-            <button class="add-btn" data-card="psych">+ ADD TO ORDER</button>
-          </div>
-        </div>
-
-        <!-- eBook -->
-        <div class="product-card ebook">
-          <div class="product-header">
-            <div class="product-icon-row">
-              <div class="product-icon">📖</div>
-              <div class="product-tier">ADD-ON · EBOOK</div>
-            </div>
-            <div class="product-name">From Broke<br>to Funded</div>
-            <div class="product-desc">200+ page ICT/SMC playbook. Instant PDF download — no platform required.</div>
-          </div>
-          <div class="feature-list">
-            <div class="feature-item"><div class="feature-dot"></div>200+ pages of ICT/SMC content</div>
-            <div class="feature-item"><div class="feature-dot"></div>Full trade playbook &amp; setups</div>
-            <div class="feature-item"><div class="feature-dot"></div>Instant PDF download</div>
-          </div>
-          <div class="plan-section">
-            <div class="plan-toggle" style="grid-template-columns:1fr;">
-              <div class="plan-opt selected" data-product="From Broke to Funded eBook" data-plan="One-Time" data-price="19">
-                <div class="plan-opt-name">One-Time Purchase</div>
-                <div class="plan-opt-price">$19</div>
-                <div class="plan-opt-note">Instant download</div>
-              </div>
-            </div>
-            <button class="add-btn" data-card="ebook">+ ADD TO ORDER</button>
-          </div>
-        </div>
-
-        <!-- Full Suite Bundle (UPDATED with Monthly $600 & Annual $6000) -->
-        <div class="product-card bundle">
-          <div class="product-badge-pop" style="background:rgba(240,180,41,.12);color:var(--bundle-h);border-color:rgba(240,180,41,.3);">BEST VALUE</div>
-          <div class="product-header">
-            <div class="product-icon-row">
-              <div class="product-icon">🚀</div>
-              <div class="product-tier">FULL SUITE · BUNDLE</div>
-            </div>
-            <div class="product-name">Full Suite<br>Bundle</div>
-            <div class="product-desc">Every tool, forever. ThinkScript v3.1 + PineScript v3.1 + PSYCH App + eBook. Saves $1,994+.</div>
-          </div>
-          <div class="feature-list">
-            <div class="feature-item"><div class="feature-dot"></div>USME ThinkScript v3.1 — forever</div>
-            <div class="feature-item"><div class="feature-dot"></div>USME PineScript v3.1 — forever</div>
-            <div class="feature-item"><div class="feature-dot"></div>PSYCH App full lifetime access</div>
-            <div class="feature-item"><div class="feature-dot"></div>From Broke to Funded eBook</div>
-          </div>
-          <div class="plan-section">
-            <div class="plan-toggle">
-              <div class="plan-opt" data-product="Full Suite Bundle" data-plan="Monthly" data-price="600">
-                <div class="plan-opt-name">Monthly</div>
-                <div class="plan-opt-price">$600<sub>/mo</sub></div>
-                <div class="plan-opt-note">Cancel anytime</div>
-              </div>
-              <div class="plan-opt" data-product="Full Suite Bundle" data-plan="Annual" data-price="6000">
-                <div class="plan-save-chip">SAVE 17%</div>
-                <div class="plan-opt-name">Annual</div>
-                <div class="plan-opt-price">$6,000<sub>/yr</sub></div>
-                <div class="plan-opt-note">≈ $500/mo</div>
-              </div>
-            </div>
-            <button class="add-btn" data-card="bundle">+ ADD TO ORDER</button>
-          </div>
-        </div>
-
-      </div><!-- /products-grid -->
-    </div><!-- /productsSection -->
-
-  </main>
-
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-
-    <div class="sidebar-title">
-      Order Summary
-      <span class="cart-badge" id="cartBadge">0</span>
-    </div>
-
-    <div class="cart-scroll" id="cartScroll">
-      <div class="cart-empty-state" id="cartEmpty">
-        <span>🛒</span>
-        Select a platform and add<br>indicators to build your order.
+        <div class="breakdown-save">SAVE ≈ $720/mo — over 50%</div>
       </div>
     </div>
+  </div>
+</section>
 
-    <div class="cart-total-block">
-      <div class="ct-label">Total due today</div>
-      <div class="ct-amount" id="cartTotal">$0</div>
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a class="f-logo" href="/index.html">SniperTrader<span>.ai</span></a>
+        <p class="f-mission">Precision market systems &amp; algorithmic engines — calm, surgical execution for the disciplined trader.</p>
+        <div class="f-status"><i></i> System Status: Operational</div>
+        <div class="f-social"><a href="#">X</a><a href="#">YouTube</a><a href="#">Discord</a><a href="#">Telegram</a></div>
+      </div>
+      <div class="footer-col">
+        <h4>Intelligence</h4>
+        <a href="/traderedge_preflight.html">Preflight Protocol</a>
+        <a href="/market_terminal.html">Daily Market Picks</a>
+        <a href="/prerun_detection.html">Daily Pre-Run Detection</a>
+        <a href="https://chart-ai.snipertrader.ai">AI Chart Analyzer</a>
+        <a href="/sniper_market_forecaster.html">Market Forecaster</a>
+      </div>
+      <div class="footer-col">
+        <h4>Proprietary Algos</h4>
+        <a href="/NoRepaint_Pivot_indicator.html">No Repaint Engine</a>
+        <a href="/USME_ICT_Foundation.html">USME ICT Engine</a>
+        <a href="/Meridian_Engine.html">Meridian Engine</a>
+        <a href="/USME_VWAP_Elite_Suite.html">USME VWAP Suite</a>
+        <a href="/usme_products.html">TradingView Suite</a>
+      </div>
+      <div class="footer-col">
+        <h4>Academy</h4>
+        <a href="/USME_ICT_Foundation_Course.html">Courses</a>
+        <a href="/Traders_Couch.html">Live Labs</a>
+        <a href="/about.html">Mentorship</a>
+        <a href="/about.html">Community</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="/about.html">About Us</a>
+        <a href="/checkout.html">Pricing</a>
+        <a href="/about.html">Contact</a>
+        <a href="/terms.html">Terms</a>
+        <a href="/privacy.html">Privacy</a>
+        <a href="/disclaimer.html">Legal</a>
+      </div>
     </div>
+    <div class="footer-bottom">
+      <span>© 2026 SniperTrader.ai — All rights reserved.</span>
+      <span>Calm. Precise. Deliberate.</span>
+    </div>
+    <p class="footer-disclaimer">DISCLAIMER: Trading involves substantial risk of loss and is not suitable for every investor. Past performance does not guarantee future results. All content on this site is for educational purposes only and does not constitute financial or investment advice.</p>
+  </div>
+</footer>
 
-    <!-- Payment method -->
+<!-- CART BAR -->
+<div class="cart-bar" id="cartBar">
+  <span class="cb-count" id="cartBarCount">0</span>
+  <span class="cb-label">items</span>
+  <span class="cb-empty" id="cartBarEmpty" style="display:none;">Your order is empty</span>
+  <span class="cb-total" id="cartBarTotal">$0</span>
+  <button class="btn btn-primary cb-btn" id="openCheckout">Complete Order</button>
+</div>
+
+<!-- CHECKOUT MODAL -->
+<div class="modal-overlay" id="checkoutModal">
+  <div class="checkout-card">
+    <button class="matcher-close" id="closeCheckout" aria-label="Close">✕</button>
+    <div class="matcher-kicker">Order Summary</div>
+    <div class="matcher-title">Confirm your order</div>
+    <div class="co-items" id="checkoutItems"></div>
+    <div class="co-total-row"><span class="l">Total due today</span><span class="v" id="checkoutTotal">$0</span></div>
+
     <div class="pay-section-label">Payment method</div>
     <div class="pay-grid">
-      <div class="pay-opt active" data-method="crypto">
-        <span class="pi">₿</span>Crypto
-      </div>
-      <div class="pay-opt" data-method="card">
-        <span class="pi">💳</span>Card
-      </div>
+      <div class="pay-opt active" data-method="crypto"><span class="pi">₿</span>Crypto</div>
+      <div class="pay-opt" data-method="card"><span class="pi">💳</span>Card</div>
     </div>
 
-    <!-- Crypto detail (default visible) -->
     <div class="crypto-detail visible" id="cryptoDetail">
-      <div class="crypto-detail-head">SELECT COIN · SEND EXACT AMOUNT</div>
+      <div class="crypto-detail-head">Select coin · send exact amount</div>
       <div class="coin-row">
         <div class="coin-btn active" data-coin="BTC">BTC</div>
         <div class="coin-btn" data-coin="ETH">ETH</div>
@@ -1103,225 +947,222 @@ body {
       </div>
     </div>
 
-    <button class="cta-btn" id="ctaBtn" disabled>Add indicators to continue</button>
+    <button class="cta-btn" id="completeBtn">Complete Order — $0</button>
     <div class="trust-row">
       <span class="trust-chip">Instant delivery</span>
       <span class="trust-chip">BTC · ETH · USDC · SOL</span>
       <span class="trust-chip">Encrypted</span>
     </div>
-
-  </aside>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-(function() {
-  // ─── State ───
-  let platform = null;
-  let cart = {};
-  let payMethod = 'crypto';
-  let activeCoin = 'BTC';
+/* ── Precision scope cursor ──────────────────────────────── */
+(function(){
+  var scope=document.getElementById('scope'), ring=document.getElementById('scope-ring'), dot=document.getElementById('scope-dot');
+  var mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my;
+  document.addEventListener('mousemove',function(e){
+    mx=e.clientX;my=e.clientY;
+    if(dot){dot.style.left=mx+'px';dot.style.top=my+'px';}
+    if(scope){scope.style.left=mx+'px';scope.style.top=my+'px';}
+  });
+  (function loop(){
+    rx+=(mx-rx)*0.16; ry+=(my-ry)*0.16;
+    if(ring){ring.style.left=rx+'px';ring.style.top=ry+'px';}
+    requestAnimationFrame(loop);
+  })();
+})();
 
-  const CRYPTO_ADDRS = {
-    BTC:  'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
-    ETH:  '0x3A7F9b2c4D5e1F8a0B2C3D4E5F6A7B8C9D0E1F2a',
-    USDC: '0x3A7F9b2c4D5e1F8a0B2C3D4E5F6A7B8C9D0E1F2a',
-    SOL:  'DYw8jPZ5LmxJm8b7XnPKkHtnbhZfp5fXfNQUe2oY6dC'
+/* ── Theme toggle ────────────────────────────────────────── */
+(function(){
+  var btn=document.getElementById('theme-btn'), label=document.getElementById('theme-label');
+  var light=false;
+  function apply(l){
+    light=l; document.body.classList.toggle('light',l);
+    if(btn) btn.childNodes[0].nodeValue = l ? '☀ ' : '☾ ';
+    if(label) label.textContent = l ? 'Dark' : 'Light';
+  }
+  if(btn) btn.addEventListener('click',function(){apply(!light);});
+  apply(false);
+})();
+
+/* ── Nav dropdowns + mobile menu ─────────────────────────── */
+function toggleDrop(btn){
+  var item=btn.closest('.nav-item');
+  var wasOpen=item.classList.contains('open');
+  document.querySelectorAll('.nav-item.open').forEach(function(i){i.classList.remove('open');});
+  if(!wasOpen) item.classList.add('open');
+}
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.nav-item')) document.querySelectorAll('.nav-item.open').forEach(function(i){i.classList.remove('open');});
+});
+(function(){
+  var burger=document.getElementById('burger'), menu=document.getElementById('mobileMenu');
+  if(burger&&menu) burger.addEventListener('click',function(){menu.classList.toggle('open');});
+})();
+
+/* ── Scroll reveal ───────────────────────────────────────── */
+(function(){
+  var obs=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)e.target.classList.add('in');});},{threshold:.08});
+  document.querySelectorAll('.reveal').forEach(function(el){obs.observe(el);});
+})();
+
+/* ── Cart logic ──────────────────────────────────────────── */
+(function(){
+  var PLATFORM_KEYS=['pivot','ict','vwap'];       // engines needing a chosen platform
+  var MERIDIAN_PLATFORM='TradingView';
+  var platform=null;
+  var cart={};                                    // key -> {product,plan,price,cadence,platform}
+  var payMethod='crypto';
+  var activeCoin='BTC';
+
+  var CRYPTO_ADDRS={
+    BTC:'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+    ETH:'0x3A7F9b2c4D5e1F8a0B2C3D4E5F6A7B8C9D0E1F2a',
+    USDC:'0x3A7F9b2c4D5e1F8a0B2C3D4E5F6A7B8C9D0E1F2a',
+    SOL:'DYw8jPZ5LmxJm8b7XnPKkHtnbhZfp5fXfNQUe2oY6dC'
   };
-  const COIN_NAMES = { BTC: 'Bitcoin (BTC)', ETH: 'Ethereum (ETH)', USDC: 'USD Coin (USDC)', SOL: 'Solana (SOL)' };
+  var COIN_NAMES={BTC:'Bitcoin (BTC)',ETH:'Ethereum (ETH)',USDC:'USD Coin (USDC)',SOL:'Solana (SOL)'};
 
-  // ─── Platform ───
-  document.querySelectorAll('.pfm-pill').forEach(pill => {
-    pill.addEventListener('click', function() {
-      document.querySelectorAll('.pfm-pill').forEach(p => p.classList.remove('selected'));
-      this.classList.add('selected');
-      platform = this.dataset.platform;
-
-      const sec = document.getElementById('productsSection');
-      sec.classList.add('unlocked');
-      document.getElementById('pfmHint').textContent =
-        `Compatible with ${platform}. Select monthly or annual for each indicator you want.`;
-
-      stepDone('pt1', 'pl1');
-      stepActive('pt2');
-    });
-  });
-
-  // ─── Plan selection ───
-  document.querySelectorAll('.plan-opt').forEach(opt => {
-    opt.addEventListener('click', function() {
-      const card = this.closest('.product-card');
-      card.querySelectorAll('.plan-opt').forEach(o => o.classList.remove('selected'));
-      this.classList.add('selected');
-    });
-  });
-
-  // ─── Add to cart ───
-  document.querySelectorAll('.add-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-      const key = this.dataset.card;
-      const card = this.closest('.product-card');
-      
-      // Check if bundle or standalone products that don't need platform
-      const noPlatformCards = ['psych', 'ebook', 'bundle'];
-      if (!platform && !noPlatformCards.includes(key)) { 
-        toast('Pick a platform first'); 
-        return; 
-      }
-      
-      const selected = card.querySelector('.plan-opt.selected');
-      if (!selected) { toast('Choose a plan first'); return; }
-
-      cart[key] = {
-        product: selected.dataset.product,
-        plan: selected.dataset.plan,
-        price: parseFloat(selected.dataset.price),
-        platform: noPlatformCards.includes(key) ? null : platform
-      };
-
-      this.classList.add('added');
-      this.textContent = '✓ IN ORDER';
-
-      renderCart();
-      toast(`${selected.dataset.product} added`);
-
-      if (Object.keys(cart).length > 0) {
-        stepDone('pt2', 'pl2');
-        stepActive('pt3');
-      }
-    });
-  });
-
-  // ─── Render cart ───
-  function renderCart() {
-    const scroll = document.getElementById('cartScroll');
-    const empty = document.getElementById('cartEmpty');
-    const items = Object.entries(cart);
-    const total = items.reduce((s, [, v]) => s + v.price, 0);
-
-    document.getElementById('cartTotal').textContent =
-      '$' + total.toLocaleString('en-US', { minimumFractionDigits: 0 });
-    document.getElementById('cartBadge').textContent = items.length;
-
-    if (items.length === 0) {
-      scroll.innerHTML = '';
-      scroll.appendChild(empty);
-      document.getElementById('ctaBtn').disabled = true;
-      document.getElementById('ctaBtn').textContent = 'Add indicators to continue';
-      return;
-    }
-
-    if (empty.parentNode) empty.parentNode.removeChild(empty);
-    scroll.innerHTML = '';
-
-    items.forEach(([key, item]) => {
-      const suffix = item.plan === 'Annual' ? '/yr'
-        : item.plan === 'Monthly' ? '/mo'
-        : '';
-      const div = document.createElement('div');
-      div.className = 'cart-item';
-      div.innerHTML = `
-        <div>
-          <div class="ci-name">${item.product}</div>
-          <div class="ci-meta">${item.platform ? item.platform + ' · ' : ''}${item.plan}</div>
-        </div>
-        <div class="ci-right">
-          <div class="ci-price">$${item.price.toLocaleString()}${suffix}</div>
-          <button class="ci-remove" data-key="${key}">✕</button>
-        </div>`;
-      scroll.appendChild(div);
-    });
-
-    scroll.querySelectorAll('.ci-remove').forEach(btn => {
-      btn.addEventListener('click', function() {
-        const k = this.dataset.key;
-        delete cart[k];
-        const addBtn = document.querySelector(`.add-btn[data-card="${k}"]`);
-        if (addBtn) {
-          addBtn.classList.remove('added');
-          addBtn.textContent = '+ ADD TO ORDER';
-        }
-        renderCart();
-        toast('Item removed');
-      });
-    });
-
-    const totalVal = items.reduce((s, [, v]) => s + v.price, 0);
-    document.getElementById('ctaBtn').disabled = false;
-    document.getElementById('ctaBtn').textContent =
-      `Complete Order — $${totalVal.toLocaleString()}`;
+  function toast(msg){
+    var el=document.getElementById('toast'); if(!el)return;
+    el.textContent=msg; el.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t=setTimeout(function(){el.classList.remove('show');},2200);
   }
 
-  // ─── Payment toggle ───
-  document.querySelectorAll('.pay-opt').forEach(opt => {
-    opt.addEventListener('click', function() {
-      document.querySelectorAll('.pay-opt').forEach(o => o.classList.remove('active'));
-      this.classList.add('active');
-      payMethod = this.dataset.method;
-      const detail = document.getElementById('cryptoDetail');
-      detail.classList.toggle('visible', payMethod === 'crypto');
+  /* platform selector */
+  document.querySelectorAll('.pfm-pill').forEach(function(p){
+    p.addEventListener('click',function(){
+      document.querySelectorAll('.pfm-pill').forEach(function(x){x.classList.remove('selected');});
+      p.classList.add('selected');
+      platform=p.dataset.platform;
+      document.getElementById('platformHint').textContent=
+        'Engines will be delivered for '+platform+'. Market Intelligence & add-ons work on any platform.';
     });
   });
 
-  // ─── Coin toggle ───
-  document.querySelectorAll('.coin-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-      document.querySelectorAll('.coin-btn').forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
-      activeCoin = this.dataset.coin;
-      document.getElementById('addrLabel').textContent = COIN_NAMES[activeCoin] + ' Wallet Address';
-      document.getElementById('addrText').textContent = CRYPTO_ADDRS[activeCoin];
+  /* plan toggle within each card */
+  document.querySelectorAll('.plan-opt').forEach(function(opt){
+    opt.addEventListener('click',function(){
+      var card=opt.closest('.card');
+      card.querySelectorAll('.plan-opt').forEach(function(o){o.classList.remove('selected');});
+      opt.classList.add('selected');
     });
   });
 
-  // ─── Copy address ───
-  document.getElementById('addrBox').addEventListener('click', function() {
-    const addr = CRYPTO_ADDRS[activeCoin];
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(addr).catch(() => {});
+  /* add to order */
+  document.querySelectorAll('.add-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var card=btn.closest('.card');
+      var key=btn.dataset.card;
+      var selected=card.querySelector('.plan-opt.selected');
+      if(!selected){toast('Choose a plan first');return;}
+      var plat=null;
+      if(PLATFORM_KEYS.indexOf(key)>-1){
+        if(!platform){toast('Pick your platform first');return;}
+        plat=platform;
+      }else if(key==='meridian'){
+        plat=MERIDIAN_PLATFORM;
+      }
+      cart[key]={
+        product:selected.dataset.product,
+        plan:selected.dataset.plan,
+        price:parseFloat(selected.dataset.price),
+        cadence:selected.dataset.cadence||'',
+        platform:plat
+      };
+      btn.classList.add('added'); btn.textContent='✓ IN ORDER';
+      renderCart();
+      toast(selected.dataset.product+' added');
+    });
+  });
+
+  function renderCart(){
+    var entries=Object.entries(cart);
+    var total=entries.reduce(function(s,e){return s+e[1].price;},0);
+    var bar=document.getElementById('cartBar');
+    document.getElementById('cartBarCount').textContent=entries.length;
+    document.getElementById('cartBarTotal').textContent='$'+total.toLocaleString('en-US');
+    document.getElementById('cartBarEmpty').style.display=entries.length?'none':'block';
+    bar.classList.toggle('show',entries.length>0);
+
+    var list=document.getElementById('checkoutItems');
+    if(entries.length===0){list.innerHTML='';}
+    else{
+      list.innerHTML=entries.map(function(e){
+        var key=e[0],it=e[1];
+        return '<div class="co-item">'+
+          '<div><div class="co-item-name">'+it.product+'</div>'+
+          '<div class="co-item-meta">'+(it.platform?it.platform+' · ':'')+it.plan+(it.cadence?' · $'+it.price.toLocaleString()+it.cadence:'')+'</div></div>'+
+          '<div style="display:flex;align-items:center;gap:10px;">'+
+          '<div class="co-item-price">$'+it.price.toLocaleString()+'</div>'+
+          '<button class="co-remove" data-key="'+key+'">✕</button></div></div>';
+      }).join('');
+      list.querySelectorAll('.co-remove').forEach(function(b){
+        b.addEventListener('click',function(){
+          var k=b.dataset.key;
+          delete cart[k];
+          var addBtn=document.querySelector('.add-btn[data-card="'+k+'"]');
+          if(addBtn){addBtn.classList.remove('added');addBtn.textContent=addBtn.dataset.card==='combo'?'+ Add the full suite':(addBtn.dataset.card==='suite'?'+ Add everything':'+ Add');}
+          renderCart(); toast('Item removed');
+        });
+      });
     }
-    toast(`${activeCoin} address copied`);
+    document.getElementById('checkoutTotal').textContent='$'+total.toLocaleString('en-US');
+    document.getElementById('completeBtn').textContent='Complete Order — $'+total.toLocaleString('en-US');
+  }
+
+  /* modal open/close */
+  var modal=document.getElementById('checkoutModal');
+  document.getElementById('openCheckout').addEventListener('click',function(){
+    if(Object.keys(cart).length===0){toast('Add something to your order first');return;}
+    modal.classList.add('active');
+  });
+  document.getElementById('closeCheckout').addEventListener('click',function(){modal.classList.remove('active');});
+  modal.addEventListener('click',function(e){if(e.target===modal)modal.classList.remove('active');});
+
+  /* payment method */
+  document.querySelectorAll('.pay-opt').forEach(function(opt){
+    opt.addEventListener('click',function(){
+      document.querySelectorAll('.pay-opt').forEach(function(o){o.classList.remove('active');});
+      opt.classList.add('active');
+      payMethod=opt.dataset.method;
+      document.getElementById('cryptoDetail').classList.toggle('visible',payMethod==='crypto');
+    });
   });
 
-  // ─── CTA ───
-  document.getElementById('ctaBtn').addEventListener('click', function() {
-    const items = Object.values(cart);
-    if (!items.length) return;
-    const total = items.reduce((s, v) => s + v.price, 0);
-    if (payMethod === 'crypto') {
-      toast(`Send $${total.toLocaleString()} in ${activeCoin} to complete`);
-    } else {
+  /* coin toggle + copy */
+  document.querySelectorAll('.coin-btn').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('.coin-btn').forEach(function(x){x.classList.remove('active');});
+      b.classList.add('active');
+      activeCoin=b.dataset.coin;
+      document.getElementById('addrLabel').textContent=COIN_NAMES[activeCoin]+' Wallet Address';
+      document.getElementById('addrText').textContent=CRYPTO_ADDRS[activeCoin];
+    });
+  });
+  document.getElementById('addrBox').addEventListener('click',function(){
+    var addr=CRYPTO_ADDRS[activeCoin];
+    if(navigator.clipboard){navigator.clipboard.writeText(addr).catch(function(){});}
+    toast(activeCoin+' address copied');
+  });
+
+  /* complete */
+  document.getElementById('completeBtn').addEventListener('click',function(){
+    var items=Object.values(cart);
+    if(!items.length)return;
+    var total=items.reduce(function(s,v){return s+v.price;},0);
+    if(payMethod==='crypto'){
+      toast('Send $'+total.toLocaleString('en-US')+' in '+activeCoin+' to complete');
+    }else{
       toast('Redirecting to secure card checkout…');
     }
   });
 
-  // ─── Progress steps ───
-  function stepDone(id, lineId) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.classList.remove('active');
-    el.classList.add('done');
-    const num = el.querySelector('.pt-num');
-    if (num) num.textContent = '✓';
-    if (lineId) document.getElementById(lineId)?.classList.add('done');
-  }
-  function stepActive(id) {
-    const el = document.getElementById(id);
-    if (el && !el.classList.contains('done')) el.classList.add('active');
-  }
-
-  // ─── Toast ───
-  let toastTimer;
-  function toast(msg) {
-    const el = document.getElementById('toast');
-    if (!el) return;
-    el.textContent = msg;
-    el.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
-  }
-
+  renderCart();
 })();
 </script>
 </body>
