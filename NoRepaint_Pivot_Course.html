@@ -3,86 +3,83 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Non-Repaint Pivots · SniperTrader</title>
-  <meta name="description" content="Learn locked swing levels that stay put after the bar closes — so you trade what you see, not hindsight. A beginner course from SniperTrader.">
+  <title>Non-Repaint Pivots Course · SniperTrader.ai</title>
+  <meta name="description" content="Learn the four-step read: anchor to fair value, confirm the swing, read the trend cloud, trade the band extremes. Education only.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #f5f4f0;
+      --bg2: #efece6;
+      --bg3: #e6e2d8;
       --surface: #ffffff;
-      --surface-alt: #f0eeea;
-      --border: #d8d4cc;
-      --border-strong: #b0a89a;
-      --sniper-red: #c8102e;
-      --sniper-red-dark: #9e0a22;
-      --sniper-red-light: #f5e5e8;
-      --ink: #1a1612;
-      --ink-med: #3d3530;
-      --ink-dim: #6b635a;
-      --ink-muted: #9a9088;
-      --green: #0a6e3f;
-      --green-bg: #e8f5ee;
-      --red-bg: #fdf0f2;
-      --gold: #7a5500;
-      --gold-bg: #fdf6e3;
-      --cyan: #0e6e7a;
-      --cyan-bg: #e6f5f7;
-      --sidebar-w: 268px;
-      --nav-h: 52px;
+      --text: #12151a;
+      --text2: #2a3038;
+      --text3: #5a6270;
+      --text4: #8a9199;
+      --cyan: #00e5ff;
+      --cyan-ink: #087f8c;
+      --gold: #f0c040;
+      --gold-ink: #8a6a10;
+      --emerald: #00e5a0;
+      --emerald-ink: #0a8a64;
+      --rose: #ff5a6e;
+      --rose-ink: #b42338;
+      --cyan-dim: rgba(0, 229, 255, 0.14);
+      --gold-dim: rgba(240, 192, 64, 0.18);
+      --emerald-dim: rgba(0, 229, 160, 0.12);
+      --border: rgba(18, 21, 26, 0.10);
+      --border2: rgba(240, 192, 64, 0.45);
+      --shadow: 0 18px 40px rgba(18, 21, 26, 0.06);
+      --sidebar-w: 260px;
+      --nav-h: 56px;
+      --ff-d: 'Orbitron', sans-serif;
+      --ff-b: 'Syne', sans-serif;
+      --ff-m: 'Space Mono', monospace;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
     html { scroll-behavior: smooth; }
-
     body {
-      font-family: 'Barlow', sans-serif;
+      font-family: var(--ff-b);
       background: var(--bg);
-      color: var(--ink);
+      color: var(--text);
       min-height: 100vh;
       overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
     }
-
-    body::after {
+    body::before {
       content: '';
       position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 600px;
-      height: 600px;
-      background-image:
-        radial-gradient(circle, transparent 38%, rgba(200,16,46,0.04) 38.5%, rgba(200,16,46,0.04) 39%, transparent 39.5%),
-        radial-gradient(circle, transparent 55%, rgba(200,16,46,0.025) 55.5%, rgba(200,16,46,0.025) 56%, transparent 56.5%),
-        linear-gradient(rgba(200,16,46,0.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(200,16,46,0.025) 1px, transparent 1px);
-      background-size: 600px 600px, 600px 600px, 40px 40px, 40px 40px;
+      inset: 0;
       pointer-events: none;
       z-index: 0;
-      opacity: 0.6;
+      background-image:
+        linear-gradient(rgba(0, 229, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(240, 192, 64, 0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(ellipse 80% 70% at 50% 20%, black, transparent 85%);
     }
-
-    a { color: var(--sniper-red); }
-    a:hover { color: var(--sniper-red-dark); }
+    a { color: var(--cyan-ink); }
+    a:hover { color: var(--text); }
+    img { display: block; max-width: 100%; height: auto; }
 
     .skip-link {
       position: absolute;
       left: 12px;
-      top: -40px;
-      background: var(--sniper-red);
-      color: #fff;
+      top: -48px;
+      background: var(--gold);
+      color: var(--text);
       padding: 8px 14px;
       z-index: 400;
-      font-family: 'Share Tech Mono', monospace;
+      font-family: var(--ff-m);
       font-size: 11px;
-      letter-spacing: 1px;
       text-decoration: none;
     }
     .skip-link:focus { top: 12px; }
 
-    .container {
+    .wrap {
       max-width: 1180px;
       margin: 0 auto;
       padding: 0 24px;
@@ -90,149 +87,154 @@
       z-index: 1;
     }
 
-    /* ── Header (Foundation lockup) ── */
+    /* Header — light */
     header {
-      background: var(--ink);
-      border-bottom: 3px solid var(--sniper-red);
+      background: rgba(245, 244, 240, 0.92);
+      border-bottom: 1px solid var(--border);
       position: relative;
       z-index: 20;
     }
-    .header-top { background: var(--sniper-red); padding: 6px 0; }
-    .header-top .container {
+    .header-top {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .header-top .wrap {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      min-height: 32px;
     }
-    .header-top-text {
-      font-family: 'Share Tech Mono', monospace;
+    .header-top-text,
+    .header-live {
+      font-family: var(--ff-m);
       font-size: 10px;
-      color: rgba(255,255,255,0.85);
-      letter-spacing: 3px;
+      letter-spacing: 0.16em;
       text-transform: uppercase;
+      color: var(--text3);
     }
-    .header-top-live {
+    .header-live {
       display: flex;
       align-items: center;
-      gap: 6px;
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 10px;
-      color: rgba(255,255,255,0.9);
-      letter-spacing: 2px;
+      gap: 8px;
+      color: var(--gold-ink);
     }
     .live-dot {
-      width: 6px;
-      height: 6px;
-      background: #fff;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
-      animation: pulse 1.5s infinite;
+      background: var(--emerald);
+      box-shadow: 0 0 8px var(--emerald);
+      animation: blink 1.6s ease-in-out infinite;
     }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-    .header-main { padding: 24px 0 20px; }
+    .header-main { padding: 22px 0 20px; }
     .header-inner {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
       gap: 24px;
       flex-wrap: wrap;
     }
-    .brand-lockup {
+    .brand {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 14px;
       text-decoration: none;
+      color: inherit;
     }
-    .crosshair-logo { width: 52px; height: 52px; flex-shrink: 0; }
+    .crosshair { width: 40px; height: 40px; flex-shrink: 0; }
     .brand-name {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 32px;
-      font-weight: 800;
-      color: #ffffff;
-      letter-spacing: 3px;
+      font-family: var(--ff-d);
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
-      line-height: 1;
+      color: var(--text);
     }
-    .brand-name span { color: var(--sniper-red); }
+    .brand-name span { color: var(--gold-ink); }
     .brand-sub {
-      font-family: 'Share Tech Mono', monospace;
+      font-family: var(--ff-m);
       font-size: 10px;
-      color: rgba(255,255,255,0.4);
-      letter-spacing: 3px;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
+      color: var(--text4);
       margin-top: 4px;
     }
-    h1 {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: clamp(20px, 3.5vw, 34px);
-      font-weight: 800;
-      line-height: 1.0;
-      color: #ffffff;
-      letter-spacing: 1px;
-      text-transform: uppercase;
+    .header-title {
+      text-align: right;
     }
-    h1 span { color: var(--sniper-red); }
-    .subtitle {
-      font-family: 'Share Tech Mono', monospace;
+    .header-title h1 {
+      font-family: var(--ff-d);
+      font-size: clamp(16px, 2.4vw, 22px);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+    .header-title h1 em {
+      font-style: italic;
+      font-family: var(--ff-b);
+      color: var(--gold-ink);
+      text-transform: none;
+      letter-spacing: 0;
+    }
+    .header-title p {
+      font-family: var(--ff-m);
       font-size: 11px;
-      color: rgba(255,255,255,0.4);
-      margin-top: 8px;
-      letter-spacing: 1px;
+      color: var(--text4);
+      margin: 6px 0 0;
+      letter-spacing: 0.04em;
     }
 
-    /* ── Disclaimer strip ── */
     .disclaimer-strip {
-      background: var(--red-bg);
-      border-bottom: 1px solid rgba(200,16,46,0.18);
-      position: relative;
-      z-index: 15;
+      background: var(--gold-dim);
+      border-bottom: 1px solid var(--border2);
     }
     .disclaimer-strip p {
-      font-family: 'Share Tech Mono', monospace;
+      font-family: var(--ff-m);
       font-size: 11px;
-      letter-spacing: 1.5px;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: var(--sniper-red);
+      color: var(--gold-ink);
       padding: 10px 0;
       margin: 0;
     }
 
-    /* ── Sticky progress + module nav ── */
+    /* Sticky course nav */
     .course-nav {
       position: sticky;
       top: 0;
       z-index: 100;
-      background: var(--surface);
-      border-bottom: 2px solid var(--border);
-      box-shadow: 0 2px 12px rgba(26,22,18,0.08);
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 8px 24px rgba(18,21,26,0.04);
     }
-    .progress-track {
-      height: 3px;
-      background: var(--surface-alt);
-    }
+    .progress-track { height: 3px; background: var(--bg3); }
     .progress-fill {
       height: 100%;
       width: 0%;
-      background: var(--sniper-red);
+      background: linear-gradient(90deg, var(--cyan), var(--gold));
       transition: width 0.15s linear;
     }
     .nav-row {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       min-height: var(--nav-h);
     }
     .progress-meta {
-      font-family: 'Share Tech Mono', monospace;
+      font-family: var(--ff-m);
       font-size: 10px;
-      letter-spacing: 2px;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: var(--ink-dim);
+      color: var(--text3);
       white-space: nowrap;
-      padding-right: 8px;
+      padding-right: 12px;
       border-right: 1px solid var(--border);
-      flex-shrink: 0;
     }
-    .progress-meta strong { color: var(--sniper-red); }
+    .progress-meta strong { color: var(--cyan-ink); }
     .nav-inner {
       display: flex;
       overflow-x: auto;
@@ -241,48 +243,43 @@
     }
     .nav-inner::-webkit-scrollbar { display: none; }
     .nav-btn {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 1.5px;
+      font-family: var(--ff-m);
+      font-size: 10px;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: var(--ink-dim);
-      background: transparent;
+      color: var(--text3);
+      background: none;
       border: none;
-      border-bottom: 3px solid transparent;
-      padding: 16px 14px;
+      border-bottom: 2px solid transparent;
+      padding: 18px 12px;
       cursor: pointer;
       white-space: nowrap;
-      transition: all 0.15s;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 7px;
     }
-    .nav-btn:hover { color: var(--ink); background: var(--surface-alt); }
+    .nav-btn:hover { color: var(--text); }
     .nav-btn.active {
-      color: var(--sniper-red);
-      border-bottom-color: var(--sniper-red);
+      color: var(--cyan-ink);
+      border-bottom-color: var(--cyan);
     }
     .nav-btn .mark {
-      width: 12px;
-      height: 12px;
-      border: 1.5px solid var(--border-strong);
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
-      display: inline-block;
+      border: 1.5px solid var(--text4);
     }
     .nav-btn.seen .mark,
     .nav-btn.active .mark {
-      background: var(--sniper-red);
-      border-color: var(--sniper-red);
-      box-shadow: inset 0 0 0 2px #fff;
+      background: var(--emerald);
+      border-color: var(--emerald);
     }
 
-    /* ── Layout ── */
-    .course-shell {
+    .shell {
       display: grid;
       grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
-      gap: 32px;
-      padding: 36px 0 64px;
+      gap: 36px;
+      padding: 36px 0 72px;
       position: relative;
       z-index: 1;
       align-items: start;
@@ -290,31 +287,28 @@
 
     .sidebar {
       position: sticky;
-      top: calc(var(--nav-h) + 16px);
+      top: calc(var(--nav-h) + 18px);
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 2px;
-      padding: 18px 16px 20px;
-      box-shadow: 0 2px 12px rgba(26,22,18,0.05);
+      border-radius: 16px;
+      padding: 20px 16px;
+      box-shadow: var(--shadow);
     }
     .sidebar-label {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 9px;
-      letter-spacing: 3px;
+      font-family: var(--ff-m);
+      font-size: 10px;
+      letter-spacing: 0.16em;
       text-transform: uppercase;
-      color: var(--sniper-red);
+      color: var(--gold-ink);
       margin-bottom: 14px;
     }
-    .side-mod {
-      margin-bottom: 16px;
-    }
+    .side-mod { margin-bottom: 16px; }
     .side-mod h3 {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 1px;
+      font-family: var(--ff-d);
+      font-size: 11px;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: var(--ink);
+      color: var(--text);
       margin-bottom: 6px;
     }
     .side-link {
@@ -326,298 +320,250 @@
       background: none;
       border: none;
       border-left: 2px solid transparent;
-      padding: 6px 8px;
+      padding: 7px 8px;
       cursor: pointer;
-      font-family: 'Barlow', sans-serif;
+      font-family: var(--ff-b);
       font-size: 13px;
-      color: var(--ink-dim);
-      border-radius: 0 2px 2px 0;
+      color: var(--text3);
+      border-radius: 0 8px 8px 0;
     }
-    .side-link:hover { color: var(--ink); background: var(--surface-alt); }
+    .side-link:hover { color: var(--text); background: var(--bg2); }
     .side-link.active {
-      color: var(--sniper-red);
-      border-left-color: var(--sniper-red);
-      background: var(--red-bg);
+      color: var(--cyan-ink);
+      border-left-color: var(--cyan);
+      background: var(--cyan-dim);
       font-weight: 600;
     }
-    .side-link.seen { color: var(--ink-med); }
     .side-dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      border: 1.5px solid var(--border-strong);
+      border: 1.5px solid var(--text4);
       flex-shrink: 0;
     }
     .side-link.seen .side-dot,
     .side-link.active .side-dot {
-      background: var(--sniper-red);
-      border-color: var(--sniper-red);
+      background: var(--emerald);
+      border-color: var(--emerald);
     }
 
-    /* ── Typography ── */
-    .section-label {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 10px;
-      letter-spacing: 4px;
-      color: var(--sniper-red);
-      text-transform: uppercase;
-      margin-bottom: 10px;
+    .eyebrow {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 12px;
+      font-family: var(--ff-m);
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gold-ink);
+      margin-bottom: 12px;
     }
-    .section-label::before {
+    .eyebrow::before {
       content: '';
-      display: inline-block;
-      width: 20px;
-      height: 2px;
-      background: var(--sniper-red);
+      width: 28px;
+      height: 1px;
+      background: var(--gold);
     }
 
-    .hero { padding: 8px 0 12px; }
     .badge {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      font-family: 'Share Tech Mono', monospace;
+      font-family: var(--ff-m);
       font-size: 10px;
-      letter-spacing: 3px;
+      letter-spacing: 0.16em;
       text-transform: uppercase;
-      color: var(--sniper-red);
-      border: 1px solid rgba(200,16,46,0.25);
-      background: var(--red-bg);
-      padding: 5px 10px;
-      margin-bottom: 14px;
+      color: var(--cyan-ink);
+      border: 1px solid rgba(0, 229, 255, 0.35);
+      background: var(--cyan-dim);
+      padding: 6px 12px;
+      border-radius: 999px;
+      margin-bottom: 16px;
     }
-    .hero h2,
-    .lesson h2,
-    .module-head h2,
-    .closing h2 {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: clamp(28px, 4vw, 44px);
-      font-weight: 800;
-      color: var(--ink);
+
+    .lesson { scroll-margin-top: 84px; padding: 28px 0 8px; }
+    .module-block { scroll-margin-top: 84px; }
+
+    h2 {
+      font-family: var(--ff-d);
+      font-size: clamp(26px, 4vw, 40px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+    h2 em {
+      font-family: var(--ff-b);
+      font-style: italic;
+      font-weight: 600;
+      color: var(--gold-ink);
+    }
+    h3 {
+      font-family: var(--ff-d);
+      font-size: clamp(18px, 2.4vw, 24px);
+      font-weight: 600;
+      letter-spacing: -0.01em;
       margin-bottom: 10px;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
     }
-    .hero p.lede {
-      font-size: 17px;
-      color: var(--ink-med);
-      line-height: 1.7;
-      max-width: 680px;
-      margin-bottom: 18px;
-    }
-
-    .lesson h3,
-    .module-head h3 {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: clamp(22px, 3vw, 30px);
-      font-weight: 800;
-      color: var(--ink);
-      letter-spacing: 0.4px;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-
     p {
       font-size: 16px;
       line-height: 1.7;
-      color: var(--ink-med);
+      color: var(--text2);
       margin-bottom: 14px;
     }
-
-    .term {
-      font-weight: 600;
-      color: var(--ink);
+    .lede {
+      font-size: 17px;
+      color: var(--text3);
+      max-width: 680px;
     }
+    .term { font-weight: 700; color: var(--text); }
 
-    /* ── Cards & callouts ── */
     .card-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 14px;
-      margin: 20px 0 8px;
+      margin: 20px 0;
     }
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 2px;
+      border-radius: 16px;
       padding: 20px;
-      position: relative;
+      box-shadow: var(--shadow);
     }
-    .card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 3px;
-    }
-    .card.red::before { background: var(--sniper-red); }
-    .card.green::before { background: var(--green); }
-    .card.gold::before { background: var(--gold); }
-    .card.cyan::before { background: var(--cyan); }
-    .card.ink::before { background: var(--ink); }
+    .card.gold { border-top: 3px solid var(--gold); }
+    .card.cyan { border-top: 3px solid var(--cyan); }
+    .card.emerald { border-top: 3px solid var(--emerald); }
+    .card.rose { border-top: 3px solid var(--rose); }
+    .card.mute { border-top: 3px solid var(--text4); }
     .card h4 {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: 0.6px;
+      font-family: var(--ff-d);
+      font-size: 13px;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
-    .card p { font-size: 14px; color: var(--ink-dim); margin: 0; }
+    .card p { font-size: 14px; color: var(--text3); margin: 0; }
+    .card .chip {
+      font-family: var(--ff-m);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--cyan-ink);
+      margin-bottom: 8px;
+    }
 
-    .signal-box {
+    .note {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 2px;
-      padding: 18px 20px;
+      border-left: 4px solid var(--gold);
+      border-radius: 0 12px 12px 0;
+      padding: 16px 18px;
       margin: 16px 0;
     }
-    .signal-box.bull { border-left: 4px solid var(--green); }
-    .signal-box.bear { border-left: 4px solid var(--sniper-red); }
-    .signal-box.note { border-left: 4px solid var(--gold); }
-    .signal-box.warn { border-left: 4px solid var(--sniper-red); background: var(--red-bg); }
-    .signal-tag {
-      font-family: 'Share Tech Mono', monospace;
+    .note.warn { border-left-color: var(--rose); background: #fff6f6; }
+    .note.ok { border-left-color: var(--emerald); background: #f3fdf8; }
+    .note.cyan { border-left-color: var(--cyan); background: #f3fcfe; }
+    .note-tag {
+      font-family: var(--ff-m);
       font-size: 10px;
-      letter-spacing: 2px;
-      padding: 3px 8px;
-      border-radius: 2px;
-      display: inline-block;
-      margin-bottom: 8px;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
-    }
-    .tag-bull { background: var(--green-bg); color: var(--green); border: 1px solid rgba(10,110,63,0.2); }
-    .tag-bear { background: var(--red-bg); color: var(--sniper-red); border: 1px solid rgba(200,16,46,0.2); }
-    .tag-gold { background: var(--gold-bg); color: var(--gold); border: 1px solid rgba(122,85,0,0.2); }
-    .signal-box p:last-child { margin-bottom: 0; }
-
-    .lesson {
-      scroll-margin-top: 80px;
-      padding: 28px 0 12px;
-    }
-    .module-block {
-      scroll-margin-top: 80px;
-      padding-top: 12px;
-    }
-    .module-head { padding: 28px 0 4px; }
-
-    .divider-label {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin: 8px 0 4px;
-    }
-    .divider-label::before,
-    .divider-label::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
-    .divider-label span {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 9px;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      color: var(--ink-muted);
-      white-space: nowrap;
-    }
-
-    /* ── Figures ── */
-    .figure-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 2px;
-      margin: 22px 0 8px;
-      overflow: hidden;
-      box-shadow: 0 2px 14px rgba(26,22,18,0.06);
-    }
-    .figure-card img {
+      color: var(--gold-ink);
       display: block;
-      width: 100%;
-      height: auto;
-      background: #faf9f6;
+      margin-bottom: 6px;
     }
-    .figure-card figcaption {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 11px;
-      letter-spacing: 0.6px;
-      color: var(--ink-dim);
-      padding: 12px 16px 14px;
-      border-top: 1px solid var(--border);
-      background: var(--surface-alt);
-    }
+    .note.warn .note-tag { color: var(--rose-ink); }
+    .note.ok .note-tag { color: var(--emerald-ink); }
+    .note.cyan .note-tag { color: var(--cyan-ink); }
+    .note p:last-child { margin: 0; }
 
-    /* ── Tables & steps ── */
-    .score-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 18px 0;
-      font-size: 14px;
-      background: var(--surface);
-    }
-    .score-table th {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--ink-dim);
-      text-align: left;
-      padding: 10px 14px;
-      border-bottom: 2px solid var(--border-strong);
-      background: var(--surface-alt);
-    }
-    .score-table td {
-      padding: 12px 14px;
-      border-bottom: 1px solid var(--border);
-      color: var(--ink-med);
-      vertical-align: top;
-      line-height: 1.5;
-    }
-
-    .steps { margin: 8px 0 4px; }
-    .step {
+    .layer {
       display: flex;
       gap: 16px;
       align-items: flex-start;
-      padding: 16px 0;
-      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px 20px;
+      margin: 10px 0;
     }
-    .step:last-child { border-bottom: none; }
-    .step-num {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--sniper-red);
-      background: var(--red-bg);
-      border: 1px solid rgba(200,16,46,0.2);
-      width: 36px;
-      height: 36px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 2px;
+    .layer-n {
       flex-shrink: 0;
-    }
-    .step-content h4 {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: 0.4px;
+      font-family: var(--ff-m);
+      font-size: 11px;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
+      color: var(--gold-ink);
+      border: 1px solid var(--border2);
+      background: var(--gold-dim);
+      padding: 8px 10px;
+      border-radius: 10px;
+      min-width: 84px;
+      text-align: center;
+    }
+    .layer h4 {
+      font-family: var(--ff-b);
+      font-size: 17px;
+      font-weight: 700;
       margin-bottom: 4px;
     }
-    .step-content p { font-size: 15px; margin-bottom: 0; }
+    .layer p { font-size: 15px; margin: 0; color: var(--text3); }
+
+    .figure-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      margin: 22px 0 8px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .figure-card img { width: 100%; background: #faf9f6; }
+    .figure-card figcaption {
+      font-family: var(--ff-m);
+      font-size: 11px;
+      color: var(--text3);
+      padding: 12px 16px 14px;
+      border-top: 1px solid var(--border);
+      background: var(--bg2);
+    }
+
+    table.sheet {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      font-size: 14px;
+    }
+    table.sheet th {
+      font-family: var(--ff-m);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-align: left;
+      color: var(--text4);
+      padding: 12px 14px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+    }
+    table.sheet td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text2);
+      vertical-align: top;
+      line-height: 1.5;
+    }
+    table.sheet tr:last-child td { border-bottom: none; }
 
     .playbook {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 2px;
-      padding: 8px 8px 8px 4px;
-      margin: 16px 0;
+      border-radius: 16px;
+      overflow: hidden;
     }
     .check-row {
       display: flex;
@@ -629,150 +575,140 @@
     .check-row:last-child { border-bottom: none; }
     .check-row input {
       margin-top: 4px;
-      accent-color: var(--sniper-red);
+      accent-color: #00c4b0;
       width: 16px;
       height: 16px;
-      flex-shrink: 0;
     }
     .check-row label {
       font-size: 15px;
       line-height: 1.55;
-      color: var(--ink-med);
+      color: var(--text2);
       cursor: pointer;
     }
     .check-row input:checked + label {
-      color: var(--ink-dim);
+      color: var(--text4);
       text-decoration: line-through;
     }
 
-    .takeaway-list {
-      list-style: none;
-      margin: 12px 0 20px;
-    }
-    .takeaway-list li {
-      position: relative;
+    .takeaways { list-style: none; margin: 8px 0 20px; }
+    .takeaways li {
       padding: 10px 0 10px 22px;
       border-bottom: 1px solid var(--border);
-      font-size: 16px;
+      position: relative;
+      color: var(--text2);
       line-height: 1.6;
-      color: var(--ink-med);
     }
-    .takeaway-list li::before {
+    .takeaways li::before {
       content: '';
       position: absolute;
       left: 0;
-      top: 18px;
+      top: 19px;
       width: 10px;
       height: 2px;
-      background: var(--sniper-red);
+      background: var(--gold);
     }
 
-    .cta-block {
-      text-align: center;
+    .cta-band {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-top: 3px solid var(--sniper-red);
-      padding: 32px 24px;
-      margin: 28px 0 16px;
+      border-radius: 16px;
+      padding: 32px 28px;
+      margin: 24px 0 16px;
+      box-shadow: var(--shadow);
     }
-    .cta-line {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: clamp(22px, 3vw, 30px);
-      font-weight: 800;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--ink);
-    }
-    .cta-line a {
-      color: var(--sniper-red);
-      text-decoration: none;
-      border-bottom: 2px solid rgba(200,16,46,0.3);
-    }
-    .cta-line a:hover { border-bottom-color: var(--sniper-red); }
-
+    .cta-band h2 { margin-bottom: 8px; }
     .btn {
-      display: inline-block;
-      font-family: 'Barlow Condensed', sans-serif;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--ff-b);
       font-weight: 700;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      padding: 14px 36px;
-      background: var(--sniper-red);
-      color: #fff;
-      border: none;
-      border-radius: 2px;
-      cursor: pointer;
+      font-size: 15px;
+      padding: 12px 22px;
+      border-radius: 999px;
       text-decoration: none;
-      font-size: 14px;
+      border: 1px solid transparent;
     }
-    .btn:hover { background: var(--sniper-red-dark); color: #fff; }
+    .btn-gold {
+      background: linear-gradient(135deg, var(--gold), #d4a628);
+      color: #12151a;
+      box-shadow: 0 8px 22px rgba(240, 192, 64, 0.28);
+    }
+    .btn-gold:hover { color: #12151a; filter: brightness(1.04); }
+    .btn-line {
+      border-color: var(--border2);
+      color: var(--text);
+      background: transparent;
+    }
+    .btn-line:hover { border-color: var(--gold); color: var(--gold-ink); }
+    .cta-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
 
     .study-note {
       font-size: 13px;
-      color: var(--ink-dim);
-      background: var(--surface-alt);
-      border: 1px dashed var(--border-strong);
+      color: var(--text3);
+      background: var(--bg2);
+      border: 1px dashed var(--border2);
+      border-radius: 12px;
       padding: 14px 16px;
       margin: 16px 0;
     }
     .study-note strong {
-      font-family: 'Share Tech Mono', monospace;
+      font-family: var(--ff-m);
       font-size: 10px;
-      letter-spacing: 2px;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: var(--ink);
+      color: var(--text);
       display: block;
       margin-bottom: 6px;
     }
 
     footer {
-      background: var(--ink);
-      border-top: 3px solid var(--sniper-red);
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
       position: relative;
       z-index: 2;
     }
     .footer-inner {
       display: flex;
-      align-items: flex-start;
       justify-content: space-between;
-      padding: 20px 0;
+      gap: 16px;
       flex-wrap: wrap;
-      gap: 14px;
-    }
-    .footer-inner p {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 10px;
-      color: rgba(255,255,255,0.4);
-      margin: 0;
-      letter-spacing: 1.2px;
-      line-height: 1.7;
-      max-width: 520px;
+      padding: 22px 0;
     }
     .footer-brand {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 14px;
-      font-weight: 800;
-      color: rgba(255,255,255,0.6);
-      letter-spacing: 3px;
+      font-family: var(--ff-d);
+      font-size: 13px;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
+      color: var(--text);
     }
-    .footer-brand span { color: var(--sniper-red); }
+    .footer-brand span { color: var(--gold-ink); }
     .footer-brand a { color: inherit; text-decoration: none; }
+    footer p {
+      font-family: var(--ff-m);
+      font-size: 11px;
+      color: var(--text4);
+      margin: 0;
+      max-width: 560px;
+      line-height: 1.7;
+    }
 
     @media (max-width: 900px) {
-      .course-shell { grid-template-columns: 1fr; }
+      .shell { grid-template-columns: 1fr; }
       .sidebar { display: none; }
+      .header-title { text-align: left; }
     }
     @media (max-width: 600px) {
-      .header-inner { flex-direction: column; align-items: flex-start; }
-      .brand-name { font-size: 24px; }
-      h1 { font-size: 20px; }
-      .header-top-text { display: none; }
-      .card-grid { grid-template-columns: 1fr; }
       .progress-meta { display: none; }
-      .nav-btn { padding: 14px 12px; }
+      .header-top-text { display: none; }
+      .layer { flex-direction: column; }
+      .card-grid { grid-template-columns: 1fr; }
+      table.sheet, table.sheet thead, table.sheet tbody, table.sheet th, table.sheet td, table.sheet tr {
+        display: block;
+      }
+      table.sheet th { display: none; }
+      table.sheet td { border-bottom: 1px solid var(--border); }
     }
-
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
       .live-dot { animation: none; }
@@ -785,32 +721,32 @@
 
   <header>
     <div class="header-top">
-      <div class="container">
-        <span class="header-top-text">Non-Repaint Pivots · Locked Swing Course</span>
-        <span class="header-top-live"><span class="live-dot"></span>EDUCATION</span>
+      <div class="wrap">
+        <span class="header-top-text">No Repaint Indicator · Interpretation Course</span>
+        <span class="header-live"><span class="live-dot"></span>Education</span>
       </div>
     </div>
     <div class="header-main">
-      <div class="container">
+      <div class="wrap">
         <div class="header-inner">
-          <a class="brand-lockup" href="/index.html">
-            <svg class="crosshair-logo" viewBox="0 0 52 52" fill="none" aria-hidden="true">
-              <circle cx="26" cy="26" r="24" stroke="#c8102e" stroke-width="2"/>
-              <circle cx="26" cy="26" r="14" stroke="#c8102e" stroke-width="1.5" opacity="0.6"/>
-              <circle cx="26" cy="26" r="4" fill="#c8102e"/>
-              <line x1="26" y1="2" x2="26" y2="14" stroke="#c8102e" stroke-width="2.5"/>
-              <line x1="26" y1="38" x2="26" y2="50" stroke="#c8102e" stroke-width="2.5"/>
-              <line x1="2" y1="26" x2="14" y2="26" stroke="#c8102e" stroke-width="2.5"/>
-              <line x1="38" y1="26" x2="50" y2="26" stroke="#c8102e" stroke-width="2.5"/>
+          <a class="brand" href="/index.html">
+            <svg class="crosshair" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+              <circle cx="20" cy="20" r="18" stroke="#f0c040" stroke-width="1.6"/>
+              <circle cx="20" cy="20" r="10" stroke="#00e5ff" stroke-width="1.2" opacity="0.7"/>
+              <circle cx="20" cy="20" r="3" fill="#00e5a0"/>
+              <line x1="20" y1="2" x2="20" y2="10" stroke="#f0c040" stroke-width="2"/>
+              <line x1="20" y1="30" x2="20" y2="38" stroke="#f0c040" stroke-width="2"/>
+              <line x1="2" y1="20" x2="10" y2="20" stroke="#f0c040" stroke-width="2"/>
+              <line x1="30" y1="20" x2="38" y2="20" stroke="#f0c040" stroke-width="2"/>
             </svg>
             <div>
-              <div class="brand-name"><span>Sniper</span>Trader</div>
+              <div class="brand-name">SniperTrader<span>.ai</span></div>
               <div class="brand-sub">Precision · Patience · Edge</div>
             </div>
           </a>
-          <div>
-            <h1>Non-Repaint <span>Pivots</span></h1>
-            <div class="subtitle">// Locked swing levels · Closed-bar confirmation</div>
+          <div class="header-title">
+            <h1>Non-Repaint <em>Pivots</em></h1>
+            <p>Four-step read · VWAP bands · Trend cloud · Bar-close alerts</p>
           </div>
         </div>
       </div>
@@ -818,368 +754,351 @@
   </header>
 
   <div class="disclaimer-strip">
-    <div class="container">
+    <div class="wrap">
       <p>For education only. Not financial advice.</p>
     </div>
   </div>
 
   <nav class="course-nav" aria-label="Course modules">
     <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></div>
-    <div class="container">
+    <div class="wrap">
       <div class="nav-row">
         <div class="progress-meta" id="progressMeta">Read <strong>0%</strong></div>
-        <div class="nav-inner" id="topNav">
+        <div class="nav-inner">
           <button class="nav-btn active" type="button" data-target="hero" aria-current="true"><span class="mark"></span>Start</button>
-          <button class="nav-btn" type="button" data-target="m1"><span class="mark"></span>01 · Setup</button>
-          <button class="nav-btn" type="button" data-target="lesson-1-1"><span class="mark"></span>1.1 Locked</button>
-          <button class="nav-btn" type="button" data-target="lesson-1-2"><span class="mark"></span>1.2 Params</button>
-          <button class="nav-btn" type="button" data-target="m2"><span class="mark"></span>02 · Signals</button>
-          <button class="nav-btn" type="button" data-target="lesson-2-1"><span class="mark"></span>2.1 Reversal</button>
-          <button class="nav-btn" type="button" data-target="lesson-2-2"><span class="mark"></span>2.2 Fakeouts</button>
-          <button class="nav-btn" type="button" data-target="m3"><span class="mark"></span>03 · Risk</button>
-          <button class="nav-btn" type="button" data-target="lesson-3-1"><span class="mark"></span>3.1 Stops</button>
-          <button class="nav-btn" type="button" data-target="lesson-3-2"><span class="mark"></span>3.2 Timeframes</button>
-          <button class="nav-btn" type="button" data-target="m4"><span class="mark"></span>04 · Filters</button>
-          <button class="nav-btn" type="button" data-target="playbook"><span class="mark"></span>Playbook</button>
-          <button class="nav-btn" type="button" data-target="closing"><span class="mark"></span>Close</button>
+          <button class="nav-btn" type="button" data-target="workflow"><span class="mark"></span>Four steps</button>
+          <button class="nav-btn" type="button" data-target="m1"><span class="mark"></span>01 Pivots</button>
+          <button class="nav-btn" type="button" data-target="m2"><span class="mark"></span>02 VWAP</button>
+          <button class="nav-btn" type="button" data-target="m3"><span class="mark"></span>03 Cloud</button>
+          <button class="nav-btn" type="button" data-target="m4"><span class="mark"></span>04 Structure</button>
+          <button class="nav-btn" type="button" data-target="m5"><span class="mark"></span>05 Alerts</button>
+          <button class="nav-btn" type="button" data-target="resources"><span class="mark"></span>Checklist</button>
         </div>
       </div>
     </div>
   </nav>
 
-  <div class="container">
-    <div class="course-shell">
+  <div class="wrap">
+    <div class="shell">
       <aside class="sidebar" aria-label="Lesson list">
-        <div class="sidebar-label">Course map</div>
+        <div class="sidebar-label">Learn map</div>
         <div class="side-mod">
           <h3>Start</h3>
-          <button class="side-link active" type="button" data-target="hero"><span class="side-dot"></span>Hero &amp; terms</button>
+          <button class="side-link active" type="button" data-target="hero"><span class="side-dot"></span>Course brief</button>
+          <button class="side-link" type="button" data-target="workflow"><span class="side-dot"></span>Four-step read</button>
         </div>
         <div class="side-mod">
-          <h3>Module 1 · Setup</h3>
-          <button class="side-link" type="button" data-target="lesson-1-1"><span class="side-dot"></span>1.1 Repaint vs Locked</button>
-          <button class="side-link" type="button" data-target="lesson-1-2"><span class="side-dot"></span>1.2 Setup &amp; Parameters</button>
+          <h3>Modules</h3>
+          <button class="side-link" type="button" data-target="m1"><span class="side-dot"></span>01 Pivot mechanics</button>
+          <button class="side-link" type="button" data-target="m2"><span class="side-dot"></span>02 VWAP &amp; bands</button>
+          <button class="side-link" type="button" data-target="m3"><span class="side-dot"></span>03 Trend cloud</button>
+          <button class="side-link" type="button" data-target="m4"><span class="side-dot"></span>04 Swing structure</button>
+          <button class="side-link" type="button" data-target="m5"><span class="side-dot"></span>05 Alerts &amp; execution</button>
         </div>
         <div class="side-mod">
-          <h3>Module 2 · Signals</h3>
-          <button class="side-link" type="button" data-target="lesson-2-1"><span class="side-dot"></span>2.1 Reversal vs Breakout</button>
-          <button class="side-link" type="button" data-target="lesson-2-2"><span class="side-dot"></span>2.2 Filter Fakeouts</button>
-        </div>
-        <div class="side-mod">
-          <h3>Module 3 · Risk</h3>
-          <button class="side-link" type="button" data-target="lesson-3-1"><span class="side-dot"></span>3.1 Stops &amp; Targets</button>
-          <button class="side-link" type="button" data-target="lesson-3-2"><span class="side-dot"></span>3.2 Multi-Timeframe</button>
-        </div>
-        <div class="side-mod">
-          <h3>Module 4 · Filters</h3>
-          <button class="side-link" type="button" data-target="m4"><span class="side-dot"></span>Complementary filters</button>
-        </div>
-        <div class="side-mod">
-          <h3>Practice</h3>
-          <button class="side-link" type="button" data-target="playbook"><span class="side-dot"></span>Practical playbook</button>
+          <h3>Desk</h3>
+          <button class="side-link" type="button" data-target="resources"><span class="side-dot"></span>Cheat sheets</button>
           <button class="side-link" type="button" data-target="closing"><span class="side-dot"></span>Takeaways</button>
         </div>
       </aside>
 
       <main id="course-start">
-        <section class="hero lesson" id="hero" data-lesson>
+        <section class="lesson" id="hero" data-lesson>
           <span class="badge">Education · SniperTrader</span>
-          <div class="section-label">Course</div>
-          <h2>Non-Repaint Pivots</h2>
-          <p class="lede">Learn locked swing levels that stay put after the bar closes — so you trade what you see, not hindsight.</p>
-          <p>This course is for beginners. We use short sentences. Each new word is explained once, then reused.</p>
+          <div class="eyebrow">Included course</div>
+          <h2>Learn to read it. <em>In a weekend.</em></h2>
+          <p class="lede">Anchor to fair value. Confirm the swing. Trade the trend. Non-repainting pivots, an anchored VWAP with three deviation bands, and a triple-EMA trend cloud — one clean read.</p>
+          <p>This page teaches the same four-step session used on the indicator. Short sentences. Each new word is explained once.</p>
 
           <div class="card-grid">
-            <div class="card red">
-              <h4>Noise → lock</h4>
-              <p>A forming candle is noise. A finished candle can lock a level.</p>
-            </div>
             <div class="card gold">
-              <h4>Patience first</h4>
-              <p>Wait for the close. If you rush, you trade a picture that can still change.</p>
+              <h4>Fair value</h4>
+              <p>VWAP + ±1σ / ±2σ / ±3σ bands. See if price is at value or stretched.</p>
             </div>
             <div class="card cyan">
-              <h4>Edge is process</h4>
-              <p>Same rules, every time: lock, confirm, size the risk, then act.</p>
+              <h4>Trend</h4>
+              <p>EMA 9 / 21 / 50 cloud with a 200 filter. BULL, BEAR, or RANGE.</p>
+            </div>
+            <div class="card emerald">
+              <h4>Structure</h4>
+              <p>Confirmed pivots. The arrow prints after the close — and stays.</p>
             </div>
           </div>
 
-          <div class="signal-box note">
-            <span class="signal-tag tag-gold">Words we will use</span>
-            <p>A <span class="term">pivot</span> is a swing high or swing low — a turning point on the chart.</p>
-            <p>A <span class="term">candle</span> (also called a bar) is one block of price for a set time. When that time ends, the candle is <span class="term">closed</span>.</p>
-            <p>A <span class="term">repaint</span> is a marker that moves or vanishes after you first saw it. A <span class="term">locked</span> marker stays put.</p>
+          <div class="note">
+            <span class="note-tag">Words we will use</span>
+            <p>A <span class="term">pivot</span> is a swing high or swing low — a turning point.</p>
+            <p>A <span class="term">candle</span> (or bar) is one block of price. When its time ends, it is <span class="term">closed</span>.</p>
+            <p>A <span class="term">repaint</span> is a marker that moves or vanishes. A <span class="term">locked</span> marker stays put.</p>
+            <p><span class="term">VWAP</span> is the volume-weighted average price. It is a fair-value line.</p>
           </div>
         </section>
 
-        <!-- ════════ MODULE 1 ════════ -->
-        <section class="module-block" id="m1">
-          <div class="module-head">
-            <div class="divider-label"><span>Module 01</span></div>
-            <div class="section-label">Indicator Fundamentals &amp; Setup</div>
-            <h2>See it clear. Then lock it in.</h2>
-            <p>First you learn why most pivot tools lie after the fact. Then you set the indicator so it only speaks on a finished candle.</p>
+        <section class="lesson" id="workflow" data-lesson>
+          <div class="eyebrow">The daily workflow</div>
+          <h2>From chart to decision. <em>In four steps.</em></h2>
+          <p class="lede">You do not need to know how the script is built. You need to know how to trade it. Same four steps, every session.</p>
+
+          <div class="layer">
+            <div class="layer-n">Step 01</div>
+            <div>
+              <h4>Anchor to fair value</h4>
+              <p>Choose the VWAP start: confirmed swing, session, day, or week. The line and its three bands show whether price is at value or stretched away from it.</p>
+            </div>
+          </div>
+          <div class="layer">
+            <div class="layer-n">Step 02</div>
+            <div>
+              <h4>Read the trend cloud</h4>
+              <p>Green means look for longs. Red means look for shorts. Grey means stand aside. Never take a setup against the cloud.</p>
+            </div>
+          </div>
+          <div class="layer">
+            <div class="layer-n">Step 03</div>
+            <div>
+              <h4>Confirm the swing</h4>
+              <p>A swing high or low only prints after two right-side bars close. Once printed, it stays. No disappearing arrows. No quietly shifting stops.</p>
+            </div>
+          </div>
+          <div class="layer">
+            <div class="layer-n">Step 04</div>
+            <div>
+              <h4>Trade the band extremes</h4>
+              <p>A close back through VWAP is impulse. A push through +3σ or −3σ is a stretched move. Each event fires its own alert on bar close.</p>
+            </div>
           </div>
 
-          <article class="lesson" id="lesson-1-1" data-lesson>
-            <div class="section-label">Lesson 1.1</div>
-            <h3>Repaint vs Locked</h3>
-            <p>Many pivot tools shift as new ticks arrive. The dot slides. The line redraws. The old signal disappears. That is a <span class="term">repaint</span>. It is a hindsight trap. The chart looks perfect later. It did not look that way in real time.</p>
-            <p>A <span class="term">non-repaint pivot</span> waits until the candle finishes. Only then can the marker appear. Once it appears, it does not move. It does not vanish.</p>
-            <p>Think of it this way: do not trust a candle that is still being drawn. Wait until it is done. Then the level can lock.</p>
-
-            <div class="signal-box warn">
-              <span class="signal-tag tag-bear">Closed bar only</span>
-              <p>If the candle is still open, the story can still change. Locked pivots confirm after the close — the same idea as “wait until the candle finishes.”</p>
-            </div>
-
-            <figure class="figure-card">
-              <img src="assets/course/norepaint/01_repaint_vs_locked.png" alt="Side-by-side chart: a dashed repaint line that moves after the fact, versus a locked pivot that stays put after the bar closes." width="1280" height="720">
-              <figcaption>Fig. 01 — Repaint markers move after the fact. Locked markers stay after the bar closes.</figcaption>
-            </figure>
-          </article>
-
-          <article class="lesson" id="lesson-1-2" data-lesson>
-            <div class="section-label">Lesson 1.2</div>
-            <h3>Setup &amp; Parameters</h3>
-            <p>You only need two settings to start. Leave the rest alone until you can read a lock.</p>
-            <p><span class="term">Pivot depth</span> is how many candles sit on each side of a swing. A deeper number needs a bigger turn before it locks. Use about <strong>10</strong> for scalping on the 5-minute or 15-minute chart. Use about <strong>21</strong> for swing trades on the 1-hour or 4-hour chart.</p>
-            <p><span class="term">ATR</span> means Average True Range. It is a simple measure of how much price usually moves. An <span class="term">ATR multiplier</span> stretches or tightens bands around the pivot. In a quiet market the bands sit closer. In a wild market they sit farther. The bands adapt to volatility.</p>
-            <p>Always calculate on closed bars only. If the candle is still forming, wait.</p>
-
-            <div class="card-grid">
-              <div class="card gold">
-                <h4>Depth ~10</h4>
-                <p>Scalp setting. Faster locks on 5m and 15m charts.</p>
-              </div>
-              <div class="card cyan">
-                <h4>Depth ~21</h4>
-                <p>Swing setting. Slower, larger turns on 1H and 4H.</p>
-              </div>
-              <div class="card ink">
-                <h4>ATR bands</h4>
-                <p>Distance from the pivot follows recent volatility, not a fixed number of points.</p>
-              </div>
-            </div>
-
-            <figure class="figure-card">
-              <img src="assets/course/norepaint/02_atr_bands.png" alt="Chart showing a locked pivot with ATR multiplier bands above and below, and a pivot depth of 10 to 21." width="1280" height="720">
-              <figcaption>Fig. 02 — ATR bands adapt to volatility. Pivot depth 10 fits scalps. Depth 21 fits swings.</figcaption>
-            </figure>
-          </article>
+          <div class="note ok">
+            <span class="note-tag">One setup = one decision</span>
+            <p>Fair value, trend, and structure should agree before you risk a dollar. The alerts hand you the read. You still decide whether to act.</p>
+          </div>
         </section>
 
-        <!-- ════════ MODULE 2 ════════ -->
-        <section class="module-block" id="m2">
-          <div class="module-head">
-            <div class="divider-label"><span>Module 02</span></div>
-            <div class="section-label">Reading Signals</div>
-            <h2>The close is the vote.</h2>
-            <p>A lock is not a trade by itself. You still need the candle to finish on the right side of the level.</p>
+        <!-- MODULE 01 -->
+        <section class="module-block lesson" id="m1" data-lesson>
+          <div class="eyebrow">Module 01 · 45 min</div>
+          <h2>Non-repaint pivot <em>mechanics.</em></h2>
+          <p class="lede">Why repainting kills consistency — and how the left-lookback / right-confirm rule keeps a pivot static once it prints.</p>
+
+          <h3>Repaint vs locked</h3>
+          <p>Many pivot tools shift as new ticks arrive. The dot slides. The old signal disappears. That is a repaint. The chart looks perfect later. It did not look that way in real time.</p>
+          <p>A non-repaint pivot waits. The candle must finish. Only then can the marker appear. Once it appears, it does not move. It does not vanish.</p>
+
+          <div class="note warn">
+            <span class="note-tag">Bar-close only</span>
+            <p>If the candle is still open, the story can still change. Locked pivots confirm after the close. Wait until the candle finishes.</p>
           </div>
 
-          <article class="lesson" id="lesson-2-1" data-lesson>
-            <div class="section-label">Lesson 2.1</div>
-            <h3>Reversal vs Breakout</h3>
-            <p><span class="term">Support</span> is a price where buyers have held before. A support pivot is a locked low.</p>
-            <p><span class="term">Resistance</span> is a price where sellers have held before. A resistance pivot is a locked high.</p>
+          <figure class="figure-card">
+            <img src="assets/course/norepaint/01_repaint_vs_locked.png" alt="Repaint markers move after the fact. Locked pivots stay after the bar closes." width="1280" height="720">
+            <figcaption>Fig. 01 — Repaint is a hindsight trap. Locked means the marker stays after the bar closes.</figcaption>
+          </figure>
 
-            <div class="signal-box bull">
-              <span class="signal-tag tag-bull">Bullish · long bias</span>
-              <p>Price touches locked support. Then the candle <strong>closes above</strong> that support. That is a long bias — you are only looking to buy.</p>
-            </div>
-            <div class="signal-box bear">
-              <span class="signal-tag tag-bear">Bearish · short bias</span>
-              <p>Price touches locked resistance. Then the candle <strong>closes below</strong> that resistance. That is a short bias — you are only looking to sell.</p>
-            </div>
-
-            <p>After the bar closes, check the label. It should stay locked. If it stays, the signal is real. If it slides or vanishes, it was never locked.</p>
-
-            <figure class="figure-card">
-              <img src="assets/course/norepaint/03_bullish_signal.png" alt="Locked support pivot. Price touches support, a green candle closes above it, and the next bar open is the entry." width="1280" height="720">
-              <figcaption>Fig. 03 — Locked support: touch, close above, then look to the next bar open.</figcaption>
-            </figure>
-          </article>
-
-          <article class="lesson" id="lesson-2-2" data-lesson>
-            <div class="section-label">Lesson 2.2</div>
-            <h3>Filter Fakeouts</h3>
-            <p>A <span class="term">fakeout</span> is a move that looks like a signal, then fails. Mid-bar, price can poke through a pivot and then snap back. That poke is not a vote.</p>
-            <p>Use the closed-candle rule only. Do not enter while the candle is still open.</p>
-            <p>Wait for the lock. If the signal disappears before the close, skip it. That was a repaint-style trap.</p>
-            <p>Patience is the filter. No lock, no trade.</p>
-
-            <div class="signal-box warn">
-              <span class="signal-tag tag-bear">Skip rule</span>
-              <p>If the marker is not locked at the close, there is no setup. Do not chase the wick. Wait for the next finished candle.</p>
-            </div>
-          </article>
+          <h3>Lookback and confirm</h3>
+          <p>The detector looks left, then waits on the right. A candidate swing high needs <span class="term">5 bars of lower highs to its left</span> and <span class="term">2 confirmation bars to its right</span>. The arrow prints at the true pivot bar — not where it was first suspected.</p>
+          <p>Default inputs: lookback 5, confirm 2. Change them only if your method demands it.</p>
+          <p>A wider swing on a higher timeframe can use a deeper search. The figure below shows a practical depth of about 10 for a 5-minute or 15-minute scalp, and about 21 for a 1-hour or 4-hour swing. Same idea: more bars on each side means a larger turn before the lock.</p>
         </section>
 
-        <!-- ════════ MODULE 3 ════════ -->
-        <section class="module-block" id="m3">
-          <div class="module-head">
-            <div class="divider-label"><span>Module 03</span></div>
-            <div class="section-label">Execution &amp; Risk</div>
-            <h2>Define risk first.</h2>
-            <p>A locked signal still needs a plan. You decide the entry, the stop, and the target before you click.</p>
-          </div>
+        <!-- MODULE 02 -->
+        <section class="module-block lesson" id="m2" data-lesson>
+          <div class="eyebrow">Module 02 · 50 min</div>
+          <h2>Anchored VWAP &amp; <em>deviation bands.</em></h2>
+          <p class="lede">Pick the anchor. Then read ±1σ / ±2σ / ±3σ for value versus a stretched move.</p>
 
-          <article class="lesson" id="lesson-3-1" data-lesson>
-            <div class="section-label">Lesson 3.1</div>
-            <h3>Stops &amp; Targets</h3>
-            <p>The <span class="term">signal bar</span> is the candle that closed on the right side of the locked pivot. You do not enter on that close. You enter on the <strong>next bar open</strong>.</p>
-            <p>A <span class="term">stop-loss</span> is the price where the idea is wrong. For a long, place it <strong>1.5 × ATR</strong> below the pivot low. For a short, place it <strong>1.5 × ATR</strong> above the pivot high. The extra room is a buffer so normal noise does not stop you out.</p>
-            <p>A <span class="term">take-profit</span> is where you bank the trade. Use the next major pivot, or <strong>2.5 × ATR</strong> from entry.</p>
-            <p>Reward is 2.5 × ATR. Risk is 1.5 × ATR. That is about <strong>1.67 to 1</strong>. You do not need a perfect ratio. You do need a written plan.</p>
-
-            <div class="steps">
-              <div class="step">
-                <div class="step-num">01</div>
-                <div class="step-content">
-                  <h4>Entry</h4>
-                  <p>Next bar open after the confirmed signal bar.</p>
-                </div>
-              </div>
-              <div class="step">
-                <div class="step-num">02</div>
-                <div class="step-content">
-                  <h4>Stop</h4>
-                  <p>1.5 × ATR below the pivot low (longs) or above the pivot high (shorts).</p>
-                </div>
-              </div>
-              <div class="step">
-                <div class="step-num">03</div>
-                <div class="step-content">
-                  <h4>Target</h4>
-                  <p>Next major pivot, or 2.5 × ATR from entry.</p>
-                </div>
-              </div>
-            </div>
-
-            <figure class="figure-card">
-              <img src="assets/course/norepaint/04_sl_tp.png" alt="Risk diagram: entry at a pivot zone, stop 1.5 times ATR below the pivot low, take-profit 2.5 times ATR above entry." width="1280" height="720">
-              <figcaption>Fig. 04 — Plan first: 1.5 × ATR risk, 2.5 × ATR target. About 1.67 reward to risk.</figcaption>
-            </figure>
-          </article>
-
-          <article class="lesson" id="lesson-3-2" data-lesson>
-            <div class="section-label">Lesson 3.2</div>
-            <h3>Multi-Timeframe</h3>
-            <p>A <span class="term">timeframe</span> is the candle size you watch. A 5-minute chart makes a new candle every five minutes. A 1-hour chart makes one candle each hour.</p>
-            <p>The <span class="term">higher timeframe</span> sets direction. Here that is the 1-hour chart. The <span class="term">lower timeframe</span> times the entry. Here that is the 5-minute chart.</p>
-            <p>Align 5-minute pivot entries with the 1-hour trend. Take longs only when the higher timeframe agrees. If the 1-hour is up, look for locked support bounces on the 5-minute. If they disagree, wait.</p>
-
-            <figure class="figure-card">
-              <img src="assets/course/norepaint/05_mtf.png" alt="Two stacked charts: a 1-hour bullish trend above the 200 EMA, and a 5-minute entry at a locked pivot bounce that agrees with that trend." width="1280" height="720">
-              <figcaption>Fig. 05 — 1-hour bias first. 5-minute locked pivot second. No long if the higher timeframe disagrees.</figcaption>
-            </figure>
-          </article>
-        </section>
-
-        <!-- ════════ MODULE 4 ════════ -->
-        <section class="module-block lesson" id="m4" data-lesson>
-          <div class="module-head">
-            <div class="divider-label"><span>Module 04</span></div>
-            <div class="section-label">Complementary Filters</div>
-            <h2>Extra checks. Not a new system.</h2>
-            <p>A <span class="term">filter</span> is an extra yes or no. It does not replace the locked pivot. It only supports it. Skip a filter if you are still learning the lock.</p>
-          </div>
+          <p>VWAP is a volume-weighted average. Heavy volume pulls the line. Light volume does less. That is why it is used as institutional fair value.</p>
+          <p>Three bands sit around the line. The area between ±1σ and ±2σ is the value area. ±3σ is a statistical extreme — price is stretched.</p>
 
           <div class="card-grid">
-            <div class="card red">
-              <h4>200 EMA</h4>
-              <p>An EMA is an exponential moving average — a smoothed line of recent prices. The 200 EMA is a slow trend line. Longs only above it. Shorts only below it.</p>
-            </div>
             <div class="card gold">
-              <h4>RSI / Stochastic</h4>
-              <p>RSI is the Relative Strength Index, a 0–100 stretch meter. Stochastic is similar. <span class="term">Divergence</span> means price makes a new low (or high) while the oscillator does not. At a locked pivot, that is confluence — two reasons to care.</p>
+              <div class="chip">Default</div>
+              <h4>Confirmed swing</h4>
+              <p>VWAP restarts on every locked pivot. Bands track the current structural leg.</p>
             </div>
             <div class="card cyan">
-              <h4>ATR</h4>
-              <p>Use ATR to trail a stop as the trade works. Also check whether ATR is rising on a breakout. Rising ATR means the move has energy.</p>
+              <div class="chip">Intraday</div>
+              <h4>Session</h4>
+              <p>Restarts on the session’s first bar. Follows the institutional window.</p>
+            </div>
+            <div class="card emerald">
+              <div class="chip">Daily</div>
+              <h4>Day</h4>
+              <p>Above day VWAP is intraday strength. Below is weakness.</p>
+            </div>
+            <div class="card mute">
+              <div class="chip">Swing</div>
+              <h4>Week</h4>
+              <p>The longest anchor. Smooths daily noise for larger players.</p>
             </div>
           </div>
 
-          <table class="score-table">
-            <thead>
-              <tr><th>Filter</th><th>How it helps</th></tr>
-            </thead>
+          <p>Volatility also sets how far bands sit from a locked pivot. Quiet tape, tighter bands. Wild tape, wider bands. The illustration uses an ATR multiplier — Average True Range, a simple “how much does price usually move” number — to show that idea.</p>
+
+          <figure class="figure-card">
+            <img src="assets/course/norepaint/02_atr_bands.png" alt="Locked pivot with volatility bands and a pivot depth of 10 to 21." width="1280" height="720">
+            <figcaption>Fig. 02 — Bands adapt to volatility. Depth ~10 for scalps. Depth ~21 for swings. On the indicator, the same job is done by VWAP ±σ bands.</figcaption>
+          </figure>
+        </section>
+
+        <!-- MODULE 03 -->
+        <section class="module-block lesson" id="m3" data-lesson>
+          <div class="eyebrow">Module 03 · 55 min</div>
+          <h2>Triple EMA &amp; <em>trend cloud.</em></h2>
+          <p class="lede">Use the 9 / 21 / 50 stack and the 200 filter to read BULL, BEAR, or RANGE before you pick a side.</p>
+
+          <p>An <span class="term">EMA</span> is an exponential moving average — a smoothed line of recent prices. Fast numbers hug price. Slow numbers lag. The cloud sits between the fast and slow lines.</p>
+          <p>The cloud is green only when the fast EMA is above the slow <em>and</em> price is above the 200 EMA. Red is the mirror. Anything else is grey.</p>
+
+          <div class="card-grid">
+            <div class="card emerald">
+              <h4>BULL ▲</h4>
+              <p>EMA 9 &gt; EMA 21 and close &gt; EMA 200. Longs only. Reject shorts.</p>
+            </div>
+            <div class="card rose">
+              <h4>BEAR ▼</h4>
+              <p>EMA 9 &lt; EMA 21 and close &lt; EMA 200. Shorts only. Reject longs.</p>
+            </div>
+            <div class="card mute">
+              <h4>RANGE ◈</h4>
+              <p>Neither condition holds. Stand aside. The filter keeps you out.</p>
+            </div>
+          </div>
+
+          <p>The 200 EMA is also the first optional filter on a higher timeframe. Longs only above it. Shorts only below it. Align a 5-minute pivot with the 1-hour cloud. If they disagree, wait.</p>
+
+          <figure class="figure-card">
+            <img src="assets/course/norepaint/05_mtf.png" alt="1-hour bullish trend above the 200 EMA, with a 5-minute locked pivot entry that agrees." width="1280" height="720">
+            <figcaption>Fig. 05 — Higher timeframe first. 1-hour bias. 5-minute lock second. No long if the cloud disagrees.</figcaption>
+          </figure>
+
+          <p>Optional extra checks sit on top of the cloud. They do not replace it.</p>
+          <table class="sheet">
+            <thead><tr><th>Filter</th><th>How it helps</th></tr></thead>
             <tbody>
-              <tr>
-                <td><strong>200 EMA</strong></td>
-                <td>Longs only above the EMA. Shorts only below.</td>
-              </tr>
-              <tr>
-                <td><strong>RSI / Stochastic</strong></td>
-                <td>Divergence at the pivot = confluence.</td>
-              </tr>
-              <tr>
-                <td><strong>ATR</strong></td>
-                <td>Trailing stops + a breakout momentum check.</td>
-              </tr>
+              <tr><td><strong>200 EMA</strong></td><td>Longs only above. Shorts only below. Same rule as the cloud’s trend gate.</td></tr>
+              <tr><td><strong>RSI / Stochastic</strong></td><td>These are 0–100 stretch meters. Divergence at a locked pivot is confluence — two reasons to care.</td></tr>
+              <tr><td><strong>ATR</strong></td><td>Trail a stop as the trade works. Rising ATR on a band break means the move has energy.</td></tr>
             </tbody>
           </table>
 
           <figure class="figure-card">
-            <img src="assets/course/norepaint/06_filters.png" alt="Three-part filter stack: price above the 200 EMA, bullish RSI divergence at a pivot, and rising ATR as a momentum check." width="1280" height="720">
-            <figcaption>Fig. 06 — Optional stack: 200 EMA direction, RSI divergence at the pivot, ATR momentum.</figcaption>
+            <img src="assets/course/norepaint/06_filters.png" alt="Filter stack: 200 EMA direction, RSI divergence at a pivot, and ATR momentum." width="1280" height="720">
+            <figcaption>Fig. 06 — Optional stack. Cloud first. 200 EMA, RSI divergence, and ATR are extra yes-or-no checks.</figcaption>
           </figure>
         </section>
 
-        <!-- ════════ PLAYBOOK ════════ -->
-        <section class="lesson" id="playbook" data-lesson>
-          <div class="divider-label"><span>Practice</span></div>
-          <div class="section-label">Practical Playbook</div>
-          <h2>One checklist. Same order.</h2>
-          <p>Work this list on replay first. Tick a box when you can do the step without rushing.</p>
+        <!-- MODULE 04 -->
+        <section class="module-block lesson" id="m4" data-lesson>
+          <div class="eyebrow">Module 04 · 50 min</div>
+          <h2>Reading swing <em>structure.</em></h2>
+          <p class="lede">Higher-high / lower-low sequences, and break-and-retest setups built on static pivots.</p>
+
+          <p><span class="term">Support</span> is a locked low — buyers held there. <span class="term">Resistance</span> is a locked high — sellers held there.</p>
+          <p>Bullish: price touches locked support, then the candle <strong>closes above</strong> it. That is a long bias — you only look to buy, and only if the cloud is BULL.</p>
+          <p>Bearish: price touches locked resistance, then the candle <strong>closes below</strong> it. Short bias. Cloud must be BEAR.</p>
+          <p>After the bar closes, check the label. It should stay locked. If it slides or vanishes, it was never locked.</p>
+
+          <figure class="figure-card">
+            <img src="assets/course/norepaint/03_bullish_signal.png" alt="Locked support pivot: price touches support, closes above, next bar open is the entry." width="1280" height="720">
+            <figcaption>Fig. 03 — Locked support. Touch. Close above. Then look to the next bar open — if the cloud agrees.</figcaption>
+          </figure>
+
+          <h3>Filter fakeouts</h3>
+          <p>A <span class="term">fakeout</span> looks like a signal, then fails. Mid-bar, price can poke a pivot and snap back. That poke is not a vote.</p>
+          <p>Closed-candle rule only. If the signal disappears before the close, skip it. That was a repaint-style trap. No lock, no trade.</p>
+        </section>
+
+        <!-- MODULE 05 -->
+        <section class="module-block lesson" id="m5" data-lesson>
+          <div class="eyebrow">Module 05 · 60 min</div>
+          <h2>Alerts &amp; <em>execution.</em></h2>
+          <p class="lede">Six bar-close conditions. Stop beyond a confirmed pivot. Targets at the band extremes.</p>
+
+          <p>Every alert fires once per bar close. Never mid-candle. What you hear is what you see.</p>
+
+          <table class="sheet">
+            <thead>
+              <tr><th>Condition</th><th>Fires when</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Confirmed Swing HIGH</strong></td><td>Two right-side bars close and the alternating-structure rule accepts it.</td></tr>
+              <tr><td><strong>Confirmed Swing LOW</strong></td><td>Same rule on a swing low.</td></tr>
+              <tr><td><strong>Close crossed ABOVE VWAP</strong></td><td>Price finishes up through value — below value to above value.</td></tr>
+              <tr><td><strong>Close crossed BELOW VWAP</strong></td><td>Price finishes down through value.</td></tr>
+              <tr><td><strong>Close crossed ABOVE +3σ</strong></td><td>A statistically stretched move above the upper band.</td></tr>
+              <tr><td><strong>Close crossed BELOW −3σ</strong></td><td>A statistically stretched move below the lower band.</td></tr>
+            </tbody>
+          </table>
+
+          <div class="note warn">
+            <span class="note-tag">Bar-close only</span>
+            <p>There is no mid-candle signal. No bubble that disappears after it prints. If it is not locked at the close, there is no setup.</p>
+          </div>
+
+          <h3>Plan the trade</h3>
+          <p>The <span class="term">signal bar</span> is the candle that closed with a confirmed event. Enter on the <strong>next bar open</strong>.</p>
+          <p>A <span class="term">stop-loss</span> sits beyond the confirmed pivot — far enough that normal noise does not take you out. A simple frame: <strong>1.5 × ATR</strong> beyond the pivot low (longs) or pivot high (shorts).</p>
+          <p>A <span class="term">take-profit</span> sits at the next band extreme or the next major pivot. A simple frame: <strong>2.5 × ATR</strong> from entry, or the ±3σ band.</p>
+
+          <figure class="figure-card">
+            <img src="assets/course/norepaint/04_sl_tp.png" alt="Risk plan: entry at the pivot zone, stop 1.5 times ATR, take-profit 2.5 times ATR." width="1280" height="720">
+            <figcaption>Fig. 04 — Define risk first. Stop beyond the locked pivot. Target the next band or 2.5 × ATR.</figcaption>
+          </figure>
+        </section>
+
+        <!-- RESOURCES -->
+        <section class="lesson" id="resources" data-lesson>
+          <div class="eyebrow">Resources · Reference</div>
+          <h2>Cheat sheets &amp; <em>checklist.</em></h2>
+          <p class="lede">A desk list for every session. Work it on replay first. Tick a box when the step feels slow and boring. That is the point.</p>
 
           <div class="playbook">
             <div class="check-row">
               <input type="checkbox" id="pb1">
-              <label for="pb1">Apply Non-Repaint Pivot to the chart. Practice on EUR/USD, ES, or BTC.</label>
+              <label for="pb1">Apply the Non-Repaint suite. Practice on EUR/USD, ES, or BTC.</label>
             </div>
             <div class="check-row">
               <input type="checkbox" id="pb2">
-              <label for="pb2">Set depth 10 for a scalp, or 21 for a swing. Closed bars only.</label>
+              <label for="pb2">Anchor VWAP. Read the cloud: BULL, BEAR, or RANGE. Stand aside on grey.</label>
             </div>
             <div class="check-row">
               <input type="checkbox" id="pb3">
-              <label for="pb3">Wait for a touch plus a closed confirmation candle.</label>
+              <label for="pb3">Wait for a locked swing (lookback 5 / confirm 2, or depth 10 scalp / 21 swing). Closed bars only.</label>
             </div>
             <div class="check-row">
               <input type="checkbox" id="pb4">
-              <label for="pb4">Enter on the next open. Place the ATR-based stop and target.</label>
+              <label for="pb4">Enter next open after a bar-close alert. Stop beyond the pivot. Target a band extreme.</label>
             </div>
             <div class="check-row">
               <input type="checkbox" id="pb5">
-              <label for="pb5">Optional: require the 200 EMA and RSI filter.</label>
+              <label for="pb5">Optional: 200 EMA + RSI divergence must agree with the cloud.</label>
             </div>
           </div>
         </section>
 
-        <!-- ════════ CLOSING ════════ -->
-        <section class="lesson closing" id="closing" data-lesson>
-          <div class="divider-label"><span>Close</span></div>
-          <div class="section-label">Key Takeaways</div>
-          <h2>Lock it in. Then trade the plan.</h2>
-          <ul class="takeaway-list">
-            <li>Repaint markers move. Locked markers stay after the candle closes.</li>
-            <li>Depth 10 for scalps. Depth 21 for swings. Always wait for the close.</li>
-            <li>Longs: close above locked support. Shorts: close below locked resistance.</li>
-            <li>Enter on the next open. Stop 1.5 × ATR. Target 2.5 × ATR or the next pivot.</li>
-            <li>Trade with the higher timeframe. Filters are optional extra checks.</li>
+        <section class="lesson" id="closing" data-lesson>
+          <div class="eyebrow">Close</div>
+          <h2>Calm. Precise. <em>Deliberate.</em></h2>
+          <ul class="takeaways">
+            <li>Repaint markers move. Locked pivots print after two right-side bars close — and stay.</li>
+            <li>Four steps: anchor VWAP, read the cloud, confirm the swing, trade the band extremes.</li>
+            <li>Green cloud = longs only. Red = shorts only. Grey = stand aside.</li>
+            <li>Six alerts, all bar-close. Enter the next open. Stop beyond the pivot. Target ±3σ or 2.5 × ATR.</li>
+            <li>Higher timeframe first. Filters are extra checks, not a new system.</li>
           </ul>
 
-          <div class="cta-block">
-            <p class="cta-line"><a href="#playbook">Practice on replay. Protect capital first.</a></p>
-            <p style="margin:14px 0 0;font-size:14px;color:var(--ink-dim);">Replay the same five steps until they feel slow and boring. That is the point.</p>
-            <p style="margin:20px 0 0;"><a class="btn" href="/NoRepaint_Pivot_indicator.html">Open the indicator page</a></p>
+          <div class="cta-band">
+            <h2>Practice on replay. <em>Protect capital first.</em></h2>
+            <p>Replay the four steps until they feel automatic. Education only. You are responsible for your own decisions.</p>
+            <div class="cta-actions">
+              <a class="btn btn-gold" href="/NoRepaint_Pivot_indicator.html">Open the indicator page</a>
+              <a class="btn btn-line" href="#resources">Back to checklist</a>
+            </div>
           </div>
 
-          <div class="signal-box warn">
-            <span class="signal-tag tag-bear">Education disclaimer</span>
-            <p>This page is for education only. It is not financial advice. Markets involve risk of loss. Examples here do not predict future results. You are responsible for your own decisions.</p>
+          <div class="note warn">
+            <span class="note-tag">Education disclaimer</span>
+            <p>This page is for education only. It is not financial advice. Markets involve risk of loss. Examples here do not predict future results.</p>
           </div>
 
           <div class="study-note">
@@ -1194,18 +1113,17 @@
   </div>
 
   <footer>
-    <div class="container">
+    <div class="wrap">
       <div class="footer-inner">
-        <div class="footer-brand"><a href="/index.html"><span>Sniper</span>Trader</a></div>
-        <p>// Non-Repaint Pivots · Education only · Not financial advice · Markets involve risk · Precision. Patience. Edge.</p>
+        <div class="footer-brand"><a href="/index.html">SniperTrader<span>.ai</span></a></div>
+        <p>Non-Repaint Pivots course · Education only · Not financial advice · Markets involve risk · Precision. Patience. Edge.</p>
       </div>
     </div>
   </footer>
 
   <script>
     (function () {
-      var sections = Array.prototype.slice.call(document.querySelectorAll('[data-lesson], #m1, #m2, #m3'));
-      var lessonSections = Array.prototype.slice.call(document.querySelectorAll('[data-lesson]'));
+      var sections = Array.prototype.slice.call(document.querySelectorAll('[data-lesson]'));
       var navBtns = Array.prototype.slice.call(document.querySelectorAll('.nav-btn, .side-link'));
       var fill = document.getElementById('progressFill');
       var meta = document.getElementById('progressMeta');
@@ -1213,8 +1131,7 @@
 
       function scrollToId(id) {
         var el = document.getElementById(id);
-        if (!el) return;
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
 
       navBtns.forEach(function (btn) {
@@ -1253,14 +1170,12 @@
       var spy = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
           if (!entry.isIntersecting) return;
-          var id = entry.target.id;
-          setActive(id);
-          markSeen(id);
+          setActive(entry.target.id);
+          markSeen(entry.target.id);
         });
       }, { rootMargin: '-28% 0px -58% 0px', threshold: 0.01 });
 
       sections.forEach(function (sec) { spy.observe(sec); });
-
       window.addEventListener('scroll', updateProgress, { passive: true });
       window.addEventListener('resize', updateProgress);
       updateProgress();
@@ -1277,7 +1192,7 @@
             localStorage.setItem(key, JSON.stringify(saved));
           });
         });
-      } catch (e) { /* storage blocked — checkboxes still work for the session */ }
+      } catch (e) {}
     })();
   </script>
 </body>
