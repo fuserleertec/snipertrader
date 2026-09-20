@@ -148,14 +148,36 @@ h2{font-size:clamp(1.7rem,3.2vw,2.6rem);margin-bottom:14px;}
 .hero-bg .grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:76px 76px;mask-image:radial-gradient(ellipse 75% 75% at 50% 40%,black,transparent 80%);}
 .hero-bg .glow1{position:absolute;top:-15%;left:-8%;width:60%;height:70%;background:radial-gradient(ellipse,rgba(240,192,64,.06),transparent 62%);}
 .hero-bg .glow2{position:absolute;bottom:-12%;right:-6%;width:46%;height:58%;background:radial-gradient(ellipse,rgba(0,229,160,.06),transparent 62%);}
-.hero-inner{position:relative;z-index:2;max-width:760px;}
+.hero-inner{position:relative;z-index:2;display:grid;grid-template-columns:1.08fr 1fr;gap:56px;align-items:center;}
 .hero-title{font-size:clamp(2.4rem,4.6vw,3.8rem);margin-bottom:22px;}
 .hero-title em{font-style:italic;color:var(--gold);}
 .hero-sub{font-size:1.08rem;color:var(--text3);line-height:1.75;max-width:600px;margin-bottom:36px;}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:40px;}
 .hero-trust{display:flex;gap:34px;flex-wrap:wrap;padding-top:26px;border-top:1px solid var(--border);}
 .trust-item{display:flex;flex-direction:column;gap:4px;}
 .trust-item .t-label{font-family:var(--ff-m);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text4);}
 .trust-item .t-value{font-size:.92rem;font-weight:600;color:var(--text2);}
+
+/* Hero order card */
+.hero-card{position:relative;padding:26px;}
+.hero-card::before{content:'';position:absolute;inset:-1px;border-radius:16px;padding:1px;background:linear-gradient(135deg,rgba(240,192,64,.35),transparent 40%,rgba(0,229,160,.25));-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;}
+.dash-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.dash-dots{display:flex;gap:7px;}
+.dash-dots i{width:10px;height:10px;border-radius:50%;display:block;}
+.dash-dots i:nth-child(1){background:#FF4455}.dash-dots i:nth-child(2){background:#F0C040}.dash-dots i:nth-child(3){background:#00E5A0}
+.dash-title{font-family:var(--ff-m);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);}
+.dash-live{display:flex;align-items:center;gap:6px;font-family:var(--ff-m);font-size:.66rem;color:var(--emerald);}
+.dash-asset{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px;}
+.dash-asset .sym{font-family:var(--ff-d);font-size:1.02rem;font-weight:600;color:var(--text);}
+.dash-asset .px{font-size:1.5rem;font-weight:700;color:var(--text);}
+.dash-asset .px small{font-size:.78rem;color:var(--emerald);margin-left:8px;font-family:var(--ff-m);}
+.dash-viz{margin:14px 0 18px;}
+.dash-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.dm{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;}
+.dm .l{font-family:var(--ff-m);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text4);}
+.dm .v{font-size:1rem;font-weight:700;color:var(--text);margin-top:3px;}
+.dm .v.gold{color:var(--gold);}.dm .v.sage{color:var(--emerald);}
+.dash-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;}
 
 /* ── Sections ────────────────────────────────────────────── */
 .sec{padding:96px 0;}
@@ -331,6 +353,8 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width:1080px){
   .footer-grid{grid-template-columns:1fr 1fr 1fr;}
+  .hero-inner{grid-template-columns:1fr;gap:40px;}
+  .hero-card{max-width:560px;}
 }
 @media (max-width:820px){
   .nav-menu{display:none;}
@@ -348,6 +372,7 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
   .ticker-status{display:none;}
   .sec{padding:64px 0;}
   #hero{padding:130px 0 50px;}
+  .hero-cta .btn{width:100%;justify-content:center;}
 }
 </style>
 </head>
@@ -447,13 +472,57 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
 <section id="hero">
   <div class="hero-bg"><div class="grid"></div><div class="glow1"></div><div class="glow2"></div></div>
   <div class="container hero-inner">
-    <div class="eyebrow">Pricing</div>
-    <h1 class="hero-title">Precision, <em>priced with intent.</em></h1>
-    <p class="hero-sub">Four proprietary engines. Five market-intelligence services. One honest menu — subscribe monthly, or lock annual and keep two months. No hidden fees, no forced bundles.</p>
-    <div class="hero-trust">
-      <div class="trust-item"><span class="t-label">Engines</span><span class="t-value">Non-repainting</span></div>
-      <div class="trust-item"><span class="t-label">Annual</span><span class="t-value">2 months free</span></div>
-      <div class="trust-item"><span class="t-label">Billing</span><span class="t-value">Cancel anytime</span></div>
+    <div>
+      <div class="eyebrow">Pricing</div>
+      <h1 class="hero-title">Precision, <em>priced with intent.</em></h1>
+      <p class="hero-sub">Four proprietary engines. Five market-intelligence services. One honest menu — subscribe monthly, or lock annual and keep two months. No hidden fees, no forced bundles.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="#indicators">Browse the Engines</a>
+        <a class="btn btn-outline" href="#intelligence">Explore Market Intelligence</a>
+      </div>
+      <div class="hero-trust">
+        <div class="trust-item"><span class="t-label">Engines</span><span class="t-value">Non-repainting</span></div>
+        <div class="trust-item"><span class="t-label">Annual</span><span class="t-value">2 months free</span></div>
+        <div class="trust-item"><span class="t-label">Billing</span><span class="t-value">Cancel anytime</span></div>
+      </div>
+    </div>
+    <div class="glass hero-card">
+      <div class="dash-top">
+        <div class="dash-dots"><i></i><i></i><i></i></div>
+        <span class="dash-title">SniperTrader Order</span>
+        <span class="dash-live"><span class="live-dot"></span>Live</span>
+      </div>
+      <div class="dash-asset">
+        <span class="sym">Full Suite — 4 engines + 5 services</span>
+        <span class="px">$599<small>/mo · save 56%</small></span>
+      </div>
+      <div class="dash-viz">
+        <svg viewBox="0 0 520 190" width="100%" height="190" preserveAspectRatio="none" role="img" aria-label="Engine pricing ladder">
+          <defs>
+            <linearGradient id="ladA" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#00E5A0" stop-opacity=".22"/><stop offset="1" stop-color="#00E5A0" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="M0,150 L130,150 L130,118 L260,118 L260,86 L390,86 L390,54 L520,54 L520,150 Z" fill="url(#ladA)"/>
+          <path d="M0,150 L130,150 L130,118 L260,118 L260,86 L390,86 L390,54 L520,54" fill="none" stroke="#00E5A0" stroke-width="2.4"/>
+          <path d="M0,118 L130,118" stroke="#F0C040" stroke-width="1.2" stroke-dasharray="2 6" opacity=".7"/>
+          <path d="M0,86 L260,86" stroke="#F0C040" stroke-width="1.2" stroke-dasharray="2 6" opacity=".7"/>
+          <path d="M0,54 L390,54" stroke="#F0C040" stroke-width="1.2" stroke-dasharray="2 6" opacity=".7"/>
+          <circle cx="130" cy="118" r="4" fill="#F0C040"/>
+          <circle cx="260" cy="86" r="4" fill="#F0C040"/>
+          <circle cx="390" cy="54" r="4" fill="#F0C040"/>
+        </svg>
+      </div>
+      <div class="dash-metrics">
+        <div class="dm"><div class="l">Engines</div><div class="v sage">4</div></div>
+        <div class="dm"><div class="l">Services</div><div class="v gold">5</div></div>
+        <div class="dm"><div class="l">Annual</div><div class="v">2 mo free</div></div>
+      </div>
+      <div class="dash-tags">
+        <span class="tag sage">Non-repainting</span>
+        <span class="tag gold">Cancel anytime</span>
+        <span class="tag">Instant delivery</span>
+      </div>
     </div>
   </div>
 </section>
