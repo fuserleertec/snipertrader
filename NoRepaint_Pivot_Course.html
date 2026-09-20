@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Non-Repaint Pivots · SniperTrader</title>
+  <meta name="description" content="Learn locked swing levels that stay put after the bar closes — so you trade what you see, not hindsight. A beginner course from SniperTrader.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f4f0;
+      --surface: #ffffff;
+      --surface-alt: #f0eeea;
+      --border: #d8d4cc;
+      --border-strong: #b0a89a;
+      --sniper-red: #c8102e;
+      --sniper-red-dark: #9e0a22;
+      --sniper-red-light: #f5e5e8;
+      --ink: #1a1612;
+      --ink-med: #3d3530;
+      --ink-dim: #6b635a;
+      --ink-muted: #9a9088;
+      --green: #0a6e3f;
+      --green-bg: #e8f5ee;
+      --red-bg: #fdf0f2;
+      --gold: #7a5500;
+      --gold-bg: #fdf6e3;
+      --cyan: #0e6e7a;
+      --cyan-bg: #e6f5f7;
+      --sidebar-w: 268px;
+      --nav-h: 52px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Barlow', sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px;
+      height: 600px;
+      background-image:
+        radial-gradient(circle, transparent 38%, rgba(200,16,46,0.04) 38.5%, rgba(200,16,46,0.04) 39%, transparent 39.5%),
+        radial-gradient(circle, transparent 55%, rgba(200,16,46,0.025) 55.5%, rgba(200,16,46,0.025) 56%, transparent 56.5%),
+        linear-gradient(rgba(200,16,46,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(200,16,46,0.025) 1px, transparent 1px);
+      background-size: 600px 600px, 600px 600px, 40px 40px, 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.6;
+    }
+
+    a { color: var(--sniper-red); }
+    a:hover { color: var(--sniper-red-dark); }
+
+    .skip-link {
+      position: absolute;
+      left: 12px;
+      top: -40px;
+      background: var(--sniper-red);
+      color: #fff;
+      padding: 8px 14px;
+      z-index: 400;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-decoration: none;
+    }
+    .skip-link:focus { top: 12px; }
+
+    .container {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Header (Foundation lockup) ── */
+    header {
+      background: var(--ink);
+      border-bottom: 3px solid var(--sniper-red);
+      position: relative;
+      z-index: 20;
+    }
+    .header-top { background: var(--sniper-red); padding: 6px 0; }
+    .header-top .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header-top-text {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      color: rgba(255,255,255,0.85);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+    .header-top-live {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      color: rgba(255,255,255,0.9);
+      letter-spacing: 2px;
+    }
+    .live-dot {
+      width: 6px;
+      height: 6px;
+      background: #fff;
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    .header-main { padding: 24px 0 20px; }
+    .header-inner {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .brand-lockup {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      text-decoration: none;
+    }
+    .crosshair-logo { width: 52px; height: 52px; flex-shrink: 0; }
+    .brand-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      line-height: 1;
+    }
+    .brand-name span { color: var(--sniper-red); }
+    .brand-sub {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    h1 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(20px, 3.5vw, 34px);
+      font-weight: 800;
+      line-height: 1.0;
+      color: #ffffff;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    h1 span { color: var(--sniper-red); }
+    .subtitle {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: rgba(255,255,255,0.4);
+      margin-top: 8px;
+      letter-spacing: 1px;
+    }
+
+    /* ── Disclaimer strip ── */
+    .disclaimer-strip {
+      background: var(--red-bg);
+      border-bottom: 1px solid rgba(200,16,46,0.18);
+      position: relative;
+      z-index: 15;
+    }
+    .disclaimer-strip p {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--sniper-red);
+      padding: 10px 0;
+      margin: 0;
+    }
+
+    /* ── Sticky progress + module nav ── */
+    .course-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--surface);
+      border-bottom: 2px solid var(--border);
+      box-shadow: 0 2px 12px rgba(26,22,18,0.08);
+    }
+    .progress-track {
+      height: 3px;
+      background: var(--surface-alt);
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--sniper-red);
+      transition: width 0.15s linear;
+    }
+    .nav-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: var(--nav-h);
+    }
+    .progress-meta {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      white-space: nowrap;
+      padding-right: 8px;
+      border-right: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .progress-meta strong { color: var(--sniper-red); }
+    .nav-inner {
+      display: flex;
+      overflow-x: auto;
+      scrollbar-width: none;
+      flex: 1;
+    }
+    .nav-inner::-webkit-scrollbar { display: none; }
+    .nav-btn {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      padding: 16px 14px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .nav-btn:hover { color: var(--ink); background: var(--surface-alt); }
+    .nav-btn.active {
+      color: var(--sniper-red);
+      border-bottom-color: var(--sniper-red);
+    }
+    .nav-btn .mark {
+      width: 12px;
+      height: 12px;
+      border: 1.5px solid var(--border-strong);
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .nav-btn.seen .mark,
+    .nav-btn.active .mark {
+      background: var(--sniper-red);
+      border-color: var(--sniper-red);
+      box-shadow: inset 0 0 0 2px #fff;
+    }
+
+    /* ── Layout ── */
+    .course-shell {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+      gap: 32px;
+      padding: 36px 0 64px;
+      position: relative;
+      z-index: 1;
+      align-items: start;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: calc(var(--nav-h) + 16px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 18px 16px 20px;
+      box-shadow: 0 2px 12px rgba(26,22,18,0.05);
+    }
+    .sidebar-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--sniper-red);
+      margin-bottom: 14px;
+    }
+    .side-mod {
+      margin-bottom: 16px;
+    }
+    .side-mod h3 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+    .side-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      text-align: left;
+      background: none;
+      border: none;
+      border-left: 2px solid transparent;
+      padding: 6px 8px;
+      cursor: pointer;
+      font-family: 'Barlow', sans-serif;
+      font-size: 13px;
+      color: var(--ink-dim);
+      border-radius: 0 2px 2px 0;
+    }
+    .side-link:hover { color: var(--ink); background: var(--surface-alt); }
+    .side-link.active {
+      color: var(--sniper-red);
+      border-left-color: var(--sniper-red);
+      background: var(--red-bg);
+      font-weight: 600;
+    }
+    .side-link.seen { color: var(--ink-med); }
+    .side-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border-strong);
+      flex-shrink: 0;
+    }
+    .side-link.seen .side-dot,
+    .side-link.active .side-dot {
+      background: var(--sniper-red);
+      border-color: var(--sniper-red);
+    }
+
+    /* ── Typography ── */
+    .section-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 4px;
+      color: var(--sniper-red);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-label::before {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 2px;
+      background: var(--sniper-red);
+    }
+
+    .hero { padding: 8px 0 12px; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--sniper-red);
+      border: 1px solid rgba(200,16,46,0.25);
+      background: var(--red-bg);
+      padding: 5px 10px;
+      margin-bottom: 14px;
+    }
+    .hero h2,
+    .lesson h2,
+    .module-head h2,
+    .closing h2 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 800;
+      color: var(--ink);
+      margin-bottom: 10px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .hero p.lede {
+      font-size: 17px;
+      color: var(--ink-med);
+      line-height: 1.7;
+      max-width: 680px;
+      margin-bottom: 18px;
+    }
+
+    .lesson h3,
+    .module-head h3 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(22px, 3vw, 30px);
+      font-weight: 800;
+      color: var(--ink);
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    p {
+      font-size: 16px;
+      line-height: 1.7;
+      color: var(--ink-med);
+      margin-bottom: 14px;
+    }
+
+    .term {
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    /* ── Cards & callouts ── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+      margin: 20px 0 8px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 20px;
+      position: relative;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+    .card.red::before { background: var(--sniper-red); }
+    .card.green::before { background: var(--green); }
+    .card.gold::before { background: var(--gold); }
+    .card.cyan::before { background: var(--cyan); }
+    .card.ink::before { background: var(--ink); }
+    .card h4 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .card p { font-size: 14px; color: var(--ink-dim); margin: 0; }
+
+    .signal-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 18px 20px;
+      margin: 16px 0;
+    }
+    .signal-box.bull { border-left: 4px solid var(--green); }
+    .signal-box.bear { border-left: 4px solid var(--sniper-red); }
+    .signal-box.note { border-left: 4px solid var(--gold); }
+    .signal-box.warn { border-left: 4px solid var(--sniper-red); background: var(--red-bg); }
+    .signal-tag {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 2px;
+      padding: 3px 8px;
+      border-radius: 2px;
+      display: inline-block;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+    .tag-bull { background: var(--green-bg); color: var(--green); border: 1px solid rgba(10,110,63,0.2); }
+    .tag-bear { background: var(--red-bg); color: var(--sniper-red); border: 1px solid rgba(200,16,46,0.2); }
+    .tag-gold { background: var(--gold-bg); color: var(--gold); border: 1px solid rgba(122,85,0,0.2); }
+    .signal-box p:last-child { margin-bottom: 0; }
+
+    .lesson {
+      scroll-margin-top: 80px;
+      padding: 28px 0 12px;
+    }
+    .module-block {
+      scroll-margin-top: 80px;
+      padding-top: 12px;
+    }
+    .module-head { padding: 28px 0 4px; }
+
+    .divider-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 8px 0 4px;
+    }
+    .divider-label::before,
+    .divider-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    .divider-label span {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+      white-space: nowrap;
+    }
+
+    /* ── Figures ── */
+    .figure-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      margin: 22px 0 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 14px rgba(26,22,18,0.06);
+    }
+    .figure-card img {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #faf9f6;
+    }
+    .figure-card figcaption {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.6px;
+      color: var(--ink-dim);
+      padding: 12px 16px 14px;
+      border-top: 1px solid var(--border);
+      background: var(--surface-alt);
+    }
+
+    /* ── Tables & steps ── */
+    .score-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 18px 0;
+      font-size: 14px;
+      background: var(--surface);
+    }
+    .score-table th {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      text-align: left;
+      padding: 10px 14px;
+      border-bottom: 2px solid var(--border-strong);
+      background: var(--surface-alt);
+    }
+    .score-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--ink-med);
+      vertical-align: top;
+      line-height: 1.5;
+    }
+
+    .steps { margin: 8px 0 4px; }
+    .step {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .step:last-child { border-bottom: none; }
+    .step-num {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--sniper-red);
+      background: var(--red-bg);
+      border: 1px solid rgba(200,16,46,0.2);
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+    .step-content h4 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .step-content p { font-size: 15px; margin-bottom: 0; }
+
+    .playbook {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 8px 8px 8px 4px;
+      margin: 16px 0;
+    }
+    .check-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .check-row:last-child { border-bottom: none; }
+    .check-row input {
+      margin-top: 4px;
+      accent-color: var(--sniper-red);
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+    .check-row label {
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--ink-med);
+      cursor: pointer;
+    }
+    .check-row input:checked + label {
+      color: var(--ink-dim);
+      text-decoration: line-through;
+    }
+
+    .takeaway-list {
+      list-style: none;
+      margin: 12px 0 20px;
+    }
+    .takeaway-list li {
+      position: relative;
+      padding: 10px 0 10px 22px;
+      border-bottom: 1px solid var(--border);
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--ink-med);
+    }
+    .takeaway-list li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 18px;
+      width: 10px;
+      height: 2px;
+      background: var(--sniper-red);
+    }
+
+    .cta-block {
+      text-align: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--sniper-red);
+      padding: 32px 24px;
+      margin: 28px 0 16px;
+    }
+    .cta-line {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(22px, 3vw, 30px);
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+    .cta-line a {
+      color: var(--sniper-red);
+      text-decoration: none;
+      border-bottom: 2px solid rgba(200,16,46,0.3);
+    }
+    .cta-line a:hover { border-bottom-color: var(--sniper-red); }
+
+    .btn {
+      display: inline-block;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 14px 36px;
+      background: var(--sniper-red);
+      color: #fff;
+      border: none;
+      border-radius: 2px;
+      cursor: pointer;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .btn:hover { background: var(--sniper-red-dark); color: #fff; }
+
+    .study-note {
+      font-size: 13px;
+      color: var(--ink-dim);
+      background: var(--surface-alt);
+      border: 1px dashed var(--border-strong);
+      padding: 14px 16px;
+      margin: 16px 0;
+    }
+    .study-note strong {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--ink);
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    footer {
+      background: var(--ink);
+      border-top: 3px solid var(--sniper-red);
+      position: relative;
+      z-index: 2;
+    }
+    .footer-inner {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 20px 0;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+    .footer-inner p {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      color: rgba(255,255,255,0.4);
+      margin: 0;
+      letter-spacing: 1.2px;
+      line-height: 1.7;
+      max-width: 520px;
+    }
+    .footer-brand {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      color: rgba(255,255,255,0.6);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+    .footer-brand span { color: var(--sniper-red); }
+    .footer-brand a { color: inherit; text-decoration: none; }
+
+    @media (max-width: 900px) {
+      .course-shell { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+    }
+    @media (max-width: 600px) {
+      .header-inner { flex-direction: column; align-items: flex-start; }
+      .brand-name { font-size: 24px; }
+      h1 { font-size: 20px; }
+      .header-top-text { display: none; }
+      .card-grid { grid-template-columns: 1fr; }
+      .progress-meta { display: none; }
+      .nav-btn { padding: 14px 12px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .live-dot { animation: none; }
+      .progress-fill { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#course-start">Skip to course</a>
+
+  <header>
+    <div class="header-top">
+      <div class="container">
+        <span class="header-top-text">Non-Repaint Pivots · Locked Swing Course</span>
+        <span class="header-top-live"><span class="live-dot"></span>EDUCATION</span>
+      </div>
+    </div>
+    <div class="header-main">
+      <div class="container">
+        <div class="header-inner">
+          <a class="brand-lockup" href="/index.html">
+            <svg class="crosshair-logo" viewBox="0 0 52 52" fill="none" aria-hidden="true">
+              <circle cx="26" cy="26" r="24" stroke="#c8102e" stroke-width="2"/>
+              <circle cx="26" cy="26" r="14" stroke="#c8102e" stroke-width="1.5" opacity="0.6"/>
+              <circle cx="26" cy="26" r="4" fill="#c8102e"/>
+              <line x1="26" y1="2" x2="26" y2="14" stroke="#c8102e" stroke-width="2.5"/>
+              <line x1="26" y1="38" x2="26" y2="50" stroke="#c8102e" stroke-width="2.5"/>
+              <line x1="2" y1="26" x2="14" y2="26" stroke="#c8102e" stroke-width="2.5"/>
+              <line x1="38" y1="26" x2="50" y2="26" stroke="#c8102e" stroke-width="2.5"/>
+            </svg>
+            <div>
+              <div class="brand-name"><span>Sniper</span>Trader</div>
+              <div class="brand-sub">Precision · Patience · Edge</div>
+            </div>
+          </a>
+          <div>
+            <h1>Non-Repaint <span>Pivots</span></h1>
+            <div class="subtitle">// Locked swing levels · Closed-bar confirmation</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="disclaimer-strip">
+    <div class="container">
+      <p>For education only. Not financial advice.</p>
+    </div>
+  </div>
+
+  <nav class="course-nav" aria-label="Course modules">
+    <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="container">
+      <div class="nav-row">
+        <div class="progress-meta" id="progressMeta">Read <strong>0%</strong></div>
+        <div class="nav-inner" id="topNav">
+          <button class="nav-btn active" type="button" data-target="hero" aria-current="true"><span class="mark"></span>Start</button>
+          <button class="nav-btn" type="button" data-target="m1"><span class="mark"></span>01 · Setup</button>
+          <button class="nav-btn" type="button" data-target="lesson-1-1"><span class="mark"></span>1.1 Locked</button>
+          <button class="nav-btn" type="button" data-target="lesson-1-2"><span class="mark"></span>1.2 Params</button>
+          <button class="nav-btn" type="button" data-target="m2"><span class="mark"></span>02 · Signals</button>
+          <button class="nav-btn" type="button" data-target="lesson-2-1"><span class="mark"></span>2.1 Reversal</button>
+          <button class="nav-btn" type="button" data-target="lesson-2-2"><span class="mark"></span>2.2 Fakeouts</button>
+          <button class="nav-btn" type="button" data-target="m3"><span class="mark"></span>03 · Risk</button>
+          <button class="nav-btn" type="button" data-target="lesson-3-1"><span class="mark"></span>3.1 Stops</button>
+          <button class="nav-btn" type="button" data-target="lesson-3-2"><span class="mark"></span>3.2 Timeframes</button>
+          <button class="nav-btn" type="button" data-target="m4"><span class="mark"></span>04 · Filters</button>
+          <button class="nav-btn" type="button" data-target="playbook"><span class="mark"></span>Playbook</button>
+          <button class="nav-btn" type="button" data-target="closing"><span class="mark"></span>Close</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="course-shell">
+      <aside class="sidebar" aria-label="Lesson list">
+        <div class="sidebar-label">Course map</div>
+        <div class="side-mod">
+          <h3>Start</h3>
+          <button class="side-link active" type="button" data-target="hero"><span class="side-dot"></span>Hero &amp; terms</button>
+        </div>
+        <div class="side-mod">
+          <h3>Module 1 · Setup</h3>
+          <button class="side-link" type="button" data-target="lesson-1-1"><span class="side-dot"></span>1.1 Repaint vs Locked</button>
+          <button class="side-link" type="button" data-target="lesson-1-2"><span class="side-dot"></span>1.2 Setup &amp; Parameters</button>
+        </div>
+        <div class="side-mod">
+          <h3>Module 2 · Signals</h3>
+          <button class="side-link" type="button" data-target="lesson-2-1"><span class="side-dot"></span>2.1 Reversal vs Breakout</button>
+          <button class="side-link" type="button" data-target="lesson-2-2"><span class="side-dot"></span>2.2 Filter Fakeouts</button>
+        </div>
+        <div class="side-mod">
+          <h3>Module 3 · Risk</h3>
+          <button class="side-link" type="button" data-target="lesson-3-1"><span class="side-dot"></span>3.1 Stops &amp; Targets</button>
+          <button class="side-link" type="button" data-target="lesson-3-2"><span class="side-dot"></span>3.2 Multi-Timeframe</button>
+        </div>
+        <div class="side-mod">
+          <h3>Module 4 · Filters</h3>
+          <button class="side-link" type="button" data-target="m4"><span class="side-dot"></span>Complementary filters</button>
+        </div>
+        <div class="side-mod">
+          <h3>Practice</h3>
+          <button class="side-link" type="button" data-target="playbook"><span class="side-dot"></span>Practical playbook</button>
+          <button class="side-link" type="button" data-target="closing"><span class="side-dot"></span>Takeaways</button>
+        </div>
+      </aside>
+
+      <main id="course-start">
+        <section class="hero lesson" id="hero" data-lesson>
+          <span class="badge">Education · SniperTrader</span>
+          <div class="section-label">Course</div>
+          <h2>Non-Repaint Pivots</h2>
+          <p class="lede">Learn locked swing levels that stay put after the bar closes — so you trade what you see, not hindsight.</p>
+          <p>This course is for beginners. We use short sentences. Each new word is explained once, then reused.</p>
+
+          <div class="card-grid">
+            <div class="card red">
+              <h4>Noise → lock</h4>
+              <p>A forming candle is noise. A finished candle can lock a level.</p>
+            </div>
+            <div class="card gold">
+              <h4>Patience first</h4>
+              <p>Wait for the close. If you rush, you trade a picture that can still change.</p>
+            </div>
+            <div class="card cyan">
+              <h4>Edge is process</h4>
+              <p>Same rules, every time: lock, confirm, size the risk, then act.</p>
+            </div>
+          </div>
+
+          <div class="signal-box note">
+            <span class="signal-tag tag-gold">Words we will use</span>
+            <p>A <span class="term">pivot</span> is a swing high or swing low — a turning point on the chart.</p>
+            <p>A <span class="term">candle</span> (also called a bar) is one block of price for a set time. When that time ends, the candle is <span class="term">closed</span>.</p>
+            <p>A <span class="term">repaint</span> is a marker that moves or vanishes after you first saw it. A <span class="term">locked</span> marker stays put.</p>
+          </div>
+        </section>
+
+        <!-- ════════ MODULE 1 ════════ -->
+        <section class="module-block" id="m1">
+          <div class="module-head">
+            <div class="divider-label"><span>Module 01</span></div>
+            <div class="section-label">Indicator Fundamentals &amp; Setup</div>
+            <h2>See it clear. Then lock it in.</h2>
+            <p>First you learn why most pivot tools lie after the fact. Then you set the indicator so it only speaks on a finished candle.</p>
+          </div>
+
+          <article class="lesson" id="lesson-1-1" data-lesson>
+            <div class="section-label">Lesson 1.1</div>
+            <h3>Repaint vs Locked</h3>
+            <p>Many pivot tools shift as new ticks arrive. The dot slides. The line redraws. The old signal disappears. That is a <span class="term">repaint</span>. It is a hindsight trap. The chart looks perfect later. It did not look that way in real time.</p>
+            <p>A <span class="term">non-repaint pivot</span> waits until the candle finishes. Only then can the marker appear. Once it appears, it does not move. It does not vanish.</p>
+            <p>Think of it this way: do not trust a candle that is still being drawn. Wait until it is done. Then the level can lock.</p>
+
+            <div class="signal-box warn">
+              <span class="signal-tag tag-bear">Closed bar only</span>
+              <p>If the candle is still open, the story can still change. Locked pivots confirm after the close — the same idea as “wait until the candle finishes.”</p>
+            </div>
+
+            <figure class="figure-card">
+              <img src="assets/course/norepaint/01_repaint_vs_locked.png" alt="Side-by-side chart: a dashed repaint line that moves after the fact, versus a locked pivot that stays put after the bar closes." width="1280" height="720">
+              <figcaption>Fig. 01 — Repaint markers move after the fact. Locked markers stay after the bar closes.</figcaption>
+            </figure>
+          </article>
+
+          <article class="lesson" id="lesson-1-2" data-lesson>
+            <div class="section-label">Lesson 1.2</div>
+            <h3>Setup &amp; Parameters</h3>
+            <p>You only need two settings to start. Leave the rest alone until you can read a lock.</p>
+            <p><span class="term">Pivot depth</span> is how many candles sit on each side of a swing. A deeper number needs a bigger turn before it locks. Use about <strong>10</strong> for scalping on the 5-minute or 15-minute chart. Use about <strong>21</strong> for swing trades on the 1-hour or 4-hour chart.</p>
+            <p><span class="term">ATR</span> means Average True Range. It is a simple measure of how much price usually moves. An <span class="term">ATR multiplier</span> stretches or tightens bands around the pivot. In a quiet market the bands sit closer. In a wild market they sit farther. The bands adapt to volatility.</p>
+            <p>Always calculate on closed bars only. If the candle is still forming, wait.</p>
+
+            <div class="card-grid">
+              <div class="card gold">
+                <h4>Depth ~10</h4>
+                <p>Scalp setting. Faster locks on 5m and 15m charts.</p>
+              </div>
+              <div class="card cyan">
+                <h4>Depth ~21</h4>
+                <p>Swing setting. Slower, larger turns on 1H and 4H.</p>
+              </div>
+              <div class="card ink">
+                <h4>ATR bands</h4>
+                <p>Distance from the pivot follows recent volatility, not a fixed number of points.</p>
+              </div>
+            </div>
+
+            <figure class="figure-card">
+              <img src="assets/course/norepaint/02_atr_bands.png" alt="Chart showing a locked pivot with ATR multiplier bands above and below, and a pivot depth of 10 to 21." width="1280" height="720">
+              <figcaption>Fig. 02 — ATR bands adapt to volatility. Pivot depth 10 fits scalps. Depth 21 fits swings.</figcaption>
+            </figure>
+          </article>
+        </section>
+
+        <!-- ════════ MODULE 2 ════════ -->
+        <section class="module-block" id="m2">
+          <div class="module-head">
+            <div class="divider-label"><span>Module 02</span></div>
+            <div class="section-label">Reading Signals</div>
+            <h2>The close is the vote.</h2>
+            <p>A lock is not a trade by itself. You still need the candle to finish on the right side of the level.</p>
+          </div>
+
+          <article class="lesson" id="lesson-2-1" data-lesson>
+            <div class="section-label">Lesson 2.1</div>
+            <h3>Reversal vs Breakout</h3>
+            <p><span class="term">Support</span> is a price where buyers have held before. A support pivot is a locked low.</p>
+            <p><span class="term">Resistance</span> is a price where sellers have held before. A resistance pivot is a locked high.</p>
+
+            <div class="signal-box bull">
+              <span class="signal-tag tag-bull">Bullish · long bias</span>
+              <p>Price touches locked support. Then the candle <strong>closes above</strong> that support. That is a long bias — you are only looking to buy.</p>
+            </div>
+            <div class="signal-box bear">
+              <span class="signal-tag tag-bear">Bearish · short bias</span>
+              <p>Price touches locked resistance. Then the candle <strong>closes below</strong> that resistance. That is a short bias — you are only looking to sell.</p>
+            </div>
+
+            <p>After the bar closes, check the label. It should stay locked. If it stays, the signal is real. If it slides or vanishes, it was never locked.</p>
+
+            <figure class="figure-card">
+              <img src="assets/course/norepaint/03_bullish_signal.png" alt="Locked support pivot. Price touches support, a green candle closes above it, and the next bar open is the entry." width="1280" height="720">
+              <figcaption>Fig. 03 — Locked support: touch, close above, then look to the next bar open.</figcaption>
+            </figure>
+          </article>
+
+          <article class="lesson" id="lesson-2-2" data-lesson>
+            <div class="section-label">Lesson 2.2</div>
+            <h3>Filter Fakeouts</h3>
+            <p>A <span class="term">fakeout</span> is a move that looks like a signal, then fails. Mid-bar, price can poke through a pivot and then snap back. That poke is not a vote.</p>
+            <p>Use the closed-candle rule only. Do not enter while the candle is still open.</p>
+            <p>Wait for the lock. If the signal disappears before the close, skip it. That was a repaint-style trap.</p>
+            <p>Patience is the filter. No lock, no trade.</p>
+
+            <div class="signal-box warn">
+              <span class="signal-tag tag-bear">Skip rule</span>
+              <p>If the marker is not locked at the close, there is no setup. Do not chase the wick. Wait for the next finished candle.</p>
+            </div>
+          </article>
+        </section>
+
+        <!-- ════════ MODULE 3 ════════ -->
+        <section class="module-block" id="m3">
+          <div class="module-head">
+            <div class="divider-label"><span>Module 03</span></div>
+            <div class="section-label">Execution &amp; Risk</div>
+            <h2>Define risk first.</h2>
+            <p>A locked signal still needs a plan. You decide the entry, the stop, and the target before you click.</p>
+          </div>
+
+          <article class="lesson" id="lesson-3-1" data-lesson>
+            <div class="section-label">Lesson 3.1</div>
+            <h3>Stops &amp; Targets</h3>
+            <p>The <span class="term">signal bar</span> is the candle that closed on the right side of the locked pivot. You do not enter on that close. You enter on the <strong>next bar open</strong>.</p>
+            <p>A <span class="term">stop-loss</span> is the price where the idea is wrong. For a long, place it <strong>1.5 × ATR</strong> below the pivot low. For a short, place it <strong>1.5 × ATR</strong> above the pivot high. The extra room is a buffer so normal noise does not stop you out.</p>
+            <p>A <span class="term">take-profit</span> is where you bank the trade. Use the next major pivot, or <strong>2.5 × ATR</strong> from entry.</p>
+            <p>Reward is 2.5 × ATR. Risk is 1.5 × ATR. That is about <strong>1.67 to 1</strong>. You do not need a perfect ratio. You do need a written plan.</p>
+
+            <div class="steps">
+              <div class="step">
+                <div class="step-num">01</div>
+                <div class="step-content">
+                  <h4>Entry</h4>
+                  <p>Next bar open after the confirmed signal bar.</p>
+                </div>
+              </div>
+              <div class="step">
+                <div class="step-num">02</div>
+                <div class="step-content">
+                  <h4>Stop</h4>
+                  <p>1.5 × ATR below the pivot low (longs) or above the pivot high (shorts).</p>
+                </div>
+              </div>
+              <div class="step">
+                <div class="step-num">03</div>
+                <div class="step-content">
+                  <h4>Target</h4>
+                  <p>Next major pivot, or 2.5 × ATR from entry.</p>
+                </div>
+              </div>
+            </div>
+
+            <figure class="figure-card">
+              <img src="assets/course/norepaint/04_sl_tp.png" alt="Risk diagram: entry at a pivot zone, stop 1.5 times ATR below the pivot low, take-profit 2.5 times ATR above entry." width="1280" height="720">
+              <figcaption>Fig. 04 — Plan first: 1.5 × ATR risk, 2.5 × ATR target. About 1.67 reward to risk.</figcaption>
+            </figure>
+          </article>
+
+          <article class="lesson" id="lesson-3-2" data-lesson>
+            <div class="section-label">Lesson 3.2</div>
+            <h3>Multi-Timeframe</h3>
+            <p>A <span class="term">timeframe</span> is the candle size you watch. A 5-minute chart makes a new candle every five minutes. A 1-hour chart makes one candle each hour.</p>
+            <p>The <span class="term">higher timeframe</span> sets direction. Here that is the 1-hour chart. The <span class="term">lower timeframe</span> times the entry. Here that is the 5-minute chart.</p>
+            <p>Align 5-minute pivot entries with the 1-hour trend. Take longs only when the higher timeframe agrees. If the 1-hour is up, look for locked support bounces on the 5-minute. If they disagree, wait.</p>
+
+            <figure class="figure-card">
+              <img src="assets/course/norepaint/05_mtf.png" alt="Two stacked charts: a 1-hour bullish trend above the 200 EMA, and a 5-minute entry at a locked pivot bounce that agrees with that trend." width="1280" height="720">
+              <figcaption>Fig. 05 — 1-hour bias first. 5-minute locked pivot second. No long if the higher timeframe disagrees.</figcaption>
+            </figure>
+          </article>
+        </section>
+
+        <!-- ════════ MODULE 4 ════════ -->
+        <section class="module-block lesson" id="m4" data-lesson>
+          <div class="module-head">
+            <div class="divider-label"><span>Module 04</span></div>
+            <div class="section-label">Complementary Filters</div>
+            <h2>Extra checks. Not a new system.</h2>
+            <p>A <span class="term">filter</span> is an extra yes or no. It does not replace the locked pivot. It only supports it. Skip a filter if you are still learning the lock.</p>
+          </div>
+
+          <div class="card-grid">
+            <div class="card red">
+              <h4>200 EMA</h4>
+              <p>An EMA is an exponential moving average — a smoothed line of recent prices. The 200 EMA is a slow trend line. Longs only above it. Shorts only below it.</p>
+            </div>
+            <div class="card gold">
+              <h4>RSI / Stochastic</h4>
+              <p>RSI is the Relative Strength Index, a 0–100 stretch meter. Stochastic is similar. <span class="term">Divergence</span> means price makes a new low (or high) while the oscillator does not. At a locked pivot, that is confluence — two reasons to care.</p>
+            </div>
+            <div class="card cyan">
+              <h4>ATR</h4>
+              <p>Use ATR to trail a stop as the trade works. Also check whether ATR is rising on a breakout. Rising ATR means the move has energy.</p>
+            </div>
+          </div>
+
+          <table class="score-table">
+            <thead>
+              <tr><th>Filter</th><th>How it helps</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>200 EMA</strong></td>
+                <td>Longs only above the EMA. Shorts only below.</td>
+              </tr>
+              <tr>
+                <td><strong>RSI / Stochastic</strong></td>
+                <td>Divergence at the pivot = confluence.</td>
+              </tr>
+              <tr>
+                <td><strong>ATR</strong></td>
+                <td>Trailing stops + a breakout momentum check.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <figure class="figure-card">
+            <img src="assets/course/norepaint/06_filters.png" alt="Three-part filter stack: price above the 200 EMA, bullish RSI divergence at a pivot, and rising ATR as a momentum check." width="1280" height="720">
+            <figcaption>Fig. 06 — Optional stack: 200 EMA direction, RSI divergence at the pivot, ATR momentum.</figcaption>
+          </figure>
+        </section>
+
+        <!-- ════════ PLAYBOOK ════════ -->
+        <section class="lesson" id="playbook" data-lesson>
+          <div class="divider-label"><span>Practice</span></div>
+          <div class="section-label">Practical Playbook</div>
+          <h2>One checklist. Same order.</h2>
+          <p>Work this list on replay first. Tick a box when you can do the step without rushing.</p>
+
+          <div class="playbook">
+            <div class="check-row">
+              <input type="checkbox" id="pb1">
+              <label for="pb1">Apply Non-Repaint Pivot to the chart. Practice on EUR/USD, ES, or BTC.</label>
+            </div>
+            <div class="check-row">
+              <input type="checkbox" id="pb2">
+              <label for="pb2">Set depth 10 for a scalp, or 21 for a swing. Closed bars only.</label>
+            </div>
+            <div class="check-row">
+              <input type="checkbox" id="pb3">
+              <label for="pb3">Wait for a touch plus a closed confirmation candle.</label>
+            </div>
+            <div class="check-row">
+              <input type="checkbox" id="pb4">
+              <label for="pb4">Enter on the next open. Place the ATR-based stop and target.</label>
+            </div>
+            <div class="check-row">
+              <input type="checkbox" id="pb5">
+              <label for="pb5">Optional: require the 200 EMA and RSI filter.</label>
+            </div>
+          </div>
+        </section>
+
+        <!-- ════════ CLOSING ════════ -->
+        <section class="lesson closing" id="closing" data-lesson>
+          <div class="divider-label"><span>Close</span></div>
+          <div class="section-label">Key Takeaways</div>
+          <h2>Lock it in. Then trade the plan.</h2>
+          <ul class="takeaway-list">
+            <li>Repaint markers move. Locked markers stay after the candle closes.</li>
+            <li>Depth 10 for scalps. Depth 21 for swings. Always wait for the close.</li>
+            <li>Longs: close above locked support. Shorts: close below locked resistance.</li>
+            <li>Enter on the next open. Stop 1.5 × ATR. Target 2.5 × ATR or the next pivot.</li>
+            <li>Trade with the higher timeframe. Filters are optional extra checks.</li>
+          </ul>
+
+          <div class="cta-block">
+            <p class="cta-line"><a href="#playbook">Practice on replay. Protect capital first.</a></p>
+            <p style="margin:14px 0 0;font-size:14px;color:var(--ink-dim);">Replay the same five steps until they feel slow and boring. That is the point.</p>
+            <p style="margin:20px 0 0;"><a class="btn" href="/NoRepaint_Pivot_indicator.html">Open the indicator page</a></p>
+          </div>
+
+          <div class="signal-box warn">
+            <span class="signal-tag tag-bear">Education disclaimer</span>
+            <p>This page is for education only. It is not financial advice. Markets involve risk of loss. Examples here do not predict future results. You are responsible for your own decisions.</p>
+          </div>
+
+          <div class="study-note">
+            <strong>Optional third-party study</strong>
+            A public walkthrough exists on YouTube:
+            <a href="https://www.youtube.com/watch?v=Y4u1JlDKRH8" rel="noopener noreferrer" target="_blank">youtube.com/watch?v=Y4u1JlDKRH8</a>.
+            It is a third-party example, not a SniperTrader endorsement.
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <footer>
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand"><a href="/index.html"><span>Sniper</span>Trader</a></div>
+        <p>// Non-Repaint Pivots · Education only · Not financial advice · Markets involve risk · Precision. Patience. Edge.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var sections = Array.prototype.slice.call(document.querySelectorAll('[data-lesson], #m1, #m2, #m3'));
+      var lessonSections = Array.prototype.slice.call(document.querySelectorAll('[data-lesson]'));
+      var navBtns = Array.prototype.slice.call(document.querySelectorAll('.nav-btn, .side-link'));
+      var fill = document.getElementById('progressFill');
+      var meta = document.getElementById('progressMeta');
+      var seen = {};
+
+      function scrollToId(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      navBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          scrollToId(btn.getAttribute('data-target'));
+        });
+      });
+
+      function setActive(id) {
+        navBtns.forEach(function (btn) {
+          var on = btn.getAttribute('data-target') === id;
+          btn.classList.toggle('active', on);
+          if (btn.classList.contains('nav-btn')) {
+            if (on) btn.setAttribute('aria-current', 'true');
+            else btn.removeAttribute('aria-current');
+          }
+        });
+      }
+
+      function markSeen(id) {
+        if (!id || seen[id]) return;
+        seen[id] = true;
+        navBtns.forEach(function (btn) {
+          if (btn.getAttribute('data-target') === id) btn.classList.add('seen');
+        });
+      }
+
+      function updateProgress() {
+        var doc = document.documentElement;
+        var max = doc.scrollHeight - window.innerHeight;
+        var pct = max > 0 ? Math.min(100, Math.round((window.scrollY / max) * 100)) : 0;
+        fill.style.width = pct + '%';
+        meta.innerHTML = 'Read <strong>' + pct + '%</strong>';
+      }
+
+      var spy = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          var id = entry.target.id;
+          setActive(id);
+          markSeen(id);
+        });
+      }, { rootMargin: '-28% 0px -58% 0px', threshold: 0.01 });
+
+      sections.forEach(function (sec) { spy.observe(sec); });
+
+      window.addEventListener('scroll', updateProgress, { passive: true });
+      window.addEventListener('resize', updateProgress);
+      updateProgress();
+
+      try {
+        var key = 'st-norepaint-playbook';
+        var saved = JSON.parse(localStorage.getItem(key) || '{}');
+        ['pb1','pb2','pb3','pb4','pb5'].forEach(function (id) {
+          var box = document.getElementById(id);
+          if (!box) return;
+          box.checked = !!saved[id];
+          box.addEventListener('change', function () {
+            saved[id] = box.checked;
+            localStorage.setItem(key, JSON.stringify(saved));
+          });
+        });
+      } catch (e) { /* storage blocked — checkboxes still work for the session */ }
+    })();
+  </script>
+</body>
+</html>
