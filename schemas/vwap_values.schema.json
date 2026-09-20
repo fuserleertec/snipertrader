@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snipertrader.ai/schemas/vwap_values.schema.json",
+  "title": "VWAPValues",
+  "description": "Session / weekly / rolling VWAP with volume-weighted σ bands. Redis key: vwap:{symbol}:{anchor_type}. σ_VWAP = sqrt(Σ v_i (p_i - VWAP)^2 / Σ v_i).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "symbol",
+    "asset_class",
+    "anchor_type",
+    "anchor_start_ms",
+    "vwap",
+    "sigma",
+    "band_m3",
+    "band_m2",
+    "band_m1",
+    "band_p1",
+    "band_p2",
+    "band_p3",
+    "cum_volume",
+    "n_obs",
+    "updated_ts_ms"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.1" },
+    "symbol": { "type": "string", "pattern": "^[A-Z0-9]+$" },
+    "asset_class": { "type": "string", "enum": ["crypto", "equity", "futures"] },
+    "anchor_type": { "type": "string", "enum": ["session", "weekly", "rolling"] },
+    "session_type": {
+      "type": ["string", "null"],
+      "enum": ["asia", "london", "ny_am", "ny_pm", "rth", "eth", "globex", null]
+    },
+    "anchor_start_ms": { "type": "integer" },
+    "lookback_periods": { "type": ["integer", "null"] },
+    "vwap": { "type": "number" },
+    "sigma": { "type": "number", "minimum": 0 },
+    "band_m3": { "type": "number" },
+    "band_m2": { "type": "number" },
+    "band_m1": { "type": "number" },
+    "band_p1": { "type": "number" },
+    "band_p2": { "type": "number" },
+    "band_p3": { "type": "number" },
+    "cum_volume": { "type": "number", "minimum": 0 },
+    "n_obs": { "type": "integer", "minimum": 0 },
+    "updated_ts_ms": { "type": "integer" }
+  }
+}
