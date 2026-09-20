@@ -10,31 +10,37 @@
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #f5f4f0;
-      --bg2: #efece6;
-      --bg3: #e6e2d8;
-      --surface: #ffffff;
-      --text: #12151a;
-      --text2: #2a3038;
-      --text3: #5a6270;
-      --text4: #8a9199;
+      --black: #040609;
+      --deep: #070b12;
+      --panel: #0c1220;
+      --surface: #111827;
+      --bg: #040609;
+      --bg2: #070b12;
+      --bg3: #0c1220;
+      --text: #edf2fb;
+      --text2: rgba(237, 242, 251, 0.86);
+      --text3: rgba(237, 242, 251, 0.64);
+      --text4: rgba(237, 242, 251, 0.40);
       --cyan: #00e5ff;
-      --cyan-ink: #087f8c;
+      --cyan-ink: #00e5ff;
+      --cyan2: #00b8cc;
       --gold: #f0c040;
-      --gold-ink: #8a6a10;
+      --gold-ink: #f0c040;
+      --gold2: #b8882a;
       --emerald: #00e5a0;
-      --emerald-ink: #0a8a64;
-      --rose: #ff5a6e;
-      --rose-ink: #b42338;
-      --cyan-dim: rgba(0, 229, 255, 0.14);
-      --gold-dim: rgba(240, 192, 64, 0.18);
-      --emerald-dim: rgba(0, 229, 160, 0.12);
-      --border: rgba(18, 21, 26, 0.10);
-      --border2: rgba(240, 192, 64, 0.45);
-      --shadow: 0 18px 40px rgba(18, 21, 26, 0.06);
+      --emerald-ink: #00e5a0;
+      --green: #00e5a0;
+      --rose: #ff4d6a;
+      --rose-ink: #ff4d6a;
+      --cyan-dim: rgba(0, 229, 255, 0.10);
+      --gold-dim: rgba(240, 192, 64, 0.12);
+      --emerald-dim: rgba(0, 229, 160, 0.10);
+      --border: rgba(0, 229, 255, 0.12);
+      --border2: rgba(240, 192, 64, 0.35);
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
       --sidebar-w: 260px;
       --nav-h: 56px;
-      --ff-d: 'Orbitron', sans-serif;
+      --ff-d: 'Orbitron', monospace;
       --ff-b: 'Syne', sans-serif;
       --ff-m: 'Space Mono', monospace;
     }
@@ -57,12 +63,13 @@
       z-index: 0;
       background-image:
         linear-gradient(rgba(0, 229, 255, 0.035) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(240, 192, 64, 0.04) 1px, transparent 1px);
-      background-size: 48px 48px;
+        linear-gradient(90deg, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
       mask-image: radial-gradient(ellipse 80% 70% at 50% 20%, black, transparent 85%);
     }
-    a { color: var(--cyan-ink); }
-    a:hover { color: var(--text); }
+    a { color: var(--cyan); }
+    a:hover { color: var(--gold); }
+    ::selection { background: var(--gold); color: var(--black); }
     img { display: block; max-width: 100%; height: auto; }
 
     .skip-link {
@@ -70,7 +77,7 @@
       left: 12px;
       top: -48px;
       background: var(--gold);
-      color: var(--text);
+      color: var(--black);
       padding: 8px 14px;
       z-index: 400;
       font-family: var(--ff-m);
@@ -89,13 +96,13 @@
 
     /* Header — light */
     header {
-      background: rgba(245, 244, 240, 0.92);
+      background: linear-gradient(180deg, rgba(4, 6, 9, 0.98) 0%, rgba(7, 11, 18, 0.96) 100%);
       border-bottom: 1px solid var(--border);
       position: relative;
       z-index: 20;
     }
     .header-top {
-      background: var(--surface);
+      background: rgba(0, 229, 255, 0.05);
       border-bottom: 1px solid var(--border);
     }
     .header-top .wrap {
@@ -116,7 +123,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      color: var(--gold-ink);
+      color: var(--cyan);
     }
     .live-dot {
       width: 7px;
@@ -152,7 +159,7 @@
       text-transform: uppercase;
       color: var(--text);
     }
-    .brand-name span { color: var(--gold-ink); }
+    .brand-name span { color: var(--cyan); }
     .brand-sub {
       font-family: var(--ff-m);
       font-size: 10px;
@@ -175,7 +182,7 @@
     .header-title h1 em {
       font-style: italic;
       font-family: var(--ff-b);
-      color: var(--gold-ink);
+      color: var(--gold);
       text-transform: none;
       letter-spacing: 0;
     }
@@ -188,7 +195,7 @@
     }
 
     .disclaimer-strip {
-      background: var(--gold-dim);
+      background: rgba(240, 192, 64, 0.08);
       border-bottom: 1px solid var(--border2);
     }
     .disclaimer-strip p {
@@ -196,7 +203,7 @@
       font-size: 11px;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: var(--gold-ink);
+      color: var(--gold);
       padding: 10px 0;
       margin: 0;
     }
@@ -206,12 +213,12 @@
       position: sticky;
       top: 0;
       z-index: 100;
-      background: rgba(255,255,255,0.92);
-      backdrop-filter: blur(14px);
+      background: rgba(4, 6, 9, 0.92);
+      backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border);
-      box-shadow: 0 8px 24px rgba(18,21,26,0.04);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
     }
-    .progress-track { height: 3px; background: var(--bg3); }
+    .progress-track { height: 3px; background: var(--panel); }
     .progress-fill {
       height: 100%;
       width: 0%;
@@ -234,7 +241,7 @@
       padding-right: 12px;
       border-right: 1px solid var(--border);
     }
-    .progress-meta strong { color: var(--cyan-ink); }
+    .progress-meta strong { color: var(--cyan); }
     .nav-inner {
       display: flex;
       overflow-x: auto;
@@ -260,7 +267,7 @@
     }
     .nav-btn:hover { color: var(--text); }
     .nav-btn.active {
-      color: var(--cyan-ink);
+      color: var(--cyan);
       border-bottom-color: var(--cyan);
     }
     .nav-btn .mark {
@@ -288,7 +295,7 @@
     .sidebar {
       position: sticky;
       top: calc(var(--nav-h) + 18px);
-      background: var(--surface);
+      background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 16px;
       padding: 20px 16px;
@@ -299,7 +306,7 @@
       font-size: 10px;
       letter-spacing: 0.16em;
       text-transform: uppercase;
-      color: var(--gold-ink);
+      color: var(--gold);
       margin-bottom: 14px;
     }
     .side-mod { margin-bottom: 16px; }
@@ -327,9 +334,9 @@
       color: var(--text3);
       border-radius: 0 8px 8px 0;
     }
-    .side-link:hover { color: var(--text); background: var(--bg2); }
+    .side-link:hover { color: var(--text); background: rgba(0, 229, 255, 0.06); }
     .side-link.active {
-      color: var(--cyan-ink);
+      color: var(--cyan);
       border-left-color: var(--cyan);
       background: var(--cyan-dim);
       font-weight: 600;
@@ -355,7 +362,7 @@
       font-size: 11px;
       letter-spacing: 0.18em;
       text-transform: uppercase;
-      color: var(--gold-ink);
+      color: var(--gold);
       margin-bottom: 12px;
     }
     .eyebrow::before {
@@ -373,8 +380,8 @@
       font-size: 10px;
       letter-spacing: 0.16em;
       text-transform: uppercase;
-      color: var(--cyan-ink);
-      border: 1px solid rgba(0, 229, 255, 0.35);
+      color: var(--cyan);
+      border: 1px solid rgba(0, 229, 255, 0.28);
       background: var(--cyan-dim);
       padding: 6px 12px;
       border-radius: 999px;
@@ -397,7 +404,7 @@
       font-family: var(--ff-b);
       font-style: italic;
       font-weight: 600;
-      color: var(--gold-ink);
+      color: var(--gold);
     }
     h3 {
       font-family: var(--ff-d);
@@ -426,7 +433,7 @@
       margin: 20px 0;
     }
     .card {
-      background: var(--surface);
+      background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 16px;
       padding: 20px;
@@ -450,40 +457,40 @@
       font-size: 10px;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: var(--cyan-ink);
+      color: var(--cyan);
       margin-bottom: 8px;
     }
 
     .note {
-      background: var(--surface);
+      background: var(--panel);
       border: 1px solid var(--border);
       border-left: 4px solid var(--gold);
       border-radius: 0 12px 12px 0;
       padding: 16px 18px;
       margin: 16px 0;
     }
-    .note.warn { border-left-color: var(--rose); background: #fff6f6; }
-    .note.ok { border-left-color: var(--emerald); background: #f3fdf8; }
-    .note.cyan { border-left-color: var(--cyan); background: #f3fcfe; }
+    .note.warn { border-left-color: var(--rose); background: rgba(255, 77, 106, 0.08); }
+    .note.ok { border-left-color: var(--emerald); background: rgba(0, 229, 160, 0.07); }
+    .note.cyan { border-left-color: var(--cyan); background: var(--cyan-dim); }
     .note-tag {
       font-family: var(--ff-m);
       font-size: 10px;
       letter-spacing: 0.14em;
       text-transform: uppercase;
-      color: var(--gold-ink);
+      color: var(--gold);
       display: block;
       margin-bottom: 6px;
     }
-    .note.warn .note-tag { color: var(--rose-ink); }
-    .note.ok .note-tag { color: var(--emerald-ink); }
-    .note.cyan .note-tag { color: var(--cyan-ink); }
+    .note.warn .note-tag { color: var(--rose); }
+    .note.ok .note-tag { color: var(--emerald); }
+    .note.cyan .note-tag { color: var(--cyan); }
     .note p:last-child { margin: 0; }
 
     .layer {
       display: flex;
       gap: 16px;
       align-items: flex-start;
-      background: var(--surface);
+      background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 16px;
       padding: 18px 20px;
@@ -495,7 +502,7 @@
       font-size: 11px;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: var(--gold-ink);
+      color: var(--gold);
       border: 1px solid var(--border2);
       background: var(--gold-dim);
       padding: 8px 10px;
@@ -512,7 +519,7 @@
     .layer p { font-size: 15px; margin: 0; color: var(--text3); }
 
     .figure-card {
-      background: var(--surface);
+      background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 16px;
       margin: 22px 0 8px;
@@ -526,14 +533,14 @@
       color: var(--text3);
       padding: 12px 16px 14px;
       border-top: 1px solid var(--border);
-      background: var(--bg2);
+      background: var(--deep);
     }
 
     table.sheet {
       width: 100%;
       border-collapse: collapse;
       margin: 16px 0;
-      background: var(--surface);
+      background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 16px;
       overflow: hidden;
@@ -547,7 +554,7 @@
       text-align: left;
       color: var(--text4);
       padding: 12px 14px;
-      background: var(--bg2);
+      background: var(--deep);
       border-bottom: 1px solid var(--border);
     }
     table.sheet td {
@@ -560,7 +567,7 @@
     table.sheet tr:last-child td { border-bottom: none; }
 
     .playbook {
-      background: var(--surface);
+      background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 16px;
       overflow: hidden;
@@ -609,7 +616,7 @@
     }
 
     .cta-band {
-      background: var(--surface);
+      background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 16px;
       padding: 32px 28px;
@@ -630,23 +637,23 @@
       border: 1px solid transparent;
     }
     .btn-gold {
-      background: linear-gradient(135deg, var(--gold), #d4a628);
-      color: #12151a;
+      background: linear-gradient(135deg, var(--gold), var(--gold2));
+      color: #040609;
       box-shadow: 0 8px 22px rgba(240, 192, 64, 0.28);
     }
-    .btn-gold:hover { color: #12151a; filter: brightness(1.04); }
+    .btn-gold:hover { color: #040609; filter: brightness(1.06); }
     .btn-line {
-      border-color: var(--border2);
+      border-color: var(--border);
       color: var(--text);
       background: transparent;
     }
-    .btn-line:hover { border-color: var(--gold); color: var(--gold-ink); }
+    .btn-line:hover { border-color: var(--cyan); color: var(--cyan); }
     .cta-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
 
     .study-note {
       font-size: 13px;
       color: var(--text3);
-      background: var(--bg2);
+      background: var(--deep);
       border: 1px dashed var(--border2);
       border-radius: 12px;
       padding: 14px 16px;
@@ -663,7 +670,7 @@
     }
 
     footer {
-      background: var(--bg2);
+      background: var(--deep);
       border-top: 1px solid var(--border);
       position: relative;
       z-index: 2;
@@ -682,7 +689,7 @@
       text-transform: uppercase;
       color: var(--text);
     }
-    .footer-brand span { color: var(--gold-ink); }
+    .footer-brand span { color: var(--cyan); }
     .footer-brand a { color: inherit; text-decoration: none; }
     footer p {
       font-family: var(--ff-m);
