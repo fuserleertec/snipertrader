@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>USME Futures Mastercourse · SniperTrader Education</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+
+/* ============ LIGHT THEME (matches USME ICT Core Course) ============ */
+:root {
+  --bg: #F2F3FB;
+  --bg2: #E9EBF6;
+  --bg3: #DEE1F0;
+  --obs: #FFFFFF;
+  --obs2: #E9EBF6;
+  --obs3: #DEE1F0;
+  --surface: #FFFFFF;
+  --surface-alt: #E9EBF6;
+  --card: rgba(255,255,255,.6);
+  --card2: rgba(255,255,255,.82);
+  --text: #0A0C18;
+  --text2: #1C2240;
+  --text3: #3A4470;
+  --text4: #5A6690;
+  --violet: #6D28D9;
+  --violet2: #5B21B6;
+  --violet-dim: rgba(124,58,237,.10);
+  --cyan: #0086A8;
+  --cyan2: #006E8A;
+  --cyan-dim: rgba(0,150,200,.12);
+  --fuchsia: #C026D3;
+  --gold: #8A5B00;
+  --gold2: #8A5B00;
+  --gold-dim: rgba(138,91,0,.10);
+  --amber: #8A5B00;
+  --amber-dim: rgba(138,91,0,.10);
+  --emerald: #059669;
+  --emerald2: #059669;
+  --emerald-dim: rgba(5,150,105,.10);
+  --bear: #BE1E3C;
+  --bear-dim: rgba(190,30,60,.12);
+  --red: #BE1E3C;
+  --border: rgba(109,40,217,.18);
+  --border2: rgba(109,40,217,.34);
+  --border-cyan: rgba(0,150,200,.18);
+  --nav-bg: rgba(242,243,251,.96);
+  --nav-h: 56px;
+  --font-display: 'Playfair Display', serif;
+  --font-mono: 'Space Mono', monospace;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+  --ff-d: 'Playfair Display', serif;
+  --ff-b: 'Plus Jakarta Sans', sans-serif;
+  --ff-m: 'Space Mono', monospace;
+  --shadow: 0 30px 70px rgba(60,70,110,.20);
+  --radius: 14px;
+}
+
+/* ============ DARK THEME ============ */
+body.dark {
+  --bg: #0B0F17;
+  --bg2: #121826;
+  --bg3: #1A2233;
+  --obs: #0E1420;
+  --obs2: #151C2B;
+  --obs3: #1A2233;
+  --surface: #101727;
+  --surface-alt: #151C2B;
+  --card: rgba(16,23,39,.6);
+  --card2: rgba(16,23,39,.82);
+  --text: #E9EDF6;
+  --text2: #C7CEE2;
+  --text3: #9AA5C0;
+  --text4: #6C7898;
+  --violet: #A78BFA;
+  --violet2: #8B5CF6;
+  --violet-dim: rgba(139,92,246,.16);
+  --cyan: #22D3EE;
+  --cyan2: #67E8F9;
+  --cyan-dim: rgba(34,211,238,.14);
+  --fuchsia: #E879F9;
+  --gold: #F0C040;
+  --gold2: #F0C040;
+  --gold-dim: rgba(240,192,64,.12);
+  --amber: #F59E0B;
+  --amber-dim: rgba(245,158,11,.14);
+  --emerald: #34D399;
+  --emerald2: #34D399;
+  --emerald-dim: rgba(52,211,153,.12);
+  --bear: #FB7185;
+  --bear-dim: rgba(251,113,133,.14);
+  --red: #FB7185;
+  --border: rgba(148,163,184,.22);
+  --border2: rgba(148,163,184,.40);
+  --border-cyan: rgba(34,211,238,.22);
+  --nav-bg: rgba(11,15,23,.92);
+  --shadow: 0 30px 70px rgba(0,0,0,.5);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.65;
+  transition: background .3s ease, color .3s ease;
+}
+img, svg { max-width: 100%; height: auto; display: block; }
+a { color: var(--violet); }
+.container {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 22px;
+  position: relative;
+  z-index: 1;
+}
+.topbar {
+  background: var(--obs);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 0;
+}
+.topbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+}
+.brand-mark {
+  width: 36px; height: 36px;
+  border: 2px solid var(--violet);
+  border-radius: 50%;
+  position: relative;
+  flex-shrink: 0;
+  box-shadow: 0 0 14px rgba(109,40,217,0.28);
+}
+.brand-mark::before,
+.brand-mark::after {
+  content: '';
+  position: absolute;
+  background: var(--violet);
+}
+.brand-mark::before {
+  width: 2px; height: 14px;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+.brand-mark::after {
+  width: 14px; height: 2px;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+.brand-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 1.5px;
+  color: var(--text);
+}
+.brand-name span { color: var(--violet); }
+.brand-tag {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text4);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+.edu-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--violet);
+  background: var(--violet-dim);
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: 20px;
+}
+.edu-pill::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--cyan);
+  animation: pulse 1.6s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text4);
+  background: var(--obs);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: color .2s, border-color .2s;
+  white-space: nowrap;
+}
+.theme-toggle:hover { color: var(--violet); border-color: var(--border2); }
+.course-nav {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: var(--nav-bg);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 4px 24px rgba(60,70,110,0.12);
+}
+.nav-row { display: flex; align-items: stretch; gap: 0; }
+.nav-scroll {
+  flex: 1;
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.nav-scroll::-webkit-scrollbar { display: none; }
+.nav-btn {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text4);
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 16px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .2s, border-color .2s, background .2s;
+  text-decoration: none;
+}
+.nav-btn:hover { color: var(--text); background: var(--obs2); }
+.nav-btn.active {
+  color: var(--violet);
+  border-bottom-color: var(--violet);
+}
+.progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  border-left: 1px solid var(--border);
+  flex-shrink: 0;
+  min-width: 108px;
+}
+.progress-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text4);
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+.progress-label strong { color: var(--cyan); font-weight: 700; }
+.progress-bar {
+  width: 44px; height: 4px;
+  background: var(--obs3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--cyan), var(--violet));
+  transition: width .25s ease;
+}
+
+.disclaimer-strip {
+  background: var(--gold-dim);
+  border-bottom: 1px solid rgba(138,91,0,0.28);
+  padding: 10px 0;
+}
+.disclaimer-strip p {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--gold2);
+  letter-spacing: 0.4px;
+  text-align: center;
+}
+
+.hero {
+  padding: 48px 0 36px;
+  background:
+    radial-gradient(ellipse 80% 60% at 10% 0%, var(--violet-dim), transparent 55%),
+    radial-gradient(ellipse 60% 50% at 90% 20%, var(--cyan-dim), transparent 50%);
+}
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--violet);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-label::before {
+  content: '';
+  width: 18px; height: 2px;
+  background: var(--violet);
+}
+.hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(24px, 4.2vw, 38px);
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  line-height: 1.18;
+  color: var(--text);
+  margin-bottom: 14px;
+  max-width: 760px;
+}
+.hero .lead {
+  font-size: 17px;
+  color: var(--text3);
+  max-width: 660px;
+  margin-bottom: 22px;
+}
+.hero-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 7px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text3);
+}
+.chip.cyan {
+  border-color: var(--border-cyan);
+  color: var(--cyan2);
+  background: var(--cyan-dim);
+}
+.chip.gold {
+  border-color: rgba(138,91,0,0.35);
+  color: var(--amber);
+  background: var(--amber-dim);
+}
+.chip.emerald {
+  border-color: rgba(0,150,200,0.35);
+  color: var(--cyan);
+  background: var(--cyan-dim);
+}
+.chip.violet {
+  border-color: var(--border2);
+  color: var(--violet);
+  background: var(--violet-dim);
+}
+.sec-h2 {
+  font-family: var(--font-display);
+  font-size: clamp(16px, 2.5vw, 20px);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 18px;
+  color: var(--text);
+}
+.steps { padding: 8px 0 40px; }
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+.step-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 20px;
+  box-shadow: var(--shadow);
+  transition: border-color .2s, transform .2s;
+}
+.step-card:hover {
+  border-color: var(--border2);
+  transform: translateY(-2px);
+}
+.step-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--violet);
+  margin-bottom: 10px;
+}
+.step-card h3 {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text);
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+.step-card p {
+  font-size: 13px;
+  color: var(--text4);
+  line-height: 1.55;
+}
+
+.module { padding: 28px 0 8px; }
+.module-header {
+  margin-bottom: 22px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--border);
+}
+.module-header h2 {
+  font-family: var(--font-display);
+  font-size: clamp(18px, 3vw, 24px);
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.module-header p {
+  font-size: 14px;
+  color: var(--text4);
+  max-width: 640px;
+}
+.mod-time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--violet);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.lesson {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 26px 24px 22px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+  scroll-margin-top: calc(var(--nav-h) + 18px);
+  transition: border-color .25s, box-shadow .25s;
+}
+.lesson.in-view {
+  border-color: var(--border2);
+  box-shadow: 0 8px 32px rgba(109,40,217,0.12);
+}
+.lesson.done { border-color: rgba(0,134,168,0.45); }
+.lesson-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.lesson-title {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--text);
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.lesson-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--violet);
+  letter-spacing: 1px;
+}
+.lesson p {
+  font-size: 15px;
+  color: var(--text3);
+  margin-bottom: 12px;
+}
+.lesson ul, .lesson ol {
+  margin: 0 0 14px 18px;
+  color: var(--text3);
+  font-size: 14px;
+}
+.lesson li { margin-bottom: 7px; }
+.lesson li strong { color: var(--text); }
+.mark-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text4);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--obs);
+  transition: color .2s, border-color .2s, background .2s;
+}
+.mark-done:hover { color: var(--text); border-color: var(--border-cyan); }
+.mark-done input {
+  accent-color: var(--violet);
+  width: 14px; height: 14px;
+  cursor: pointer;
+}
+.mark-done.checked {
+  color: var(--cyan);
+  border-color: rgba(0,134,168,0.45);
+  background: var(--cyan-dim);
+}
+.callout {
+  background: var(--bg2);
+  border-left: 3px solid var(--violet);
+  border-radius: 0 10px 10px 0;
+  padding: 14px 16px;
+  margin: 14px 0;
+  font-size: 14px;
+  color: var(--text2);
+}
+.callout.gold { border-left-color: var(--gold2); background: var(--gold-dim); }
+.callout.emerald { border-left-color: var(--emerald); background: var(--emerald-dim); }
+.callout.bear { border-left-color: var(--bear); background: var(--bear-dim); }
+.figure {
+  margin: 18px 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--obs);
+}
+.figure .svg-wrap { background: #F2F3FB; padding: 12px; }
+.figure figcaption {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--text4);
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-alt);
+}
+.checklist { display: grid; gap: 8px; margin: 14px 0; }
+.check-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: var(--obs);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: var(--text3);
+}
+.check-box {
+  flex-shrink: 0;
+  width: 18px; height: 18px;
+  border: 2px solid var(--cyan);
+  border-radius: 4px;
+  margin-top: 1px;
+}
+.rules-ol {
+  counter-reset: rule;
+  list-style: none;
+  margin: 14px 0;
+  padding: 0;
+}
+.rules-ol li {
+  counter-increment: rule;
+  position: relative;
+  background: var(--obs);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px 14px 52px;
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: var(--text3);
+}
+.rules-ol li::before {
+  content: counter(rule);
+  position: absolute;
+  left: 14px; top: 14px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--violet);
+  width: 28px; height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--violet-dim);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.rules-ol li strong { color: var(--text); }
+.sheet-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+.sheet {
+  background: var(--obs);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+.sheet h4 {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--violet);
+  margin-bottom: 10px;
+}
+.sheet ul {
+  margin: 0 0 0 16px;
+  font-size: 13px;
+  color: var(--text3);
+}
+.sheet li { margin-bottom: 5px; }
+
+/* ---- phase list (Execution Protocol) ---- */
+.phase-list { display: grid; gap: 12px; margin: 14px 0; }
+.phase-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  background: var(--obs);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+.phase-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.phase-badge.p1 { color: var(--violet); background: var(--violet-dim); border: 1px solid var(--border); }
+.phase-badge.p2 { color: var(--cyan2); background: var(--cyan-dim); border: 1px solid var(--border-cyan); }
+.phase-badge.p3 { color: var(--emerald); background: var(--emerald-dim); border: 1px solid rgba(5,150,105,.35); }
+.phase-row h4 {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.phase-row p { font-size: 13px; color: var(--text3); line-height: 1.55; margin-bottom: 0; }
+
+.table-wrap { overflow-x: auto; }
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0;
+  font-size: 13px;
+}
+.data-table th, .data-table td {
+  text-align: left;
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.data-table th {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--violet);
+  background: var(--obs);
+  white-space: nowrap;
+}
+.data-table td { color: var(--text3); line-height: 1.5; }
+.data-table td:first-child {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+.data-table tr:last-child td { border-bottom: none; }
+
+.takeaways {
+  list-style: none;
+  margin: 0 auto 20px;
+  padding: 0;
+  text-align: left;
+  max-width: 560px;
+}
+.takeaways li {
+  position: relative;
+  padding: 10px 0 10px 28px;
+  color: var(--text3);
+  font-size: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.takeaways li::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 16px;
+  width: 10px; height: 10px;
+  border: 2px solid var(--violet);
+  border-radius: 2px;
+}
+.closing { padding: 36px 0 48px; }
+.closing-card {
+  background: linear-gradient(145deg, #FFFFFF, #E9EBF6);
+  color: var(--text);
+  border: 1px solid var(--border2);
+  border-radius: 18px;
+  padding: 36px 28px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+body.dark .closing-card {
+  background: linear-gradient(145deg, #1A2233, #0E1420);
+}
+.closing-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(109,40,217,0.12), transparent 45%),
+    radial-gradient(circle at 80% 70%, rgba(0,134,168,0.10), transparent 40%);
+  pointer-events: none;
+}
+.closing-card > * { position: relative; z-index: 1; }
+.closing-card h2 {
+  font-family: var(--font-display);
+  font-size: clamp(18px, 3vw, 26px);
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+.closing-card > p {
+  color: var(--text3);
+  max-width: 520px;
+  margin: 0 auto 18px;
+  font-size: 15px;
+}
+.closing-cta {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #FFFFFF;
+  background: var(--violet);
+  padding: 12px 22px;
+  border-radius: 24px;
+  text-decoration: none;
+  font-weight: 700;
+  margin-top: 8px;
+  box-shadow: 0 8px 24px rgba(109,40,217,0.28);
+}
+.closing-cta:hover { background: var(--violet2); }
+footer {
+  border-top: 1px solid var(--border);
+  padding: 28px 0 40px;
+  background: var(--obs);
+}
+.footer-brand {
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 3px;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.footer-brand span { color: var(--violet); }
+.footer-disc {
+  font-size: 12px;
+  color: var(--text4);
+  max-width: 680px;
+  line-height: 1.6;
+}
+.footer-meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text4);
+  margin-top: 14px;
+  text-transform: uppercase;
+}
+@media (max-width: 860px) {
+  .steps-grid { grid-template-columns: 1fr; }
+  .sheet-grid { grid-template-columns: 1fr; }
+  .calc-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .lesson { padding: 20px 16px; }
+  .progress-wrap { min-width: auto; padding: 0 10px; }
+  .progress-bar { display: none; }
+  .nav-btn { padding: 14px 10px; font-size: 8px; }
+  .hero { padding: 32px 0 24px; }
+  .rules-ol li { padding-left: 48px; }
+  .phase-row { flex-direction: column; gap: 10px; }
+}
+</style>
+</head>
+<body class="dark">
+
+  <div class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="#top" aria-label="SniperTrader home">
+        <div class="brand-mark" aria-hidden="true"></div>
+        <div>
+          <div class="brand-name">SNIPER<span>TRADER</span></div>
+          <div class="brand-tag">Education · Precision · Edge</div>
+        </div>
+      </a>
+      <div class="topbar-right">
+        <div class="edu-pill">Education · SniperTrader</div>
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light/dark theme">☀ Light</button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="course-nav" id="courseNav" aria-label="Course modules">
+    <div class="container nav-row">
+      <div class="nav-scroll">
+        <a class="nav-btn active" href="#overview" data-section="overview">Overview</a>
+        <a class="nav-btn" href="#core" data-section="core">Engines</a>
+        <a class="nav-btn" href="#m1" data-section="m1">SMT</a>
+        <a class="nav-btn" href="#m2" data-section="m2">Execution</a>
+        <a class="nav-btn" href="#m3" data-section="m3">Performance</a>
+        <a class="nav-btn" href="#protocol" data-section="protocol">Protocol</a>
+        <a class="nav-btn" href="#close" data-section="close">Close</a>
+      </div>
+      <div class="progress-wrap" title="Course progress">
+        <span class="progress-label"><strong id="progressPct">0%</strong></span>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="disclaimer-strip">
+    <div class="container">
+      <p>For education only. Not financial advice. Trading CME / NYMEX futures carries substantial risk of capital loss. Protect capital first.</p>
+    </div>
+  </div>
+
+  <main id="top">
+
+    <section class="hero" id="overview">
+      <div class="container">
+        <div class="section-label">Advanced Masterplan · USME Futures</div>
+        <h1>Advanced Institutional Futures Mechanics &amp; Systems</h1>
+        <p class="lead">
+          Exploiting centralized exchange liquidity, cross-market SMT divergence, and volatility bands
+          in ES, NQ, &amp; CL — with the USME VWAP Elite and USME ICT Core engines.
+        </p>
+        <div class="hero-chips">
+          <span class="chip cyan">Cross-Market SMT</span>
+          <span class="chip emerald">VWAP ±σ Bands</span>
+          <span class="chip gold">ICT Core MSS</span>
+          <span class="chip violet">CME / NYMEX Futures</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="steps" id="core">
+      <div class="container">
+        <div class="section-label">Core Framework</div>
+        <h2 class="sec-h2">Four engines. One institutional edge.</h2>
+        <div class="steps-grid">
+          <article class="step-card">
+            <div class="step-num">01</div>
+            <h3>USME VWAP Elite Engine</h3>
+            <p>
+              Session-anchored <strong style="color:var(--text)">±1.0σ / ±2.0σ / ±3.0σ</strong> volatility bands —
+              the benchmark institutional execution algos are judged against.
+            </p>
+          </article>
+          <article class="step-card">
+            <div class="step-num">02</div>
+            <h3>USME ICT Core Engine</h3>
+            <p>
+              Micro-structure triggers — <strong style="color:var(--text)">Market Structure Shift (MSS)</strong>,
+              Fair Value Gaps, and Order Blocks on the 1m / 2m / 3m.
+            </p>
+          </article>
+          <article class="step-card">
+            <div class="step-num">03</div>
+            <h3>Cross-Market SMT Profiling</h3>
+            <p>
+              Divergence between correlated benchmarks (ES / NQ / YM, CL / RB) before
+              <strong style="color:var(--text)">violent trend accelerations</strong>.
+            </p>
+          </article>
+          <article class="step-card">
+            <div class="step-num">04</div>
+            <h3>Session Liquidity Delivery</h3>
+            <p>
+              From the <strong style="color:var(--text)">Asia / London sweep</strong> to the
+              <strong style="color:var(--text)">09:30 EST NY open injection</strong> — how algos re-anchor fresh value.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="module" id="m1">
+      <div class="container">
+        <div class="module-header">
+          <div class="mod-time">Module 01 · Microstructure &amp; SMT</div>
+          <h2>Cross-Market SMT Divergence &amp; Liquidity Profiling</h2>
+          <p>Centralized futures operate as one interconnected liquidity network. Institutional algorithms create divergence between correlated benchmarks before violent trend accelerations.</p>
+        </div>
+
+        <article class="lesson" id="l1-1" data-lesson="l1-1">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">1.1</span> Smart Money Technique (SMT) Mechanics</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l1-1"> Mark complete</label>
+          </div>
+          <p>
+            <strong>Smart Money Technique (SMT)</strong> reads the disagreement between two correlated markets.
+            When <strong>NQ prints a Higher High (HH)</strong> while <strong>ES only makes a Lower High (LH)</strong>
+            at a key <strong>USME VWAP ±2.0σ band</strong>, it signals institutional
+            <strong>distribution in NQ</strong> and <strong>absorption in ES</strong>.
+          </p>
+          <p>
+            The instrument that fails to confirm the move — the one leaving the lower high — is being used to
+            <strong>distribute</strong> into strength. That is the divergence, and it is the signal.
+          </p>
+          <div class="callout">
+            SMT reads divergence, not direction. The market that refuses to confirm is telling you where smart money is selling into the rally.
+          </div>
+
+          <figure class="figure">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420" width="100%" role="img" aria-label="Cross-market SMT bearish divergence between ES and NQ" style="background-color:#0b0f17; font-family:'Space Mono',monospace,sans-serif;">
+              <defs>
+                <linearGradient id="mc1_bgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#111827" />
+                  <stop offset="100%" stop-color="#0b0f17" />
+                </linearGradient>
+                <filter id="mc1_glowCyan" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+                <filter id="mc1_glowRed" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+              <rect width="800" height="420" fill="url(#mc1_bgGradient)" rx="12" stroke="#1e293b" stroke-width="1.5" />
+              <text x="30" y="34" fill="#ffffff" font-size="14" font-weight="700" letter-spacing="0.5">FIG 01 · CROSS-MARKET SMT BEARISH DIVERGENCE</text>
+              <text x="770" y="34" fill="#00f2ff" font-size="10" font-weight="600" text-anchor="end">ES vs NQ · VWAP ±2σ ZONE</text>
+
+              <!-- ES panel -->
+              <g transform="translate(30, 54)">
+                <rect width="360" height="300" rx="8" fill="#0f172a" stroke="#334155" stroke-width="1.5" />
+                <text x="16" y="24" fill="#64748b" font-size="10" font-weight="700">ES — E-MINI S&amp;P 500</text>
+                <text x="344" y="24" fill="#ef4444" font-size="10" font-weight="700" text-anchor="end">LOWER HIGH</text>
+                <line x1="16" y1="210" x2="344" y2="210" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6 5" />
+                <text x="16" y="202" fill="#ef4444" font-size="9" font-weight="600">+2.0σ BAND</text>
+                <path d="M 20 250 L 90 200 L 150 210 L 200 160 L 260 170 L 320 190" fill="none" stroke="#00f2ff" stroke-width="3" filter="url(#mc1_glowCyan)" />
+                <circle cx="200" cy="160" r="5" fill="#00f2ff" />
+                <text x="200" y="145" fill="#cbd5e1" font-size="10" font-weight="700" text-anchor="middle">A</text>
+                <circle cx="320" cy="190" r="5" fill="#ef4444" filter="url(#mc1_glowRed)" />
+                <text x="320" y="215" fill="#ef4444" font-size="10" font-weight="700" text-anchor="middle">B · LH</text>
+                <line x1="200" y1="160" x2="320" y2="190" stroke="#64748b" stroke-width="1" stroke-dasharray="3 3" />
+                <text x="16" y="288" fill="#94a3b8" font-size="9">ABSORPTION — ES stalls below the band</text>
+              </g>
+
+              <!-- NQ panel -->
+              <g transform="translate(410, 54)">
+                <rect width="360" height="300" rx="8" fill="#0f172a" stroke="#334155" stroke-width="1.5" />
+                <text x="16" y="24" fill="#64748b" font-size="10" font-weight="700">NQ — E-MINI NASDAQ-100</text>
+                <text x="344" y="24" fill="#00f2ff" font-size="10" font-weight="700" text-anchor="end">HIGHER HIGH</text>
+                <line x1="16" y1="210" x2="344" y2="210" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6 5" />
+                <text x="16" y="202" fill="#ef4444" font-size="9" font-weight="600">+2.0σ BAND</text>
+                <path d="M 20 250 L 90 200 L 150 210 L 200 160 L 260 150 L 320 120" fill="none" stroke="#00f2ff" stroke-width="3" filter="url(#mc1_glowCyan)" />
+                <circle cx="200" cy="160" r="5" fill="#00f2ff" />
+                <text x="200" y="145" fill="#cbd5e1" font-size="10" font-weight="700" text-anchor="middle">A</text>
+                <circle cx="320" cy="120" r="5" fill="#00f2ff" filter="url(#mc1_glowCyan)" />
+                <text x="320" y="105" fill="#00f2ff" font-size="10" font-weight="700" text-anchor="middle">B · HH</text>
+                <line x1="200" y1="160" x2="320" y2="120" stroke="#64748b" stroke-width="1" stroke-dasharray="3 3" />
+                <text x="16" y="288" fill="#94a3b8" font-size="9">LIQUIDITY SWEEP — NQ runs through the band</text>
+              </g>
+
+              <g transform="translate(30, 372)">
+                <line x1="0" y1="10" x2="25" y2="10" stroke="#00f2ff" stroke-width="3" />
+                <text x="32" y="14" fill="#cbd5e1" font-size="10">Correlated price</text>
+                <line x1="185" y1="10" x2="210" y2="10" stroke="#ef4444" stroke-width="3" />
+                <text x="217" y="14" fill="#cbd5e1" font-size="10">Divergence (LH vs HH)</text>
+                <line x1="440" y1="10" x2="465" y2="10" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4 4" />
+                <text x="472" y="14" fill="#cbd5e1" font-size="10">VWAP +2.0σ band</text>
+              </g>
+              <text x="400" y="408" fill="#ef4444" font-size="11" font-weight="700" text-anchor="middle">▼ SMT BEARISH DIVERGENCE → HIGH-PROBABILITY SHORT ENTRY</text>
+            </svg>
+            <figcaption>NQ SWEEPS THE +2σ BAND WHILE ES STALLS — THE DIVERGENCE IS THE DISTRIBUTION SIGNAL</figcaption>
+          </figure>
+        </article>
+
+        <article class="lesson" id="l1-2" data-lesson="l1-2">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">1.2</span> Session Liquidity Profiles</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l1-2"> Mark complete</label>
+          </div>
+          <p>
+            Liquidity is delivered on a schedule. Each session prints a distinct profile — know which one you are trading.
+          </p>
+          <div class="sheet-grid">
+            <div class="sheet">
+              <h4>Asia / London Sweep · 02:00–05:00 EST</h4>
+              <ul>
+                <li>Liquidity accumulation outside overnight value parameters.</li>
+                <li>Quiet sweeps of the overnight high / low outside ±1σ.</li>
+                <li>Sets the range the NY open will either accept or reject.</li>
+              </ul>
+            </div>
+            <div class="sheet">
+              <h4>NY Open Injection · 09:30 EST</h4>
+              <ul>
+                <li>High-volume algorithm re-calibration with fresh session anchors.</li>
+                <li>RTH VWAP re-anchors — overnight levels are re-priced.</li>
+                <li>First 45 minutes = the highest-probability overextension window.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="callout gold">
+            The 09:30 EST injection re-anchors VWAP — stale overnight levels are re-priced in the first minutes of the cash session.
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="module" id="m2">
+      <div class="container">
+        <div class="module-header">
+          <div class="mod-time">Module 02 · Execution Frameworks</div>
+          <h2>High-Velocity Session Execution Frameworks</h2>
+          <p>Two institutional execution frameworks — one for range / mean-reverting regimes, one for high-beta trend expansion.</p>
+        </div>
+
+        <article class="lesson" id="l2-1" data-lesson="l2-1">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">2.1</span> Strategy 1 · RTH Open Standard Deviation Reversion</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l2-1"> Mark complete</label>
+          </div>
+          <p>
+            Designed for <strong>range-bound / mean-reverting regimes</strong> during the NY Morning Session (09:30–11:30 EST).
+          </p>
+          <ol class="rules-ol">
+            <li><strong>Establish the session anchor baseline.</strong> Reset the USME VWAP Elite anchor strictly at 09:30 EST. Mark static ±1.0σ / ±2.0σ / ±3.0σ expansion bands on the 3-minute timeframe.</li>
+            <li><strong>Detect institutional overextension.</strong> Watch for an aggressive directional spike that pushes price completely outside the ±2.0σ or ±3.0σ band within the first 45 minutes of RTH.</li>
+            <li><strong>USME ICT Core structural shift.</strong> Wait for a 1-minute Market Structure Shift (MSS) back inside the ±2.0σ band, leaving a clear Fair Value Gap (FVG) or Order Block (OB).</li>
+            <li><strong>Order execution &amp; risk calibration.</strong> Enter via limit order at the 50% Consequent Encroachment (CE) of the FVG. Stop 2 ticks beyond the extreme sweep high / low. TP1 at the dynamic VWAP mean (scale 60%); TP2 at the opposite ±1.5σ band.</li>
+          </ol>
+          <div class="callout emerald">
+            Reversion wins in range regimes — wait for the MSS back inside the band before fading the extreme. Never fade a band that is still breaking.
+          </div>
+
+          <figure class="figure">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420" width="100%" role="img" aria-label="RTH open standard deviation reversion setup" style="background-color:#0b0f17; font-family:'Space Mono',monospace,sans-serif;">
+              <defs>
+                <linearGradient id="mc2_bg" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#111827" />
+                  <stop offset="100%" stop-color="#0b0f17" />
+                </linearGradient>
+                <filter id="mc2_glowCyan" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+              <rect width="800" height="420" fill="url(#mc2_bg)" rx="12" stroke="#1e293b" stroke-width="1.5" />
+              <text x="30" y="34" fill="#ffffff" font-size="14" font-weight="700" letter-spacing="0.5">FIG 02 · RTH OPEN STANDARD DEVIATION REVERSION</text>
+              <text x="770" y="34" fill="#64748b" font-size="10" font-weight="600" text-anchor="end">SWEEP → MSS → CE ENTRY</text>
+
+              <rect x="60" y="56" width="680" height="52" rx="6" fill="rgba(239,68,68,0.10)" stroke="#ef4444" stroke-width="1" stroke-dasharray="4 3" />
+              <text x="76" y="78" fill="#ef4444" font-size="12" font-weight="700">+2.0σ → +3.0σ</text>
+              <text x="76" y="96" fill="#94a3b8" font-size="10">EXTREME OVERBOUGHT · OVEREXTENSION SWEEP ZONE</text>
+
+              <rect x="60" y="118" width="680" height="40" rx="6" fill="rgba(245,158,11,0.08)" stroke="#f59e0b" stroke-width="1" />
+              <text x="76" y="136" fill="#f59e0b" font-size="12" font-weight="700">+1.0σ</text>
+              <text x="76" y="152" fill="#94a3b8" font-size="10">BULLISH EXTENSION</text>
+
+              <rect x="60" y="168" width="680" height="46" rx="6" fill="rgba(0,242,255,0.12)" stroke="#00f2ff" stroke-width="2" filter="url(#mc2_glowCyan)" />
+              <text x="76" y="190" fill="#00f2ff" font-size="13" font-weight="700">DYNAMIC RTH VWAP (TP1)</text>
+              <text x="76" y="206" fill="#e2e8f0" font-size="10">CENTRAL FAIR-VALUE BENCHMARK</text>
+
+              <rect x="60" y="224" width="680" height="40" rx="6" fill="rgba(245,158,11,0.08)" stroke="#f59e0b" stroke-width="1" />
+              <text x="76" y="242" fill="#f59e0b" font-size="12" font-weight="700">−1.0σ</text>
+              <text x="76" y="258" fill="#94a3b8" font-size="10">BEARISH EXTENSION</text>
+
+              <rect x="60" y="274" width="680" height="52" rx="6" fill="rgba(16,185,129,0.10)" stroke="#10b981" stroke-width="1" stroke-dasharray="4 3" />
+              <text x="76" y="296" fill="#10b981" font-size="12" font-weight="700">−2.0σ → −3.0σ</text>
+              <text x="76" y="314" fill="#94a3b8" font-size="10">EXTREME OVERSOLD · TARGET ZONE (TP2 −1.5σ)</text>
+
+              <!-- price path: sweep up through +2σ, MSS back inside, entry at CE, down to TP1/TP2 -->
+              <path d="M 120 190 L 200 130 L 260 78 L 340 140 L 380 150 L 480 190 L 600 250" fill="none" stroke="#ffffff" stroke-width="2.5" />
+              <circle cx="260" cy="78" r="6" fill="#ef4444" />
+              <text x="260" y="62" fill="#ef4444" font-size="10" font-weight="700" text-anchor="middle">SWEEP HIGH</text>
+              <line x1="220" y1="52" x2="300" y2="52" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4 4" />
+              <text x="260" y="44" fill="#ef4444" font-size="9" text-anchor="middle">SL · 2 TICKS BEYOND</text>
+              <circle cx="380" cy="150" r="6" fill="#00f2ff" filter="url(#mc2_glowCyan)" />
+              <text x="380" y="172" fill="#00f2ff" font-size="10" font-weight="700" text-anchor="middle">ENTRY · 50% CE</text>
+              <circle cx="480" cy="190" r="6" fill="#10b981" />
+              <text x="480" y="212" fill="#10b981" font-size="10" font-weight="700" text-anchor="middle">TP1 · VWAP (60%)</text>
+              <circle cx="600" cy="250" r="6" fill="#10b981" />
+              <text x="600" y="272" fill="#10b981" font-size="10" font-weight="700" text-anchor="middle">TP2 · −1.5σ</text>
+
+              <text x="60" y="352" fill="#64748b" font-size="10">BANDS RE-ANCHOR AT 09:30 EST — THE FIRST 45 MINUTES IS THE OVEREXTENSION WINDOW</text>
+              <text x="60" y="378" fill="#64748b" font-size="10">ENTER ONLY AFTER THE 1M MSS BACK INSIDE ±2σ LEAVES A VALID FVG / OB</text>
+            </svg>
+            <figcaption>FIG 02 · OVEREXTENSION → STRUCTURAL SHIFT → CONSEQUENT ENCROACHMENT ENTRY → BAND TARGETS</figcaption>
+          </figure>
+        </article>
+
+        <article class="lesson" id="l2-2" data-lesson="l2-2">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">2.2</span> Strategy 2 · Cross-Correlated SMT Trend Continuation</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l2-2"> Mark complete</label>
+          </div>
+          <p>
+            Designed for <strong>high-beta trend-expansion regimes</strong> in index futures (NQ / ES).
+          </p>
+          <ol class="rules-ol">
+            <li><strong>Confirm trend-extension alignment.</strong> Price holds consistently above (bullish) or below (bearish) the dynamic RTH VWAP centerline, with the 9/21 EMA cloud expanding in alignment.</li>
+            <li><strong>Identify inter-market SMT divergence.</strong> During a shallow retracement toward the dynamic +1.0σ or −1.0σ VWAP band, check for SMT divergence between ES and NQ.</li>
+            <li><strong>Execute on ICT Core displacement.</strong> Identify a nested FVG on the 2-minute timeframe that directly overlaps the dynamic ±1.0σ boundary. Enter immediately on a touch of the FVG threshold.</li>
+            <li><strong>Trail via institutional liquidity expansion.</strong> Stop below the swing low created during SMT formation. Target unmitigated buy-side / sell-side liquidity pools beyond the ±3.0σ band extension.</li>
+          </ol>
+          <div class="callout">
+            Continuation is a trend-follow, not a fade. Only trade the SMT divergence when the macro VWAP direction and the EMA cloud agree.
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="module" id="m3">
+      <div class="container">
+        <div class="module-header">
+          <div class="mod-time">Module 03 · Performance &amp; Volatility</div>
+          <h2>Quantitative Performance &amp; Volatility Profiling</h2>
+          <p>Match the strategy to the volatility regime. The profile below maps each framework to its ideal environment.</p>
+        </div>
+
+        <article class="lesson" id="l3-1" data-lesson="l3-1">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">3.1</span> Overnight ETH Reversion Engine</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l3-1"> Mark complete</label>
+          </div>
+          <p>
+            The third profile in the suite — a low-volatility engine for the <strong>Asian–London drift</strong>, before the NY open injects volatility.
+          </p>
+          <ol class="rules-ol">
+            <li><strong>Anchor the ETH VWAP at 18:00 EST</strong> and mark the ±1.0σ overnight band.</li>
+            <li><strong>During the 02:00–05:00 EST drift</strong>, wait for a quiet sweep of the overnight high / low outside ±1.0σ.</li>
+            <li><strong>Fade the sweep</strong> back toward the ETH VWAP mean with a tight stop beyond the sweep.</li>
+            <li><strong>Take profit at the opposite ±1.0σ band</strong> — small 1:1.5–1:1.8 reward, but a 72–78% win-rate profile.</li>
+          </ol>
+          <div class="callout gold">
+            The overnight engine trades small, frequent edges in the drift — never the violent NY open. Keep size small and stops tight.
+          </div>
+        </article>
+
+        <article class="lesson" id="l3-2" data-lesson="l3-2">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">3.2</span> Volatility-Environment Matching</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l3-2"> Mark complete</label>
+          </div>
+          <p>
+            Win rate and reward-to-risk are <strong>regime-dependent</strong> — a trend strategy forced into a range day gives back its edge.
+          </p>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Strategy Profile</th>
+                  <th>Primary Instrument</th>
+                  <th>Ideal Volatility Environment</th>
+                  <th>Win Rate Range</th>
+                  <th>Avg Risk-to-Reward</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>RTH Open SD Reversion</td>
+                  <td>ES / CL</td>
+                  <td>Normal Volatility / Range Expansion</td>
+                  <td>68% – 74%</td>
+                  <td>1:2.0 – 1:2.5</td>
+                </tr>
+                <tr>
+                  <td>Cross-Correlated SMT Trend Continuation</td>
+                  <td>NQ / ES</td>
+                  <td>High Volatility / Trend Days</td>
+                  <td>58% – 64%</td>
+                  <td>1:3.0 – 1:4.5</td>
+                </tr>
+                <tr>
+                  <td>Overnight ETH Reversion Engine</td>
+                  <td>CL / ES</td>
+                  <td>Low Volatility / Asian–London Drift</td>
+                  <td>72% – 78%</td>
+                  <td>1:1.5 – 1:1.8</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            These ranges are illustrative historical profiles, not guarantees. Regime first — pick the framework the session is actually printing.
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="module" id="protocol">
+      <div class="container">
+        <div class="module-header">
+          <div class="mod-time">Protocol · Execution Discipline</div>
+          <h2>Execution Discipline Protocol</h2>
+          <p>Three locked phases before any order hits the tape.</p>
+        </div>
+
+        <article class="lesson" id="lp-1" data-lesson="lp-1">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">P</span> Pre-Entry Sequence</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="lp-1"> Mark complete</label>
+          </div>
+          <div class="phase-list">
+            <div class="phase-row">
+              <span class="phase-badge p1">Phase 1</span>
+              <div>
+                <h4>Bias Calibration</h4>
+                <p>Confirm daily higher-timeframe bias and SMT alignment across ES / NQ prior to the 09:30 EST open.</p>
+              </div>
+            </div>
+            <div class="phase-row">
+              <span class="phase-badge p2">Phase 2</span>
+              <div>
+                <h4>Location Verification</h4>
+                <p>Ensure entry occurs strictly at or beyond ±1.0σ (continuation) or ±2.0σ (reversion) VWAP bands.</p>
+              </div>
+            </div>
+            <div class="phase-row">
+              <span class="phase-badge p3">Phase 3</span>
+              <div>
+                <h4>Micro Trigger</h4>
+                <p>Execute only after a confirmed 1-minute MSS and a displacement candle leaving a valid Fair Value Gap.</p>
+              </div>
+            </div>
+          </div>
+          <div class="callout emerald">
+            Bias → Location → Trigger. If any one of the three is missing, stand down. Discipline is the edge.
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="closing" id="close">
+      <div class="container">
+        <div class="closing-card">
+          <h2>Five takeaways. Then execute.</h2>
+          <ul class="takeaways">
+            <li>SMT is the disagreement between correlated markets — read divergence, not direction.</li>
+            <li>VWAP is the benchmark execution algos are judged against — trade the bands, not the noise.</li>
+            <li>Reversion fades extremes inside ±2/3σ; continuation rides the ±1σ retest with the trend.</li>
+            <li>Match strategy to regime — normal / range, high-beta trend, or overnight drift.</li>
+            <li>Never execute without bias + location + micro-trigger all confirmed.</li>
+          </ul>
+
+          <div class="checklist" style="text-align:left; margin-top:6px;">
+            <div class="check-item"><span class="check-box" aria-hidden="true"></span><span><strong>1. Bias</strong> — HTF bias + SMT alignment across ES / NQ.</span></div>
+            <div class="check-item"><span class="check-box" aria-hidden="true"></span><span><strong>2. Location</strong> — entry at / beyond ±1σ (continuation) or ±2σ (reversion).</span></div>
+            <div class="check-item"><span class="check-box" aria-hidden="true"></span><span><strong>3. Trigger</strong> — 1m MSS + displacement candle leaving a valid FVG.</span></div>
+            <div class="check-item"><span class="check-box" aria-hidden="true"></span><span><strong>4. Risk</strong> — stop beyond the sweep, size to the stop distance.</span></div>
+            <div class="check-item"><span class="check-box" aria-hidden="true"></span><span><strong>5. Regime</strong> — framework matches the session's volatility profile.</span></div>
+          </div>
+
+          <p>
+            Practice on replay. Protect capital first.
+            Education builds calm, surgical conviction — not urgency.
+          </p>
+          <a class="closing-cta" href="#overview">Back to overview →</a>
+          <p style="margin-top:22px;font-family:var(--font-mono);font-size:10px;letter-spacing:1px;color:var(--gold2);">
+            FOR EDUCATION ONLY · NOT FINANCIAL ADVICE · MANAGE RISK ON EVERY TRADE
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="footer-brand">SNIPER<span>TRADER</span></div>
+      <p class="footer-disc">
+        This course is for educational purposes only and does not constitute financial, investment, or trading advice.
+        Trading CME / NYMEX futures carries substantial risk of capital loss. You are solely responsible for your decisions.
+        Indicators and volatility bands can fail; manage risk on every trade.
+      </p>
+      <div class="footer-meta">USME Futures Mastercourse · v1.0 · Education</div>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var STORAGE_KEY = 'st_usme_futures_mastercourse_v1';
+      var THEME_KEY = 'st_usme_futures_mastercourse_theme';
+      var navBtns = Array.prototype.slice.call(document.querySelectorAll('.nav-btn'));
+      var sections = ['overview','core','m1','m2','m3','protocol','close'].map(function (id) {
+        return document.getElementById(id);
+      }).filter(Boolean);
+      var lessons = Array.prototype.slice.call(document.querySelectorAll('.lesson'));
+      var fill = document.getElementById('progressFill');
+      var pctEl = document.getElementById('progressPct');
+
+      /* ---------- theme toggle (light / dark) ---------- */
+      var themeToggle = document.getElementById('themeToggle');
+      function themeIsDark() { return document.body.classList.contains('dark'); }
+      function updateToggleLabel() {
+        if (themeToggle) themeToggle.textContent = themeIsDark() ? '☀ Light' : '☾ Dark';
+      }
+      try {
+        var savedTheme = localStorage.getItem(THEME_KEY);
+        if (savedTheme === 'light') document.body.classList.remove('dark');
+        else if (savedTheme === 'dark') document.body.classList.add('dark');
+      } catch (e) {}
+      if (themeToggle) {
+        themeToggle.addEventListener('click', function () {
+          document.body.classList.toggle('dark');
+          try { localStorage.setItem(THEME_KEY, themeIsDark() ? 'dark' : 'light'); } catch (e) {}
+          updateToggleLabel();
+        });
+      }
+      updateToggleLabel();
+
+      /* ---------- mark-complete persistence ---------- */
+      function loadDone() {
+        try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+        catch (e) { return {}; }
+      }
+      function saveDone(map) {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(map)); } catch (e) {}
+      }
+      var doneMap = loadDone();
+      Array.prototype.slice.call(document.querySelectorAll('input[data-complete]')).forEach(function (cb) {
+        var id = cb.getAttribute('data-complete');
+        var label = cb.closest('.mark-done');
+        var lesson = cb.closest('.lesson');
+        if (doneMap[id]) {
+          cb.checked = true;
+          if (label) label.classList.add('checked');
+          if (lesson) lesson.classList.add('done');
+        }
+        cb.addEventListener('change', function () {
+          doneMap[id] = !!cb.checked;
+          saveDone(doneMap);
+          if (label) label.classList.toggle('checked', cb.checked);
+          if (lesson) lesson.classList.toggle('done', cb.checked);
+          updateProgress();
+        });
+      });
+
+      /* ---------- progress ---------- */
+      function updateProgress() {
+        var total = lessons.length || 1;
+        var completed = 0;
+        lessons.forEach(function (el) {
+          var r = el.getBoundingClientRect();
+          var visible = r.top < window.innerHeight * 0.7 && r.bottom > 80;
+          el.classList.toggle('in-view', visible);
+          if (el.classList.contains('done')) completed++;
+        });
+        var scrollY = window.scrollY || window.pageYOffset;
+        var docH = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
+        var scrollPct = Math.min(100, Math.round((scrollY / docH) * 100));
+        var lessonPct = Math.round((completed / total) * 100);
+        var pct = Math.max(scrollPct, Math.round(scrollPct * 0.6 + lessonPct * 0.4));
+        if (fill) fill.style.width = pct + '%';
+        if (pctEl) pctEl.textContent = pct + '%';
+      }
+
+      function setActive(id) {
+        navBtns.forEach(function (btn) {
+          btn.classList.toggle('active', btn.getAttribute('data-section') === id);
+        });
+      }
+
+      function onScroll() {
+        var current = sections[0] && sections[0].id;
+        var offset = 80;
+        for (var i = 0; i < sections.length; i++) {
+          var top = sections[i].getBoundingClientRect().top;
+          if (top - offset <= 0) current = sections[i].id;
+        }
+        setActive(current);
+        updateProgress();
+      }
+
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', onScroll);
+
+      onScroll();
+
+      navBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          setActive(btn.getAttribute('data-section'));
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
