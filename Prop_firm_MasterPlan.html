@@ -6,232 +6,1709 @@
   <title>Prop Firm MasterPlan · SniperTrader Education</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-</head>
-<body class="bg-[#0b0f17] text-slate-300 font-sans">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
 
-  <!-- STICKY TOP NAV -->
-  <nav class="sticky top-0 z-50 bg-[#0b0f17]/90 backdrop-blur border-b border-slate-800">
-    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <span class="font-bold text-white tracking-wider">SNIPER<span class="text-cyan-400">TRADER</span></span>
-        <span class="text-xs text-slate-500 border-l border-slate-700 pl-3">Prop Firm MasterPlan</span>
+/* ============ LIGHT THEME (matches USME ICT Core Course) ============ */
+:root {
+  --bg: #F2F3FB;
+  --bg2: #E9EBF6;
+  --bg3: #DEE1F0;
+  --obs: #FFFFFF;
+  --obs2: #E9EBF6;
+  --obs3: #DEE1F0;
+  --surface: #FFFFFF;
+  --surface-alt: #E9EBF6;
+  --card: rgba(255,255,255,.6);
+  --card2: rgba(255,255,255,.82);
+  --text: #0A0C18;
+  --text2: #1C2240;
+  --text3: #3A4470;
+  --text4: #5A6690;
+  --violet: #6D28D9;
+  --violet2: #5B21B6;
+  --violet-dim: rgba(124,58,237,.10);
+  --cyan: #0086A8;
+  --cyan2: #006E8A;
+  --cyan-dim: rgba(0,150,200,.12);
+  --fuchsia: #C026D3;
+  --gold: #8A5B00;
+  --gold2: #8A5B00;
+  --gold-dim: rgba(138,91,0,.10);
+  --amber: #8A5B00;
+  --amber-dim: rgba(138,91,0,.10);
+  --emerald: #059669;
+  --emerald2: #059669;
+  --emerald-dim: rgba(5,150,105,.10);
+  --bear: #BE1E3C;
+  --bear-dim: rgba(190,30,60,.12);
+  --red: #BE1E3C;
+  --border: rgba(109,40,217,.18);
+  --border2: rgba(109,40,217,.34);
+  --border-cyan: rgba(0,150,200,.18);
+  --nav-bg: rgba(242,243,251,.96);
+  --nav-h: 56px;
+  --font-display: 'Playfair Display', serif;
+  --font-mono: 'Space Mono', monospace;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+  --ff-d: 'Playfair Display', serif;
+  --ff-b: 'Plus Jakarta Sans', sans-serif;
+  --ff-m: 'Space Mono', monospace;
+  --shadow: 0 30px 70px rgba(60,70,110,.20);
+  --radius: 14px;
+}
+
+/* ============ DARK THEME ============ */
+body.dark {
+  --bg: #0B0F17;
+  --bg2: #121826;
+  --bg3: #1A2233;
+  --obs: #0E1420;
+  --obs2: #151C2B;
+  --obs3: #1A2233;
+  --surface: #101727;
+  --surface-alt: #151C2B;
+  --card: rgba(16,23,39,.6);
+  --card2: rgba(16,23,39,.82);
+  --text: #E9EDF6;
+  --text2: #C7CEE2;
+  --text3: #9AA5C0;
+  --text4: #6C7898;
+  --violet: #A78BFA;
+  --violet2: #8B5CF6;
+  --violet-dim: rgba(139,92,246,.16);
+  --cyan: #22D3EE;
+  --cyan2: #67E8F9;
+  --cyan-dim: rgba(34,211,238,.14);
+  --fuchsia: #E879F9;
+  --gold: #F0C040;
+  --gold2: #F0C040;
+  --gold-dim: rgba(240,192,64,.12);
+  --amber: #F59E0B;
+  --amber-dim: rgba(245,158,11,.14);
+  --emerald: #34D399;
+  --emerald2: #34D399;
+  --emerald-dim: rgba(52,211,153,.12);
+  --bear: #FB7185;
+  --bear-dim: rgba(251,113,133,.14);
+  --red: #FB7185;
+  --border: rgba(148,163,184,.22);
+  --border2: rgba(148,163,184,.40);
+  --border-cyan: rgba(34,211,238,.22);
+  --nav-bg: rgba(11,15,23,.92);
+  --shadow: 0 30px 70px rgba(0,0,0,.5);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.65;
+  transition: background .3s ease, color .3s ease;
+}
+img, svg { max-width: 100%; height: auto; display: block; }
+a { color: var(--violet); }
+.container {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 22px;
+  position: relative;
+  z-index: 1;
+}
+.topbar {
+  background: var(--obs);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 0;
+}
+.topbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+}
+.brand-mark {
+  width: 36px; height: 36px;
+  border: 2px solid var(--violet);
+  border-radius: 50%;
+  position: relative;
+  flex-shrink: 0;
+  box-shadow: 0 0 14px rgba(109,40,217,0.28);
+}
+.brand-mark::before,
+.brand-mark::after {
+  content: '';
+  position: absolute;
+  background: var(--violet);
+}
+.brand-mark::before {
+  width: 2px; height: 14px;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+.brand-mark::after {
+  width: 14px; height: 2px;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+.brand-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 1.5px;
+  color: var(--text);
+}
+.brand-name span { color: var(--violet); }
+.brand-tag {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text4);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+.edu-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--violet);
+  background: var(--violet-dim);
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: 20px;
+}
+.edu-pill::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--cyan);
+  animation: pulse 1.6s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text4);
+  background: var(--obs);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: color .2s, border-color .2s;
+  white-space: nowrap;
+}
+.theme-toggle:hover { color: var(--violet); border-color: var(--border2); }
+.course-nav {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: var(--nav-bg);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 4px 24px rgba(60,70,110,0.12);
+}
+.nav-row { display: flex; align-items: stretch; gap: 0; }
+.nav-scroll {
+  flex: 1;
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.nav-scroll::-webkit-scrollbar { display: none; }
+.nav-btn {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text4);
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 16px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .2s, border-color .2s, background .2s;
+  text-decoration: none;
+}
+.nav-btn:hover { color: var(--text); background: var(--obs2); }
+.nav-btn.active {
+  color: var(--violet);
+  border-bottom-color: var(--violet);
+}
+.progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  border-left: 1px solid var(--border);
+  flex-shrink: 0;
+  min-width: 108px;
+}
+.progress-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text4);
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+.progress-label strong { color: var(--cyan); font-weight: 700; }
+.progress-bar {
+  width: 44px; height: 4px;
+  background: var(--obs3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--cyan), var(--violet));
+  transition: width .25s ease;
+}
+
+.disclaimer-strip {
+  background: var(--gold-dim);
+  border-bottom: 1px solid rgba(138,91,0,0.28);
+  padding: 10px 0;
+}
+.disclaimer-strip p {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--gold2);
+  letter-spacing: 0.4px;
+  text-align: center;
+}
+
+.hero {
+  padding: 48px 0 36px;
+  background:
+    radial-gradient(ellipse 80% 60% at 10% 0%, var(--violet-dim), transparent 55%),
+    radial-gradient(ellipse 60% 50% at 90% 20%, var(--cyan-dim), transparent 50%);
+}
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--violet);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-label::before {
+  content: '';
+  width: 18px; height: 2px;
+  background: var(--violet);
+}
+.hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(24px, 4.2vw, 38px);
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  line-height: 1.18;
+  color: var(--text);
+  margin-bottom: 14px;
+  max-width: 760px;
+}
+.hero .lead {
+  font-size: 17px;
+  color: var(--text3);
+  max-width: 660px;
+  margin-bottom: 22px;
+}
+.hero-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 7px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text3);
+}
+.chip.cyan {
+  border-color: var(--border-cyan);
+  color: var(--cyan2);
+  background: var(--cyan-dim);
+}
+.chip.gold {
+  border-color: rgba(138,91,0,0.35);
+  color: var(--amber);
+  background: var(--amber-dim);
+}
+.chip.emerald {
+  border-color: rgba(0,150,200,0.35);
+  color: var(--cyan);
+  background: var(--cyan-dim);
+}
+.chip.violet {
+  border-color: var(--border2);
+  color: var(--violet);
+  background: var(--violet-dim);
+}
+.sec-h2 {
+  font-family: var(--font-display);
+  font-size: clamp(16px, 2.5vw, 20px);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 18px;
+  color: var(--text);
+}
+.steps { padding: 8px 0 40px; }
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+.step-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 20px;
+  box-shadow: var(--shadow);
+  transition: border-color .2s, transform .2s;
+}
+.step-card:hover {
+  border-color: var(--border2);
+  transform: translateY(-2px);
+}
+.step-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--violet);
+  margin-bottom: 10px;
+}
+.step-card h3 {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text);
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+.step-card p {
+  font-size: 13px;
+  color: var(--text4);
+  line-height: 1.55;
+}
+
+.module { padding: 28px 0 8px; }
+.module-header {
+  margin-bottom: 22px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--border);
+}
+.module-header h2 {
+  font-family: var(--font-display);
+  font-size: clamp(18px, 3vw, 24px);
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.module-header p {
+  font-size: 14px;
+  color: var(--text4);
+  max-width: 640px;
+}
+.mod-time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--violet);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.lesson {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 26px 24px 22px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+  scroll-margin-top: calc(var(--nav-h) + 18px);
+  transition: border-color .25s, box-shadow .25s;
+}
+.lesson.in-view {
+  border-color: var(--border2);
+  box-shadow: 0 8px 32px rgba(109,40,217,0.12);
+}
+.lesson.done { border-color: rgba(0,134,168,0.45); }
+.lesson-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.lesson-title {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--text);
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.lesson-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--violet);
+  letter-spacing: 1px;
+}
+.lesson p {
+  font-size: 15px;
+  color: var(--text3);
+  margin-bottom: 12px;
+}
+.lesson ul, .lesson ol {
+  margin: 0 0 14px 18px;
+  color: var(--text3);
+  font-size: 14px;
+}
+.lesson li { margin-bottom: 7px; }
+.lesson li strong { color: var(--text); }
+.mark-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text4);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--obs);
+  transition: color .2s, border-color .2s, background .2s;
+}
+.mark-done:hover { color: var(--text); border-color: var(--border-cyan); }
+.mark-done input {
+  accent-color: var(--violet);
+  width: 14px; height: 14px;
+  cursor: pointer;
+}
+.mark-done.checked {
+  color: var(--cyan);
+  border-color: rgba(0,134,168,0.45);
+  background: var(--cyan-dim);
+}
+.callout {
+  background: var(--bg2);
+  border-left: 3px solid var(--violet);
+  border-radius: 0 10px 10px 0;
+  padding: 14px 16px;
+  margin: 14px 0;
+  font-size: 14px;
+  color: var(--text2);
+}
+.callout.gold { border-left-color: var(--gold2); background: var(--gold-dim); }
+.callout.emerald { border-left-color: var(--emerald); background: var(--emerald-dim); }
+.callout.bear { border-left-color: var(--bear); background: var(--bear-dim); }
+.figure {
+  margin: 18px 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--obs);
+}
+.figure .svg-wrap { background: #F2F3FB; padding: 12px; }
+.figure figcaption {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--text4);
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-alt);
+}
+.checklist { display: grid; gap: 8px; margin: 14px 0; }
+.check-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: var(--obs);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: var(--text3);
+}
+.check-box {
+  flex-shrink: 0;
+  width: 18px; height: 18px;
+  border: 2px solid var(--cyan);
+  border-radius: 4px;
+  margin-top: 1px;
+}
+.rules-ol {
+  counter-reset: rule;
+  list-style: none;
+  margin: 14px 0;
+  padding: 0;
+}
+.rules-ol li {
+  counter-increment: rule;
+  position: relative;
+  background: var(--obs);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px 14px 52px;
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: var(--text3);
+}
+.rules-ol li::before {
+  content: counter(rule);
+  position: absolute;
+  left: 14px; top: 14px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--violet);
+  width: 28px; height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--violet-dim);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.rules-ol li strong { color: var(--text); }
+.sheet-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+.sheet {
+  background: var(--obs);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+.sheet h4 {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--violet);
+  margin-bottom: 10px;
+}
+.sheet ul {
+  margin: 0 0 0 16px;
+  font-size: 13px;
+  color: var(--text3);
+}
+.sheet li { margin-bottom: 5px; }
+
+/* ---- phase list (Module 03) ---- */
+.phase-list { display: grid; gap: 12px; margin: 14px 0; }
+.phase-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  background: var(--obs);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+.phase-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.phase-badge.p1 { color: var(--violet); background: var(--violet-dim); border: 1px solid var(--border); }
+.phase-badge.p2 { color: var(--cyan2); background: var(--cyan-dim); border: 1px solid var(--border-cyan); }
+.phase-badge.funded { color: var(--emerald); background: var(--emerald-dim); border: 1px solid rgba(5,150,105,.35); }
+.phase-row h4 {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.phase-row p { font-size: 13px; color: var(--text3); line-height: 1.55; margin-bottom: 0; }
+
+/* ---- risk & position-size calculator (Module 02) ---- */
+.calc {
+  background: var(--obs);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  padding: 22px 20px;
+  margin: 18px 0 6px;
+  box-shadow: var(--shadow);
+}
+.calc h4 {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--violet);
+  margin-bottom: 16px;
+}
+.calc-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+.calc-field { display: flex; flex-direction: column; gap: 6px; }
+.calc-field label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text4);
+}
+.calc-field input, .calc-field select {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  outline: none;
+}
+.calc-field input:focus, .calc-field select:focus { border-color: var(--cyan); }
+.preset-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.preset {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  color: var(--text4);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+}
+.preset:hover { color: var(--cyan); border-color: var(--border-cyan); }
+.calc-out {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.calc-out-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.calc-out-row .k {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text4);
+}
+.calc-out-row .v {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  text-align: right;
+}
+.calc-out-row .v.risk { color: var(--bear); }
+.calc-out-row .v.size { color: var(--cyan2); font-size: 20px; }
+.guard {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 14px;
+  background: var(--gold-dim);
+  border: 1px solid rgba(138,91,0,.3);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 12px;
+  color: var(--text2);
+  line-height: 1.5;
+}
+.guard.warn { background: var(--bear-dim); border-color: rgba(190,30,60,.35); }
+.guard .dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--gold2);
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+.guard.warn .dot { background: var(--bear); }
+.calc-note {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.4px;
+  color: var(--text4);
+  margin-top: 10px;
+  line-height: 1.6;
+}
+
+.takeaways {
+  list-style: none;
+  margin: 0 auto 20px;
+  padding: 0;
+  text-align: left;
+  max-width: 560px;
+}
+.takeaways li {
+  position: relative;
+  padding: 10px 0 10px 28px;
+  color: var(--text3);
+  font-size: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.takeaways li::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 16px;
+  width: 10px; height: 10px;
+  border: 2px solid var(--violet);
+  border-radius: 2px;
+}
+.closing { padding: 36px 0 48px; }
+.closing-card {
+  background: linear-gradient(145deg, #FFFFFF, #E9EBF6);
+  color: var(--text);
+  border: 1px solid var(--border2);
+  border-radius: 18px;
+  padding: 36px 28px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+body.dark .closing-card {
+  background: linear-gradient(145deg, #1A2233, #0E1420);
+}
+.closing-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(109,40,217,0.12), transparent 45%),
+    radial-gradient(circle at 80% 70%, rgba(0,134,168,0.10), transparent 40%);
+  pointer-events: none;
+}
+.closing-card > * { position: relative; z-index: 1; }
+.closing-card h2 {
+  font-family: var(--font-display);
+  font-size: clamp(18px, 3vw, 26px);
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+.closing-card > p {
+  color: var(--text3);
+  max-width: 520px;
+  margin: 0 auto 18px;
+  font-size: 15px;
+}
+.closing-cta {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #FFFFFF;
+  background: var(--violet);
+  padding: 12px 22px;
+  border-radius: 24px;
+  text-decoration: none;
+  font-weight: 700;
+  margin-top: 8px;
+  box-shadow: 0 8px 24px rgba(109,40,217,0.28);
+}
+.closing-cta:hover { background: var(--violet2); }
+footer {
+  border-top: 1px solid var(--border);
+  padding: 28px 0 40px;
+  background: var(--obs);
+}
+.footer-brand {
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 3px;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.footer-brand span { color: var(--violet); }
+.footer-disc {
+  font-size: 12px;
+  color: var(--text4);
+  max-width: 680px;
+  line-height: 1.6;
+}
+.footer-meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text4);
+  margin-top: 14px;
+  text-transform: uppercase;
+}
+@media (max-width: 860px) {
+  .steps-grid { grid-template-columns: 1fr; }
+  .sheet-grid { grid-template-columns: 1fr; }
+  .calc-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .lesson { padding: 20px 16px; }
+  .progress-wrap { min-width: auto; padding: 0 10px; }
+  .progress-bar { display: none; }
+  .nav-btn { padding: 14px 10px; font-size: 8px; }
+  .hero { padding: 32px 0 24px; }
+  .rules-ol li { padding-left: 48px; }
+  .phase-row { flex-direction: column; gap: 10px; }
+}
+</style>
+</head>
+<body class="dark">
+
+  <div class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="#top" aria-label="SniperTrader home">
+        <div class="brand-mark" aria-hidden="true"></div>
+        <div>
+          <div class="brand-name">SNIPER<span>TRADER</span></div>
+          <div class="brand-tag">Education · Precision · Edge</div>
+        </div>
+      </a>
+      <div class="topbar-right">
+        <div class="edu-pill">Education · SniperTrader</div>
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light/dark theme">☀ Light</button>
       </div>
-      <div class="flex items-center gap-6 text-sm">
-        <a href="#overview" class="hover:text-cyan-400">Overview</a>
-        <a href="#m1" class="hover:text-cyan-400">Drawdown</a>
-        <a href="#m2" class="hover:text-cyan-400">Risk Math</a>
-        <a href="#m3" class="hover:text-cyan-400">Evaluation</a>
-        <a href="#m4" class="hover:text-cyan-400">Payouts</a>
-        <a href="#playbooks" class="hover:text-cyan-400">Playbooks</a>
+    </div>
+  </div>
+
+  <nav class="course-nav" id="courseNav" aria-label="Course modules">
+    <div class="container nav-row">
+      <div class="nav-scroll">
+        <a class="nav-btn active" href="#overview" data-section="overview">Overview</a>
+        <a class="nav-btn" href="#core" data-section="core">Core</a>
+        <a class="nav-btn" href="#m1" data-section="m1">Drawdown</a>
+        <a class="nav-btn" href="#m2" data-section="m2">Risk Math</a>
+        <a class="nav-btn" href="#m3" data-section="m3">Evaluation</a>
+        <a class="nav-btn" href="#m4" data-section="m4">Payouts</a>
+        <a class="nav-btn" href="#strategies" data-section="strategies">Playbooks</a>
+        <a class="nav-btn" href="#close" data-section="close">Close</a>
+      </div>
+      <div class="progress-wrap" title="Course progress">
+        <span class="progress-label"><strong id="progressPct">0%</strong></span>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
       </div>
     </div>
   </nav>
 
-  <!-- HERO SECTION -->
-  <section id="overview" class="py-16 border-b border-slate-800 bg-gradient-to-b from-[#111827] to-[#0b0f17]">
-    <div class="max-w-4xl mx-auto px-4 text-center">
-      <span class="text-xs font-mono text-cyan-400 tracking-widest uppercase">Proprietary Trading Strategy</span>
-      <h1 class="text-4xl md:text-5xl font-bold text-white mt-2 mb-4">Prop Firm MasterPlan & Execution Rules</h1>
-      <p class="text-lg text-slate-400 max-w-2xl mx-auto">
-        How to systematically pass 100k+ evaluation accounts, protect trailing drawdowns, and scale funded capital without risking rule violations.
-      </p>
-      <div class="flex flex-wrap justify-center gap-3 mt-6 text-xs font-mono">
-        <span class="bg-slate-800 text-slate-300 px-3 py-1 rounded">Trailing vs Static Drawdown</span>
-        <span class="bg-slate-800 text-slate-300 px-3 py-1 rounded">0.5% Risk Cap</span>
-        <span class="bg-slate-800 text-slate-300 px-3 py-1 rounded">Consistency Rules</span>
-        <span class="bg-slate-800 text-slate-300 px-3 py-1 rounded">Scaling Engine</span>
-      </div>
+  <div class="disclaimer-strip">
+    <div class="container">
+      <p>For education only. Not financial advice. Prop firm evaluations carry substantial risk of capital loss. Protect capital first.</p>
     </div>
-  </section>
+  </div>
 
-  <!-- CORE FOUNDATIONS (4 CARDS) -->
-  <section class="py-12 border-b border-slate-800">
-    <div class="max-w-6xl mx-auto px-4">
-      <h2 class="text-2xl font-bold text-white mb-6">Four Pillars of Prop Capital Preservation</h2>
-      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-        
-        <article class="bg-slate-900/60 border border-slate-800 rounded-xl p-5">
-          <div class="text-cyan-400 font-mono text-sm font-bold mb-2">01</div>
-          <h3 class="text-white font-semibold mb-2">Drawdown Engineering</h3>
-          <p class="text-sm text-slate-400">Master the math of <strong>Daily Loss Limits</strong> and <strong>Max Trailing Drawdowns</strong> to guarantee you never touch the failure threshold.</p>
-        </article>
+  <main id="top">
 
-        <article class="bg-slate-900/60 border border-slate-800 rounded-xl p-5">
-          <div class="text-cyan-400 font-mono text-sm font-bold mb-2">02</div>
-          <h3 class="text-white font-semibold mb-2">Fractional Lot Math</h3>
-          <p class="text-sm text-slate-400">Never risk fixed lot sizes. Standardize risk to <strong>0.25% - 0.5% per trade</strong> based on distance to structural stops.</p>
-        </article>
-
-        <article class="bg-slate-900/60 border border-slate-800 rounded-xl p-5">
-          <div class="text-cyan-400 font-mono text-sm font-bold mb-2">03</div>
-          <h3 class="text-white font-semibold mb-2">Consistency Safeguards</h3>
-          <p class="text-sm text-slate-400">Avoid the single-day profit penalty. Distribute gains smoothly across trading days to pass compliance checks.</p>
-        </article>
-
-        <article class="bg-slate-900/60 border border-slate-800 rounded-xl p-5">
-          <div class="text-cyan-400 font-mono text-sm font-bold mb-2">04</div>
-          <h3 class="text-white font-semibold mb-2">Payout Buffer Strategy</h3>
-          <p class="text-sm text-slate-400">Build a <strong>3% - 5% safety cushion</strong> on live accounts before requesting withdrawals to preserve position sizing flexibility.</p>
-        </article>
-
-      </div>
-    </div>
-  </section>
-
-  <!-- MODULE 01 -->
-  <section id="m1" class="py-12 border-b border-slate-800">
-    <div class="max-w-4xl mx-auto px-4">
-      <div class="text-xs font-mono text-cyan-400 mb-1">Module 01 · Capital Mechanics</div>
-      <h2 class="text-3xl font-bold text-white mb-6">Navigating Trailing vs Static Drawdown</h2>
-      
-      <article class="bg-slate-900/40 border border-slate-800 rounded-xl p-6 mb-8">
-        <h3 class="text-xl font-semibold text-white mb-3">Understanding the Trailing Drawdown Trap</h3>
-        <p class="mb-4">
-          Most prop firm traders fail not due to strategy, but because they do not realize trailing drawdowns move up with intra-trade unrealized equity high points.
+    <section class="hero" id="overview">
+      <div class="container">
+        <div class="section-label">Education · SniperTrader</div>
+        <h1>Prop Firm MasterPlan &amp; Execution Rules</h1>
+        <p class="lead">
+          How to systematically pass $100k+ evaluation accounts, protect trailing drawdowns,
+          and scale funded capital without risking rule violations.
         </p>
-        
-        <div class="grid md:grid-cols-2 gap-4 my-6 font-mono text-xs">
-          <div class="bg-red-950/30 border border-red-800/50 p-4 rounded-lg">
-            <span class="text-red-400 font-bold block mb-1">Trailing Drawdown (Intraday Peak)</span>
-            As open unrealized equity hits +$2,000, your maximum allowed drawdown floor moves up by +$2,000 immediately.
-          </div>
-          <div class="bg-emerald-950/30 border border-emerald-800/50 p-4 rounded-lg">
-            <span class="text-emerald-400 font-bold block mb-1">Static Balance Drawdown</span>
-            Drawdown floor stays locked based on initial balance or daily closed balance, offering a fixed safety buffer.
-          </div>
-        </div>
-
-        <!-- VISUAL DIAGRAM PLACEHOLDER -->
-        <figure class="my-6 p-4 bg-slate-950 border border-slate-800 rounded-lg text-center">
-          <!-- SVG Diagram: Trailing Equity vs Drawdown Floor -->
-          <svg viewBox="0 0 600 200" class="w-full max-w-lg mx-auto">
-            <path d="M 50 150 Q 150 50 250 80 T 450 40 T 550 100" fill="none" stroke="#00f2ff" stroke-width="2"/>
-            <path d="M 50 180 Q 150 80 250 110 T 450 70 T 550 130" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="4"/>
-            <text x="60" y="140" fill="#00f2ff" font-size="10">Account Equity Peak</text>
-            <text x="60" y="195" fill="#ef4444" font-size="10">Trailing Watermark Floor</text>
-          </svg>
-          <figcaption class="text-xs text-slate-500 mt-2">FIG 01 · TRAILING DRAWDOWN FLOOR RISES WITH UNREALIZED EQUITY PEAKS</figcaption>
-        </figure>
-
-      </article>
-    </div>
-  </section>
-
-  <!-- MODULE 02 -->
-  <section id="m2" class="py-12 border-b border-slate-800">
-    <div class="max-w-4xl mx-auto px-4">
-      <div class="text-xs font-mono text-cyan-400 mb-1">Module 02 · Position Sizing</div>
-      <h2 class="text-3xl font-bold text-white mb-6">Risk Calibration & Drawdown Protection</h2>
-      
-      <div class="grid md:grid-cols-2 gap-6 mb-8">
-        <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-5">
-          <h4 class="text-white font-semibold mb-2">Evaluation Phase Risk</h4>
-          <ul class="text-sm space-y-2 text-slate-400">
-            <li>• Risk per trade: <strong>0.5% max</strong></li>
-            <li>• Max daily trades: <strong>2 trades</strong></li>
-            <li>• Max daily risk allocation: <strong>1.0%</strong></li>
-            <li>• Hard stop on 2 consecutive losses.</li>
-          </ul>
-        </div>
-        <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-5">
-          <h4 class="text-white font-semibold mb-2">Funded Account Risk</h4>
-          <ul class="text-sm space-y-2 text-slate-400">
-            <li>• Risk per trade: <strong>0.25% - 0.35%</strong></li>
-            <li>• Scale risk to 0.5% only after +3% buffer is banked.</li>
-            <li>• Zero trade execution during High Impact News (±5 min).</li>
-          </ul>
+        <div class="hero-chips">
+          <span class="chip cyan">Trailing vs Static Drawdown</span>
+          <span class="chip emerald">0.5% Risk Cap</span>
+          <span class="chip gold">Consistency Rules</span>
+          <span class="chip violet">Scaling Engine</span>
         </div>
       </div>
+    </section>
 
-    </div>
-  </section>
-
-  <!-- MODULE 03 -->
-  <section id="m3" class="py-12 border-b border-slate-800">
-    <div class="max-w-4xl mx-auto px-4">
-      <div class="text-xs font-mono text-cyan-400 mb-1">Module 03 · Execution Roadmap</div>
-      <h2 class="text-3xl font-bold text-white mb-6">The 3-Phase Evaluation Matrix</h2>
-      
-      <div class="space-y-6">
-        
-        <!-- STEP 1 -->
-        <div class="flex gap-4 items-start bg-slate-900/40 border border-slate-800 p-5 rounded-xl">
-          <span class="bg-cyan-500/10 text-cyan-400 font-mono text-lg font-bold px-3 py-1 rounded">PHASE 1</span>
-          <div>
-            <h3 class="text-white font-semibold text-lg">Phase 1: The Target Push (10% Target)</h3>
-            <p class="text-sm text-slate-400 mt-1">Focus on high R:R setups (1:2 min). Execute only inside London & NY AM Kill Zones aligned with USME Trend Cloud.</p>
-          </div>
+    <section class="steps" id="core">
+      <div class="container">
+        <div class="section-label">Core Framework</div>
+        <h2 class="sec-h2">Four pillars of prop capital preservation.</h2>
+        <div class="steps-grid">
+          <article class="step-card">
+            <div class="step-num">01</div>
+            <h3>Drawdown Engineering</h3>
+            <p>
+              Master the math of <strong style="color:var(--text)">Daily Loss Limits</strong> and
+              <strong style="color:var(--text)">Max Trailing Drawdowns</strong> so you never touch the failure threshold.
+            </p>
+          </article>
+          <article class="step-card">
+            <div class="step-num">02</div>
+            <h3>Fractional Lot Math</h3>
+            <p>
+              Never risk fixed lot sizes. Standardize risk to
+              <strong style="color:var(--text)">0.25% – 0.5% per trade</strong> based on distance to structural stops.
+            </p>
+          </article>
+          <article class="step-card">
+            <div class="step-num">03</div>
+            <h3>Consistency Safeguards</h3>
+            <p>
+              Avoid the single-day profit penalty. Distribute gains smoothly across trading days
+              to pass compliance checks.
+            </p>
+          </article>
+          <article class="step-card">
+            <div class="step-num">04</div>
+            <h3>Payout Buffer Strategy</h3>
+            <p>
+              Build a <strong style="color:var(--text)">3% – 5% safety cushion</strong> on live accounts before
+              requesting withdrawals to preserve position-sizing flexibility.
+            </p>
+          </article>
         </div>
-
-        <!-- STEP 2 -->
-        <div class="flex gap-4 items-start bg-slate-900/40 border border-slate-800 p-5 rounded-xl">
-          <span class="bg-cyan-500/10 text-cyan-400 font-mono text-lg font-bold px-3 py-1 rounded">PHASE 2</span>
-          <div>
-            <h3 class="text-white font-semibold text-lg">Phase 2: Consistency Verification (5% Target)</h3>
-            <p class="text-sm text-slate-400 mt-1">Scale back risk to 0.25% per trade. Objective is capital preservation and smooth equity growth curve.</p>
-          </div>
-        </div>
-
-        <!-- STEP 3 -->
-        <div class="flex gap-4 items-start bg-slate-900/40 border border-slate-800 p-5 rounded-xl">
-          <span class="bg-emerald-500/10 text-emerald-400 font-mono text-lg font-bold px-3 py-1 rounded">FUNDED</span>
-          <div>
-            <h3 class="text-white font-semibold text-lg">Phase 3: Live Funded Buffer & Scaling</h3>
-            <p class="text-sm text-slate-400 mt-1">Bank 3% profit cushion before first payout request. Protect baseline capital at all costs.</p>
-          </div>
-        </div>
-
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- STRATEGY PLAYBOOKS -->
-  <section id="playbooks" class="py-12 border-b border-slate-800">
-    <div class="max-w-4xl mx-auto px-4">
-      <div class="text-xs font-mono text-cyan-400 mb-1">Playbooks · Two Execution Strategies</div>
-      <h2 class="text-3xl font-bold text-white mb-6">Prop Evaluation Playbooks</h2>
+    <section class="module" id="m1">
+      <div class="container">
+        <div class="module-header">
+          <div class="mod-time">Module 01 · Capital Mechanics</div>
+          <h2>Navigating Trailing vs Static Drawdown</h2>
+          <p>Most prop firm traders fail not because of strategy, but because they don't realize how drawdown floors move.</p>
+        </div>
 
-      <!-- PLAYBOOK A -->
-      <article class="bg-slate-900/60 border border-slate-800 rounded-xl p-6 mb-8">
-        <h3 class="text-xl font-bold text-white mb-2">Playbook A: Conservative 0.5% Consistency Protocol</h3>
-        <p class="text-sm text-slate-400 mb-4">Designed to systematically hit the 8-10% profit target without triggering daily or trailing drawdown limits.</p>
+        <article class="lesson" id="l1-1" data-lesson="l1-1">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">1.1</span> The Trailing Drawdown Trap</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l1-1"> Mark complete</label>
+          </div>
+          <p>
+            A <strong>trailing drawdown</strong> is not a fixed number. It ratchets up as your account's unrealized
+            equity hits new highs — and it never comes back down.
+          </p>
+          <p>
+            With a <strong>5% trailing drawdown</strong> on a $100k account, every new equity high lifts the floor to
+            <strong>5% below that peak</strong>. If your open equity peaks at $107,000, the floor locks at $102,000 —
+            immediately, while the trade is still open.
+          </p>
+          <div class="callout">
+            Plain English: know where your drawdown floor sits <em>before</em> the trade — not after the equity peaks.
+          </div>
 
-        <ol class="list-decimal list-inside text-sm space-y-3 text-slate-300 font-mono">
-          <li><strong>Rule 1:</strong> Identify HTF Trend Bias via USME Triple-EMA Cloud (BULL / BEAR only).</li>
-          <li><strong>Rule 2:</strong> Wait for London or NY AM Kill Zone sweep of BSL / SSL.</li>
-          <li><strong>Rule 3:</strong> Confirm 3-Candle Non-Repainting FVG retest in Discount (for long) or Premium (for short).</li>
-          <li><strong>Rule 4:</strong> Calculate lot size strictly equal to <strong>0.5% account risk</strong> based on Stop Loss distance.</li>
-          <li><strong>Rule 5:</strong> Set TP1 at 1:1.5 R:R (Lock 50% position), trail remaining position to opposing liquidity pool.</li>
-        </ol>
-      </article>
+          <figure class="figure">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420" width="100%" role="img" aria-label="Trailing drawdown and high-water mark mechanics" style="background-color:#0b0f17; font-family:'Space Mono',monospace,sans-serif;">
+              <defs>
+                <linearGradient id="pf1_bgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#111827" />
+                  <stop offset="100%" stop-color="#0b0f17" />
+                </linearGradient>
+                <linearGradient id="pf1_equityFill" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#00f2ff" stop-opacity="0.25" />
+                  <stop offset="100%" stop-color="#00f2ff" stop-opacity="0.0" />
+                </linearGradient>
+                <linearGradient id="pf1_drawdownFill" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#ef4444" stop-opacity="0.15" />
+                  <stop offset="100%" stop-color="#ef4444" stop-opacity="0.0" />
+                </linearGradient>
+                <filter id="pf1_glowCyan" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+                <filter id="pf1_glowRed" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+              <rect width="800" height="420" fill="url(#pf1_bgGradient)" rx="12" stroke="#1e293b" stroke-width="1.5" />
+              <g stroke="#1e293b" stroke-width="1" stroke-dasharray="4 4">
+                <line x1="80" y1="60" x2="740" y2="60" />
+                <line x1="80" y1="120" x2="740" y2="120" />
+                <line x1="80" y1="180" x2="740" y2="180" />
+                <line x1="80" y1="240" x2="740" y2="240" />
+                <line x1="80" y1="300" x2="740" y2="300" />
+                <line x1="80" y1="360" x2="740" y2="360" />
+                <line x1="200" y1="50" x2="200" y2="360" opacity="0.5" />
+                <line x1="380" y1="50" x2="380" y2="360" opacity="0.5" />
+                <line x1="560" y1="50" x2="560" y2="360" opacity="0.5" />
+              </g>
+              <g fill="#64748b" font-size="11" text-anchor="end">
+                <text x="70" y="64">$108k</text>
+                <text x="70" y="124">$105k</text>
+                <text x="70" y="184">$102k</text>
+                <text x="70" y="244">$100k</text>
+                <text x="70" y="304">$97k</text>
+                <text x="70" y="364">$95k</text>
+              </g>
+              <text x="80" y="32" fill="#ffffff" font-size="14" font-weight="700" letter-spacing="0.5">FIG 01 · TRAILING DRAWDOWN &amp; HIGH-WATER MARK DYNAMICS</text>
+              <text x="620" y="32" fill="#00f2ff" font-size="11" font-weight="600" text-anchor="end">100K EVALUATION ACCOUNT</text>
+              <path d="M 80 240 L 160 240 L 220 180 L 280 210 L 380 90 L 460 160 L 560 120 L 640 270 L 740 220 L 740 360 L 80 360 Z" fill="url(#pf1_equityFill)" />
+              <line x1="80" y1="360" x2="740" y2="360" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6 6" />
+              <text x="88" y="352" fill="#f59e0b" font-size="10" font-weight="600">Static Drawdown Floor ($95k)</text>
+              <path d="M 80 300 L 160 300 L 220 240 L 280 240 L 380 150 L 740 150" fill="none" stroke="#ef4444" stroke-width="2.5" filter="url(#pf1_glowRed)" />
+              <path d="M 80 240 L 160 240 L 220 180 L 280 210 L 380 90 L 460 160 L 560 120 L 640 270 L 740 220" fill="none" stroke="#00f2ff" stroke-width="3" filter="url(#pf1_glowCyan)" />
+              <line x1="380" y1="240" x2="740" y2="240" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="3 3" />
+              <text x="620" y="232" fill="#ef4444" font-size="10" font-weight="600">Trailing Locks at Starting Capital ($100k)</text>
+              <circle cx="220" cy="180" r="4" fill="#00f2ff" />
+              <circle cx="220" cy="240" r="4" fill="#ef4444" />
+              <line x1="220" y1="180" x2="220" y2="240" stroke="#64748b" stroke-width="1" stroke-dasharray="2 2" />
+              <circle cx="380" cy="90" r="5" fill="#00f2ff" />
+              <circle cx="380" cy="150" r="5" fill="#ef4444" />
+              <line x1="380" y1="90" x2="380" y2="150" stroke="#ef4444" stroke-width="1" stroke-dasharray="2 2" />
+              <circle cx="640" cy="270" r="6" fill="#ef4444" filter="url(#pf1_glowRed)" />
+              <g transform="translate(390, 75)">
+                <rect x="0" y="0" width="160" height="34" rx="4" fill="#0f172a" stroke="#00f2ff" stroke-width="1" />
+                <text x="8" y="14" fill="#ffffff" font-size="10" font-weight="700">Peak Equity: $107,000</text>
+                <text x="8" y="26" fill="#00f2ff" font-size="9">Floor Rises to $102,000</text>
+              </g>
+              <g transform="translate(520, 285)">
+                <rect x="0" y="0" width="200" height="42" rx="4" fill="#180c10" stroke="#ef4444" stroke-width="1" />
+                <text x="8" y="16" fill="#ef4444" font-size="10" font-weight="700">⚠️ BREACH: Equity Hits $98k</text>
+                <text x="8" y="30" fill="#94a3b8" font-size="9">Breached Trailing Floor ($102k)</text>
+                <text x="8" y="39" fill="#94a3b8" font-size="8">(Even though balance &gt; $95k static)</text>
+              </g>
+              <g transform="translate(80, 385)">
+                <line x1="0" y1="10" x2="25" y2="10" stroke="#00f2ff" stroke-width="3" />
+                <text x="32" y="14" fill="#cbd5e1" font-size="10">Account Equity Curve</text>
+                <line x1="200" y1="10" x2="225" y2="10" stroke="#ef4444" stroke-width="2.5" />
+                <text x="232" y="14" fill="#cbd5e1" font-size="10">Trailing Max Drawdown Floor (5%)</text>
+                <line x1="480" y1="10" x2="505" y2="10" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4 4" />
+                <text x="512" y="14" fill="#cbd5e1" font-size="10">Static Loss Floor</text>
+              </g>
+            </svg>
+            <figcaption>THE FLOOR FOLLOWS THE PEAK — A 5% TRAILING DRAWDOWN LOCKS 5% BELOW EACH NEW EQUITY HIGH</figcaption>
+          </figure>
+        </article>
 
-      <!-- PLAYBOOK B -->
-      <article class="bg-slate-900/60 border border-slate-800 rounded-xl p-6">
-        <h3 class="text-xl font-bold text-white mb-2">Playbook B: High-Confluence Breaker Surge</h3>
-        <p class="text-sm text-slate-400 mb-4">Higher win-rate setup designed for clearing Phase 2 or recovery mode after a minor draw down.</p>
+        <article class="lesson" id="l1-2" data-lesson="l1-2">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">1.2</span> Trailing vs Static Balance Drawdown</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l1-2"> Mark complete</label>
+          </div>
+          <p>
+            The two drawdown models behave differently under open trades. Know which one your evaluation uses before you size a position.
+          </p>
+          <div class="sheet-grid">
+            <div class="sheet">
+              <h4>Trailing Drawdown (intraday peak)</h4>
+              <ul>
+                <li>Floor rises with unrealized equity highs.</li>
+                <li>Re-trails up in real time as open P&amp;L peaks.</li>
+                <li>Locks in at the peak once the trade closes.</li>
+              </ul>
+            </div>
+            <div class="sheet">
+              <h4>Static Balance Drawdown</h4>
+              <ul>
+                <li>Floor stays locked to the initial or closed daily balance.</li>
+                <li>Fixed safety buffer that does not move with open P&amp;L.</li>
+                <li>Easier to plan position sizing against.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="callout gold">
+            On trailing-drawdown accounts, bank profits and be cautious holding into new equity highs — the floor follows you up.
+          </div>
+        </article>
+      </div>
+    </section>
 
-        <ol class="list-decimal list-inside text-sm space-y-3 text-slate-300 font-mono">
-          <li><strong>Rule 1:</strong> Sweep of Major Session High/Low during NY PM Macro (13:30 - 16:00 EST).</li>
-          <li><strong>Rule 2:</strong> Rapid displacement breaking internal market structure (MSS).</li>
-          <li><strong>Rule 3:</strong> Entry on Breaker Block retest with Anchored VWAP alignment.</li>
-          <li><strong>Rule 4:</strong> Fixed 0.25% risk per trade with 1:2 R:R target.</li>
-        </ol>
-      </article>
+    <section class="module" id="m2">
+      <div class="container">
+        <div class="module-header">
+          <div class="mod-time">Module 02 · Position Sizing</div>
+          <h2>Risk Calibration &amp; Drawdown Protection</h2>
+          <p>Fixed risk per trade — never fixed lots. Size to the stop, not to the target.</p>
+        </div>
 
-    </div>
-  </section>
+        <article class="lesson" id="l2-1" data-lesson="l2-1">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">2.1</span> Risk Per Phase</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l2-1"> Mark complete</label>
+          </div>
+          <p>
+            Your risk budget changes as you move from evaluation to funded. The discipline does not.
+          </p>
+          <div class="sheet-grid">
+            <div class="sheet">
+              <h4>Evaluation Phase Risk</h4>
+              <ul>
+                <li><strong>Risk per trade:</strong> 0.5% max</li>
+                <li><strong>Max daily trades:</strong> 2</li>
+                <li><strong>Max daily risk:</strong> 1.0%</li>
+                <li><strong>Hard stop</strong> on 2 consecutive losses.</li>
+              </ul>
+            </div>
+            <div class="sheet">
+              <h4>Funded Account Risk</h4>
+              <ul>
+                <li><strong>Risk per trade:</strong> 0.25% – 0.35%</li>
+                <li><strong>Scale to 0.5%</strong> only after +3% buffer banked.</li>
+                <li><strong>No execution</strong> ±5 min around high-impact news.</li>
+              </ul>
+            </div>
+          </div>
+        </article>
 
-  <!-- SUMMARY & FOOTER -->
-  <footer class="py-12 bg-[#080c14] border-t border-slate-800 text-center text-xs text-slate-500">
-    <div class="max-w-4xl mx-auto px-4">
-      <div class="font-bold text-white tracking-wider mb-2">SNIPER<span class="text-cyan-400">TRADER</span></div>
-      <p class="mb-4 max-w-xl mx-auto">
-        Educational material only. Prop firm evaluations carry significant risk of capital loss. Past performance does not guarantee future evaluation success.
+        <article class="lesson" id="l2-2" data-lesson="l2-2">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">2.2</span> Risk &amp; Position Size Calculator</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l2-2"> Mark complete</label>
+          </div>
+          <p>
+            Set the stop first, then let the size fall out of the math:
+            <strong>position size = (capital × risk%) ÷ (stop distance × value per unit)</strong>.
+          </p>
+
+          <div class="calc">
+            <h4>Prop Firm Risk &amp; Lot Size Calculator</h4>
+            <div class="calc-grid">
+              <div class="calc-field">
+                <label for="capInput">Account capital</label>
+                <input type="number" id="capInput" value="100000" min="1000" step="1000" inputmode="numeric">
+                <div class="preset-row">
+                  <button type="button" class="preset" data-cap="25000">$25k</button>
+                  <button type="button" class="preset" data-cap="50000">$50k</button>
+                  <button type="button" class="preset" data-cap="100000">$100k</button>
+                  <button type="button" class="preset" data-cap="200000">$200k</button>
+                </div>
+              </div>
+              <div class="calc-field">
+                <label for="riskSelect">Risk per trade</label>
+                <select id="riskSelect">
+                  <option value="0.0025">0.25% (funded)</option>
+                  <option value="0.005" selected>0.50% (evaluation)</option>
+                  <option value="0.01">1.00% (aggressive)</option>
+                </select>
+              </div>
+              <div class="calc-field">
+                <label for="instSelect">Instrument</label>
+                <select id="instSelect">
+                  <option value="fx" selected>FX pair — $10 per pip / lot</option>
+                  <option value="mes">MES — Micro S&amp;P ($1.25 / tick)</option>
+                  <option value="mnq">MNQ — Micro Nasdaq ($0.50 / tick)</option>
+                  <option value="es">ES — E-mini S&amp;P ($12.50 / tick)</option>
+                  <option value="nq">NQ — E-mini Nasdaq ($5.00 / tick)</option>
+                </select>
+              </div>
+              <div class="calc-field">
+                <label for="slInput">Stop-loss distance (<span id="slUnit">pips</span>)</label>
+                <input type="number" id="slInput" value="20" min="1" step="1" inputmode="numeric">
+              </div>
+            </div>
+            <div class="calc-out">
+              <div class="calc-out-row"><span class="k">Risk amount</span><span class="v risk" id="outRisk">$500.00</span></div>
+              <div class="calc-out-row"><span class="k">Max position size</span><span class="v size" id="outSize">2.50 lots</span></div>
+              <div class="calc-out-row"><span class="k">Daily risk cap (1.0%)</span><span class="v" id="outDaily">$1,000.00</span></div>
+              <div class="calc-out-row"><span class="k">Trades left today</span><span class="v" id="outTrades">2</span></div>
+            </div>
+            <div class="guard" id="guardMsg">
+              <span class="dot"></span>
+              <span id="guardText">Within evaluation cap. Hard stop on 2 consecutive losses.</span>
+            </div>
+          </div>
+          <p class="calc-note">
+            Tick/pip values are standard approximations for the listed instruments. Position size is illustrative — always verify against your platform's contract spec before placing an order.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section class="module" id="m3">
+      <div class="container">
+        <div class="module-header">
+          <div class="mod-time">Module 03 · Execution Roadmap</div>
+          <h2>The 3-Phase Evaluation Matrix</h2>
+          <p>One evaluation, three phases. Each phase has a different job.</p>
+        </div>
+
+        <article class="lesson" id="l3-1" data-lesson="l3-1">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">3.1</span> Phase 1 → Phase 2 → Funded</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l3-1"> Mark complete</label>
+          </div>
+          <p>
+            Approach each phase with a different objective, not the same aggressive mindset.
+          </p>
+          <figure class="figure">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 360" width="100%" role="img" aria-label="Three-phase evaluation and capital scaling matrix" style="background-color:#0b0f17; font-family:'Space Mono',monospace,sans-serif;">
+              <defs>
+                <linearGradient id="pf2_phase1Grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#0f172a" />
+                  <stop offset="100%" stop-color="#0b1329" />
+                </linearGradient>
+                <linearGradient id="pf2_phase2Grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#0f172a" />
+                  <stop offset="100%" stop-color="#091823" />
+                </linearGradient>
+                <linearGradient id="pf2_fundedGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#0f172a" />
+                  <stop offset="100%" stop-color="#06221b" />
+                </linearGradient>
+                <filter id="pf2_glowCyan" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+                <filter id="pf2_glowGreen" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+                <marker id="pf2_arrow" markerWidth="10" markerHeight="10" refX="7" refY="5" orient="auto">
+                  <path d="M0,0 L10,5 L0,10 Z" fill="#00f2ff" />
+                </marker>
+              </defs>
+              <rect width="800" height="360" fill="#0b0f17" rx="12" stroke="#1e293b" stroke-width="1.5" />
+              <text x="30" y="36" fill="#ffffff" font-size="14" font-weight="700" letter-spacing="0.5">FIG 02 · THE 3-PHASE EVALUATION &amp; CAPITAL SCALING MATRIX</text>
+              <text x="770" y="36" fill="#64748b" font-size="10" font-weight="600" text-anchor="end">EXECUTION ROADMAP</text>
+              <path d="M 260 180 L 290 180" stroke="#00f2ff" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#pf2_arrow)" />
+              <path d="M 520 180 L 550 180" stroke="#10b981" stroke-width="2" stroke-dasharray="4 4" />
+              <g transform="translate(30, 60)">
+                <rect width="230" height="260" rx="8" fill="url(#pf2_phase1Grad)" stroke="#334155" stroke-width="1.5" />
+                <rect width="230" height="4" rx="2" fill="#00f2ff" filter="url(#pf2_glowCyan)" />
+                <rect x="14" y="16" width="65" height="18" rx="4" fill="#00f2ff" fill-opacity="0.1" stroke="#00f2ff" stroke-width="0.8" />
+                <text x="46" y="28" fill="#00f2ff" font-size="9" font-weight="700" text-anchor="middle">STEP 01</text>
+                <text x="14" y="54" fill="#ffffff" font-size="14" font-weight="700">Phase 1: Evaluation</text>
+                <text x="14" y="68" fill="#64748b" font-size="10">Target Push Phase</text>
+                <line x1="14" y1="80" x2="216" y2="80" stroke="#1e293b" />
+                <text x="14" y="100" fill="#94a3b8" font-size="10">Profit Target:</text>
+                <text x="216" y="100" fill="#00f2ff" font-size="11" font-weight="700" text-anchor="end">+10% ($10k)</text>
+                <text x="14" y="125" fill="#94a3b8" font-size="10">Max Risk / Trade:</text>
+                <text x="216" y="125" fill="#cbd5e1" font-size="10" font-weight="600" text-anchor="end">0.50% ($500)</text>
+                <text x="14" y="150" fill="#94a3b8" font-size="10">Daily Loss Cap:</text>
+                <text x="216" y="150" fill="#ef4444" font-size="10" font-weight="600" text-anchor="end">2.0% ($2,000)</text>
+                <text x="14" y="175" fill="#94a3b8" font-size="10">Min Trading Days:</text>
+                <text x="216" y="175" fill="#cbd5e1" font-size="10" font-weight="600" text-anchor="end">4 - 5 Days</text>
+                <rect x="10" y="195" width="210" height="52" rx="4" fill="#080e1a" stroke="#1e293b" />
+                <text x="18" y="212" fill="#00f2ff" font-size="9" font-weight="700">OBJECTIVE:</text>
+                <text x="18" y="226" fill="#94a3b8" font-size="8.5">Capture high R:R setups (1:2+)</text>
+                <text x="18" y="238" fill="#94a3b8" font-size="8.5">during Kill Zone momentum.</text>
+              </g>
+              <g transform="translate(285, 60)">
+                <rect width="230" height="260" rx="8" fill="url(#pf2_phase2Grad)" stroke="#334155" stroke-width="1.5" />
+                <rect width="230" height="4" rx="2" fill="#38bdf8" />
+                <rect x="14" y="16" width="65" height="18" rx="4" fill="#38bdf8" fill-opacity="0.1" stroke="#38bdf8" stroke-width="0.8" />
+                <text x="46" y="28" fill="#38bdf8" font-size="9" font-weight="700" text-anchor="middle">STEP 02</text>
+                <text x="14" y="54" fill="#ffffff" font-size="14" font-weight="700">Phase 2: Verification</text>
+                <text x="14" y="68" fill="#64748b" font-size="10">Consistency Check</text>
+                <line x="14" y1="80" x2="216" y2="80" stroke="#1e293b" />
+                <text x="14" y="100" fill="#94a3b8" font-size="10">Profit Target:</text>
+                <text x="216" y="100" fill="#38bdf8" font-size="11" font-weight="700" text-anchor="end">+5% ($5k)</text>
+                <text x="14" y="125" fill="#94a3b8" font-size="10">Max Risk / Trade:</text>
+                <text x="216" y="125" fill="#cbd5e1" font-size="10" font-weight="600" text-anchor="end">0.25% - 0.35%</text>
+                <text x="14" y="150" fill="#94a3b8" font-size="10">Daily Loss Cap:</text>
+                <text x="216" y="150" fill="#ef4444" font-size="10" font-weight="600" text-anchor="end">1.5% ($1,500)</text>
+                <text x="14" y="175" fill="#94a3b8" font-size="10">Consistency Rule:</text>
+                <text x="216" y="175" fill="#f59e0b" font-size="10" font-weight="600" text-anchor="end">&lt; 40% in 1 Day</text>
+                <rect x="10" y="195" width="210" height="52" rx="4" fill="#080e1a" stroke="#1e293b" />
+                <text x="18" y="212" fill="#38bdf8" font-size="9" font-weight="700">OBJECTIVE:</text>
+                <text x="18" y="226" fill="#94a3b8" font-size="8.5">De-risk trade sizes. Smooth out</text>
+                <text x="18" y="238" fill="#94a3b8" font-size="8.5">equity curve to pass compliance.</text>
+              </g>
+              <g transform="translate(540, 60)">
+                <rect width="230" height="260" rx="8" fill="url(#pf2_fundedGrad)" stroke="#10b981" stroke-width="1.5" />
+                <rect width="230" height="4" rx="2" fill="#10b981" filter="url(#pf2_glowGreen)" />
+                <rect x="14" y="16" width="65" height="18" rx="4" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="0.8" />
+                <text x="46" y="28" fill="#10b981" font-size="9" font-weight="700" text-anchor="middle">LIVE FUNDED</text>
+                <text x="14" y="54" fill="#ffffff" font-size="14" font-weight="700">Phase 3: Scale &amp; Bank</text>
+                <text x="14" y="68" fill="#10b981" font-size="10">Payout Engine</text>
+                <line x="14" y1="80" x2="216" y2="80" stroke="#1e293b" />
+                <text x="14" y="100" fill="#94a3b8" font-size="10">Safety Buffer Goal:</text>
+                <text x="216" y="100" fill="#10b981" font-size="11" font-weight="700" text-anchor="end">+3% - 5% Cushion</text>
+                <text x="14" y="125" fill="#94a3b8" font-size="10">Base Risk / Trade:</text>
+                <text x="216" y="125" fill="#cbd5e1" font-size="10" font-weight="600" text-anchor="end">0.25% Base</text>
+                <text x="14" y="150" fill="#94a3b8" font-size="10">First Payout:</text>
+                <text x="216" y="150" fill="#10b981" font-size="10" font-weight="600" text-anchor="end">Day 14 / 80%+ Split</text>
+                <text x="14" y="175" fill="#94a3b8" font-size="10">Scaling Trigger:</text>
+                <text x="216" y="175" fill="#cbd5e1" font-size="10" font-weight="600" text-anchor="end">+10% in 4 Months</text>
+                <rect x="10" y="195" width="210" height="52" rx="4" fill="#061812" stroke="#10b981" stroke-opacity="0.3" />
+                <text x="18" y="212" fill="#10b981" font-size="9" font-weight="700">OBJECTIVE:</text>
+                <text x="18" y="226" fill="#94a3b8" font-size="8.5">Build $3k buffer before payout.</text>
+                <text x="18" y="238" fill="#94a3b8" font-size="8.5">Protect funded capital first.</text>
+              </g>
+            </svg>
+            <figcaption>THREE PHASES, ONE ACCOUNT — PUSH THE TARGET, PROVE CONSISTENCY, THEN BANK &amp; SCALE</figcaption>
+          </figure>
+          <div class="callout emerald">
+            Phase 2 is a consistency test, not a profit test. Slow down.
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="module" id="m4">
+      <div class="container">
+        <div class="module-header">
+          <div class="mod-time">Module 04 · Payouts &amp; Scaling</div>
+          <h2>Payout Protocols &amp; Scale-Up Engineering</h2>
+          <p>A funded account is a capital base to grow — not a slot machine to drain.</p>
+        </div>
+
+        <article class="lesson" id="l4-1" data-lesson="l4-1">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">4.1</span> Payout Buffer &amp; Withdrawal Discipline</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l4-1"> Mark complete</label>
+          </div>
+          <p>
+            Never request a payout the moment you are eligible. Build a
+            <strong>3% – 5% cushion above the payout threshold</strong> first, so a withdrawal doesn't
+            drop you straight into a drawdown violation.
+          </p>
+          <ol class="rules-ol">
+            <li><strong>Bank 3% – 5% above threshold</strong> before the first withdrawal request.</li>
+            <li><strong>Withdraw on a fixed schedule</strong> (e.g. monthly), never on impulse after a hot streak.</li>
+            <li><strong>Leave enough in the account</strong> to keep position sizing intact after the withdrawal.</li>
+          </ol>
+          <div class="callout">
+            Withdraw from profit, never from the safety buffer. If a payout would push you near the drawdown floor, wait.
+          </div>
+        </article>
+
+        <article class="lesson" id="l4-2" data-lesson="l4-2">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">4.2</span> Scale-Up Engineering</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l4-2"> Mark complete</label>
+          </div>
+          <p>
+            Scaling is about keeping risk constant while capital grows — not about getting bigger, faster.
+          </p>
+          <div class="sheet-grid">
+            <div class="sheet">
+              <h4>When to scale up</h4>
+              <ul>
+                <li>+3% buffer banked.</li>
+                <li>Consistent win-rate over a full month.</li>
+                <li>No rule violations in the current period.</li>
+              </ul>
+            </div>
+            <div class="sheet">
+              <h4>How to scale</h4>
+              <ul>
+                <li>0.25% → 0.35% → 0.5% per trade, one step at a time.</li>
+                <li>Hold each step for a full week before increasing again.</li>
+                <li>Recompute lot size on the new capital every time.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="callout gold">
+            Scale risk with evidence, not emotion. A string of wins is not a reason to size up the next morning.
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="module" id="strategies">
+      <div class="container">
+        <div class="module-header">
+          <div class="mod-time">Playbooks · Two execution strategies</div>
+          <h2>Prop Evaluation Playbooks</h2>
+          <p>Numbered rules in plain English. Same language you use at the desk.</p>
+        </div>
+
+        <article class="lesson" id="sa" data-lesson="sa">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">A</span> Conservative 0.5% Consistency Protocol</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="sa"> Mark complete</label>
+          </div>
+          <p>
+            Designed to systematically hit the 8 – 10% profit target without triggering daily or trailing drawdown limits.
+          </p>
+          <ol class="rules-ol">
+            <li><strong>Trend Cloud BULL or BEAR only</strong> — identify HTF bias via the Triple-EMA Trend Cloud. No range.</li>
+            <li><strong>Wait for a London or NY AM kill-zone sweep</strong> of BSL / SSL.</li>
+            <li><strong>Confirm the 3-candle non-repainting FVG retest</strong> in discount (for long) or premium (for short).</li>
+            <li><strong>Size the position to exactly 0.5% account risk</strong> from the stop distance.</li>
+            <li><strong>TP1 at 1:1.5 R:R</strong> — lock 50% of the position, trail the rest to the opposing liquidity pool.</li>
+          </ol>
+          <div class="callout emerald">
+            Consistency beats aggression. This playbook wins by surviving, not by hero trades.
+          </div>
+        </article>
+
+        <article class="lesson" id="sb" data-lesson="sb">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">B</span> High-Confluence Breaker Surge</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="sb"> Mark complete</label>
+          </div>
+          <p>
+            Higher win-rate setup for clearing Phase 2 or recovering after a minor drawdown.
+          </p>
+          <ol class="rules-ol">
+            <li><strong>Sweep of the major session high/low</strong> during NY PM macro (13:30 – 16:00 EST).</li>
+            <li><strong>Rapid displacement breaking internal market structure</strong> (MSS).</li>
+            <li><strong>Entry on the Breaker Block retest</strong> with Anchored VWAP alignment.</li>
+            <li><strong>Fixed 0.25% risk per trade</strong> with a 1:2 R:R target.</li>
+          </ol>
+          <div class="callout bear">
+            Recovery mode is not revenge mode. Keep risk at 0.25% until the buffer is rebuilt.
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="closing" id="close">
+      <div class="container">
+        <div class="closing-card">
+          <h2>Five takeaways. Then execute.</h2>
+          <ul class="takeaways">
+            <li>Know your drawdown type — trailing floors move up; static floors don't.</li>
+            <li>Risk a fixed 0.25% – 0.5% per trade, sized to the stop — never fixed lots.</li>
+            <li>Phase 1 is the push, Phase 2 is the consistency test, Funded is the buffer.</li>
+            <li>Bank a 3% – 5% cushion before your first payout.</li>
+            <li>Hard stop after two consecutive losses. Protect capital first.</li>
+          </ul>
+
+          <div class="checklist" style="text-align:left; margin-top:6px;">
+            <div class="check-item"><span class="check-box" aria-hidden="true"></span><span><strong>1. Trend</strong> — Trend Cloud BULL or BEAR (not range).</span></div>
+            <div class="check-item"><span class="check-box" aria-hidden="true"></span><span><strong>2. Session</strong> — London or NY kill zone active.</span></div>
+            <div class="check-item"><span class="check-box" aria-hidden="true"></span><span><strong>3. Setup</strong> — sweep + FVG / breaker retest confirmed.</span></div>
+            <div class="check-item"><span class="check-box" aria-hidden="true"></span><span><strong>4. Size</strong> — risk fixed at 0.5% (0.25% when funded).</span></div>
+            <div class="check-item"><span class="check-box" aria-hidden="true"></span><span><strong>5. Buffer</strong> — current drawdown floor known before entry.</span></div>
+          </div>
+
+          <p>
+            Practice on replay. Protect capital first.
+            Education builds calm, surgical conviction — not urgency.
+          </p>
+          <a class="closing-cta" href="#overview">Back to overview →</a>
+          <p style="margin-top:22px;font-family:var(--font-mono);font-size:10px;letter-spacing:1px;color:var(--gold2);">
+            FOR EDUCATION ONLY · NOT FINANCIAL ADVICE · MANAGE RISK ON EVERY TRADE
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="footer-brand">SNIPER<span>TRADER</span></div>
+      <p class="footer-disc">
+        This course is for educational purposes only and does not constitute financial, investment, or trading advice.
+        Prop firm evaluations carry substantial risk of capital loss. You are solely responsible for your decisions.
+        Indicators can fail; manage risk on every trade.
       </p>
-      <p class="font-mono">Prop Firm MasterPlan · v1.0 · SniperTrader Education</p>
+      <div class="footer-meta">Prop Firm MasterPlan · v1.0 · Education</div>
     </div>
   </footer>
 
+  <script>
+    (function () {
+      var STORAGE_KEY = 'st_prop_firm_masterplan_v1';
+      var THEME_KEY = 'st_prop_firm_theme';
+      var navBtns = Array.prototype.slice.call(document.querySelectorAll('.nav-btn'));
+      var sections = ['overview','core','m1','m2','m3','m4','strategies','close'].map(function (id) {
+        return document.getElementById(id);
+      }).filter(Boolean);
+      var lessons = Array.prototype.slice.call(document.querySelectorAll('.lesson'));
+      var fill = document.getElementById('progressFill');
+      var pctEl = document.getElementById('progressPct');
+
+      /* ---------- theme toggle (light / dark) ---------- */
+      var themeToggle = document.getElementById('themeToggle');
+      function themeIsDark() { return document.body.classList.contains('dark'); }
+      function updateToggleLabel() {
+        if (themeToggle) themeToggle.textContent = themeIsDark() ? '☀ Light' : '☾ Dark';
+      }
+      try {
+        var savedTheme = localStorage.getItem(THEME_KEY);
+        if (savedTheme === 'light') document.body.classList.remove('dark');
+        else if (savedTheme === 'dark') document.body.classList.add('dark');
+      } catch (e) {}
+      if (themeToggle) {
+        themeToggle.addEventListener('click', function () {
+          document.body.classList.toggle('dark');
+          try { localStorage.setItem(THEME_KEY, themeIsDark() ? 'dark' : 'light'); } catch (e) {}
+          updateToggleLabel();
+        });
+      }
+      updateToggleLabel();
+
+      /* ---------- mark-complete persistence ---------- */
+      function loadDone() {
+        try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+        catch (e) { return {}; }
+      }
+      function saveDone(map) {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(map)); } catch (e) {}
+      }
+      var doneMap = loadDone();
+      Array.prototype.slice.call(document.querySelectorAll('input[data-complete]')).forEach(function (cb) {
+        var id = cb.getAttribute('data-complete');
+        var label = cb.closest('.mark-done');
+        var lesson = cb.closest('.lesson');
+        if (doneMap[id]) {
+          cb.checked = true;
+          if (label) label.classList.add('checked');
+          if (lesson) lesson.classList.add('done');
+        }
+        cb.addEventListener('change', function () {
+          doneMap[id] = !!cb.checked;
+          saveDone(doneMap);
+          if (label) label.classList.toggle('checked', cb.checked);
+          if (lesson) lesson.classList.toggle('done', cb.checked);
+          updateProgress();
+        });
+      });
+
+      /* ---------- progress ---------- */
+      function updateProgress() {
+        var total = lessons.length || 1;
+        var completed = 0;
+        lessons.forEach(function (el) {
+          var r = el.getBoundingClientRect();
+          var visible = r.top < window.innerHeight * 0.7 && r.bottom > 80;
+          el.classList.toggle('in-view', visible);
+          if (el.classList.contains('done')) completed++;
+        });
+        var scrollY = window.scrollY || window.pageYOffset;
+        var docH = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
+        var scrollPct = Math.min(100, Math.round((scrollY / docH) * 100));
+        var lessonPct = Math.round((completed / total) * 100);
+        var pct = Math.max(scrollPct, Math.round(scrollPct * 0.6 + lessonPct * 0.4));
+        if (fill) fill.style.width = pct + '%';
+        if (pctEl) pctEl.textContent = pct + '%';
+      }
+
+      function setActive(id) {
+        navBtns.forEach(function (btn) {
+          btn.classList.toggle('active', btn.getAttribute('data-section') === id);
+        });
+      }
+
+      function onScroll() {
+        var current = sections[0] && sections[0].id;
+        var offset = 80;
+        for (var i = 0; i < sections.length; i++) {
+          var top = sections[i].getBoundingClientRect().top;
+          if (top - offset <= 0) current = sections[i].id;
+        }
+        setActive(current);
+        updateProgress();
+      }
+
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', onScroll);
+
+      /* ---------- risk & position-size calculator ---------- */
+      var INST = {
+        fx:  { unit: 'pips',   per: 10,    label: 'lots',      round: 2 },
+        mes: { unit: 'ticks',  per: 1.25,  label: 'contracts', round: 0 },
+        mnq: { unit: 'ticks',  per: 0.50,  label: 'contracts', round: 0 },
+        es:  { unit: 'ticks',  per: 12.50, label: 'contracts', round: 0 },
+        nq:  { unit: 'ticks',  per: 5.00,  label: 'contracts', round: 0 }
+      };
+      var capInput = document.getElementById('capInput');
+      var riskSelect = document.getElementById('riskSelect');
+      var instSelect = document.getElementById('instSelect');
+      var slInput = document.getElementById('slInput');
+      var slUnit = document.getElementById('slUnit');
+      var outRisk = document.getElementById('outRisk');
+      var outSize = document.getElementById('outSize');
+      var outDaily = document.getElementById('outDaily');
+      var outTrades = document.getElementById('outTrades');
+      var guardMsg = document.getElementById('guardMsg');
+      var guardText = document.getElementById('guardText');
+
+      function computeCalc() {
+        var cap = parseFloat(capInput.value) || 0;
+        var riskPct = parseFloat(riskSelect.value) || 0;
+        var inst = INST[instSelect.value] || INST.fx;
+        var sl = parseFloat(slInput.value) || 0;
+
+        var riskAmt = cap * riskPct;
+        var dailyCap = cap * 0.01;
+        var tradesLeft = riskPct > 0 ? Math.floor(0.01 / riskPct) : 0;
+
+        outRisk.textContent = '$' + riskAmt.toFixed(2);
+        outDaily.textContent = '$' + dailyCap.toFixed(2);
+        outTrades.textContent = String(tradesLeft);
+        if (slUnit) slUnit.textContent = inst.unit;
+
+        var size = 0;
+        if (sl > 0 && inst.per > 0) {
+          size = riskAmt / (sl * inst.per);
+          if (inst.round === 0) size = Math.floor(size);
+          else size = Math.floor(size * 100) / 100;
+        }
+        outSize.textContent = size + ' ' + inst.label;
+
+        var warn = false, msg = '';
+        if (riskPct > 0.005) {
+          warn = true;
+          msg = 'Above 0.5% per-trade risk — evaluation accounts cap this. Drop to 0.5% or lower.';
+        } else if (cap <= 0 || sl <= 0) {
+          msg = 'Enter a capital and stop-loss distance to compute position size.';
+        } else {
+          msg = 'Within evaluation cap. At ' + (riskPct * 100).toFixed(2) + '% risk you get ' +
+                tradesLeft + ' trade(s) before the 1.0% daily stop. Hard stop on 2 consecutive losses.';
+        }
+        guardMsg.classList.toggle('warn', warn);
+        guardText.textContent = msg;
+      }
+
+      [capInput, riskSelect, instSelect, slInput].forEach(function (el) {
+        el.addEventListener('input', computeCalc);
+        el.addEventListener('change', computeCalc);
+      });
+      Array.prototype.slice.call(document.querySelectorAll('.preset')).forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          capInput.value = btn.getAttribute('data-cap');
+          computeCalc();
+        });
+      });
+
+      onScroll();
+      computeCalc();
+
+      navBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          setActive(btn.getAttribute('data-section'));
+        });
+      });
+    })();
+  </script>
 </body>
 </html>
