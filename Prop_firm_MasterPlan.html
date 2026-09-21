@@ -790,6 +790,37 @@ a { color: var(--violet); }
   line-height: 1.6;
 }
 
+.table-wrap { overflow-x: auto; }
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0;
+  font-size: 13px;
+}
+.data-table th, .data-table td {
+  text-align: left;
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.data-table th {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--violet);
+  background: var(--obs);
+  white-space: nowrap;
+}
+.data-table td { color: var(--text3); line-height: 1.5; }
+.data-table td:first-child {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+.data-table tr:last-child td { border-bottom: none; }
+
 .takeaways {
   list-style: none;
   margin: 0 auto 20px;
@@ -937,6 +968,7 @@ footer {
         <a class="nav-btn" href="#m2" data-section="m2">Risk Math</a>
         <a class="nav-btn" href="#m3" data-section="m3">Evaluation</a>
         <a class="nav-btn" href="#m4" data-section="m4">Payouts</a>
+        <a class="nav-btn" href="#vwap" data-section="vwap">VWAP</a>
         <a class="nav-btn" href="#strategies" data-section="strategies">Playbooks</a>
         <a class="nav-btn" href="#close" data-section="close">Close</a>
       </div>
@@ -1439,6 +1471,178 @@ footer {
       </div>
     </section>
 
+    <section class="module" id="vwap">
+      <div class="container">
+        <div class="module-header">
+          <div class="mod-time">Module 05 · USME VWAP Elite Suite</div>
+          <h2>Session Execution Framework</h2>
+          <p>Precision session anchors and institutional liquidity execution for index and commodity futures.</p>
+        </div>
+
+        <article class="lesson" id="l5-1" data-lesson="l5-1">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">5.1</span> Centralized Order Flow &amp; Session Anchors</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l5-1"> Mark complete</label>
+          </div>
+          <p>
+            Unlike decentralized FX or retail spot markets, futures volume flows through a
+            <strong>centralized order book</strong>. Institutional execution algorithms (TWAP / VWAP) are benchmarked
+            against VWAP to complete large orders with minimal market impact.
+          </p>
+          <div class="sheet-grid">
+            <div class="sheet">
+              <h4>ETH Anchor · 18:00 EST</h4>
+              <ul>
+                <li>Overnight session sets the global baseline volume-weighted price.</li>
+                <li>Overnight highs / lows outside the SD bands = mean-reversion setups.</li>
+              </ul>
+            </div>
+            <div class="sheet">
+              <h4>RTH Anchor · 09:30 EST</h4>
+              <ul>
+                <li>Cash-session open injects a surge of institutional liquidity.</li>
+                <li>Fresh dynamic support / resistance for daytime volatility.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="callout">
+            VWAP is the benchmark the execution algos are judged against. Trade the bands, not the noise.
+          </div>
+        </article>
+
+        <article class="lesson" id="l5-2" data-lesson="l5-2">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">5.2</span> The VWAP Band Structure</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l5-2"> Mark complete</label>
+          </div>
+          <p>
+            Standard-deviation bands around the session VWAP act as dynamic fair-value bounds —
+            the centerline is fair value, and each band outward marks where price is statistically stretched.
+          </p>
+          <figure class="figure">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" width="100%" role="img" aria-label="VWAP standard deviation band structure" style="background-color:#0b0f17; font-family:'Space Mono',monospace,sans-serif;">
+              <defs>
+                <linearGradient id="pf3_bg" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#111827" />
+                  <stop offset="100%" stop-color="#0b0f17" />
+                </linearGradient>
+                <filter id="pf3_glowCyan" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+              <rect width="800" height="400" fill="url(#pf3_bg)" rx="12" stroke="#1e293b" stroke-width="1.5" />
+              <text x="30" y="32" fill="#ffffff" font-size="14" font-weight="700" letter-spacing="0.5">FIG 03 · VWAP STANDARD DEVIATION BAND STRUCTURE</text>
+              <text x="770" y="32" fill="#64748b" font-size="10" font-weight="600" text-anchor="end">SESSION FAIR-VALUE LADDER</text>
+
+              <rect x="60" y="56" width="680" height="52" rx="6" fill="rgba(239,68,68,0.10)" stroke="#ef4444" stroke-width="1" stroke-dasharray="4 3" />
+              <text x="76" y="78" fill="#ef4444" font-size="12" font-weight="700">+2.0σ → +3.0σ</text>
+              <text x="76" y="96" fill="#94a3b8" font-size="10">EXTREME OVERBOUGHT · LIQUIDITY SWEEP ZONE</text>
+              <text x="724" y="86" fill="#ef4444" font-size="9" text-anchor="end" opacity="0.85">PREMIUM</text>
+
+              <rect x="60" y="118" width="680" height="40" rx="6" fill="rgba(245,158,11,0.08)" stroke="#f59e0b" stroke-width="1" />
+              <text x="76" y="136" fill="#f59e0b" font-size="12" font-weight="700">+1.0σ</text>
+              <text x="76" y="152" fill="#94a3b8" font-size="10">BULLISH EXTENSION · TRAILING RESISTANCE</text>
+
+              <rect x="60" y="168" width="680" height="46" rx="6" fill="rgba(0,242,255,0.12)" stroke="#00f2ff" stroke-width="2" filter="url(#pf3_glowCyan)" />
+              <text x="76" y="190" fill="#00f2ff" font-size="13" font-weight="700">DYNAMIC SESSION VWAP</text>
+              <text x="76" y="206" fill="#e2e8f0" font-size="10">CENTRAL FAIR-VALUE BENCHMARK</text>
+
+              <rect x="60" y="224" width="680" height="40" rx="6" fill="rgba(245,158,11,0.08)" stroke="#f59e0b" stroke-width="1" />
+              <text x="76" y="242" fill="#f59e0b" font-size="12" font-weight="700">−1.0σ</text>
+              <text x="76" y="258" fill="#94a3b8" font-size="10">BEARISH EXTENSION · TRAILING SUPPORT</text>
+
+              <rect x="60" y="274" width="680" height="52" rx="6" fill="rgba(16,185,129,0.10)" stroke="#10b981" stroke-width="1" stroke-dasharray="4 3" />
+              <text x="76" y="296" fill="#10b981" font-size="12" font-weight="700">−2.0σ → −3.0σ</text>
+              <text x="76" y="314" fill="#94a3b8" font-size="10">EXTREME OVERSOLD · LIQUIDITY SWEEP ZONE</text>
+              <text x="724" y="304" fill="#10b981" font-size="9" text-anchor="end" opacity="0.85">DISCOUNT</text>
+
+              <text x="60" y="352" fill="#64748b" font-size="10">BANDS ARE DYNAMIC — THEY RE-ANCHOR AT EACH SESSION RESET (ETH 18:00 · RTH 09:30 EST)</text>
+              <text x="60" y="378" fill="#64748b" font-size="10">TRADE IN DISCOUNT (LONG) / PREMIUM (SHORT) WITH THE TREND — NEVER FADE A BREAKING BAND</text>
+            </svg>
+            <figcaption>FIG 03 · VWAP STANDARD DEVIATION BANDS — PREMIUM ABOVE, DISCOUNT BELOW THE SESSION BENCHMARK</figcaption>
+          </figure>
+        </article>
+
+        <article class="lesson" id="l5-3" data-lesson="l5-3">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">5.3</span> Instrument Execution Mechanics</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l5-3"> Mark complete</label>
+          </div>
+          <p>
+            Each futures market has its own microstructure. Match the band usage to the instrument, not the other way around.
+          </p>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Instrument</th>
+                  <th>Microstructure / Volatility</th>
+                  <th>Primary VWAP Band Usage</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>ES</td>
+                  <td>High liquidity, tight spread, mean-reverting character.</td>
+                  <td>Dynamic support / resistance at ±1.0σ &amp; ±2.0σ during RTH consolidation.</td>
+                </tr>
+                <tr>
+                  <td>NQ</td>
+                  <td>Higher beta, wide range expansion, momentum trend.</td>
+                  <td>Break above / below ±1.0σ signals session expansion toward ±2.5σ / 3.0σ pools.</td>
+                </tr>
+                <tr>
+                  <td>CL</td>
+                  <td>Heavy inventory / news volatility, sharp order-flow sweeps.</td>
+                  <td>Session resets around the NYMEX pit open (09:00 EST) → mean-reversion off ±2.0σ spikes.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="lesson" id="l5-4" data-lesson="l5-4">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">5.4</span> Prop Firm Strategy Implementation</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l5-4"> Mark complete</label>
+          </div>
+          <p>
+            Four locked steps, mapped to the prop-firm rule set — preserving max trailing drawdown, daily loss limits, and target consistency.
+          </p>
+          <ol class="rules-ol">
+            <li><strong>Session anchor setup &amp; reset.</strong> Dual VWAP anchors — ETH (18:00 EST) for overnight context, RTH (09:30 EST) for cash-session execution. Mark ±1.0σ / ±2.0σ / ±3.0σ on 1m / 3m / 5m.</li>
+            <li><strong>Filter the regime at the RTH open.</strong> Mean-reversion: price inside ±1.0σ with low displacement → fade at ±2.0σ, target dynamic VWAP. Trend-expansion: price pushes out of ±1.0σ on volume → retest VWAP / ±1.0σ as continuation entries.</li>
+            <li><strong>Execution &amp; SMC confluence.</strong> Combine a band test with a local Fair Value Gap or Order Block. Enter on the 1-minute market-structure shift (MSS) after sweeping the ±2.0σ boundary.</li>
+            <li><strong>Prop-firm risk protocol.</strong> Stop beyond the structural high / low — max 8–12 ticks (ES), 15–25 ticks (NQ), 10–15 ticks (CL). TP1 at the VWAP centerline (lock 50% + breakeven), TP2 at the opposite ±1.5σ / ±2.0σ band. Daily guardrail: hard cutoff after 2 consecutive losses or at 50% of the daily loss limit.</li>
+          </ol>
+          <div class="sheet-grid">
+            <div class="sheet">
+              <h4>Stop-Loss Matrix</h4>
+              <ul>
+                <li><strong>ES</strong> — 8–12 ticks</li>
+                <li><strong>NQ</strong> — 15–25 ticks</li>
+                <li><strong>CL</strong> — 10–15 ticks</li>
+                <li>Placed beyond the structural high / low.</li>
+              </ul>
+            </div>
+            <div class="sheet">
+              <h4>Targets &amp; Guardrails</h4>
+              <ul>
+                <li><strong>TP1</strong> — dynamic VWAP (lock 50% + breakeven).</li>
+                <li><strong>TP2</strong> — opposite ±1.5σ / ±2.0σ band.</li>
+                <li><strong>Daily lockout</strong> — 2 losses or 50% of daily limit.</li>
+                <li><strong>Min R:R</strong> — 1:2.5 on mean-reversion.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="callout emerald">
+            The bands protect the trailing drawdown — scale out at the centerline to eliminate risk immediately.
+          </div>
+        </article>
+      </div>
+    </section>
+
     <section class="module" id="strategies">
       <div class="container">
         <div class="module-header">
@@ -1539,7 +1743,7 @@ footer {
       var STORAGE_KEY = 'st_prop_firm_masterplan_v1';
       var THEME_KEY = 'st_prop_firm_theme';
       var navBtns = Array.prototype.slice.call(document.querySelectorAll('.nav-btn'));
-      var sections = ['overview','core','m1','m2','m3','m4','strategies','close'].map(function (id) {
+      var sections = ['overview','core','m1','m2','m3','m4','vwap','strategies','close'].map(function (id) {
         return document.getElementById(id);
       }).filter(Boolean);
       var lessons = Array.prototype.slice.call(document.querySelectorAll('.lesson'));
