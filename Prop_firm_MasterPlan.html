@@ -1,580 +1,237 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SniperTrader – USME Prop Firm Master Plan</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    :root {
-      --bg-body: #040609;
-      --bg-panel: #0c1220;
-      --bg-card: #111827;
-      --border: rgba(0,229,255,0.10);
-      --cyan: #00e5ff;
-      --cyan2: #00b8cc;
-      --gold: #f0c040;
-      --gold2: #b8882a;
-      --green: #00e5a0;
-      --red: #ff4d6a;
-      --white: #edf2fb;
-      --sub: rgba(237,242,251,0.72);
-      --muted: rgba(237,242,251,0.42);
-      --ff-disp: 'Orbitron', monospace;
-      --ff-mono: 'Space Mono', monospace;
-      --ff-body: 'Syne', sans-serif;
-    }
-    body {
-      background: var(--bg-body);
-      color: var(--white);
-      font-family: var(--ff-body);
-      padding: 40px 20px;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .playbook {
-      max-width: 1100px;
-      width: 100%;
-    }
-    header {
-      text-align: center;
-      padding: 40px 0 30px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 40px;
-    }
-    header h1 {
-      font-family: var(--ff-disp);
-      font-size: clamp(1.8rem, 4vw, 3.2rem);
-      font-weight: 900;
-      letter-spacing: 0.08em;
-      color: var(--white);
-    }
-    header h1 span { color: var(--cyan); }
-    header .badge {
-      font-family: var(--ff-mono);
-      font-size: 0.6rem;
-      letter-spacing: 0.2em;
-      color: var(--gold);
-      background: rgba(240,192,64,0.08);
-      border: 1px solid rgba(240,192,64,0.2);
-      padding: 6px 18px;
-      border-radius: 40px;
-      display: inline-block;
-      margin-top: 12px;
-    }
-    header .sub {
-      font-family: var(--ff-mono);
-      font-size: 0.65rem;
-      color: var(--muted);
-      margin-top: 12px;
-      letter-spacing: 0.1em;
-    }
-
-    /* Tabs */
-    .tabs {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 32px;
-      flex-wrap: wrap;
-    }
-    .tab-btn {
-      font-family: var(--ff-mono);
-      font-size: 0.6rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      padding: 12px 28px;
-      background: var(--bg-panel);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--muted);
-      cursor: pointer;
-      transition: all 0.25s;
-      font-weight: 700;
-      flex: 1;
-      min-width: 140px;
-      text-align: center;
-    }
-    .tab-btn:hover { border-color: var(--cyan); color: var(--cyan); }
-    .tab-btn.active {
-      background: rgba(0,229,255,0.06);
-      border-color: var(--cyan);
-      color: var(--cyan);
-      box-shadow: 0 0 30px rgba(0,229,255,0.04);
-    }
-    .tab-btn .num {
-      display: inline-block;
-      background: rgba(0,229,255,0.12);
-      border-radius: 50%;
-      width: 22px;
-      height: 22px;
-      line-height: 22px;
-      text-align: center;
-      font-size: 0.55rem;
-      margin-right: 8px;
-      color: var(--cyan);
-    }
-    .tab-btn.active .num { background: var(--cyan); color: #000; }
-
-    .panel {
-      display: none;
-      animation: fadeUp 0.5s ease;
-    }
-    .panel.active { display: block; }
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(16px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Cards */
-    .card {
-      background: var(--bg-panel);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 28px 32px;
-      margin-bottom: 20px;
-      transition: border-color 0.2s;
-    }
-    .card:hover { border-color: rgba(0,229,255,0.15); }
-    .card-title {
-      font-family: var(--ff-disp);
-      font-size: 1rem;
-      font-weight: 700;
-      color: var(--cyan);
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .card-title .icon { font-size: 1.2rem; }
-    .card p, .card li {
-      font-size: 0.92rem;
-      color: var(--sub);
-      line-height: 1.7;
-    }
-    .card ul, .card ol {
-      padding-left: 24px;
-      margin: 8px 0;
-    }
-    .card li { margin-bottom: 6px; }
-    .card strong { color: var(--white); }
-    .highlight-box {
-      background: rgba(0,229,255,0.04);
-      border-left: 3px solid var(--cyan);
-      padding: 14px 18px;
-      border-radius: 0 8px 8px 0;
-      margin: 12px 0;
-    }
-    .highlight-box.gold { border-left-color: var(--gold); background: rgba(240,192,64,0.04); }
-    .highlight-box.green { border-left-color: var(--green); background: rgba(0,229,160,0.04); }
-    .highlight-box.red { border-left-color: var(--red); background: rgba(255,77,106,0.04); }
-
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-    }
-    @media (max-width: 768px) {
-      .grid-2 { grid-template-columns: 1fr; }
-      .tab-btn { min-width: 100px; padding: 10px 16px; font-size: 0.5rem; }
-      .card { padding: 20px; }
-    }
-
-    .rule-badge {
-      display: inline-block;
-      font-family: var(--ff-mono);
-      font-size: 0.45rem;
-      letter-spacing: 0.1em;
-      padding: 2px 10px;
-      border-radius: 20px;
-      margin-right: 6px;
-      font-weight: 700;
-    }
-    .rule-badge.gold { background: rgba(240,192,64,0.12); color: var(--gold); border: 1px solid rgba(240,192,64,0.15); }
-    .rule-badge.cyan { background: rgba(0,229,255,0.08); color: var(--cyan); border: 1px solid rgba(0,229,255,0.12); }
-    .rule-badge.green { background: rgba(0,229,160,0.08); color: var(--green); border: 1px solid rgba(0,229,160,0.12); }
-    .rule-badge.red { background: rgba(255,77,106,0.08); color: var(--red); border: 1px solid rgba(255,77,106,0.12); }
-
-    .checklist { list-style: none; padding: 0; }
-    .checklist li {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 8px 0;
-      border-bottom: 1px solid rgba(0,229,255,0.04);
-    }
-    .checklist li:last-child { border-bottom: none; }
-    .checklist .check {
-      color: var(--cyan);
-      font-size: 1.1rem;
-      margin-top: 2px;
-      flex-shrink: 0;
-    }
-
-    /* ── AUDIO + BUTTON CONTAINER (fixed alignment) ── */
-    .media-toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: center;
-      gap: 20px 30px;
-      background: var(--bg-panel);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 20px 28px;
-      margin-bottom: 32px;
-      backdrop-filter: blur(4px);
-    }
-    .media-toolbar .audio-container {
-      flex: 0 1 320px;
-      min-width: 240px;
-    }
-    .media-toolbar .btn-group {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-    }
-    .media-toolbar .btn-group button {
-      font-family: var(--ff-mono);
-      font-size: 0.6rem;
-      letter-spacing: 0.06em;
-      background: rgba(0,229,255,0.06);
-      border: 1px solid var(--border);
-      border-radius: 40px;
-      padding: 10px 18px;
-      color: var(--white);
-      cursor: pointer;
-      transition: all 0.2s;
-      white-space: nowrap;
-      font-weight: 600;
-      background: #0f1a2b;
-    }
-    .media-toolbar .btn-group button:hover {
-      background: rgba(0,229,255,0.12);
-      border-color: var(--cyan);
-      color: var(--cyan);
-      box-shadow: 0 0 20px rgba(0,229,255,0.04);
-    }
-    .media-toolbar .btn-group button b {
-      color: var(--gold);
-      font-weight: 700;
-    }
-    @media (max-width: 700px) {
-      .media-toolbar { flex-direction: column; align-items: stretch; }
-      .media-toolbar .audio-container { flex: 1 1 auto; }
-      .media-toolbar .btn-group { justify-content: center; }
-    }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prop Firm MasterPlan · SniperTrader Education</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
-<body>
-<div class="playbook">
+<body class="bg-[#0b0f17] text-slate-300 font-sans">
 
-<header>
- <h1>SNIPER<span>TRADER</span> USME <span style="color:var(--gold);">PROP FIRM</span> MASTER PLAN</h1>
-  <div class="badge">⚡ UNIFIED SMART MONEY ENGINE ⚡</div>
-  <div class="sub">A systematic, institutionally-aligned framework to deploy USME across multiple funded accounts</div>
-</header>
-
-<!-- ─── FIXED AUDIO + BUTTON ROW ─── -->
-<div class="media-toolbar">
-  <div class="audio-container">
-    <div id="elevenlabs-audionative-widget" 
-         data-height="90" 
-         data-width="100%" 
-         data-frameborder="no" 
-         data-scrolling="no" 
-         data-publicuserid="e06825d773fd8db4434198e19977a56685b511c453d54e89265fcb9c64a40cdc" 
-         data-playerurl="https://elevenlabs.io/player/index.html" 
-         data-projectid="IydOqYkcf3Qgu1iE7zQy">
-      Loading the <a href="https://elevenlabs.io/text-to-speech" target="_blank" rel="noopener">Elevenlabs Text to Speech</a> AudioNative Player...
-    </div>
-    <script src="https://elevenlabs.io/player/audioNativeHelper.js" type="text/javascript"></script>
-  </div>
-
-  <div class="btn-group">
-    <button onclick="openPopup('/snipertrader_workshop.html', 'Workshop', 1024, 800)"><b>SNIPERTRADER'S 30 DAYS WORKSHOP</b></button>
-    <button onclick="openPopup('/sniper_pl_widget.html', 'P&L Widget', 900, 700)"><b>SNIPERTRADER'S PROFIT & LOSS WIDGET</b></button>
-    <button onclick="openPopup('/P&L_tracker.html', 'P&L Simple Journal Tracker', 420, 800)"><b>P&L SIMPLE JOURNAL TRACKER</b></button>
-  </div>
-</div>
-
-<script>
-function openPopup(url, title, width, height) {
-  const left = (screen.width - width) / 2;
-  const top = (screen.height - height) / 2;
-  const popup = window.open(
-    url,
-    title,
-    `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes,toolbar=no,menubar=no,status=no,location=no`
-  );
-  if (popup) popup.focus();
-  else alert('Please allow popups for this site to open the window.');
-}
-</script>
-
-<!-- Tabs -->
-<div class="tabs">
-  <button class="tab-btn active" data-panel="overview"><span class="num">1</span> Overview</button>
-  <button class="tab-btn" data-panel="research"><span class="num">2</span> Research</button>
-  <button class="tab-btn" data-panel="execution"><span class="num">3</span> Execution</button>
-  <button class="tab-btn" data-panel="scale"><span class="num">4</span> Scale & Income</button>
-  <button class="tab-btn" data-panel="firms"><span class="num">5</span> Firms & Laws</button>
-</div>
-
-<!-- ============================================================ -->
-<!-- PANEL 1: OVERVIEW -->
-<!-- ============================================================ -->
-<div class="panel active" id="panel-overview">
-  <div class="card">
-    <div class="card-title"><span class="icon">🎯</span> The Prop Firm Opportunity</div>
-    <p>Prop firms give skilled traders access to institutional-scale capital without risking personal funds beyond the challenge fee. The game is simple — survive the evaluation rules, get funded, extract profits, scale accounts. With the <strong>Unified Smart Money Engine (USME)</strong> as your core edge — Order Blocks, FVGs, BOS/CHoCH, multi-timeframe bias, killzones, and ATR-calibrated risk — you hold the most institutionally-aligned methodology in retail trading. This plan converts USME into a systematic income machine across multiple funded accounts.</p>
-
-    <div class="highlight-box">
-      <strong>Core Philosophy:</strong> <em>"We don't chase trades. We deploy USME signals across a portfolio of accounts, extracting asymmetric payouts from institutional order flow."</em>
-    </div>
-
-    <div class="grid-2" style="margin-top:20px;">
-      <div class="card" style="background:rgba(0,0,0,0.2); border-color:rgba(0,229,255,0.08);">
-        <div style="font-family:var(--ff-disp); font-size:2rem; color:var(--cyan);">80–90%</div>
-        <div style="font-family:var(--ff-mono); font-size:0.5rem; letter-spacing:0.08em; color:var(--muted);">AVG PROFIT SPLIT</div>
+  <!-- STICKY TOP NAV -->
+  <nav class="sticky top-0 z-50 bg-[#0b0f17]/90 backdrop-blur border-b border-slate-800">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="font-bold text-white tracking-wider">SNIPER<span class="text-cyan-400">TRADER</span></span>
+        <span class="text-xs text-slate-500 border-l border-slate-700 pl-3">Prop Firm MasterPlan</span>
       </div>
-      <div class="card" style="background:rgba(0,0,0,0.2); border-color:rgba(240,192,64,0.08);">
-        <div style="font-family:var(--ff-disp); font-size:2rem; color:var(--gold);">$4M+</div>
-        <div style="font-family:var(--ff-mono); font-size:0.5rem; letter-spacing:0.08em; color:var(--muted);">MAX CAPITAL ACCESS</div>
+      <div class="flex items-center gap-6 text-sm">
+        <a href="#overview" class="hover:text-cyan-400">Overview</a>
+        <a href="#m1" class="hover:text-cyan-400">Drawdown</a>
+        <a href="#m2" class="hover:text-cyan-400">Risk Math</a>
+        <a href="#m3" class="hover:text-cyan-400">Evaluation</a>
+        <a href="#m4" class="hover:text-cyan-400">Payouts</a>
+        <a href="#playbooks" class="hover:text-cyan-400">Playbooks</a>
       </div>
     </div>
-  </div>
+  </nav>
 
-  <div class="card">
-    <div class="card-title"><span class="icon">📈</span> USME Compliance Engine</div>
-    <p>USME isn't just an indicator — in the prop firm context it functions as a <strong>compliance engine</strong>: pre-trade checklist, entry filter, and risk calculator unified. Every module maps directly to a funded account rule.</p>
-    <table style="width:100%; border-collapse:collapse; font-size:0.82rem; color:var(--sub); margin-top:12px;">
-      <tr style="border-bottom:1px solid var(--border);">
-        <th style="text-align:left; padding:6px 0; font-family:var(--ff-mono); color:var(--white);">USME Module</th>
-        <th style="text-align:left; padding:6px 0; font-family:var(--ff-mono); color:var(--white);">Prop Rule Enforced</th>
-      </tr>
-      <tr style="border-bottom:1px solid rgba(0,229,255,0.05);"><td style="padding:8px 0;">AI Scoring System</td><td style="padding:8px 0;">Quality filter — max 2–3 trades/day</td></tr>
-      <tr style="border-bottom:1px solid rgba(0,229,255,0.05);"><td style="padding:8px 0;">Killzone Filter</td><td style="padding:8px 0;">Session compliance + news avoidance</td></tr>
-      <tr style="border-bottom:1px solid rgba(0,229,255,0.05);"><td style="padding:8px 0;">ATR Stops & Targets</td><td style="padding:8px 0;">Minimum 1:2 RR enforcement</td></tr>
-      <tr style="border-bottom:1px solid rgba(0,229,255,0.05);"><td style="padding:8px 0;">Order Blocks + FVGs</td><td style="padding:8px 0;">Institutional-level entry precision</td></tr>
-      <tr><td style="padding:8px 0;">BOS / CHoCH Detection</td><td style="padding:8px 0;">Structural confirmation requirement</td></tr>
-    </table>
-  </div>
-</div>
-
-<!-- ============================================================ -->
-<!-- PANEL 2: RESEARCH -->
-<!-- ============================================================ -->
-<div class="panel" id="panel-research">
-  <div class="card">
-    <div class="card-title"><span class="icon">🔬</span> What Actually Wins in Prop Firms</div>
-    <p>Elite prop traders follow a strict set of rules that maximize survival and profitability. USME is designed to enforce these rules automatically.</p>
-
-    <ul class="checklist">
-      <li><span class="check">🎯</span> <div><strong>Quality Over Quantity</strong> — Max 2–3 setups per day. Overtrading is the #1 account killer. USME's AI scoring system filters this automatically.</div></li>
-      <li><span class="check">📐</span> <div><strong>Risk 0.25–1% Per Trade</strong> — Stop at 2–3% daily loss. Scale down after two consecutive red days — reduce sizing by 50%.</div></li>
-      <li><span class="check">⏰</span> <div><strong>Trade Killzones Only</strong> — London Open (2–5 AM ET) &amp; NY Open (7–10 AM ET). USME aligns FVGs and Order Blocks with institutional flow.</div></li>
-      <li><span class="check">📊</span> <div><strong>Minimum 1:2 Risk-Reward</strong> — Never accept below 1:1.5. USME's ATR-based stops and dynamic targets are engineered for this.</div></li>
-      <li><span class="check">🧠</span> <div><strong>Never Chase the Profit Target</strong> — Distribute across days. Aim for 0.5–1% per session on evaluation accounts — surgical and repeatable.</div></li>
-      <li><span class="check">📰</span> <div><strong>Avoid News Events</strong> — Trading NFP, CPI, FOMC on prop accounts has terminated thousands of positions. Close all positions 2 minutes before any red-folder event.</div></li>
-    </ul>
-
-    <div class="highlight-box gold">
-      <strong>🔑 The Sniper Mindset:</strong> "We wait for the exact moment when USME gives us a confluence score ≥ 70, HTF alignment, and a killzone window. If any condition is missing, we stand aside."
+  <!-- HERO SECTION -->
+  <section id="overview" class="py-16 border-b border-slate-800 bg-gradient-to-b from-[#111827] to-[#0b0f17]">
+    <div class="max-w-4xl mx-auto px-4 text-center">
+      <span class="text-xs font-mono text-cyan-400 tracking-widest uppercase">Proprietary Trading Strategy</span>
+      <h1 class="text-4xl md:text-5xl font-bold text-white mt-2 mb-4">Prop Firm MasterPlan & Execution Rules</h1>
+      <p class="text-lg text-slate-400 max-w-2xl mx-auto">
+        How to systematically pass 100k+ evaluation accounts, protect trailing drawdowns, and scale funded capital without risking rule violations.
+      </p>
+      <div class="flex flex-wrap justify-center gap-3 mt-6 text-xs font-mono">
+        <span class="bg-slate-800 text-slate-300 px-3 py-1 rounded">Trailing vs Static Drawdown</span>
+        <span class="bg-slate-800 text-slate-300 px-3 py-1 rounded">0.5% Risk Cap</span>
+        <span class="bg-slate-800 text-slate-300 px-3 py-1 rounded">Consistency Rules</span>
+        <span class="bg-slate-800 text-slate-300 px-3 py-1 rounded">Scaling Engine</span>
+      </div>
     </div>
-  </div>
-</div>
+  </section>
 
-<!-- ============================================================ -->
-<!-- PANEL 3: EXECUTION -->
-<!-- ============================================================ -->
-<div class="panel" id="panel-execution">
-  <div class="card">
-    <div class="card-title"><span class="icon">⚡</span> USME Timeframe Protocol</div>
-    <p>The USME protocol defines exactly <strong>when</strong> and <strong>how</strong> to enter trades across funded accounts.</p>
+  <!-- CORE FOUNDATIONS (4 CARDS) -->
+  <section class="py-12 border-b border-slate-800">
+    <div class="max-w-6xl mx-auto px-4">
+      <h2 class="text-2xl font-bold text-white mb-6">Four Pillars of Prop Capital Preservation</h2>
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        
+        <article class="bg-slate-900/60 border border-slate-800 rounded-xl p-5">
+          <div class="text-cyan-400 font-mono text-sm font-bold mb-2">01</div>
+          <h3 class="text-white font-semibold mb-2">Drawdown Engineering</h3>
+          <p class="text-sm text-slate-400">Master the math of <strong>Daily Loss Limits</strong> and <strong>Max Trailing Drawdowns</strong> to guarantee you never touch the failure threshold.</p>
+        </article>
 
-    <div class="grid-2" style="margin-top:12px;">
-      <div class="card" style="background:rgba(0,0,0,0.2); border-color:rgba(68,136,255,0.15);">
-        <div style="font-family:var(--ff-disp); font-size:0.9rem; color:#4488ff;">🔭 HTF Bias — H4 / Daily</div>
-        <p style="font-size:0.82rem; margin-top:8px;">Establish directional bias using USME's multi-timeframe engine on H4 and Daily. Mark premium/discount ranges, key Order Blocks, and weekly FVGs. <strong>Never execute against confirmed H4 structure.</strong></p>
-        <div style="margin-top:8px;">
-          <span class="rule-badge cyan">H4 OBs</span>
-          <span class="rule-badge cyan">Daily BOS</span>
+        <article class="bg-slate-900/60 border border-slate-800 rounded-xl p-5">
+          <div class="text-cyan-400 font-mono text-sm font-bold mb-2">02</div>
+          <h3 class="text-white font-semibold mb-2">Fractional Lot Math</h3>
+          <p class="text-sm text-slate-400">Never risk fixed lot sizes. Standardize risk to <strong>0.25% - 0.5% per trade</strong> based on distance to structural stops.</p>
+        </article>
+
+        <article class="bg-slate-900/60 border border-slate-800 rounded-xl p-5">
+          <div class="text-cyan-400 font-mono text-sm font-bold mb-2">03</div>
+          <h3 class="text-white font-semibold mb-2">Consistency Safeguards</h3>
+          <p class="text-sm text-slate-400">Avoid the single-day profit penalty. Distribute gains smoothly across trading days to pass compliance checks.</p>
+        </article>
+
+        <article class="bg-slate-900/60 border border-slate-800 rounded-xl p-5">
+          <div class="text-cyan-400 font-mono text-sm font-bold mb-2">04</div>
+          <h3 class="text-white font-semibold mb-2">Payout Buffer Strategy</h3>
+          <p class="text-sm text-slate-400">Build a <strong>3% - 5% safety cushion</strong> on live accounts before requesting withdrawals to preserve position sizing flexibility.</p>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- MODULE 01 -->
+  <section id="m1" class="py-12 border-b border-slate-800">
+    <div class="max-w-4xl mx-auto px-4">
+      <div class="text-xs font-mono text-cyan-400 mb-1">Module 01 · Capital Mechanics</div>
+      <h2 class="text-3xl font-bold text-white mb-6">Navigating Trailing vs Static Drawdown</h2>
+      
+      <article class="bg-slate-900/40 border border-slate-800 rounded-xl p-6 mb-8">
+        <h3 class="text-xl font-semibold text-white mb-3">Understanding the Trailing Drawdown Trap</h3>
+        <p class="mb-4">
+          Most prop firm traders fail not due to strategy, but because they do not realize trailing drawdowns move up with intra-trade unrealized equity high points.
+        </p>
+        
+        <div class="grid md:grid-cols-2 gap-4 my-6 font-mono text-xs">
+          <div class="bg-red-950/30 border border-red-800/50 p-4 rounded-lg">
+            <span class="text-red-400 font-bold block mb-1">Trailing Drawdown (Intraday Peak)</span>
+            As open unrealized equity hits +$2,000, your maximum allowed drawdown floor moves up by +$2,000 immediately.
+          </div>
+          <div class="bg-emerald-950/30 border border-emerald-800/50 p-4 rounded-lg">
+            <span class="text-emerald-400 font-bold block mb-1">Static Balance Drawdown</span>
+            Drawdown floor stays locked based on initial balance or daily closed balance, offering a fixed safety buffer.
+          </div>
+        </div>
+
+        <!-- VISUAL DIAGRAM PLACEHOLDER -->
+        <figure class="my-6 p-4 bg-slate-950 border border-slate-800 rounded-lg text-center">
+          <!-- SVG Diagram: Trailing Equity vs Drawdown Floor -->
+          <svg viewBox="0 0 600 200" class="w-full max-w-lg mx-auto">
+            <path d="M 50 150 Q 150 50 250 80 T 450 40 T 550 100" fill="none" stroke="#00f2ff" stroke-width="2"/>
+            <path d="M 50 180 Q 150 80 250 110 T 450 70 T 550 130" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="4"/>
+            <text x="60" y="140" fill="#00f2ff" font-size="10">Account Equity Peak</text>
+            <text x="60" y="195" fill="#ef4444" font-size="10">Trailing Watermark Floor</text>
+          </svg>
+          <figcaption class="text-xs text-slate-500 mt-2">FIG 01 · TRAILING DRAWDOWN FLOOR RISES WITH UNREALIZED EQUITY PEAKS</figcaption>
+        </figure>
+
+      </article>
+    </div>
+  </section>
+
+  <!-- MODULE 02 -->
+  <section id="m2" class="py-12 border-b border-slate-800">
+    <div class="max-w-4xl mx-auto px-4">
+      <div class="text-xs font-mono text-cyan-400 mb-1">Module 02 · Position Sizing</div>
+      <h2 class="text-3xl font-bold text-white mb-6">Risk Calibration & Drawdown Protection</h2>
+      
+      <div class="grid md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-5">
+          <h4 class="text-white font-semibold mb-2">Evaluation Phase Risk</h4>
+          <ul class="text-sm space-y-2 text-slate-400">
+            <li>• Risk per trade: <strong>0.5% max</strong></li>
+            <li>• Max daily trades: <strong>2 trades</strong></li>
+            <li>• Max daily risk allocation: <strong>1.0%</strong></li>
+            <li>• Hard stop on 2 consecutive losses.</li>
+          </ul>
+        </div>
+        <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-5">
+          <h4 class="text-white font-semibold mb-2">Funded Account Risk</h4>
+          <ul class="text-sm space-y-2 text-slate-400">
+            <li>• Risk per trade: <strong>0.25% - 0.35%</strong></li>
+            <li>• Scale risk to 0.5% only after +3% buffer is banked.</li>
+            <li>• Zero trade execution during High Impact News (±5 min).</li>
+          </ul>
         </div>
       </div>
-      <div class="card" style="background:rgba(0,0,0,0.2); border-color:rgba(240,192,64,0.15);">
-        <div style="font-family:var(--ff-disp); font-size:0.9rem; color:var(--gold);">🎯 Entry TF — 15M / 5M</div>
-        <p style="font-size:0.82rem; margin-top:8px;">During killzone windows, drop to 15M then 5M for the precision entry trigger. Confirm CHoCH at the HTF OB/FVG level. <strong>Enter on the 5M displacement candle</strong> with ATR-calculated stop.</p>
-        <div style="margin-top:8px;">
-          <span class="rule-badge gold">15M CHoCH</span>
-          <span class="rule-badge gold">5M Trigger</span>
+
+    </div>
+  </section>
+
+  <!-- MODULE 03 -->
+  <section id="m3" class="py-12 border-b border-slate-800">
+    <div class="max-w-4xl mx-auto px-4">
+      <div class="text-xs font-mono text-cyan-400 mb-1">Module 03 · Execution Roadmap</div>
+      <h2 class="text-3xl font-bold text-white mb-6">The 3-Phase Evaluation Matrix</h2>
+      
+      <div class="space-y-6">
+        
+        <!-- STEP 1 -->
+        <div class="flex gap-4 items-start bg-slate-900/40 border border-slate-800 p-5 rounded-xl">
+          <span class="bg-cyan-500/10 text-cyan-400 font-mono text-lg font-bold px-3 py-1 rounded">PHASE 1</span>
+          <div>
+            <h3 class="text-white font-semibold text-lg">Phase 1: The Target Push (10% Target)</h3>
+            <p class="text-sm text-slate-400 mt-1">Focus on high R:R setups (1:2 min). Execute only inside London & NY AM Kill Zones aligned with USME Trend Cloud.</p>
+          </div>
         </div>
+
+        <!-- STEP 2 -->
+        <div class="flex gap-4 items-start bg-slate-900/40 border border-slate-800 p-5 rounded-xl">
+          <span class="bg-cyan-500/10 text-cyan-400 font-mono text-lg font-bold px-3 py-1 rounded">PHASE 2</span>
+          <div>
+            <h3 class="text-white font-semibold text-lg">Phase 2: Consistency Verification (5% Target)</h3>
+            <p class="text-sm text-slate-400 mt-1">Scale back risk to 0.25% per trade. Objective is capital preservation and smooth equity growth curve.</p>
+          </div>
+        </div>
+
+        <!-- STEP 3 -->
+        <div class="flex gap-4 items-start bg-slate-900/40 border border-slate-800 p-5 rounded-xl">
+          <span class="bg-emerald-500/10 text-emerald-400 font-mono text-lg font-bold px-3 py-1 rounded">FUNDED</span>
+          <div>
+            <h3 class="text-white font-semibold text-lg">Phase 3: Live Funded Buffer & Scaling</h3>
+            <p class="text-sm text-slate-400 mt-1">Bank 3% profit cushion before first payout request. Protect baseline capital at all costs.</p>
+          </div>
+        </div>
+
       </div>
     </div>
+  </section>
 
-    <div class="highlight-box green" style="margin-top:16px;">
-      <strong>📈 Daily Session Clock:</strong> London Killzone (2–5 AM ET) → NY Killzone (7–10 AM ET) → Dead zone (10 AM onwards, no new entries).
+  <!-- STRATEGY PLAYBOOKS -->
+  <section id="playbooks" class="py-12 border-b border-slate-800">
+    <div class="max-w-4xl mx-auto px-4">
+      <div class="text-xs font-mono text-cyan-400 mb-1">Playbooks · Two Execution Strategies</div>
+      <h2 class="text-3xl font-bold text-white mb-6">Prop Evaluation Playbooks</h2>
+
+      <!-- PLAYBOOK A -->
+      <article class="bg-slate-900/60 border border-slate-800 rounded-xl p-6 mb-8">
+        <h3 class="text-xl font-bold text-white mb-2">Playbook A: Conservative 0.5% Consistency Protocol</h3>
+        <p class="text-sm text-slate-400 mb-4">Designed to systematically hit the 8-10% profit target without triggering daily or trailing drawdown limits.</p>
+
+        <ol class="list-decimal list-inside text-sm space-y-3 text-slate-300 font-mono">
+          <li><strong>Rule 1:</strong> Identify HTF Trend Bias via USME Triple-EMA Cloud (BULL / BEAR only).</li>
+          <li><strong>Rule 2:</strong> Wait for London or NY AM Kill Zone sweep of BSL / SSL.</li>
+          <li><strong>Rule 3:</strong> Confirm 3-Candle Non-Repainting FVG retest in Discount (for long) or Premium (for short).</li>
+          <li><strong>Rule 4:</strong> Calculate lot size strictly equal to <strong>0.5% account risk</strong> based on Stop Loss distance.</li>
+          <li><strong>Rule 5:</strong> Set TP1 at 1:1.5 R:R (Lock 50% position), trail remaining position to opposing liquidity pool.</li>
+        </ol>
+      </article>
+
+      <!-- PLAYBOOK B -->
+      <article class="bg-slate-900/60 border border-slate-800 rounded-xl p-6">
+        <h3 class="text-xl font-bold text-white mb-2">Playbook B: High-Confluence Breaker Surge</h3>
+        <p class="text-sm text-slate-400 mb-4">Higher win-rate setup designed for clearing Phase 2 or recovery mode after a minor draw down.</p>
+
+        <ol class="list-decimal list-inside text-sm space-y-3 text-slate-300 font-mono">
+          <li><strong>Rule 1:</strong> Sweep of Major Session High/Low during NY PM Macro (13:30 - 16:00 EST).</li>
+          <li><strong>Rule 2:</strong> Rapid displacement breaking internal market structure (MSS).</li>
+          <li><strong>Rule 3:</strong> Entry on Breaker Block retest with Anchored VWAP alignment.</li>
+          <li><strong>Rule 4:</strong> Fixed 0.25% risk per trade with 1:2 R:R target.</li>
+        </ol>
+      </article>
+
     </div>
-  </div>
+  </section>
 
-  <div class="card">
-    <div class="card-title"><span class="icon">📋</span> Position Sizing & Risk Matrix</div>
-    <table style="width:100%; border-collapse:collapse; font-size:0.8rem; color:var(--sub);">
-      <tr style="border-bottom:1px solid var(--border);">
-        <th style="text-align:left; padding:6px 0; font-family:var(--ff-mono); color:var(--white);">Signal Tier</th>
-        <th style="text-align:left; padding:6px 0; font-family:var(--ff-mono); color:var(--white);">Risk %</th>
-        <th style="text-align:left; padding:6px 0; font-family:var(--ff-mono); color:var(--white);">Position Size</th>
-      </tr>
-      <tr style="border-bottom:1px solid rgba(0,229,255,0.05);">
-        <td style="padding:8px 0; color:var(--gold);">ELITE (≥90%)</td>
-        <td style="padding:8px 0;">0.50%</td>
-        <td style="padding:8px 0; color:var(--green);">100%</td>
-      </tr>
-      <tr style="border-bottom:1px solid rgba(0,229,255,0.05);">
-        <td style="padding:8px 0; color:var(--cyan);">PRIME (80–89%)</td>
-        <td style="padding:8px 0;">0.35%</td>
-        <td style="padding:8px 0; color:var(--gold);">75%</td>
-      </tr>
-      <tr>
-        <td style="padding:8px 0; color:var(--sub);">STANDARD (65–79%)</td>
-        <td style="padding:8px 0;">0.20%</td>
-        <td style="padding:8px 0; color:var(--muted);">25–50%</td>
-      </tr>
-    </table>
-    <div style="margin-top:12px; font-size:0.7rem; color:var(--muted);">* For a $100,000 account, 0.5% = $500 risk per trade. Hard daily loss limit: 2%.</div>
-  </div>
-</div>
-
-<!-- ============================================================ -->
-<!-- PANEL 4: SCALE & INCOME -->
-<!-- ============================================================ -->
-<div class="panel" id="panel-scale">
-  <div class="card">
-    <div class="card-title"><span class="icon">📈</span> Phase-by-Phase Scale Architecture</div>
-    <p>Multiple funded accounts deploying the same proven edge is how you compound income without compounding risk. The USME signal fires every morning — as each phase completes, you simply deploy it across more capital.</p>
-
-    <div style="margin-top:16px;">
-      <div style="padding:16px; border-left: 3px solid var(--cyan); background:rgba(0,229,255,0.02); border-radius:0 8px 8px 0; margin-bottom:12px;">
-        <div style="font-family:var(--ff-disp); font-size:0.8rem; color:var(--cyan);">PHASE 1 — FOUNDATION (Months 0–3)</div>
-        <p style="font-size:0.85rem; color:var(--sub);">Master one account. Prove the system. Trade London + NY killzones exclusively with USME — maximum 2 entries per day. Risk: 0.5% per trade, 2% daily loss ceiling. Pass evaluation, receive 2+ payouts.</p>
-      </div>
-      <div style="padding:16px; border-left: 3px solid var(--gold); background:rgba(240,192,64,0.02); border-radius:0 8px 8px 0; margin-bottom:12px;">
-        <div style="font-family:var(--ff-disp); font-size:0.8rem; color:var(--gold);">PHASE 2 — DUPLICATION (Months 3–6)</div>
-        <p style="font-size:0.85rem; color:var(--sub);">Clone the system to 2–3 accounts. Use payouts from Account #1 to fund challenges. Identical USME configuration, identical risk. Rotation schedule: Account A on Mon/Wed, B on Tue/Thu, C on Fri.</p>
-      </div>
-      <div style="padding:16px; border-left: 3px solid #4488ff; background:rgba(68,136,255,0.02); border-radius:0 8px 8px 0; margin-bottom:12px;">
-        <div style="font-family:var(--ff-disp); font-size:0.8rem; color:#4488ff;">PHASE 3 — SCALE (Months 6–12)</div>
-        <p style="font-size:0.85rem; color:var(--sub);">Expand to 5–6 accounts across 3 firms. Deploy trade copier to execute USME signals simultaneously. Activate internal scaling programs — capital growth without new challenge fees.</p>
-      </div>
-      <div style="padding:16px; border-left: 3px solid var(--red); background:rgba(255,77,106,0.02); border-radius:0 8px 8px 0;">
-        <div style="font-family:var(--ff-disp); font-size:0.8rem; color:var(--red);">PHASE 4 — EMPIRE (Month 12+)</div>
-        <p style="font-size:0.85rem; color:var(--sub);">8–10 accounts · Full income architecture. USME generates the signal — the copier executes across every account simultaneously. Monthly income is a function of total capital deployed, not additional work. Establish LLC for tax optimization.</p>
-      </div>
+  <!-- SUMMARY & FOOTER -->
+  <footer class="py-12 bg-[#080c14] border-t border-slate-800 text-center text-xs text-slate-500">
+    <div class="max-w-4xl mx-auto px-4">
+      <div class="font-bold text-white tracking-wider mb-2">SNIPER<span class="text-cyan-400">TRADER</span></div>
+      <p class="mb-4 max-w-xl mx-auto">
+        Educational material only. Prop firm evaluations carry significant risk of capital loss. Past performance does not guarantee future evaluation success.
+      </p>
+      <p class="font-mono">Prop Firm MasterPlan · v1.0 · SniperTrader Education</p>
     </div>
-  </div>
-
-  <div class="card">
-    <div class="card-title"><span class="icon">💰</span> Monthly Payout Projections</div>
-    <p style="font-size:0.85rem; color:var(--sub);">Conservative modeling at 3–5% monthly return on funded capital with 80% profit split.</p>
-    <table style="width:100%; border-collapse:collapse; font-size:0.8rem; color:var(--sub); margin-top:12px;">
-      <tr style="border-bottom:1px solid var(--border);">
-        <th style="text-align:left; padding:6px 0; font-family:var(--ff-mono); color:var(--white);">Phase</th>
-        <th style="text-align:left; padding:6px 0; font-family:var(--ff-mono); color:var(--white);">Accounts</th>
-        <th style="text-align:left; padding:6px 0; font-family:var(--ff-mono); color:var(--white);">Total Capital</th>
-        <th style="text-align:left; padding:6px 0; font-family:var(--ff-mono); color:var(--white);">Your Payout (80%)</th>
-      </tr>
-      <tr style="border-bottom:1px solid rgba(0,229,255,0.05);"><td style="padding:8px 0;">Phase 1</td><td>1</td><td>$100,000</td><td style="color:var(--gold);">$2,400–$4,000</td></tr>
-      <tr style="border-bottom:1px solid rgba(0,229,255,0.05);"><td style="padding:8px 0;">Phase 2</td><td>3</td><td>$300,000</td><td style="color:var(--gold);">$7,200–$12,000</td></tr>
-      <tr style="border-bottom:1px solid rgba(0,229,255,0.05);"><td style="padding:8px 0;">Phase 3</td><td>5–6</td><td>$600,000</td><td style="color:var(--gold);">$14,400–$24,000</td></tr>
-      <tr><td style="padding:8px 0; color:var(--green);">Phase 4</td><td style="color:var(--green);">8–10</td><td style="color:var(--green);">$1,000,000+</td><td style="color:var(--green); font-weight:700;">$24,000–$40,000+</td></tr>
-    </table>
-    <div style="margin-top:12px; font-size:0.7rem; color:var(--muted);">* Projections model 3–5% monthly return. Conservative execution assumed. Past performance does not guarantee future results.</div>
-  </div>
-</div>
-
-<!-- ============================================================ -->
-<!-- PANEL 5: FIRMS & LAWS -->
-<!-- ============================================================ -->
-<div class="panel" id="panel-firms">
-  <div class="card">
-    <div class="card-title"><span class="icon">🏛️</span> Recommended Firms for USME Traders</div>
-    <div class="grid-2">
-      <div class="card" style="background:rgba(0,0,0,0.2);">
-        <div style="font-family:var(--ff-disp); font-size:0.9rem; color:var(--cyan);">🥇 FTMO</div>
-        <p style="font-size:0.82rem;">Up to $400K per trader / $2M via multiple accounts. 80–90% split. Full ICT/SMC compatibility. Optimal for experienced traders prioritizing brand reliability.</p>
-        <div style="margin-top:8px;"><span class="rule-badge cyan">Forex & Indices</span> <span class="rule-badge">$400K Cap</span></div>
-      </div>
-      <div class="card" style="background:rgba(0,0,0,0.2);">
-        <div style="font-family:var(--ff-disp); font-size:0.9rem; color:var(--gold);">⚡ Apex Trader Funding</div>
-        <p style="font-size:0.82rem;">Up to 10 funded accounts simultaneously. Futures-focused (/NQ, /ES, CL). Purpose-built for trade copier deployment across a full USME portfolio.</p>
-        <div style="margin-top:8px;"><span class="rule-badge gold">Futures</span> <span class="rule-badge gold">10 Accounts</span></div>
-      </div>
-      <div class="card" style="background:rgba(0,0,0,0.2);">
-        <div style="font-family:var(--ff-disp); font-size:0.9rem; color:#4488ff;">🚀 FundedNext</div>
-        <p style="font-size:0.82rem;">Scales to $4M. Fast payouts. Weekly payout cadence. Best suited for Phase 2–3 scaling — rapid reinvestment of profits into progressively larger accounts.</p>
-        <div style="margin-top:8px;"><span class="rule-badge" style="border-color:#4488ff; color:#4488ff;">Forex + Futures</span> <span class="rule-badge">$4M Scale</span></div>
-      </div>
-      <div class="card" style="background:rgba(0,0,0,0.2);">
-        <div style="font-family:var(--ff-disp); font-size:0.9rem; color:var(--green);">🏔️ The5ers</div>
-        <p style="font-size:0.82rem;">Account doubles at every profit milestone. Scales to $4M with 100% profit split at peak tier. Optimal as the long-term compounding vehicle.</p>
-        <div style="margin-top:8px;"><span class="rule-badge green">100% Split</span> <span class="rule-badge">$4M Scale</span></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card" style="border-color:rgba(255,77,106,0.2); background:rgba(255,77,106,0.02);">
-    <div class="card-title" style="color:var(--red);"><span class="icon">⚖️</span> The 7 Laws of USME Prop Trading</div>
-    <ul class="checklist">
-      <li><span class="check">01</span> <div><strong>Never risk more than 1% per trade</strong> on funded accounts. Your edge is statistical — it requires volume to manifest.</div></li>
-      <li><span class="check">02</span> <div><strong>Stop trading after 2% daily loss.</strong> Platform closed. Session over. Revenge trading inside prop firm loss-limit structures is irreversible.</div></li>
-      <li><span class="check">03</span> <div><strong>Only execute during killzone windows.</strong> USME signal quality degrades materially outside London and NY Open.</div></li>
-      <li><span class="check">04</span> <div><strong>Never scale before demonstrating consistency.</strong> Master one account, then duplicate it.</div></li>
-      <li><span class="check">05</span> <div><strong>Never hold through news events on restricted accounts.</strong> Close all positions 2 minutes ahead of any red-folder event.</div></li>
-      <li><span class="check">06</span> <div><strong>Withdraw profits on a regular, scheduled cadence.</strong> Protect what has already been earned.</div></li>
-      <li><span class="check">07</span> <div><strong>Log every trade</strong> in TraderEdge Performance OS. Pattern recognition is your second edge — and it compounds over time.</div></li>
-    </ul>
-    <div class="highlight-box red" style="margin-top:12px;">
-      <strong>⛔ Hard Rule:</strong> Never add to a losing position. No averaging down. Let the trade play out or stop out.
-    </div>
-  </div>
-</div>
-
-<!-- Footer -->
-<div style="margin-top:48px; padding-top:24px; border-top:1px solid var(--border); text-align:center; font-family:var(--ff-mono); font-size:0.5rem; color:var(--muted); letter-spacing:0.08em;">
-   <a href="/index.html"><span style="color:var(--cyan);">SNIPERTRADER</span></a> USME PROP FIRM MASTER PLAN v2.0 · 2026
-  <br>Trade responsibly. Past performance does not guarantee future results.
-</div>
-
-</div>
-
-<script>
-// Tab switching
-const tabs = document.querySelectorAll('.tab-btn');
-const panels = {
-  overview: document.getElementById('panel-overview'),
-  research: document.getElementById('panel-research'),
-  execution: document.getElementById('panel-execution'),
-  scale: document.getElementById('panel-scale'),
-  firms: document.getElementById('panel-firms')
-};
-
-tabs.forEach(tab => {
-  tab.addEventListener('click', () => {
-    tabs.forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    const panelName = tab.dataset.panel;
-    Object.keys(panels).forEach(key => {
-      panels[key].classList.toggle('active', key === panelName);
-    });
-  });
-});
-</script>
+  </footer>
 
 </body>
 </html>
