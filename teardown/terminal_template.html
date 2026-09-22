@@ -292,6 +292,23 @@ function rowHtml(r,i){
   </div>`;
 }
 
+function structureHealthHtml(){
+  const sv = DATA.structure_validation;
+  if(!sv) return '';
+  const rows = [
+    ['trend ↑', sv.trend.up], ['trend ↓', sv.trend.down], ['trend →', sv.trend.range],
+    ['break (MSS) bull', sv.mss.bullish], ['break (MSS) bear', sv.mss.bearish],
+    ['gap (FVG) bull', sv.fvg.bull], ['gap (FVG) bear', sv.fvg.bear],
+    ['key level (OB) bull', sv.ob.bull], ['key level (OB) bear', sv.ob.bear],
+    ['sweep bull', sv.sweep.bull], ['sweep bear', sv.sweep.bear],
+  ];
+  return rows.filter(([,m]) => m && m.n > 0).map(([label, m]) => {
+    const e = m.edge;
+    const cls = Math.abs(e) < 1.5 ? 'hr' : (e > 0 ? 'pf-pos' : 'pf-neg');
+    return `<div class="l"><span>${label}</span><span class="${cls}">${e>=0?'+':''}${e}pt · P(up) ${m.p_up}% (n=${m.n})</span></div>`;
+  }).join('');
+}
+
 function render(){
   const list = filteredResults();
   updateFilterCounts();
@@ -337,6 +354,11 @@ function render(){
       <h4>Honest verdict</h4>
       <div class="method">${tb?tb.verdict:''}</div>
       ${conc}
+    </div>
+    <div class="hbox" style="grid-column:1/-1">
+      <h4>Structure features — descriptive or predictive? (${DATA.structure_validation?DATA.structure_validation.horizon_bars:5}-bar forward · base P(up) ${DATA.structure_validation?DATA.structure_validation.base_p_up:'—'}%)</h4>
+      <div class="persym">${structureHealthHtml()}</div>
+      <div class="method" style="margin-top:8px">edge = P(up) vs base. FVG / order-block / sweep sit at ≈0pt — descriptive, not predictive. Only trend carries a mild ±2pt continuation edge (already folded into the model).</div>
     </div>`;
 
   // dropped
@@ -375,7 +397,7 @@ function render(){
       <br><br>
       <b style="color:var(--fg)">Click a row</b> to open the full audit: each of the seven signals with its vote, confidence, and a plain-English reason, plus the probability cone, entry / stop / target, the SEC EDGAR catalyst (insider activity + earnings dates), and a live chart.
       <br><br>
-      <b style="color:var(--fg)">Ensemble Health (02)</b> is the honest scoreboard: a walk-forward backtest of the actual signals — win rate, expectancy, profit factor, best/worst names, and a plain verdict — so you can see whether the read works net of costs. <b style="color:var(--fg)">Drop Audit (03)</b> lists the names scanned but that didn't clear the bar, shown in the open instead of hidden.
+      <b style="color:var(--fg)">Ensemble Health (02)</b> is the honest scoreboard: a walk-forward backtest of the actual signals — win rate, expectancy, profit factor, best/worst names, and a plain verdict — so you can see whether the read works net of costs. It also measures whether the structure tags (trend / gap / key level / sweep) actually predict the next move — most are descriptive, not predictive. <b style="color:var(--fg)">Drop Audit (03)</b> lists the names scanned but that didn't clear the bar, shown in the open instead of hidden.
       <br><br>
       <b style="color:var(--fg)">Sort.</b> <b style="color:var(--fg)">Conviction</b> ranks by the setup's historical edge; <b style="color:var(--fg)">Edge (out-of-sample)</b> ranks by profit factor on the recent period only (post mid-2025), not the full 2-year window — so a name can't top the list on old performance that may have stopped working. Only names with ≥30 recent trades count, and the sample size is shown.
     </div>

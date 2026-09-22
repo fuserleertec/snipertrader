@@ -599,17 +599,36 @@ def analyze(raw, cond=None):
     results.sort(key=lambda r: (0 if r["trade"]["direction"] != "HOLD" else 1, -r["conviction"]))
     return results
 
+def _hit_edge(rs, base_p_up):
+    """Summarize a forward-return sample: n, P(up), and edge = P(up) - base P(up)."""
+    n = len(rs)
+    if n == 0:
+        return {"n": 0, "p_up": None, "edge": None}
+    p_up = sum(1 for x in rs if x > 0) / n
+    return {"n": n, "p_up": round(p_up * 100, 1), "edge": round((p_up - base_p_up) * 100, 1)}
+
+
 def _walk_forward(raw):
     """Single walk-forward pass: at each bar (>=60 history), score the ensemble
     (point-in-time cross-section, no lookahead), then record the forward FWD_BARS
-    return.  Returns BOTH the naive hit-rate backtest AND the signal-conditioned
-    forward-return buckets for the probability cone — one pass, so the two always agree.
+    return.  Returns the naive hit-rate backtest, the signal-conditioned cone
+    buckets, AND a structure-feature validation (do FVG/OB/sweep/MSS/trend actually
+    predict the forward move, or are they merely descriptive?) — one pass, all
+    consistent.
     """
     roc_series, stats = cross_sectional(raw, window=MOM_WINDOW, skip=MOM_SKIP)
     hits = calls = 0
     per_symbol = {}
     buckets_per_sym = {}
     pooled = {"bull": [], "bear": [], "neutral": []}
+    struct_cond = {
+        "trend": {"up": [], "down": [], "range": []},
+        "mss": {"bullish": [], "bearish": []},
+        "fvg": {"bull": [], "bear": []},
+        "ob": {"bull": [], "bear": []},
+        "sweep": {"bull": [], "bear": []},
+    }
+    all_fwd = []
     for key, rec in raw.items():
         bars = rec["bars"]
         closes = [b["c"] for b in bars]
@@ -622,6 +641,16 @@ def _walk_forward(raw):
             mf = ensemble(window, k, {"cs_median": med, "cs_mad": mad})
             cons = mf["consensus"]
             fwd = closes[i + FWD_BARS] / closes[i] - 1.0
+            all_fwd.append(fwd)
+            struct_cond["trend"][k["trend"]].append(fwd)
+            if k["mss"]:
+                struct_cond["mss"][k["mss"]].append(fwd)
+            if k["fvg"]:
+                struct_cond["fvg"][k["fvg"]["dir"]].append(fwd)
+            if k["order_block"]:
+                struct_cond["ob"][k["order_block"]["dir"]].append(fwd)
+            if k["sweep"]:
+                struct_cond["sweep"][k["sweep"]["dir"]].append(fwd)
             b = _bucket_key(cons)
             buckets[b].append(fwd)
             pooled[b].append(fwd)
@@ -635,6 +664,13 @@ def _walk_forward(raw):
         buckets_per_sym[key] = {b: _condense(v) for b, v in buckets.items()}
         hits += sh
         calls += sc
+    base_p_up = sum(1 for x in all_fwd if x > 0) / len(all_fwd) if all_fwd else 0.5
+    struct_val = {
+        feat: {state: _hit_edge(rs, base_p_up) for state, rs in states.items()}
+        for feat, states in struct_cond.items()
+    }
+    struct_val["base_p_up"] = round(base_p_up * 100, 1)
+    struct_val["horizon_bars"] = FWD_BARS
     return {
         "hit": {
             "universe_hit_rate": round(hits / calls, 3) if calls else None,
@@ -646,6 +682,7 @@ def _walk_forward(raw):
             "per_symbol": buckets_per_sym,
             "pooled": {b: _condense(v) for b, v in pooled.items()},
         },
+        "struct": struct_val,
     }
 
 
@@ -661,6 +698,7 @@ def main():
     bt = wf["hit"]
     with open("/Users/snipertrader/snipertrader/teardown/results.json", "w") as f:
         json.dump({"results": results, "backtest": bt, "conditional": wf["cond"],
+                   "structure_validation": wf["struct"],
                    "as_of": "see raw_ohlcv meta.regularMarketTime"}, f, indent=2)
     # print a compact audit
     for r in results:
