@@ -54,6 +54,23 @@ function mapLimit(items, limit, fn) {
   });
 }
 
+// Stablecoins / fiat-pegged bases to exclude from the dynamic universe.
+const STABLE = new Set(['USDC','FDUSD','TUSD','BUSD','USD1','USDP','USDE','PYUSD','GUSD','SUSD','DAI','EUR','EURI','AEUR','EURC','USDG','USDS','RLUSD','FRAX','LUSD','CRVUSD','GHO','USD0','USDY','USDL','USR','USTC']);
+
+// Dynamic universe: top-N USDT pairs by 24h volume from Binance's full ticker.
+// This reaches down into mid/small-cap alts where accumulation actually shows up,
+// instead of only the 24 liquid majors (where the edge is arbitraged away).
+// Falls back to the hardcoded majors if the ticker fetch fails.
+async function fetchDynamicUniverse(limit = 60) {
+  const raw = await getJSON('https://data-api.binance.vision/api/v3/ticker/24hr', 20000);
+  return (raw || [])
+    .filter((t) => t && t.symbol && t.symbol.endsWith('USDT') && !STABLE.has(t.symbol.replace(/USDT$/, '')))
+    .filter((t) => (parseFloat(t.quoteVolume) || 0) > 10e6)  // >$10M 24h volume floor
+    .sort((a, b) => (parseFloat(b.quoteVolume) || 0) - (parseFloat(a.quoteVolume) || 0))
+    .slice(0, limit)
+    .map((t) => t.symbol);
+}
+
 // Binance kline bar: [openTime, o, h, l, c, v, closeTime, quoteVol, numTrades,
 //                     takerBuyBase, takerBuyQuote, ignore]
 function binanceKlines(symbol, interval = '1d', limit = 60) {
@@ -150,9 +167,11 @@ function analyze(symbol, rows) {
 }
 
 // Fetch the universe with bounded concurrency and return candidates sorted by score.
-async function scanCrypto(limit = 24, concurrency = 5) {
+async function scanCrypto(limit = 60, concurrency = 8) {
+  let universe;
+  try { universe = await fetchDynamicUniverse(limit); } catch (_) { universe = UNIVERSE; }
   const out = [];
-  const queue = UNIVERSE.slice(0, limit);
+  const queue = universe.slice(0, limit);
   const workers = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
     while (queue.length) {
       const sym = queue.shift();
@@ -188,4 +207,4 @@ async function scanCrypto(limit = 24, concurrency = 5) {
   return out;
 }
 
-module.exports = { scanCrypto, analyze, UNIVERSE };
+module.exports = { scanCrypto, analyze, fetchDynamicUniverse, UNIVERSE };

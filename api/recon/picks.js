@@ -77,6 +77,19 @@ function technicalSignal(rows) {
   // ATR expansion bonus (order-flow momentum)
   const recentRange = (highs[rows.length - 1] - lows[rows.length - 1]) / cur.c;
   if (recentRange > atr / cur.c * 0.9) score += 0.2;
+  // COIL — quiet accumulation (the genuine pre-run setup): volume quietly building
+  // while price compresses in a tight range with a gentle, not-yet-vertical drift.
+  const vols = rows.map((r) => r.v || 0);
+  const vol5 = vols.slice(-5).reduce((a, b) => a + b, 0) / 5;
+  const volPriorSlice = vols.slice(-20, -5);
+  const volPrior = volPriorSlice.reduce((a, b) => a + b, 0) / Math.max(1, volPriorSlice.length);
+  const volRatio = volPrior > 0 ? vol5 / volPrior : 1;
+  const sma20 = closes.slice(-20).reduce((a, b) => a + b, 0) / Math.min(20, closes.length);
+  const compression = Math.abs(cur.c - sma20) / sma20;
+  const ret20 = closes.length > 21 ? (cur.c / closes[closes.length - 21] - 1) : 0;
+  if (volRatio > 1.2 && compression < 0.03 && ret20 > -0.03 && ret20 < 0.12) {
+    triggers.push('COIL'); score += 0.7;
+  }
   return { score: Math.min(1, score), atr, swingLow: swingLow10, swingHigh: swing10, close: cur.c, triggers };
 }
 
@@ -199,7 +212,7 @@ function tierRank(t) { return { ultra: 3, high: 2, moderate: 1, rejected: 0 }[t]
 // Broad key-less equity universe via Yahoo's predefined screens (listed exchanges).
 // OTC is not in these screens (and has no clean key-less universe source) — seeded
 // separately below plus whatever Stocktwits surfaces.
-const SCREENS = ['most_actives', 'day_gainers', 'aggressive_small_caps', 'undervalued_growth_stocks'];
+const SCREENS = ['most_actives', 'day_gainers', 'aggressive_small_caps', 'undervalued_growth_stocks', 'day_losers', 'undervalued_large_caps', 'most_shorted_stocks'];
 const UNIVERSE_CAP = 360; // full Yahoo-screener breadth (small caps first)
 function capFromMc(mc) {
   if (!mc) return 'large';
@@ -261,7 +274,7 @@ async function run(force = false) {
 
   // Phase B — SEC insider enrichment on the ranked top (rate-limited via insider.js).
   scanned.sort((a, b) => b.score - a.score);
-  const ENRICH = Math.min(80, scanned.length);
+  const ENRICH = Math.min(60, scanned.length);
   if (ENRICH > 0) {
     const enriched = await mapLimit(scanned.slice(0, ENRICH), 4, (b) =>
       buildSymbol(b.symbol, b.exchange, congressional, b.cap).catch(() => b)
@@ -296,7 +309,7 @@ async function run(force = false) {
   const top = selectBalanced(built, 12);
   // Layer 2 crypto leg — key-less Binance scan (OHLCV + trade count + taker buy/sell).
   let crypto = [], cryptoError = null;
-  try { crypto = await scanCrypto(24); } catch (e) { cryptoError = String(e.message || e); }
+  try { crypto = await scanCrypto(60); } catch (e) { cryptoError = String(e.message || e); }
   // Layer 3 confirmation — hard volume gate + catalyst on RANKED candidates only.
   const volumeRejected = [];
   const confirmedPicks = [];
@@ -374,7 +387,7 @@ async function run(force = false) {
       '13F institutional positions & short interest — key-gated / no clean key-less source',
       'Discord sentiment — gated (no public API)'
     ],
-    methodology: 'The terminal sweeps a broad public-data universe — roughly 360 stocks across every size (large-cap through small-cap and OTC) plus a basket of liquid cryptocurrencies — and scores each on a blend of trend structure, trading-volume behavior, insider-filing activity, and news catalysts — and, for crypto, live derivatives positioning (funding rate, open-interest buildup, long/short crowding). A bounded directional projection (a transparent Monte-Carlo simulation of the trailing trend) contributes at most 20% of the technical score and is surfaced for audit — it is a projection of momentum, not order flow. When a paid data key is present (Alpaca/Polygon), real trade-tape order flow — buyer-vs-seller aggression — is folded in as its own gated factor; without the key it is reported unavailable and never estimated. The highest-scoring names then face a second-pass confirmation on volume and momentum before being surfaced; anything that fails is dropped into a separate rejected list rather than filtered silently. Anything else requiring a paid key or proprietary feed (dark-pool data, on-chain whale flows, and similar) is excluded and reported, never estimated. Every signal, position size, and stop/target is simulated research output; no orders are ever placed.'
+    methodology: 'The terminal sweeps a broad public-data universe — roughly 360 stocks across every size (large-cap through small-cap and OTC) plus a broad basket of cryptocurrencies (top-60 by 24h volume — majors through mid/small-caps) — and scores each on a blend of trend structure, quiet-accumulation coils, trading-volume behavior, insider-filing activity, and news catalysts — and, for crypto, live derivatives positioning (funding rate, open-interest buildup, long/short crowding). A bounded directional projection (a transparent Monte-Carlo simulation of the trailing trend) contributes at most 20% of the technical score and is surfaced for audit — it is a projection of momentum, not order flow. When a paid data key is present (Alpaca/Polygon), real trade-tape order flow — buyer-vs-seller aggression — is folded in as its own gated factor; without the key it is reported unavailable and never estimated. The highest-scoring names then face a second-pass confirmation on volume and momentum before being surfaced; anything that fails is dropped into a separate rejected list rather than filtered silently. Anything else requiring a paid key or proprietary feed (dark-pool data, on-chain whale flows, and similar) is excluded and reported, never estimated. Every signal, position size, and stop/target is simulated research output; no orders are ever placed.'
   };
   _cache = { ts: now, payload };
   return payload;
