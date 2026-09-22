@@ -214,6 +214,16 @@ let FILTER = 'all';
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function n(x,d){return (x==null||x===''||Number.isNaN(+x))?(d||'—'):(+x).toLocaleString(undefined,{maximumFractionDigits:2});}
 function sigCls(s){return s==='BUY'?'buy':(s==='SELL'?'sell':'hold');}
+function catCell(cat, dec){
+  const sc=(cat&&Number.isFinite(cat.score))?cat.score:0;
+  const dir=(dec&&dec.catalystDirection)||(cat&&cat.breakdown&&cat.breakdown.newsDirection)||'neutral';
+  const sym=dir==='bull'?'▲':(dir==='bear'?'▼':'·');
+  const col=dir==='bull'?'var(--green)':(dir==='bear'?'var(--red)':'var(--text3)');
+  let s='<span style="color:'+col+';font-weight:700">'+sym+' '+n(sc)+'</span>';
+  if(dir!=='neutral') s+=' <span class="dim" style="text-transform:capitalize">'+dir+'</span>';
+  if(dec&&dec.bullTrap) s+=' <span class="badge gate" style="color:var(--red);border-color:var(--red)" title="bullish chart + bearish news — bull-trap guard">⚠ trap</span>';
+  return s;
+}
 function matchesType(t){ if(FILTER==='all') return true; return FILTER==='stocks' ? t==='stock' : t==='crypto'; }
 
 // Resolve a ticker + exchange into a TradingView symbol.
@@ -312,7 +322,7 @@ function renderDecisions(d){
   if(!rows.length){
     document.getElementById('decisions').innerHTML='<div class="empty">Zero'+label+' candidates survived all confirmation gates this cycle — the funnel is working (see methodology for the thresholds).</div>';
   } else {
-    const head='<table><thead><tr><th>Symbol</th><th>Signal</th><th>Conviction</th><th>Weighted</th><th>Volume</th><th>Catalyst</th><th>Size</th><th>Stop / TP1</th><th>Missing</th></tr></thead><tbody>';
+    const head='<table><thead><tr><th>Symbol</th><th>Signal</th><th>Conviction</th><th>Weighted</th><th>Volume</th><th>Catalyst (dir)</th><th>Size</th><th>Stop / TP1</th><th>Missing</th></tr></thead><tbody>';
     document.getElementById('decisions').innerHTML=head+rows.join('')+'</tbody></table>';
   }
 }
@@ -405,7 +415,7 @@ function decisionRow(p,type){
     '<td>'+n(score)+'</td>'+
     '<td>'+n(dec.weightedScore)+' <span class="dim">/100</span></td>'+
     '<td>'+volCell(conf)+'</td>'+
-    '<td>'+n(cat.score)+'</td>'+
+    '<td>'+catCell(cat,dec)+'</td>'+
     '<td>$'+n(size.dollars)+' <span class="dim">('+n(size.positionPct)+'%)</span></td>'+
     '<td>'+n(ex.stop)+' / '+n(ex.tp1)+'</td>'+
     '<td class="dim">'+(dec.missingFactors&&dec.missingFactors.length?dec.missingFactors.join(', '):'—')+'</td>'+
@@ -430,6 +440,23 @@ async function loadTrack(){
   }
 }
 
+function signalBreakdown(t){
+  const sig=t.signals;
+  if(!sig) return '';
+  const cell=(s,d)=>{
+    const x=s&&s[d];
+    if(!x||!x.n) return '<span class="dim">accruing…</span>';
+    const ex=x.avgExcess!=null?x.avgExcess:x.avgReturn;
+    const col=ex!=null?(ex>0?'var(--green)':(ex<0?'var(--red)':'var(--text3)')):'var(--text3)';
+    return '<span style="color:'+col+';font-weight:700">'+(ex!=null?(ex>0?'+':'')+ex+'%':'—')+'</span> <span class="dim">vs bench · n='+x.n+' · '+(x.hitRate!=null?x.hitRate+'% hit':'—')+'</span>';
+  };
+  const rows=['BUY','HOLD','SELL'].map(k=>{
+    const s=sig[k]||{tracked:0};
+    return '<tr><td><span class="sig '+sigCls(k)+'">'+k+'</span></td><td>'+(s.tracked||0)+'</td><td>'+cell(s,'d1')+'</td><td>'+cell(s,'d5')+'</td><td>'+cell(s,'d20')+'</td></tr>';
+  }).join('');
+  return '<div style="margin:0 0 18px"><div class="thlbl" style="margin-bottom:8px">By signal — does the BUY/HOLD split hold up out-of-sample?</div><table><thead><tr><th>Signal</th><th>Tracked</th><th>+1d</th><th>+5d</th><th>+20d</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+
 function renderTrack(t){
   const el=document.getElementById('track');
   if(!t||!t.candidatesTracked){
@@ -449,6 +476,7 @@ function renderTrack(t){
     '<div class="thbox"><div class="thlbl">+5 days</div>'+cell('d5')+'</div>'+
     '<div class="thbox"><div class="thlbl">+20 days</div>'+cell('d20')+'</div>'+
     '</div>';
+  html+=signalBreakdown(t);
   const rows=(t.recent||[]).map(c=>{
     const s=c.settled||{};
     const r=(k)=>{ const x=s[k]; if(!x) return '<span class="dim">…</span>'; const col=x.ret>0?'var(--green)':(x.ret<0?'var(--red)':'var(--text3)'); const ex=x.bench!=null?(x.ret-x.bench):null;

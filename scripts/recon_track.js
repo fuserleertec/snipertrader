@@ -87,7 +87,7 @@ function round6(x) { return Math.round(Number(x) * 1e6) / 1e6; }
 // Pull the live picks the terminal is actually showing, keeping only candidates
 // that carry a decision (BUY/HOLD/SELL) + an entry price.
 async function fetchCandidates() {
-  const d = await getJSON(PICK_URL);
+  const d = await getJSON(PICK_URL, 90000); // cold Vercel cache runs a fresh ~30-60s scan — give it headroom
   const out = [];
   for (const p of d.picks || []) {
     out.push({ symbol: p.symbol, assetType: 'stock', signal: (p.decision && p.decision.signal) || 'HOLD', entry: round6(p.close), conviction: round2(p.score || 0) });
@@ -136,17 +136,28 @@ async function evaluate(history, now) {
   return { curSPY, curBTC };
 }
 
+function mkH() { return { n: 0, hits: 0, sumRet: 0, sumBench: 0 }; }
+function mkSig() { return { tracked: 0, d1: mkH(), d5: mkH(), d20: mkH() }; }
+
 function buildReport(history, now, benchNow) {
-  const H = { d1: { n: 0, hits: 0, sumRet: 0, sumBench: 0 }, d5: { n: 0, hits: 0, sumRet: 0, sumBench: 0 }, d20: { n: 0, hits: 0, sumRet: 0, sumBench: 0 } };
+  const H = { d1: mkH(), d5: mkH(), d20: mkH() };
+  const sig = { BUY: mkSig(), HOLD: mkSig(), SELL: mkSig() };
   let total = 0, active = 0;
   const rows = [];
   for (const snap of history.snapshots) {
     for (const c of snap.candidates) {
       total++;
+      const sk = (c.signal === 'BUY' || c.signal === 'SELL') ? c.signal : 'HOLD';
+      sig[sk].tracked++;
       let settled = false;
       for (const h of HORIZONS) {
         const s = c.settled && c.settled['d' + h];
-        if (s) { settled = true; H['d' + h].n++; H['d' + h].sumRet += s.ret; if (s.bench != null) H['d' + h].sumBench += s.bench; if (s.ret > 0) H['d' + h].hits++; }
+        if (s) {
+          settled = true;
+          for (const agg of [H['d' + h], sig[sk]['d' + h]]) {
+            agg.n++; agg.sumRet += s.ret; if (s.bench != null) agg.sumBench += s.bench; if (s.ret > 0) agg.hits++;
+          }
+        }
       }
       if (!(c.settled && c.settled.d20)) active++;
       if (settled || snap === history.snapshots[history.snapshots.length - 1]) {
@@ -154,16 +165,18 @@ function buildReport(history, now, benchNow) {
       }
     }
   }
+  const finalize = (x) => ({
+    n: x.n,
+    hitRate: x.n ? round2(x.hits / x.n * 100) : null,
+    avgReturn: x.n ? round2(x.sumRet / x.n * 100) : null,
+    avgBench: x.sumBench && x.n ? round2(x.sumBench / x.n * 100) : null,
+    avgExcess: x.sumBench && x.n ? round2((x.sumRet - x.sumBench) / x.n * 100) : (x.n ? round2(x.sumRet / x.n * 100) : null)
+  });
   const horiz = {};
-  for (const h of HORIZONS) {
-    const k = 'd' + h, x = H[k];
-    horiz[k] = {
-      n: x.n,
-      hitRate: x.n ? round2(x.hits / x.n * 100) : null,
-      avgReturn: x.n ? round2(x.sumRet / x.n * 100) : null,
-      avgBench: x.sumBench && x.n ? round2(x.sumBench / x.n * 100) : null,
-      avgExcess: x.sumBench && x.n ? round2((x.sumRet - x.sumBench) / x.n * 100) : (x.n ? round2(x.sumRet / x.n * 100) : null)
-    };
+  for (const h of HORIZONS) horiz['d' + h] = finalize(H['d' + h]);
+  const signals = {};
+  for (const k of ['BUY', 'HOLD', 'SELL']) {
+    signals[k] = { tracked: sig[k].tracked, d1: finalize(sig[k].d1), d5: finalize(sig[k].d5), d20: finalize(sig[k].d20) };
   }
   rows.sort((a, b) => Date.parse(b.ts) - Date.parse(a.ts));
   return {
@@ -174,6 +187,7 @@ function buildReport(history, now, benchNow) {
     active,
     benchmarks: { SPY: benchNow.curSPY == null ? null : round2(benchNow.curSPY), BTC: benchNow.curBTC == null ? null : round2(benchNow.curBTC) },
     horizons: horiz,
+    signals,
     recent: rows.slice(0, 30)
   };
 }
