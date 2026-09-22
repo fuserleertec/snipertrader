@@ -42,22 +42,54 @@ function binanceDepth(symbol, limit = 50) {
 }
 
 // ---- 3.1 stock volume confirmation (pure — uses daily bars already fetched) ----
+// ET-clock helpers. The most recent daily bar may be TODAY'S IN-PROGRESS session
+// (Yahoo keeps it live during market hours). Comparing a partial day's volume
+// against full prior days false-fails the gate on every name — observed live:
+// every conviction-clearing name showed "volume 0.07x–0.43x — drying up" at
+// 09:50 ET because today's ~20-minute bar was measured against full prior days
+// (→ 0 picks). The reference bar must be the last bar that has printed a full
+// session.
+const ET_ZONE = 'America/New_York';
+function etParts(ms) {
+  const s = new Intl.DateTimeFormat('en-US', {
+    timeZone: ET_ZONE, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false
+  }).format(new Date(ms));
+  const [d, t] = s.split(', ');
+  const [mo, dy, yr] = d.split('/');
+  const [hh, mm] = t.split(':');
+  return { date: `${yr}-${mo}-${dy}`, hour: parseInt(hh, 10), minute: parseInt(mm, 10) };
+}
+// Index of the last COMPLETED daily bar. A bar is in-progress when its open date
+// is today (ET) and the session (09:30–16:00 ET) hasn't closed. Pre-market the
+// last bar is a prior session (date mismatch → completed); post-close hour ≥ 16
+// → completed; weekends/holidays → last bar is a prior session (completed).
+function lastCompletedBarIndex(rows) {
+  const last = rows[rows.length - 1];
+  if (!last || !last.t) return rows.length - 1;
+  const bar = etParts(last.t * 1000);
+  const now = etParts(Date.now());
+  if (bar.date === now.date && now.hour < 16) return rows.length - 2;
+  return rows.length - 1;
+}
+
 function stockVolumeConfirm(rows) {
-  if (!rows || rows.length < 21) {
+  if (!rows || rows.length < 22) {
     return { pass: false, surgeRatio: 0, aboveVwap: false, vwap: 0, strength: 'n/a', reasons: ['insufficient bars'] };
   }
   const closes = rows.map(r => r.c);
   const vols = rows.map(r => r.v);
-  const lastClose = closes[closes.length - 1];
-  // Volume surge: last bar vs the prior 20 completed bars (excludes the in-progress
-  // bar so a partial day's volume can't false-fail the gate).
-  const prior20 = vols.slice(-21, -1);
+  const refIdx = lastCompletedBarIndex(rows);
+  const lastClose = closes[refIdx];
+  // Volume surge: last COMPLETED bar vs the prior 20 completed bars (the
+  // in-progress bar is excluded so a partial day can't false-fail the gate).
+  const prior20 = vols.slice(refIdx - 20, refIdx);
   const avgVol20 = avg(prior20);
-  const surgeRatio = avgVol20 > 0 ? vols[vols.length - 1] / avgVol20 : 0;
+  const surgeRatio = avgVol20 > 0 ? vols[refIdx] / avgVol20 : 0;
 
-  // Anchored daily VWAP proxy over the last 20 bars: Σ(typical*vol) / Σ(vol).
+  // Anchored daily VWAP proxy over the 20 completed bars ending at refIdx.
   let tpVol = 0, volSum = 0;
-  for (let i = rows.length - 20; i < rows.length; i++) {
+  for (let i = refIdx - 19; i <= refIdx; i++) {
     const tp = (rows[i].h + rows[i].l + rows[i].c) / 3;
     tpVol += tp * rows[i].v; volSum += rows[i].v;
   }
@@ -127,4 +159,4 @@ async function cryptoConfirm(symbol, takerBuyRatio) {
   };
 }
 
-module.exports = { stockVolumeConfirm, cryptoConfirm };
+module.exports = { stockVolumeConfirm, cryptoConfirm, lastCompletedBarIndex, etParts };

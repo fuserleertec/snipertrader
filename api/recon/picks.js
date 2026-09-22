@@ -14,7 +14,7 @@ const { insiderFor, insiderStrength } = require('../_lib/recon/insider');
 const { congressionalRecent, congressionalStrength } = require('../_lib/recon/congressional');
 const { coneSignal } = require('../_lib/recon/kronos_cone');
 const { scanCrypto } = require('../_lib/recon/crypto_scan');
-const { stockVolumeConfirm, cryptoConfirm } = require('../_lib/recon/confirm');
+const { stockVolumeConfirm, cryptoConfirm, lastCompletedBarIndex } = require('../_lib/recon/confirm');
 const { catalystScore } = require('../_lib/recon/catalyst');
 const { stockDumpSignals, GATED: DUMP_GATED } = require('../_lib/recon/dump');
 const { stockOrderFlow, ORDERFLOW_GATED } = require('../_lib/recon/orderflow');
@@ -95,11 +95,16 @@ function technicalSignal(rows) {
 
 function volumeSignal(rows) {
   if (!rows || rows.length < 16) return { score: 0, dollarVol: 0 };
-  const vols = rows.map((r) => r.v).filter((v) => v);
-  const avg = vols.slice(-15).reduce((a, b) => a + b, 0) / 15;
-  const today = vols[vols.length - 1];
+  // Use the last COMPLETED daily bar (not today's in-progress partial bar), so
+  // the volume sub-score is stable during market hours — same fix as the hard
+  // confirmation gate.
+  const refIdx = lastCompletedBarIndex(rows);
+  const slice = rows.slice(refIdx - 14, refIdx + 1); // last 15 completed bars incl ref
+  const vols = slice.map((r) => r.v || 0);
+  const avg = vols.reduce((a, b) => a + b, 0) / vols.length;
+  const today = rows[refIdx].v || 0;
   const surge = avg > 0 ? today / avg : 1;
-  const avgClose = rows.slice(-15).reduce((a, r) => a + r.c, 0) / 15;
+  const avgClose = slice.reduce((a, r) => a + r.c, 0) / slice.length;
   // Base credit for a normally-traded name (1x volume → 0.55); 3x+ surge → 1.0.
   const score = Math.max(0, Math.min(1, 0.55 + (surge - 1) / 2 * 0.45));
   return { score, dollarVol: avg * avgClose };
@@ -276,9 +281,14 @@ async function run(force = false) {
   scanned.sort((a, b) => b.score - a.score);
   const ENRICH = Math.min(60, scanned.length);
   if (ENRICH > 0) {
-    const enriched = await mapLimit(scanned.slice(0, ENRICH), 4, (b) =>
-      buildSymbol(b.symbol, b.exchange, congressional, b.cap).catch(() => b)
-    );
+    const enriched = await mapLimit(scanned.slice(0, ENRICH), 4, async (b) => {
+      // buildSymbol resolves to null on any error (internal try/catch) rather than
+      // rejecting — so `.catch` alone can't catch it. Fall back to the Phase-A
+      // result when the insider-enriched re-fetch fails, so a single bad symbol
+      // (SEC 403, Yahoo hiccup) can't null a slot and 500 the whole endpoint.
+      const r = await buildSymbol(b.symbol, b.exchange, congressional, b.cap).catch(() => null);
+      return r || b;
+    });
     for (let i = 0; i < ENRICH; i++) scanned[i] = enriched[i];
   }
 
