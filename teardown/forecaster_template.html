@@ -241,7 +241,7 @@ function renderReadout(){
     <div class="dbox">
       <h4>Market structure</h4>
       <div class="lv"><span class="n">close</span><span class="v">${fmtPx(k.close)}</span></div>
-      <div class="lv"><span class="n">20-bar avg price</span><span class="v">${fmtPx(k.vwap)} <span class="fl">(${k.vwap_pct==null?'':(k.vwap_pct>0?'+':'')+k.vwap_pct+'%'})</span></span></div>
+      <div class="lv"><span class="n">20-day avg price</span><span class="v">${fmtPx(k.vwap)} <span class="fl">(${k.vwap_pct==null?'':(k.vwap_pct>0?'+':'')+k.vwap_pct+'%'})</span></span></div>
       <div class="lv"><span class="n">nearest support</span><span class="v">${fmtPx(k.support)}</span></div>
       <div class="lv"><span class="n">nearest resistance</span><span class="v">${fmtPx(k.resistance)}</span></div>
       <div class="lv"><span class="n">trend structure</span><span class="v ${k.trend==='up'?'up':k.trend==='down'?'dn':'fl'}">${k.trend}</span></div>
@@ -257,10 +257,10 @@ function renderReadout(){
       ${agentRows(mf.agents)}
     </div>
     <div class="dbox">
-      <h4>Probability cone — conditional on this call (${c?c.horizon_bars:5}-bar forward)</h4>
+      <h4>Probability cone — conditional on this call (next ${c?c.horizon_bars:5} trading days)</h4>
       ${coneBar(c)}
       <div class="lv" style="margin-top:8px"><span class="n">basis</span><span class="v fl">${c&&c.scope?coneScopeLabel(c):'—'}</span></div>
-      <div class="lv"><span class="n">σ (${c?c.horizon_bars:5}-bar)</span><span class="v">${c?c.sigma_5d+'%':'—'}</span></div>
+      <div class="lv"><span class="n">typical move · 1σ (${c?c.horizon_bars:5} days)</span><span class="v">${c?c.sigma_5d+'%':'—'}</span></div>
       <div class="lv"><span class="n">ATR(14)</span><span class="v">${c?fmt(c.atr)+' ('+c.atr_pct+'%)':'—'}</span></div>
       <div class="lv"><span class="n">1σ up cone</span><span class="v up">${c?fmtPx(c.up):'—'}</span></div>
       <div class="lv"><span class="n">1σ down cone</span><span class="v dn">${c?fmtPx(c.down):'—'}</span></div>
@@ -272,7 +272,7 @@ function renderReadout(){
       <div class="lv"><span class="n">stop</span><span class="v dn">${fmtPx(t.stop)}</span></div>
       <div class="lv"><span class="n">target</span><span class="v up">${fmtPx(t.target)}</span></div>
       <div class="lv"><span class="n">reward : risk</span><span class="v">${t.rr?t.rr:1.0}</span></div>
-      <div class="lv"><span class="n">bars in sample</span><span class="v">${r.n_bars}</span></div>
+      <div class="lv"><span class="n">days in sample</span><span class="v">${r.n_bars}</span></div>
     </div>
     ${catalystBox(cat)}
     <div class="dbox">
@@ -343,10 +343,10 @@ document.getElementById('foot').innerHTML = `
   <b>Methodology:</b> live prices = public exchange data (crypto, key-less) + a market-data feed via
   <span class="fl">/api/stocks/klines</span> (equities, server-side key). Futures have no key-less feed, so they are
   shown from the snapshot. Market structure = anchored average price, price gaps, key levels, and break/run markers —
-  all standard, public definitions. The read = seven independent signals over the same price history, folded into one
-  consensus score. The probability cone = the empirical distribution of ${DATA.backtest ? DATA.backtest.horizon_bars : 5}-bar
-  forward returns, conditioned on the signal's direction, not a Monte Carlo simulation. The backtest = walk-forward,
-  no lookahead, TP/SL sim with costs. &nbsp; <span class="risknote">Educational only — not financial advice. Paper desk.
+  all standard, public definitions. The read = seven independent signals over the same price history, folded into a
+  single 0–100 score of how bullish they are. The probability cone = the empirical distribution of ${DATA.backtest ? DATA.backtest.horizon_bars : 5} trading days
+  forward, conditioned on the signal's direction, not a Monte Carlo simulation. The backtest = walk-forward,
+  no lookahead, take-profit/stop-loss sim with costs. &nbsp; <span class="risknote">Educational only — not financial advice. Paper desk.
   live_trading=false.</span>
   <div style="margin-top:22px;padding-top:16px;border-top:1px solid var(--border-soft);display:flex;gap:20px;flex-wrap:wrap">
     <a href="/index.html" style="color:var(--muted);text-decoration:none;font-family:var(--font-m);font-size:11px">SniperTrader.ai</a>

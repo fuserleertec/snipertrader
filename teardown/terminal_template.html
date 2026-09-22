@@ -243,7 +243,7 @@ function detailHtml(r,i){
       <div class="dbox">
         <h4>Market structure</h4>
         <div class="lv"><span class="n">close</span><span class="v">${fmtPx(k.close,r.symbol)}</span></div>
-        <div class="lv"><span class="n">20-bar avg price</span><span class="v">${fmtPx(k.vwap,r.symbol)} <span class="fl">(${k.vwap_pct==null?'':(k.vwap_pct>0?'+':'')+k.vwap_pct+'%'})</span></span></div>
+        <div class="lv"><span class="n">20-day avg price</span><span class="v">${fmtPx(k.vwap,r.symbol)} <span class="fl">(${k.vwap_pct==null?'':(k.vwap_pct>0?'+':'')+k.vwap_pct+'%'})</span></span></div>
         <div class="lv"><span class="n">nearest support</span><span class="v">${fmtPx(k.support,r.symbol)}</span></div>
         <div class="lv"><span class="n">nearest resistance</span><span class="v">${fmtPx(k.resistance,r.symbol)}</span></div>
         <div class="lv"><span class="n">trend structure</span><span class="v ${k.trend==='up'?'up':k.trend==='down'?'dn':'fl'}">${k.trend}</span></div>
@@ -253,15 +253,15 @@ function detailHtml(r,i){
         <div class="lv"><span class="n">Sweep</span><span class="v">${k.sweep?k.sweep.dir+' @ '+fmt(k.sweep.level):'—'}</span></div>
       </div>
       <div class="dbox">
-        <h4>Model read</h4>
+        <h4>Model read · 7 signals</h4>
         <div class="cbar" style="margin-bottom:10px"><div class="b" style="width:${mf.n_bull/7*100}%">${mf.n_bull}B</div><div class="f" style="width:${mf.n_neu/7*100}%">${mf.n_neu}N</div><div class="r" style="width:${mf.n_bear/7*100}%">${mf.n_bear}R</div></div>
         ${agentRows(mf.agents)}
       </div>
       <div class="dbox">
-        <h4>Probability cone — conditional on this call (${c?c.horizon_bars:5}-bar forward)</h4>
+        <h4>Probability cone — conditional on this call (next ${c?c.horizon_bars:5} trading days)</h4>
         ${coneBar(c)}
         <div class="lv" style="margin-top:8px"><span class="n">basis</span><span class="v fl">${c&&c.scope?coneScopeLabel(c):'—'}</span></div>
-        <div class="lv"><span class="n">σ (${c?c.horizon_bars:5}-bar)</span><span class="v">${c?c.sigma_5d+'%':'—'}</span></div>
+        <div class="lv"><span class="n">typical move · 1σ (${c?c.horizon_bars:5} days)</span><span class="v">${c?c.sigma_5d+'%':'—'}</span></div>
         <div class="lv"><span class="n">ATR(14)</span><span class="v">${c?fmt(c.atr)+' ('+c.atr_pct+'%)':'—'}</span></div>
         <div class="lv"><span class="n">1σ up cone</span><span class="v up">${c?fmtPx(c.up,r.symbol):'—'}</span></div>
         <div class="lv"><span class="n">1σ down cone</span><span class="v dn">${c?fmtPx(c.down,r.symbol):'—'}</span></div>
@@ -367,7 +367,7 @@ function render(){
     <div class="stat"><div class="k">Universe</div><div class="v">${results.length}<small> symbols</small></div><div class="sub">${UNI_SUB}</div></div>
     <div class="stat"><div class="k">Directional setups</div><div class="v">${longs+shorts}<small> / ${results.length}</small></div><div class="sub">${longs} long · ${shorts} short</div></div>
     <div class="stat"><div class="k">No edge (hold)</div><div class="v">${holds}</div><div class="sub">structure or R:R failed</div></div>
-    <div class="stat"><div class="k">Net profit factor</div><div class="v" style="color:${netPF>=1?'var(--emerald)':'var(--gold)'}">${netPF!=null?netPF.toFixed(2):'—'}</div><div class="sub">intraday 1h · fixed 2:1 · cost 0.05R</div></div>`;
+    <div class="stat"><div class="k">Net profit factor</div><div class="v" style="color:${netPF>=1?'var(--emerald)':'var(--gold)'}">${netPF!=null?netPF.toFixed(2):'—'}</div><div class="sub">intraday 1h · fixed 2:1 · 0.05R round-trip</div></div>`;
 
   // health — honest trade-level backtest (expectancy, not just hit rate)
   const cfg = tb ? tb.configs.map(c=>{
@@ -381,11 +381,12 @@ function render(){
   })() : '';
   document.getElementById('health').innerHTML = `
     <div class="hbox">
-      <h4>Trade-level backtest — expectancy (TP/SL, walk-forward · daily + intraday 1h)</h4>
+      <h4>Trade-level backtest — expectancy (take-profit/stop-loss, walk-forward · daily + intraday 1h)</h4>
       <div class="cfg">
-        <div class="h"><span>config</span><span>n</span><span>win%</span><span>E[R]</span><span>PF</span><span>ΣR</span></div>
+        <div class="h"><span>scenario</span><span>trades</span><span>win rate</span><span>avg R</span><span>PF</span><span>total R</span></div>
         ${cfg}
       </div>
+      <div style="margin-top:8px;font-family:var(--font-m);font-size:11px;color:var(--muted);line-height:1.6">PF = profit factor (gross wins ÷ gross losses; &gt;1 = profitable net of cost). avg R = mean result per trade, in units of R — the amount risked per trade. Every row enters on a strong consensus (≥0.70 daily, ≥0.75 intraday) and holds up to 20 bars (≈4 weeks daily, ≈3 days intraday).</div>
     </div>
     <div class="hbox">
       <h4>Honest verdict</h4>
@@ -393,7 +394,7 @@ function render(){
       ${conc}
     </div>
     <div class="hbox" style="grid-column:1/-1">
-      <h4>Structure features — descriptive or predictive? (${DATA.structure_validation?DATA.structure_validation.horizon_bars:5}-bar forward · base P(up) ${DATA.structure_validation?DATA.structure_validation.base_p_up:'—'}%)</h4>
+      <h4>Structure features — descriptive or predictive? (next ${DATA.structure_validation?DATA.structure_validation.horizon_bars:5} trading days · base P(up) ${DATA.structure_validation?DATA.structure_validation.base_p_up:'—'}%)</h4>
       <div class="persym">${structureHealthHtml()}</div>
       <div class="method" style="margin-top:8px">edge = P(up) vs base. FVG / order-block / sweep sit at ≈0pt — descriptive, not predictive. Only trend carries a mild ±2pt continuation edge (already folded into the model).</div>
     </div>`;
@@ -419,8 +420,8 @@ function render(){
      <span class="fl">/api/stocks/klines</span> (equities, server-side key). Futures have no key-less feed, so they
      are shown from the snapshot. Market structure = anchored average price, price gaps, key levels, and
      break/run markers — all standard, public definitions. The read = several independent signals over the same
-     price history, combined into one consensus score. Forecast = the empirical distribution of
-     ${backtest.horizon_bars}-bar forward returns → P(up/flat/down). Backtest = walk-forward, no lookahead, TP/SL
+     price history, combined into a single 0–100 score of how bullish they are. Forecast = the empirical distribution of
+     ${backtest.horizon_bars} trading days forward → P(up/flat/down). Backtest = walk-forward, no lookahead, take-profit/stop-loss
      sim with costs. &nbsp; <span class="risknote">Educational only — not financial advice. Paper desk.
      live_trading=false.</span>`;
 
@@ -428,7 +429,7 @@ function render(){
   document.getElementById('foot').innerHTML += `<div style="margin-top:26px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px 20px">
     <div style="font-family:var(--font-d);font-size:12px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:10px">How to read this terminal</div>
     <div style="font-family:var(--font-m);font-size:12px;color:var(--muted);line-height:1.7">
-      <b style="color:var(--fg)">What it does.</b> Every cycle it scans ~${results.length} markets (equities, crypto, futures). For each, it runs seven separate signals over the real price history, folds them into one consensus score, maps the market structure, and draws a probability cone conditioned on the signal — what happened historically when the signals made this same call. It ranks everything by conviction — or by trailing backtest profit factor — and tells you honestly whether the read has an edge.
+      <b style="color:var(--fg)">What it does.</b> Every cycle it scans ~${results.length} markets (equities, crypto, futures). For each, it runs seven separate signals over the real price history, folds them into a single 0–100 score of how bullish they are, maps the market structure, and draws a probability cone conditioned on the signal — what happened historically when the signals made this same call. It ranks everything by conviction — or by trailing backtest profit factor — and tells you honestly whether the read has an edge.
       <br><br>
       <b style="color:var(--fg)">Reading a row.</b> <b style="color:var(--fg)">Bias</b> = the confidence-weighted consensus (how bullish the seven signals are, 0–100%). <b style="color:var(--fg)">Setup</b> = LONG / SHORT / HOLD with its reward:risk. <b style="color:var(--fg)">Conviction</b> = 0–100, this setup's empirical edge — how often the same call historically resolved in its favor (50 = coin flip, no edge). <b style="color:var(--fg)">Structure</b> = trend ↗ / gap / key level / liquidity sweep tags.
       <br><br>

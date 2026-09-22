@@ -356,10 +356,10 @@ def ensemble(bars, k, u=None):
     else:
         push("Vol Regime", 0.0, "no ATR")
 
-    # 5) Volume — OBV 10-bar slope, z-scored
+    # 5) Volume — OBV 10-day slope, z-scored
     if len(obv) >= 18:
         slopes = [(obv[i] - obv[i - 10]) / (obv[i - 10] or 1) for i in range(10, len(obv))]
-        push("Volume", _zlast(slopes), f"OBV 10-bar slope {obv_slope:+.3f}")
+        push("Volume", _zlast(slopes), f"OBV 10-day slope {obv_slope:+.3f}")
     else:
         push("Volume", 0.0, "insufficient bars")
 

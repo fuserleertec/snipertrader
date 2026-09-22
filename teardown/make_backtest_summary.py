@@ -55,10 +55,10 @@ def config_trades(feats, raw, threshold, horizon, gate, rr_mode, cost_r, split=N
 
 
 def human_config(tag, threshold, horizon, gate, rr_mode, cost_r):
-    """Human-readable label for one backtest row.  The cryptic params (consensus
-    threshold, hold horizon, trend gate) are constant across the table and are
-    explained in the caption under it, so the row label only carries what actually
-    differs between rows: timeframe, exit rule, and round-trip cost."""
+    """Human-readable label for one backtest row.  The consensus threshold and
+    hold horizon are spelled out in the caption under the table, so the row label
+    only carries what actually differs between rows: timeframe, exit rule, and
+    round-trip cost."""
     tf = "Daily" if tag == "1d" else "Intraday 1h"
     exit_ = "fixed 2:1 R:R" if rr_mode == "fixed2" else "structure stop/target"
     cost = "no cost" if cost_r == 0.0 else f"{cost_r}R round-trip"
