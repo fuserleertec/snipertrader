@@ -208,7 +208,7 @@
     <button class="fbtn" data-f="futures" onclick="setFilter('futures')">Futures <span class="cnt"></span></button>
     <span class="lbl" style="margin-left:14px">Sort</span>
     <button class="sbtn active" data-s="conviction" onclick="setSort('conviction')">Conviction</button>
-    <button class="sbtn" data-s="edge" onclick="setSort('edge')">Edge (trailing PF)</button>
+    <button class="sbtn" data-s="edge" onclick="setSort('edge')">Edge (out-of-sample)</button>
     <button class="refresh-btn" id="refreshBtn" onclick="refreshData()" title="Refresh live data"><span class="rf-icon">↻</span> <span class="rf-label">REFRESH</span></button>
   </div>
   <div class="board" id="board"></div>
@@ -299,7 +299,7 @@ function render(){
   const list = filteredResults();
   updateFilterCounts();
   document.getElementById('board').innerHTML =
-    `<div class="row head"><span>#</span><span>Symbol</span><span>Last</span><span>Chg</span><span>Bias</span><span>Setup</span><span>${SORT==='edge'?'Trailing PF (n≥'+MIN_TRADES+')':'Conviction'}</span><span>Structure</span><span></span></div>` +
+    `<div class="row head"><span>#</span><span>Symbol</span><span>Last</span><span>Chg</span><span>Bias</span><span>Setup</span><span>${SORT==='edge'?'PF · out-of-sample (n≥'+MIN_TRADES+')':'Conviction'}</span><span>Structure</span><span></span></div>` +
     list.map((r,i)=>rowHtml(r,i)+detailHtml(r,i)).join('');
 
   // stats
@@ -379,7 +379,7 @@ function render(){
       <br><br>
       <b style="color:var(--fg)">Ensemble Health (02)</b> is the honest scoreboard: a walk-forward backtest of the actual signals — win rate, expectancy, profit factor, best/worst names, and a plain verdict — so you can see whether the read works net of costs. <b style="color:var(--fg)">Drop Audit (03)</b> lists the names scanned but that didn't clear the bar, shown in the open instead of hidden.
       <br><br>
-      <b style="color:var(--fg)">Sort.</b> <b style="color:var(--fg)">Conviction</b> ranks by the setup's historical edge; <b style="color:var(--fg)">Edge (trailing PF)</b> ranks by in-sample trailing profit factor — but only names with ≥30 trades count, and the sample size is shown, so a 4-trade fluke can't top the list.
+      <b style="color:var(--fg)">Sort.</b> <b style="color:var(--fg)">Conviction</b> ranks by the setup's historical edge; <b style="color:var(--fg)">Edge (out-of-sample)</b> ranks by profit factor on the recent period only (post mid-2025), not the full 2-year window — so a name can't top the list on old performance that may have stopped working. Only names with ≥30 recent trades count, and the sample size is shown.
     </div>
   </div>`;
 
@@ -401,8 +401,8 @@ let openRow = -1;
 // ── asset-class filter ──
 let FILTER = 'all';
 let SORT = 'conviction';
-const EDGE_PF = (DATA.trade_backtest && DATA.trade_backtest.per_symbol_pf) || {};
-const EDGE_N = (DATA.trade_backtest && DATA.trade_backtest.per_symbol_n) || {};
+const EDGE_PF = (DATA.trade_backtest && DATA.trade_backtest.per_symbol_pf_oos) || {};
+const EDGE_N = (DATA.trade_backtest && DATA.trade_backtest.per_symbol_n_oos) || {};
 const MIN_TRADES = (DATA.trade_backtest && DATA.trade_backtest.min_trades) || 30;
 function edgeDisplay(r){
   const n = EDGE_N[r.symbol] || 0;

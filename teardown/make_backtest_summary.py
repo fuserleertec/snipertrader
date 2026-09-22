@@ -28,7 +28,7 @@ def pf(rs):
     return round(w / l, 3) if l > 0 else None
 
 
-def config_trades(feats, raw, threshold, horizon, gate, rr_mode, cost_r):
+def config_trades(feats, raw, threshold, horizon, gate, rr_mode, cost_r, split=None):
     out = []
     for sym, snap in feats.items():
         bars = raw[sym]["bars"]
@@ -41,6 +41,12 @@ def config_trades(feats, raw, threshold, horizon, gate, rr_mode, cost_r):
                 if d == "LONG" and s["trend"] != "up":
                     continue
                 if d == "SHORT" and s["trend"] != "down":
+                    continue
+            if split is not None:
+                t = bars[s["i"]]["t"]
+                if split == "early" and t >= _SPLIT_EPOCH:
+                    continue
+                if split == "late" and t < _SPLIT_EPOCH:
                     continue
             r = sim_trade(bars, s, d, horizon, rr_mode)
             if r is not None:
@@ -73,6 +79,21 @@ def headline(feats, raw, threshold, horizon, gate, rr_mode, cost_r, tag):
         "per_symbol_pf": {s: pf(rl) for s, rl in syms.items() if pf(rl) is not None},
         "per_symbol_n": {s: len(rl) for s, rl in syms.items() if pf(rl) is not None},
     }
+
+
+# ---- catalyst: earnings-recency gate (point-in-time) ----
+def oos_per_symbol(feats, raw, threshold=0.70, horizon=20, rr_mode="fixed2", cost_r=0.05):
+    """Per-symbol PF + trade count on the OUT-OF-SAMPLE (late) period only — the
+    honest ranking key for the 'Edge' sort.  Same config as configs[1] (daily
+    fixed2 @0.05R), split at _SPLIT_EPOCH so a name can't top the list on old
+    performance that may have stopped working."""
+    tr = config_trades(feats, raw, threshold, horizon, "none", rr_mode, cost_r, split="late")
+    syms = {}
+    for sym, _, r in tr:
+        syms.setdefault(sym, []).append(r)
+    pf_oos = {s: pf(rl) for s, rl in syms.items() if pf(rl) is not None}
+    n_oos = {s: len(rl) for s, rl in syms.items() if pf(rl) is not None}
+    return pf_oos, n_oos
 
 
 # ---- catalyst: earnings-recency gate (point-in-time) ----
@@ -177,6 +198,7 @@ configs = [
 ]
 per_symbol_pf = (configs[1] or {}).pop("per_symbol_pf", {})   # daily fixed2 @0.05R covers the full universe
 per_symbol_n = (configs[1] or {}).pop("per_symbol_n", {})
+per_symbol_pf_oos, per_symbol_n_oos = oos_per_symbol(feats_d, raw_d)
 
 
 def _pf(x):
@@ -213,6 +235,8 @@ summary = {
     "configs": configs,
     "per_symbol_pf": per_symbol_pf,
     "per_symbol_n": per_symbol_n,
+    "per_symbol_pf_oos": per_symbol_pf_oos,
+    "per_symbol_n_oos": per_symbol_n_oos,
     "min_trades": 30,
     "verdict": verdict,
 }
