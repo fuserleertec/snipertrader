@@ -9,6 +9,8 @@
 // read-only FS except /tmp) keyed by run window to avoid hammering upstreams.
 
 const https = require('https');
+const fs = require('fs');
+const path = require('path');
 const { convictionScore, tierOf, TIER_META, computeLevels } = require('../_lib/recon/engine');
 const { insiderFor, insiderStrength } = require('../_lib/recon/insider');
 const { congressionalRecent, congressionalStrength } = require('../_lib/recon/congressional');
@@ -25,6 +27,35 @@ const CACHE_TTL_MS = 30 * 60 * 1000;
 
 // In-memory cache (module scope survives warm starts on a given instance)
 let _cache = { ts: 0, payload: null };
+
+// Persisted snapshot — mirrors prop/store.js. A serverless function can't rewrite
+// the git repo at runtime, so the committed `data/recon.json` is the cold-start
+// fallback (kept fresh by the cron/GH-Actions/bot push) and `/tmp` is the
+// per-instance mirror. `readDiskCache` reads /tmp first (freshest on a warm
+// instance), then the committed file — so a cold start serves a real snapshot in
+// ~ms instead of blocking ~40s on a live 360-symbol scan (and never 504s).
+const ROOT = path.join(__dirname, '..', '..');
+const DATA_PATH = path.join(ROOT, 'data', 'recon.json');
+const TMP_CACHE = '/tmp/recon_cache.json';
+
+function readDiskCache() {
+  let data = null;
+  if (fs.existsSync(TMP_CACHE)) {
+    try { data = JSON.parse(fs.readFileSync(TMP_CACHE, 'utf8')); } catch (_) { data = null; }
+  }
+  if (!data && fs.existsSync(DATA_PATH)) {
+    try { data = JSON.parse(fs.readFileSync(DATA_PATH, 'utf8')); } catch (_) { data = null; }
+  }
+  if (!data || !Array.isArray(data.picks)) return null;
+  return data;
+}
+
+function writeDiskCache(payload) {
+  try { fs.writeFileSync(TMP_CACHE, JSON.stringify(payload)); } catch (_) {}
+  try { fs.writeFileSync(DATA_PATH, JSON.stringify(payload, null, 2)); } catch (_) {}
+}
+
+let _refreshing = false; // prevent concurrent background refreshes
 
 function gjson(url, headers = UA, timeoutMs = 20000) {
   return new Promise((resolve, reject) => {
@@ -458,10 +489,34 @@ function health() {
 }
 
 module.exports = async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
   try {
-    const payload = await run();
+    // 1) Warm in-memory cache (<30 min) → fresh + fast.
+    if (_cache.payload && Date.now() - _cache.ts < CACHE_TTL_MS) {
+      res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate');
+      return res.json(_cache.payload);
+    }
+    // 2) Cold start: serve the last persisted snapshot instantly and kick off a
+    //    best-effort background refresh. Turns a ~40s cold scan into a sub-second
+    //    load; the payload carries `stale:true` + generatedAt so the UI can show
+    //    "as of …". On the long-lived local server the refresh warms `_cache`;
+    //    on Vercel it may be frozen after response (fine — the cron keeps the
+    //    committed snapshot fresh).
+    const snapshot = readDiskCache();
+    if (snapshot) {
+      snapshot.stale = true;
+      snapshot.staleNote = 'Served from the last persisted snapshot (see generatedAt); a fresh scan is running.';
+      if (!_refreshing) {
+        _refreshing = true;
+        run(true).then((p) => writeDiskCache(p)).catch(() => {}).finally(() => { _refreshing = false; });
+      }
+      res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=3600');
+      return res.json(snapshot);
+    }
+    // 3) Nothing persisted anywhere (first deploy) → full live scan.
+    const payload = await run(true);
+    writeDiskCache(payload);
     res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate');
-    res.setHeader('Access-Control-Allow-Origin', '*');
     res.json(payload);
   } catch (e) {
     res.status(500).json({ error: String(e.message || e) });

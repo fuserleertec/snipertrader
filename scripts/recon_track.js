@@ -36,6 +36,7 @@ const UA = { 'User-Agent': 'Mozilla/5.0 (snipertrader.ai track loop)' };
 const REPO = path.resolve(__dirname, '..');
 const HISTORY = path.join(REPO, 'data', 'recon_history.json');
 const REPORT = path.join(REPO, 'data', 'recon_track_report.json');
+const RECON = path.join(REPO, 'data', 'recon.json');
 const HORIZONS = [1, 5, 20];
 
 function getJSON(url, timeoutMs = 20000) {
@@ -88,6 +89,9 @@ function round6(x) { return Math.round(Number(x) * 1e6) / 1e6; }
 // that carry a decision (BUY/HOLD/SELL) + an entry price.
 async function fetchCandidates() {
   const d = await getJSON(PICK_URL, 90000); // cold Vercel cache runs a fresh ~30-60s scan — give it headroom
+  // Persist the full picks payload as the committed cold-start fallback for
+  // /api/recon/picks (data/recon.json). Best-effort — mirrors the refresh cron.
+  try { fs.writeFileSync(RECON, JSON.stringify(d, null, 2)); } catch (_) {}
   const out = [];
   for (const p of d.picks || []) {
     out.push({ symbol: p.symbol, assetType: 'stock', signal: (p.decision && p.decision.signal) || 'HOLD', entry: round6(p.close), conviction: round2(p.score || 0) });
@@ -193,7 +197,7 @@ function buildReport(history, now, benchNow) {
 }
 
 function gitPush() {
-  execSync('git add data/recon_history.json data/recon_track_report.json', { cwd: REPO });
+  execSync('git add data/recon_history.json data/recon_track_report.json data/recon.json', { cwd: REPO });
   let hasChanges = true;
   try { execSync('git diff --cached --quiet', { cwd: REPO }); hasChanges = false; } catch (_) { hasChanges = true; }
   if (!hasChanges) { console.log('no changes to commit'); return; }

@@ -14,6 +14,8 @@ const fs = require('fs');
 const path = require('path');
 
 const CACHE_FILE = '/tmp/recon_cache.json';
+const ROOT = path.join(__dirname, '..', '..');
+const DATA_PATH = path.join(ROOT, 'data', 'recon.json');
 
 module.exports = async (req, res) => {
   const token = req.query && req.query.token;
@@ -23,7 +25,11 @@ module.exports = async (req, res) => {
   }
   try {
     const payload = await run(true);
+    // Persist to /tmp (always) AND the committed repo file (works on local dev /
+    // GH Actions; best-effort on Vercel where the FS is read-only). Mirrors
+    // prop/store.js so /api/recon/picks has a cold-start fallback.
     try { fs.writeFileSync(CACHE_FILE, JSON.stringify(payload)); } catch (_) {}
+    try { fs.writeFileSync(DATA_PATH, JSON.stringify(payload, null, 2)); } catch (_) {}
     res.json({ ok: true, picks: payload.picks.length, generatedAt: payload.generatedAt });
   } catch (e) {
     res.status(500).json({ error: String(e.message || e) });
