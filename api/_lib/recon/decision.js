@@ -22,6 +22,7 @@ function decide(c, assetType) {
   const conv = clamp(c.score || 0, 0, 100);
   const volumePass = !!(c.confirmation && c.confirmation.pass);
   const catalyst = c.catalyst && Number.isFinite(c.catalyst.score) ? clamp(c.catalyst.score, 0, 100) : 0;
+  const catalystDirection = (c.catalyst && c.catalyst.direction) || null;
   const dumpTriggered = !!(c.dumpSignals && c.dumpSignals.length);
 
   // Order flow: crypto uses taker-buy as a proxy; stocks use the KEY-GATED
@@ -53,6 +54,10 @@ function decide(c, assetType) {
 
   const convPositive = conv >= 70;
   const catalystMet = catalyst >= 50;
+  // Bull-trap guard (quality gate 5): bullish chart + bearish catalyst headline.
+  // The bearish news already drives `catalyst` < 50 (blocking BUY), so this flag
+  // is surfaced for transparency rather than as an independent gate.
+  const bullTrap = catalystDirection === 'bear' && convPositive;
 
   let signal = 'HOLD';
   if (dumpTriggered || (!convPositive && !volumePass)) {
@@ -75,6 +80,8 @@ function decide(c, assetType) {
       catalyst: round2(catalyst), whale: null
     },
     thresholdsMet: { conviction: convPositive, catalyst: catalystMet, volume: volumePass, orderFlow: null, whale: null },
+    catalystDirection,
+    bullTrap,
     dumpTriggered,
     simulated: true
   };

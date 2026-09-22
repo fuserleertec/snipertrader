@@ -1,29 +1,54 @@
 'use strict';
 // api/_lib/recon/catalyst.js
 // ---------------------------------------------------------------------------
-// Layer 3.4 — catalyst scoring (0-100), key-less sources only:
-//   + Google News RSS headline keyword classification (dominant-event scoring)
-//   + SEC Form 4 insider strength (passed in)
-//   + GitHub commit recency (crypto, small curated repo map)
-// 13F institutional positions, short interest, Discord, and on-chain whale
-// tracking are KEY-GATED → reported as unavailable (0 points), never fabricated.
+// Layer 3.4 — DIRECTIONAL catalyst scoring (0-100), key-less sources only:
+//   + Google News RSS headline classification — now scored by DIRECTION. A
+//     bullish catalyst event adds points; a bearish one subtracts. So the
+//     system reads *which way* the catalyst points, not merely that one exists
+//     (the prior bug: "FDA rejects drug" scored the same +30 as "FDA approves").
+//   + SEC Form 4 insider strength (passed in, buy-side scaled to +20)
+//   + GitHub commit recency (crypto, small curated repo map; +10)
+// 13F, short interest, Discord, and on-chain whale tracking are KEY-GATED →
+// reported as unavailable (0 points), never fabricated.
+//
+// Ceilings (directional, honest): stock = bull event 40 + insider 20 = 60;
+// crypto = bull event 40 + github 10 = 50. This makes the decision gate
+// (catalyst ≥ 50) REACHABLE, so a BUY can actually fire on a strong
+// directional catalyst + conviction + volume — instead of being mathematically
+// impossible because presence-only scoring topped out at 45/40 < 50.
 // ---------------------------------------------------------------------------
 
 const https = require('https');
 
 const CATALYSTS = {
   stock: [
-    { key: 'FDA/approval', pts: 30, re: /\b(fda|approval|approved|clearance|cleared|designation)\b/i },
-    { key: 'earnings-beat', pts: 30, re: /\b(earnings|profit|revenue)\b[^.]{0,60}\b(beat|beats|top|surge|soar)\b/i },
-    { key: 'contract-win', pts: 30, re: /\b(contract|awarded|selected|wins?|deal)\b/i },
-    { key: 'partnership', pts: 15, re: /\b(partnership|collaboration|teams? up|alliance)\b/i }
+    { key: 'FDA/approval', pts: 40, re: /\b(fda|approval|approved|clearance|cleared|designation)\b/i },
+    { key: 'earnings', pts: 40, re: /\b(earnings|quarterly results|revenue|profit|guidance)\b/i },
+    { key: 'contract-win', pts: 40, re: /\b(contract|awarded|selected|wins?|backlog)\b/i },
+    { key: 'partnership', pts: 20, re: /\b(partnership|collaborat\w*|teams? up|alliance|integration)\b/i },
+    { key: 'analyst-action', pts: 20, re: /\b(upgrade[sd]?|downgrade[sd]?|price target|initiat\w*|rating)\b/i }
   ],
   crypto: [
-    { key: 'exchange-listing', pts: 30, re: /\b(listing|listed|to be listed|new listing|trading pair)\b/i },
-    { key: 'upgrade-mainnet', pts: 20, re: /\b(upgrade|mainnet|hard fork|testnet|network launch)\b/i },
-    { key: 'partnership', pts: 15, re: /\b(partnership|collaboration|integration|integrates)\b/i }
+    { key: 'exchange-listing', pts: 40, re: /\b(listing|listed|to be listed|new listing|trading pair|delist\w*)\b/i },
+    { key: 'upgrade-mainnet', pts: 30, re: /\b(upgrade|mainnet|hard fork|testnet|network launch)\b/i },
+    { key: 'partnership', pts: 20, re: /\b(partnership|collaborat\w*|integration|integrates|adopt\w*)\b/i }
   ]
 };
+
+// Direction lexicon — count bullish vs bearish terms per headline, majority wins.
+// A heuristic (documented, not a sentiment model); conservative enough that a
+// headline with no directional vocabulary scores 'neutral' rather than guessing.
+const BULL_RE = /\b(beats?\b|tops\b|surges?\b|soars?\b|wins?\b|won\b|approved|approval|cleared|clearance|upgrade[sd]?|bullish|rall(?:y|ies|ied)|record (?:high|profit|revenue)|awarded|selected|outperform|raises?\b|raised|strong|jumps?\b|climbs?\b|gains?\b|partnership|collaborat\w*|alliance|listing|listed|mainnet|launch\w*|adopt\w*|integrat\w*|breakthrough|positive|buyback|buyout|takeover)\b/i;
+
+const BEAR_RE = /\b(miss(?:es|ed)?\b|drop[sd]?\b|plunges?\b|falls?\b|fell\b|reject[sd]?|denies?\b|denied|downgrade[sd]?|bearish|lawsuit|probe|investigat\w*|halt[sd]?|delist\w*|bankrupt\w*|fraud|loss(?:es)?\b|warn\w*|slump\w*|tumbles?\b|crash|recall\b|weak|negative|sell[ -]?off|downturn|delay[sd]?|suspension|scam|exploit|hack\w*|breach\b|guidance cut|below expectations|disappoint\w*|decline[sd]?)\b/i;
+
+function polarity(text) {
+  const b = (text.match(BULL_RE) || []).length;
+  const r = (text.match(BEAR_RE) || []).length;
+  if (b > r) return 'bull';
+  if (r > b) return 'bear';
+  return 'neutral';
+}
 
 // Curated repo map for major coins (GitHub commit-recent proxy). Unmapped = null.
 const GITHUB_MAP = {
@@ -63,19 +88,34 @@ async function newsTitles(query) {
   }
 }
 
-// Classify titles against the catalyst table → dominant event points (no summing,
-// to avoid inflating a single story across near-duplicate headlines).
+// Classify titles against the catalyst table → DIRECTIONAL dominant event.
+// Each detected event takes the majority polarity of the headlines that matched
+// it; bullish → +pts, bearish → −pts, tie → 0 (ambiguous catalyst isn't a
+// catalyst). The dominant event is the single largest-magnitude one (no summing,
+// to avoid inflating one story across near-duplicate headlines). `direction` is
+// the aggregate headline polarity (majority of non-neutral), used as the
+// bull/bear veto downstream.
 function classifyNews(titles, assetType) {
   const table = CATALYSTS[assetType] || [];
-  let best = { key: null, pts: 0 };
+  const pols = titles.map(polarity);
+  const nBull = pols.filter(p => p === 'bull').length;
+  const nBear = pols.filter(p => p === 'bear').length;
+  const direction = nBull > nBear ? 'bull' : (nBear > nBull ? 'bear' : 'neutral');
+
+  let best = { key: null, pts: 0, dir: 'neutral' };
   const matched = [];
   for (const c of table) {
-    if (titles.some(t => c.re.test(t))) {
-      matched.push(c.key);
-      if (c.pts > best.pts) best = { key: c.key, pts: c.pts };
-    }
+    const hits = titles.filter(t => c.re.test(t));
+    if (!hits.length) continue;
+    const hp = hits.map(polarity);
+    const hb = hp.filter(p => p === 'bull').length;
+    const hr = hp.filter(p => p === 'bear').length;
+    const dir = hb > hr ? 'bull' : (hr > hb ? 'bear' : 'neutral');
+    matched.push({ key: c.key, dir });
+    const signed = dir === 'bull' ? c.pts : (dir === 'bear' ? -c.pts : 0);
+    if (Math.abs(signed) > Math.abs(best.pts)) best = { key: c.key, pts: signed, dir };
   }
-  return { points: best.pts, dominant: best.key, matched };
+  return { points: best.pts, dominant: best.key, dominantDir: best.dir, direction, matched };
 }
 
 // GitHub recency proxy: any commit in the last 7 days.
@@ -96,19 +136,22 @@ async function githubActive(repo) {
 
 // assetType: 'stock' | 'crypto'. insiderStrength: 0..1 (stocks).
 async function catalystScore({ symbol, assetType = 'stock', insiderStrength = 0 }) {
-  const breakdown = { news: 0, newsDominant: null, insider: 0, github: null, fund13f: null, shortInterest: null };
+  const breakdown = { news: 0, newsDirection: 'neutral', newsDominant: null, newsDominantDir: null, insider: 0, github: null, fund13f: null, shortInterest: null };
   let score = 0;
 
-  // News (dominant single event).
+  // News (directional dominant event).
   const query = assetType === 'crypto' ? `${symbol.replace(/USDT$/, '')} crypto` : `${symbol} stock`;
   const titles = await newsTitles(query);
   const nw = classifyNews(titles, assetType);
-  breakdown.news = nw.points; breakdown.newsDominant = nw.dominant;
+  breakdown.news = nw.points;
+  breakdown.newsDirection = nw.direction;
+  breakdown.newsDominant = nw.dominant;
+  breakdown.newsDominantDir = nw.dominantDir;
   score += nw.points;
 
-  // Insider (stocks) — scale the 0..1 strength to the spec's +15.
+  // Insider (stocks) — scale the 0..1 buy-strength to +20.
   if (assetType === 'stock' && insiderStrength > 0) {
-    breakdown.insider = Math.round(insiderStrength * 15);
+    breakdown.insider = Math.round(insiderStrength * 20);
     score += breakdown.insider;
   }
 
@@ -123,7 +166,11 @@ async function catalystScore({ symbol, assetType = 'stock', insiderStrength = 0 
   }
 
   score = Math.max(0, Math.min(100, Math.round(score)));
-  return { score, min50Met: score >= 50, breakdown };
+  // Overall direction: news leads; a neutral news tape defaults to insider-buy
+  // (bull) if insider buying is present, else neutral.
+  let direction = nw.direction;
+  if (direction === 'neutral' && breakdown.insider > 0) direction = 'bull';
+  return { score, min50Met: score >= 50, direction, breakdown };
 }
 
-module.exports = { catalystScore, classifyNews, GITHUB_MAP };
+module.exports = { catalystScore, classifyNews, polarity, GITHUB_MAP };
