@@ -13,9 +13,9 @@ Three engines:
      each casting a traceable Bull/Neutral/Bear vote with a confidence equal to
      its z-scored signal strength (no hand-tuned divisors).  The "swarm" is the
      honest aggregate of those real votes (NOT random).
-  3. CONE    — volatility-anchored probability: empirical distribution of
-     forward returns over the lookback -> P(bull/base/bear). Not a simulated
-     Monte-Carlo draw.
+  3. CONE    — volatility-anchored probability, CONDITIONAL on the signal: the
+     historical distribution of forward returns when the ensemble made the SAME
+     call (bull/bear/neutral) -> P(bull/base/bear). Not a simulated Monte-Carlo.
 
 Outputs results.json consumed by the HTML prototype.
 """
@@ -29,6 +29,7 @@ PIVOT_K = 3
 FWD_BARS = 5
 MOM_WINDOW = 120   # cross-sectional momentum lookback (daily bars ≈ 6 months)
 MOM_SKIP = 20      # skip the most recent month (Jegadeesh-Titman momentum convention)
+MIN_OBS = 30       # minimum conditional observations before we trust a signal-conditioned bucket
 
 # --------------------------------------------------------------------------- #
 # Indicators (standard definitions)
@@ -399,32 +400,81 @@ def ensemble(bars, k, u=None):
 # --------------------------------------------------------------------------- #
 # CONE — volatility-anchored probability (empirical, not simulated)
 # --------------------------------------------------------------------------- #
-def cone(bars):
+def _bucket_key(cons):
+    """The directional call the terminal makes — the SAME conditioning the
+    backtest uses, so the cone and the backtest tell one story."""
+    return "bull" if cons >= 0.60 else ("bear" if cons <= 0.40 else "neutral")
+
+
+def _condense(rs):
+    """Summarize a bucket of forward returns into {n, bull, base, bear, sigma}.
+    bull/base/bear use the bucket's own half-sigma threshold (a 'notable move')."""
+    n = len(rs)
+    if n == 0:
+        return {"n": 0, "bull": None, "base": None, "bear": None, "sigma": None}
+    mu = sum(rs) / n
+    sd = math.sqrt(sum((x - mu) ** 2 for x in rs) / n)
+    bull = sum(1 for x in rs if x > 0.5 * sd) / n
+    bear = sum(1 for x in rs if x < -0.5 * sd) / n
+    base = 1.0 - bull - bear
+    return {"n": n, "bull": round(bull * 100, 1), "base": round(base * 100, 1),
+            "bear": round(bear * 100, 1), "sigma": round(sd * 100, 2)}
+
+
+def cone(bars, bucket, per_sym=None, pooled=None):
+    """Volatility-anchored probability cone, CONDITIONAL on the signal.
+
+    Replaces the unconditional base rate ('did price rise over 5 bars?') with the
+    decision-relevant question: 'when the ensemble made THIS SAME call historically,
+    what happened?'.  Resolution order: this symbol's own bucket -> the universe-wide
+    bucket -> the symbol's unconditional base rate (all point-in-time, no lookahead).
+    `per_sym`/`pooled` are the condensed {n,bull,base,bear,sigma} maps from
+    _walk_forward.  The +/-1 sigma price band stays name-specific (the symbol's own
+    5-bar volatility) so the cone price still tracks the name.
+    """
     c = bars[-1]["c"]
     atr = atr_series(bars)
     atr_now = atr[-1] if atr else None
-    fr = fwd_returns(bars, FWD_BARS)
-    if not fr or atr_now is None:
+    if atr_now is None:
         return None
-    mu = sum(fr) / len(fr)
-    sd = math.sqrt(sum((x - mu) ** 2 for x in fr) / len(fr))
-    # empirical P(bull/base/bear) over the 5-bar forward-return distribution
-    bull = sum(1 for x in fr if x > 0.5 * sd) / len(fr)
-    bear = sum(1 for x in fr if x < -0.5 * sd) / len(fr)
-    base = 1.0 - bull - bear
-    up = c * (1 + sd)          # 1-sigma up cone
-    dn = c * (1 - sd)          # 1-sigma down cone
+    fr_all = fwd_returns(bars, FWD_BARS)
+    if not fr_all:
+        return None
+    mu_all = sum(fr_all) / len(fr_all)
+    sd_all = math.sqrt(sum((x - mu_all) ** 2 for x in fr_all) / len(fr_all))
+
+    stats, scope = None, "unconditional"
+    if per_sym is not None and per_sym.get(bucket) and per_sym[bucket]["n"] >= MIN_OBS:
+        stats, scope = per_sym[bucket], "symbol"
+    elif pooled is not None and pooled.get(bucket) and pooled[bucket]["n"] >= MIN_OBS:
+        stats, scope = pooled[bucket], "universe"
+
+    if stats is None:
+        bull = sum(1 for x in fr_all if x > 0.5 * sd_all) / len(fr_all)
+        bear = sum(1 for x in fr_all if x < -0.5 * sd_all) / len(fr_all)
+        base = 1.0 - bull - bear
+        n = len(fr_all)
+        bull, base, bear = round(bull * 100, 1), round(base * 100, 1), round(bear * 100, 1)
+    else:
+        bull, base, bear = stats["bull"], stats["base"], stats["bear"]
+        n = stats["n"]
+
+    up = c * (1 + sd_all)          # 1-sigma up cone (name-specific volatility)
+    dn = c * (1 - sd_all)          # 1-sigma down cone
     atr_pct = atr_now / c * 100
     return {
-        "sigma_5d": round(sd * 100, 2),
-        "bull": round(bull * 100, 1),
-        "base": round(base * 100, 1),
-        "bear": round(bear * 100, 1),
+        "sigma_5d": round(sd_all * 100, 2),
+        "bull": bull,
+        "base": base,
+        "bear": bear,
         "up": round(up, 4),
         "down": round(dn, 4),
         "atr": round(atr_now, 4),
         "atr_pct": round(atr_pct, 2),
         "horizon_bars": FWD_BARS,
+        "n": n,
+        "scope": scope,
+        "bucket": bucket,
     }
 
 # --------------------------------------------------------------------------- #
@@ -496,12 +546,16 @@ def conviction(cons, k):
     # round-half-up to match JS Math.round (Python round() is banker's: 42.5 -> 42).
     return int(cons * 100 + 0.5)
 
-def analyze(raw):
+def analyze(raw, cond=None):
     roc_series, _ = cross_sectional(raw, window=MOM_WINDOW, skip=MOM_SKIP)
     latest_rocs = [ser[-1][1] for ser in roc_series.values() if ser]
     med = _median(latest_rocs)
     mad = _median([abs(r - med) for r in latest_rocs])
     u = {"cs_median": med, "cs_mad": mad}
+    if cond is None:
+        cond = _walk_forward(raw)["cond"]
+    per_sym = cond["per_symbol"]
+    pooled = cond["pooled"]
     results = []
     for key, rec in raw.items():
         bars = rec["bars"]
@@ -509,7 +563,7 @@ def analyze(raw):
             continue
         k = structure(bars)
         mf = ensemble(bars, k, u)
-        cn = cone(bars)
+        cn = cone(bars, _bucket_key(mf["consensus"]), per_sym.get(key), pooled)
         cons = mf["consensus"]
         tl = trade_levels(bars, k, cons)
         prev_close = bars[-2]["c"] if len(bars) >= 2 else bars[-1]["c"]
@@ -532,48 +586,69 @@ def analyze(raw):
     results.sort(key=lambda r: (0 if r["trade"]["direction"] != "HOLD" else 1, -r["conviction"]))
     return results
 
-def backtest(raw):
-    """Walk-forward: at each bar (>=60 history), compute the ensemble's directional
-    call, then measure the forward FWD_BARS return.  Aggregates hit rate across the
-    universe — the honest replacement for the dashboard's unsourced 'walk-forward 61%'.
-    Rel Momentum uses point-in-time cross-sectional context (no lookahead)."""
+def _walk_forward(raw):
+    """Single walk-forward pass: at each bar (>=60 history), score the ensemble
+    (point-in-time cross-section, no lookahead), then record the forward FWD_BARS
+    return.  Returns BOTH the naive hit-rate backtest AND the signal-conditioned
+    forward-return buckets for the probability cone — one pass, so the two always agree.
+    """
     roc_series, stats = cross_sectional(raw, window=MOM_WINDOW, skip=MOM_SKIP)
     hits = calls = 0
     per_symbol = {}
+    buckets_per_sym = {}
+    pooled = {"bull": [], "bear": [], "neutral": []}
     for key, rec in raw.items():
         bars = rec["bars"]
-        sh = sc = 0
         closes = [b["c"] for b in bars]
+        sh = sc = 0
+        buckets = {"bull": [], "bear": [], "neutral": []}
         for i in range(60, len(bars) - FWD_BARS):
             window = bars[: i + 1]
             med, mad = stats.get(bars[i]["t"], (0.0, 0.0))
             k = structure(window)
             mf = ensemble(window, k, {"cs_median": med, "cs_mad": mad})
             cons = mf["consensus"]
-            if cons < 0.60 and cons > 0.40:
+            fwd = closes[i + FWD_BARS] / closes[i] - 1.0
+            b = _bucket_key(cons)
+            buckets[b].append(fwd)
+            pooled[b].append(fwd)
+            if 0.40 < cons < 0.60:
                 continue                       # no directional call
-            fwd = closes[i + FWD_BARS] / closes[i] - 1
             call = "bull" if cons >= 0.60 else "bear"
             hit = (call == "bull" and fwd > 0) or (call == "bear" and fwd < 0)
             sc += 1
             sh += 1 if hit else 0
         per_symbol[key] = {"calls": sc, "hits": sh, "hit_rate": round(sh / sc, 3) if sc else None}
+        buckets_per_sym[key] = {b: _condense(v) for b, v in buckets.items()}
         hits += sh
         calls += sc
     return {
-        "universe_hit_rate": round(hits / calls, 3) if calls else None,
-        "total_calls": calls,
-        "per_symbol": per_symbol,
-        "horizon_bars": FWD_BARS,
+        "hit": {
+            "universe_hit_rate": round(hits / calls, 3) if calls else None,
+            "total_calls": calls,
+            "per_symbol": per_symbol,
+            "horizon_bars": FWD_BARS,
+        },
+        "cond": {
+            "per_symbol": buckets_per_sym,
+            "pooled": {b: _condense(v) for b, v in pooled.items()},
+        },
     }
+
+
+def backtest(raw):
+    """Naive walk-forward hit-rate backtest (kept for make_backtest_summary)."""
+    return _walk_forward(raw)["hit"]
 
 def main():
     with open("/Users/snipertrader/snipertrader/teardown/raw_ohlcv.json") as f:
         raw = json.load(f)
-    results = analyze(raw)
-    bt = backtest(raw)
+    wf = _walk_forward(raw)
+    results = analyze(raw, cond=wf["cond"])
+    bt = wf["hit"]
     with open("/Users/snipertrader/snipertrader/teardown/results.json", "w") as f:
-        json.dump({"results": results, "backtest": bt, "as_of": "see raw_ohlcv meta.regularMarketTime"}, f, indent=2)
+        json.dump({"results": results, "backtest": bt, "conditional": wf["cond"],
+                   "as_of": "see raw_ohlcv meta.regularMarketTime"}, f, indent=2)
     # print a compact audit
     for r in results:
         mf = r["ensemble"]
