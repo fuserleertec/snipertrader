@@ -190,10 +190,7 @@
        strongly. It then ranks every market from highest to lowest conviction and, for each, maps out where
        a reasonable entry, a protective stop, and a profit target would sit. Click any row to open the full
        read — the reasoning, the exact levels, and a live chart.</p>
-    <p style="margin:0;color:var(--muted);font-size:13px">Everything here is calculated from real, current
-       market data, refreshed live on the page. <b style="color:var(--gold)">This is an educational study
-       tool — it is not financial advice.</b> &nbsp; <span style="font-family:var(--font-m);font-size:11px">Data as of
-       <span id="asof"></span>.</span></p>
+    <p style="margin:0;color:var(--muted);font-size:13px">Equities and crypto refresh live from public feeds (server-key + key-less). Futures have no live feed, so they show a snapshot (as of <span id="snapasof"></span>). <b style="color:var(--gold)">This is an educational study tool — it is not financial advice.</b> &nbsp; <span style="font-family:var(--font-m);font-size:11px">Data as of <span id="asof"></span>.</span></p>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -283,7 +280,7 @@ function rowHtml(r,i){
   const chgCls = r.chg_pct>=0?'up':'dn';
   return `<div class="row" onclick="toggle(${i})">
     <span class="rk">${i+1}</span>
-    <span class="sym">${dispSym(r.symbol)}<span class="cls">${CLS[r.symbol]||''}${r.source==='LIVE'?' · <span style="color:var(--emerald);font-weight:700">LIVE</span>':''}</span></span>
+    <span class="sym">${dispSym(r.symbol)}<span class="cls">${CLS[r.symbol]||''}${r.source==='LIVE'?' · <span style="color:var(--emerald);font-weight:700">LIVE</span>':' · <span style="color:var(--faint);font-weight:400">SNAP</span>'}</span></span>
     <span class="px">${fmtPx(r.last,r.symbol)}</span>
     <span class="chg ${chgCls}">${r.chg_pct>=0?'+':''}${fmt(r.chg_pct)}%</span>
     <span class="bias"><span class="pct">${mf.consensus_pct}% ${sigLabel(mf.consensus>=0.6?'bull':mf.consensus<=0.4?'bear':'neutral')}</span>
@@ -308,6 +305,7 @@ function render(){
   const holds = list.filter(r=>r.trade.direction==='HOLD').length;
   const asOf = ASOF;
   document.getElementById('asof').textContent = asOf;
+  document.getElementById('snapasof').textContent = DATA.as_of || '—';
   const tb = DATA.trade_backtest;
   const netPF = tb && tb.configs[4] ? tb.configs[4].profit_factor : null;
   const naiveHR = backtest.universe_hit_rate;
