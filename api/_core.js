@@ -239,6 +239,50 @@ function alpacaBars({ symbol, timeframe, limit }) {
   });
 }
 
+/* ── ALPACA futures k-lines (continuous `1!` contracts, e.g. CL1!, ES1!) ──
+   Same key as equities; requires futures-data access on the Alpaca plan. */
+function alpacaFuturesBars({ symbol, timeframe, limit }) {
+  return new Promise((resolve, reject) => {
+    const key = process.env.ALPACA_API_KEY, sec = process.env.ALPACA_SECRET_KEY;
+    if (!key || !sec) return reject(new Error('Alpaca credentials not configured — set ALPACA_API_KEY and ALPACA_SECRET_KEY'));
+    const tf = ALPACA_TF[timeframe] || '1Day';
+    const sym = String(symbol || '').toUpperCase();
+    const lim = Math.max(1, Math.min(MAX_ALPACA, parseInt(limit, 10) || MAX_ALPACA));
+    const lookback = (ALPACA_TF_MS[tf] || 86400e3) * lim * 3;
+    const start = new Date(Date.now() - lookback).toISOString();
+    const q = `symbols=${encodeURIComponent(sym)}&timeframe=${tf}&limit=${lim}&start=${encodeURIComponent(start)}`;
+    const req = https.request({
+      hostname: 'data.alpaca.markets',
+      path: `/v1beta3/futures/us/bars?${q}`,
+      method: 'GET',
+      headers: { 'Apca-Api-Key-Id': key, 'Apca-Api-Secret-Key': sec, 'Accept': 'application/json' }
+    }, res => {
+      let body = '';
+      res.on('data', c => body += c);
+      res.on('end', () => {
+        if (res.statusCode >= 400) {
+          let m = 'Alpaca futures HTTP ' + res.statusCode;
+          try { const e = JSON.parse(body); if (e && (e.message || e.error)) m = e.message || e.error; } catch (_) {}
+          return reject(new Error(m));
+        }
+        try {
+          const j = JSON.parse(body);
+          const arr = (j.bars && j.bars[sym]) || [];
+          const out = arr.map(b => ({
+            timestamp: b.timestamp || (typeof b.t === 'string' ? b.t : new Date((b.t || 0) * 1000).toISOString()),
+            open: +(b.o != null ? b.o : b.open), high: +(b.h != null ? b.h : b.high),
+            low: +(b.l != null ? b.l : b.low), close: +(b.c != null ? b.c : b.close), volume: +(b.v != null ? b.v : b.volume)
+          }));
+          resolve(out);
+        } catch (e) { reject(new Error('Alpaca futures parse error: ' + e.message)); }
+      });
+    });
+    req.on('error', e => reject(new Error('Alpaca futures request failed: ' + e.message)));
+    req.setTimeout(15000, () => req.destroy(new Error('Alpaca futures timeout')));
+    req.end();
+  });
+}
+
 /* ── FORECAST handler ── */
 function buildForecast(req, res) {
   let body = '';
@@ -282,7 +326,9 @@ function buildStocks(req, res, url) {
   const symbol = (url.searchParams.get('symbol') || 'AAPL').trim();
   const timeframe = url.searchParams.get('timeframe') || url.searchParams.get('interval') || '1h';
   const limit = Math.max(1, Math.min(MAX_ALPACA, parseInt(url.searchParams.get('limit') || '512', 10) || MAX_ALPACA));
-  alpacaBars({ symbol, timeframe, limit })
+  const isFutures = /1!$/.test(symbol.toUpperCase());
+  const fetcher = isFutures ? alpacaFuturesBars : alpacaBars;
+  fetcher({ symbol, timeframe, limit })
     .then(out => { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(out)); })
     .catch(e => { res.writeHead(502, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: String(e && e.message || e) })); });
 }
@@ -849,7 +895,7 @@ module.exports = {
   MAX_CTX, MAX_BARS,
   mulberry32, gauss, genHistory, genPaths, computeBands, computeStats, runModel, runModelFull,
   computeSwarm, buildConfluence, detectICT, SWARM_ARCHETYPES,
-  alpacaBars, alpacaGet, buildForecast, buildStocks, buildChat, buildPropAccount,
+  alpacaBars, alpacaFuturesBars, alpacaGet, buildForecast, buildStocks, buildChat, buildPropAccount,
   ema, sma, rsi, macd, calcATR, scaleForScore, heuristicAnalysis, syntheticBars, buildDailyContext,
   normalizeDailyPayload, buildDailyPrompt, runDailyAnalysis, buildReviewLoop,
   buildPreflight, NEURAL_STATES, GATE_KEYS,

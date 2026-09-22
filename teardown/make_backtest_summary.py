@@ -54,6 +54,17 @@ def config_trades(feats, raw, threshold, horizon, gate, rr_mode, cost_r, split=N
     return out
 
 
+def human_config(tag, threshold, horizon, gate, rr_mode, cost_r):
+    """Human-readable label for one backtest row.  The cryptic params (consensus
+    threshold, hold horizon, trend gate) are constant across the table and are
+    explained in the caption under it, so the row label only carries what actually
+    differs between rows: timeframe, exit rule, and round-trip cost."""
+    tf = "Daily" if tag == "1d" else "Intraday 1h"
+    exit_ = "fixed 2:1 R:R" if rr_mode == "fixed2" else "structure stop/target"
+    cost = "no cost" if cost_r == 0.0 else f"{cost_r}R round-trip"
+    return f"{tf} · {exit_} · {cost}"
+
+
 def headline(feats, raw, threshold, horizon, gate, rr_mode, cost_r, tag):
     tr = config_trades(feats, raw, threshold, horizon, gate, rr_mode, cost_r)
     rs = [r for _, _, r in tr]
@@ -68,7 +79,7 @@ def headline(feats, raw, threshold, horizon, gate, rr_mode, cost_r, tag):
         syms.setdefault(sym, []).append(r)
     pfs = sorted(((s, pf(rl)) for s, rl in syms.items() if pf(rl) is not None), key=lambda x: x[1])
     return {
-        "config": f"{tag} thr={threshold} hz={horizon} {gate} {rr_mode} cost={cost_r}R",
+        "config": human_config(tag, threshold, horizon, gate, rr_mode, cost_r),
         "n": n,
         "win_rate": round(len(wins) / n * 100, 1),
         "expectancy_R": round(sum(rs) / n, 3),

@@ -220,6 +220,9 @@ async function fetchBinance(sym, limit = 1000){ const r = await fetch(`https://d
 async function fetchAlpaca(sym, limit = 512){ const r = await fetch(`/api/stocks/klines?symbol=${sym}&timeframe=1d&limit=${limit}`);
   if(!r.ok){ let m = 'Stocks API HTTP '+r.status; try{const e = await r.json(); if(e && e.error) m = e.error;}catch(_){} throw new Error(m); }
   return (await r.json()).map(b=>({o:+b.open,h:+b.high,l:+b.low,c:+b.close,v:+b.volume})); }
+async function fetchFutures(sym, limit = 512){ const r = await fetch(`/api/stocks/klines?symbol=${sym}1!&timeframe=1d&limit=${limit}`);
+  if(!r.ok){ let m = 'Futures API HTTP '+r.status; try{const e = await r.json(); if(e && e.error) m = e.error;}catch(_){} throw new Error(m); }
+  return (await r.json()).map(b=>({o:+b.open,h:+b.high,l:+b.low,c:+b.close,v:+b.volume})); }
 
 /* Fetch + analyze the whole universe, returning {results, sources, liveCount}.
    `cond` = the conditional-cone buckets (per_symbol + pooled), passed through to analyzeSymbol. */
@@ -227,7 +230,8 @@ async function fetchLive(cond){
   const out = [], sources = {}, barMap = {};
   await Promise.all([
     ...CRYPTO.map(async sym=>{ try{ barMap[sym] = await fetchBinance(sym); sources[sym] = 'binance'; }catch(e){ sources[sym] = 'error'; } }),
-    ...EQUITY.map(async sym=>{ try{ barMap[sym] = await fetchAlpaca(sym); sources[sym] = 'alpaca'; }catch(e){ sources[sym] = 'error'; } })
+    ...EQUITY.map(async sym=>{ try{ barMap[sym] = await fetchAlpaca(sym); sources[sym] = 'alpaca'; }catch(e){ sources[sym] = 'error'; } }),
+    ...FUTURES.map(async sym=>{ try{ barMap[sym] = await fetchFutures(sym); sources[sym] = 'alpaca-futures'; }catch(e){ sources[sym] = 'error'; } })
   ]);
   const rocs = [];
   for(const sym of ALL_SYMBOLS){ const bars = barMap[sym]; if(bars && bars.length >= MOM_WINDOW+1) rocs.push(bars[bars.length-1-MOM_SKIP].c/bars[bars.length-1-MOM_WINDOW].c-1); }
