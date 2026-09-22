@@ -249,13 +249,15 @@ def structure(bars):
         sweep = {"dir": "bear", "level": hi_k}
 
     # Key levels
-    # Nearest structural levels (nearest swing low below / high above price)
+    # Nearest structural levels (nearest swing low below / high above price).
+    # null (NOT a 20-bar fallback) when price is at/through the extreme — an
+    # honest "no level" instead of a fabricated one.
     piv_lows = sorted(p[2] for p in piv_l)
     piv_highs = sorted(p[2] for p in piv_h)
     below = [x for x in piv_lows if x < c]
     above = [x for x in piv_highs if x > c]
-    support = max(below) if below else (min(b["l"] for b in bars[-VWAP_N:]))
-    resistance = min(above) if above else (max(b["h"] for b in bars[-VWAP_N:]))
+    support = max(below) if below else None
+    resistance = min(above) if above else None
 
     return {
         "close": c,
@@ -266,8 +268,8 @@ def structure(bars):
         "fvg": fvg,
         "order_block": ob,
         "sweep": sweep,
-        "support": round(support, 4),
-        "resistance": round(resistance, 4),
+        "support": round(support, 4) if support is not None else None,
+        "resistance": round(resistance, 4) if resistance is not None else None,
     }
 
 # --------------------------------------------------------------------------- #
@@ -325,7 +327,7 @@ def ensemble(bars, k, u=None):
     t_dir = (1 if e12 > e26 else -1) + stack          # int in [-2, 2]
     push("Trend", t_dir,
          f"EMA12/26 {'above' if e12 > e26 else 'below'}"
-         + (f", SMA50 {'>' if c > sma50 else '<'} SMA200" if (sma50 and sma200) else ""))
+         + (f", SMA50 {'>' if sma50 > sma200 else '<'} SMA200" if (sma50 and sma200) else ""))
 
     # 2) Rel Momentum — cross-sectional relative strength (vs the universe).
     #    120d lookback, skip 20d (~1mo) — the Jegadeesh-Titman momentum convention,
@@ -361,11 +363,11 @@ def ensemble(bars, k, u=None):
     else:
         push("Volume", 0.0, "insufficient bars")
 
-    # 6) Key Level — ATR-distance to nearest support/resistance
-    if atr_now and atr_now > 0 and k["support"] and k["resistance"]:
-        d_sup = (c - k["support"]) / atr_now
-        d_res = (k["resistance"] - c) / atr_now
-        near = min(abs(d_sup), abs(d_res))
+    # 6) Key Level — ATR-distance to nearest support/resistance (one-sided OK)
+    if atr_now and atr_now > 0 and (k["support"] is not None or k["resistance"] is not None):
+        d_sup = (c - k["support"]) / atr_now if k["support"] is not None else float("inf")
+        d_res = (k["resistance"] - c) / atr_now if k["resistance"] is not None else float("inf")
+        near = min(d_sup, d_res)
         kl = 0.0
         if near <= 2.0:
             kl = (1.0 - near / 2.0) * (1 if d_sup < d_res else -1)
@@ -540,11 +542,22 @@ def trade_levels(bars, k, cons):
 # --------------------------------------------------------------------------- #
 # Analyze all symbols
 # --------------------------------------------------------------------------- #
-def conviction(cons, k):
-    # conviction = the consensus itself.  No separate trend/MSS kicker — Structure
-    # is already one of the ensemble votes, so a kicker would double-count trend.
-    # round-half-up to match JS Math.round (Python round() is banker's: 42.5 -> 42).
-    return int(cons * 100 + 0.5)
+def conviction(cone, trade):
+    """Conviction = the empirical conditional EDGE of this setup (0-100, 50 = no edge).
+
+    Not trend strength.  It answers 'how often did this same call historically resolve
+    in the called direction vs against', from the signal-conditioned cone: p_win =
+    P(notable move in the called direction), p_loss = P(notable move against), and
+    conviction = 50 + (p_win - p_loss)/2.  HOLD (no directional call) -> 50.  Half-up
+    to match JS Math.round."""
+    d = trade["direction"]
+    if d == "HOLD" or cone is None:
+        return 50
+    if d == "LONG":
+        p_win, p_loss = cone["bull"], cone["bear"]
+    else:  # SHORT
+        p_win, p_loss = cone["bear"], cone["bull"]
+    return int(50 + (p_win - p_loss) / 2.0 + 0.5)
 
 def analyze(raw, cond=None):
     roc_series, _ = cross_sectional(raw, window=MOM_WINDOW, skip=MOM_SKIP)
@@ -578,7 +591,7 @@ def analyze(raw, cond=None):
             "ensemble": mf,
             "cone": cn,
             "trade": tl,
-            "conviction": conviction(cons, k),
+            "conviction": conviction(cn, tl),
             "n_bars": len(bars),
         })
     # rank by conviction desc, but HOLD/direction-invalid names sink

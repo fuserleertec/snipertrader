@@ -71,18 +71,27 @@ def headline(feats, raw, threshold, horizon, gate, rr_mode, cost_r, tag):
         "top5": [(s, p) for s, p in pfs[-5:]],
         "bottom5": [(s, p) for s, p in pfs[:5]],
         "per_symbol_pf": {s: pf(rl) for s, rl in syms.items() if pf(rl) is not None},
+        "per_symbol_n": {s: len(rl) for s, rl in syms.items() if pf(rl) is not None},
     }
 
 
 # ---- catalyst: earnings-recency gate (point-in-time) ----
-def _earnings_epochs(sym):
+# Use the CORRECT earnings-release date (8-K Item 2.02, filed within 4 days of the
+# release) instead of the 10-K/10-Q FILING date. Falls back to filing dates where
+# 8-K is absent (foreign filers like TSM use 6-K, not 8-K).
+def _epoch_list(sym, key):
     out = []
-    for d in cat.get(sym, {}).get("earnings_dates", []):
+    for d in cat.get(sym, {}).get(key, []):
         try:
             out.append(int(_t.mktime(_t.strptime(d, "%Y-%m-%d"))))
         except Exception:
             pass
     return sorted(out)
+
+
+def _earnings_epochs(sym):
+    e8 = _epoch_list(sym, "earnings_8k_dates")
+    return e8 if e8 else _epoch_list(sym, "earnings_dates")
 
 
 def _days_since(sym, bars):
@@ -94,7 +103,10 @@ def _days_since(sym, bars):
     return out
 
 
-def drift_run(threshold, horizon, rr_mode, cost_r, max_days=None):
+_SPLIT_EPOCH = int(_t.mktime(_t.strptime("2025-06-01", "%Y-%m-%d")))
+
+
+def drift_run(threshold, horizon, rr_mode, cost_r, max_days=None, split=None):
     trades = []
     for sym, snap in feats_d.items():
         bars = raw_d[sym]["bars"]
@@ -108,6 +120,11 @@ def drift_run(threshold, horizon, rr_mode, cost_r, max_days=None):
                 ds = dsm.get(s["i"])
                 if ds is None or ds > max_days:
                     continue
+            t = bars[s["i"]]["t"]
+            if split == "early" and t >= _SPLIT_EPOCH:
+                continue
+            if split == "late" and t < _SPLIT_EPOCH:
+                continue
             r = sim_trade(bars, s, d, horizon, rr_mode)
             if r is not None:
                 trades.append(r - cost_r)
@@ -125,6 +142,8 @@ bt = backtest(raw_d)
 base = drift_run(0.70, 20, "fixed2", 0.05, None)
 d7 = drift_run(0.70, 20, "fixed2", 0.05, 7)
 d3 = drift_run(0.70, 20, "fixed2", 0.05, 3)
+d7_early = drift_run(0.70, 20, "fixed2", 0.05, 7, "early")
+d7_late = drift_run(0.70, 20, "fixed2", 0.05, 7, "late")
 
 # insider summary (30d window, open-market only)
 tot_buys = sum(v.get("insider", {}).get("buys", 0) for v in cat.values())
@@ -132,11 +151,13 @@ tot_sells = sum(v.get("insider", {}).get("sells", 0) for v in cat.values())
 buy_syms = [v["symbol"] for v in cat.values() if v.get("insider", {}).get("buys", 0) > 0]
 
 if d7.get("pf") and d3.get("pf"):
-    drift_s = (f"post-earnings-filing drift is TENTATIVE — PF {d7['pf']} net at ≤7 days after the "
-               f"earnings filing ({d7['n']} trades) and PF {d3['pf']} at ≤3 days ({d3['n']} trades) "
-               f"vs baseline PF {base['pf']} — in-sample and underpowered, a hypothesis not proven edge")
+    drift_s = (f"post-earnings drift (correct 8-K release date) is PF {d7['pf']} at ≤7 days "
+               f"({d7['n']} trades) and PF {d3['pf']} at ≤3 days ({d3['n']} trades) vs baseline PF {base['pf']} "
+               f"— but it is NOT a stable edge: split at mid-2025, the ≤7-day effect flips from PF {d7_early['pf']} "
+               f"({d7_early['n']} earlier trades) to PF {d7_late['pf']} ({d7_late['n']} recent trades). "
+               f"The apparent edge is a recent-period artifact, not a robust tradeable signal")
 else:
-    drift_s = "post-earnings-filing drift shows no exploitable signal at realistic cost"
+    drift_s = "post-earnings drift shows no exploitable signal at realistic cost"
 
 if buy_syms:
     insider_s = (f"Insider Form 4 (30d): {len(buy_syms)} names show open-market purchases "
@@ -155,6 +176,7 @@ configs = [
     headline(feats_h, raw_h, 0.70, 20, "none", "structure", 0.05, "1h"),
 ]
 per_symbol_pf = (configs[1] or {}).pop("per_symbol_pf", {})   # daily fixed2 @0.05R covers the full universe
+per_symbol_n = (configs[1] or {}).pop("per_symbol_n", {})
 
 
 def _pf(x):
@@ -179,8 +201,8 @@ edge_s = (
 )
 
 verdict = (f"No systematic edge on EITHER timeframe. {edge_s} Catalyst overlays (SEC EDGAR): "
-           f"{drift_s}. {insider_s}. Next: validate the drift out-of-sample with the actual 8-K "
-           f"earnings-release date (not the lagged filing date).")
+           f"{drift_s}. {insider_s}. Remaining gap: futures still have no key-less live feed "
+           f"(snapshot only); equities + crypto are live.")
 
 summary = {
     "naive": {
@@ -190,6 +212,8 @@ summary = {
     },
     "configs": configs,
     "per_symbol_pf": per_symbol_pf,
+    "per_symbol_n": per_symbol_n,
+    "min_trades": 30,
     "verdict": verdict,
 }
 

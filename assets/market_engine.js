@@ -89,10 +89,10 @@ function structure(bars){
   if(last.l<loK && last.c>loK) sweep = {dir:'bull', level:loK}; else if(last.h>hiK && last.c<hiK) sweep = {dir:'bear', level:hiK};
   const lows = pL.map(p=>p.price).sort((a,b)=>a-b), highs = pH.map(p=>p.price).sort((a,b)=>a-b);
   const below = lows.filter(x=>x<c), above = highs.filter(x=>x>c);
-  const support = below.length ? Math.max(...below) : Math.min(...bars.slice(-20).map(b=>b.l));
-  const resistance = above.length ? Math.min(...above) : Math.max(...bars.slice(-20).map(b=>b.h));
+  const support = below.length ? Math.max(...below) : null;
+  const resistance = above.length ? Math.min(...above) : null;
   return {close:c, vwap:vwap==null?null:+vwap.toFixed(4), vwap_pct:vwap==null?null:+((c/vwap-1)*100).toFixed(2),
-    trend, mss, fvg, order_block:ob, sweep, support:+support.toFixed(4), resistance:+resistance.toFixed(4)};
+    trend, mss, fvg, order_block:ob, sweep, support:support==null?null:+support.toFixed(4), resistance:resistance==null?null:+resistance.toFixed(4)};
 }
 
 /* ── ensemble: 7 signals → one consensus (0..1) ── */
@@ -111,7 +111,7 @@ function ensemble(bars, k, u){
   // 1) Trend — EMA12/26 + SMA50/200 stack
   let stack = 0; if(sma50 && sma200){ if(c>sma50 && sma50>sma200)stack=1; else if(c<sma50 && sma50<sma200)stack=-1; }
   const tDir = (e12>e26?1:-1) + stack;
-  push('Trend', tDir, `EMA12/26 ${e12>e26?'above':'below'}${(sma50&&sma200)?`, SMA50 ${c>sma50?'>':'<'} SMA200`:''}`);
+  push('Trend', tDir, `EMA12/26 ${e12>e26?'above':'below'}${(sma50&&sma200)?`, SMA50 ${sma50>sma200?'>':'<'} SMA200`:''}`);
 
   // 2) Rel Momentum — cross-sectional relative strength vs universe. 120d lookback, skip 20d.
   if(n >= MOM_WINDOW+1){ const mom = closes[closes.length-1-MOM_SKIP]/closes[closes.length-1-MOM_WINDOW]-1;
@@ -136,7 +136,7 @@ function ensemble(bars, k, u){
   else push('Volume', 0, 'insufficient bars');
 
   // 6) Key Level — ATR-distance to nearest support/resistance
-  if(atrNow && atrNow>0 && k.support && k.resistance){ const dSup = (c-k.support)/atrNow, dRes = (k.resistance-c)/atrNow, near = Math.min(Math.abs(dSup), Math.abs(dRes));
+  if(atrNow && atrNow>0 && (k.support != null || k.resistance != null)){ const dSup = k.support != null ? (c-k.support)/atrNow : Infinity, dRes = k.resistance != null ? (k.resistance-c)/atrNow : Infinity, near = Math.min(dSup, dRes);
     let kl = 0; if(near<=2) kl = (1-near/2)*(dSup<dRes?1:-1);
     push('Key Level', kl, `${near.toFixed(1)} ATR to S/R`); }
   else push('Key Level', 0, 'no level');
@@ -193,7 +193,13 @@ function tradeLevels(bars, k, cons){
   return {direction, entry, stop, target, rr};
 }
 
-function conviction(cons){ return Math.round(cons*100); }
+function conviction(cone, trade){
+  const d = trade.direction;
+  if(d === 'HOLD' || cone == null) return 50;
+  const pWin = d === 'LONG' ? cone.bull : cone.bear;
+  const pLoss = d === 'LONG' ? cone.bear : cone.bull;
+  return Math.round(50 + (pWin - pLoss) / 2);
+}
 
 function analyzeSymbol(sym, bars, u, cond){
   if(!bars || bars.length < 60) return null;
@@ -204,7 +210,7 @@ function analyzeSymbol(sym, bars, u, cond){
   const cn = cone(bars, bucket, perSym, pooled), tl = tradeLevels(bars, k, mf.consensus);
   const prev = bars[bars.length-2] ? bars[bars.length-2].c : bars[bars.length-1].c, chg = (bars[bars.length-1].c/prev-1)*100;
   return {symbol:sym, yahoo:'', currency:'', last:bars[bars.length-1].c, chg_pct:+chg.toFixed(2),
-    structure:k, ensemble:mf, cone:cn, trade:tl, conviction:conviction(mf.consensus), n_bars:bars.length};
+    structure:k, ensemble:mf, cone:cn, trade:tl, conviction:conviction(cn, tl), n_bars:bars.length};
 }
 
 /* ── data fetchers ── */
@@ -265,7 +271,7 @@ function agentRows(agents){
 }
 
 function earnDaysAgo(cat){
-  const d = cat && cat.earnings_dates && cat.earnings_dates[0];
+  const d = (cat && cat.earnings_8k_dates && cat.earnings_8k_dates[0]) || (cat && cat.earnings_dates && cat.earnings_dates[0]);
   if(!d) return '—';
   const days = Math.round((Date.now() - new Date(d + 'T00:00:00').getTime()) / 86400000);
   return `${d} · ${days}d ago`;

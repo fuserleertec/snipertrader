@@ -223,7 +223,7 @@ function renderReadout(){
     <div><div class="sym">${dispSym(r.symbol)}<span class="cls">${CLS[r.symbol]||''} ${badge}</span></div></div>
     <div><div class="k">Last</div><div class="v">${fmtPx(r.last)}</div></div>
     <div><div class="k">Change</div><div class="v ${chgCls}">${r.chg_pct>=0?'+':''}${fmt(r.chg_pct)}%</div></div>
-    <div><div class="k">Conviction</div><div class="v" style="color:${convClr}">${r.conviction}<small> / 100</small></div></div>
+    <div><div class="k">Conviction</div><div class="v" style="color:${convClr}">${r.conviction}<small> · 50 = no edge</small></div></div>
     <div><div class="k">Setup</div><div class="v ${dirCls}">${dir}${t.rr?' <small>R:R '+t.rr+'</small>':''}</div>
       <div class="biasbar"><div class="b" style="width:${mf.consensus_pct}%"></div><div class="r" style="width:${100-mf.consensus_pct}%"></div></div></div>`;
 
