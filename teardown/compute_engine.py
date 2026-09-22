@@ -668,7 +668,7 @@ def main():
         tl = r["trade"]
         cn = r["cone"] or {}
         print(f"{r['symbol']:10s} {r['last']:>12.4f} {r['chg_pct']:+6.2f}%  conv={r['conviction']:3d}  "
-              f"{tl['direction']:5s} rr={tl['rr']}  swarm={mf['consensus_pct']:5.1f}%  "
+              f"{tl['direction']:5s} rr={tl['rr']}  cons={mf['consensus_pct']:5.1f}%  "
               f"cone B/B/B={cn.get('bull')}/{cn.get('base')}/{cn.get('bear')}  trend={r['structure']['trend']}")
     print(f"\nBACKTEST (walk-forward, {bt['horizon_bars']}-bar horizon): "
           f"hit_rate={bt['universe_hit_rate']} over {bt['total_calls']} calls")

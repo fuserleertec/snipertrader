@@ -166,6 +166,8 @@
 const DATA = JSON.parse(document.getElementById('data').textContent);
 const SNAP_MAP = {}; DATA.results.forEach(r => SNAP_MAP[r.symbol] = r);
 const EDGE_PF = (DATA.trade_backtest && DATA.trade_backtest.per_symbol_pf) || {};
+const EDGE_N = (DATA.trade_backtest && DATA.trade_backtest.per_symbol_n) || {};
+const MIN_TRADES = (DATA.trade_backtest && DATA.trade_backtest.min_trades) || 30;
 let merged = DATA.results.slice();
 let current = null;
 let sources = {};
@@ -229,8 +231,11 @@ function renderReadout(){
 
   const cat = DATA.catalysts && DATA.catalysts[r.symbol];
   const pf = EDGE_PF[r.symbol];
-  const pfCls = pf==null?'':(pf>=1?'pf-pos':'pf-neg');
-  const pfNote = pf==null ? 'no per-name backtest yet' : (pf>=1 ? 'name beat breakeven net of 0.05R cost' : 'name lost money net of 0.05R cost');
+  const n = EDGE_N[r.symbol] || 0;
+  const pfCls = (pf==null || n < MIN_TRADES) ? '' : (pf>=1?'pf-pos':'pf-neg');
+  const pfNote = pf==null ? 'no per-name backtest yet'
+               : (n < MIN_TRADES ? `only ${n} trades — below the ${MIN_TRADES}-trade bar (insufficient sample)`
+               : (pf>=1 ? 'name beat breakeven net of 0.05R cost' : 'name lost money net of 0.05R cost'));
 
   document.getElementById('grid').innerHTML = `
     <div class="dbox">
@@ -272,7 +277,7 @@ function renderReadout(){
     ${catalystBox(cat)}
     <div class="dbox">
       <h4>Edge — trailing backtest (this name)</h4>
-      <div class="pfbox"><span class="pf ${pfCls}">${pf==null?'—':pf.toFixed(2)}</span><span class="note">profit factor</span></div>
+      <div class="pfbox"><span class="pf ${pfCls}">${(pf==null || n < MIN_TRADES)?'—':pf.toFixed(2)}</span><span class="note">profit factor · n=${n}</span></div>
       <div class="lv"><span class="n">basis</span><span class="v fl">daily · fixed 2:1 R:R · 0.05R cost</span></div>
       <div class="lv"><span class="n">read</span><span class="v">${pfNote}</span></div>
       <div style="margin-top:12px;font-family:var(--font-m);font-size:11px;color:var(--faint);line-height:1.6">
