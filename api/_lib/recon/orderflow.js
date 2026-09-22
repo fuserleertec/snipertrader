@@ -110,6 +110,11 @@ async function polygonTrades(symbol) {
 }
 
 // Dispatcher: first available provider wins; otherwise honest unavailable + reasons.
+// Alpaca (free IEX feed, ~1000 trades/session) is tried FIRST because it works on the
+// free tier. Polygon's ticks endpoint (full SIP tape) would be a more complete aggressor
+// signal, but it returns NOT_AUTHORIZED on a free Polygon key — it only kicks in once the
+// key is upgraded to a plan that includes trade-tick history. The source is labeled, so
+// an IEX-only imbalance is never mistaken for full-tape order flow.
 async function stockOrderFlow(symbol) {
   const reasons = [];
   for (const fn of [alpacaTrades, polygonTrades]) {
