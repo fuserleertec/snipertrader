@@ -346,6 +346,16 @@ function renderCrypto(d){
       const dec=c.decision||{};
       const label=String(c.symbol).replace('USDT','');
       const tv='BINANCE:'+c.symbol;
+      const posCell=function(){
+        const p=c.positioning||{};
+        if(p.error||!p.note) return '<span class="dim">—</span>';
+        const parts=[];
+        if(p.fundingRate!=null) parts.push('F '+(p.fundingRate*100).toFixed(2)+'%');
+        if(p.oiChangePct!=null) parts.push('OI '+(p.oiChangePct>0?'+':'')+p.oiChangePct+'%');
+        if(!parts.length) return '<span class="dim">—</span>';
+        const col=(p.flags&&p.flags.indexOf('funding-overheat')>=0)?'var(--red)':((p.fundingAvg<0||p.oiChangePct>5)?'var(--green)':'var(--text3)');
+        return '<span style="color:'+col+'" title="'+esc(p.note)+'">'+parts.join(' · ')+'</span>';
+      };
       return '<tr>'+
         '<td><button class="chartbtn" data-tv="'+esc(tv)+'" data-name="'+esc(label)+'" title="TradingView chart">📈</button><span class="sym">'+esc(label)+'</span> <span class="dim">/USDT</span></td>'+
         '<td>$'+n(c.price)+'</td>'+
@@ -354,10 +364,11 @@ function renderCrypto(d){
         '<td>'+esc(c.setup||'—')+'</td>'+
         '<td>'+n((c.takerBuyRatio||0)*100)+'%</td>'+
         '<td>'+(c.cone&&c.cone.upPct!=null?n(c.cone.upPct)+'%':'—')+'</td>'+
+        '<td>'+posCell()+'</td>'+
         '<td>'+(dec.signal?'<span class="sig '+sigCls(dec.signal)+'">'+esc(dec.signal)+'</span>':'<span class="dim">scanned</span>')+'</td>'+
         '</tr>';
     }).join('');
-    document.getElementById('crypto').innerHTML='<table><thead><tr><th>Symbol</th><th>Price</th><th>RSI</th><th>Score</th><th>Setup</th><th>Taker Buy</th><th>Bullish %</th><th>Signal</th></tr></thead><tbody>'+rows+'</tbody></table>';
+    document.getElementById('crypto').innerHTML='<table><thead><tr><th>Symbol</th><th>Price</th><th>RSI</th><th>Score</th><th>Setup</th><th>Taker Buy</th><th>Bullish %</th><th>Positioning</th><th>Signal</th></tr></thead><tbody>'+rows+'</tbody></table>';
   }
 }
 

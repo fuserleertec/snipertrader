@@ -14,6 +14,7 @@
 const https = require('https');
 const { coneSignal } = require('./kronos_cone');
 const { cryptoDumpSignals } = require('./dump');
+const { positioningFor } = require('./positioning');
 
 // Fixed, liquid USDT universe (deterministic + bounded; no extra discovery call).
 const UNIVERSE = [
@@ -39,6 +40,17 @@ function getJSON(url, timeoutMs = 15000) {
     });
     req.on('error', reject);
     req.setTimeout(timeoutMs, () => req.destroy(new Error('timeout')));
+  });
+}
+
+function mapLimit(items, limit, fn) {
+  return new Promise((resolve) => {
+    const out = new Array(items.length);
+    let i = 0;
+    const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+      while (i < items.length) { const idx = i++; out[idx] = await fn(items[idx], idx); }
+    });
+    Promise.all(workers).then(() => resolve(out));
   });
 }
 
@@ -152,6 +164,26 @@ async function scanCrypto(limit = 24, concurrency = 5) {
     }
   });
   await Promise.all(workers);
+
+  // Positioning enrichment — funding rate + open interest + long/short (Gate.io).
+  // Genuinely leading positioning data, folded in as a bounded, transparent delta.
+  await mapLimit(out, 6, async (a) => {
+    try {
+      const p = await positioningFor(a.symbol);
+      a.positioning = p;
+      a.score = Math.max(0, Math.min(100, a.score + p.delta));
+      if (p.flags.includes('funding-overheat')) {
+        if (a.setup === 'neutral') a.setup = 'overheat-risk';
+        a.dumpSignals = a.dumpSignals || [];
+        a.dumpSignals.push({ level: 'REDUCE', code: 'funding-overheat', msg: 'funding ' + (p.fundingAvg * 100).toFixed(3) + '% — crowded longs (mean-reversion risk)' });
+      } else if (p.fundingAvg < 0 && (a.setup === 'neutral' || a.setup === 'oversold-accumulation')) {
+        a.setup = 'squeeze-setup';
+      }
+    } catch (e) {
+      a.positioning = { source: 'gate.io', error: String(e.message || e), delta: 0 };
+    }
+  });
+
   out.sort((a, b) => b.score - a.score);
   return out;
 }
