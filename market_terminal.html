@@ -89,6 +89,8 @@
   .sbtn{font-family:var(--font-m);font-size:11px;letter-spacing:.05em;background:var(--panel);color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:6px 14px;cursor:pointer;transition:all .15s;text-transform:uppercase}
   .sbtn:hover{color:var(--fg);border-color:var(--cyan)}
   .sbtn.active{color:var(--emerald);border-color:var(--emerald);background:color-mix(in srgb,var(--emerald) 10%,var(--panel))}
+  .rinput{font-family:var(--font-m);font-size:11px;background:var(--panel);color:var(--fg);border:1px solid var(--border);border-radius:8px;padding:6px 9px;width:76px;transition:border-color .15s}
+  .rinput:hover,.rinput:focus{border-color:var(--cyan);outline:none}
   .refresh-btn{font-family:var(--font-m);font-size:11px;letter-spacing:.05em;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:6px 14px;cursor:pointer;transition:all .15s;text-transform:uppercase;margin-left:auto;display:inline-flex;align-items:center;gap:6px}
   .refresh-btn:hover{color:var(--fg);border-color:var(--cyan)}
 
@@ -206,6 +208,9 @@
     <span class="lbl" style="margin-left:14px">Sort</span>
     <button class="sbtn active" data-s="conviction" onclick="setSort('conviction')">Conviction</button>
     <button class="sbtn" data-s="edge" onclick="setSort('edge')">Edge (out-of-sample)</button>
+    <span class="lbl" style="margin-left:14px">Risk</span>
+    <input id="acctInput" class="rinput" type="number" value="10000" min="100" step="500" onchange="setAccount(this.value)" title="Account size ($)"/>
+    <input id="riskInput" class="rinput" type="number" value="1" min="0.1" max="10" step="0.25" onchange="setRisk(this.value)" title="Risk per trade (%)"/>
     <button class="refresh-btn" id="refreshBtn" onclick="refreshData()" title="Refresh live data"><span class="rf-icon">↻</span> <span class="rf-label">REFRESH</span></button>
   </div>
   <div class="board" id="board"></div>
@@ -263,6 +268,7 @@ function detailHtml(r,i){
         <div class="lv"><span class="n">trade</span><span class="v">${t.direction}${t.rr?' @ R:R '+t.rr:''}</span></div>
         <div class="lv"><span class="n">entry / stop / target</span><span class="v">${fmtPx(t.entry,r.symbol)} / ${fmtPx(t.stop,r.symbol)} / ${fmtPx(t.target,r.symbol)}</span></div>
       </div>
+      ${sizingBox(r)}
       ${catalystBox(DATA.catalysts && DATA.catalysts[r.symbol])}
       <div class="dbox tvbox">
         <h4>Quick chart — TradingView <a class="tvlink" href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent(tvSymbol(r.symbol))}" target="_blank" rel="noopener">open full chart ↗</a></h4>
@@ -307,6 +313,37 @@ function structureHealthHtml(){
     const cls = Math.abs(e) < 1.5 ? 'hr' : (e > 0 ? 'pf-pos' : 'pf-neg');
     return `<div class="l"><span>${label}</span><span class="${cls}">${e>=0?'+':''}${e}pt · P(up) ${m.p_up}% (n=${m.n})</span></div>`;
   }).join('');
+}
+
+function fmtMoney(n){
+  if(n == null || !isFinite(n)) return '—';
+  const abs = Math.abs(n);
+  if(abs >= 100) return '$' + Math.round(n).toLocaleString('en-US');
+  if(abs >= 1) return '$' + n.toFixed(2);
+  return '$' + n.toFixed(4);
+}
+
+function sizingFor(t, c, account, riskPct){
+  if(!t || t.direction === 'HOLD' || t.stop == null || t.entry == null) return null;
+  const riskPerShare = Math.abs(t.entry - t.stop);
+  const riskBudget = account * riskPct / 100;
+  const shares = riskPerShare > 0 ? Math.floor(riskBudget / riskPerShare) : 0;
+  const posValue = shares * t.entry;
+  const atr = (c && c.atr) || null;
+  return { riskPerShare, riskBudget, shares, posValue, stopAtr: (atr && atr > 0) ? riskPerShare / atr : null };
+}
+
+function sizingBox(r){
+  const s = sizingFor(r.trade, r.cone, ACCOUNT, RISK_PCT);
+  if(!s) return '';
+  return `<div class="dbox">
+    <h4>Position sizing</h4>
+    <div class="lv"><span class="n">risk per share (stop)</span><span class="v">${fmtMoney(s.riskPerShare)}${s.stopAtr != null ? ' · '+s.stopAtr.toFixed(1)+' ATR' : ''}</span></div>
+    <div class="lv"><span class="n">risk budget (${RISK_PCT}% × ${fmtMoney(ACCOUNT)})</span><span class="v">${fmtMoney(s.riskBudget)}</span></div>
+    <div class="lv"><span class="n">position size</span><span class="v">${s.shares.toLocaleString('en-US')} shares</span></div>
+    <div class="lv"><span class="n">position value</span><span class="v">${fmtMoney(s.posValue)}</span></div>
+    <div class="lv"><span class="n">reward : risk</span><span class="v">${r.trade.rr != null ? r.trade.rr + 'R' : '—'}</span></div>
+  </div>`;
 }
 
 function render(){
@@ -421,6 +458,13 @@ let openRow = -1;
 // ── asset-class filter ──
 let FILTER = 'all';
 let SORT = 'conviction';
+// ── position sizing (localStorage-backed, real data) ──
+let ACCOUNT = parseFloat(localStorage.getItem('mt_acct')) || 10000;
+let RISK_PCT = parseFloat(localStorage.getItem('mt_risk')) || 1.0;
+function setAccount(v){ ACCOUNT = parseFloat(v) || 0; localStorage.setItem('mt_acct', String(ACCOUNT)); render(); }
+function setRisk(v){ RISK_PCT = parseFloat(v) || 0; localStorage.setItem('mt_risk', String(RISK_PCT)); render(); }
+// sync the input fields with any localStorage-restored values
+(function(){ const a = document.getElementById('acctInput'); if(a) a.value = ACCOUNT; const r = document.getElementById('riskInput'); if(r) r.value = RISK_PCT; })();
 const EDGE_PF = (DATA.trade_backtest && DATA.trade_backtest.per_symbol_pf_oos) || {};
 const EDGE_N = (DATA.trade_backtest && DATA.trade_backtest.per_symbol_n_oos) || {};
 const MIN_TRADES = (DATA.trade_backtest && DATA.trade_backtest.min_trades) || 30;
