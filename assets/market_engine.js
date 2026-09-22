@@ -270,23 +270,44 @@ function agentRows(agents){
     <span class="wh">${a.why}</span></div>`).join('');
 }
 
-function earnDaysAgo(cat){
-  const d = (cat && cat.earnings_8k_dates && cat.earnings_8k_dates[0]) || (cat && cat.earnings_dates && cat.earnings_dates[0]);
-  if(!d) return '—';
-  const days = Math.round((Date.now() - new Date(d + 'T00:00:00').getTime()) / 86400000);
-  return `${d} · ${days}d ago`;
+function earnInfo(cat){
+  const dates = (cat && cat.earnings_8k_dates && cat.earnings_8k_dates.length) ? cat.earnings_8k_dates : ((cat && cat.earnings_dates) || []);
+  if(!dates.length) return { last: null, next: null };
+  const last = dates[0];
+  const lastDaysAgo = Math.round((Date.now() - new Date(last + 'T00:00:00').getTime()) / 86400000);
+  // estimate next earnings from the median quarterly gap (labeled an estimate)
+  let next = null;
+  if(dates.length >= 3){
+    const gaps = [];
+    for(let i = 0; i < dates.length - 1; i++){
+      const g = (new Date(dates[i] + 'T00:00:00') - new Date(dates[i+1] + 'T00:00:00')) / 86400000;
+      if(g > 60 && g < 130) gaps.push(g);   // quarterly cadence only
+    }
+    if(gaps.length >= 2){
+      const avg = gaps.reduce((a,b) => a + b, 0) / gaps.length;
+      const nextDate = new Date(new Date(last + 'T00:00:00').getTime() + avg * 86400000);
+      const daysOut = Math.round((nextDate - Date.now()) / 86400000);
+      next = daysOut <= 0 ? 'overdue' : '~' + daysOut + 'd';
+    }
+  }
+  return { last: last + ' · ' + lastDaysAgo + 'd ago', next };
 }
 
-/* catalyst box: pass the catalyst record for the symbol (may be undefined) */
+/* catalyst box: pass the catalyst record for the symbol (may be undefined).
+   Context only — catalysts are deliberately NOT in the consensus signal. */
 function catalystBox(cat){
   if(!cat || !cat.insider) return '';
   const ins = cat.insider;
+  const ei = earnInfo(cat);
+  const buys = ins.buys || 0;
+  const sells = ins.sells || 0;
+  const insLabel = buys > 0
+    ? `<span class="v up">${buys} buy${buys>1?'s':''} — bullish</span>`
+    : `<span class="v fl">none (${sells} sells, routine)</span>`;
   return `<div class="dbox">
-    <h4>Catalyst — SEC EDGAR (key-less)</h4>
-    <div class="lv"><span class="n">open-market buys (P)</span><span class="v ${ins.buys>0?'up':'fl'}">${ins.buys}</span></div>
-    <div class="lv"><span class="n">open-market sells (S)</span><span class="v ${ins.sells>0?'dn':'fl'}">${ins.sells}</span></div>
-    <div class="lv"><span class="n">awards (A) / disposition (D)</span><span class="v">${ins.awards} / ${ins.dispositions}</span></div>
-    <div class="lv"><span class="n">insider score (30d)</span><span class="v">${ins.score.toFixed(2)}</span></div>
-    <div class="lv"><span class="n">last 10-K / 10-Q</span><span class="v">${earnDaysAgo(cat)}</span></div>
+    <h4>Catalyst — SEC EDGAR · context, not a signal</h4>
+    <div class="lv"><span class="n">insider open-market buys (30d)</span>${insLabel}</div>
+    <div class="lv"><span class="n">last earnings (8-K)</span><span class="v">${ei.last || '—'}</span></div>
+    <div class="lv"><span class="n">next earnings (est.)</span><span class="v">${ei.next || '—'}</span></div>
   </div>`;
 }
