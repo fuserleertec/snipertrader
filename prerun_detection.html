@@ -75,6 +75,12 @@
   .chart-close{background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:14px;line-height:1;}
   .chart-close:hover{border-color:var(--red);color:var(--red);}
   #chartFrame{flex:1;width:100%;border:none;background:var(--obs);}
+  .track-head{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-family:var(--font-mono);font-size:12px;color:var(--text2);margin-bottom:14px;}
+  .track-horiz{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;}
+  .thbox{background:var(--obs2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-family:var(--font-mono);}
+  .thlbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:8px;}
+  .thit{font-family:var(--font-display);font-size:20px;color:var(--emerald);margin-bottom:4px;}
+  .thbox .dim{font-size:11px;line-height:1.6;}
 </style>
 </head>
 <body>
@@ -159,6 +165,14 @@
     <div class="panel">
       <h2>Methodology</h2>
       <p class="note" id="methodology">—</p>
+    </div>
+  </section>
+
+  <section id="sec-track">
+    <div class="panel">
+      <h2>Track Record <span style="color:var(--text4);font-size:9px;letter-spacing:1px;">· forward-tested vs SPY/BTC</span></h2>
+      <p class="sec-desc">The honest answer. Every pick is logged with its entry price, then measured at +1, +5, and +20 days against the benchmark (SPY for stocks, BTC for crypto). No look-ahead — results accrue as time passes.</p>
+      <div id="track"><div class="empty">Loading …</div></div>
     </div>
   </section>
 
@@ -395,8 +409,51 @@ function volCell(conf){
 
 function fmtTime(iso){ try{return new Date(iso).toLocaleString('en-US',{hour:'2-digit',minute:'2-digit',month:'short',day:'numeric'});}catch(_){return '—';} }
 
+async function loadTrack(){
+  try{
+    const r=await fetch('/data/recon_track_report.json',{cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    renderTrack(await r.json());
+  }catch(e){
+    document.getElementById('track').innerHTML='<div class="empty">Track record not yet seeded — run <code>node scripts/recon_track.js</code> to record the first snapshot.</div>';
+  }
+}
+
+function renderTrack(t){
+  const el=document.getElementById('track');
+  if(!t||!t.candidatesTracked){
+    el.innerHTML='<div class="empty">No candidates recorded yet.</div>';
+    return;
+  }
+  const H=t.horizons||{};
+  const cell=(k)=>{ const x=H[k]||{}; if(!x.n) return '<div class="empty">accruing…</div>'; const ex=x.avgExcess!=null?x.avgExcess:x.avgReturn;
+    return '<div class="thit">'+(x.hitRate!=null?x.hitRate+'%':'—')+'</div>'+
+      '<div class="dim">avg '+(x.avgReturn!=null?(x.avgReturn>0?'+':'')+x.avgReturn+'%':'—')+'</div>'+
+      '<div class="dim">vs bench '+(ex!=null?(ex>0?'+':'')+ex+'%':'—')+'</div>'+
+      '<div class="dim">n='+x.n+'</div>'; };
+  let html='<div class="track-head"><span>'+t.candidatesTracked+' candidates · '+t.snapshots+' snapshot(s) · '+t.active+' pending</span>'+
+    '<span class="dim">SPY $'+n(t.benchmarks&&t.benchmarks.SPY)+' · BTC $'+n(t.benchmarks&&t.benchmarks.BTC)+'</span></div>';
+  html+='<div class="track-horiz">'+
+    '<div class="thbox"><div class="thlbl">+1 day</div>'+cell('d1')+'</div>'+
+    '<div class="thbox"><div class="thlbl">+5 days</div>'+cell('d5')+'</div>'+
+    '<div class="thbox"><div class="thlbl">+20 days</div>'+cell('d20')+'</div>'+
+    '</div>';
+  const rows=(t.recent||[]).map(c=>{
+    const s=c.settled||{};
+    const r=(k)=>{ const x=s[k]; if(!x) return '<span class="dim">…</span>'; const col=x.ret>0?'var(--green)':(x.ret<0?'var(--red)':'var(--text3)'); const ex=x.bench!=null?(x.ret-x.bench):null;
+      return '<span style="color:'+col+'">'+(x.ret>0?'+':'')+(x.ret*100).toFixed(1)+'%</span>'+(ex!=null?' <span class="dim">('+(ex>0?'+':'')+(ex*100).toFixed(1)+'%)</span>':''); };
+    return '<tr><td><span class="sym">'+esc(String(c.symbol).replace('USDT',''))+'</span> <span class="dim">['+esc(c.assetType)+']</span></td>'+
+      '<td>'+esc(c.signal||'—')+'</td><td>$'+n(c.entry)+'</td>'+
+      '<td>'+r('d1')+'</td><td>'+r('d5')+'</td><td>'+r('d20')+'</td></tr>';
+  }).join('');
+  html+='<table><thead><tr><th>Symbol</th><th>Signal</th><th>Entry</th><th>+1d</th><th>+5d</th><th>+20d</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  el.innerHTML=html;
+}
+
 load();
+loadTrack();
 setInterval(load, 30*60*1000);
+setInterval(loadTrack, 30*60*1000);
 </script>
 <footer class="kf-footer">
   <div class="f-wrap">
