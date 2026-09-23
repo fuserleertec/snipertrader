@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
-"""Inject results.json into terminal_template.html -> terminal.html and
-   forecaster_template.html -> sniper_market_forecaster.html."""
+"""Inject results.json into terminal_template.html -> market_terminal.html
+   (and the local teardown/terminal.html copy).
+
+   NOTE: sniper_market_forecaster.html is NOT rebuilt here. It is hand-edited
+   directly (search box, narration, self-rendered candlestick chart) and its
+   embedded data is refreshed separately by build_forecaster.py, which patches
+   ONLY the <script id="data"> block in place and preserves the hand-edits.
+"""
 import json
 from datetime import datetime, timezone
 
 TMPL = "/Users/snipertrader/snipertrader/teardown/terminal_template.html"
-TMPL_FC = "/Users/snipertrader/snipertrader/teardown/forecaster_template.html"
 OUT = "/Users/snipertrader/snipertrader/market_terminal.html"
-OUT_FC = "/Users/snipertrader/snipertrader/sniper_market_forecaster.html"
 OUT_LOCAL = "/Users/snipertrader/snipertrader/teardown/terminal.html"
 RES = "/Users/snipertrader/snipertrader/teardown/results.json"
 RAW = "/Users/snipertrader/snipertrader/teardown/raw_ohlcv.json"
@@ -42,10 +46,3 @@ with open(OUT_LOCAL, "w") as f:
     f.write(html)
 print(f"wrote {OUT}  ({len(html)} bytes, data {len(payload)} bytes, as_of={as_of})")
 print(f"wrote {OUT_LOCAL}")
-
-with open(TMPL_FC) as f:
-    tpl_fc = f.read()
-html_fc = tpl_fc.replace("__DATA__", payload)
-with open(OUT_FC, "w") as f:
-    f.write(html_fc)
-print(f"wrote {OUT_FC}  ({len(html_fc)} bytes)")
