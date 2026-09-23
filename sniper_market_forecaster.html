@@ -210,7 +210,7 @@
   <div class="fchead" id="fchead"></div>
 
   <div class="dbox" style="margin-bottom:14px">
-    <h4>Price chart — last 90 days (live) <span id="chartband" class="chartband"></span></h4>
+    <h4>Price chart — last 90 days (live) <span id="chartband" class="chartband"></span><span id="pivotband" class="chartband"></span></h4>
     <div class="tv-holder" id="chartbox" style="height:300px"><span class="fl" style="font-family:var(--font-m);font-size:12px;padding:12px;display:inline-block">Search a symbol above to load its price chart.</span></div>
   </div>
 
@@ -423,6 +423,14 @@ function buildNarration(){
     const side = r.last >= vwl.vwap ? 'above' : 'below';
     const zl = zone === '+2' ? 'stretched bullish extension' : zone === '+1' ? 'elevated vs VWAP, bullish' : zone === '-2' ? 'stretched bearish extension' : zone === '-1' ? 'depressed vs VWAP, bearish' : 'balanced, mean-reverting zone';
     parts.push(`USME VWAP read: price ${side} VWAP at ${speakPx(vwl.vwap)}, band ${zone} — ${zl}.`);
+  }
+  if(r._pivots && (r._pivots.highs.length || r._pivots.lows.length)){
+    const hs = r._pivots.highs, ls = r._pivots.lows;
+    const nearH = hs[hs.length - 1], nearL = ls[ls.length - 1];
+    const bits = [];
+    if(nearH) bits.push('nearest locked swing high ' + speakPx(nearH.price));
+    if(nearL) bits.push('nearest locked swing low ' + speakPx(nearL.price));
+    parts.push(`No-repaint pivots: ${hs.length} swing highs and ${ls.length} swing lows — ${bits.join(', ')}.`);
   }
   if(r.mc){
     const b = r.mc.bootstrap, H = r.mc.horizon;
@@ -656,6 +664,31 @@ function vwapZone(price, vw){
   return '0';
 }
 
+// No-repaint swing pivots — Lookback 5 / Confirm 2 (bar-close only).
+// A pivot high/low prints ONLY after its 2 right-side bars have closed, so
+// once an arrow is drawn it never moves or vanishes. The final (possibly
+// forming) bar and its confirmation window are excluded on purpose.
+function noRepaintPivots(bars, L, R){
+  L = L || 5; R = R || 2;
+  const highs = [], lows = [];
+  const n = bars.length;
+  const end = n - R - 2;            // confirm window closes ≥1 bar before the (forming) last bar
+  for(let i = L; i <= end; i++){
+    let hi = true, lo = true;
+    for(let j = i - L; j < i; j++){                       // left: strict (5 bars of structure)
+      if(bars[j].h >= bars[i].h) hi = false;
+      if(bars[j].l <= bars[i].l) lo = false;
+    }
+    for(let j = i + 1; j <= i + R; j++){                  // right: non-strict (2 closed bars)
+      if(bars[j].h > bars[i].h) hi = false;
+      if(bars[j].l < bars[i].l) lo = false;
+    }
+    if(hi) highs.push({ i, price: bars[i].h });
+    if(lo) lows.push({ i, price: bars[i].l });
+  }
+  return { highs, lows };
+}
+
 function renderChart(bars, vw){
   const el = document.getElementById('chartbox');
   if(!el) return;
@@ -698,7 +731,19 @@ function renderChart(bars, vw){
   s += vline('u1', 'var(--emerald)', 1, '3 3');
   s += vline('l1', 'var(--emerald)', 1, '3 3');
   s += vline('vwap', '#38bdf8', 1.6);
-  el.innerHTML = '<svg class="cnsvg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="Price chart — last ' + n + ' bars with USME VWAP">' + s + '</svg>';
+  // No-repaint pivots (Lookback 5 / Confirm 2) — gold ▼ swing high, cyan ▲ swing low
+  const piv = noRepaintPivots(b);
+  if(current) current._pivots = piv;
+  const tri = (cx, cy, dir, col) => {
+    const sz = 5.5;
+    return '<path d="M ' + cx.toFixed(1) + ' ' + (cy + dir * sz).toFixed(1)
+      + ' L ' + (cx - sz).toFixed(1) + ' ' + (cy - dir * sz).toFixed(1)
+      + ' L ' + (cx + sz).toFixed(1) + ' ' + (cy - dir * sz).toFixed(1)
+      + ' Z" fill="' + col + '" stroke="' + col + '" stroke-width="1"/>';
+  };
+  for(const p of piv.highs) s += tri(X(p.i), Y(p.price) - 7, 1, 'var(--gold)');
+  for(const p of piv.lows)  s += tri(X(p.i), Y(p.price) + 7, -1, 'var(--cyan)');
+  el.innerHTML = '<svg class="cnsvg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="Price chart — last ' + n + ' bars with USME VWAP and no-repaint pivots">' + s + '</svg>';
   const cb = document.getElementById('chartband');
   if(cb){
     const lastBar = b[b.length - 1], lastVw = vwArr[vwArr.length - 1];
@@ -706,6 +751,10 @@ function renderChart(bars, vw){
     const zoneTxt = zone === '0' ? 'band 0 · at VWAP' : (zone[0] === '+' ? 'band ' + zone + ' · above VWAP' : 'band ' + zone + ' · below VWAP');
     cb.textContent = 'VWAP ' + fmtPx(lastVw.vwap) + ' · ' + zoneTxt;
     cb.className = 'chartband ' + (zone === '0' ? 'cb-0' : (zone[0] === '+' ? 'cb-up' : 'cb-dn'));
+  }
+  const pb = document.getElementById('pivotband');
+  if(pb){
+    pb.textContent = 'pivots ' + piv.highs.length + '▼ / ' + piv.lows.length + '▲ · L5/C2';
   }
 }
 
