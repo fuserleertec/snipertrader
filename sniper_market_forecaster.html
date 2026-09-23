@@ -207,8 +207,8 @@
   <div class="fchead" id="fchead"></div>
 
   <div class="dbox" style="margin-bottom:14px">
-    <h4>Chart — AI Chart Analyzer <a class="tvlink" href="https://chart-ai.snipertrader.ai" target="_blank" rel="noopener">open ↗</a></h4>
-    <div class="fl" style="font-family:var(--font-m);font-size:12px;color:var(--muted)">Interactive charts, VWAP suite and AI narration now live in the AI Chart Analyzer.</div>
+    <h4>Chart — AI Chart Analyzer <a class="tvlink" id="chartlink" href="https://chart-ai.snipertrader.ai" target="_blank" rel="noopener">open full page ↗</a></h4>
+    <div class="tv-holder" id="tvph" style="height:700px"></div>
   </div>
 
   <div class="dgrid" id="grid"></div>
@@ -269,6 +269,7 @@ function selectSymbol(sym){
   current = merged.find(x => x.symbol === sym) || SNAP_MAP[sym];
   document.getElementById('symSelect').value = sym;
   renderReadout();
+  loadChart();
   loadNewsCatalyst(sym);
 }
 
@@ -328,6 +329,7 @@ async function analyzeCustom(){
     current = r;
     document.getElementById('symSelect').value = c.sym;
     renderReadout();
+    loadChart();
     loadNewsCatalyst(c.sym);
     setStatus(st, 'ok', '✓ Live read for ' + c.sym + ' · ' + r.n_bars + ' days · setup ' + r.trade.direction);
   }catch(e){
@@ -678,6 +680,13 @@ function renderReadout(){
     ${(DATA.trade_backtest && DATA.trade_backtest.verdict) ? DATA.trade_backtest.verdict : ''}`;
 
   document.getElementById('asof').textContent = ASOF;
+}
+
+function loadChart(){
+  const r = current; if(!r) return;
+  const sym = encodeURIComponent(r.symbol);
+  document.getElementById('chartlink').href = 'https://chart-ai.snipertrader.ai/?symbol=' + sym;
+  document.getElementById('tvph').innerHTML = '<iframe src="https://chart-ai.snipertrader.ai/?embed=1&symbol=' + sym + '" loading="lazy" title="AI Chart Analyzer — ' + dispSym(r.symbol) + '"></iframe>';
 }
 
 function toggleTheme(){
