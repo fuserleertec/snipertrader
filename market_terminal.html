@@ -58,7 +58,7 @@
   .secdesc{font-family:var(--font-m);font-size:12px;color:var(--muted);margin:-4px 0 14px;max-width:780px;line-height:1.55}
 
   /* collapsible surface sections (02 Ensemble Health / 03 Drop Audit) */
-  .collapse{border:1px solid var(--border);border-radius:12px;background:var(--panel);margin:0 0 14px;overflow:hidden}
+  .collapse{border:1px solid var(--border);border-radius:12px;background:var(--panel);margin:0 0 28px;overflow:hidden}
   .collapse > summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;padding:15px 16px;font-family:var(--font-d);font-size:13px;letter-spacing:.14em;color:var(--muted);user-select:none}
   .collapse > summary:hover{color:var(--fg)}
   .collapse > summary::-webkit-details-marker{display:none}
@@ -108,7 +108,7 @@
   .board{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden}
 
   /* decision surface — resized scrollable window (show ~15+ symbols, scroll for the rest) */
-  #board{max-height:72vh;overflow-x:hidden;overflow-y:auto}
+  #board{max-height:72vh;overflow-x:hidden;overflow-y:auto;margin-bottom:28px}
   #board .row.head{position:sticky;top:0;z-index:3;box-shadow:0 1px 0 var(--border-soft)}
   .row{display:grid;grid-template-columns:34px 1.3fr .9fr .9fr 1.1fr .7fr 1.3fr 1.1fr 30px;gap:10px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border-soft);cursor:pointer;transition:background .12s}
   .row:last-child{border-bottom:none}
@@ -325,14 +325,14 @@
   </div>
   <div class="board" id="board"></div>
 
-  <details class="collapse">
+  <details class="collapse" open>
     <summary><span class="num">02</span> ENSEMBLE HEALTH — does the read actually work?</summary>
     <div class="collapse-body">
       <div class="health" id="health"></div>
     </div>
   </details>
 
-  <details class="collapse">
+  <details class="collapse" open>
     <summary><span class="num">03</span> DROP AUDIT — scanned but no edge this cycle</summary>
     <div class="collapse-body">
       <div class="secdesc">Markets we looked at this cycle that didn't clear the bar for a high-conviction, well-structured setup. We show them here in plain sight instead of hiding the misses.</div>
