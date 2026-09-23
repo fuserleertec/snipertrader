@@ -85,6 +85,9 @@
   .tvbox h4{display:flex;align-items:center;justify-content:space-between;margin:0 0 10px}
   .tv-holder{height:380px;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:var(--panel-2)}
   .tv-holder iframe{width:100%;height:100%;border:0}
+  .cnsvg{width:100%;height:100%;display:block}
+  .cn-grid{stroke:var(--border-soft);stroke-width:1}
+  .cn-wick{stroke-width:1}
   .tvlink{font-family:var(--font-m);font-size:11px;color:var(--cyan);text-decoration:none;font-weight:400;text-transform:none;letter-spacing:0}
   .tvlink:hover{text-decoration:underline}
 
@@ -166,7 +169,6 @@
     <a href="/market_terminal.html">Daily Market Picks</a>
     <a href="/prerun_detection.html">Pre-Run Detection</a>
     <a href="/traderedge_preflight.html">Pre-Flight Protocols</a>
-    <a href="https://chart-ai.snipertrader.ai">AI Chart Analyzer</a>
      <a href="/traderedge_prop_firms_command_center.html">Prop Firm Center</a>
     <a href="/all_products.html">All Products</a>
   </div>
@@ -204,15 +206,15 @@
   <div class="fchead" id="fchead"></div>
 
   <div class="dbox" style="margin-bottom:14px">
-    <h4>Chart — AI Chart Analyzer</h4>
-    <div class="tv-holder" id="tvph" style="height:700px"></div>
+    <h4>Price chart — last 90 days (live)</h4>
+    <div class="tv-holder" id="chartbox" style="height:300px"><span class="fl" style="font-family:var(--font-m);font-size:12px;padding:12px;display:inline-block">Search a symbol above to load its price chart.</span></div>
   </div>
 
   <div class="dgrid" id="grid"></div>
 
   <div class="dbox" id="newsbox" style="margin:14px 0">
     <h4>News catalyst — AI-scored<span id="newsEngine" class="newsbadge"></span></h4>
-    <div id="newsBody"><span class="fl">fetching news…</span></div>
+    <div id="newsBody"><span class="fl">search a symbol to load news</span></div>
   </div>
 
   <div class="verdict" id="verdict"></div>
@@ -266,7 +268,7 @@ async function analyzeCustom(){
     r.source = 'LIVE';
     current = r;
     renderReadout();
-    loadChart();
+    renderChart(bars);
     loadNewsCatalyst(c.sym);
     setStatus(st, 'ok', '✓ Live read for ' + c.sym + ' · ' + r.n_bars + ' days · setup ' + r.trade.direction);
   }catch(e){
@@ -619,10 +621,36 @@ function renderReadout(){
   document.getElementById('asof').textContent = ASOF;
 }
 
-function loadChart(){
-  const r = current; if(!r) return;
-  const sym = encodeURIComponent(r.symbol);
-  document.getElementById('tvph').innerHTML = '<iframe src="https://chart-ai.snipertrader.ai/?embed=1&symbol=' + sym + '" loading="lazy" title="AI Chart Analyzer — ' + dispSym(r.symbol) + '"></iframe>';
+function renderChart(bars){
+  const el = document.getElementById('chartbox');
+  if(!el) return;
+  if(!bars || bars.length < 2){ el.innerHTML = '<span class="fl" style="font-family:var(--font-m);font-size:12px">No price data.</span>'; return; }
+  const b = bars.slice(-90);
+  let lo = Infinity, hi = -Infinity;
+  b.forEach(x => { if(x.l < lo) lo = x.l; if(x.h > hi) hi = x.h; });
+  const pad = (hi - lo) * 0.06 || 1;
+  lo -= pad; hi += pad;
+  const W = 720, H = 280, n = b.length;
+  const step = W / n;
+  const X = i => i * step + step / 2;
+  const Y = v => H - ((v - lo) / (hi - lo)) * H;
+  const cw = Math.max(1.5, step * 0.6);
+  let s = '';
+  for(let g = 0; g <= 4; g++){
+    const y = (g / 4) * H;
+    s += '<line x1="0" x2="' + W + '" y1="' + y.toFixed(1) + '" y2="' + y.toFixed(1) + '" class="cn-grid"/>';
+  }
+  b.forEach((x, i) => {
+    const up = x.c >= x.o;
+    const col = up ? 'var(--bull)' : 'var(--bear)';
+    const cx = X(i).toFixed(1);
+    const yH = Y(x.h).toFixed(1), yL = Y(x.l).toFixed(1);
+    const yO = Y(x.o), yC = Y(x.c);
+    const top = Math.min(yO, yC), h = Math.max(1, Math.abs(yC - yO));
+    s += '<line x1="' + cx + '" x2="' + cx + '" y1="' + yH + '" y2="' + yL + '" class="cn-wick" style="stroke:' + col + '"/>';
+    s += '<rect x="' + (X(i) - cw / 2).toFixed(1) + '" y="' + top.toFixed(1) + '" width="' + cw.toFixed(1) + '" height="' + h.toFixed(1) + '" style="fill:' + col + ';stroke:' + col + '" stroke-width="1"/>';
+  });
+  el.innerHTML = '<svg class="cnsvg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="Price chart — last ' + n + ' bars">' + s + '</svg>';
 }
 
 function toggleTheme(){
