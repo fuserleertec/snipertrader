@@ -129,6 +129,8 @@
   .newsitem .nm{font-family:var(--font-m);font-size:11px;color:var(--muted);margin-top:4px;line-height:1.55}
   .newsmeta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:7px}
   .newsnote{font-family:var(--font-m);font-size:10.5px;color:var(--faint);margin-top:12px;line-height:1.65;border-top:1px solid var(--border-soft);padding-top:10px}
+  .newscond{margin-top:10px;border-top:1px solid var(--border-soft);padding-top:10px}
+  .newscond .vh{font-family:var(--font-m);font-size:10px;letter-spacing:.08em;color:var(--cyan);text-transform:uppercase;margin-bottom:8px}
 
   /* monte carlo fan */
   .mcsvg{width:100%;height:120px;display:block;margin:2px 0 4px}
@@ -330,6 +332,14 @@ let newsSeq = 0;
 
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function biasLabel(b){ return b === 'BULLISH' ? '▲ Bullish' : (b === 'BEARISH' ? '▼ Bearish' : '· Neutral'); }
+// Distill the news readout into numeric conditioning scalars: beta (-1..+1)
+// directional bias and sigmaNews (>=1) cone-width coefficient.
+function newsBiasScalars(news){
+  const bias = (news && news.sentiment_bias) || 'NEUTRAL';
+  const impact = (news && Number(news.market_impact_score)) || 0;
+  const sign = bias === 'BULLISH' ? 1 : (bias === 'BEARISH' ? -1 : 0);
+  return { beta: sign * Math.min(1, impact / 100), sigmaNews: 1 + Math.min(0.5, (impact / 100) * 0.5), impact, bias };
+}
 
 async function loadNewsCatalyst(sym){
   const body = document.getElementById('newsBody');
@@ -382,6 +392,30 @@ function renderNews(j){
     html += '<div class="nm" style="margin-top:6px">No high-confidence catalysts on the current headline tape.'
       + (j.headlines && j.headlines.length ? ' (' + j.headlines.length + ' headlines scanned — nothing material or relevant to this ticker.)' : ' (No headlines returned.)')
       + (j.note ? ' ' + escapeHtml(j.note) : '') + '</div>';
+  }
+  // News-conditioned forward projection — bridges the sentiment readout into
+  // numeric conditioning (beta, sigma_news) over the Monte Carlo forward path.
+  const mc = current && current.mc;
+  if(mc && j && j.market_impact_score != null){
+    const sc = newsBiasScalars(j);
+    const mu = (mc.mu_pct || 0) / 100, sigma = (mc.sigma_pct || 0) / 100;
+    const biasDrift = sc.beta * 0.25 * sigma;                 // honest, small tilt
+    const fan = gbmFanCustom(mc.last, mu + biasDrift, sigma * sc.sigmaNews, mc.horizon, 2000);
+    const lb = fan[fan.length - 1];
+    const st = (current && current.structure) || {};
+    const targets = [];
+    if(st.resistance != null && lb.p50 >= st.resistance) targets.push('resistance ' + fmtPx(st.resistance));
+    if(st.support != null && lb.p50 <= st.support) targets.push('support ' + fmtPx(st.support));
+    if(st.fvg) targets.push('FVG ' + fmt(st.fvg.zone[0]) + '–' + fmt(st.fvg.zone[1]));
+    html += '<div class="newscond">'
+      + '<div class="vh">Forward projection — sentiment-conditioned</div>'
+      + '<div class="lv"><span class="n">bias β</span><span class="v ' + (sc.beta > 0 ? 'up' : sc.beta < 0 ? 'dn' : 'fl') + '">' + (sc.beta > 0 ? '+' : '') + sc.beta.toFixed(2) + '</span></div>'
+      + '<div class="lv"><span class="n">vol coef σ<sub>news</sub></span><span class="v fl">×' + sc.sigmaNews.toFixed(2) + '</span></div>'
+      + '<div class="lv"><span class="n">cond. P50 (+' + mc.horizon + 'd)</span><span class="v">' + fmtPx(lb.p50) + '</span></div>'
+      + '<div class="lv"><span class="n">cond. P10–P90</span><span class="v fl">' + fmtPx(lb.p10) + ' – ' + fmtPx(lb.p90) + '</span></div>'
+      + (targets.length ? '<div class="lv"><span class="n">structure targets</span><span class="v fl">' + targets.join(' · ') + '</span></div>' : '')
+      + '<div class="nm" style="margin-top:8px">Heuristic conditioning of the Monte Carlo — sentiment tilts drift, impact widens the cone. Not a trained model; no edge implied.</div>'
+      + '</div>';
   }
   html += '<div class="newsnote">News readout for context — it is <b>not</b> folded into the conviction score (backtests show catalyst timing has no stable edge). Sources: Google News headlines + SEC EDGAR filings, scored by ' + (j.engine === 'llm' ? 'DeepSeek' : 'a keyword heuristic') + '. ' + (j.asOf ? 'As of ' + new Date(j.asOf).toLocaleString() + '.' : '') + '</div>';
   body.innerHTML = html;

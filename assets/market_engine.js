@@ -245,6 +245,22 @@ function monteCarlo(bars, opts){
   return { horizon, nPaths, n, last:+last, mu_pct:+(mu*100).toFixed(3), sigma_pct:+(sigma*100).toFixed(2), bootstrap:boot, gbm:gbm };
 }
 
+/* GBM fan with EXPLICIT drift/vol — used for the news-conditioned forward path
+   (inject a sentiment bias β into mu, a news-vol coefficient into sigma). */
+function gbmFanCustom(last, mu, sigma, horizon, nPaths, seed){
+  const H = horizon || 5, N = nPaths || 2000;
+  const rng = mulberry32(seed == null ? 0x9E3779B1 : seed);
+  const cur = new Float64Array(N); cur.fill(last);
+  const fan = [];
+  for(let t=0;t<H;t++){
+    for(let p=0;p<N;p++) cur[p] = cur[p] * Math.exp((mu - sigma*sigma/2) + sigma*gauss(rng));
+    const s = Array.from(cur).sort((a,b)=>a-b);
+    const pct = q => { const i=(s.length-1)*q; const lo=Math.floor(i), hi=Math.ceil(i); return lo===hi ? s[lo] : s[lo]*(hi-i)+s[hi]*(i-lo); };
+    fan.push({ p10:+pct(0.10).toFixed(2), p50:+pct(0.50).toFixed(2), p90:+pct(0.90).toFixed(2) });
+  }
+  return fan;
+}
+
 function analyzeSymbol(sym, bars, u, cond){
   if(!bars || bars.length < 60) return null;
   const k = structure(bars), mf = ensemble(bars, k, u);
