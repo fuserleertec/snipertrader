@@ -167,22 +167,120 @@
   .verdict{border:1px solid color-mix(in srgb,var(--gold) 40%,transparent);background:color-mix(in srgb,var(--gold) 6%,transparent);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--fg);line-height:1.6;margin-top:12px}
   .foot{font-family:var(--font-m);font-size:11px;color:var(--faint);margin-top:34px;border-top:1px solid var(--border-soft);padding-top:14px;line-height:1.7}
   .risknote{color:var(--gold);font-family:var(--font-m);font-size:11.5px}
+
+  /* ── merged page: tab segmented control ── */
+  .tabs{display:flex;gap:6px;margin:0 0 20px;border:1px solid var(--border);border-radius:12px;padding:5px;background:var(--panel);width:max-content;max-width:100%}
+  .tab-btn{font-family:var(--font-m);font-size:11px;letter-spacing:.06em;text-transform:uppercase;background:transparent;border:none;color:var(--muted);padding:9px 18px;border-radius:8px;cursor:pointer;transition:all .15s}
+  .tab-btn:hover{color:var(--fg)}
+  .tab-btn.active{background:var(--panel-2);color:var(--emerald);box-shadow:inset 0 0 0 1px var(--emerald)}
+  .tab-hint{font-family:var(--font-m);font-size:10.5px;color:var(--faint);margin-left:auto;align-self:center;padding-right:6px}
+
+  /* ── Pre-Run Radar (scoped under .radar; colliding classes renamed) ── */
+  .radar .mono{font-family:var(--font-mono)}
+  .radar h1{font-family:var(--font-display);font-size:24px;letter-spacing:2px;margin:0 0 4px}
+  .radar h1 span{color:var(--emerald)}
+  .radar .sub{color:var(--text3);font-size:13px;margin:0 0 28px;font-family:var(--font-mono)}
+  .radar .hero{margin:0 0 24px;padding:24px 28px;background:linear-gradient(145deg,var(--obs3),var(--obs2));border:1px solid var(--border);border-radius:16px}
+  .radar .hero-lede{font-size:17px;line-height:1.6;color:var(--text);margin:0 0 12px;max-width:840px}
+  .radar .hero-lede strong{color:var(--emerald)}
+  .radar .hero-sub{font-size:14px;line-height:1.65;color:var(--text2);margin:0 0 14px;max-width:840px}
+  .radar .hero-note{font-family:var(--font-mono);font-size:11px;letter-spacing:1px;color:var(--gold);margin:0}
+  .radar .sim-banner{display:flex;align-items:center;gap:10px;background:var(--gold-dim);border:1px solid var(--gold-border);border-radius:12px;padding:12px 16px;margin-bottom:24px;font-family:var(--font-mono);font-size:11px;color:var(--gold);letter-spacing:.5px}
+  .radar .rstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:28px}
+  .radar .rstat{background:linear-gradient(145deg,var(--obs3),var(--obs2));border:1px solid var(--border);border-radius:14px;padding:14px 16px}
+  .radar .rstat .v{font-family:var(--font-display);font-size:22px;color:var(--emerald)}
+  .radar .rstat .l{font-family:var(--font-mono);font-size:9px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;margin-top:4px}
+  .radar section{margin-bottom:32px}
+  .radar .panel{background:linear-gradient(145deg,var(--obs3),var(--obs2));border:1px solid var(--border);border-radius:16px;padding:20px}
+  .radar .panel h2{font-family:var(--font-display);font-size:12px;letter-spacing:2px;color:var(--text2);text-transform:uppercase;margin:0 0 8px;display:flex;align-items:center;gap:8px}
+  .radar .panel h2::before{content:'';width:8px;height:8px;border-radius:2px;background:var(--emerald);box-shadow:0 0 10px var(--emerald)}
+  .radar .sec-desc{color:var(--text3);font-size:13px;line-height:1.6;margin:0 0 18px;max-width:760px}
+  .radar table{width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:12px}
+  .radar th{color:var(--text3);text-align:left;font-weight:400;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border)}
+  .radar td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top}
+  .radar tr:last-child td{border-bottom:none}
+  .radar .rsym{font-weight:700;color:var(--text);letter-spacing:1px}
+  .radar .sig{display:inline-block;font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:1px;padding:3px 10px;border-radius:20px}
+  .radar .sig.buy{color:var(--green);background:var(--green-dim);border:1px solid var(--green)}
+  .radar .sig.hold{color:var(--gold);background:var(--gold-dim);border:1px solid var(--gold-border)}
+  .radar .sig.sell{color:var(--red);background:var(--red-dim);border:1px solid var(--red)}
+  .radar .dim{color:var(--text3)}
+  .radar .alert{background:var(--red-dim);border:1px solid var(--red);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-family:var(--font-mono);font-size:12px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+  .radar .alert .lvl{color:var(--red);font-weight:700;letter-spacing:1px;font-size:10px}
+  .radar .gate{color:var(--text3);font-family:var(--font-mono);font-size:11px;padding:5px 0;border-bottom:1px dashed var(--border)}
+  .radar .gate:last-child{border-bottom:none}
+  .radar .note{color:var(--text3);font-family:var(--font-mono);font-size:12px;line-height:1.6}
+  .radar .what-list{display:flex;flex-direction:column}
+  .radar .what-list .wrow{padding:11px 0;border-bottom:1px dashed var(--border)}
+  .radar .what-list .wrow:last-child{border-bottom:none}
+  .radar .what-list .k{display:block;font-family:var(--font-mono);font-size:9px;letter-spacing:1.5px;color:var(--emerald);text-transform:uppercase;margin-bottom:4px}
+  .radar .what-list .v{display:block;font-size:13px;line-height:1.65;color:var(--text2)}
+  .radar .what-list .v strong{color:var(--text);font-weight:700}
+  .radar .empty{color:var(--text4);font-family:var(--font-mono);font-size:13px;padding:18px}
+  .radar .badge{display:inline-block;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:3px 8px;border-radius:6px;border:1px solid var(--border2);color:var(--text3)}
+  .radar .badge.gate{color:var(--gold);border-color:var(--gold-border)}
+  .radar .refresh{background:var(--obs3);border:1px solid var(--border2);color:var(--text2);font-family:var(--font-mono);font-size:10px;letter-spacing:1px;padding:8px 16px;border-radius:20px;cursor:pointer}
+  .radar .refresh:hover{border-color:var(--emerald);color:var(--emerald)}
+  .radar .head-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .radar .head-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .radar .rfilters{display:flex;gap:6px;background:linear-gradient(145deg,var(--obs3),var(--obs2));border:1px solid var(--border);border-radius:22px;padding:4px}
+  .radar .filter-btn{background:transparent;border:none;color:var(--text3);font-family:var(--font-mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:6px 16px;border-radius:18px;cursor:pointer;transition:all .15s}
+  .radar .filter-btn:hover{color:var(--text)}
+  .radar .filter-btn.active{background:var(--obs2);color:var(--emerald);box-shadow:inset 0 0 0 1px var(--emerald)}
+  .radar .rchartbtn{background:transparent;border:1px solid var(--border2);color:var(--text3);border-radius:8px;padding:3px 7px;cursor:pointer;font-size:12px;line-height:1;margin-right:8px;vertical-align:middle}
+  .radar .rchartbtn:hover{border-color:var(--emerald);color:var(--emerald)}
+  .radar .chart-modal{display:none;position:fixed;inset:0;z-index:9999}
+  .radar .chart-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.72)}
+  .radar .chart-box{position:relative;margin:32px auto;width:min(1100px,94vw);height:min(700px,88vh);background:var(--obs);border:1px solid var(--border);border-radius:16px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+  .radar .chart-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:13px}
+  .radar .chart-head .rsym{color:var(--text)}
+  .radar .chart-head-actions{display:flex;align-items:center;gap:12px}
+  .radar .chart-open{color:var(--emerald);text-decoration:none;font-size:11px;letter-spacing:1px;font-family:var(--font-mono)}
+  .radar .chart-open:hover{text-decoration:underline}
+  .radar .chart-close{background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:14px;line-height:1}
+  .radar .chart-close:hover{border-color:var(--red);color:var(--red)}
+  .radar #chartFrame{flex:1;width:100%;border:none;background:var(--obs)}
+  .radar .track-head{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-family:var(--font-mono);font-size:12px;color:var(--text2);margin-bottom:14px}
+  .radar .track-horiz{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+  .radar .thbox{background:var(--obs2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-family:var(--font-mono)}
+  .radar .thlbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
+  .radar .thit{font-family:var(--font-display);font-size:20px;color:var(--emerald);margin-bottom:4px}
+  .radar .thbox .dim{font-size:11px;line-height:1.6}
+
+  /* radar <details> collapsible sections (small-cap + crypto long tail) */
+  .radar details{background:var(--obs2);border:1px solid var(--border);border-radius:14px;padding:16px 18px}
+  .radar details summary{cursor:pointer;list-style:none;font-family:var(--font-display);font-size:12px;letter-spacing:2px;color:var(--text2);text-transform:uppercase;display:flex;align-items:center;gap:8px}
+  .radar details summary::-webkit-details-marker{display:none}
+  .radar details summary::before{content:'▸';color:var(--emerald);transition:transform .15s;font-family:var(--font-mono)}
+  .radar details[open] summary::before{transform:rotate(90deg)}
+  .radar details summary .h2dot{width:8px;height:8px;border-radius:2px;background:var(--emerald);box-shadow:0 0 10px var(--emerald)}
+  .radar details .sec-desc{margin-top:10px}
 </style>
 </head>
 <body class="light-mode">
 <nav class="kf-nav">
   <a class="nav-logo" href="/index.html">SNIPER<span>TRADER</span></a>
   <div class="nav-links">
-    <a class="nav-pill" href="/market_terminal.html">Daily Market Picks</a>
-    <a href="/prerun_detection.html">Pre-Run Detection</a>
-    <a href="https://chart-ai.snipertrader.ai">AI Chart Analyzer</a>
     <a href="/sniper_market_forecaster.html">Market Forecaster</a>
-    <a href="/usme_products.html">Products</a>
+    <a class="nav-pill" href="/market_terminal.html">Daily Market Picks</a>
+    <a href="/market_terminal.html#radar">Pre-Run Detection</a>
+    <a href="/traderedge_preflight.html">Pre-Flight Protocols</a>
+    <a href="https://chart-ai.snipertrader.ai">AI Chart Analyzer</a>
+    <a href="/traderedge_prop_firms_command_center.html">Prop Firm Center</a>
+    <a href="/all_products.html">All Products</a>
   </div>
   <button class="kf-theme-toggle" onclick="toggleTheme()"><span class="tt-icon">☀️</span> <span id="themeLabel">LIGHT</span></button>
 </nav>
 
 <div class="wrap">
+
+  <div class="tabs" id="tabs">
+    <button class="tab-btn active" id="tabBtnSurface" onclick="switchTab('surface')">Decision Surface</button>
+    <button class="tab-btn" id="tabBtnRadar" onclick="switchTab('radar')">Pre-Run Radar</button>
+    <span class="tab-hint">one desk · two scanners</span>
+  </div>
+
+  <div id="tab-surface">
 
   <div class="banner">
     <div class="head">ABOUT THIS TERMINAL <span id="modebadge" style="margin-left:10px;font-family:var(--font-m);font-size:10px;letter-spacing:.06em;padding:3px 10px;border-radius:20px;border:1px solid var(--border2);color:var(--emerald)">STATIC SNAPSHOT</span></div>
@@ -208,6 +306,9 @@
     <span class="lbl" style="margin-left:14px">Sort</span>
     <button class="sbtn active" data-s="conviction" onclick="setSort('conviction')">Conviction</button>
     <button class="sbtn" data-s="edge" onclick="setSort('edge')">Edge (out-of-sample)</button>
+    <span class="lbl" style="margin-left:14px">View</span>
+    <button class="sbtn active" data-l="all" onclick="setLimit(0)">All</button>
+    <button class="sbtn" data-l="top10" onclick="setLimit(10)">Top 10</button>
     <span class="lbl" style="margin-left:14px">Risk</span>
     <input id="acctInput" class="rinput" type="number" value="10000" min="100" step="500" onchange="setAccount(this.value)" title="Account size ($)"/>
     <input id="riskInput" class="rinput" type="number" value="1" min="0.1" max="10" step="0.25" onchange="setRisk(this.value)" title="Risk per trade (%)"/>
@@ -223,7 +324,165 @@
   <div class="board" id="dropped"></div>
 
   <div class="foot" id="foot"></div>
+  </div><!-- /tab-surface -->
+
+  <div id="tab-radar" class="radar" hidden>
+    <div class="head-row">
+      <div>
+        <h1>PRE-RUN <span>RADAR</span></h1>
+        <p class="sub" id="radarMetaLine">loading /api/recon/picks …</p>
+      </div>
+      <div class="head-actions">
+        <div class="rfilters" id="radarFilters">
+          <button class="filter-btn active" data-f="all" onclick="setRadarFilter('all')">All</button>
+          <button class="filter-btn" data-f="stocks" onclick="setRadarFilter('stocks')">Stocks</button>
+          <button class="filter-btn" data-f="crypto" onclick="setRadarFilter('crypto')">Crypto</button>
+        </div>
+        <button class="refresh" onclick="loadRadar()">⟳ REFRESH</button>
+      </div>
+    </div>
+
+    <section class="hero">
+      <p class="hero-lede">One terminal that watches hundreds of stocks and cryptocurrencies so you don't have to — sweeping from the biggest names down to small caps and OTC, asking a single question of each: <strong>is this quietly building toward a move before the crowd notices?</strong></p>
+      <p class="hero-sub">It blends technical structure, real trading volume, insider filings, and breaking news to separate genuine breakouts from noise. The result is a short, ranked watchlist with plain-English reasons behind every pick — and a warning flag whenever a move already looks too late to chase.</p>
+      <p class="hero-note">A radar, not a broker. Everything here is research and simulation — no orders are ever placed.</p>
+    </section>
+
+    <div class="sim-banner" id="radarSimBanner" style="display:none"></div>
+
+    <div class="rstats" id="radarStats"></div>
+
+    <section id="sec-decisions">
+      <div class="panel">
+        <h2>Decisions</h2>
+        <p class="sec-desc">The shortlist that cleared every confirmation check — each with a signal, conviction, position size, and stop/target levels. Simulation only; no orders placed.</p>
+        <div id="decisions"><div class="empty">Loading …</div></div>
+      </div>
+    </section>
+
+    <section id="sec-smallcaps">
+      <details>
+        <summary><span class="h2dot"></span> Small-cap / OTC Watchlist</summary>
+        <p class="sec-desc">The wide net: smaller and OTC names worth keeping an eye on. OTC tickers are flagged — they sit in the pump-and-dump zone, so they're listed but never auto-rated.</p>
+        <div id="smallcaps"><div class="empty">Loading …</div></div>
+      </details>
+    </section>
+
+    <section id="sec-crypto">
+      <details>
+        <summary><span class="h2dot"></span> Crypto Scan <span style="color:var(--text4);font-size:9px;letter-spacing:1px;">· Binance · key-less</span></summary>
+        <p class="sec-desc">Every liquid pair scanned on Binance (key-less). Scores quiet accumulation, coil squeezes, and buyer-side flow that can precede a move.</p>
+        <div id="crypto"><div class="empty">Loading …</div></div>
+      </details>
+    </section>
+
+    <section id="sec-alerts">
+      <div class="panel">
+        <h2>Dump / Exit Alerts</h2>
+        <div id="alerts"><div class="empty">Loading …</div></div>
+      </div>
+    </section>
+
+    <section id="sec-gated">
+      <div class="panel">
+        <h2>Excluded Inputs (key-gated — never fabricated)</h2>
+        <div id="gated"><div class="empty">Loading …</div></div>
+      </div>
+    </section>
+
+    <section id="sec-methodology">
+      <div class="panel">
+        <h2>Methodology</h2>
+        <p class="note" id="methodology">—</p>
+      </div>
+    </section>
+
+    <section id="sec-track">
+      <div class="panel">
+        <h2>Track Record <span style="color:var(--text4);font-size:9px;letter-spacing:1px;">· forward-tested vs SPY/BTC</span></h2>
+        <p class="sec-desc">The honest answer. Every pick is logged with its entry price, then measured at +1, +5, and +20 days against the benchmark (SPY for stocks, BTC for crypto). No look-ahead — results accrue as time passes.</p>
+        <div id="track"><div class="empty">Loading …</div></div>
+      </div>
+    </section>
+
+    <section id="sec-what">
+      <div class="panel">
+        <h2>Here's What This Terminal Actually Does</h2>
+        <p class="sec-desc">The plain-English version — what the pipeline really does, and where its limits are.</p>
+        <div class="what-list">
+          <div class="wrow"><span class="k">Universe</span><span class="v">Sweeps <strong>~350 stocks</strong> across every size — large-cap down to small-cap and OTC — plus <strong>24 liquid Binance crypto pairs</strong>, all on free public data.</span></div>
+          <div class="wrow"><span class="k">Scoring</span><span class="v">Scores each name on a blend of <strong>trend structure, trading volume, insider filings, and news catalysts</strong>, with a bounded directional projection folded in.</span></div>
+          <div class="wrow"><span class="k">Confirmation</span><span class="v">Runs a <strong>second-pass volume-and-momentum gate</strong> before anything is surfaced — failures go to a rejected list, never dropped silently.</span></div>
+          <div class="wrow"><span class="k">Output</span><span class="v">A short, ranked watchlist with <strong>plain-English reasons, conviction, position size, and stop/target levels</strong> — all simulated.</span></div>
+          <div class="wrow"><span class="k">Alerts</span><span class="v">Flags <strong>dump / exit setups</strong> — overheated or fading-volume moves — so a late chase is visible before you take it.</span></div>
+          <div class="wrow"><span class="k">Honesty</span><span class="v">Every input it can't reach (order flow, dark pool, whale flows) is listed under <strong>Excluded Inputs</strong> — reported, never estimated.</span></div>
+          <div class="wrow"><span class="k">No orders</span><span class="v"><strong>Radar, not a broker.</strong> Everything is research and simulation; no orders are ever placed and no edge is claimed.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="chart-modal" id="chartModal">
+      <div class="chart-backdrop" onclick="closeRadarChart()"></div>
+      <div class="chart-box">
+        <div class="chart-head">
+          <span class="rsym" id="chartTitle">—</span>
+          <div class="chart-head-actions">
+            <a class="chart-open" id="chartOpen" target="_blank" rel="noopener">open on TradingView ↗</a>
+            <button class="chart-close" onclick="closeRadarChart()" title="Close">✕</button>
+          </div>
+        </div>
+        <iframe id="chartFrame" frameborder="0" allowtransparency="true" scrolling="no" allowfullscreen title="TradingView chart"></iframe>
+      </div>
+    </div>
+  </div><!-- /tab-radar -->
 </div>
+
+<footer class="kf-footer">
+  <div class="f-wrap">
+    <div class="f-grid">
+      <div class="f-brand">
+        <a class="f-logo" href="/index.html">SniperTrader<span>.ai</span></a>
+        <p class="f-mission">Precision market systems &amp; algorithmic engines — calm, surgical execution for the disciplined trader.</p>
+        <div class="f-status"><i></i> System Status: Operational</div>
+        <div class="f-social"><a href="#">X</a><a href="#">YouTube</a><a href="#">Discord</a><a href="#">Telegram</a></div>
+      </div>
+      <div class="f-col">
+        <h4>Intelligence</h4>
+        <a href="/sniper_market_forecaster.html">Market Forecaster</a>
+        <a href="/market_terminal.html">Daily Market Picks</a>
+        <a href="/market_terminal.html#radar">Daily Pre-Run Detection</a>
+        <a href="/traderedge_preflight.html">Preflight Protocol</a>
+        <a href="https://chart-ai.snipertrader.ai">AI Chart Analyzer</a>
+      </div>
+      <div class="f-col">
+        <h4>Proprietary Algos</h4>
+        <a href="/NoRepaint_Pivot_indicator.html">No Repaint Engine</a>
+        <a href="/USME_ICT_Core.html">USME ICT Core Engine</a>
+        <a href="/USME_VWAP_Elite_Suite.html">USME VWAP Suite Engine</a>
+        <a href="/Meridian_Engine.html">Meridian Engine</a>
+        <a href="/all_products.html">All Products</a>
+      </div>
+      <div class="f-col">
+        <h4>Academy</h4>
+        <a href="/all_products.html#masterplans">Courses</a>
+        <a href="/Traders_Couch.html">Live Labs</a>
+        <a href="/about.html">Mentorship</a>
+        <a href="/about.html">Community</a>
+      </div>
+      <div class="f-col">
+        <h4>Company</h4>
+        <a href="/about.html">About Us</a>
+        <a href="/checkout.html">Pricing</a>
+        <a href="/about.html">Contact</a>
+        <a href="/terms.html">Terms</a>
+        <a href="/privacy.html">Privacy</a>
+        <a href="/disclaimer.html">Legal</a>
+      </div>
+    </div>
+    <div class="f-bottom"><span>© 2026 SniperTrader.ai — All rights reserved.</span><span>Calm. Precise. Deliberate.</span></div>
+    <p class="f-disclaimer">DISCLAIMER: Trading involves substantial risk of loss and is not suitable for every investor. Past performance does not guarantee future results. All content on this site is for educational purposes only and does not constitute financial or investment advice.</p>
+  </div>
+</footer>
 
 <script id="data" type="application/json">__DATA__</script>
 <script src="/assets/market_engine.js"></script>
@@ -347,16 +606,18 @@ function sizingBox(r){
 }
 
 function render(){
-  const list = filteredResults();
+  const full = filteredResults();
+  const list = LIMIT ? full.slice(0, LIMIT) : full;
+  currentList = list;
   updateFilterCounts();
   document.getElementById('board').innerHTML =
     `<div class="row head"><span>#</span><span>Symbol</span><span>Last</span><span>Chg</span><span>Bias</span><span>Setup</span><span>${SORT==='edge'?'PF · out-of-sample (n≥'+MIN_TRADES+')':'Conviction'}</span><span>Structure</span><span></span></div>` +
-    list.map((r,i)=>rowHtml(r,i)+detailHtml(r,i)).join('');
+    list.map((r,i)=>rowHtml(r,i)).join('');
 
-  // stats
-  const longs = list.filter(r=>r.trade.direction==='LONG').length;
-  const shorts = list.filter(r=>r.trade.direction==='SHORT').length;
-  const holds = list.filter(r=>r.trade.direction==='HOLD').length;
+  // stats (full universe — not limited by the Top-10 view)
+  const longs = full.filter(r=>r.trade.direction==='LONG').length;
+  const shorts = full.filter(r=>r.trade.direction==='SHORT').length;
+  const holds = full.filter(r=>r.trade.direction==='HOLD').length;
   const asOf = ASOF;
   document.getElementById('asof').textContent = asOf;
   document.getElementById('snapasof').textContent = DATA.as_of || '—';
@@ -441,24 +702,15 @@ function render(){
     </div>
   </div>`;
 
-  // canonical site footer
-  const foot = document.getElementById('foot');
-  foot.innerHTML += `<div style="margin-top:26px;padding-top:18px;border-top:1px solid var(--border-soft);display:flex;gap:20px;flex-wrap:wrap">
-    <a href="/index.html" style="color:var(--muted);text-decoration:none;font-family:var(--font-m);font-size:11px">SniperTrader.ai</a>
-    <a href="/sniper_market_forecaster.html" style="color:var(--muted);text-decoration:none;font-family:var(--font-m);font-size:11px">Market Forecaster</a>
-    <a href="/market_terminal.html" style="color:var(--muted);text-decoration:none;font-family:var(--font-m);font-size:11px">AI Stock Picks</a>
-    <a href="/traderedge_prop_firms_command_center.html" style="color:var(--muted);text-decoration:none;font-family:var(--font-m);font-size:11px">Prop Firm Center</a>
-    <a href="/about.html" style="color:var(--muted);text-decoration:none;font-family:var(--font-m);font-size:11px">About</a>
-    <a href="/terms.html" style="color:var(--muted);text-decoration:none;font-family:var(--font-m);font-size:11px">Terms</a>
-    <a href="/disclaimer.html" style="color:var(--muted);text-decoration:none;font-family:var(--font-m);font-size:11px">Disclaimer</a>
-  </div>`;
 }
 
 let openRow = -1;
+let currentList = [];
 
 // ── asset-class filter ──
 let FILTER = 'all';
 let SORT = 'conviction';
+let LIMIT = 0;   // 0 = show all rows; 10 = top-10 only
 // ── position sizing (localStorage-backed, real data) ──
 let ACCOUNT = parseFloat(localStorage.getItem('mt_acct')) || 10000;
 let RISK_PCT = parseFloat(localStorage.getItem('mt_risk')) || 1.0;
@@ -495,7 +747,13 @@ function filteredResults(){
 function setSort(s){
   SORT = s;
   openRow = -1;
-  document.querySelectorAll('.sbtn').forEach(b => b.classList.toggle('active', b.dataset.s === s));
+  document.querySelectorAll('.sbtn[data-s]').forEach(b => b.classList.toggle('active', b.dataset.s === s));
+  render();
+}
+function setLimit(n){
+  LIMIT = n;
+  openRow = -1;
+  document.querySelectorAll('#filters .sbtn[data-l]').forEach(b => b.classList.toggle('active', (b.dataset.l === (n === 10 ? 'top10' : 'all'))));
   render();
 }
 function setFilter(f){
@@ -514,11 +772,12 @@ function updateFilterCounts(){
 }
 
 function toggle(i){
-  const rows = document.querySelectorAll('#board .row:not(.head)');
-  const details = document.querySelectorAll('#board .detail');
-  if(openRow === i){ rows[i].classList.remove('open'); openRow=-1; return; }
-  if(openRow>=0) rows[openRow].classList.remove('open');
-  rows[i].classList.add('open');
+  const board = document.getElementById('board');
+  const rows = board.querySelectorAll('.row:not(.head)');
+  board.querySelectorAll('.detail').forEach(d => d.remove());
+  if(openRow === i){ openRow = -1; return; }
+  const r = currentList[i];
+  if(r){ rows[i].classList.add('open'); rows[i].insertAdjacentHTML('afterend', detailHtml(r, i)); }
   openRow = i;
   rows[i].scrollIntoView({block:'nearest',behavior:'smooth'});
   lazyChart(i);
@@ -613,6 +872,320 @@ async function bootstrap(){
 }
 
 bootstrap();
+</script>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════
+   PRE-RUN RADAR — merged tab. Data: runtime fetch from /api/recon/picks
+   + /data/recon_track_report.json. All globals prefixed `radar`/`Radar`
+   to avoid collision with the Decision Surface engine.
+   ═══════════════════════════════════════════════════════════════════════ */
+let RADAR_DATA = null;
+let RADAR_FILTER = 'all';
+
+function radarEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function radarN(x,d){return (x==null||x===''||Number.isNaN(+x))?(d||'—'):(+x).toLocaleString(undefined,{maximumFractionDigits:2});}
+function radarSigCls(s){return s==='BUY'?'buy':(s==='SELL'?'sell':'hold');}
+function radarCatCell(cat, dec){
+  const sc=(cat&&Number.isFinite(cat.score))?cat.score:0;
+  const dir=(dec&&dec.catalystDirection)||(cat&&cat.breakdown&&cat.breakdown.newsDirection)||'neutral';
+  const sym=dir==='bull'?'▲':(dir==='bear'?'▼':'·');
+  const col=dir==='bull'?'var(--green)':(dir==='bear'?'var(--red)':'var(--text3)');
+  let s='<span style="color:'+col+';font-weight:700">'+sym+' '+radarN(sc)+'</span>';
+  if(dir!=='neutral') s+=' <span class="dim" style="text-transform:capitalize">'+dir+'</span>';
+  if(dec&&dec.bullTrap) s+=' <span class="badge gate" style="color:var(--red);border-color:var(--red)" title="bullish chart + bearish news — bull-trap guard">⚠ trap</span>';
+  return s;
+}
+function radarMatchesType(t){ if(RADAR_FILTER==='all') return true; return RADAR_FILTER==='stocks' ? t==='stock' : t==='crypto'; }
+
+function radarTvSymbol(symbol, exchange, type){
+  if(type==='crypto') return 'BINANCE:'+symbol;
+  const ex=(exchange||'').toUpperCase();
+  if(ex==='OTC'||ex.indexOf('OTC')>=0||ex==='PNK'||ex==='OQB'||ex==='OQX') return 'OTC:'+symbol;
+  if(ex==='NMS'||ex==='NGM'||ex==='NCM'||ex.indexOf('NASDAQ')>=0) return 'NASDAQ:'+symbol;
+  if(ex==='NYQ'||ex.indexOf('NYSE')>=0) return 'NYSE:'+symbol;
+  if(ex==='ASE'||ex==='AMEX') return 'AMEX:'+symbol;
+  return symbol;
+}
+
+function openRadarChart(tv, name){
+  const theme = document.body.classList.contains('light-mode') ? 'light' : 'dark';
+  const src = 'https://s.tradingview.com/widgetembed/?symbol='+encodeURIComponent(tv)+
+    '&interval=D&hidesidetoolbar=1&symboledit=1&saveimage=1&hideideas=1&theme='+theme+
+    '&style=1&timezone=Etc%2FUTC&withdateranges=1&allow_symbol_change=1';
+  document.getElementById('chartFrame').src = src;
+  document.getElementById('chartTitle').textContent = (name||tv)+' · '+tv;
+  document.getElementById('chartOpen').href = 'https://www.tradingview.com/chart/?symbol='+encodeURIComponent(tv);
+  document.getElementById('chartModal').style.display='block';
+  document.body.style.overflow='hidden';
+}
+function closeRadarChart(){
+  document.getElementById('chartModal').style.display='none';
+  document.getElementById('chartFrame').src='about:blank';
+  document.body.style.overflow='';
+}
+document.addEventListener('click', function(e){
+  const btn=e.target.closest('.rchartbtn');
+  if(btn) openRadarChart(btn.dataset.tv, btn.dataset.name);
+});
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeRadarChart(); });
+
+async function loadRadar(){
+  const meta=document.getElementById('radarMetaLine');
+  try{
+    const r=await fetch('/api/recon/picks',{headers:{'Accept':'application/json'},cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    RADAR_DATA=await r.json();
+    paintRadar();
+  }catch(e){
+    meta.textContent='could not reach /api/recon/picks — '+e.message;
+    document.getElementById('decisions').innerHTML='<div class="empty">No data. The endpoint is served by the same-origin Vercel function — run it locally with <code>node api/_server.js</code> on :8787 or deploy to snipertrader.ai.</div>';
+  }
+}
+
+function setRadarFilter(f){
+  RADAR_FILTER=f;
+  document.querySelectorAll('#radarFilters .filter-btn').forEach(b=>b.classList.toggle('active',b.dataset.f===f));
+  if(RADAR_DATA) paintRadar();
+}
+
+function paintRadar(){
+  const d=RADAR_DATA; if(!d) return;
+  document.getElementById('radarMetaLine').textContent='generated '+radarFmtTime(d.generatedAt)+' · scanned '+d.universeScanned+' assets · '+(d.methodology?'see methodology below':'');
+  const sb=document.getElementById('radarSimBanner');
+  sb.style.display='flex';
+  sb.innerHTML='<span class="badge gate">SIMULATION</span> '+radarEsc((d.simulation&&d.simulation.note)||'paper only — no live orders.')+' · equity $'+(d.simulation&&d.simulation.equity?d.simulation.equity:'—');
+
+  renderRadarStats(d);
+  renderRadarDecisions(d);
+  renderRadarSmallCaps(d);
+  renderRadarCrypto(d);
+  renderRadarAlerts(d);
+  renderRadarGated(d);
+  document.getElementById('methodology').textContent=d.methodology||'—';
+
+  document.getElementById('sec-smallcaps').style.display = RADAR_FILTER==='crypto' ? 'none' : '';
+  document.getElementById('sec-crypto').style.display = RADAR_FILTER==='stocks' ? 'none' : '';
+}
+
+function renderRadarStats(d){
+  const picks=(d.picks||[]), crypto=(d.crypto||[]), alerts=(d.sellAlerts||[]), rejected=(d.volumeRejected||[]), orders=(d.simulatedOrders||[]), smallcaps=(d.smallCaps||[]);
+  const stats=[
+    ['Stock candidates', picks.length],
+    ['Small-cap / OTC', smallcaps.length],
+    ['Crypto scanned', crypto.length],
+    ['Simulated orders', orders.length],
+    ['Dump alerts', alerts.length],
+    ['Volume-rejected', rejected.length],
+    ['Missing factors', (d.screeningGaps||[]).length+(d.dumpGated||[]).length]
+  ];
+  document.getElementById('radarStats').innerHTML=stats.map(s=>'<div class="rstat"><div class="v">'+s[1]+'</div><div class="l">'+s[0]+'</div></div>').join('');
+}
+
+function renderRadarDecisions(d){
+  const picks=(d.picks||[]), crypto=(d.crypto||[]);
+  const rows=[];
+  if(radarMatchesType('stock')) picks.forEach(p=>rows.push(radarDecisionRow(p,'stock')));
+  if(radarMatchesType('crypto')) crypto.forEach(c=>{ if(c.confirmation) rows.push(radarDecisionRow(c,'crypto')); });
+  const label=RADAR_FILTER==='all'?'':(' '+RADAR_FILTER);
+  if(!rows.length){
+    document.getElementById('decisions').innerHTML='<div class="empty">Zero'+label+' candidates survived all confirmation gates this cycle — the funnel is working (see methodology for the thresholds).</div>';
+  } else {
+    const head='<table><thead><tr><th>Symbol</th><th>Signal</th><th>Conviction</th><th>Weighted</th><th>Volume</th><th>Catalyst (dir)</th><th>Size</th><th>Stop / TP1</th><th>Missing</th></tr></thead><tbody>';
+    document.getElementById('decisions').innerHTML=head+rows.join('')+'</tbody></table>';
+  }
+}
+
+function renderRadarSmallCaps(d){
+  const smallcaps=d.smallCaps||[];
+  if(!smallcaps.length){
+    document.getElementById('smallcaps').innerHTML='<div class="empty">No small-cap / OTC candidates this cycle.</div>';
+  } else {
+    const scRows=smallcaps.map(s => {
+      const tv=radarTvSymbol(s.symbol,s.exchange,'stock');
+      return '<tr>'+
+      '<td><button class="rchartbtn" data-tv="'+radarEsc(tv)+'" data-name="'+radarEsc(s.symbol)+'" title="TradingView chart">📈</button><span class="rsym">'+radarEsc(s.symbol)+'</span>'+(s.otc?' <span class="badge gate">OTC</span>':'')+' <span class="dim">['+radarEsc(s.exchange)+']</span></td>'+
+      '<td>$'+radarN(s.price)+'</td>'+
+      '<td>'+radarN(s.rsi)+'</td>'+
+      '<td>'+(s.high52wProximity!=null?radarN(s.high52wProximity)+'%':'—')+'</td>'+
+      '<td>'+radarN(s.score)+'</td>'+
+      '<td class="dim">'+radarEsc(s.note||'')+'</td>'+
+      '</tr>';
+    }).join('');
+    document.getElementById('smallcaps').innerHTML='<table><thead><tr><th>Symbol</th><th>Price</th><th>RSI</th><th>52w Prox</th><th>Score</th><th>Note</th></tr></thead><tbody>'+scRows+'</tbody></table>';
+  }
+}
+
+function renderRadarCrypto(d){
+  const crypto=d.crypto||[];
+  if(!crypto.length){
+    document.getElementById('crypto').innerHTML='<div class="empty">No crypto scanned this cycle.</div>';
+  } else {
+    const rows=crypto.map(c=>{
+      const dec=c.decision||{};
+      const label=String(c.symbol).replace('USDT','');
+      const tv='BINANCE:'+c.symbol;
+      const posCell=function(){
+        const p=c.positioning||{};
+        if(p.error||!p.note) return '<span class="dim">—</span>';
+        const parts=[];
+        if(p.fundingRate!=null) parts.push('F '+(p.fundingRate*100).toFixed(2)+'%');
+        if(p.oiChangePct!=null) parts.push('OI '+(p.oiChangePct>0?'+':'')+p.oiChangePct+'%');
+        if(!parts.length) return '<span class="dim">—</span>';
+        const col=(p.flags&&p.flags.indexOf('funding-overheat')>=0)?'var(--red)':((p.fundingAvg<0||p.oiChangePct>5)?'var(--green)':'var(--text3)');
+        return '<span style="color:'+col+'" title="'+radarEsc(p.note)+'">'+parts.join(' · ')+'</span>';
+      };
+      return '<tr>'+
+        '<td><button class="rchartbtn" data-tv="'+radarEsc(tv)+'" data-name="'+radarEsc(label)+'" title="TradingView chart">📈</button><span class="rsym">'+radarEsc(label)+'</span> <span class="dim">/USDT</span></td>'+
+        '<td>$'+radarN(c.price)+'</td>'+
+        '<td>'+radarN(c.rsi)+'</td>'+
+        '<td>'+radarN(c.score)+'</td>'+
+        '<td>'+radarEsc(c.setup||'—')+'</td>'+
+        '<td>'+radarN((c.takerBuyRatio||0)*100)+'%</td>'+
+        '<td>'+(c.cone&&c.cone.upPct!=null?radarN(c.cone.upPct)+'%':'—')+'</td>'+
+        '<td>'+posCell()+'</td>'+
+        '<td>'+(dec.signal?'<span class="sig '+radarSigCls(dec.signal)+'">'+radarEsc(dec.signal)+'</span>':'<span class="dim">scanned</span>')+'</td>'+
+        '</tr>';
+    }).join('');
+    document.getElementById('crypto').innerHTML='<table><thead><tr><th>Symbol</th><th>Price</th><th>RSI</th><th>Score</th><th>Setup</th><th>Taker Buy</th><th>Bullish %</th><th>Positioning</th><th>Signal</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  }
+}
+
+function renderRadarAlerts(d){
+  const alerts=(d.sellAlerts||[]).filter(a=>radarMatchesType(a.assetType));
+  const label=RADAR_FILTER==='all'?'':(' for '+RADAR_FILTER);
+  if(!alerts.length){
+    document.getElementById('alerts').innerHTML='<div class="empty">No dump/exit signals'+label+' on the current universe.</div>';
+  } else {
+    document.getElementById('alerts').innerHTML=alerts.map(a=>
+      '<div class="alert"><span class="rsym">'+radarEsc(a.symbol)+'</span> ['+radarEsc(a.assetType)+'] '+
+      a.alerts.map(x=>'<span><span class="lvl">'+radarEsc(x.level)+'</span> '+radarEsc(x.msg)+'</span>').join(' · ')+'</div>'
+    ).join('');
+  }
+}
+
+function renderRadarGated(d){
+  const gaps=(d.screeningGaps||[]).concat((d.dumpGated||[]).map(g=>g+' (dump)'));
+  document.getElementById('gated').innerHTML= gaps.length?gaps.map(g=>'<div class="gate">▸ '+radarEsc(g)+'</div>').join(''):'<div class="empty">None.</div>';
+}
+
+function radarDecisionRow(p,type){
+  const dec=p.decision||{};
+  const conf=p.confirmation||{};
+  const cat=p.catalyst||{};
+  const size=dec.sizing||{};
+  const ex=dec.exits||{};
+  const score=p.score!=null?p.score:(p.signals?p.signals.technical:'—');
+  const label=type==='crypto'?String(p.symbol).replace('USDT',''):p.symbol;
+  const tv=radarTvSymbol(p.symbol,p.exchange,type);
+  return '<tr>'+
+    '<td><button class="rchartbtn" data-tv="'+radarEsc(tv)+'" data-name="'+radarEsc(label)+'" title="TradingView chart">📈</button><span class="rsym">'+radarEsc(label)+'</span> <span class="dim">['+type+']</span></td>'+
+    '<td><span class="sig '+radarSigCls(dec.signal)+'">'+radarEsc(dec.signal||'—')+'</span></td>'+
+    '<td>'+radarN(score)+'</td>'+
+    '<td>'+radarN(dec.weightedScore)+' <span class="dim">/100</span></td>'+
+    '<td>'+radarVolCell(conf)+'</td>'+
+    '<td>'+radarCatCell(cat,dec)+'</td>'+
+    '<td>$'+radarN(size.dollars)+' <span class="dim">('+radarN(size.positionPct)+'%)</span></td>'+
+    '<td>'+radarN(ex.stop)+' / '+radarN(ex.tp1)+'</td>'+
+    '<td class="dim">'+(dec.missingFactors&&dec.missingFactors.length?dec.missingFactors.join(', '):'—')+'</td>'+
+    '</tr>';
+}
+
+function radarVolCell(conf){
+  if(!conf||conf.pass==null) return '<span class="dim">—</span>';
+  if(conf.pass) return '<span style="color:var(--green)">✓ pass</span>';
+  return '<span style="color:var(--red)">✗ '+radarEsc((conf.reasons&&conf.reasons[0])||'fail')+'</span>';
+}
+
+function radarFmtTime(iso){ try{return new Date(iso).toLocaleString('en-US',{hour:'2-digit',minute:'2-digit',month:'short',day:'numeric'});}catch(_){return '—';} }
+
+async function loadRadarTrack(){
+  try{
+    const r=await fetch('/data/recon_track_report.json',{cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    renderRadarTrack(await r.json());
+  }catch(e){
+    document.getElementById('track').innerHTML='<div class="empty">Track record not yet seeded — run <code>node scripts/recon_track.js</code> to record the first snapshot.</div>';
+  }
+}
+
+function radarSignalBreakdown(t){
+  const sig=t.signals;
+  if(!sig) return '';
+  const cell=(s,d)=>{
+    const x=s&&s[d];
+    if(!x||!x.n) return '<span class="dim">accruing…</span>';
+    const ex=x.avgExcess!=null?x.avgExcess:x.avgReturn;
+    const col=ex!=null?(ex>0?'var(--green)':(ex<0?'var(--red)':'var(--text3)')):'var(--text3)';
+    return '<span style="color:'+col+';font-weight:700">'+(ex!=null?(ex>0?'+':'')+ex+'%':'—')+'</span> <span class="dim">vs bench · n='+x.n+' · '+(x.hitRate!=null?x.hitRate+'% hit':'—')+'</span>';
+  };
+  const rows=['BUY','HOLD','SELL'].map(k=>{
+    const s=sig[k]||{tracked:0};
+    return '<tr><td><span class="sig '+radarSigCls(k)+'">'+k+'</span></td><td>'+(s.tracked||0)+'</td><td>'+cell(s,'d1')+'</td><td>'+cell(s,'d5')+'</td><td>'+cell(s,'d20')+'</td></tr>';
+  }).join('');
+  return '<div style="margin:0 0 18px"><div class="thlbl" style="margin-bottom:8px">By signal — does the BUY/HOLD split hold up out-of-sample?</div><table><thead><tr><th>Signal</th><th>Tracked</th><th>+1d</th><th>+5d</th><th>+20d</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+
+function renderRadarTrack(t){
+  const el=document.getElementById('track');
+  if(!t||!t.candidatesTracked){
+    el.innerHTML='<div class="empty">No candidates recorded yet.</div>';
+    return;
+  }
+  const H=t.horizons||{};
+  const cell=(k)=>{ const x=H[k]||{}; if(!x.n) return '<div class="empty">accruing…</div>'; const ex=x.avgExcess!=null?x.avgExcess:x.avgReturn;
+    return '<div class="thit">'+(x.hitRate!=null?x.hitRate+'%':'—')+'</div>'+
+      '<div class="dim">avg '+(x.avgReturn!=null?(x.avgReturn>0?'+':'')+x.avgReturn+'%':'—')+'</div>'+
+      '<div class="dim">vs bench '+(ex!=null?(ex>0?'+':'')+ex+'%':'—')+'</div>'+
+      '<div class="dim">n='+x.n+'</div>'; };
+  let html='<div class="track-head"><span>'+t.candidatesTracked+' candidates · '+t.snapshots+' snapshot(s) · '+t.active+' pending</span>'+
+    '<span class="dim">SPY $'+radarN(t.benchmarks&&t.benchmarks.SPY)+' · BTC $'+radarN(t.benchmarks&&t.benchmarks.BTC)+'</span></div>';
+  html+='<div class="track-horiz">'+
+    '<div class="thbox"><div class="thlbl">+1 day</div>'+cell('d1')+'</div>'+
+    '<div class="thbox"><div class="thlbl">+5 days</div>'+cell('d5')+'</div>'+
+    '<div class="thbox"><div class="thlbl">+20 days</div>'+cell('d20')+'</div>'+
+    '</div>';
+  html+=radarSignalBreakdown(t);
+  const rows=(t.recent||[]).map(c=>{
+    const s=c.settled||{};
+    const r=(k)=>{ const x=s[k]; if(!x) return '<span class="dim">…</span>'; const col=x.ret>0?'var(--green)':(x.ret<0?'var(--red)':'var(--text3)'); const ex=x.bench!=null?(x.ret-x.bench):null;
+      return '<span style="color:'+col+'">'+(x.ret>0?'+':'')+(x.ret*100).toFixed(1)+'%</span>'+(ex!=null?' <span class="dim">('+(ex>0?'+':'')+(ex*100).toFixed(1)+'%)</span>':''); };
+    return '<tr><td><span class="rsym">'+radarEsc(String(c.symbol).replace('USDT',''))+'</span> <span class="dim">['+radarEsc(c.assetType)+']</span></td>'+
+      '<td>'+radarEsc(c.signal||'—')+'</td><td>$'+radarN(c.entry)+'</td>'+
+      '<td>'+r('d1')+'</td><td>'+r('d5')+'</td><td>'+r('d20')+'</td></tr>';
+  }).join('');
+  html+='<table><thead><tr><th>Symbol</th><th>Signal</th><th>Entry</th><th>+1d</th><th>+5d</th><th>+20d</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  el.innerHTML=html;
+}
+
+/* ── tab switching + hash deep-link ── */
+function switchTab(tab){
+  const surf = document.getElementById('tab-surface');
+  const radar = document.getElementById('tab-radar');
+  const sBtn = document.getElementById('tabBtnSurface');
+  const rBtn = document.getElementById('tabBtnRadar');
+  if(!surf || !radar) return;
+  if(tab === 'radar'){
+    surf.hidden = true; radar.hidden = false;
+    if(sBtn) sBtn.classList.remove('active');
+    if(rBtn) rBtn.classList.add('active');
+    if(!window.__radarStarted){
+      window.__radarStarted = true;
+      loadRadar();
+      loadRadarTrack();
+      setInterval(loadRadar, 30*60*1000);
+      setInterval(loadRadarTrack, 30*60*1000);
+    }
+    try{ history.replaceState(null,'','#radar'); }catch(_){}
+  } else {
+    radar.hidden = true; surf.hidden = false;
+    if(rBtn) rBtn.classList.remove('active');
+    if(sBtn) sBtn.classList.add('active');
+    try{ history.replaceState(null,'','#surface'); }catch(_){}
+  }
+}
+
+if(location.hash === '#radar'){ switchTab('radar'); }
 </script>
 
 <div class="modal" id="chartmodal" onclick="if(event.target===this)closeChart()">
