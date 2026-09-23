@@ -11,10 +11,9 @@ const http = require('http');
 const { buildForecast, buildStocks, buildChat, buildReviewLoop, buildPreflight } = require('./_core');
 const { buildAdmin } = require('./_lib/admin/handlers');
 const propApi = require('./prop/[action]');
-const reconPicks = require('./recon/picks');
-const reconRefresh = require('./recon/refresh');
-const reconHealth = require('./recon/health');
+const recon = require('./recon/[action]');
 const traderedge = require('./traderedge/[action]');
+const newsCatalyst = require('./news/catalyst');
 
 const PORT = process.env.KRONOS_PORT || 8787;
 
@@ -40,14 +39,8 @@ const server = http.createServer((req, res) => {
   if (url.pathname.startsWith('/api/prop/')) {
     return propApi(req, vc(res));
   }
-  if (url.pathname === '/api/recon/picks' && req.method === 'GET') {
-    return reconPicks(req, vc(res));
-  }
-  if (url.pathname === '/api/recon/refresh' && req.method === 'GET') {
-    return reconRefresh(req, vc(res));
-  }
-  if (url.pathname === '/api/recon/health' && req.method === 'GET') {
-    return reconHealth(req, vc(res));
+  if (url.pathname.startsWith('/api/recon/')) {
+    return recon(req, vc(res));
   }
   if (url.pathname === '/api/ai/chat' && req.method === 'POST') {
     return buildChat(req, res);
@@ -67,6 +60,9 @@ const server = http.createServer((req, res) => {
   if (url.pathname === '/api/debug/alpaca' && req.method === 'POST') {
     const { buildHandler } = require('./_debug_alpaca');
     return buildHandler('iex')(req, res);
+  }
+  if (url.pathname === '/api/news/catalyst' && req.method === 'GET') {
+    return newsCatalyst(req, vc(res));
   }
   res.writeHead(404, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ error: 'not found — POST /api/kronos/forecast' }));

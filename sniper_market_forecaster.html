@@ -51,6 +51,14 @@
   .controls select:focus{outline:none;border-color:var(--cyan)}
   .navbtn{font-family:var(--font-m);font-size:12px;letter-spacing:.05em;background:var(--panel);color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:9px 14px;cursor:pointer;transition:all .15s;text-transform:uppercase}
   .navbtn:hover{color:var(--fg);border-color:var(--cyan)}
+  .navbtn:disabled{opacity:.5;cursor:default}
+  .searchrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 18px}
+  .symsearch{flex:1;min-width:220px;background:var(--panel);color:var(--fg);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-family:var(--font-m);font-size:13px}
+  .symsearch:focus{outline:none;border-color:var(--cyan)}
+  .symsearch::placeholder{color:var(--faint)}
+  .searchstatus{font-family:var(--font-m);font-size:11px;color:var(--muted)}
+  .searchstatus.err{color:var(--red)}
+  .searchstatus.ok{color:var(--emerald)}
 
   /* symbol header */
   .fchead{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin:0 0 14px;display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1.2fr;gap:16px;align-items:center}
@@ -108,6 +116,20 @@
   .verdict{border:1px solid color-mix(in srgb,var(--gold) 40%,transparent);background:color-mix(in srgb,var(--gold) 6%,transparent);border-radius:10px;padding:14px 16px;font-size:13px;color:var(--fg);line-height:1.6;margin-top:6px}
   .verdict .vh{font-family:var(--font-d);font-size:11px;letter-spacing:.12em;color:var(--gold);margin-bottom:6px;text-transform:uppercase}
 
+  /* news catalyst readout */
+  .newsbadge{font-family:var(--font-m);font-size:9.5px;letter-spacing:.06em;padding:2px 8px;border-radius:20px;border:1px solid var(--border);color:var(--cyan);margin-left:6px;font-weight:400}
+  .newsbadge.heuristic{color:var(--gold)}
+  .newshead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+  .newsbias{font-family:var(--font-m);font-weight:700;font-size:13px;letter-spacing:.03em}
+  .newsbias.BULLISH{color:var(--bull)} .newsbias.BEARISH{color:var(--bear)} .newsbias.NEUTRAL{color:var(--flat)}
+  .newsimpact{font-family:var(--font-d);font-size:24px;font-weight:700;line-height:1}
+  .newsitem{border-top:1px dashed var(--border-soft);padding:11px 0}
+  .newsitem:first-of-type{border-top:none;padding-top:4px}
+  .newsitem .nh{font-family:var(--font-m);font-size:12.5px;font-weight:700;color:var(--fg);line-height:1.45}
+  .newsitem .nm{font-family:var(--font-m);font-size:11px;color:var(--muted);margin-top:4px;line-height:1.55}
+  .newsmeta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:7px}
+  .newsnote{font-family:var(--font-m);font-size:10.5px;color:var(--faint);margin-top:12px;line-height:1.65;border-top:1px solid var(--border-soft);padding-top:10px}
+
   .foot{font-family:var(--font-m);font-size:11px;color:var(--faint);margin-top:34px;border-top:1px solid var(--border-soft);padding-top:14px;line-height:1.7}
   .risknote{color:var(--gold);font-family:var(--font-m);font-size:11.5px}
 </style>
@@ -141,7 +163,14 @@
   </div>
 
   <div class="sec"><span class="num">01</span> SELECT A MARKET — full read</div>
-  <div class="secdesc">Every market in the book (equities, crypto, futures). Pick one to see the complete read: the structure, the seven signals behind the conviction, the empirical probability cone, the trade plan, and the SEC EDGAR catalyst.</div>
+  <div class="secdesc">Every market in the book (equities, crypto, futures). Pick one to see the complete read — or type any ticker/coin below to analyze it live: the structure, the seven signals behind the conviction, the empirical probability cone, the trade plan, and the SEC EDGAR catalyst.</div>
+
+  <div class="searchrow">
+    <input id="symSearch" class="symsearch" type="text" list="symSuggestions" placeholder="Search any symbol — TSLA, BTC, SOLUSDT, GC…" autocomplete="off" spellcheck="false" aria-label="Search any symbol" onkeydown="if(event.key==='Enter')analyzeCustom()">
+    <datalist id="symSuggestions"></datalist>
+    <button class="navbtn" id="analyzeBtn" onclick="analyzeCustom()">Analyze</button>
+    <span id="searchStatus" class="searchstatus"></span>
+  </div>
 
   <div class="controls">
     <select id="symSelect" onchange="selectSymbol(this.value)" aria-label="Select a market"></select>
@@ -157,6 +186,11 @@
   </div>
 
   <div class="dgrid" id="grid"></div>
+
+  <div class="dbox" id="newsbox" style="margin:14px 0">
+    <h4>News catalyst — AI-scored<span id="newsEngine" class="newsbadge"></span></h4>
+    <div id="newsBody"><span class="fl">fetching news…</span></div>
+  </div>
 
   <div class="verdict" id="verdict"></div>
 
@@ -197,6 +231,8 @@ function buildSelector(){
     html += '</optgroup>';
   }
   sel.innerHTML = html;
+  const dl = document.getElementById('symSuggestions');
+  if(dl) dl.innerHTML = ORDER.map(s => `<option value="${s}">`).join('');
 }
 
 function indexOfSym(sym){ for(let i=0;i<ORDER.length;i++) if(ORDER[i]===sym) return i; return 0; }
@@ -207,12 +243,142 @@ function selectSymbol(sym){
   document.getElementById('symSelect').value = sym;
   renderReadout();
   loadChart();
+  loadNewsCatalyst(sym);
 }
 
 function step(d){
   const i = indexOfSym(current ? current.symbol : ORDER[0]);
   const n = (i + d + ORDER.length) % ORDER.length;
   selectSymbol(ORDER[n]);
+}
+
+/* ── free-form symbol search (any ticker / coin / futures) ── */
+function classifyCustom(raw){
+  let s = (raw||'').trim().toUpperCase().replace(/\s+/g,'').replace(/\//g,'').replace(/[^A-Z0-9.\-]/g,'');
+  if(!s) return null;
+  if(FUTURES.includes(s) || /^[A-Z]{1,3}1!$/.test(s)) return {cls:'futures', sym:s.replace(/1!$/,'')};
+  const quotes = ['USDT','USDC','BUSD','TUSD','FDUSD','BTC','ETH','BNB','DAI','USD','EUR','TRY','PAX'];
+  const hasQuote = quotes.some(q => s.endsWith(q) && s.length > q.length);
+  if(hasQuote) return {cls:'crypto', sym:s};
+  if(CRYPTO.some(c => c.replace(/USDT$/,'') === s)) return {cls:'crypto', sym:s+'USDT'};
+  return {cls:'equity', sym:s};
+}
+
+function setStatus(el, cls, msg){ el.className = 'searchstatus' + (cls ? ' ' + cls : ''); el.textContent = msg; }
+
+async function analyzeCustom(){
+  const raw = document.getElementById('symSearch').value;
+  const st = document.getElementById('searchStatus');
+  if(!raw || !raw.trim()){ setStatus(st, 'err', 'Type a symbol first.'); return; }
+  const c = classifyCustom(raw);
+  if(!c){ setStatus(st, 'err', 'Unrecognized symbol.'); return; }
+
+  // already in the book → just select it (already live or snapshot)
+  if(ORDER.includes(c.sym)){
+    const m = merged.find(x => x.symbol === c.sym);
+    selectSymbol(c.sym);
+    setStatus(st, 'ok', '✓ ' + c.sym + ' is already in the book (' + (m && m.source === 'LIVE' ? 'live' : 'snapshot') + ').');
+    return;
+  }
+
+  // new symbol → fetch real history and run the same seven-signal analysis
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true; btn.textContent = '…';
+  setStatus(st, '', 'Fetching ' + c.sym + ' (' + c.cls + ') …');
+  try{
+    let bars;
+    if(c.cls === 'crypto') bars = await fetchBinance(c.sym);
+    else if(c.cls === 'futures') bars = await fetchFutures(c.sym);
+    else bars = await fetchAlpaca(c.sym);
+    if(!bars || bars.length < 60) throw new Error('no price history for ' + c.sym);
+    CLS[c.sym] = c.cls;   // so dispSym / tvSymbol / labels render correctly
+    const r = analyzeSymbol(c.sym, bars, null, DATA.conditional);
+    if(!r) throw new Error('could not analyze');
+    r.source = 'LIVE';
+    SNAP_MAP[c.sym] = r;
+    merged.push(r);
+    ORDER.push(c.sym);
+    buildSelector();
+    current = r;
+    document.getElementById('symSelect').value = c.sym;
+    renderReadout();
+    loadChart();
+    loadNewsCatalyst(c.sym);
+    setStatus(st, 'ok', '✓ Live read for ' + c.sym + ' · ' + r.n_bars + ' days · setup ' + r.trade.direction);
+  }catch(e){
+    const msg = e.message || '';
+    const friendly = /invalid symbol|not found|no price history|no data|pair|HTTP 4|HTTP 5|insufficient/i.test(msg);
+    const hint = friendly
+      ? 'No usable data for "' + raw.trim() + '" — it may not be a valid symbol (crypto needs a pair like BTCUSDT, equities use the ticker), or the data source is unreachable right now.'
+      : msg;
+    setStatus(st, 'err', '✖ ' + hint);
+  }finally{
+    btn.disabled = false; btn.textContent = 'Analyze';
+  }
+}
+
+/* ── news catalyst (LLM-scored) readout — context, not a signal ── */
+const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'http://localhost:8787' : '';
+const newsCache = {};
+let newsSeq = 0;
+
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function biasLabel(b){ return b === 'BULLISH' ? '▲ Bullish' : (b === 'BEARISH' ? '▼ Bearish' : '· Neutral'); }
+
+async function loadNewsCatalyst(sym){
+  const body = document.getElementById('newsBody');
+  const eng = document.getElementById('newsEngine');
+  const seq = ++newsSeq;
+  if(newsCache[sym]){ renderNews(newsCache[sym]); return; }
+  body.innerHTML = '<span class="fl">fetching news…</span>';
+  eng.textContent = '';
+  try{
+    const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    const to = ctrl ? setTimeout(() => ctrl.abort(), 15000) : null;
+    const r = await fetch((API_BASE || '') + '/api/news/catalyst?symbol=' + encodeURIComponent(sym), ctrl ? { signal: ctrl.signal } : undefined);
+    if(to) clearTimeout(to);
+    const j = await r.json();
+    if(seq !== newsSeq) return;   // stale response — a newer symbol was selected
+    if(!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+    newsCache[sym] = j;
+    renderNews(j);
+  }catch(e){
+    if(seq !== newsSeq) return;
+    eng.textContent = 'unavailable';
+    eng.className = 'newsbadge heuristic';
+    body.innerHTML = '<span class="fl">News catalyst unavailable — ' + escapeHtml(String(e.message || 'network')) + '.</span>';
+  }
+}
+
+function renderNews(j){
+  const eng = document.getElementById('newsEngine');
+  const body = document.getElementById('newsBody');
+  eng.textContent = j.engine === 'llm' ? ('AI · ' + (j.provider || 'LLM')) : 'heuristic';
+  eng.className = 'newsbadge' + (j.engine === 'heuristic' ? ' heuristic' : '');
+  const bias = j.sentiment_bias || 'NEUTRAL';
+  const impact = j.market_impact_score || 0;
+  const barClr = bias === 'BULLISH' ? 'var(--bull)' : (bias === 'BEARISH' ? 'var(--bear)' : 'var(--flat)');
+  let html = '';
+  html += '<div class="newshead"><span class="newsbias ' + bias + '">' + biasLabel(bias) + '</span>'
+    + '<span class="newsimpact">' + impact + '<small style="font-family:var(--font-m);font-size:11px;color:var(--faint);font-weight:400"> / 100 impact</small></span></div>';
+  html += '<div class="bar" style="margin-bottom:6px"><div style="width:' + Math.min(100, impact) + '%;height:100%;background:' + barClr + '"></div></div>';
+  if(j.catalysts && j.catalysts.length){
+    for(const c of j.catalysts){
+      const cb = c.sentiment_bias || 'NEUTRAL';
+      html += '<div class="newsitem"><div class="nh">' + escapeHtml(c.headline || c.catalyst_event) + '</div>'
+        + '<div class="newsmeta"><span class="tag on">' + escapeHtml(c.catalyst_event || 'Other') + '</span>'
+        + '<span class="newsbias ' + cb + '" style="font-size:11px">' + biasLabel(cb) + '</span>'
+        + '<span class="fl" style="font-family:var(--font-m);font-size:10.5px">impact ' + (c.market_impact_score || 0) + '</span>'
+        + '<span class="fl" style="font-family:var(--font-m);font-size:10.5px">' + escapeHtml(c.time_horizon || 'NONE') + '</span></div>'
+        + '<div class="nm">' + escapeHtml(c.executive_summary || '') + '</div></div>';
+    }
+  }else{
+    html += '<div class="nm" style="margin-top:6px">No high-confidence catalysts on the current headline tape.'
+      + (j.headlines && j.headlines.length ? ' (' + j.headlines.length + ' headlines scanned — nothing material or relevant to this ticker.)' : ' (No headlines returned.)')
+      + (j.note ? ' ' + escapeHtml(j.note) : '') + '</div>';
+  }
+  html += '<div class="newsnote">News readout for context — it is <b>not</b> folded into the conviction score (backtests show catalyst timing has no stable edge). Sources: Google News headlines + SEC EDGAR filings, scored by ' + (j.engine === 'llm' ? 'DeepSeek' : 'a keyword heuristic') + '. ' + (j.asOf ? 'As of ' + new Date(j.asOf).toLocaleString() + '.' : '') + '</div>';
+  body.innerHTML = html;
 }
 
 function renderReadout(){

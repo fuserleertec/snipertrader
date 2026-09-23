@@ -11,16 +11,16 @@
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
-const { convictionScore, tierOf, TIER_META, computeLevels } = require('../_lib/recon/engine');
-const { insiderFor, insiderStrength } = require('../_lib/recon/insider');
-const { congressionalRecent, congressionalStrength } = require('../_lib/recon/congressional');
-const { coneSignal } = require('../_lib/recon/kronos_cone');
-const { scanCrypto } = require('../_lib/recon/crypto_scan');
-const { stockVolumeConfirm, cryptoConfirm, lastCompletedBarIndex } = require('../_lib/recon/confirm');
-const { catalystScore } = require('../_lib/recon/catalyst');
-const { stockDumpSignals, GATED: DUMP_GATED } = require('../_lib/recon/dump');
-const { stockOrderFlow, ORDERFLOW_GATED } = require('../_lib/recon/orderflow');
-const { decideFull, SIM_EQUITY } = require('../_lib/recon/decision');
+const { convictionScore, tierOf, TIER_META, computeLevels } = require('./engine');
+const { insiderFor, insiderStrength } = require('./insider');
+const { congressionalRecent, congressionalStrength } = require('./congressional');
+const { coneSignal } = require('./kronos_cone');
+const { scanCrypto } = require('./crypto_scan');
+const { stockVolumeConfirm, cryptoConfirm, lastCompletedBarIndex } = require('./confirm');
+const { catalystScore } = require('./catalyst');
+const { stockDumpSignals, GATED: DUMP_GATED } = require('./dump');
+const { stockOrderFlow, ORDERFLOW_GATED } = require('./orderflow');
+const { decideFull, SIM_EQUITY } = require('./decision');
 
 const UA = { 'User-Agent': 'Mozilla/5.0 (research; snipertrader.ai recon pipeline)' };
 const CACHE_TTL_MS = 30 * 60 * 1000;
@@ -34,7 +34,7 @@ let _cache = { ts: 0, payload: null };
 // per-instance mirror. `readDiskCache` reads /tmp first (freshest on a warm
 // instance), then the committed file — so a cold start serves a real snapshot in
 // ~ms instead of blocking ~40s on a live 360-symbol scan (and never 504s).
-const ROOT = path.join(__dirname, '..', '..');
+const ROOT = path.join(__dirname, '..', '..', '..');
 const DATA_PATH = path.join(ROOT, 'data', 'recon.json');
 const TMP_CACHE = '/tmp/recon_cache.json';
 
@@ -488,7 +488,7 @@ function health() {
   };
 }
 
-module.exports = async (req, res) => {
+async function handlePicks(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   try {
     // 1) Warm in-memory cache (<30 min) → fresh + fast.
@@ -521,18 +521,17 @@ module.exports = async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: String(e.message || e) });
   }
-};
-module.exports.buildSymbol = buildSymbol;
-module.exports.run = run;
-module.exports.health = health;
+}
+
+module.exports = { handlePicks, buildSymbol, run, health };
 
 // Test/diagnostic hook (harmless in prod; used by node test harness)
 if (require.main === module) {
   const arg = process.argv[2];
   if (arg) {
     (async () => {
-      const { buildSymbol } = require('./picks');
-      const cong = await require('../_lib/recon/congressional').congressionalRecent(7);
+      const { buildSymbol } = require('./run');
+      const cong = await require('./congressional').congressionalRecent(7);
       const r = await buildSymbol(arg, 'NASDAQ', cong);
       console.log(JSON.stringify(r, null, 2));
     })().catch((e) => { console.error('ERR', e); process.exit(1); });
