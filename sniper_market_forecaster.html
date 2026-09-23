@@ -130,6 +130,12 @@
   .newsmeta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:7px}
   .newsnote{font-family:var(--font-m);font-size:10.5px;color:var(--faint);margin-top:12px;line-height:1.65;border-top:1px solid var(--border-soft);padding-top:10px}
 
+  /* monte carlo fan */
+  .mcsvg{width:100%;height:120px;display:block;margin:2px 0 4px}
+  .mc-band-outer{fill:color-mix(in srgb, var(--cyan) 12%, transparent)}
+  .mc-band-inner{fill:color-mix(in srgb, var(--cyan) 24%, transparent)}
+  .mc-med{fill:none;stroke:var(--cyan);stroke-width:1.5}
+
   .foot{font-family:var(--font-m);font-size:11px;color:var(--faint);margin-top:34px;border-top:1px solid var(--border-soft);padding-top:14px;line-height:1.7}
   .risknote{color:var(--gold);font-family:var(--font-m);font-size:11.5px}
 </style>
@@ -381,6 +387,49 @@ function renderNews(j){
   body.innerHTML = html;
 }
 
+function mcFanSVG(mc){
+  if(!mc || !mc.bootstrap || !mc.bootstrap.fan || !mc.bootstrap.fan.length) return '';
+  const H = mc.horizon, fan = mc.bootstrap.fan, last = mc.last;
+  const vals = [last];
+  fan.forEach(f => vals.push(f[0], f[4]));
+  let lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+  const pad = (hi - lo) * 0.10 || last * 0.02 || 1;
+  lo -= pad; hi += pad;
+  const W = 260, HH = 120;
+  const X = t => (t / H) * W;
+  const Y = v => HH - ((v - lo) / (hi - lo)) * HH;
+  const band = (iLo, iHi, cls) => {
+    let d = 'M ' + X(0) + ' ' + Y(last);
+    for(let t = 1; t <= H; t++) d += ' L ' + X(t) + ' ' + Y(fan[t-1][iHi]);
+    for(let t = H; t >= 1; t--) d += ' L ' + X(t) + ' ' + Y(fan[t-1][iLo]);
+    return '<path d="' + d + ' Z" class="' + cls + '"/>';
+  };
+  let med = 'M ' + X(0) + ' ' + Y(last);
+  for(let t = 1; t <= H; t++) med += ' L ' + X(t) + ' ' + Y(fan[t-1][2]);
+  return '<svg class="mcsvg" viewBox="0 0 ' + W + ' ' + HH + '" preserveAspectRatio="none" role="img" aria-label="Monte Carlo percentile fan">'
+    + band(0, 4, 'mc-band-outer') + band(1, 3, 'mc-band-inner')
+    + '<path d="' + med + '" class="mc-med"/></svg>';
+}
+
+function mcBox(r){
+  const mc = r && r.mc;
+  if(!mc){
+    return '<div class="dbox"><h4>Monte Carlo range</h4><div class="fl" style="font-family:var(--font-m);font-size:11.5px">No live feed for this symbol — Monte Carlo range unavailable (needs real price history).</div></div>';
+  }
+  const b = mc.bootstrap, g = mc.gbm;
+  return '<div class="dbox"><h4>Monte Carlo range — realized-vol calibrated</h4>'
+    + mcFanSVG(mc)
+    + '<div class="lbl" style="margin-top:4px"><span>today</span><span>+' + mc.horizon + 'd · p50</span></div>'
+    + '<div class="lv" style="margin-top:8px"><span class="n">P(up)</span><span class="v up">' + b.pUp + '%</span></div>'
+    + '<div class="lv"><span class="n">P(down)</span><span class="v dn">' + b.pDown + '%</span></div>'
+    + '<div class="lv"><span class="n">median (p50)</span><span class="v">' + fmtPx(b.p50) + '</span></div>'
+    + '<div class="lv"><span class="n">5–95% range</span><span class="v fl">' + fmtPx(b.p5) + ' – ' + fmtPx(b.p95) + '</span></div>'
+    + '<div class="lv"><span class="n">calibration</span><span class="v fl">σ ' + mc.sigma_pct + '%/day · μ ' + mc.mu_pct + '%/day · ' + mc.n + 'd · ' + mc.nPaths + ' paths</span></div>'
+    + '<div class="lv"><span class="n">GBM cross-check</span><span class="v fl">P(up) ' + g.pUp + '% · median ' + fmtPx(g.p50) + '</span></div>'
+    + '<div style="margin-top:10px;font-family:var(--font-m);font-size:10.5px;color:var(--faint);line-height:1.6">Bootstrap resample of this name\'s <b>actual</b> daily moves + a log-normal fit — a statistical range over the next ' + mc.horizon + ' days, not a directional prediction. No edge is implied.</div>'
+    + '</div>';
+}
+
 function renderReadout(){
   const r = current; if(!r) return;
   const mf = r.ensemble, c = r.cone, t = r.trade, k = r.structure;
@@ -433,6 +482,7 @@ function renderReadout(){
       <div class="lv"><span class="n">1σ up cone</span><span class="v up">${c?fmtPx(c.up):'—'}</span></div>
       <div class="lv"><span class="n">1σ down cone</span><span class="v dn">${c?fmtPx(c.down):'—'}</span></div>
     </div>
+    ${mcBox(r)}
     <div class="dbox">
       <h4>Trade plan</h4>
       <div class="lv"><span class="n">direction</span><span class="v ${dirCls}">${dir}</span></div>

@@ -201,6 +201,50 @@ function conviction(cone, trade){
   return Math.round(50 + (pWin - pLoss) / 2);
 }
 
+/* ── real Monte Carlo (bootstrap + GBM, calibrated to realized returns) ──
+   NOT the old MiroFish seeded random-walk: these paths are sampled from the
+   symbol's ACTUAL historical daily log-returns (bootstrap, non-parametric) and
+   a log-normal GBM fit to its realized drift/vol. Output is a percentile FAN —
+   a statistical range, not a directional prediction. */
+function mulberry32(a){ return function(){ a|=0; a=(a+0x6D2B79F5)|0; let t=Math.imul(a^a>>>15,1|a); t=(t+Math.imul(t^t>>>7,61|t))^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function gauss(rng){ let u=0,v=0; while(u===0)u=rng(); while(v===0)v=rng(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+
+function monteCarlo(bars, opts){
+  opts = opts || {};
+  const horizon = opts.horizon || 5;
+  const nPaths = opts.nPaths || 2000;
+  const seed = opts.seed != null ? opts.seed : 0x9E3779B1;
+  if(!bars || bars.length < 40) return null;
+  const closes = bars.map(b => b.c);
+  const n = closes.length;
+  const rets = [];
+  for(let i=1;i<n;i++) rets.push(Math.log(closes[i]/closes[i-1]));
+  const mu = rets.reduce((a,b)=>a+b,0)/rets.length;
+  const va = rets.reduce((a,r)=>a+(r-mu)*(r-mu),0)/rets.length;
+  const sigma = Math.sqrt(va);
+  const last = closes[n-1];
+
+  function pct(sorted, q){ if(!sorted.length) return 0; const idx=(sorted.length-1)*q; const lo=Math.floor(idx), hi=Math.ceil(idx); if(lo===hi) return sorted[lo]; return sorted[lo]*(hi-idx)+sorted[hi]*(idx-lo); }
+  function qs(arr){ const s=Array.from(arr).sort((a,b)=>a-b); return [pct(s,0.05),pct(s,0.25),pct(s,0.5),pct(s,0.75),pct(s,0.95)]; }
+
+  function simulate(stepFn){
+    const cur = new Float64Array(nPaths); cur.fill(last);
+    const fan = [];
+    for(let t=0;t<horizon;t++){ for(let p=0;p<nPaths;p++) cur[p]=stepFn(cur[p]); fan.push(qs(cur)); }
+    const term = Array.from(cur);
+    let up=0, down=0; for(const x of term){ if(x>last) up++; else if(x<last) down++; }
+    const tp = qs(term);
+    return { fan, p5:+tp[0].toFixed(2), p25:+tp[1].toFixed(2), p50:+tp[2].toFixed(2), p75:+tp[3].toFixed(2), p95:+tp[4].toFixed(2),
+      pUp:+(up/nPaths*100).toFixed(1), pDown:+(down/nPaths*100).toFixed(1), pFlat:+((nPaths-up-down)/nPaths*100).toFixed(1) };
+  }
+
+  const rng = mulberry32(seed);
+  const boot = simulate(prev => prev * Math.exp(rets[Math.floor(rng()*rets.length)]));
+  const gbm = simulate(prev => prev * Math.exp((mu - sigma*sigma/2) + sigma*gauss(rng)));
+
+  return { horizon, nPaths, n, last:+last, mu_pct:+(mu*100).toFixed(3), sigma_pct:+(sigma*100).toFixed(2), bootstrap:boot, gbm:gbm };
+}
+
 function analyzeSymbol(sym, bars, u, cond){
   if(!bars || bars.length < 60) return null;
   const k = structure(bars), mf = ensemble(bars, k, u);
@@ -210,7 +254,8 @@ function analyzeSymbol(sym, bars, u, cond){
   const cn = cone(bars, bucket, perSym, pooled), tl = tradeLevels(bars, k, mf.consensus);
   const prev = bars[bars.length-2] ? bars[bars.length-2].c : bars[bars.length-1].c, chg = (bars[bars.length-1].c/prev-1)*100;
   return {symbol:sym, yahoo:'', currency:'', last:bars[bars.length-1].c, chg_pct:+chg.toFixed(2),
-    structure:k, ensemble:mf, cone:cn, trade:tl, conviction:conviction(cn, tl), n_bars:bars.length};
+    structure:k, ensemble:mf, cone:cn, trade:tl, conviction:conviction(cn, tl), n_bars:bars.length,
+    mc: monteCarlo(bars)};
 }
 
 /* ── data fetchers ── */
