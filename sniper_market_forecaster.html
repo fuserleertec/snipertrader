@@ -138,6 +138,18 @@
   .mc-band-inner{fill:color-mix(in srgb, var(--cyan) 24%, transparent)}
   .mc-med{fill:none;stroke:var(--cyan);stroke-width:1.5}
 
+  /* forward path canvas (price history + projection + targets) */
+  .fpsvg{width:100%;height:200px;display:block;margin:2px 0 4px}
+  .fp-hist{fill:none;stroke:var(--muted);stroke-width:1.2}
+  .fp-band-outer{fill:color-mix(in srgb, var(--cyan) 12%, transparent)}
+  .fp-band-inner{fill:color-mix(in srgb, var(--cyan) 24%, transparent)}
+  .fp-med{fill:none;stroke:var(--cyan);stroke-width:1.5}
+  .fp-cond{fill:none;stroke:var(--gold);stroke-width:1.6;stroke-dasharray:4 3}
+  .fp-target{stroke:var(--gold);stroke-width:0.8;stroke-dasharray:3 3;opacity:.55}
+  .fp-now{stroke:var(--faint);stroke-width:1;stroke-dasharray:2 3}
+  .fplegend{font-family:var(--font-m);font-size:9.5px;color:var(--muted);margin:0 0 8px;line-height:1.7}
+  .fplegend .c{color:var(--cyan)} .fplegend .g{color:var(--gold)}
+
   .foot{font-family:var(--font-m);font-size:11px;color:var(--faint);margin-top:34px;border-top:1px solid var(--border-soft);padding-top:14px;line-height:1.7}
   .risknote{color:var(--gold);font-family:var(--font-m);font-size:11.5px}
 </style>
@@ -403,6 +415,8 @@ function renderNews(j){
     const fan = gbmFanCustom(mc.last, mu + biasDrift, sigma * sc.sigmaNews, mc.horizon, 2000);
     const lb = fan[fan.length - 1];
     const st = (current && current.structure) || {};
+    const fp = document.getElementById('fpCanvas');
+    if(fp) fp.innerHTML = forwardCanvasSVG(mc, st, fan);
     const targets = [];
     if(st.resistance != null && lb.p50 >= st.resistance) targets.push('resistance ' + fmtPx(st.resistance));
     if(st.support != null && lb.p50 <= st.support) targets.push('support ' + fmtPx(st.support));
@@ -421,39 +435,65 @@ function renderNews(j){
   body.innerHTML = html;
 }
 
-function mcFanSVG(mc){
-  if(!mc || !mc.bootstrap || !mc.bootstrap.fan || !mc.bootstrap.fan.length) return '';
-  const H = mc.horizon, fan = mc.bootstrap.fan, last = mc.last;
-  const vals = [last];
-  fan.forEach(f => vals.push(f[0], f[4]));
-  let lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
-  const pad = (hi - lo) * 0.10 || last * 0.02 || 1;
+function forwardCanvasSVG(mc, structure, cond){
+  if(!mc || !mc.bootstrap || !mc.recent || !mc.recent.length) return '';
+  const H = mc.horizon, hist = mc.recent, fan = mc.bootstrap.fan, last = mc.last;
+  const st = structure || {};
+  const targets = [];
+  if(st.support != null) targets.push(st.support);
+  if(st.resistance != null) targets.push(st.resistance);
+  if(st.fvg) targets.push(st.fvg.zone[0], st.fvg.zone[1]);
+
+  let lo = Math.min(last, Math.min.apply(null, hist));
+  let hi = Math.max(last, Math.max.apply(null, hist));
+  fan.forEach(f => { lo = Math.min(lo, f[0]); hi = Math.max(hi, f[4]); });
+  if(cond){ cond.forEach(c => { lo = Math.min(lo, c.p10, c.p50, c.p90); hi = Math.max(hi, c.p10, c.p50, c.p90); }); }
+  targets.forEach(t => { lo = Math.min(lo, t); hi = Math.max(hi, t); });
+  const pad = (hi - lo) * 0.08 || last * 0.02 || 1;
   lo -= pad; hi += pad;
-  const W = 260, HH = 120;
-  const X = t => (t / H) * W;
+
+  const W = 600, HH = 200, histN = hist.length, total = histN + H;
+  const X = i => (i / total) * W;
   const Y = v => HH - ((v - lo) / (hi - lo)) * HH;
+
+  let s = '';
+  for(const t of targets){
+    s += '<line x1="0" x2="' + W + '" y1="' + Y(t).toFixed(1) + '" y2="' + Y(t).toFixed(1) + '" class="fp-target"/>';
+  }
+  let hd = '';
+  for(let i = 0; i < histN; i++) hd += (i ? ' L ' : 'M ') + X(i).toFixed(1) + ' ' + Y(hist[i]).toFixed(1);
+  s += '<path d="' + hd + '" class="fp-hist"/>';
+  s += '<line x1="' + X(histN-1).toFixed(1) + '" x2="' + X(histN-1).toFixed(1) + '" y1="0" y2="' + HH + '" class="fp-now"/>';
+
   const band = (iLo, iHi, cls) => {
-    let d = 'M ' + X(0) + ' ' + Y(last);
-    for(let t = 1; t <= H; t++) d += ' L ' + X(t) + ' ' + Y(fan[t-1][iHi]);
-    for(let t = H; t >= 1; t--) d += ' L ' + X(t) + ' ' + Y(fan[t-1][iLo]);
+    let d = 'M ' + X(histN-1).toFixed(1) + ' ' + Y(last).toFixed(1);
+    for(let t = 1; t <= H; t++) d += ' L ' + X(histN-1+t).toFixed(1) + ' ' + Y(fan[t-1][iHi]).toFixed(1);
+    for(let t = H; t >= 1; t--) d += ' L ' + X(histN-1+t).toFixed(1) + ' ' + Y(fan[t-1][iLo]).toFixed(1);
     return '<path d="' + d + ' Z" class="' + cls + '"/>';
   };
-  let med = 'M ' + X(0) + ' ' + Y(last);
-  for(let t = 1; t <= H; t++) med += ' L ' + X(t) + ' ' + Y(fan[t-1][2]);
-  return '<svg class="mcsvg" viewBox="0 0 ' + W + ' ' + HH + '" preserveAspectRatio="none" role="img" aria-label="Monte Carlo percentile fan">'
-    + band(0, 4, 'mc-band-outer') + band(1, 3, 'mc-band-inner')
-    + '<path d="' + med + '" class="mc-med"/></svg>';
+  s += band(0, 4, 'fp-band-outer') + band(1, 3, 'fp-band-inner');
+  let med = 'M ' + X(histN-1).toFixed(1) + ' ' + Y(last).toFixed(1);
+  for(let t = 1; t <= H; t++) med += ' L ' + X(histN-1+t).toFixed(1) + ' ' + Y(fan[t-1][2]).toFixed(1);
+  s += '<path d="' + med + '" class="fp-med"/>';
+
+  if(cond && cond.length){
+    let cd = 'M ' + X(histN-1).toFixed(1) + ' ' + Y(last).toFixed(1);
+    for(let t = 0; t < cond.length && t < H; t++) cd += ' L ' + X(histN+t).toFixed(1) + ' ' + Y(cond[t].p50).toFixed(1);
+    s += '<path d="' + cd + '" class="fp-cond"/>';
+  }
+  return '<svg class="fpsvg" viewBox="0 0 ' + W + ' ' + HH + '" preserveAspectRatio="none" role="img" aria-label="Forward path canvas">' + s + '</svg>';
 }
 
 function mcBox(r){
   const mc = r && r.mc;
   if(!mc){
-    return '<div class="dbox"><h4>Monte Carlo range</h4><div class="fl" style="font-family:var(--font-m);font-size:11.5px">No live feed for this symbol — Monte Carlo range unavailable (needs real price history).</div></div>';
+    return '<div class="dbox"><h4>Forward Path Canvas</h4><div class="fl" style="font-family:var(--font-m);font-size:11.5px">No live feed for this symbol — forward projection unavailable (needs real price history).</div></div>';
   }
   const b = mc.bootstrap, g = mc.gbm;
-  return '<div class="dbox"><h4>Monte Carlo range — realized-vol calibrated</h4>'
-    + mcFanSVG(mc)
-    + '<div class="lbl" style="margin-top:4px"><span>today</span><span>+' + mc.horizon + 'd · p50</span></div>'
+  return '<div class="dbox"><h4>Forward Path Canvas — Monte Carlo projection</h4>'
+    + '<div id="fpCanvas">' + forwardCanvasSVG(mc, r.structure, null) + '</div>'
+    + '<div class="fplegend"><span class="c">cyan band</span> = unconditional Monte Carlo · <span class="g">gold dashed</span> = sentiment-conditioned P50 · <span class="g">gold dotted</span> = structure target</div>'
+    + '<div class="lbl" style="margin-top:4px"><span>history (' + (mc.recent ? mc.recent.length : '') + 'd)</span><span>+ ' + mc.horizon + 'd forecast</span></div>'
     + '<div class="lv" style="margin-top:8px"><span class="n">P(up)</span><span class="v up">' + b.pUp + '%</span></div>'
     + '<div class="lv"><span class="n">P(down)</span><span class="v dn">' + b.pDown + '%</span></div>'
     + '<div class="lv"><span class="n">median (p50)</span><span class="v">' + fmtPx(b.p50) + '</span></div>'

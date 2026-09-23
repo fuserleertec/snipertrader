@@ -242,7 +242,8 @@ function monteCarlo(bars, opts){
   const boot = simulate(prev => prev * Math.exp(rets[Math.floor(rng()*rets.length)]));
   const gbm = simulate(prev => prev * Math.exp((mu - sigma*sigma/2) + sigma*gauss(rng)));
 
-  return { horizon, nPaths, n, last:+last, mu_pct:+(mu*100).toFixed(3), sigma_pct:+(sigma*100).toFixed(2), bootstrap:boot, gbm:gbm };
+  return { horizon, nPaths, n, last:+last, mu_pct:+(mu*100).toFixed(3), sigma_pct:+(sigma*100).toFixed(2), bootstrap:boot, gbm:gbm,
+    recent: closes.slice(-60).map(c => +c.toFixed(2)) };
 }
 
 /* GBM fan with EXPLICIT drift/vol — used for the news-conditioned forward path
