@@ -207,8 +207,8 @@
   <div class="fchead" id="fchead"></div>
 
   <div class="dbox" style="margin-bottom:14px">
-    <h4>Quick chart — TradingView <a class="tvlink" id="chartlink" href="#" target="_blank" rel="noopener">open full chart ↗</a></h4>
-    <div class="tv-holder" id="tvph"></div>
+    <h4>Chart — AI Chart Analyzer <a class="tvlink" href="https://chart-ai.snipertrader.ai" target="_blank" rel="noopener">open ↗</a></h4>
+    <div class="fl" style="font-family:var(--font-m);font-size:12px;color:var(--muted)">Interactive charts, VWAP suite and AI narration now live in the AI Chart Analyzer.</div>
   </div>
 
   <div class="dgrid" id="grid"></div>
@@ -269,7 +269,6 @@ function selectSymbol(sym){
   current = merged.find(x => x.symbol === sym) || SNAP_MAP[sym];
   document.getElementById('symSelect').value = sym;
   renderReadout();
-  loadChart();
   loadNewsCatalyst(sym);
 }
 
@@ -318,7 +317,7 @@ async function analyzeCustom(){
     else if(c.cls === 'futures') bars = await fetchFutures(c.sym);
     else bars = await fetchAlpaca(c.sym);
     if(!bars || bars.length < 60) throw new Error('no price history for ' + c.sym);
-    CLS[c.sym] = c.cls;   // so dispSym / tvSymbol / labels render correctly
+    CLS[c.sym] = c.cls;   // so dispSym / labels render correctly
     const r = analyzeSymbol(c.sym, bars, null, DATA.conditional);
     if(!r) throw new Error('could not analyze');
     r.source = 'LIVE';
@@ -329,7 +328,6 @@ async function analyzeCustom(){
     current = r;
     document.getElementById('symSelect').value = c.sym;
     renderReadout();
-    loadChart();
     loadNewsCatalyst(c.sym);
     setStatus(st, 'ok', '✓ Live read for ' + c.sym + ' · ' + r.n_bars + ' days · setup ' + r.trade.direction);
   }catch(e){
@@ -682,19 +680,10 @@ function renderReadout(){
   document.getElementById('asof').textContent = ASOF;
 }
 
-function loadChart(){
-  const r = current; if(!r) return;
-  const tv = tvSymbol(r.symbol);
-  const theme = document.body.classList.contains('light-mode') ? 'light' : 'dark';
-  document.getElementById('chartlink').href = 'https://www.tradingview.com/chart/?symbol=' + encodeURIComponent(tv);
-  document.getElementById('tvph').innerHTML = `<iframe src="https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(tv)}&interval=D&hidesidetoolbar=1&symboledit=0&saveimage=0&theme=${theme}&style=1&locale=en&withdateranges=0" loading="lazy" title="${dispSym(r.symbol)} chart"></iframe>`;
-}
-
 function toggleTheme(){
   const light = document.body.classList.toggle('light-mode');
   document.getElementById('themeLabel').textContent = light ? 'LIGHT' : 'DARK';
   document.querySelector('.tt-icon').textContent = light ? '☀️' : '🌙';
-  if(current) loadChart();
 }
 
 if(location.search.includes('dark')){
