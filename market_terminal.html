@@ -247,14 +247,9 @@
   .radar .thit{font-family:var(--font-display);font-size:20px;color:var(--emerald);margin-bottom:4px}
   .radar .thbox .dim{font-size:11px;line-height:1.6}
 
-  /* radar <details> collapsible sections (small-cap + crypto long tail) */
-  .radar details{background:var(--obs2);border:1px solid var(--border);border-radius:14px;padding:16px 18px}
-  .radar details summary{cursor:pointer;list-style:none;font-family:var(--font-display);font-size:12px;letter-spacing:2px;color:var(--text2);text-transform:uppercase;display:flex;align-items:center;gap:8px}
-  .radar details summary::-webkit-details-marker{display:none}
-  .radar details summary::before{content:'▸';color:var(--emerald);transition:transform .15s;font-family:var(--font-mono)}
-  .radar details[open] summary::before{transform:rotate(90deg)}
-  .radar details summary .h2dot{width:8px;height:8px;border-radius:2px;background:var(--emerald);box-shadow:0 0 10px var(--emerald)}
-  .radar details .sec-desc{margin-top:10px}
+  /* radar scan panels — always open, scroll in place (no collapsed windows) */
+  .radar .scroll{max-height:600px;overflow-y:auto}
+  .radar .scroll thead th{position:sticky;top:0;background:var(--obs3);z-index:2;box-shadow:0 1px 0 var(--border)}
 </style>
 </head>
 <body class="light-mode">
@@ -361,19 +356,19 @@
     </section>
 
     <section id="sec-smallcaps">
-      <details>
-        <summary><span class="h2dot"></span> Small-cap / OTC Watchlist</summary>
+      <div class="panel">
+        <h2>Small-cap / OTC Watchlist</h2>
         <p class="sec-desc">The wide net: smaller and OTC names worth keeping an eye on. OTC tickers are flagged — they sit in the pump-and-dump zone, so they're listed but never auto-rated.</p>
-        <div id="smallcaps"><div class="empty">Loading …</div></div>
-      </details>
+        <div class="scroll" id="smallcaps"><div class="empty">Loading …</div></div>
+      </div>
     </section>
 
     <section id="sec-crypto">
-      <details>
-        <summary><span class="h2dot"></span> Crypto Scan <span style="color:var(--text4);font-size:9px;letter-spacing:1px;">· Binance · key-less</span></summary>
+      <div class="panel">
+        <h2>Crypto Scan <span style="color:var(--text4);font-size:9px;letter-spacing:1px;">· Binance · key-less</span></h2>
         <p class="sec-desc">Every liquid pair scanned on Binance (key-less). Scores quiet accumulation, coil squeezes, and buyer-side flow that can precede a move.</p>
-        <div id="crypto"><div class="empty">Loading …</div></div>
-      </details>
+        <div class="scroll" id="crypto"><div class="empty">Loading …</div></div>
+      </div>
     </section>
 
     <section id="sec-alerts">
