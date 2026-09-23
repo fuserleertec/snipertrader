@@ -88,6 +88,10 @@
   .cnsvg{width:100%;height:100%;display:block}
   .cn-grid{stroke:var(--border-soft);stroke-width:1}
   .cn-wick{stroke-width:1}
+  .chartband{font-family:var(--font-m);font-size:10.5px;font-weight:400;letter-spacing:.03em;padding:2px 8px;border-radius:20px;border:1px solid var(--border);margin-left:8px;color:var(--muted)}
+  .chartband.cb-up{color:var(--emerald);border-color:color-mix(in srgb,var(--emerald) 45%,transparent)}
+  .chartband.cb-dn{color:var(--red);border-color:color-mix(in srgb,var(--red) 45%,transparent)}
+  .chartband.cb-0{color:var(--cyan);border-color:color-mix(in srgb,var(--cyan) 45%,transparent)}
   .tvlink{font-family:var(--font-m);font-size:11px;color:var(--cyan);text-decoration:none;font-weight:400;text-transform:none;letter-spacing:0}
   .tvlink:hover{text-decoration:underline}
 
@@ -206,7 +210,7 @@
   <div class="fchead" id="fchead"></div>
 
   <div class="dbox" style="margin-bottom:14px">
-    <h4>Price chart — last 90 days (live)</h4>
+    <h4>Price chart — last 90 days (live) <span id="chartband" class="chartband"></span></h4>
     <div class="tv-holder" id="chartbox" style="height:300px"><span class="fl" style="font-family:var(--font-m);font-size:12px;padding:12px;display:inline-block">Search a symbol above to load its price chart.</span></div>
   </div>
 
@@ -266,9 +270,10 @@ async function analyzeCustom(){
     const r = analyzeSymbol(c.sym, bars, null, DATA.conditional);
     if(!r) throw new Error('could not analyze');
     r.source = 'LIVE';
+    r._vwap = usmeVwap(bars.slice(-90));
     current = r;
     renderReadout();
-    renderChart(bars);
+    renderChart(bars, r._vwap);
     loadNewsCatalyst(c.sym);
     setStatus(st, 'ok', '✓ Live read for ' + c.sym + ' · ' + r.n_bars + ' days · setup ' + r.trade.direction);
   }catch(e){
@@ -412,6 +417,13 @@ function buildNarration(){
   const k = r.structure;
   const trendWord = k.trend === 'up' ? 'uptrend' : k.trend === 'down' ? 'downtrend' : 'a range';
   parts.push(`Market structure is ${trendWord}. Nearest support ${speakPx(k.support)}, resistance ${speakPx(k.resistance)}.`);
+  if(r._vwap && r._vwap.length){
+    const vwl = r._vwap[r._vwap.length - 1];
+    const zone = vwapZone(r.last, vwl);
+    const side = r.last >= vwl.vwap ? 'above' : 'below';
+    const zl = zone === '+2' ? 'stretched bullish extension' : zone === '+1' ? 'elevated vs VWAP, bullish' : zone === '-2' ? 'stretched bearish extension' : zone === '-1' ? 'depressed vs VWAP, bearish' : 'balanced, mean-reverting zone';
+    parts.push(`USME VWAP read: price ${side} VWAP at ${speakPx(vwl.vwap)}, band ${zone} — ${zl}.`);
+  }
   if(r.mc){
     const b = r.mc.bootstrap, H = r.mc.horizon;
     parts.push(`Over the next ${H} days, the Monte Carlo range is ${speakPx(b.p5)} to ${speakPx(b.p95)}, median ${speakPx(b.p50)}, with a ${b.pUp} percent probability of finishing higher.`);
@@ -621,13 +633,38 @@ function renderReadout(){
   document.getElementById('asof').textContent = ASOF;
 }
 
-function renderChart(bars){
+function usmeVwap(bars){
+  let cumPV = 0, cumV = 0, cumPV2 = 0;
+  const out = [];
+  for(const x of bars){
+    const t = (x.h + x.l + x.c) / 3;
+    const v = x.v || 0;
+    if(v > 0){ cumPV += t * v; cumV += v; cumPV2 += v * t * t; }
+    let vwap, std = 0;
+    if(cumV > 0){ vwap = cumPV / cumV; const variance = Math.max(0, cumPV2 / cumV - vwap * vwap); std = Math.sqrt(variance); }
+    else vwap = t;
+    out.push({ vwap, u1: vwap + std, u2: vwap + 2 * std, l1: vwap - std, l2: vwap - 2 * std });
+  }
+  return out;
+}
+
+function vwapZone(price, vw){
+  if(price >= vw.u2) return '+2';
+  if(price >= vw.u1) return '+1';
+  if(price <= vw.l2) return '-2';
+  if(price <= vw.l1) return '-1';
+  return '0';
+}
+
+function renderChart(bars, vw){
   const el = document.getElementById('chartbox');
   if(!el) return;
   if(!bars || bars.length < 2){ el.innerHTML = '<span class="fl" style="font-family:var(--font-m);font-size:12px">No price data.</span>'; return; }
   const b = bars.slice(-90);
+  const vwArr = vw || usmeVwap(b);
   let lo = Infinity, hi = -Infinity;
   b.forEach(x => { if(x.l < lo) lo = x.l; if(x.h > hi) hi = x.h; });
+  vwArr.forEach(x => { lo = Math.min(lo, x.l2); hi = Math.max(hi, x.u2); });
   const pad = (hi - lo) * 0.06 || 1;
   lo -= pad; hi += pad;
   const W = 720, H = 280, n = b.length;
@@ -650,7 +687,26 @@ function renderChart(bars){
     s += '<line x1="' + cx + '" x2="' + cx + '" y1="' + yH + '" y2="' + yL + '" class="cn-wick" style="stroke:' + col + '"/>';
     s += '<rect x="' + (X(i) - cw / 2).toFixed(1) + '" y="' + top.toFixed(1) + '" width="' + cw.toFixed(1) + '" height="' + h.toFixed(1) + '" style="fill:' + col + ';stroke:' + col + '" stroke-width="1"/>';
   });
-  el.innerHTML = '<svg class="cnsvg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="Price chart — last ' + n + ' bars">' + s + '</svg>';
+  // USME VWAP overlay (blue) + ±1σ (emerald) / ±2σ (red) bands
+  const vline = (key, col, w, dash) => {
+    let d = '';
+    vwArr.forEach((x, i) => { d += (i ? ' L ' : 'M ') + X(i).toFixed(1) + ' ' + Y(x[key]).toFixed(1); });
+    return '<path d="' + d + '" fill="none" style="stroke:' + col + ';stroke-width:' + w + '"' + (dash ? ' stroke-dasharray="' + dash + '"' : '') + '/>';
+  };
+  s += vline('u2', 'var(--red)', 1, '4 3');
+  s += vline('l2', 'var(--red)', 1, '4 3');
+  s += vline('u1', 'var(--emerald)', 1, '3 3');
+  s += vline('l1', 'var(--emerald)', 1, '3 3');
+  s += vline('vwap', '#38bdf8', 1.6);
+  el.innerHTML = '<svg class="cnsvg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="Price chart — last ' + n + ' bars with USME VWAP">' + s + '</svg>';
+  const cb = document.getElementById('chartband');
+  if(cb){
+    const lastBar = b[b.length - 1], lastVw = vwArr[vwArr.length - 1];
+    const zone = vwapZone(lastBar.c, lastVw);
+    const zoneTxt = zone === '0' ? 'band 0 · at VWAP' : (zone[0] === '+' ? 'band ' + zone + ' · above VWAP' : 'band ' + zone + ' · below VWAP');
+    cb.textContent = 'VWAP ' + fmtPx(lastVw.vwap) + ' · ' + zoneTxt;
+    cb.className = 'chartband ' + (zone === '0' ? 'cb-0' : (zone[0] === '+' ? 'cb-up' : 'cb-dn'));
+  }
 }
 
 function toggleTheme(){
