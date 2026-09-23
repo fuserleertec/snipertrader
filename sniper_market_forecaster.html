@@ -58,6 +58,10 @@
   .symsearch::placeholder{color:var(--faint)}
   .searchstatus{font-family:var(--font-m);font-size:11px;color:var(--muted)}
   .searchstatus.err{color:var(--red)}
+  .narratebtn{font-family:var(--font-m);font-size:12px;letter-spacing:.05em;background:var(--panel);color:var(--gold);border:1px solid var(--border);border-radius:8px;padding:9px 14px;cursor:pointer;transition:all .15s;text-transform:uppercase}
+  .narratebtn:hover{color:var(--fg);border-color:var(--gold)}
+  .narratebtn.speaking{color:var(--gold);border-color:var(--gold);animation:narrPulse 1.3s ease-in-out infinite}
+  @keyframes narrPulse{0%,100%{box-shadow:0 0 0 0 rgba(240,192,64,0)}50%{box-shadow:0 0 0 5px rgba(240,192,64,.14)}}
   .searchstatus.ok{color:var(--emerald)}
 
   /* symbol header */
@@ -196,6 +200,8 @@
     <select id="symSelect" onchange="selectSymbol(this.value)" aria-label="Select a market"></select>
     <button class="navbtn" onclick="step(-1)" title="Previous">‹ Prev</button>
     <button class="navbtn" onclick="step(1)" title="Next">Next ›</button>
+    <button class="narratebtn" id="narrateBtn" onclick="narrate()" title="Read this analysis aloud — AI voice">🔊 Narrate</button>
+    <span id="narrateStatus" class="searchstatus"></span>
   </div>
 
   <div class="fchead" id="fchead"></div>
@@ -258,6 +264,7 @@ function buildSelector(){
 function indexOfSym(sym){ for(let i=0;i<ORDER.length;i++) if(ORDER[i]===sym) return i; return 0; }
 
 function selectSymbol(sym){
+  stopNarration();
   if(!sym || !SNAP_MAP[sym] && !merged.find(x=>x.symbol===sym)) sym = ORDER[0];
   current = merged.find(x => x.symbol === sym) || SNAP_MAP[sym];
   document.getElementById('symSelect').value = sym;
@@ -433,6 +440,95 @@ function renderNews(j){
   }
   html += '<div class="newsnote">News readout for context — it is <b>not</b> folded into the conviction score (backtests show catalyst timing has no stable edge). Sources: Google News headlines + SEC EDGAR filings, scored by ' + (j.engine === 'llm' ? 'DeepSeek' : 'a keyword heuristic') + '. ' + (j.asOf ? 'As of ' + new Date(j.asOf).toLocaleString() + '.' : '') + '</div>';
   body.innerHTML = html;
+}
+
+/* ── AI voice narration (browser neural TTS, key-less) ── */
+let narrating = false;
+function speakPx(n){
+  if(n == null) return '—';
+  const v = Number(n);
+  return Math.abs(v) >= 1000 ? Math.round(v).toLocaleString('en-US') : v.toFixed(2);
+}
+function pickNarrationVoice(){
+  if(!('speechSynthesis' in window)) return null;
+  const voices = speechSynthesis.getVoices();
+  if(!voices || !voices.length) return null;
+  const en = voices.filter(v => /^en(-|_)/i.test(v.lang));
+  const prefer = ['Samantha','Alex','Ava','Zoe','Allison','Salli','Joanna','Aria','Jenny','Serena','Karen','Daniel','Google US English','Microsoft Aria','Microsoft Jenny','Natural'];
+  for(const p of prefer){
+    const hit = en.find(v => v.name.indexOf(p) !== -1);
+    if(hit) return hit;
+  }
+  return en[0] || voices[0];
+}
+function buildNarration(){
+  const r = current; if(!r) return null;
+  const parts = [];
+  parts.push(`${dispSym(r.symbol)} is trading at ${speakPx(r.last)}.`);
+  const dir = r.trade.direction;
+  const dirWord = dir === 'LONG' ? 'long' : dir === 'SHORT' ? 'short' : 'no trade';
+  parts.push(`The model reads ${r.conviction} out of 100 conviction, a ${dirWord} setup.`);
+  const mf = r.ensemble;
+  parts.push(`${mf.n_bull} of 7 signals bullish, ${mf.n_bear} bearish, ${mf.n_neu} neutral.`);
+  const k = r.structure;
+  const trendWord = k.trend === 'up' ? 'uptrend' : k.trend === 'down' ? 'downtrend' : 'a range';
+  parts.push(`Market structure is ${trendWord}. Nearest support ${speakPx(k.support)}, resistance ${speakPx(k.resistance)}.`);
+  if(r.mc){
+    const b = r.mc.bootstrap, H = r.mc.horizon;
+    parts.push(`Over the next ${H} days, the Monte Carlo range is ${speakPx(b.p5)} to ${speakPx(b.p95)}, median ${speakPx(b.p50)}, with a ${b.pUp} percent probability of finishing higher.`);
+  }
+  const t = r.trade;
+  if(dir !== 'HOLD'){
+    parts.push(`The trade plan is ${dirWord}. Entry ${speakPx(t.entry)}, stop ${speakPx(t.stop)}, target ${speakPx(t.target)}, reward to risk ${t.rr || 1}.`);
+  }
+  const news = newsCache[r.symbol];
+  if(news && (news.sentiment_bias || news.market_impact_score)){
+    const bias = news.sentiment_bias || 'NEUTRAL';
+    const impact = news.market_impact_score || 0;
+    const biasWord = bias === 'BULLISH' ? 'bullish' : bias === 'BEARISH' ? 'bearish' : 'neutral';
+    parts.push(`The latest news reads ${biasWord}, impact ${impact} out of 100.`);
+    if(r.mc && news.market_impact_score != null){
+      const sc = newsBiasScalars(news);
+      const mu = (r.mc.mu_pct || 0) / 100, sigma = (r.mc.sigma_pct || 0) / 100;
+      const fan = gbmFanCustom(r.mc.last, mu + sc.beta * 0.25 * sigma, sigma * sc.sigmaNews, r.mc.horizon, 2000);
+      const lb = fan[fan.length - 1];
+      parts.push(`Conditioned on that sentiment, the median forward projection is ${speakPx(lb.p50)}.`);
+    }
+    if(news.catalysts && news.catalysts.length && news.catalysts[0].executive_summary){
+      parts.push(news.catalysts[0].executive_summary);
+    }
+  }
+  parts.push('This is an educational read, not financial advice.');
+  return parts.join(' ');
+}
+function narrate(){
+  const st = document.getElementById('narrateStatus');
+  const btn = document.getElementById('narrateBtn');
+  if(!('speechSynthesis' in window)){ st.className = 'searchstatus err'; st.textContent = 'Speech synthesis not supported here.'; return; }
+  if(narrating){ stopNarration(); return; }
+  if(!current){ st.className = 'searchstatus err'; st.textContent = 'Run an analysis first.'; return; }
+  const text = buildNarration();
+  if(!text){ st.className = 'searchstatus err'; st.textContent = 'Nothing to narrate.'; return; }
+  const u = new SpeechSynthesisUtterance(text);
+  const v = pickNarrationVoice(); if(v) u.voice = v;
+  u.rate = 1.0; u.pitch = 1;
+  u.onstart = () => { narrating = true; btn.classList.add('speaking'); btn.innerHTML = '⏹ Stop'; st.className = 'searchstatus'; st.textContent = 'Speaking…'; };
+  u.onend = u.onerror = () => stopNarration();
+  speechSynthesis.cancel();
+  speechSynthesis.speak(u);
+}
+function stopNarration(){
+  if('speechSynthesis' in window) speechSynthesis.cancel();
+  narrating = false;
+  const btn = document.getElementById('narrateBtn');
+  if(btn){ btn.classList.remove('speaking'); btn.innerHTML = '🔊 Narrate'; }
+  const st = document.getElementById('narrateStatus');
+  if(st){ st.className = 'searchstatus'; st.textContent = ''; }
+}
+// warm the voice list — it loads async in most browsers
+if('speechSynthesis' in window){
+  speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+  speechSynthesis.getVoices();
 }
 
 function forwardCanvasSVG(mc, structure, cond){
