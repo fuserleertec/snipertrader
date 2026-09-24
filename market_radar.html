@@ -183,6 +183,27 @@
   .foot{font-family:var(--font-m);font-size:11px;color:var(--faint);margin-top:34px;border-top:1px solid var(--border-soft);padding-top:14px;line-height:1.7}
   .risknote{color:var(--gold);font-family:var(--font-m);font-size:11.5px}
 
+  /* 04 trading-agent analysis */
+  .agents{display:grid;grid-template-columns:1.1fr 1fr;gap:14px}
+  @media(max-width:820px){.agents{grid-template-columns:1fr}}
+  .atbl{font-family:var(--font-m);font-size:11.5px}
+  .atbl .ah{display:grid;grid-template-columns:1.4fr 2.4fr .9fr;gap:8px;color:var(--faint);text-transform:uppercase;font-size:9.5px;letter-spacing:.06em;padding:4px 0;border-bottom:1px solid var(--border)}
+  .atbl .ar{display:grid;grid-template-columns:1.4fr 2.4fr .9fr;gap:8px;align-items:center;padding:7px 0;border-bottom:1px dashed var(--border-soft)}
+  .atbl .ar:last-child{border-bottom:none}
+  .atbl .an{color:var(--fg)}
+  .atbl .acf{text-align:right;color:var(--muted)}
+  .adist{display:flex;flex-direction:column;gap:7px;font-family:var(--font-m);font-size:11px}
+  .adist .drow{display:grid;grid-template-columns:120px 1fr 38px;gap:8px;align-items:center}
+  .adist .dlbl{color:var(--muted)}
+  .adist .dtrack{height:10px;border-radius:5px;background:var(--panel-2);overflow:hidden}
+  .adist .dtrack i{display:block;height:100%;border-radius:5px}
+  .adist .dcnt{color:var(--faint);text-align:right}
+  .acont{font-family:var(--font-m);font-size:11.5px}
+  .acont .l{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px dashed var(--border-soft)}
+  .acont .l:last-child{border-bottom:none}
+  .acont .s{color:var(--fg);font-weight:700}
+  .acont .v{color:var(--muted)}
+
   /* ── merged page: tab segmented control ── */
   .tabs{display:flex;gap:6px;margin:0 0 20px;border:1px solid var(--border);border-radius:12px;padding:5px;background:var(--panel);width:max-content;max-width:100%}
   .tab-btn{font-family:var(--font-m);font-size:11px;letter-spacing:.06em;text-transform:uppercase;background:transparent;border:none;color:var(--muted);padding:9px 18px;border-radius:8px;cursor:pointer;transition:all .15s}
@@ -336,6 +357,14 @@
     <div class="collapse-body">
       <div class="secdesc">Markets we looked at this cycle that didn't clear the bar for a high-conviction, well-structured setup. We show them here in plain sight instead of hiding the misses.</div>
       <div class="board" id="dropped"></div>
+    </div>
+  </details>
+
+  <details class="collapse" open>
+    <summary><span class="num">04</span> TRADING AGENT ANALYSIS — what the seven signals say across the board</summary>
+    <div class="collapse-body">
+      <div class="secdesc">The same seven trading agents that score every market — Trend, Relative Momentum, Mean Reversion, Volatility Regime, Volume, Key Level, and Structure — aggregated across the whole board this cycle. Who's leaning which way, how confident, how spread the consensus is, and which names the agents argue about most.</div>
+      <div class="agents" id="agents"></div>
     </div>
   </details>
 
@@ -620,6 +649,75 @@ function sizingBox(r){
   </div>`;
 }
 
+function agentsHtml(){
+  const tally = {};
+  const names = [];
+  results.forEach(r => {
+    (r.ensemble && r.ensemble.agents || []).forEach(a => {
+      if(!tally[a.name]){ tally[a.name] = {b:0,n:0,r:0,cSum:0,cN:0}; names.push(a.name); }
+      const t = tally[a.name];
+      if(a.signal === 'bull') t.b++;
+      else if(a.signal === 'bear') t.r++;
+      else t.n++;
+      if(a.signal === 'bull' || a.signal === 'bear'){ t.cSum += (a.confidence || 0); t.cN++; }
+    });
+  });
+  const total = results.length || 1;
+
+  const rows = names.map(nm => {
+    const t = tally[nm];
+    const tot = t.b + t.n + t.r || 1;
+    const conf = t.cN ? Math.round(t.cSum / t.cN * 100) : null;
+    return `<div class="ar">
+      <span class="an">${nm}</span>
+      <span class="cbar" style="height:16px;border-radius:5px">
+        <span class="b" style="width:${(t.b/tot*100).toFixed(1)}%">${t.b||''}</span>
+        <span class="f" style="width:${(t.n/tot*100).toFixed(1)}%">${t.n||''}</span>
+        <span class="r" style="width:${(t.r/tot*100).toFixed(1)}%">${t.r||''}</span>
+      </span>
+      <span class="acf">${conf != null ? conf+'%' : '—'}</span>
+    </div>`;
+  }).join('');
+
+  const buckets = [
+    ['bearish 0–20', 0, 20, 'var(--bear)'],
+    ['lean bear 20–40', 20, 40, 'var(--bear)'],
+    ['neutral 40–60', 40, 60, 'var(--flat)'],
+    ['lean bull 60–80', 60, 80, 'var(--bull)'],
+    ['bullish 80–100', 80, 101, 'var(--bull)'],
+  ];
+  const dist = buckets.map(([lbl, lo, hi, clr]) => {
+    const n = results.filter(r => r.ensemble && r.ensemble.consensus_pct >= lo && r.ensemble.consensus_pct < hi).length;
+    const pct = n / total * 100;
+    return `<div class="drow"><span class="dlbl">${lbl}</span><span class="dtrack"><i style="width:${pct.toFixed(1)}%;background:${clr}"></i></span><span class="dcnt">${n}</span></div>`;
+  }).join('');
+
+  const contested = results
+    .filter(r => r.ensemble && r.ensemble.n_bull > 0 && r.ensemble.n_bear > 0)
+    .map(r => ({ sym: r.symbol, b: r.ensemble.n_bull, r: r.ensemble.n_bear, n: r.ensemble.n_neu || 0,
+                 split: Math.abs(r.ensemble.n_bull - r.ensemble.n_bear) }))
+    .sort((a,b) => (a.split - b.split) || ((b.b + b.r) - (a.b + a.r)))
+    .slice(0, 5);
+  const cont = contested.length
+    ? contested.map(c => `<div class="l"><span class="s">${dispSym(c.sym)}</span><span class="v">${c.b}B · ${c.r}R · ${c.n}N</span></div>`).join('')
+    : '<div class="l"><span class="s">—</span><span class="v">no split votes this cycle</span></div>';
+
+  return `
+    <div class="hbox">
+      <h4>Agent stance — bull / neutral / bear across ${results.length} markets</h4>
+      <div class="atbl">
+        <div class="ah"><span>agent</span><span>stance</span><span style="text-align:right">conf</span></div>
+        ${rows}
+      </div>
+    </div>
+    <div class="hbox">
+      <h4>Consensus distribution — how bullish the board reads overall</h4>
+      <div class="adist">${dist}</div>
+      <h4 style="margin-top:18px">Most contested — where the agents disagree most</h4>
+      <div class="acont">${cont}</div>
+    </div>`;
+}
+
 function render(){
   const full = filteredResults();
   const list = LIMIT ? full.slice(0, LIMIT) : full;
@@ -691,6 +789,9 @@ function render(){
     </div>`;
   }).join('') : '<div class="row" style="cursor:default"><span class="fl">All names pass — no drops this cycle.</span></div>';
 
+  // 04 — trading-agent analysis (aggregate across the whole board)
+  document.getElementById('agents').innerHTML = agentsHtml();
+
   document.getElementById('foot').innerHTML =
     `<b>Methodology:</b> live prices = public exchange data (crypto, key-less) + a market-data feed via
      <span class="fl">/api/stocks/klines</span> (equities, server-side key). Futures have no key-less feed, so they
@@ -713,7 +814,7 @@ function render(){
       <br><br>
       <b style="color:var(--fg)">Click a row</b> to open the full audit: each of the seven signals with its vote, confidence, and a plain-English reason, plus the probability cone, entry / stop / target, the SEC EDGAR catalyst (insider activity + earnings dates), and a live chart.
       <br><br>
-      <b style="color:var(--fg)">Ensemble Health (02)</b> is the honest scoreboard: a walk-forward backtest of the actual signals — win rate, expectancy, profit factor, best/worst names, and a plain verdict — so you can see whether the read works net of costs. It also measures whether the structure tags (trend / gap / key level / sweep) actually predict the next move — most are descriptive, not predictive. <b style="color:var(--fg)">Drop Audit (03)</b> lists the names scanned but that didn't clear the bar, in a scrollable window like the main board. Both 02 and 03 start expanded and can be collapsed with the ▸ chevron.
+      <b style="color:var(--fg)">Ensemble Health (02)</b> is the honest scoreboard: a walk-forward backtest of the actual signals — win rate, expectancy, profit factor, best/worst names, and a plain verdict — so you can see whether the read works net of costs. It also measures whether the structure tags (trend / gap / key level / sweep) actually predict the next move — most are descriptive, not predictive. <b style="color:var(--fg)">Drop Audit (03)</b> lists the names scanned but that didn't clear the bar, in a scrollable window like the main board. Both 02, 03 and 04 start expanded and can be collapsed with the ▸ chevron. <b style="color:var(--fg)">Trading Agent Analysis (04)</b> aggregates the seven signals across the whole board — who's leaning bull vs bear, how confident, how the consensus is spread, and which names the agents argue about most.
       <br><br>
       <b style="color:var(--fg)">Sort.</b> <b style="color:var(--fg)">Conviction</b> ranks by the setup's historical edge; <b style="color:var(--fg)">Edge (out-of-sample)</b> ranks by profit factor on the recent period only (post mid-2025), not the full 2-year window — so a name can't top the list on old performance that may have stopped working. Only names with ≥30 recent trades count, and the sample size is shown.
     </div>
