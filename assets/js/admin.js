@@ -481,7 +481,7 @@
   function renderAlerts(id, list) {
     var el = $(id); if (!el) return;
     if (!Array.isArray(list) || !list.length) {
-      showEmpty(id, 'No alerts in the last 7 days.', '<a class="action-btn primary" href="/prerun_detection.html">Run Pre-Market Scan</a>');
+      showEmpty(id, 'No alerts in the last 7 days.', '<a class="action-btn primary" href="/market_terminal.html#radar">Run Pre-Market Scan</a>');
       return;
     }
     el.innerHTML = list.map(function (a) {
@@ -565,7 +565,7 @@
     var pf = list[list.length - 1];
     if (!pf) {
       showEmpty('preflightBody', 'No pre-flight scan logged for today.',
-        '<a class="action-btn primary" href="/prerun_detection.html">Run Pre-Market Scan</a>');
+        '<a class="action-btn primary" href="/market_terminal.html#radar">Run Pre-Market Scan</a>');
       return;
     }
     var nb = pf.neuralBaseline || {};
