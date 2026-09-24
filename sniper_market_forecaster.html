@@ -261,21 +261,45 @@ async function analyzeCustom(){
   btn.disabled = true; btn.textContent = '…';
   setStatus(st, '', 'Fetching ' + c.sym + ' (' + c.cls + ') …');
   try{
-    let bars;
-    if(c.cls === 'crypto') bars = await fetchBinance(c.sym);
-    else if(c.cls === 'futures') bars = await fetchFutures(c.sym);
-    else bars = await fetchAlpaca(c.sym);
-    if(!bars || bars.length < 60) throw new Error('no price history for ' + c.sym);
-    CLS[c.sym] = c.cls;   // so dispSym / labels render correctly
-    const r = analyzeSymbol(c.sym, bars, null, DATA.conditional);
-    if(!r) throw new Error('could not analyze');
-    r.source = 'LIVE';
-    r._vwap = usmeVwap(bars.slice(-90));
-    current = r;
-    renderReadout();
-    renderChart(bars, r._vwap);
-    loadNewsCatalyst(c.sym);
-    setStatus(st, 'ok', '✓ Live read for ' + c.sym + ' · ' + r.n_bars + ' days · setup ' + r.trade.direction);
+    let bars = null;
+    try{
+      if(c.cls === 'crypto') bars = await fetchBinance(c.sym);
+      else if(c.cls === 'futures') bars = await fetchFutures(c.sym);
+      else bars = await fetchAlpaca(c.sym);
+    }catch(_){ bars = null; }
+
+    if(bars && bars.length >= 60){
+      CLS[c.sym] = c.cls;   // so dispSym / labels render correctly
+      const r = analyzeSymbol(c.sym, bars, null, DATA.conditional);
+      if(!r) throw new Error('could not analyze');
+      r.source = 'LIVE';
+      r._vwap = usmeVwap(bars.slice(-90));
+      current = r;
+      renderReadout();
+      renderChart(bars, r._vwap);
+      loadNewsCatalyst(c.sym);
+      setStatus(st, 'ok', '✓ Live read for ' + c.sym + ' · ' + r.n_bars + ' days · setup ' + r.trade.direction);
+      return;
+    }
+
+    // Live feed unavailable (e.g. futures need a market-data subscription) →
+    // fall back to the embedded build-time snapshot, honestly labeled SNAPSHOT.
+    const snap = (DATA.results || []).find(x => x.symbol === c.sym);
+    if(snap){
+      CLS[c.sym] = c.cls;
+      snap.source = 'SNAPSHOT';
+      current = snap;
+      renderReadout();
+      const box = document.getElementById('chartbox');
+      if(box) box.innerHTML = '<span class="fl" style="font-family:var(--font-m);font-size:12px;padding:12px;display:inline-block">No live price feed for ' + dispSym(c.sym) + ' — read shown from the build-time snapshot.' + (c.cls === 'futures' ? ' Live futures data needs a market-data subscription.' : '') + '</span>';
+      const cb = document.getElementById('chartband'); if(cb) cb.textContent = '';
+      const pb = document.getElementById('pivotband'); if(pb) pb.textContent = '';
+      loadNewsCatalyst(c.sym);
+      const note = c.cls === 'futures' ? ' · live futures feed unavailable' : '';
+      setStatus(st, 'ok', '✓ Snapshot read for ' + c.sym + ' · ' + snap.n_bars + ' days · setup ' + snap.trade.direction + note);
+      return;
+    }
+    throw new Error('no price history for ' + c.sym);
   }catch(e){
     const msg = e.message || '';
     const friendly = /invalid symbol|not found|no price history|no data|pair|HTTP 4|HTTP 5|insufficient/i.test(msg);
@@ -779,8 +803,12 @@ let ASOF = DATA.as_of || '';
   if(dl) dl.innerHTML = ALL_SYMBOLS.map(s => '<option value="' + s + '">').join('');
   const badge = document.getElementById('modebadge');
   if(badge){ badge.textContent = 'LIVE · ON DEMAND'; badge.style.color = 'var(--emerald)'; }
+  // Preset NQ futures as the initial model symbol and auto-analyze on load.
+  const inp = document.getElementById('symSearch');
+  if(inp && !inp.value) inp.value = 'NQ';
   document.getElementById('fchead').innerHTML =
-    '<div><div class="sym">Analyze any symbol</div><div class="fl" style="font-family:var(--font-m);font-size:12px;color:var(--muted)">Type a ticker or coin above and hit Analyze — structure, 7 signals, conviction, Monte Carlo, trade plan and news. The daily watchlist scan lives on <a href="/market_terminal.html" style="color:var(--cyan)">Market Terminal</a>.</div></div>';
+    '<div><div class="sym">Loading NQ futures…</div><div class="fl" style="font-family:var(--font-m);font-size:12px;color:var(--muted)">Fetching Nasdaq-100 futures — structure, 7 signals, conviction and trade plan. The daily watchlist scan lives on <a href="/market_terminal.html" style="color:var(--cyan)">Market Terminal</a>.</div></div>';
+  analyzeCustom();
 })();
 
 document.getElementById('foot').innerHTML = `
