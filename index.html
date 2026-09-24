@@ -479,8 +479,8 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
     <li class="nav-item" data-drop>
       <button class="nav-link" onclick="toggleDrop(this)">Market Intelligence <span class="caret">▾</span></button>
       <div class="dropdown">
-               <a href="/market_forecaster.html"><span class="d-name">Market Forecaster</span><span class="d-sub">Macro price targets &amp; High-probability setups scored by ML</span></a>
-                <a href="/market_radar.html"><span class="d-name">Daily Market Radar</span><span class="d-sub">High-probability setups scored by ML</span></a>
+               <a href="/market_forecaster.html"><span class="d-name">Market Forecaster</span><span class="d-sub">Real-data chart analysis &amp; price targets</span></a>
+                <a href="/market_radar.html"><span class="d-name">Daily Market Radar</span><span class="d-sub">Ranked watchlist — structure, volume, filings &amp; news</span></a>
                   <a href="/traderedge_preflight.html"><span class="d-name">Preflight Protocol</span><span class="d-sub">Daily pre-market playbook &amp; bias calibration</span></a>
       </div>
     </li>
@@ -518,9 +518,9 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
 <div class="mobile-menu" id="mobileMenu">
   <div class="mm-group">Market Intelligence</div>
   <a class="mm-sub" href="/traderedge_preflight.html">Preflight Protocol</a>
-  <a class="mm-sub" href="/market_terminal.html">Daily Market Picks</a>
+  <a class="mm-sub" href="/market_radar.html">Daily Market Radar</a>
   <a class="mm-sub" href="https://chart-ai.snipertrader.ai">AI Chart Analyzer</a>
-  <a class="mm-sub" href="/sniper_market_forecaster.html">Sniper Market Forecaster</a>
+  <a class="mm-sub" href="/market_forecaster.html">Market Forecaster</a>
   <div class="mm-group">Proprietary Algos</div>
   <a class="mm-sub" href="/NoRepaint_Pivot_indicator.html">No Repaint Indicator</a>
   <a class="mm-sub" href="/USME_ICT_Core.html">USME ICT Core</a>
@@ -533,7 +533,7 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
   <a class="mm-sub" href="/complete_snipertrader_course.html">The Complete Course</a>
   <div class="mm-group">Academy</div>
   <a class="mm-link" href="/USME_ICT_Core_Course.html">Sniper Academy</a>
-  <a class="mm-link" href="/market_terminal.html">Market Terminal</a>
+  <a class="mm-link" href="/market_radar.html">Market Radar</a>
 </div>
 
 <!-- TICKER -->
@@ -565,7 +565,7 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
     <div class="glass hero-card">
       <div class="dash-top">
         <div class="dash-dots"><i></i><i></i><i></i></div>
-        <span class="dash-title">Sniper Forecaster</span>
+        <span class="dash-title">Market Forecaster</span>
         <span class="dash-live"><span class="live-dot"></span>Live</span>
       </div>
       <div class="dash-asset">
@@ -631,48 +631,47 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
     <h2 class="reveal">See the market <em style="color:var(--gold)">before</em> it moves.</h2>
     <p class="lede reveal">Four modules turn raw price action — and your own readiness — into a calm, readable read on structure, probable targets, and the setups worth taking.</p>
     <div class="featured-grid">
-      <div class="glass feature-card reveal">
+            <div class="glass feature-card reveal">
         <div class="fc-top">
-          <div class="fc-icon">&#9670;</div>
-          <span class="tag gold">ML Screener</span>
+          <div class="fc-icon">&#9678;</div>
+          <span class="tag gold">Decision Surface</span>
         </div>
-        <h3>Daily Market Picks</h3>
-        <p>A real-time screener surfacing high-probability swing and day setups scored by machine learning — with exact invalidation levels and risk-to-reward targets.</p>
+        <h3>Daily Market Radar</h3>
+        <p>A daily decision surface that blends technical structure, real volume, insider filings, and breaking news into a short, ranked watchlist — with plain-English reasons behind every pick and a flag when a move is too late to chase.</p>
         <div class="fc-viz">
-          <div class="viz-row"><div><div class="vr-sym">NVDA</div><div class="vr-name">Semiconductors</div></div><div style="min-width:110px"><div class="vt-v sage" style="text-align:right">86%</div><div class="viz-bar"><span style="width:86%"></span></div></div></div>
-          <div class="viz-row"><div><div class="vr-sym">AAPL</div><div class="vr-name">Technology</div></div><div style="min-width:110px"><div class="vt-v sage" style="text-align:right">78%</div><div class="viz-bar"><span style="width:78%"></span></div></div></div>
-          <div class="viz-row"><div><div class="vr-sym">TSLA</div><div class="vr-name">Automotive</div></div><div style="min-width:110px"><div class="vt-v sage" style="text-align:right">64%</div><div class="viz-bar"><span style="width:64%"></span></div></div></div>
+          <div class="viz-row"><div><div class="vr-sym">NVDA</div><div class="vr-name">Structure + filings</div></div><div style="min-width:110px"><div class="vt-v sage" style="text-align:right">86%</div><div class="viz-bar"><span style="width:86%"></span></div></div></div>
+          <div class="viz-row"><div><div class="vr-sym">AAPL</div><div class="vr-name">Volume + news</div></div><div style="min-width:110px"><div class="vt-v sage" style="text-align:right">78%</div><div class="viz-bar"><span style="width:78%"></span></div></div></div>
+          <div class="viz-row"><div><div class="vr-sym">TSLA</div><div class="vr-name">Late — flagged</div></div><div style="min-width:110px"><div class="vt-v" style="text-align:right">flag</div><div class="viz-bar"><span style="width:64%"></span></div></div></div>
         </div>
         <div class="fc-tags">
-          <span class="tag gold">Probability-rated</span>
-          <span class="tag">Invalidation levels</span>
+          <span class="tag gold">Ranked watchlist</span>
+          <span class="tag">Structure · volume · filings · news</span>
         </div>
-        <a class="fc-cta" href="/market_terminal.html">View Today's Scored Picks <span>&#8594;</span></a>
+        <a class="fc-cta" href="/market_radar.html">Open Daily Market Radar <span>&#8594;</span></a>
       </div>
       <div class="glass feature-card reveal">
         <div class="fc-top">
           <div class="fc-icon">&#9673;</div>
-          <span class="tag sage">Pre-Market Scan</span>
+          <span class="tag sage">Real-Data Charts</span>
         </div>
-        <h3>Daily Pre-Run Detection</h3>
-        <p>A pre-market scan across the full watchlist — flags the setups forming before the open, so you walk in with a plan instead of a scramble.</p>
+        <h3>Market Forecaster</h3>
+        <p>Real-data chart analysis — automated structure, liquidity zones, and price targets computed from live market data instead of guesswork.</p>
         <div class="fc-viz">
-          <div class="viz-status"><span class="live-dot"></span><div><div class="vs-t">Watchlist scanned</div><div class="vs-s">4 flags &#183; 2 confluent</div></div></div>
-          <div style="height:12px"></div>
-          <div class="viz-grid">
-            <div class="viz-tile"><div class="vt-l">Scan</div><div class="vt-v sage">Pre-market</div></div>
-            <div class="viz-tile"><div class="vt-l">Flags</div><div class="vt-v gold">4</div></div>
-            <div class="viz-tile"><div class="vt-l">Confluent</div><div class="vt-v">2</div></div>
-            <div class="viz-tile"><div class="vt-l">Window</div><div class="vt-v gold">09:30 ET</div></div>
-          </div>
+          <svg viewBox="0 0 460 150" width="100%" height="150" preserveAspectRatio="none" role="img" aria-label="Forecast corridor">
+            <path d="M0,120 C60,112 120,84 180,80 C240,76 300,56 360,50 C400,46 430,40 460,34" fill="none" stroke="#00E5A0" stroke-width="2"/>
+            <path d="M0,132 C70,124 130,100 190,96 C250,92 310,72 370,66 C410,62 440,56 460,50" fill="none" stroke="#F0C040" stroke-width="1.4" stroke-dasharray="2 6"/>
+            <path d="M0,108 C70,100 130,68 190,64 C250,60 310,40 370,34 C410,30 440,24 460,18" fill="none" stroke="#F0C040" stroke-width="1.4" stroke-dasharray="2 6"/>
+            <rect x="402" y="14" width="58" height="48" rx="6" fill="rgba(240,192,64,.16)" stroke="#F0C040" stroke-opacity=".55"/>
+            <circle cx="460" cy="34" r="3.6" fill="#F0C040"/>
+          </svg>
         </div>
         <div class="fc-tags">
-          <span class="tag sage">Full watchlist</span>
-          <span class="tag">Pre-bell flags</span>
+          <span class="tag gold">Real-data targets</span>
+          <span class="tag">Structure &amp; liquidity</span>
         </div>
-        <a class="fc-cta" href="/market_terminal.html#radar">Run Pre-Run Detection <span>&#8594;</span></a>
+        <a class="fc-cta" href="/market_forecaster.html">Open Market Forecaster <span>&#8594;</span></a>
       </div>
-      <div class="glass feature-card reveal">
+<div class="glass feature-card reveal">
         <div class="fc-top">
           <div class="fc-icon">&#9672;</div>
           <span class="tag sage">Structural AI</span>
@@ -1115,10 +1114,9 @@ var CATALOG={
     label:'Market Intelligence',
     items:[
       {name:'Preflight Protocol',desc:'Daily automated bias assessment, key liquidity pools, and the volatility catalyst calendar.',hl:['Institutional daily bias score','News sentiment heatmaps','Automated key-level mapping'],cta:'Launch Preflight Playbook',href:'/traderedge_preflight.html',viz:'bias'},
-      {name:'Daily Market Picks',desc:'A real-time screener surfacing high-probability swing and day setups scored by machine learning.',hl:['Probability rating','Exact invalidation levels','Risk-to-reward targets'],cta:"View Today's Scored Picks",href:'/market_terminal.html',viz:'picks'},
-      {name:'Daily Pre-Run Detection',desc:'Pre-market scan across the full watchlist — flags the setups forming before the open.',hl:['Full watchlist pre-market scan','Pre-bell setup flags','Risk & confluency scoring'],cta:'Run Pre-Run Detection',href:'/market_terminal.html#radar',viz:'prerun'},
+      {name:'Daily Market Radar',desc:'A daily decision surface blending technical structure, real volume, insider filings, and breaking news into a short, ranked watchlist with plain-English reasons behind every pick.',hl:['Ranked watchlist with reasons','Structure · volume · filings · news','Late-move warning flags'],cta:'Open Daily Market Radar',href:'/market_radar.html',viz:'picks'},
       {name:'AI Chart Analyzer',desc:'Instant automated structural analysis — fair value gaps, order blocks, and market structure breaks.',hl:['Zero-lag pattern recognition','Multi-timeframe structural overlay','Automated target zones'],cta:'Open Chart Analyzer',href:'https://chart-ai.snipertrader.ai',viz:'chart'},
-      {name:'Sniper Market Forecaster',desc:'Macro forecasting curves charting price projection corridors and high-probability reversal windows.',hl:['Time-and-price cycle alignment','Liquidity sweep projections','Macro sentiment correlation'],cta:'Explore Market Forecasts',href:'/sniper_market_forecaster.html',viz:'forecast'}
+      {name:'Market Forecaster',desc:'Real-data chart analysis — automated structure, liquidity zones, and price targets from live market data.',hl:['Real-data price targets','Automated structure & liquidity','Pivot windows'],cta:'Open Market Forecaster',href:'/market_forecaster.html',viz:'forecast'}
     ]
   },
   algos:{
