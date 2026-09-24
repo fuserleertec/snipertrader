@@ -210,7 +210,7 @@
   <div class="fchead" id="fchead"></div>
 
   <div class="dbox" style="margin-bottom:14px">
-    <h4>Price chart — last 90 days (live) <span id="chartband" class="chartband"></span><span id="pivotband" class="chartband"></span></h4>
+    <h4>Price chart — last 90 days (live) <span id="chartband" class="chartband"></span><span id="cloudband" class="chartband"></span><span id="pivotband" class="chartband"></span></h4>
     <div class="tv-holder" id="chartbox" style="height:300px"><span class="fl" style="font-family:var(--font-m);font-size:12px;padding:12px;display:inline-block">Search a symbol above to load its price chart.</span></div>
   </div>
 
@@ -455,6 +455,11 @@ function buildNarration(){
     if(nearH) bits.push('nearest locked swing high ' + speakPx(nearH.price));
     if(nearL) bits.push('nearest locked swing low ' + speakPx(nearL.price));
     parts.push(`No-repaint pivots: ${hs.length} swing highs and ${ls.length} swing lows — ${bits.join(', ')}.`);
+  }
+  if(r._cloud && r._cloud.length){
+    const cl = r._cloud[r._cloud.length - 1];
+    const clWord = cl.state === 'bull' ? 'bullish' : cl.state === 'bear' ? 'bearish' : 'a neutral range';
+    parts.push(`Trend cloud is ${clWord} — EMA9 versus EMA21, with price versus the EMA200 filter.`);
   }
   if(r.mc){
     const b = r.mc.bootstrap, H = r.mc.horizon;
@@ -713,15 +718,43 @@ function noRepaintPivots(bars, L, R){
   return { highs, lows };
 }
 
+// Triple-EMA Trend Cloud — directional filter (NoRepaint suite definition):
+//   BULL  (green) — EMA9 > EMA21 AND Close > EMA200 → longs only.
+//   BEAR  (red)   — EMA9 < EMA21 AND Close < EMA200 → shorts only.
+//   RANGE (grey)  — neither → no directional edge.
+function emaSeries(vals, period){
+  const k = 2 / (period + 1), out = [];
+  let prev = vals[0];
+  for(let i = 0; i < vals.length; i++){
+    prev = (i === 0) ? vals[0] : vals[i] * k + prev * (1 - k);
+    out.push(prev);
+  }
+  return out;
+}
+function trendCloud(bars){
+  const closes = bars.map(b => b.c);
+  const e9 = emaSeries(closes, 9), e21 = emaSeries(closes, 21), e50 = emaSeries(closes, 50), e200 = emaSeries(closes, 200);
+  const out = [];
+  for(let i = 0; i < bars.length; i++){
+    const c = closes[i];
+    const st = (e9[i] > e21[i] && c > e200[i]) ? 'bull' : (e9[i] < e21[i] && c < e200[i]) ? 'bear' : 'range';
+    out.push({ e9: e9[i], e21: e21[i], e50: e50[i], e200: e200[i], state: st });
+  }
+  return out;
+}
+
 function renderChart(bars, vw){
   const el = document.getElementById('chartbox');
   if(!el) return;
   if(!bars || bars.length < 2){ el.innerHTML = '<span class="fl" style="font-family:var(--font-m);font-size:12px">No price data.</span>'; return; }
   const b = bars.slice(-90);
   const vwArr = vw || usmeVwap(b);
+  const cloud = trendCloud(bars).slice(-90);
+  if(current) current._cloud = cloud;
   let lo = Infinity, hi = -Infinity;
   b.forEach(x => { if(x.l < lo) lo = x.l; if(x.h > hi) hi = x.h; });
   vwArr.forEach(x => { lo = Math.min(lo, x.l2); hi = Math.max(hi, x.u2); });
+  cloud.forEach(x => { lo = Math.min(lo, x.e9, x.e21, x.e50, x.e200); hi = Math.max(hi, x.e9, x.e21, x.e50, x.e200); });
   const pad = (hi - lo) * 0.06 || 1;
   lo -= pad; hi += pad;
   const W = 720, H = 280, n = b.length;
@@ -744,6 +777,22 @@ function renderChart(bars, vw){
     s += '<line x1="' + cx + '" x2="' + cx + '" y1="' + yH + '" y2="' + yL + '" class="cn-wick" style="stroke:' + col + '"/>';
     s += '<rect x="' + (X(i) - cw / 2).toFixed(1) + '" y="' + top.toFixed(1) + '" width="' + cw.toFixed(1) + '" height="' + h.toFixed(1) + '" style="fill:' + col + ';stroke:' + col + '" stroke-width="1"/>';
   });
+  // Triple-EMA Trend Cloud — filled band between EMA9/EMA21 coloured by state,
+  // EMA50 midline, EMA200 as the dashed filter line.
+  const sline = (get, col, w, dash) => {
+    let d = '';
+    cloud.forEach((x, i) => { d += (i ? ' L ' : 'M ') + X(i).toFixed(1) + ' ' + Y(get(x)).toFixed(1); });
+    return '<path d="' + d + '" fill="none" style="stroke:' + col + ';stroke-width:' + w + '"' + (dash ? ' stroke-dasharray="' + dash + '"' : '') + '/>';
+  };
+  const cloudCol = st => st === 'bull' ? 'var(--bull)' : st === 'bear' ? 'var(--bear)' : 'var(--flat)';
+  for(let i = 1; i < n; i++){
+    const col = cloudCol(cloud[i].state);
+    s += '<polygon points="' + X(i-1).toFixed(1) + ',' + Y(cloud[i-1].e9).toFixed(1) + ' ' + X(i).toFixed(1) + ',' + Y(cloud[i].e9).toFixed(1) + ' ' + X(i).toFixed(1) + ',' + Y(cloud[i].e21).toFixed(1) + ' ' + X(i-1).toFixed(1) + ',' + Y(cloud[i-1].e21).toFixed(1) + '" fill="' + col + '" fill-opacity="0.16" stroke="none"/>';
+  }
+  s += sline(x => x.e9, 'var(--flat)', 0.7);
+  s += sline(x => x.e21, 'var(--flat)', 0.7);
+  s += sline(x => x.e50, 'var(--flat)', 0.7, '2 3');
+  s += sline(x => x.e200, '#c084fc', 1.2, '5 4');
   // USME VWAP overlay (blue) + ±1σ (emerald) / ±2σ (red) bands
   const vline = (key, col, w, dash) => {
     let d = '';
@@ -767,7 +816,7 @@ function renderChart(bars, vw){
   };
   for(const p of piv.highs) s += tri(X(p.i), Y(p.price) - 7, 1, 'var(--gold)');
   for(const p of piv.lows)  s += tri(X(p.i), Y(p.price) + 7, -1, 'var(--cyan)');
-  el.innerHTML = '<svg class="cnsvg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="Price chart — last ' + n + ' bars with USME VWAP and no-repaint pivots">' + s + '</svg>';
+  el.innerHTML = '<svg class="cnsvg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="Price chart — last ' + n + ' bars with trend cloud, USME VWAP and no-repaint pivots">' + s + '</svg>';
   const cb = document.getElementById('chartband');
   if(cb){
     const lastBar = b[b.length - 1], lastVw = vwArr[vwArr.length - 1];
@@ -779,6 +828,13 @@ function renderChart(bars, vw){
   const pb = document.getElementById('pivotband');
   if(pb){
     pb.textContent = 'pivots ' + piv.highs.length + '▼ / ' + piv.lows.length + '▲ · L5/C2';
+  }
+  const cb2 = document.getElementById('cloudband');
+  if(cb2){
+    const st = cloud[cloud.length - 1].state;
+    const label = st === 'bull' ? 'BULL' : st === 'bear' ? 'BEAR' : 'RANGE';
+    cb2.textContent = 'cloud ' + label + ' · EMA9/21 + 200';
+    cb2.className = 'chartband' + (st === 'bull' ? ' cb-up' : st === 'bear' ? ' cb-dn' : '');
   }
 }
 
