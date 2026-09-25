@@ -1,41 +1,41 @@
 //@version=6
-// Meridian OFI Engine — Order Flow Intelligence layer
+// Meridian Engine v2.2 — unique SMC + VWAP synthesis + Order Flow Intelligence
 // Pillars: Regime Engine · Liquidity Memory Map · Event Lattice · 3-Gate Core
-//          Path Integrity · Dynamic Risk Geometry · Session DNA · OFI (CVD/Abs/Imb)
+//          Path Integrity · Dynamic Risk Geometry · Session DNA · OFI (CVD + Stack)
 //
-// v2 FIXES (carried from v2):
-//  1. Direction-matched magnet boost in lattice grade.
-//  2. SL adjusted to match ATR-floored risk used for TP math.
-//  3. Entry signals / alerts require barstate.isconfirmed.
-//  4. VWAP "Session" anchor / RTH gate no longer hardcoded to NY 09:30-16:00.
-//  5. Lattice density counts each event TYPE once per window (type dedup).
+// v2.2 STACKED IMBALANCE (built on v2.1):
+//  - Native request.footprint() diagonal buy/sell imbalance when available
+//  - Consecutive same-side rows (≥ minStack) → lattice event type 10
+//  - Stack zones optionally registered as high-intensity magnets
+//  - CVD multi-bar proxy fallback when footprint data is na
+//  - Graceful degrade on plans/symbols without footprint access
 //
-// v2.1 — OFI LAYER:
-//  - CVD primitive (close-vs-prior-close split, Session/Daily/None reset).
-//  - Absorption (type 8) + Imbalance (type 9) pushed as direction-aware
-//    lattice events at the same SMC/VWAP/magnet levels the engine already tracks.
-//  - Type dedup range extended to types 1..9.
-//  - Density now computed AFTER same-bar FVG + OFI pushes (fixes type-7 gap too).
-//  - No new gates; higher densL/densS flows into existing gradeOK/mutual-exclusion.
-//  - Minimal visuals: tiny circles = absorption, tiny diamonds = imbalance.
-//  - Dashboard row 12 (table height 12 -> 13) + 4 new alertconditions.
+// v2.1 OFI LAYER (built on v2):
+//  - Cumulative Volume Delta (session/daily/continuous reset)
+//  - Absorption & imbalance detection at SMC / VWAP / magnet levels
+//  - New lattice event types 8 (absorption) and 9 (imbalance)
+//  - Direction-aware density feed into existing grade → Gate 3 pipeline
+//  - Minimal visuals + dashboard row; path-integrity consumes the same evidence
 //
-// v2.1.1 — COMPILE FIX:
-//  - Pine Script has no bitwise functions (bitwise.or / bitwise.and /
-//    bitwise.lshift do not exist, and `or` is a reserved word, which caused
-//    CE10013 at the density function). The per-type dedup now uses a
-//    9-slot bool array instead of a bitmask. Same result, same counts.
-//
-//  Corrections vs. supplied OFI spec:
-//  * Absorption is code 8 for BOTH directions, Imbalance is code 9 for BOTH
-//    (spec table said so; the code snippet swapped bear-side codes).
-//  * Absorption proximity check now uses `not na(zoneBotL/TopS)` guards —
-//    the spec's nz(zoneBotL, c) made `l <= c` always true, degenerating the
-//    level-gate into a bare strong-delta-and-candle check.
-indicator("Meridian OFI Engine", overlay=true, max_labels_count=500, max_boxes_count=500, max_lines_count=500)
+// v2 CHANGES FROM v1 (bug fixes, not feature additions):
+//  1. Lattice grade's magnet boost is now direction-matched (was direction-blind:
+//     any nearby magnet used to boost BOTH long and short grades equally).
+//  2. SL is now adjusted to match the ATR-floored risk figure used for TP math
+//     (was: SL could sit closer than the risk the TP1/TP2/TP3 targets assumed).
+//  3. Entry signals (and their alerts) now require barstate.isconfirmed, so they
+//     can no longer fire mid-bar off a live price and vanish before the close.
+//  4. VWAP "Session" anchor / RTH gate no longer hardcoded to NY 09:30-16:00 for
+//     24/7 assets — crypto symbols get a full-day window instead of losing VWAP,
+//     bands, and band-confluence gating for most of the day.
+//  5. Event lattice now counts each event TYPE once per window (bitmask dedup)
+//     instead of raw hits, so a single displacement move that fires sweep+CHoCH+
+//     BOS+VWAP-reclaim in the same 2-3 bars can't also inflate the score further
+//     via repeats of the same event type.
+// See known remaining limitations at the bottom of this file.
+indicator("Meridian Engine v2.2 OFI", overlay=true, max_labels_count=500, max_boxes_count=500, max_lines_count=500)
 
 // ============================================================
-// INPUTS
+// INPUTS (~30) — const string groups for compile-clean TV
 // ============================================================
 const string GRP_CORE   = "Core / Presets"
 const string GRP_REGIME = "Regime Engine"
@@ -58,11 +58,17 @@ showRegimeBg = input.bool(true, "Subtle regime bgcolor", group=GRP_REGIME)
 latticeBars = input.int(12, "Lattice lookback bars", minval=3, group=GRP_LATT)
 latticeATR  = input.float(1.5, "Lattice price proximity (×ATR)", step=0.1, group=GRP_LATT)
 minGrade    = input.string("PRIME", "Min lattice grade to enter", options=["WATCH","PRIME","ELITE","SINGULAR"], group=GRP_LATT)
-// --- OFI inputs ---
-cvdResetMode = input.string("Session", "CVD Reset", options=["None","Session","Daily"], group=GRP_LATT)
-ofiDeltaMult = input.float(1.5, "OFI strong-delta × avg", step=0.1, minval=0.5, group=GRP_LATT)
-ofiProxATR   = input.float(0.4, "OFI level proximity (×ATR)", step=0.05, minval=0.1, group=GRP_LATT)
-showOFI      = input.bool(true, "Show OFI marks", group=GRP_LATT)
+cvdResetMode = input.string("Session", "CVD Reset", options=["None", "Session", "Daily"], group=GRP_LATT)
+ofiDeltaMult = input.float(1.5, "OFI strong-delta × avg", minval=1.0, step=0.1, group=GRP_LATT)
+ofiProxATR   = input.float(0.4, "OFI level proximity (×ATR)", minval=0.1, step=0.05, group=GRP_LATT)
+showOFIMarks = input.bool(true, "Show OFI absorption marks", group=GRP_LATT)
+// Stacked imbalance (native footprint + proxy fallback)
+useTrueFP    = input.bool(true, "Prefer native footprint (Premium+)", group=GRP_LATT)
+fpTicks      = input.int(100, "Footprint ticks/row", minval=1, group=GRP_LATT)
+fpImbPct     = input.float(300.0, "Imbalance threshold %", minval=100.0, step=50.0, group=GRP_LATT)
+minStackRows = input.int(3, "Min stacked imbalance rows", minval=2, maxval=12, group=GRP_LATT)
+showStackZones = input.bool(true, "Show stacked imbalance zones", group=GRP_LATT)
+stackAsMagnet  = input.bool(true, "Register stack as liquidity magnet", group=GRP_LATT)
 
 showMagnets = input.bool(true, "Plot top magnet pools", group=GRP_LIQ)
 magnetDecay = input.float(0.92, "Magnet decay / bar", minval=0.5, maxval=0.99, step=0.01, group=GRP_LIQ)
@@ -88,7 +94,7 @@ showStruct  = input.bool(true, "Show BOS/CHoCH marks", group=GRP_VIS)
 enableAlerts = input.bool(true, "Enable alert() calls", group=GRP_VIS)
 
 // ============================================================
-// PRESET RESOLUTION
+// PRESET RESOLUTION (Auto from timeframe.in_seconds)
 // ============================================================
 f_autoPreset() =>
     int tfSec = timeframe.in_seconds(timeframe.period)
@@ -115,6 +121,27 @@ float atr = ta.atr(atrLen)
 float avgVol = ta.sma(volume, 20)
 float volRatio = avgVol > 0 ? volume / avgVol : 1.0
 
+// ============================================================
+// ORDER FLOW — Cumulative Volume Delta (CVD)
+// ============================================================
+// Up/Down split vs prior close (more robust than open/close on many feeds)
+float upVol    = close > close[1] ? volume : close < close[1] ? 0.0 : volume * 0.5
+float dnVol    = close < close[1] ? volume : close > close[1] ? 0.0 : volume * 0.5
+float barDelta = upVol - dnVol
+
+// CVD reset will be resolved after VWAP reset flags exist; provisional continuous for now
+var float cvd = 0.0
+var float cvdSessionHigh = 0.0
+var float cvdSessionLow  = 0.0
+// Actual reset applied later once isNewDay / vwapReset are known
+
+float avgAbsDelta = ta.sma(math.abs(barDelta), 20)
+bool  strongDeltaUp = barDelta > avgAbsDelta * ofiDeltaMult
+bool  strongDeltaDn = barDelta < -avgAbsDelta * ofiDeltaMult
+float cvdSlope3 = cvd - cvd[3]
+bool  cvdRising  = cvdSlope3 > 0
+bool  cvdFalling = cvdSlope3 < 0
+
 minNY() =>
     hour(time, NY) * 60 + minute(time, NY)
 
@@ -134,10 +161,12 @@ int minGradeRank = gradeRank(minGrade)
 
 // ============================================================
 // PILLAR 1 — REGIME ENGINE
+// ATR relative strength + manual ADX(14) + EMA ribbon alignment
 // ============================================================
 float atrSMA = ta.sma(atr, 100)
 float atrRS  = atrSMA > 0 ? atr / atrSMA : 1.0
 
+// Manual ADX via RMA of +DM / -DM / TR
 float upMove   = h - h[1]
 float dnMove   = l[1] - l
 float plusDM   = upMove > dnMove and upMove > 0 ? upMove : 0.0
@@ -160,6 +189,7 @@ bool  ribbonAligned = ribbonBull or ribbonBear
 bool  ribbonMixed   = not ribbonAligned
 int   ribbonBias    = ribbonBull ? 1 : ribbonBear ? -1 : 0
 
+// SMA cloud (Pro v3 style) for bias context
 float cloudBasis = ta.sma(c, cloudLen)
 float cloudDev   = ta.stdev(c, cloudLen)
 float cloudTop   = cloudBasis + cloudDev
@@ -169,6 +199,7 @@ bool  cloudBear  = c < cloudBot
 
 string regime = (adxVal >= adxTrend and ribbonAligned) ? "TREND" : (adxVal < adxRange and ribbonMixed) ? "RANGE" : "TRANSITION"
 
+// Regime-aware RR
 float rr = regime == "TREND" ? baseRR + 0.5 : regime == "RANGE" ? math.max(1.2, baseRR - 0.5) : baseRR
 
 bgcolor(showRegimeBg ? (regime == "TREND" ? color.new(#22c55e, 95) : regime == "RANGE" ? color.new(#eab308, 96) : color.new(#64748b, 96)) : na)
@@ -182,8 +213,12 @@ fill(pE9, pE21, color=ribbonBull ? color.new(#22c55e, 88) : ribbonBear ? color.n
 plot(showClouds ? e50 : na, "EMA50", color=color.new(#64748b, 50), linewidth=2)
 
 // ============================================================
-// VWAP
+// VWAP — true vol-weighted σ (vPV2), correct resets
 // ============================================================
+// FIX #4: "0930-1600" was hardcoded regardless of symbol, so Session-anchor VWAP,
+// its bands, and the RTH gate (rthOK) went dark almost all day for 24/7 assets like
+// crypto. Crypto now gets a full-day window; NY Open anchor stays fixed to the real
+// cash-session open on purpose (that's a deliberate anchor choice, not an RTH filter).
 string rthSession = syminfo.type == "crypto" ? "0000-2400" : "0930-1600"
 sessionTime = time(timeframe.period, rthSession, NY)
 bool isNewDay  = ta.change(time("D", "0000-0000", NY)) != 0
@@ -240,8 +275,8 @@ bool overextUp = h >= vwapUp2
 bool overextDn = l <= vwapDn2
 bool inPrem = c > vwapVal + 0.5 * vwapStd
 bool inDisc = c < vwapVal - 0.5 * vwapStd
-bool atExtremeLong  = c <= vwapDn1 - 0.5 * vwapStd
-bool atExtremeShort = c >= vwapUp1 + 0.5 * vwapStd
+bool atExtremeLong  = c <= vwapDn1 - 0.5 * vwapStd   // fade long at -1.5σ+
+bool atExtremeShort = c >= vwapUp1 + 0.5 * vwapStd   // fade short at +1.5σ+
 
 f_nearBand(float px) =>
     float prox = atr * bandProx
@@ -252,46 +287,28 @@ bool rthOK = not useRTH or inRTH
 
 string vwapZoneTxt = c >= vwapUp2 ? "+2σ" : c >= vwapUp1 ? "+1σ" : c <= vwapDn2 ? "-2σ" : c <= vwapDn1 ? "-1σ" : "FV"
 
-// ============================================================
-// CUMULATIVE VOLUME DELTA (Order Flow primitive)
-// ============================================================
-// Close-vs-prior-close split is more robust than open/close on many feeds.
-// Uses Meridian's own session resets so CVD aligns with VWAP anchoring.
-float upVol   = close > close[1] ? volume : close < close[1] ? 0.0 : volume * 0.5
-float dnVol   = close < close[1] ? volume : close > close[1] ? 0.0 : volume * 0.5
-float barDelta = upVol - dnVol
-
-bool cvdReset = switch cvdResetMode
+// CVD accumulation (reset aligned with chosen mode)
+bool cvdDoReset = switch cvdResetMode
     "Session" => vwapReset
     "Daily"   => isNewDay
     => false
 
-var float cvd = 0.0
-var float cvdHigh = 0.0
-var float cvdLow  = 0.0
-
-if cvdReset or barstate.isfirst
-    cvd     := barDelta
-    cvdHigh := barDelta
-    cvdLow  := barDelta
+if cvdDoReset or barstate.isfirst
+    cvd := barDelta
+    cvdSessionHigh := barDelta
+    cvdSessionLow  := barDelta
 else
-    cvd     += barDelta
-    cvdHigh := math.max(cvd, cvdHigh)
-    cvdLow  := math.min(cvd, cvdLow)
+    cvd += barDelta
+    cvdSessionHigh := math.max(cvd, cvdSessionHigh)
+    cvdSessionLow  := math.min(cvd, cvdSessionLow)
 
-float cvdSlope = cvd - cvd[3]
-bool  cvdRising  = cvdSlope > 0
-bool  cvdFalling = cvdSlope < 0
-
-float avgAbsDelta = ta.sma(math.abs(barDelta), 20)
-bool  strongDeltaUp = barDelta > avgAbsDelta * ofiDeltaMult
-bool  strongDeltaDn = barDelta < -avgAbsDelta * ofiDeltaMult
-
-// Hidden pane-only CVD plot (overlay indicator - keeps price scale clean).
-plot(cvd, "CVD", color=cvdRising ? color.new(#22c55e, 30) : color.new(#ef4444, 30), linewidth=2, display=display.none)
+// Recompute slope after update
+cvdSlope3 := cvd - cvd[3]
+cvdRising  := cvdSlope3 > 0
+cvdFalling := cvdSlope3 < 0
 
 // ============================================================
-// HTF BIAS
+// HTF BIAS (lookahead_off)
 // ============================================================
 float htfClose = request.security(syminfo.tickerid, htfTF, close, lookahead=barmerge.lookahead_off)
 float htfBasis = request.security(syminfo.tickerid, htfTF, ta.sma(close, cloudLen), lookahead=barmerge.lookahead_off)
@@ -300,7 +317,7 @@ bool  htfBull  = htfClose > htfBasis + htfDev
 bool  htfBear  = htfClose < htfBasis - htfDev
 
 // ============================================================
-// STRUCTURE
+// STRUCTURE — non-repainting pivots → BOS / CHoCH (lattice + arm)
 // ============================================================
 float ph = ta.pivothigh(h, swingLen, swingLen)
 float pl = ta.pivotlow(l, swingLen, swingLen)
@@ -327,7 +344,7 @@ plotshape(showStruct and chochBull, "CHoCH↑", shape.labelup, location.belowbar
 plotshape(showStruct and chochBear, "CHoCH↓", shape.labeldown, location.abovebar, color.new(#d946ef, 0), text="CHoCH", textcolor=color.white, size=size.tiny)
 
 // ============================================================
-// SESSION DNA
+// SESSION DNA — Asia / London / NY / SB amplifiers (not AND gates)
 // ============================================================
 bool asia   = inSess(20, 0, 0, 0)
 bool london = inSess(2, 0, 5, 0)
@@ -339,6 +356,7 @@ bgcolor(showKZ and london ? color.new(#eab308, 93) : na)
 bgcolor(showKZ and nyKZ   ? color.new(#06b6d4, 93) : na)
 bgcolor(showKZ and asia   ? color.new(#8b5cf6, 94) : na)
 
+// Session range tracking
 var float asiaHi = na
 var float asiaLo = na
 var float prevAsiaHi = na
@@ -403,7 +421,7 @@ if sweepLow
     lastSweepLoBar := bar_index
 
 // ============================================================
-// PILLAR 2 — LIQUIDITY MEMORY MAP
+// PILLAR 2 — LIQUIDITY MEMORY MAP (signature)
 // ============================================================
 type LiqPool
     float price
@@ -433,6 +451,7 @@ if sweepHigh
     float intens = ((h - math.max(c, o)) / math.max(atr, syminfo.mintick)) * volRatio
     f_pushPool(h, -1, intens)
 
+// Decay magnets; boost on revisit + reverse with volume
 float topMagnet = 0.0
 float topMagnetPx = na
 int   topMagnetDir = 0
@@ -461,6 +480,10 @@ if array.size(liqPools) > 0
                     topMagnetDir := p.dir
             array.set(liqPools, i, p)
 
+// FIX #1: this used to ignore pool direction entirely, so ANY nearby magnet — long-side
+// or short-side — boosted BOTH densL and densS equally. A bearish liquidity pool could
+// push a bullish grade toward SINGULAR. Now the caller must say which direction it's
+// scoring, and only magnets whose dir matches (i.e. actually support that side) count.
 f_nearHighMagnet(float px, float proxMult, int dir) =>
     bool hit = false
     float best = 0.0
@@ -473,6 +496,7 @@ f_nearHighMagnet(float px, float proxMult, int dir) =>
     [hit, best]
 
 f_nearestOpposingMagnet(int dir, float fromPx) =>
+    // dir=1 long → look for sell-side pools above; dir=-1 short → buy-side below
     float best = na
     float bestDist = 1e10
     if array.size(liqPools) > 0
@@ -488,15 +512,17 @@ f_nearestOpposingMagnet(int dir, float fromPx) =>
     best
 
 // ============================================================
-// PILLAR 3 — EVENT LATTICE
-// Type codes: 1=sweep 2=CHoCH 3=BOS 4=VWAP-reclaim 5=band-touch
-//             6=session-tag 7=FVG 8=absorption 9=imbalance
+// PILLAR 3 — EVENT LATTICE (clustered density, not flat score)
+// Rolling event arrays: bar / price / dir  (cap 30)
 // ============================================================
 var array<int>   evBars  = array.new_int()
 var array<float> evPrices = array.new_float()
 var array<int>   evDirs  = array.new_int()
 var array<int>   evTypes = array.new_int()
 
+// Event type codes for lattice dedup (see f_latticeDensity):
+// 1=sweep 2=CHoCH 3=BOS 4=VWAP reclaim 5=band touch 6=session tag 7=FVG
+// 8=absorption  9=imbalance  10=stacked imbalance  (Order Flow Intelligence)
 f_pushEvent(int dir, float px, int etype) =>
     array.unshift(evBars, bar_index)
     array.unshift(evPrices, px)
@@ -508,6 +534,7 @@ f_pushEvent(int dir, float px, int etype) =>
         array.pop(evDirs)
         array.pop(evTypes)
 
+// Emit lattice events
 if sweepLow
     f_pushEvent(1, l, 1)
 if sweepHigh
@@ -533,10 +560,15 @@ if sessionTagL
 if sessionTagS
     f_pushEvent(-1, c, 6)
 
-// Density function — counts each event TYPE (1..9) once per window.
-// Pine has no bitwise operators, so a 9-slot bool array does the dedup.
+// FIX: density used to count every raw event hit. A single displacement move commonly
+// fires sweep + CHoCH + BOS + VWAP-reclaim within 2-3 bars at nearly the same price —
+// those are correlated tags of ONE move, not four independent confirmations, and worse,
+// two sweeps or two band-touches in the window used to double-count the same evidence
+// type. Now each event TYPE (see codes above f_pushEvent) counts at most once per
+// window via a bitmask, so density reflects how many DIFFERENT kinds of confluence
+// showed up, not how many times any one kind repeated.
 f_latticeDensity(int dir) =>
-    array<bool> seen = array.new_bool(9, false)
+    int mask = 0
     float prox = latticeATR * atr
     int n = array.size(evBars)
     if n > 0
@@ -545,30 +577,35 @@ f_latticeDensity(int dir) =>
             int ed = array.get(evDirs, i)
             float ep = array.get(evPrices, i)
             int et = array.get(evTypes, i)
-            if ed == dir and (bar_index - eb) <= latBars and math.abs(ep - c) <= prox and et >= 1 and et <= 9
-                array.set(seen, et - 1, true)
+            if ed == dir and (bar_index - eb) <= latBars and math.abs(ep - c) <= prox
+                mask := bitwise.or(mask, bitwise.lshift(1, et - 1))
     int cnt = 0
-    for b = 0 to 8
-        if array.get(seen, b)
+    for b = 0 to 9
+        if bitwise.and(mask, bitwise.lshift(1, b)) != 0
             cnt += 1
+    // Session window multiplier
     float dens = float(cnt)
     if sessBoost
         dens := dens * 1.25
+    // High-magnet nearby boosts toward SINGULAR — only a magnet that actually supports
+    // this direction (dir-matched, see f_nearHighMagnet fix) can raise the grade.
     [nearMag, magStr] = f_nearHighMagnet(c, 1.2, dir)
     int grade = math.round(dens)
     if nearMag and grade >= 3
         grade := math.min(5, grade + 1)
     if grade >= 5
         grade := 5
+    // TRANSITION requires denser lattice
     if regime == "TRANSITION" and grade < 4 and dens < 3.5
         grade := math.min(grade, 2)
     grade
 
+// densL / densS computed after all same-bar events (FVG + OFI) are pushed
 f_gradeName(int g) =>
     g >= 5 ? "SINGULAR" : g >= 4 ? "ELITE" : g >= 3 ? "PRIME" : g >= 2 ? "WATCH" : "—"
 
 // ============================================================
-// FVG ARRAY ZONES + optional OBs
+// FVG ARRAY ZONES + optional OBs (mitigate-once via array.set)
 // ============================================================
 type FVGZone
     float top
@@ -613,6 +650,7 @@ if bearFVG
         if not na(old.b)
             box.delete(old.b)
 
+// Optional OBs on displacement after BOS
 bool bigCandle = math.abs(c - o) > atr * 1.5
 if showOB and bullBOS and bigCandle
     box bx = box.new(bar_index[1], h[1], bar_index + 20, l[1], bgcolor=color.new(#166534, 85), border_color=color.new(#166534, 50))
@@ -638,6 +676,7 @@ f_tapFVG(array<FVGZone> arr, bool isBull) =>
             FVGZone z = array.get(arr, i)
             if not z.mitigated
                 bool tap = isBull ? (l <= z.top and l >= z.bot) : (h >= z.bot and h <= z.top)
+                // Lattice weight if near high-magnet
                 if tap
                     outTop := z.top
                     outBot := z.bot
@@ -676,6 +715,180 @@ float zoneBotS = bearTapIdx >= 0 ? bearTapBot : bearOBBot
 bool bullBandConf = inBullZone and f_nearBand(nz(zoneBotL, c))
 bool bearBandConf = inBearZone and f_nearBand(nz(zoneTopS, c))
 
+// ============================================================
+// ORDER FLOW INTELLIGENCE — Absorption / Imbalance at levels
+// ============================================================
+// Proximity helpers: active FVG/OB, top magnet, or VWAP band
+bool nearBullLevel = inBullZone or f_nearBand(c) or (not na(topMagnetPx) and topMagnetDir == 1 and math.abs(c - topMagnetPx) <= atr * ofiProxATR)
+bool nearBearLevel = inBearZone or f_nearBand(c) or (not na(topMagnetPx) and topMagnetDir == -1 and math.abs(c - topMagnetPx) <= atr * ofiProxATR)
+
+// Absorption: strong opposing delta that fails to continue (rejection / stall at level)
+bool absorbBull = strongDeltaDn and c > o and nearBullLevel and (cvdFalling or barDelta < 0)
+bool absorbBear = strongDeltaUp and c < o and nearBearLevel and (cvdRising or barDelta > 0)
+
+// Imbalance: aggressive directional delta that expands with structure / reclaim / zone
+bool imbBull = strongDeltaUp and cvdRising and (bullBOS or vwapReclaimBull or inBullZone or chochBull)
+bool imbBear = strongDeltaDn and cvdFalling and (bearBOS or vwapReclaimBear or inBearZone or chochBear)
+
+// Feed lattice (direction-aware). Type 8 = absorption, 9 = imbalance.
+if absorbBull
+    f_pushEvent(1, c, 8)
+if absorbBear
+    f_pushEvent(-1, c, 8)
+if imbBull
+    f_pushEvent(1, c, 9)
+if imbBear
+    f_pushEvent(-1, c, 9)
+
+// ============================================================
+// STACKED IMBALANCE — native diagonal footprint + CVD proxy
+// Diagonal rule (TV native): buy imb = buy(row) ≥ T% × sell(row below)
+//                            sell imb = sell(row) ≥ T% × buy(row above)
+// Stack = ≥ minStackRows consecutive same-side flags → lattice type 10
+// ============================================================
+var int   stackDir   = 0      // 1 = buy stack, -1 = sell stack
+var int   stackCount = 0
+var float stackTop   = na
+var float stackBot   = na
+var bool  fpNative   = false  // true when this bar used real footprint data
+var box   stackBox   = na
+
+// Reset per bar
+stackDir   := 0
+stackCount := 0
+stackTop   := na
+stackBot   := na
+fpNative   := false
+
+// Always request (Pine requires stable request context); gate on useTrueFP + not na
+footprint fpReq = request.footprint(fpTicks, 70.0, fpImbPct)
+if useTrueFP and not na(fpReq)
+    fpNative := true
+    array<volume_row> rows = fpReq.rows()
+    int nRows = array.size(rows)
+    int runBuy = 0
+    int runSell = 0
+    float runTop = na
+    float runBot = na
+    int bestBuyRun = 0
+    int bestSellRun = 0
+    float bestBuyTop = na
+    float bestBuyBot = na
+    float bestSellTop = na
+    float bestSellBot = na
+
+    if nRows > 0
+        for i = 0 to nRows - 1
+            volume_row r = array.get(rows, i)
+            bool bImb = r.has_buy_imbalance()
+            bool sImb = r.has_sell_imbalance()
+            float upP = r.up_price()
+            float dnP = r.down_price()
+
+            if bImb and not sImb
+                runBuy += 1
+                runSell := 0
+                runBot := na(runBot) ? dnP : math.min(runBot, dnP)
+                runTop := na(runTop) ? upP : math.max(runTop, upP)
+                if runBuy > bestBuyRun
+                    bestBuyRun := runBuy
+                    bestBuyTop := runTop
+                    bestBuyBot := runBot
+            else if sImb and not bImb
+                runSell += 1
+                runBuy := 0
+                runBot := na(runBot) ? dnP : math.min(runBot, dnP)
+                runTop := na(runTop) ? upP : math.max(runTop, upP)
+                if runSell > bestSellRun
+                    bestSellRun := runSell
+                    bestSellTop := runTop
+                    bestSellBot := runBot
+            else
+                runBuy := 0
+                runSell := 0
+                runTop := na
+                runBot := na
+
+    // Prefer the stronger stack
+    if bestBuyRun >= minStackRows and bestBuyRun >= bestSellRun
+        stackDir   := 1
+        stackCount := bestBuyRun
+        stackTop   := bestBuyTop
+        stackBot   := bestBuyBot
+    else if bestSellRun >= minStackRows
+        stackDir   := -1
+        stackCount := bestSellRun
+        stackTop   := bestSellTop
+        stackBot   := bestSellBot
+
+// CVD multi-bar proxy when native footprint unavailable
+if not fpNative
+    // Count consecutive confirmed bars with strong same-side delta
+    int proxyBuy = 0
+    int proxySell = 0
+    for i = 0 to math.min(minStackRows + 2, 8)
+        float d = barDelta[i]
+        float avgD = avgAbsDelta[i]
+        if d > avgD * ofiDeltaMult
+            proxyBuy += 1
+            proxySell := 0
+        else if d < -avgD * ofiDeltaMult
+            proxySell += 1
+            proxyBuy := 0
+        else
+            break
+    if proxyBuy >= minStackRows
+        stackDir   := 1
+        stackCount := proxyBuy
+        stackTop   := ta.highest(h, proxyBuy)
+        stackBot   := ta.lowest(l, proxyBuy)
+    else if proxySell >= minStackRows
+        stackDir   := -1
+        stackCount := proxySell
+        stackTop   := ta.highest(h, proxySell)
+        stackBot   := ta.lowest(l, proxySell)
+
+// Emit lattice event + optional magnet + zone box
+bool stackBull = stackDir == 1 and stackCount >= minStackRows
+bool stackBear = stackDir == -1 and stackCount >= minStackRows
+
+if stackBull
+    f_pushEvent(1, (nz(stackTop) + nz(stackBot)) / 2.0, 10)
+    if stackAsMagnet and not na(stackBot)
+        float intens = float(stackCount) * 1.5 * volRatio
+        f_pushPool(stackBot, 1, intens)
+if stackBear
+    f_pushEvent(-1, (nz(stackTop) + nz(stackBot)) / 2.0, 10)
+    if stackAsMagnet and not na(stackTop)
+        float intens = float(stackCount) * 1.5 * volRatio
+        f_pushPool(stackTop, -1, intens)
+
+if showStackZones and (stackBull or stackBear) and not na(stackTop) and not na(stackBot)
+    if not na(stackBox)
+        box.delete(stackBox)
+    stackBox := box.new(bar_index, stackTop, bar_index + 12, stackBot,
+         border_color=stackBull ? color.new(#22c55e, 40) : color.new(#ef4444, 40),
+         bgcolor=stackBull ? color.new(#22c55e, 88) : color.new(#ef4444, 88),
+         border_width=1)
+
+// Density now includes same-bar FVG (7) + OFI absorb/imb (8/9) + stacked (10)
+int baseDensL = f_latticeDensity(1)
+int baseDensS = f_latticeDensity(-1)
+// Stacked imbalance is high-conviction: small extra grade nudge when stack aligns
+int densL = stackBull and baseDensL >= 2 ? math.min(5, baseDensL + 1) : baseDensL
+int densS = stackBear and baseDensS >= 2 ? math.min(5, baseDensS + 1) : baseDensS
+string gradeL = f_gradeName(densL)
+string gradeS = f_gradeName(densS)
+
+// Minimal OFI marks
+plotshape(showOFIMarks and absorbBull, "OFI Abs↑", shape.circle, location.belowbar, color.new(#22c55e, 25), size=size.tiny)
+plotshape(showOFIMarks and absorbBear, "OFI Abs↓", shape.circle, location.abovebar, color.new(#ef4444, 25), size=size.tiny)
+plotshape(showOFIMarks and imbBull and not absorbBull, "OFI Imb↑", shape.diamond, location.belowbar, color.new(#06b6d4, 30), size=size.tiny)
+plotshape(showOFIMarks and imbBear and not absorbBear, "OFI Imb↓", shape.diamond, location.abovebar, color.new(#d946ef, 30), size=size.tiny)
+plotshape(showOFIMarks and stackBull, "Stack↑", shape.square, location.belowbar, color.new(#16a34a, 0), size=size.tiny)
+plotshape(showOFIMarks and stackBear, "Stack↓", shape.square, location.abovebar, color.new(#dc2626, 0), size=size.tiny)
+
+// Mitigate invalidated zones
 if array.size(bullZones) > 0
     for i = 0 to array.size(bullZones) - 1
         FVGZone z = array.get(bullZones, i)
@@ -697,56 +910,14 @@ if array.size(bearZones) > 0
                 box.set_border_color(z.b, color.new(color.gray, 75))
 
 // ============================================================
-// ORDER FLOW INTELLIGENCE — Absorption (8) + Imbalance (9)
+// PILLAR 4 — REFINED 3-GATE CORE
+// Gate 1 Bias (regime-aware) → Gate 2 Armed → Gate 3 Zone retest
 // ============================================================
-// Level-proximity guards use `not na(...)` instead of nz() fallback —
-// nz(zoneBotL, c) would make `l <= c` always true and collapse the gate.
-bool zoneNearL  = not na(zoneBotL) and l <= zoneBotL
-bool zoneNearS  = not na(zoneTopS) and h >= zoneTopS
-bool bandNear   = f_nearBand(c)
-bool magNear    = not na(topMagnetPx) and math.abs(c - topMagnetPx) <= atr * ofiProxATR
-bool nearLevelL = zoneNearL or bandNear or magNear
-bool nearLevelS = zoneNearS or bandNear or magNear
-
-// Absorption: strong OPPOSING delta + rejection candle at a tracked level
-bool absorbBull = strongDeltaDn and c > o and nearLevelL
-bool absorbBear = strongDeltaUp and c < o and nearLevelS
-
-// Imbalance: strong DIRECTIONAL delta + CVD agreement + structure/zone
-bool imbBull = strongDeltaUp and cvdRising and (bullBOS or vwapReclaimBull or inBullZone)
-bool imbBear = strongDeltaDn and cvdFalling and (bearBOS or vwapReclaimBear or inBearZone)
-
-// Push into lattice. Type 8 = absorption, 9 = imbalance (spec table).
-if absorbBull
-    f_pushEvent(1, c, 8)
-if absorbBear
-    f_pushEvent(-1, c, 8)
-if imbBull
-    f_pushEvent(1, c, 9)
-if imbBear
-    f_pushEvent(-1, c, 9)
-
-plotshape(showOFI and absorbBull, "Abs↑", shape.circle, location.belowbar, color.new(#22c55e, 20), size=size.tiny)
-plotshape(showOFI and absorbBear, "Abs↓", shape.circle, location.abovebar, color.new(#ef4444, 20), size=size.tiny)
-plotshape(showOFI and imbBull,   "Imb↑", shape.diamond, location.belowbar, color.new(#06b6d4, 0), size=size.tiny)
-plotshape(showOFI and imbBear,   "Imb↓", shape.diamond, location.abovebar, color.new(#d946ef, 0), size=size.tiny)
-
-// ============================================================
-// DENSITY → GRADE  (moved here so same-bar FVG + OFI count)
-// ============================================================
-int densL = f_latticeDensity(1)
-int densS = f_latticeDensity(-1)
-
-string gradeL = f_gradeName(densL)
-string gradeS = f_gradeName(densS)
-
-// ============================================================
-// PILLAR 4 — 3-GATE CORE
-// ============================================================
+// Gate 1 — Bias
 bool biasLongTrend  = (ribbonBull or cloudBull) and (not useHTF or htfBull)
 bool biasShortTrend = (ribbonBear or cloudBear) and (not useHTF or htfBear)
-bool biasLongRange  = atExtremeLong or inDisc
-bool biasShortRange = atExtremeShort or inPrem
+bool biasLongRange  = atExtremeLong or inDisc   // fade discount
+bool biasShortRange = atExtremeShort or inPrem  // fade premium
 bool biasLongTrans  = ribbonBull or cloudBull or htfBull
 bool biasShortTrans = ribbonBear or cloudBear or htfBear
 
@@ -760,6 +931,7 @@ string biasNow = biasDir == 1 ? "bull" : biasDir == -1 ? "bear" : "none"
 bool biasBullFlip = biasNow == "bull" and lastBiasState != "bull"
 bool biasBearFlip = biasNow == "bear" and lastBiasState != "bear"
 
+// Gate 2 — Armed
 var bool bullArmed = false
 var int  bullArmedBar = na
 var bool bearArmed = false
@@ -805,22 +977,31 @@ if showBubbles and chochBull and not sweepLow and not vwapReclaimBull
 if showBubbles and chochBear and not sweepHigh and not vwapReclaimBear
     label.new(bar_index, h + atr * 0.35, "CHoCH", style=label.style_label_down, color=color.new(#d946ef, 25), textcolor=color.white, size=size.tiny)
 
+// Gate 3 — Zone retest + lattice grade + no-chase + band
 bool chaseOKLong  = not noChase or regime == "RANGE" or not overextUp
 bool chaseOKShort = not noChase or regime == "RANGE" or not overextDn
+// RANGE allows fades into extremes (opposite of TREND no-chase)
 bool rangeFadeLong  = regime != "RANGE" or atExtremeLong or inDisc
 bool rangeFadeShort = regime != "RANGE" or atExtremeShort or inPrem
 bool confOKLong  = not requireBand or bullBandConf
 bool confOKShort = not requireBand or bearBandConf
 bool gradeOKLong  = densL >= minGradeRank
 bool gradeOKShort = densS >= minGradeRank
+// TRANSITION: require higher density already handled in f_latticeDensity
 
 bool buyRaw  = gate1Long  and bullArmed and inBullZone and rthOK and chaseOKLong  and rangeFadeLong  and confOKLong  and gradeOKLong
 bool sellRaw = gate1Short and bearArmed and inBearZone and rthOK and chaseOKShort and rangeFadeShort and confOKShort and gradeOKShort
 
+// Mutual exclusion: keep higher density side, or skip both if equal
 bool bothEqual = buyRaw and sellRaw and densL == densS
+// FIX #3: buyRaw/sellRaw are built from `close`, which on the currently-forming bar is
+// just the live price — without a confirmation gate, a signal (and its alert()) could
+// fire mid-bar and then disappear by the actual close. barstate.isconfirmed is always
+// true on historical bars, so this only changes realtime behavior.
 bool buySignal  = buyRaw and (not sellRaw or densL > densS) and not bothEqual and barstate.isconfirmed
 bool sellSignal = sellRaw and (not buyRaw or densS > densL) and not bothEqual and barstate.isconfirmed
 
+// Mark tapped zone mitigated on entry
 if buySignal
     if bullTapIdx >= 0
         FVGZone z = array.get(bullZones, bullTapIdx)
@@ -849,6 +1030,7 @@ if sellSignal
 
 // ============================================================
 // PILLAR 6 — DYNAMIC RISK GEOMETRY
+// Structural SL · VWAP/σ/R TP1 · RR TP2 · magnet/1.5× TP3
 // ============================================================
 type PathState
     float entry
@@ -880,9 +1062,15 @@ f_buildRisk(int dir, float zoneBot, float zoneTop, float sweepPx) =>
         float structSL = not na(sweepPx) ? sweepPx : not na(zoneTop) ? zoneTop : h
         sl := structSL + atr * stopATR * 0.35
     float risk = math.abs(entry - sl)
+    // FIX #2: this used to floor `risk` for the TP math without touching `sl`, so a
+    // tight structural stop (say 8 ticks) could get displayed next to a TP2 computed
+    // off a much larger floored risk (say 20 ticks) — the labeled R-multiple didn't
+    // match the actual stop distance. Now the SL itself is pushed out to match the
+    // floor, so what's plotted and what's used for TP math always agree.
     if risk < atr * 0.5
         risk := atr * 0.5
         sl := dir == 1 ? entry - risk : entry + risk
+    // TP1: VWAP if wrong side, else nearest opposing σ, else 1R
     float tp1 = na
     if dir == 1
         if entry < vwapVal
@@ -914,6 +1102,7 @@ bool pathConfS  = false
 
 if buySignal
     [entry, sl, tp1, tp2, tp3, risk] = f_buildRisk(1, zoneBotL, zoneTopL, armedSweepLo)
+    // Clear prior path lines
     if not na(pathL.lnSL)
         line.delete(pathL.lnSL)
         line.delete(pathL.lnTP1)
@@ -941,7 +1130,7 @@ if buySignal
          "\nTP3 " + str.tostring(tp3, format.mintick) + "  RR " + str.tostring(rr, "#.#") + " · " + presetName
     label.new(bar_index, l, txt, color=color.new(#16a34a, 0), textcolor=color.white, style=label.style_label_up, size=size.normal)
     if enableAlerts
-        alert("Meridian OFI BUY · " + gradeL + " · " + regime + " | E " + str.tostring(entry, format.mintick) + " SL " + str.tostring(sl, format.mintick) + " TP1 " + str.tostring(tp1, format.mintick) + " TP2 " + str.tostring(tp2, format.mintick) + (setupTag != "" ? " | " + setupTag : ""), alert.freq_once_per_bar)
+        alert("Meridian BUY · " + gradeL + " · " + regime + " | E " + str.tostring(entry, format.mintick) + " SL " + str.tostring(sl, format.mintick) + " TP1 " + str.tostring(tp1, format.mintick) + " TP2 " + str.tostring(tp2, format.mintick) + (setupTag != "" ? " | " + setupTag : ""), alert.freq_once_per_bar)
 
 if sellSignal
     [entry, sl, tp1, tp2, tp3, risk] = f_buildRisk(-1, zoneBotS, zoneTopS, armedSweepHi)
@@ -972,7 +1161,7 @@ if sellSignal
          "\nTP3 " + str.tostring(tp3, format.mintick) + "  RR " + str.tostring(rr, "#.#") + " · " + presetName
     label.new(bar_index, h, txt, color=color.new(#dc2626, 0), textcolor=color.white, style=label.style_label_down, size=size.normal)
     if enableAlerts
-        alert("Meridian OFI SELL · " + gradeS + " · " + regime + " | E " + str.tostring(entry, format.mintick) + " SL " + str.tostring(sl, format.mintick) + " TP1 " + str.tostring(tp1, format.mintick) + " TP2 " + str.tostring(tp2, format.mintick) + (setupTag != "" ? " | " + setupTag : ""), alert.freq_once_per_bar)
+        alert("Meridian SELL · " + gradeS + " · " + regime + " | E " + str.tostring(entry, format.mintick) + " SL " + str.tostring(sl, format.mintick) + " TP1 " + str.tostring(tp1, format.mintick) + " TP2 " + str.tostring(tp2, format.mintick) + (setupTag != "" ? " | " + setupTag : ""), alert.freq_once_per_bar)
 
 // ============================================================
 // PILLAR 5 — PATH INTEGRITY TRACKER
@@ -984,13 +1173,13 @@ if pathL.active and not pathL.confirmed and not pathL.broken
         pathBreakL := true
         label.new(bar_index, l, "PATH BREAK", color=color.new(#7f1d1d, 0), textcolor=color.white, style=label.style_label_up, size=size.small)
         if enableAlerts
-            alert("Meridian OFI PATH BREAK LONG — " + syminfo.ticker, alert.freq_once_per_bar)
+            alert("Meridian PATH BREAK LONG — " + syminfo.ticker, alert.freq_once_per_bar)
     else if h >= pathL.tp1
         pathL.confirmed := true
         pathConfL := true
         label.new(bar_index, h, "PATH CONFIRM", color=color.new(#166534, 0), textcolor=color.white, style=label.style_label_down, size=size.small)
         if enableAlerts
-            alert("Meridian OFI PATH CONFIRM LONG — TP1 touched | " + syminfo.ticker, alert.freq_once_per_bar)
+            alert("Meridian PATH CONFIRM LONG — TP1 touched | " + syminfo.ticker, alert.freq_once_per_bar)
 
 if pathS.active and not pathS.confirmed and not pathS.broken
     if c > pathS.sl
@@ -999,14 +1188,15 @@ if pathS.active and not pathS.confirmed and not pathS.broken
         pathBreakS := true
         label.new(bar_index, h, "PATH BREAK", color=color.new(#7f1d1d, 0), textcolor=color.white, style=label.style_label_down, size=size.small)
         if enableAlerts
-            alert("Meridian OFI PATH BREAK SHORT — " + syminfo.ticker, alert.freq_once_per_bar)
+            alert("Meridian PATH BREAK SHORT — " + syminfo.ticker, alert.freq_once_per_bar)
     else if l <= pathS.tp1
         pathS.confirmed := true
         pathConfS := true
         label.new(bar_index, l, "PATH CONFIRM", color=color.new(#166534, 0), textcolor=color.white, style=label.style_label_up, size=size.small)
         if enableAlerts
-            alert("Meridian OFI PATH CONFIRM SHORT — TP1 touched | " + syminfo.ticker, alert.freq_once_per_bar)
+            alert("Meridian PATH CONFIRM SHORT — TP1 touched | " + syminfo.ticker, alert.freq_once_per_bar)
 
+// Extend active path lines
 if pathL.active and not na(pathL.lnSL)
     line.set_x2(pathL.lnSL, bar_index + 5)
     line.set_x2(pathL.lnTP1, bar_index + 5)
@@ -1023,13 +1213,13 @@ if pathS.active and not na(pathS.lnSL)
 string pathTxt = pathL.active ? (pathL.confirmed ? "L:CONFIRM" : "L:OPEN") : pathL.broken ? "L:BREAK" : pathS.active ? (pathS.confirmed ? "S:CONFIRM" : "S:OPEN") : pathS.broken ? "S:BREAK" : "—"
 
 // ============================================================
-// ALERTS
+// ALERTS — alertcondition + runtime alert()
 // ============================================================
 bool eliteFire = (buySignal and densL >= 4) or (sellSignal and densS >= 4)
 bool singularFire = (buySignal and densL >= 5) or (sellSignal and densS >= 5)
 
-alertcondition(buySignal, "BUY Entry", "Meridian OFI Engine: BUY")
-alertcondition(sellSignal, "SELL Entry", "Meridian OFI Engine: SELL")
+alertcondition(buySignal, "BUY Entry", "Meridian Engine: BUY")
+alertcondition(sellSignal, "SELL Entry", "Meridian Engine: SELL")
 alertcondition(sweepLow, "Sweep Arm Long", "Meridian: buy-side liquidity swept — long armed")
 alertcondition(sweepHigh, "Sweep Arm Short", "Meridian: sell-side liquidity swept — short armed")
 alertcondition(eliteFire, "ELITE Signal", "Meridian: ELITE lattice grade entry")
@@ -1038,33 +1228,33 @@ alertcondition(pathBreakL or pathBreakS, "Path Break", "Meridian: PATH BREAK")
 alertcondition(pathConfL or pathConfS, "Path Confirm", "Meridian: PATH CONFIRM (TP1)")
 alertcondition(regimeChange, "Regime Change", "Meridian: regime changed")
 alertcondition(biasBullFlip or biasBearFlip, "Bias Flip", "Meridian: bias flipped")
-
-// OFI alerts (absorption >= PRIME, imbalance >= ELITE)
-alertcondition(absorbBull and densL >= 3, "OFI Absorption Long", "Meridian OFI: Bullish absorption at level")
-alertcondition(absorbBear and densS >= 3, "OFI Absorption Short", "Meridian OFI: Bearish absorption at level")
-alertcondition(imbBull and densL >= 4, "OFI Imbalance Long", "Meridian OFI: Strong bullish imbalance")
-alertcondition(imbBear and densS >= 4, "OFI Imbalance Short", "Meridian OFI: Strong bearish imbalance")
+alertcondition(absorbBull and densL >= 3, "OFI Absorption Long", "Meridian OFI: bullish absorption at level")
+alertcondition(absorbBear and densS >= 3, "OFI Absorption Short", "Meridian OFI: bearish absorption at level")
+alertcondition(imbBull and densL >= 4, "OFI Imbalance Long", "Meridian OFI: strong bullish imbalance")
+alertcondition(imbBear and densS >= 4, "OFI Imbalance Short", "Meridian OFI: strong bearish imbalance")
+alertcondition(stackBull and densL >= 3, "OFI Stacked Imbalance Long", "Meridian OFI: stacked buy imbalance")
+alertcondition(stackBear and densS >= 3, "OFI Stacked Imbalance Short", "Meridian OFI: stacked sell imbalance")
 
 if enableAlerts and sweepLow
-    alert("Meridian OFI Sweep Arm Long — " + syminfo.ticker + " " + presetName, alert.freq_once_per_bar)
+    alert("Meridian Sweep Arm Long — " + syminfo.ticker + " " + presetName, alert.freq_once_per_bar)
 if enableAlerts and sweepHigh
-    alert("Meridian OFI Sweep Arm Short — " + syminfo.ticker + " " + presetName, alert.freq_once_per_bar)
+    alert("Meridian Sweep Arm Short — " + syminfo.ticker + " " + presetName, alert.freq_once_per_bar)
 if enableAlerts and singularFire
-    alert("Meridian OFI SINGULAR — " + syminfo.ticker + " dens L/S=" + str.tostring(densL) + "/" + str.tostring(densS), alert.freq_once_per_bar)
+    alert("Meridian SINGULAR — " + syminfo.ticker + " dens L/S=" + str.tostring(densL) + "/" + str.tostring(densS), alert.freq_once_per_bar)
 else if enableAlerts and eliteFire
-    alert("Meridian OFI ELITE — " + syminfo.ticker + " dens L/S=" + str.tostring(densL) + "/" + str.tostring(densS), alert.freq_once_per_bar)
+    alert("Meridian ELITE — " + syminfo.ticker + " dens L/S=" + str.tostring(densL) + "/" + str.tostring(densS), alert.freq_once_per_bar)
 if enableAlerts and regimeChange
-    alert("Meridian OFI Regime → " + regime + " | ADX " + str.tostring(adxVal, "#.#") + " | " + syminfo.ticker, alert.freq_once_per_bar)
+    alert("Meridian Regime → " + regime + " | ADX " + str.tostring(adxVal, "#.#") + " | " + syminfo.ticker, alert.freq_once_per_bar)
 if enableAlerts and biasBullFlip
-    alert("Meridian OFI Bias → Bull — " + syminfo.ticker, alert.freq_once_per_bar)
+    alert("Meridian Bias → Bull — " + syminfo.ticker, alert.freq_once_per_bar)
 if enableAlerts and biasBearFlip
-    alert("Meridian OFI Bias → Bear — " + syminfo.ticker, alert.freq_once_per_bar)
+    alert("Meridian Bias → Bear — " + syminfo.ticker, alert.freq_once_per_bar)
 
 lastBiasState := biasNow
 lastRegime := regime
 
 // ============================================================
-// DASHBOARD — 13 rows now (was 12)
+// DASHBOARD — top_right
 // ============================================================
 var table dash = table.new(position.top_right, 2, 13, bgcolor=color.new(#0b1220, 12), border_width=1, border_color=color.new(#334155, 0))
 
@@ -1103,25 +1293,35 @@ if showDash and barstate.islast
     table.cell(dash, 1, 10, str.tostring(atrRS, "#.##") + " RR " + str.tostring(rr, "#.#"), text_color=#f8fafc, text_size=size.small)
     table.cell(dash, 0, 11, "Sess", text_color=#94a3b8, text_size=size.small)
     table.cell(dash, 1, 11, sbWin ? "SB" : nyKZ ? "NY" : london ? "LDN" : asia ? "ASIA" : "—", text_color=#f8fafc, text_size=size.small)
-    // --- new OFI row ---
-    string ofiTxt = absorbBull ? "Abs↑" : absorbBear ? "Abs↓" : imbBull ? "Imb↑" : imbBear ? "Imb↓" : cvdRising ? "CVD↑" : cvdFalling ? "CVD↓" : "—"
-    color  ofiCol = (absorbBull or imbBull or cvdRising) ? #22c55e : (absorbBear or imbBear or cvdFalling) ? #ef4444 : #94a3b8
+    // OFI / CVD / Stack row
+    string stackTxt = stackBull ? "Stk↑" + str.tostring(stackCount) : stackBear ? "Stk↓" + str.tostring(stackCount) : ""
+    string ofiTxt = stackTxt != "" ? stackTxt : absorbBull ? "Abs↑" : absorbBear ? "Abs↓" : imbBull ? "Imb↑" : imbBear ? "Imb↓" : (cvdRising ? "CVD↑" : cvdFalling ? "CVD↓" : "—")
+    color  ofiCol = (stackBull or absorbBull or imbBull) ? #22c55e : (stackBear or absorbBear or imbBear) ? #ef4444 : cvdRising ? #86efac : cvdFalling ? #fca5a5 : #94a3b8
+    string srcTag = fpNative ? "·FP" : "·px"
     table.cell(dash, 0, 12, "OFI", text_color=#94a3b8, text_size=size.small)
-    table.cell(dash, 1, 12, ofiTxt + " " + str.tostring(cvd, format.volume), text_color=ofiCol, text_size=size.small)
+    table.cell(dash, 1, 12, ofiTxt + srcTag + " " + str.tostring(cvd, format.volume), text_color=ofiCol, text_size=size.small)
 
 // ============================================================
-// KNOWN REMAINING LIMITATIONS
+// KNOWN REMAINING LIMITATIONS (not fixed in v2, by scope choice)
 // ============================================================
 // - Liquidity pools are still N-bar swing extremes, not true multi-timeframe
-//   resting liquidity (PDH/PDL, weekly open, equal-highs clusters).
-// - Regime classification still has no hysteresis; near-threshold flips can
-//   occur bar-to-bar.
-// - Arming and stage bubbles remain intrabar by design (state, not triggers).
-// - OFI absorption/imbalance use close-vs-prior-close volume split, which is
-//   a robust proxy but not true footprint / bid-ask data. On symbols with
-//   irregular volume feeds this is the best you get without exchange DOM.
-// - Density now can reach up to 9 unique event types; the grade cap at 5
-//   means PRIME/ELITE/SINGULAR are easier to reach than in v2. Watch whether
-//   that loosens your entry filter and consider raising minGrade if so.
-// - CVD reset "Session" piggybacks on VWAP's session anchor; if you change
-//   vwapAnchor preset-by-preset, CVD reset follows. That's intentional.
+//   resting liquidity (PDH/PDL, weekly open, equal-highs clusters). Real
+//   confluence would weight sweeps of those levels much higher.
+// - Regime classification (ADX vs fixed thresholds) still has no hysteresis,
+//   so instruments sitting near the adxRange/adxTrend gap can flip regimes
+//   bar-to-bar. Consider requiring N consecutive confirming bars before a
+//   regime change is accepted, or basing thresholds on the ADX's own trailing
+//   percentile instead of a fixed constant.
+// - Arming (Gate 2) and the "S"/"ARMED"/"VWAP"/"CHoCH" bubbles remain
+//   intrabar/live by design — they're state indicators, not trade triggers.
+// - No walk-forward or multi-symbol robustness testing is built in here.
+//   Use the companion strategy script (Meridian_Engine_Backtest.pine) to get
+//   real win-rate/profit-factor/drawdown numbers before trusting this live,
+//   and test across several symbols/timeframes to check for overfitting to
+//   one chart's ~30 free parameters.
+// - OFI / CVD uses close-vs-prior-close volume split when native footprint is unavailable.
+//   On low-volume symbols raise ofiDeltaMult or disable showOFIMarks if marks clutter.
+// - Stacked imbalance prefers request.footprint() (Premium/Ultimate). When footprint
+//   returns na the script falls back to a multi-bar CVD proxy (coarser, not diagonal).
+// - request.footprint is limited to one call per script; ticks/row should be tuned per
+//   instrument (e.g. ES ~4–20, crypto larger) so rows stay informative (~15–40 per bar).

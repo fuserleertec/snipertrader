@@ -3,19 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Meridian OFI Engine — Order Flow Intelligence · CVD · Absorption · Imbalance | SniperTrader.ai</title>
-<meta name="description" content="Meridian OFI Engine — a Pine Script v6 indicator that layers Order Flow Intelligence (cumulative volume delta, absorption, imbalance) onto a regime-aware SMC lattice with decaying liquidity magnets, WATCH→PRIME→ELITE→SINGULAR grading, and entry-to-TP3 path tracking.">
+<title>Meridian OFI Engine v2.2 — Order Flow Intelligence · CVD · Absorption · Imbalance · Stacked | SniperTrader.ai</title>
+<meta name="description" content="Meridian OFI Engine v2.2 — a Pine Script v6 indicator that layers Order Flow Intelligence (cumulative volume delta, absorption, imbalance, native-footprint stacked imbalance) onto a regime-aware SMC lattice with decaying liquidity magnets, WATCH→PRIME→ELITE→SINGULAR grading, and entry-to-TP3 path tracking.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 /* ============================================================
-   Meridian OFI Engine — SniperTrader.ai product page
+   Meridian OFI Engine v2.2 — SniperTrader.ai product page
    Follows the index.html "Precision Over Prediction" design
    system (glassmorphism, Playfair + Plus Jakarta + Space Mono),
    with a UNIQUE emerald-flow palette: green (bull/accumulation)
-   + red (bear/distribution) order-flow poles, and cyan/magenta
-   imbalance markers. Distinct from the violet Meridian Engine,
+   + red (bear/distribution) order-flow poles, cyan/magenta
+   imbalance markers, and green/red SQUARES for stacked imbalance
+   (native footprint). Distinct from the violet Meridian Engine,
    the gold/sage USME suite, and the green/cyan traderedge family.
    ============================================================ */
 
@@ -28,6 +29,7 @@
   --bull:#22C55E; --bull2:#16A34A; --bull-dim:rgba(34,197,94,.10);
   --bear:#EF4444; --bear2:#DC2626; --bear-dim:rgba(239,68,68,.10);
   --imb-up:#06B6D4; --imb-dn:#D946EF;
+  --stack-up:#16A34A; --stack-dn:#DC2626;
   --red:#FB7185; --red-dim:rgba(251,113,133,.10);
   --amber:#FBBF24; --amber-dim:rgba(251,191,36,.10);
   --border:rgba(16,185,129,.15); --border2:rgba(16,185,129,.32);
@@ -47,6 +49,7 @@ body.light{
   --bull:#15803D; --bull2:#166534; --bull-dim:rgba(21,128,61,.12);
   --bear:#DC2626; --bear2:#DC2626; --bear-dim:rgba(220,38,38,.10);
   --imb-up:#0E7490; --imb-dn:#A21CAF;
+  --stack-up:#15803D; --stack-dn:#B91C1C;
   --red:#BE1E3C; --red-dim:rgba(190,30,60,.08);
   --amber:#8A5B00; --amber-dim:rgba(138,91,0,.10);
   --border:rgba(4,120,87,.18); --border2:rgba(4,120,87,.34);
@@ -74,6 +77,10 @@ body.light [fill="#22C55E"]{fill:#15803D;}
 body.light [fill="#EF4444"]{fill:#DC2626;}
 body.light [fill="#06B6D4"]{fill:#0E7490;}
 body.light [fill="#D946EF"]{fill:#A21CAF;}
+body.light [stroke="#16A34A"]{stroke:#15803D;}
+body.light [stroke="#DC2626"]{stroke:#B91C1C;}
+body.light [fill="#16A34A"]{fill:#15803D;}
+body.light [fill="#DC2626"]{fill:#B91C1C;}
 
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
@@ -236,7 +243,7 @@ h2 em{font-style:italic;color:var(--brand);}
 
 /* ── Order Flow Intelligence (special color format) ───────── */
 #ofi{padding:96px 0;background:var(--bg2);}
-.ofi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:8px;}
+.ofi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-top:8px;}
 .ofi-card{padding:30px 26px;border:1px solid var(--border);background:var(--card);border-radius:16px;transition:transform .25s,border-color .25s;}
 .ofi-card:hover{transform:translateY(-4px);border-color:var(--border2);}
 .ofi-card .of-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
@@ -251,6 +258,8 @@ h2 em{font-style:italic;color:var(--brand);}
 .ofi-tags span.dn{border-color:rgba(239,68,68,.4);color:var(--bear);background:var(--bear-dim);}
 .ofi-tags span.imb-up{border-color:rgba(6,182,212,.4);color:var(--imb-up);}
 .ofi-tags span.imb-dn{border-color:rgba(217,70,239,.4);color:var(--imb-dn);}
+.ofi-tags span.stack-up{border-color:rgba(22,163,74,.4);color:var(--stack-up);background:rgba(22,163,74,.10);}
+.ofi-tags span.stack-dn{border-color:rgba(220,38,38,.4);color:var(--stack-dn);background:rgba(220,38,38,.10);}
 /* Special color-format legend */
 .ofi-legend{margin-top:28px;border:1px solid var(--border);border-radius:16px;background:var(--card);padding:24px 26px;}
 .ofi-legend h4{font-family:var(--ff-m);font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--text4);margin-bottom:16px;}
@@ -261,6 +270,7 @@ h2 em{font-style:italic;color:var(--brand);}
 .ofi-key .k-sub{font-size:.7rem;color:var(--text4);}
 .sw-dot{width:11px;height:11px;border-radius:50%;}
 .sw-diamond{width:10px;height:10px;transform:rotate(45deg);border-radius:2px;}
+.sw-square{width:11px;height:11px;border-radius:2px;}
 .sw-line{width:24px;height:3px;border-radius:2px;}
 
 /* ── Grades (4 tiers) ──────────────────────────────────────── */
@@ -484,7 +494,7 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
       <span class="tick-item"><span class="t-brand">◆</span> 3-Gate Core — bias → armed → zone</span>
       <span class="tick-item"><span class="t-brand">◆</span> Dynamic Risk Geometry — SL + TP1–3</span>
       <span class="tick-item"><span class="t-brand">◆</span> Path Integrity — confirm / break</span>
-      <span class="tick-item"><span class="t-brand">◆</span> Order Flow Intelligence — CVD · Abs · Imb</span>
+      <span class="tick-item"><span class="t-brand">◆</span> Order Flow Intelligence — CVD · Abs · Imb · Stack</span>
       <span class="tick-item"><span class="t-brand">◆</span> Session DNA — SB · NY · London · Asia</span>
       <span class="tick-item"><span class="t-brand">◆</span> TradingView Pine Script v6</span>
       <span class="tick-item"><span class="t-brand">◆</span> Regime Engine — TREND · RANGE · TRANSITION</span>
@@ -493,7 +503,7 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
       <span class="tick-item"><span class="t-brand">◆</span> 3-Gate Core — bias → armed → zone</span>
       <span class="tick-item"><span class="t-brand">◆</span> Dynamic Risk Geometry — SL + TP1–3</span>
       <span class="tick-item"><span class="t-brand">◆</span> Path Integrity — confirm / break</span>
-      <span class="tick-item"><span class="t-brand">◆</span> Order Flow Intelligence — CVD · Abs · Imb</span>
+      <span class="tick-item"><span class="t-brand">◆</span> Order Flow Intelligence — CVD · Abs · Imb · Stack</span>
       <span class="tick-item"><span class="t-brand">◆</span> Session DNA — SB · NY · London · Asia</span>
       <span class="tick-item"><span class="t-brand">◆</span> TradingView Pine Script v6</span>
     </div>
@@ -507,11 +517,11 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
     <div>
       <div class="hero-pill">
         <span class="hp-dot"></span>
-        <span class="hp-text">Meridian OFI Engine</span>
-        <span class="hp-plat">Order Flow Intelligence · Pine v6</span>
+        <span class="hp-text">Meridian OFI Engine v2.2</span>
+        <span class="hp-plat">Order Flow Intelligence · Native Footprint · Pine v6</span>
       </div>
       <h1 class="hero-title">Read the regime. Map the liquidity. <em>Read the flow.</em></h1>
-      <p class="hero-sub">Meridian OFI Engine layers <strong>cumulative volume delta</strong>, <strong>absorption</strong>, and <strong>imbalance</strong> onto the regime-aware lattice — the same SMC/VWAP/magnet levels, now read through order flow — feeding the <strong>liquidity memory map</strong> and <strong>path-integrity tracking</strong>, so every signal carries a grade, a regime, and a managed trade from entry to TP3.</p>
+      <p class="hero-sub">Meridian OFI Engine v2.2 layers <strong>cumulative volume delta</strong>, <strong>absorption</strong>, <strong>imbalance</strong>, and <strong>stacked imbalance</strong> — the last read from TradingView's native <strong>diagonal footprint</strong> — onto the regime-aware lattice: the same SMC/VWAP/magnet levels, now read through order flow — feeding the <strong>liquidity memory map</strong> and <strong>path-integrity tracking</strong>, so every signal carries a grade, a regime, and a managed trade from entry to TP3.</p>
       <div class="hero-cta">
         <a class="btn btn-primary" href="/checkout.html">Get Meridian OFI Engine</a>
         <a class="btn btn-outline" href="#workflow">See How It Trades</a>
@@ -519,7 +529,7 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
       <div class="hero-trust">
         <div class="trust-item"><span class="t-label">Regime</span><span class="t-value">TREND · RANGE · TRANSITION</span></div>
         <div class="trust-item"><span class="t-label">Conviction</span><span class="t-value">WATCH → SINGULAR</span></div>
-        <div class="trust-item"><span class="t-label">Order Flow</span><span class="t-value">CVD · Abs · Imb</span></div>
+        <div class="trust-item"><span class="t-label">Order Flow</span><span class="t-value">CVD · Abs · Imb · Stack</span></div>
         <div class="trust-item"><span class="t-label">Path</span><span class="t-value">Break · Confirm</span></div>
       </div>
     </div>
@@ -630,7 +640,7 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
           <span class="tag south">Confluence</span>
         </div>
         <h3>Event Lattice</h3>
-        <p>Not a flat score. Sweeps, CHoCH, BOS, VWAP reclaims, band touches, session tags, absorption, and imbalance land in a rolling lattice. Density is measured in time and price — each of the nine event types counted once — then graded WATCH to SINGULAR.</p>
+        <p>Not a flat score. Sweeps, CHoCH, BOS, VWAP reclaims, band touches, session tags, absorption, imbalance, and stacked imbalance land in a rolling lattice. Density is measured in time and price — each of the ten event types counted once — then graded WATCH to SINGULAR.</p>
         <div class="fc-viz">
           <svg viewBox="0 0 460 90" width="100%" height="90" preserveAspectRatio="none" role="img" aria-label="Clustered lattice events">
             <circle cx="80" cy="50" r="4" fill="#22C55E"/><circle cx="120" cy="44" r="4" fill="#22C55E"/><circle cx="160" cy="52" r="4" fill="#22C55E"/>
@@ -644,7 +654,7 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
         </div>
         <div class="fc-tags">
           <span class="tag brand">WATCH → SINGULAR</span>
-          <span class="tag">9 types · dedup</span>
+          <span class="tag">10 types · dedup</span>
         </div>
       </div>
       <div class="glass feature-card reveal">
@@ -726,7 +736,7 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
   <div class="container">
     <div class="eyebrow reveal">Order Flow Intelligence</div>
     <h2 class="reveal">Volume's true intent. <em>On the lattice.</em></h2>
-    <p class="lede reveal">The OFI layer reads cumulative volume delta and projects it onto the same SMC/VWAP/magnet levels the engine already tracks. Absorption (type 8) and imbalance (type 9) join the lattice as direction-aware events — feeding straight into density → grade → Gate 3 with no new gates.</p>
+    <p class="lede reveal">The OFI layer reads cumulative volume delta and projects it onto the same SMC/VWAP/magnet levels the engine already tracks. Absorption (type 8) and imbalance (type 9) join the lattice as direction-aware events — and v2.2 adds <strong>stacked imbalance</strong> (type 10), read from TradingView's native diagonal footprint. All three feed straight into density → grade → Gate 3 with no new gates.</p>
     <div class="ofi-grid">
       <div class="ofi-card reveal">
         <div class="of-top"><div class="of-icon">⇅</div><span class="tag north">Primitive</span></div>
@@ -780,6 +790,30 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
         </div>
         <div class="ofi-tags"><span class="imb-up">Imb ↑ diamond</span><span class="imb-dn">Imb ↓ diamond</span></div>
       </div>
+      <div class="ofi-card reveal">
+        <div class="of-top"><div class="of-icon">▦</div><span class="tag brand">Type 10</span></div>
+        <h3>Stacked Imbalance</h3>
+        <div class="of-code">native diagonal footprint · ≥3 consecutive rows · proxy fallback</div>
+        <p><code style="font-family:var(--ff-m);font-size:.78rem;color:var(--text2)">request.footprint()</code> reads true bid/ask at every price row. A buy imbalance flags when a row's buy volume ≥ threshold% of the sell volume of the row <em>below</em> it (diagonal, 3:1 default); a sell imbalance mirrors it above. Three or more consecutive same-side rows form a <strong>stacked zone</strong> — the strongest initiative read in the lattice, pushed as type 10 and optionally registered as a high-intensity magnet.</p>
+        <div class="of-viz">
+          <svg viewBox="0 0 460 120" width="100%" height="120" preserveAspectRatio="none" role="img" aria-label="Stacked imbalance footprint rows">
+            <line x1="46" y1="10" x2="46" y2="110" stroke="#9CA5C4" stroke-width="1" stroke-dasharray="2 4"/>
+            <rect x="56" y="14" width="12" height="12" fill="#16A34A"/>
+            <rect x="56" y="30" width="12" height="12" fill="#16A34A"/>
+            <rect x="56" y="46" width="12" height="12" fill="#16A34A"/>
+            <rect x="56" y="86" width="12" height="12" fill="#DC2626"/>
+            <rect x="56" y="102" width="12" height="12" fill="#DC2626"/>
+            <path d="M198,26 L76,42" stroke="#06B6D4" stroke-width="1" stroke-dasharray="3 3" fill="none"/>
+            <text x="76" y="24" font-family="Space Mono,monospace" font-size="9" fill="#16A34A">Stk↑ · 3 rows</text>
+            <text x="76" y="112" font-family="Space Mono,monospace" font-size="9" fill="#DC2626">Stk↓</text>
+            <text x="212" y="26" font-family="Space Mono,monospace" font-size="9" fill="#9CA5C4">buy(row) ≥ 3× sell(row below)</text>
+            <text x="212" y="46" font-family="Space Mono,monospace" font-size="9" fill="#9CA5C4">diagonal — not same-row</text>
+            <text x="212" y="68" font-family="Space Mono,monospace" font-size="9" fill="#9CA5C4">native request.footprint()</text>
+            <text x="212" y="98" font-family="Space Mono,monospace" font-size="9" fill="#9CA5C4">CVD proxy fallback when na</text>
+          </svg>
+        </div>
+        <div class="ofi-tags"><span class="stack-up">Stk ↑ square</span><span class="stack-dn">Stk ↓ square</span><span>≥3 rows</span></div>
+      </div>
     </div>
     <div class="ofi-legend reveal">
       <h4>Special color format — order-flow semantics</h4>
@@ -790,11 +824,17 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
         <div class="ofi-key"><span class="swatch"><span class="sw-dot" style="background:#EF4444"></span></span><span class="k-name">Abs ↓</span><span class="k-sub">bearish absorption</span></div>
         <div class="ofi-key"><span class="swatch"><span class="sw-diamond" style="background:#06B6D4"></span></span><span class="k-name">Imb ↑</span><span class="k-sub">bullish imbalance</span></div>
         <div class="ofi-key"><span class="swatch"><span class="sw-diamond" style="background:#D946EF"></span></span><span class="k-name">Imb ↓</span><span class="k-sub">bearish imbalance</span></div>
+        <div class="ofi-key"><span class="swatch"><span class="sw-square" style="background:#16A34A"></span></span><span class="k-name">Stk ↑</span><span class="k-sub">stacked buy imbalance</span></div>
+        <div class="ofi-key"><span class="swatch"><span class="sw-square" style="background:#DC2626"></span></span><span class="k-name">Stk ↓</span><span class="k-sub">stacked sell imbalance</span></div>
       </div>
     </div>
     <div class="v2-note reveal">
       <span class="af-dot"></span>
-      <p><strong>No new gates.</strong> Absorption and imbalance raise density at the levels you already trade. A strong CVD read at a high-magnet or VWAP band naturally lifts the grade toward PRIME / ELITE — the existing gradeOK and mutual-exclusion logic consume it automatically.</p>
+      <p><strong>No new gates.</strong> Absorption, imbalance, and stacked imbalance raise density at the levels you already trade. A stacked run that aligns with the lattice gets a small extra grade nudge — the existing gradeOK and mutual-exclusion logic consume all of it automatically.</p>
+    </div>
+    <div class="v2-note reveal">
+      <span class="af-dot"></span>
+      <p><strong>Honest data source.</strong> Stacked imbalance prefers TradingView's native <code style="font-family:var(--ff-m);color:var(--text2)">request.footprint()</code> (Premium/Ultimate). When footprint data is unavailable, the engine falls back to a multi-bar CVD proxy — coarser, not diagonal. The dashboard tags every read <span style="font-family:var(--ff-m);color:var(--bull)">·FP</span> (native) or <span style="font-family:var(--ff-m);color:var(--text4)">·px</span> (proxy).</p>
     </div>
   </div>
 </section>
@@ -804,7 +844,7 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
   <div class="container">
     <div class="eyebrow center reveal">Event Lattice Grades</div>
     <h2 class="reveal" style="text-align:center">Four grades. <em>One density.</em></h2>
-    <p class="lede reveal" style="text-align:center;margin-left:auto;margin-right:auto">The lattice counts how many of the nine event types cluster near price — structure, VWAP, session, and now order-flow absorption and imbalance — then grades the setup. Session windows amplify, and a high-magnet pool in range can push a setup to the top.</p>
+    <p class="lede reveal" style="text-align:center;margin-left:auto;margin-right:auto">The lattice counts how many of the ten event types cluster near price — structure, VWAP, session, and now order-flow absorption, imbalance, and stacked imbalance — then grades the setup. Session windows amplify, and a high-magnet pool in range can push a setup to the top.</p>
     <div class="tier-grid">
       <div class="tier-card singular reveal">
         <div class="tc-head"><span class="tc-name">SINGULAR</span><span class="tc-icon">✶</span></div>
@@ -895,7 +935,7 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
           <tr><td class="cap">Path integrity</td><td class="no">— No</td><td class="no">— No</td><td class="meridian-col sig">✦ Yes</td></tr>
           <tr><td class="cap">Structural SL + TP1–3</td><td class="partial">◐ ATR only</td><td class="no">Labels only</td><td class="meridian-col sig">✦ Dynamic geometry</td></tr>
           <tr><td class="cap">Regime engine</td><td class="no">— No</td><td class="no">— No</td><td class="meridian-col sig">✦ TREND / RANGE / TRANSITION</td></tr>
-          <tr><td class="cap">Order flow (CVD / Abs / Imb)</td><td class="no">— No</td><td class="no">— No</td><td class="meridian-col sig">✦ OFI layer</td></tr>
+          <tr><td class="cap">Order flow (CVD / Abs / Imb / Stack)</td><td class="no">— No</td><td class="no">— No</td><td class="meridian-col sig">✦ OFI + native footprint</td></tr>
         </tbody>
       </table>
     </div>
@@ -916,6 +956,7 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
       <div class="label-row"><div class="ll-name">CHoCH</div><div class="ll-desc">A change of character — the first break of structure against the prior trend. A valid arm and lattice event.</div><div class="ll-alert">CHoCH marker</div></div>
       <div class="label-row"><div class="ll-name">Abs ↑ / Abs ↓</div><div class="ll-desc">Absorption — heavy opposing delta that rejects at a key level (FVG/OB, magnet, or VWAP band). A tiny green or red circle. Lattice type 8.</div><div class="ll-alert">OFI absorption</div></div>
       <div class="label-row"><div class="ll-name">Imb ↑ / Imb ↓</div><div class="ll-desc">Imbalance — strong directional delta with rising/falling CVD plus a BOS, reclaim, or zone tap. A tiny cyan or magenta diamond. Lattice type 9.</div><div class="ll-alert">OFI imbalance</div></div>
+      <div class="label-row"><div class="ll-name">Stk ↑ / Stk ↓</div><div class="ll-desc">Stacked imbalance — three or more consecutive same-side footprint rows (native diagonal bid/ask), the strongest initiative read. A tiny green or red square, with an optional translucent stack zone. Lattice type 10, optionally a magnet.</div><div class="ll-alert">OFI stacked imbalance</div></div>
       <div class="label-row"><div class="ll-name brand">PATH CONFIRM</div><div class="ll-desc">TP1 touched first. The path is on track; manage toward TP2 and TP3.</div><div class="ll-alert">Confirm alert</div></div>
       <div class="label-row"><div class="ll-name">PATH BREAK</div><div class="ll-desc">Price closed beyond the stop before TP1 was reached. The path is invalidated.</div><div class="ll-alert">Break alert</div></div>
     </div>
@@ -970,7 +1011,7 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
       <div class="faq-item reveal"><button class="faq-q">Are the signals non-repainting? <span class="faq-icon">+</span></button><div class="faq-a">Entry signals confirm on a closed bar and do not vanish afterward. Stage bubbles (S / ARMED / VWAP / CHoCH) update live by design because they are state indicators, not trade triggers. The path tracker, structure marks, and lattice grades are confirmed-at-close.</div></div>
       <div class="faq-item reveal"><button class="faq-q">What is a "liquidity magnet"? <span class="faq-icon">+</span></button><div class="faq-a">When a sweep confirms, Meridian OFI records that price level as a liquidity pool with a direction and intensity. Its "magnet" decays bar by bar, and strengthens when price revisits and reverses with volume. High-magnet pools add lattice weight and can become the TP3 target.</div></div>
       <div class="faq-item reveal"><button class="faq-q">Which markets work best? <span class="faq-icon">+</span></button><div class="faq-a">NQ, ES, YM, gold, forex majors, and crypto. The session logic assumes America/New_York hours, but crypto symbols automatically get a full-day VWAP window instead of losing bands for most of the day.</div></div>
-      <div class="faq-item reveal"><button class="faq-q">What is Order Flow Intelligence (OFI)? <span class="faq-icon">+</span></button><div class="faq-a">Meridian OFI Engine adds three order-flow reads on top of the Meridian engine. Cumulative Volume Delta splits each bar's volume by close-vs-prior-close and accumulates it (session or daily reset). Absorption flags heavy opposing delta that rejects at a key level. Imbalance flags strong directional delta with rising/falling CVD and structure agreement. Both land as lattice events (types 8 and 9) that raise density — no new gates.</div></div>
+      <div class="faq-item reveal"><button class="faq-q">What is Order Flow Intelligence (OFI)? <span class="faq-icon">+</span></button><div class="faq-a">Meridian OFI Engine adds four order-flow reads on top of the Meridian engine. Cumulative Volume Delta splits each bar's volume by close-vs-prior-close and accumulates it (session or daily reset). Absorption flags heavy opposing delta that rejects at a key level. Imbalance flags strong directional delta with rising/falling CVD and structure agreement. Stacked imbalance reads TradingView's native footprint and flags three or more consecutive same-side diagonal bid/ask rows. All land as lattice events (types 8, 9, and 10) that raise density — no new gates.</div></div>
       <div class="faq-item reveal"><button class="faq-q">Should I backtest before going live? <span class="faq-icon">+</span></button><div class="faq-a">Yes — this is a ~30-parameter indicator. Use the companion backtest strategy script to measure win rate, profit factor, and drawdown across several symbols and timeframes before trusting it live, and raise the minimum grade or widen FVG filters if low-timeframe noise inflates grades.</div></div>
     </div>
   </div>
@@ -990,7 +1031,7 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
         </div>
       </div>
       <div class="cb-meta">
-        <div class="cb-stat"><span class="n">9</span><span class="t">Event types — structure to order flow.</span></div>
+        <div class="cb-stat"><span class="n">10</span><span class="t">Event types — structure to stacked imbalance.</span></div>
         <div class="cb-stat"><span class="n">4</span><span class="t">Grades — WATCH to SINGULAR.</span></div>
         <div class="cb-stat"><span class="n">3</span><span class="t">Regimes — TREND · RANGE · TRANSITION.</span></div>
       </div>
