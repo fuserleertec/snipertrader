@@ -1,5 +1,5 @@
 //@version=6
-// Meridian Engine v2.1 — Order Flow Intelligence layer
+// Meridian OFI Engine — Order Flow Intelligence layer
 // Pillars: Regime Engine · Liquidity Memory Map · Event Lattice · 3-Gate Core
 //          Path Integrity · Dynamic Risk Geometry · Session DNA · OFI (CVD/Abs/Imb)
 //
@@ -32,7 +32,7 @@
 //  * Absorption proximity check now uses `not na(zoneBotL/TopS)` guards —
 //    the spec's nz(zoneBotL, c) made `l <= c` always true, degenerating the
 //    level-gate into a bare strong-delta-and-candle check.
-indicator("Meridian Engine v2.1 — OFI", overlay=true, max_labels_count=500, max_boxes_count=500, max_lines_count=500)
+indicator("Meridian OFI Engine", overlay=true, max_labels_count=500, max_boxes_count=500, max_lines_count=500)
 
 // ============================================================
 // INPUTS
@@ -941,7 +941,7 @@ if buySignal
          "\nTP3 " + str.tostring(tp3, format.mintick) + "  RR " + str.tostring(rr, "#.#") + " · " + presetName
     label.new(bar_index, l, txt, color=color.new(#16a34a, 0), textcolor=color.white, style=label.style_label_up, size=size.normal)
     if enableAlerts
-        alert("Meridian BUY · " + gradeL + " · " + regime + " | E " + str.tostring(entry, format.mintick) + " SL " + str.tostring(sl, format.mintick) + " TP1 " + str.tostring(tp1, format.mintick) + " TP2 " + str.tostring(tp2, format.mintick) + (setupTag != "" ? " | " + setupTag : ""), alert.freq_once_per_bar)
+        alert("Meridian OFI BUY · " + gradeL + " · " + regime + " | E " + str.tostring(entry, format.mintick) + " SL " + str.tostring(sl, format.mintick) + " TP1 " + str.tostring(tp1, format.mintick) + " TP2 " + str.tostring(tp2, format.mintick) + (setupTag != "" ? " | " + setupTag : ""), alert.freq_once_per_bar)
 
 if sellSignal
     [entry, sl, tp1, tp2, tp3, risk] = f_buildRisk(-1, zoneBotS, zoneTopS, armedSweepHi)
@@ -972,7 +972,7 @@ if sellSignal
          "\nTP3 " + str.tostring(tp3, format.mintick) + "  RR " + str.tostring(rr, "#.#") + " · " + presetName
     label.new(bar_index, h, txt, color=color.new(#dc2626, 0), textcolor=color.white, style=label.style_label_down, size=size.normal)
     if enableAlerts
-        alert("Meridian SELL · " + gradeS + " · " + regime + " | E " + str.tostring(entry, format.mintick) + " SL " + str.tostring(sl, format.mintick) + " TP1 " + str.tostring(tp1, format.mintick) + " TP2 " + str.tostring(tp2, format.mintick) + (setupTag != "" ? " | " + setupTag : ""), alert.freq_once_per_bar)
+        alert("Meridian OFI SELL · " + gradeS + " · " + regime + " | E " + str.tostring(entry, format.mintick) + " SL " + str.tostring(sl, format.mintick) + " TP1 " + str.tostring(tp1, format.mintick) + " TP2 " + str.tostring(tp2, format.mintick) + (setupTag != "" ? " | " + setupTag : ""), alert.freq_once_per_bar)
 
 // ============================================================
 // PILLAR 5 — PATH INTEGRITY TRACKER
@@ -984,13 +984,13 @@ if pathL.active and not pathL.confirmed and not pathL.broken
         pathBreakL := true
         label.new(bar_index, l, "PATH BREAK", color=color.new(#7f1d1d, 0), textcolor=color.white, style=label.style_label_up, size=size.small)
         if enableAlerts
-            alert("Meridian PATH BREAK LONG — " + syminfo.ticker, alert.freq_once_per_bar)
+            alert("Meridian OFI PATH BREAK LONG — " + syminfo.ticker, alert.freq_once_per_bar)
     else if h >= pathL.tp1
         pathL.confirmed := true
         pathConfL := true
         label.new(bar_index, h, "PATH CONFIRM", color=color.new(#166534, 0), textcolor=color.white, style=label.style_label_down, size=size.small)
         if enableAlerts
-            alert("Meridian PATH CONFIRM LONG — TP1 touched | " + syminfo.ticker, alert.freq_once_per_bar)
+            alert("Meridian OFI PATH CONFIRM LONG — TP1 touched | " + syminfo.ticker, alert.freq_once_per_bar)
 
 if pathS.active and not pathS.confirmed and not pathS.broken
     if c > pathS.sl
@@ -999,13 +999,13 @@ if pathS.active and not pathS.confirmed and not pathS.broken
         pathBreakS := true
         label.new(bar_index, h, "PATH BREAK", color=color.new(#7f1d1d, 0), textcolor=color.white, style=label.style_label_down, size=size.small)
         if enableAlerts
-            alert("Meridian PATH BREAK SHORT — " + syminfo.ticker, alert.freq_once_per_bar)
+            alert("Meridian OFI PATH BREAK SHORT — " + syminfo.ticker, alert.freq_once_per_bar)
     else if l <= pathS.tp1
         pathS.confirmed := true
         pathConfS := true
         label.new(bar_index, l, "PATH CONFIRM", color=color.new(#166534, 0), textcolor=color.white, style=label.style_label_up, size=size.small)
         if enableAlerts
-            alert("Meridian PATH CONFIRM SHORT — TP1 touched | " + syminfo.ticker, alert.freq_once_per_bar)
+            alert("Meridian OFI PATH CONFIRM SHORT — TP1 touched | " + syminfo.ticker, alert.freq_once_per_bar)
 
 if pathL.active and not na(pathL.lnSL)
     line.set_x2(pathL.lnSL, bar_index + 5)
@@ -1028,8 +1028,8 @@ string pathTxt = pathL.active ? (pathL.confirmed ? "L:CONFIRM" : "L:OPEN") : pat
 bool eliteFire = (buySignal and densL >= 4) or (sellSignal and densS >= 4)
 bool singularFire = (buySignal and densL >= 5) or (sellSignal and densS >= 5)
 
-alertcondition(buySignal, "BUY Entry", "Meridian Engine: BUY")
-alertcondition(sellSignal, "SELL Entry", "Meridian Engine: SELL")
+alertcondition(buySignal, "BUY Entry", "Meridian OFI Engine: BUY")
+alertcondition(sellSignal, "SELL Entry", "Meridian OFI Engine: SELL")
 alertcondition(sweepLow, "Sweep Arm Long", "Meridian: buy-side liquidity swept — long armed")
 alertcondition(sweepHigh, "Sweep Arm Short", "Meridian: sell-side liquidity swept — short armed")
 alertcondition(eliteFire, "ELITE Signal", "Meridian: ELITE lattice grade entry")
@@ -1046,19 +1046,19 @@ alertcondition(imbBull and densL >= 4, "OFI Imbalance Long", "Meridian OFI: Stro
 alertcondition(imbBear and densS >= 4, "OFI Imbalance Short", "Meridian OFI: Strong bearish imbalance")
 
 if enableAlerts and sweepLow
-    alert("Meridian Sweep Arm Long — " + syminfo.ticker + " " + presetName, alert.freq_once_per_bar)
+    alert("Meridian OFI Sweep Arm Long — " + syminfo.ticker + " " + presetName, alert.freq_once_per_bar)
 if enableAlerts and sweepHigh
-    alert("Meridian Sweep Arm Short — " + syminfo.ticker + " " + presetName, alert.freq_once_per_bar)
+    alert("Meridian OFI Sweep Arm Short — " + syminfo.ticker + " " + presetName, alert.freq_once_per_bar)
 if enableAlerts and singularFire
-    alert("Meridian SINGULAR — " + syminfo.ticker + " dens L/S=" + str.tostring(densL) + "/" + str.tostring(densS), alert.freq_once_per_bar)
+    alert("Meridian OFI SINGULAR — " + syminfo.ticker + " dens L/S=" + str.tostring(densL) + "/" + str.tostring(densS), alert.freq_once_per_bar)
 else if enableAlerts and eliteFire
-    alert("Meridian ELITE — " + syminfo.ticker + " dens L/S=" + str.tostring(densL) + "/" + str.tostring(densS), alert.freq_once_per_bar)
+    alert("Meridian OFI ELITE — " + syminfo.ticker + " dens L/S=" + str.tostring(densL) + "/" + str.tostring(densS), alert.freq_once_per_bar)
 if enableAlerts and regimeChange
-    alert("Meridian Regime → " + regime + " | ADX " + str.tostring(adxVal, "#.#") + " | " + syminfo.ticker, alert.freq_once_per_bar)
+    alert("Meridian OFI Regime → " + regime + " | ADX " + str.tostring(adxVal, "#.#") + " | " + syminfo.ticker, alert.freq_once_per_bar)
 if enableAlerts and biasBullFlip
-    alert("Meridian Bias → Bull — " + syminfo.ticker, alert.freq_once_per_bar)
+    alert("Meridian OFI Bias → Bull — " + syminfo.ticker, alert.freq_once_per_bar)
 if enableAlerts and biasBearFlip
-    alert("Meridian Bias → Bear — " + syminfo.ticker, alert.freq_once_per_bar)
+    alert("Meridian OFI Bias → Bear — " + syminfo.ticker, alert.freq_once_per_bar)
 
 lastBiasState := biasNow
 lastRegime := regime
