@@ -1,0 +1,1127 @@
+//@version=6
+// Meridian Engine v2.1 — Order Flow Intelligence layer
+// Pillars: Regime Engine · Liquidity Memory Map · Event Lattice · 3-Gate Core
+//          Path Integrity · Dynamic Risk Geometry · Session DNA · OFI (CVD/Abs/Imb)
+//
+// v2 FIXES (carried from v2):
+//  1. Direction-matched magnet boost in lattice grade.
+//  2. SL adjusted to match ATR-floored risk used for TP math.
+//  3. Entry signals / alerts require barstate.isconfirmed.
+//  4. VWAP "Session" anchor / RTH gate no longer hardcoded to NY 09:30-16:00.
+//  5. Lattice density counts each event TYPE once per window (type dedup).
+//
+// v2.1 — OFI LAYER:
+//  - CVD primitive (close-vs-prior-close split, Session/Daily/None reset).
+//  - Absorption (type 8) + Imbalance (type 9) pushed as direction-aware
+//    lattice events at the same SMC/VWAP/magnet levels the engine already tracks.
+//  - Type dedup range extended to types 1..9.
+//  - Density now computed AFTER same-bar FVG + OFI pushes (fixes type-7 gap too).
+//  - No new gates; higher densL/densS flows into existing gradeOK/mutual-exclusion.
+//  - Minimal visuals: tiny circles = absorption, tiny diamonds = imbalance.
+//  - Dashboard row 12 (table height 12 -> 13) + 4 new alertconditions.
+//
+// v2.1.1 — COMPILE FIX:
+//  - Pine Script has no bitwise functions (bitwise.or / bitwise.and /
+//    bitwise.lshift do not exist, and `or` is a reserved word, which caused
+//    CE10013 at the density function). The per-type dedup now uses a
+//    9-slot bool array instead of a bitmask. Same result, same counts.
+//
+//  Corrections vs. supplied OFI spec:
+//  * Absorption is code 8 for BOTH directions, Imbalance is code 9 for BOTH
+//    (spec table said so; the code snippet swapped bear-side codes).
+//  * Absorption proximity check now uses `not na(zoneBotL/TopS)` guards —
+//    the spec's nz(zoneBotL, c) made `l <= c` always true, degenerating the
+//    level-gate into a bare strong-delta-and-candle check.
+indicator("Meridian Engine v2.1 — OFI", overlay=true, max_labels_count=500, max_boxes_count=500, max_lines_count=500)
+
+// ============================================================
+// INPUTS
+// ============================================================
+const string GRP_CORE   = "Core / Presets"
+const string GRP_REGIME = "Regime Engine"
+const string GRP_LATT   = "Event Lattice"
+const string GRP_LIQ    = "Liquidity Memory"
+const string GRP_GATES  = "3-Gate / Risk"
+const string GRP_SESS   = "Session DNA"
+const string GRP_VIS    = "Visuals / Alerts"
+
+presetSel   = input.string("Auto", "Preset", options=["Auto","Scalp","Intraday","Swing","Position"], group=GRP_CORE)
+useHTF      = input.bool(false, "Require HTF Bias (TREND/TRANSITION)", group=GRP_CORE)
+htfTF       = input.timeframe("15", "HTF Bias Timeframe", group=GRP_CORE)
+swingLen    = input.int(5, "Swing / Pivot Length", minval=2, group=GRP_CORE)
+atrLen      = input.int(14, "ATR Length", minval=5, group=GRP_CORE)
+
+adxTrend    = input.float(25.0, "ADX TREND threshold", step=0.5, group=GRP_REGIME)
+adxRange    = input.float(20.0, "ADX RANGE threshold", step=0.5, group=GRP_REGIME)
+showRegimeBg = input.bool(true, "Subtle regime bgcolor", group=GRP_REGIME)
+
+latticeBars = input.int(12, "Lattice lookback bars", minval=3, group=GRP_LATT)
+latticeATR  = input.float(1.5, "Lattice price proximity (×ATR)", step=0.1, group=GRP_LATT)
+minGrade    = input.string("PRIME", "Min lattice grade to enter", options=["WATCH","PRIME","ELITE","SINGULAR"], group=GRP_LATT)
+// --- OFI inputs ---
+cvdResetMode = input.string("Session", "CVD Reset", options=["None","Session","Daily"], group=GRP_LATT)
+ofiDeltaMult = input.float(1.5, "OFI strong-delta × avg", step=0.1, minval=0.5, group=GRP_LATT)
+ofiProxATR   = input.float(0.4, "OFI level proximity (×ATR)", step=0.05, minval=0.1, group=GRP_LATT)
+showOFI      = input.bool(true, "Show OFI marks", group=GRP_LATT)
+
+showMagnets = input.bool(true, "Plot top magnet pools", group=GRP_LIQ)
+magnetDecay = input.float(0.92, "Magnet decay / bar", minval=0.5, maxval=0.99, step=0.01, group=GRP_LIQ)
+maxPools    = input.int(20, "Max liquidity pools", minval=5, maxval=30, group=GRP_LIQ)
+
+showZones   = input.bool(true, "Show FVG zones", group=GRP_GATES)
+showOB      = input.bool(false, "Show Order Blocks", group=GRP_GATES)
+requireBand = input.bool(false, "Require VWAP band confluence", group=GRP_GATES)
+noChase     = input.bool(true, "No-chase (±2σ in TREND)", group=GRP_GATES)
+band1Mult   = input.float(1.0, "±1σ mult", step=0.1, group=GRP_GATES)
+band2Mult   = input.float(2.0, "±2σ mult", step=0.1, group=GRP_GATES)
+bandProx    = input.float(0.3, "Band proximity (×ATR)", step=0.05, group=GRP_GATES)
+
+sbStartHHMM = input.int(800, "Silver Bullet start (HHMM NY)", group=GRP_SESS)
+sbEndHHMM   = input.int(900, "Silver Bullet end (HHMM NY)", group=GRP_SESS)
+showKZ      = input.bool(false, "Show session killzones", group=GRP_SESS)
+
+showBubbles = input.bool(true, "Stage bubbles (S/ARMED/VWAP/CHoCH)", group=GRP_VIS)
+showClouds  = input.bool(true, "Show EMA ribbon cloud", group=GRP_VIS)
+showBands   = input.bool(true, "Show VWAP σ bands", group=GRP_VIS)
+showDash    = input.bool(true, "Show dashboard", group=GRP_VIS)
+showStruct  = input.bool(true, "Show BOS/CHoCH marks", group=GRP_VIS)
+enableAlerts = input.bool(true, "Enable alert() calls", group=GRP_VIS)
+
+// ============================================================
+// PRESET RESOLUTION
+// ============================================================
+f_autoPreset() =>
+    int tfSec = timeframe.in_seconds(timeframe.period)
+    tfSec <= 180 ? "Scalp" : tfSec <= 900 ? "Intraday" : tfSec <= 14400 ? "Swing" : "Position"
+
+string presetName = presetSel == "Auto" ? f_autoPreset() : presetSel
+
+int   cloudLen  = presetName == "Scalp" ? 34 : presetName == "Intraday" ? 50 : presetName == "Swing" ? 40 : 30
+string vwapAnchor = presetName == "Scalp" ? "Session" : presetName == "Intraday" ? "Session" : presetName == "Swing" ? "Daily" : "Weekly"
+int   sweepLen  = presetName == "Scalp" ? 6 : presetName == "Intraday" ? 10 : presetName == "Swing" ? 12 : 15
+float fvgMinATR = presetName == "Scalp" ? 0.5 : presetName == "Intraday" ? 0.8 : presetName == "Swing" ? 1.0 : 1.2
+float stopATR   = presetName == "Scalp" ? 1.0 : presetName == "Intraday" ? 1.5 : presetName == "Swing" ? 2.0 : 2.5
+float baseRR    = presetName == "Scalp" ? 1.5 : presetName == "Intraday" ? 2.0 : presetName == "Swing" ? 2.5 : 3.0
+bool  useRTH    = presetName == "Scalp" or presetName == "Intraday"
+int   armedBars = math.max(3, int(math.round(sweepLen / 2.0)))
+int   latBars   = presetName == "Scalp" ? math.max(6, latticeBars - 4) : presetName == "Position" ? latticeBars + 6 : latticeBars
+
+// ============================================================
+// HELPERS / CORE SERIES
+// ============================================================
+const string NY = "America/New_York"
+float o = open, h = high, l = low, c = close
+float atr = ta.atr(atrLen)
+float avgVol = ta.sma(volume, 20)
+float volRatio = avgVol > 0 ? volume / avgVol : 1.0
+
+minNY() =>
+    hour(time, NY) * 60 + minute(time, NY)
+
+inSess(int sh, int sm, int eh, int em) =>
+    int t = minNY()
+    int s = sh * 60 + sm
+    int e = eh * 60 + em
+    e > s ? (t >= s and t < e) : (t >= s or t < e)
+
+hhmmStart(int v) => int(math.floor(v / 100))
+hhmmMin(int v) => int(v % 100)
+
+gradeRank(string g) =>
+    g == "SINGULAR" ? 5 : g == "ELITE" ? 4 : g == "PRIME" ? 3 : g == "WATCH" ? 2 : 0
+
+int minGradeRank = gradeRank(minGrade)
+
+// ============================================================
+// PILLAR 1 — REGIME ENGINE
+// ============================================================
+float atrSMA = ta.sma(atr, 100)
+float atrRS  = atrSMA > 0 ? atr / atrSMA : 1.0
+
+float upMove   = h - h[1]
+float dnMove   = l[1] - l
+float plusDM   = upMove > dnMove and upMove > 0 ? upMove : 0.0
+float minusDM  = dnMove > upMove and dnMove > 0 ? dnMove : 0.0
+float tr_      = math.max(h - l, math.max(math.abs(h - c[1]), math.abs(l - c[1])))
+float smTR     = ta.rma(tr_, 14)
+float smPDM    = ta.rma(plusDM, 14)
+float smMDM    = ta.rma(minusDM, 14)
+float plusDI   = smTR > 0 ? 100.0 * smPDM / smTR : 0.0
+float minusDI  = smTR > 0 ? 100.0 * smMDM / smTR : 0.0
+float dx_      = (plusDI + minusDI) > 0 ? 100.0 * math.abs(plusDI - minusDI) / (plusDI + minusDI) : 0.0
+float adxVal   = ta.rma(dx_, 14)
+
+float e9  = ta.ema(c, 9)
+float e21 = ta.ema(c, 21)
+float e50 = ta.ema(c, 50)
+bool  ribbonBull = e9 > e21 and e21 > e50
+bool  ribbonBear = e9 < e21 and e21 < e50
+bool  ribbonAligned = ribbonBull or ribbonBear
+bool  ribbonMixed   = not ribbonAligned
+int   ribbonBias    = ribbonBull ? 1 : ribbonBear ? -1 : 0
+
+float cloudBasis = ta.sma(c, cloudLen)
+float cloudDev   = ta.stdev(c, cloudLen)
+float cloudTop   = cloudBasis + cloudDev
+float cloudBot   = cloudBasis - cloudDev
+bool  cloudBull  = c > cloudTop
+bool  cloudBear  = c < cloudBot
+
+string regime = (adxVal >= adxTrend and ribbonAligned) ? "TREND" : (adxVal < adxRange and ribbonMixed) ? "RANGE" : "TRANSITION"
+
+float rr = regime == "TREND" ? baseRR + 0.5 : regime == "RANGE" ? math.max(1.2, baseRR - 0.5) : baseRR
+
+bgcolor(showRegimeBg ? (regime == "TREND" ? color.new(#22c55e, 95) : regime == "RANGE" ? color.new(#eab308, 96) : color.new(#64748b, 96)) : na)
+
+var string lastRegime = "none"
+bool regimeChange = regime != lastRegime and lastRegime != "none"
+
+pE9  = plot(showClouds ? e9  : na, "EMA9",  color=color.new(#22c55e, 30), linewidth=1)
+pE21 = plot(showClouds ? e21 : na, "EMA21", color=color.new(#ef4444, 30), linewidth=1)
+fill(pE9, pE21, color=ribbonBull ? color.new(#22c55e, 88) : ribbonBear ? color.new(#ef4444, 88) : color.new(#808080, 92), title="Ribbon")
+plot(showClouds ? e50 : na, "EMA50", color=color.new(#64748b, 50), linewidth=2)
+
+// ============================================================
+// VWAP
+// ============================================================
+string rthSession = syminfo.type == "crypto" ? "0000-2400" : "0930-1600"
+sessionTime = time(timeframe.period, rthSession, NY)
+bool isNewDay  = ta.change(time("D", "0000-0000", NY)) != 0
+bool isNewWeek = ta.change(time("W", "0000-0000", NY)) != 0
+bool isNYOpen  = not na(time(timeframe.period, "0930-1600", NY)) and na(time(timeframe.period, "0930-1600", NY)[1])
+
+bool vwapReset = switch vwapAnchor
+    "Session" => not na(sessionTime) and (na(sessionTime[1]) or dayofweek(time, NY) != dayofweek(time[1], NY))
+    "Daily"   => isNewDay
+    "Weekly"  => isNewWeek
+    "NY Open" => isNYOpen
+    => false
+
+bool inVwapWindow = vwapAnchor != "Session" or not na(sessionTime)
+
+var float vwapNum = 0.0
+var float vwapDen = 0.0
+var float vwapPV2 = 0.0
+float src = hlc3
+float vol = nz(volume, 0.0)
+
+if inVwapWindow
+    if vwapReset or barstate.isfirst
+        vwapNum := src * vol
+        vwapDen := vol
+        vwapPV2 := vol * src * src
+    else
+        vwapNum += src * vol
+        vwapDen += vol
+        vwapPV2 += vol * src * src
+
+float vwapVal = vwapDen > 0 ? vwapNum / vwapDen : src
+float vwapVar = vwapDen > 0 ? math.max(0.0, vwapPV2 / vwapDen - vwapVal * vwapVal) : 0.0
+float vwapStd = math.sqrt(vwapVar)
+
+float vwapUp1 = vwapVal + band1Mult * vwapStd
+float vwapDn1 = vwapVal - band1Mult * vwapStd
+float vwapUp2 = vwapVal + band2Mult * vwapStd
+float vwapDn2 = vwapVal - band2Mult * vwapStd
+
+plot(inVwapWindow ? vwapVal : na, "VWAP", color=color.new(#f97316, 0), linewidth=2)
+plot(showBands and inVwapWindow ? vwapUp1 : na, "+1σ", color=color.new(#22c55e, 45), style=plot.style_stepline)
+plot(showBands and inVwapWindow ? vwapDn1 : na, "-1σ", color=color.new(#22c55e, 45), style=plot.style_stepline)
+plot(showBands and inVwapWindow ? vwapUp2 : na, "+2σ", color=color.new(#ef4444, 45), style=plot.style_stepline)
+plot(showBands and inVwapWindow ? vwapDn2 : na, "-2σ", color=color.new(#ef4444, 45), style=plot.style_stepline)
+
+bool vwapSlopeUp = vwapVal > vwapVal[5]
+bool vwapSlopeDn = vwapVal < vwapVal[5]
+bool volExpand   = volume > avgVol * 1.2
+bool vwapReclaimBull = c > vwapVal and c[1] <= vwapVal and volExpand
+bool vwapReclaimBear = c < vwapVal and c[1] >= vwapVal and volExpand
+bool bandTouch = (h >= vwapUp1 and l <= vwapUp1) or (h >= vwapDn1 and l <= vwapDn1) or (h >= vwapUp2 and l <= vwapUp2) or (h >= vwapDn2 and l <= vwapDn2)
+bool overextUp = h >= vwapUp2
+bool overextDn = l <= vwapDn2
+bool inPrem = c > vwapVal + 0.5 * vwapStd
+bool inDisc = c < vwapVal - 0.5 * vwapStd
+bool atExtremeLong  = c <= vwapDn1 - 0.5 * vwapStd
+bool atExtremeShort = c >= vwapUp1 + 0.5 * vwapStd
+
+f_nearBand(float px) =>
+    float prox = atr * bandProx
+    math.abs(px - vwapUp1) <= prox or math.abs(px - vwapDn1) <= prox or math.abs(px - vwapUp2) <= prox or math.abs(px - vwapDn2) <= prox
+
+bool inRTH = not na(sessionTime)
+bool rthOK = not useRTH or inRTH
+
+string vwapZoneTxt = c >= vwapUp2 ? "+2σ" : c >= vwapUp1 ? "+1σ" : c <= vwapDn2 ? "-2σ" : c <= vwapDn1 ? "-1σ" : "FV"
+
+// ============================================================
+// CUMULATIVE VOLUME DELTA (Order Flow primitive)
+// ============================================================
+// Close-vs-prior-close split is more robust than open/close on many feeds.
+// Uses Meridian's own session resets so CVD aligns with VWAP anchoring.
+float upVol   = close > close[1] ? volume : close < close[1] ? 0.0 : volume * 0.5
+float dnVol   = close < close[1] ? volume : close > close[1] ? 0.0 : volume * 0.5
+float barDelta = upVol - dnVol
+
+bool cvdReset = switch cvdResetMode
+    "Session" => vwapReset
+    "Daily"   => isNewDay
+    => false
+
+var float cvd = 0.0
+var float cvdHigh = 0.0
+var float cvdLow  = 0.0
+
+if cvdReset or barstate.isfirst
+    cvd     := barDelta
+    cvdHigh := barDelta
+    cvdLow  := barDelta
+else
+    cvd     += barDelta
+    cvdHigh := math.max(cvd, cvdHigh)
+    cvdLow  := math.min(cvd, cvdLow)
+
+float cvdSlope = cvd - cvd[3]
+bool  cvdRising  = cvdSlope > 0
+bool  cvdFalling = cvdSlope < 0
+
+float avgAbsDelta = ta.sma(math.abs(barDelta), 20)
+bool  strongDeltaUp = barDelta > avgAbsDelta * ofiDeltaMult
+bool  strongDeltaDn = barDelta < -avgAbsDelta * ofiDeltaMult
+
+// Hidden pane-only CVD plot (overlay indicator - keeps price scale clean).
+plot(cvd, "CVD", color=cvdRising ? color.new(#22c55e, 30) : color.new(#ef4444, 30), linewidth=2, display=display.none)
+
+// ============================================================
+// HTF BIAS
+// ============================================================
+float htfClose = request.security(syminfo.tickerid, htfTF, close, lookahead=barmerge.lookahead_off)
+float htfBasis = request.security(syminfo.tickerid, htfTF, ta.sma(close, cloudLen), lookahead=barmerge.lookahead_off)
+float htfDev   = request.security(syminfo.tickerid, htfTF, ta.stdev(close, cloudLen), lookahead=barmerge.lookahead_off)
+bool  htfBull  = htfClose > htfBasis + htfDev
+bool  htfBear  = htfClose < htfBasis - htfDev
+
+// ============================================================
+// STRUCTURE
+// ============================================================
+float ph = ta.pivothigh(h, swingLen, swingLen)
+float pl = ta.pivotlow(l, swingLen, swingLen)
+var float lastPH = na
+var float lastPL = na
+var int   structTrend = 0
+if not na(ph)
+    lastPH := ph
+if not na(pl)
+    lastPL := pl
+
+bool bullBOS = not na(lastPH) and c > lastPH and c[1] <= lastPH
+bool bearBOS = not na(lastPL) and c < lastPL and c[1] >= lastPL
+bool chochBull = bullBOS and structTrend == -1
+bool chochBear = bearBOS and structTrend == 1
+if bullBOS
+    structTrend := 1
+if bearBOS
+    structTrend := -1
+
+plotshape(showStruct and bullBOS and not chochBull, "BOS↑", shape.triangleup, location.belowbar, color.new(#22c55e, 0), size=size.tiny)
+plotshape(showStruct and bearBOS and not chochBear, "BOS↓", shape.triangledown, location.abovebar, color.new(#ef4444, 0), size=size.tiny)
+plotshape(showStruct and chochBull, "CHoCH↑", shape.labelup, location.belowbar, color.new(#06b6d4, 0), text="CHoCH", textcolor=color.white, size=size.tiny)
+plotshape(showStruct and chochBear, "CHoCH↓", shape.labeldown, location.abovebar, color.new(#d946ef, 0), text="CHoCH", textcolor=color.white, size=size.tiny)
+
+// ============================================================
+// SESSION DNA
+// ============================================================
+bool asia   = inSess(20, 0, 0, 0)
+bool london = inSess(2, 0, 5, 0)
+bool nyKZ   = inSess(9, 30, 12, 0)
+bool sbWin  = inSess(hhmmStart(sbStartHHMM), hhmmMin(sbStartHHMM), hhmmStart(sbEndHHMM), hhmmMin(sbEndHHMM))
+bool sessBoost = sbWin or nyKZ or london
+
+bgcolor(showKZ and london ? color.new(#eab308, 93) : na)
+bgcolor(showKZ and nyKZ   ? color.new(#06b6d4, 93) : na)
+bgcolor(showKZ and asia   ? color.new(#8b5cf6, 94) : na)
+
+var float asiaHi = na
+var float asiaLo = na
+var float prevAsiaHi = na
+var float prevAsiaLo = na
+var float lonHi = na
+var float lonLo = na
+var float prevLonHi = na
+var float prevLonLo = na
+var float nyHi = na
+var float nyLo = na
+var float prevNYHi = na
+var float prevNYLo = na
+
+if asia and not asia[1]
+    asiaHi := h, asiaLo := l
+else if asia
+    asiaHi := math.max(h, nz(asiaHi)), asiaLo := math.min(l, nz(asiaLo))
+if asia[1] and not asia
+    prevAsiaHi := asiaHi, prevAsiaLo := asiaLo
+
+if london and not london[1]
+    lonHi := h, lonLo := l
+else if london
+    lonHi := math.max(h, nz(lonHi)), lonLo := math.min(l, nz(lonLo))
+if london[1] and not london
+    prevLonHi := lonHi, prevLonLo := lonLo
+
+if nyKZ and not nyKZ[1]
+    nyHi := h, nyLo := l
+else if nyKZ
+    nyHi := math.max(h, nz(nyHi)), nyLo := math.min(l, nz(nyLo))
+if nyKZ[1] and not nyKZ
+    prevNYHi := nyHi, prevNYLo := nyLo
+
+bool sbTagL = sbWin and not na(prevLonLo) and l < prevLonLo and c > prevLonLo
+bool sbTagS = sbWin and not na(prevLonHi) and h > prevLonHi and c < prevLonHi
+bool nyDefL = nyKZ and volExpand and not na(prevNYLo) and l <= prevNYLo and c > o
+bool nyDefS = nyKZ and volExpand and not na(prevNYHi) and h >= prevNYHi and c < o
+bool asiaTagL = not asia and not na(prevAsiaHi) and c > prevAsiaHi and structTrend == 1
+bool asiaTagS = not asia and not na(prevAsiaLo) and c < prevAsiaLo and structTrend == -1
+bool sessionTagL = sbTagL or nyDefL or asiaTagL
+bool sessionTagS = sbTagS or nyDefS or asiaTagS
+
+string setupTag = (sbTagL or sbTagS) ? "SB" : (nyDefL or nyDefS) ? "NYDef" : (asiaTagL or asiaTagS) ? "Asia" : ""
+
+// ============================================================
+// LIQUIDITY SWEEPS
+// ============================================================
+float swingHi = ta.highest(h, sweepLen)[1]
+float swingLo = ta.lowest(l, sweepLen)[1]
+bool sweepHigh = h > swingHi and c < swingHi and (h - math.max(c, o)) > atr * 0.3 and volExpand
+bool sweepLow  = l < swingLo and c > swingLo and (math.min(c, o) - l) > atr * 0.3 and volExpand
+var float lastSweepHiPx = na
+var float lastSweepLoPx = na
+var int   lastSweepHiBar = na
+var int   lastSweepLoBar = na
+if sweepHigh
+    lastSweepHiPx := h
+    lastSweepHiBar := bar_index
+if sweepLow
+    lastSweepLoPx := l
+    lastSweepLoBar := bar_index
+
+// ============================================================
+// PILLAR 2 — LIQUIDITY MEMORY MAP
+// ============================================================
+type LiqPool
+    float price
+    int   dir
+    int   bar
+    float intensity
+    float magnet
+    bool  active
+    line  ray
+
+var array<LiqPool> liqPools = array.new<LiqPool>()
+
+f_pushPool(float px, int dir, float intens) =>
+    LiqPool p = LiqPool.new(px, dir, bar_index, intens, intens, true, na)
+    if showMagnets
+        p.ray := line.new(bar_index, px, bar_index + 30, px, color=dir == 1 ? color.new(#06b6d4, 40) : color.new(#d946ef, 40), style=line.style_dotted, width=1)
+    array.unshift(liqPools, p)
+    if array.size(liqPools) > maxPools
+        LiqPool old = array.pop(liqPools)
+        if not na(old.ray)
+            line.delete(old.ray)
+
+if sweepLow
+    float intens = ((math.min(c, o) - l) / math.max(atr, syminfo.mintick)) * volRatio
+    f_pushPool(l, 1, intens)
+if sweepHigh
+    float intens = ((h - math.max(c, o)) / math.max(atr, syminfo.mintick)) * volRatio
+    f_pushPool(h, -1, intens)
+
+float topMagnet = 0.0
+float topMagnetPx = na
+int   topMagnetDir = 0
+int   activeMagnets = 0
+if array.size(liqPools) > 0
+    for i = 0 to array.size(liqPools) - 1
+        LiqPool p = array.get(liqPools, i)
+        if p.active
+            p.magnet := p.magnet * magnetDecay
+            bool tagged = math.abs(c - p.price) <= atr * 0.35 or (l <= p.price and h >= p.price)
+            bool reacted = tagged and volExpand and ((p.dir == 1 and c > o) or (p.dir == -1 and c < o))
+            if reacted
+                p.magnet := p.magnet + p.intensity * 0.5
+            if p.magnet < 0.15
+                p.active := false
+                if not na(p.ray)
+                    line.delete(p.ray)
+                    p.ray := na
+            else
+                activeMagnets += 1
+                if not na(p.ray)
+                    line.set_x2(p.ray, bar_index + 5)
+                if p.magnet > topMagnet
+                    topMagnet := p.magnet
+                    topMagnetPx := p.price
+                    topMagnetDir := p.dir
+            array.set(liqPools, i, p)
+
+f_nearHighMagnet(float px, float proxMult, int dir) =>
+    bool hit = false
+    float best = 0.0
+    if array.size(liqPools) > 0
+        for i = 0 to array.size(liqPools) - 1
+            LiqPool p = array.get(liqPools, i)
+            if p.active and p.dir == dir and p.magnet >= 1.0 and math.abs(px - p.price) <= atr * proxMult
+                hit := true
+                best := math.max(best, p.magnet)
+    [hit, best]
+
+f_nearestOpposingMagnet(int dir, float fromPx) =>
+    float best = na
+    float bestDist = 1e10
+    if array.size(liqPools) > 0
+        for i = 0 to array.size(liqPools) - 1
+            LiqPool p = array.get(liqPools, i)
+            if p.active and p.magnet >= 0.8
+                bool ok = dir == 1 ? (p.dir == -1 and p.price > fromPx) : (p.dir == 1 and p.price < fromPx)
+                if ok
+                    float d = math.abs(p.price - fromPx)
+                    if d < bestDist
+                        bestDist := d
+                        best := p.price
+    best
+
+// ============================================================
+// PILLAR 3 — EVENT LATTICE
+// Type codes: 1=sweep 2=CHoCH 3=BOS 4=VWAP-reclaim 5=band-touch
+//             6=session-tag 7=FVG 8=absorption 9=imbalance
+// ============================================================
+var array<int>   evBars  = array.new_int()
+var array<float> evPrices = array.new_float()
+var array<int>   evDirs  = array.new_int()
+var array<int>   evTypes = array.new_int()
+
+f_pushEvent(int dir, float px, int etype) =>
+    array.unshift(evBars, bar_index)
+    array.unshift(evPrices, px)
+    array.unshift(evDirs, dir)
+    array.unshift(evTypes, etype)
+    if array.size(evBars) > 30
+        array.pop(evBars)
+        array.pop(evPrices)
+        array.pop(evDirs)
+        array.pop(evTypes)
+
+if sweepLow
+    f_pushEvent(1, l, 1)
+if sweepHigh
+    f_pushEvent(-1, h, 1)
+if chochBull
+    f_pushEvent(1, c, 2)
+if chochBear
+    f_pushEvent(-1, c, 2)
+if bullBOS and not chochBull
+    f_pushEvent(1, c, 3)
+if bearBOS and not chochBear
+    f_pushEvent(-1, c, 3)
+if vwapReclaimBull
+    f_pushEvent(1, vwapVal, 4)
+if vwapReclaimBear
+    f_pushEvent(-1, vwapVal, 4)
+if bandTouch and inDisc
+    f_pushEvent(1, c, 5)
+if bandTouch and inPrem
+    f_pushEvent(-1, c, 5)
+if sessionTagL
+    f_pushEvent(1, c, 6)
+if sessionTagS
+    f_pushEvent(-1, c, 6)
+
+// Density function — counts each event TYPE (1..9) once per window.
+// Pine has no bitwise operators, so a 9-slot bool array does the dedup.
+f_latticeDensity(int dir) =>
+    array<bool> seen = array.new_bool(9, false)
+    float prox = latticeATR * atr
+    int n = array.size(evBars)
+    if n > 0
+        for i = 0 to n - 1
+            int eb = array.get(evBars, i)
+            int ed = array.get(evDirs, i)
+            float ep = array.get(evPrices, i)
+            int et = array.get(evTypes, i)
+            if ed == dir and (bar_index - eb) <= latBars and math.abs(ep - c) <= prox and et >= 1 and et <= 9
+                array.set(seen, et - 1, true)
+    int cnt = 0
+    for b = 0 to 8
+        if array.get(seen, b)
+            cnt += 1
+    float dens = float(cnt)
+    if sessBoost
+        dens := dens * 1.25
+    [nearMag, magStr] = f_nearHighMagnet(c, 1.2, dir)
+    int grade = math.round(dens)
+    if nearMag and grade >= 3
+        grade := math.min(5, grade + 1)
+    if grade >= 5
+        grade := 5
+    if regime == "TRANSITION" and grade < 4 and dens < 3.5
+        grade := math.min(grade, 2)
+    grade
+
+f_gradeName(int g) =>
+    g >= 5 ? "SINGULAR" : g >= 4 ? "ELITE" : g >= 3 ? "PRIME" : g >= 2 ? "WATCH" : "—"
+
+// ============================================================
+// FVG ARRAY ZONES + optional OBs
+// ============================================================
+type FVGZone
+    float top
+    float bot
+    bool  mitigated
+    box   b
+    int   bar
+
+type OBZone
+    float top
+    float bot
+    bool  mitigated
+    box   b
+
+var array<FVGZone> bullZones = array.new<FVGZone>()
+var array<FVGZone> bearZones = array.new<FVGZone>()
+var array<OBZone>  bullOBs   = array.new<OBZone>()
+var array<OBZone>  bearOBs   = array.new<OBZone>()
+
+bool bullFVG = l > h[2] and (c[1] - o[1]) > atr * fvgMinATR
+bool bearFVG = h < l[2] and (o[1] - c[1]) > atr * fvgMinATR
+
+if bullFVG
+    f_pushEvent(1, (l + h[2]) / 2.0, 7)
+    float zTop = l
+    float zBot = h[2]
+    box bx = showZones ? box.new(bar_index[2], zTop, bar_index + 25, zBot, bgcolor=color.new(#22c55e, 78), border_color=color.new(#22c55e, 40)) : na
+    array.unshift(bullZones, FVGZone.new(zTop, zBot, false, bx, bar_index))
+    if array.size(bullZones) > 5
+        FVGZone old = array.pop(bullZones)
+        if not na(old.b)
+            box.delete(old.b)
+
+if bearFVG
+    f_pushEvent(-1, (h + l[2]) / 2.0, 7)
+    float zTop = l[2]
+    float zBot = h
+    box bx = showZones ? box.new(bar_index[2], zTop, bar_index + 25, zBot, bgcolor=color.new(#ef4444, 78), border_color=color.new(#ef4444, 40)) : na
+    array.unshift(bearZones, FVGZone.new(zTop, zBot, false, bx, bar_index))
+    if array.size(bearZones) > 5
+        FVGZone old = array.pop(bearZones)
+        if not na(old.b)
+            box.delete(old.b)
+
+bool bigCandle = math.abs(c - o) > atr * 1.5
+if showOB and bullBOS and bigCandle
+    box bx = box.new(bar_index[1], h[1], bar_index + 20, l[1], bgcolor=color.new(#166534, 85), border_color=color.new(#166534, 50))
+    array.unshift(bullOBs, OBZone.new(h[1], l[1], false, bx))
+    if array.size(bullOBs) > 3
+        OBZone old = array.pop(bullOBs)
+        if not na(old.b)
+            box.delete(old.b)
+if showOB and bearBOS and bigCandle
+    box bx = box.new(bar_index[1], h[1], bar_index + 20, l[1], bgcolor=color.new(#7f1d1d, 85), border_color=color.new(#7f1d1d, 50))
+    array.unshift(bearOBs, OBZone.new(h[1], l[1], false, bx))
+    if array.size(bearOBs) > 3
+        OBZone old = array.pop(bearOBs)
+        if not na(old.b)
+            box.delete(old.b)
+
+f_tapFVG(array<FVGZone> arr, bool isBull) =>
+    float outTop = na
+    float outBot = na
+    int   idx = -1
+    if array.size(arr) > 0
+        for i = 0 to array.size(arr) - 1
+            FVGZone z = array.get(arr, i)
+            if not z.mitigated
+                bool tap = isBull ? (l <= z.top and l >= z.bot) : (h >= z.bot and h <= z.top)
+                if tap
+                    outTop := z.top
+                    outBot := z.bot
+                    idx := i
+                    break
+    [outTop, outBot, idx]
+
+f_tapOB(array<OBZone> arr, bool isBull) =>
+    float outTop = na
+    float outBot = na
+    int   idx = -1
+    if showOB and array.size(arr) > 0
+        for i = 0 to array.size(arr) - 1
+            OBZone z = array.get(arr, i)
+            if not z.mitigated
+                bool tap = isBull ? (l <= z.top and h >= z.bot) : (h >= z.bot and l <= z.top)
+                if tap
+                    outTop := z.top
+                    outBot := z.bot
+                    idx := i
+                    break
+    [outTop, outBot, idx]
+
+[bullTapTop, bullTapBot, bullTapIdx] = f_tapFVG(bullZones, true)
+[bearTapTop, bearTapBot, bearTapIdx] = f_tapFVG(bearZones, false)
+[bullOBTop, bullOBBot, bullOBIdx] = f_tapOB(bullOBs, true)
+[bearOBTop, bearOBBot, bearOBIdx] = f_tapOB(bearOBs, false)
+
+bool inBullZone = bullTapIdx >= 0 or bullOBIdx >= 0
+bool inBearZone = bearTapIdx >= 0 or bearOBIdx >= 0
+float zoneTopL = bullTapIdx >= 0 ? bullTapTop : bullOBTop
+float zoneBotL = bullTapIdx >= 0 ? bullTapBot : bullOBBot
+float zoneTopS = bearTapIdx >= 0 ? bearTapTop : bearOBTop
+float zoneBotS = bearTapIdx >= 0 ? bearTapBot : bearOBBot
+
+bool bullBandConf = inBullZone and f_nearBand(nz(zoneBotL, c))
+bool bearBandConf = inBearZone and f_nearBand(nz(zoneTopS, c))
+
+if array.size(bullZones) > 0
+    for i = 0 to array.size(bullZones) - 1
+        FVGZone z = array.get(bullZones, i)
+        if not z.mitigated and c < z.bot
+            z.mitigated := true
+            array.set(bullZones, i, z)
+            if not na(z.b)
+                box.set_bgcolor(z.b, color.new(color.gray, 92))
+                box.set_border_color(z.b, color.new(color.gray, 75))
+
+if array.size(bearZones) > 0
+    for i = 0 to array.size(bearZones) - 1
+        FVGZone z = array.get(bearZones, i)
+        if not z.mitigated and c > z.top
+            z.mitigated := true
+            array.set(bearZones, i, z)
+            if not na(z.b)
+                box.set_bgcolor(z.b, color.new(color.gray, 92))
+                box.set_border_color(z.b, color.new(color.gray, 75))
+
+// ============================================================
+// ORDER FLOW INTELLIGENCE — Absorption (8) + Imbalance (9)
+// ============================================================
+// Level-proximity guards use `not na(...)` instead of nz() fallback —
+// nz(zoneBotL, c) would make `l <= c` always true and collapse the gate.
+bool zoneNearL  = not na(zoneBotL) and l <= zoneBotL
+bool zoneNearS  = not na(zoneTopS) and h >= zoneTopS
+bool bandNear   = f_nearBand(c)
+bool magNear    = not na(topMagnetPx) and math.abs(c - topMagnetPx) <= atr * ofiProxATR
+bool nearLevelL = zoneNearL or bandNear or magNear
+bool nearLevelS = zoneNearS or bandNear or magNear
+
+// Absorption: strong OPPOSING delta + rejection candle at a tracked level
+bool absorbBull = strongDeltaDn and c > o and nearLevelL
+bool absorbBear = strongDeltaUp and c < o and nearLevelS
+
+// Imbalance: strong DIRECTIONAL delta + CVD agreement + structure/zone
+bool imbBull = strongDeltaUp and cvdRising and (bullBOS or vwapReclaimBull or inBullZone)
+bool imbBear = strongDeltaDn and cvdFalling and (bearBOS or vwapReclaimBear or inBearZone)
+
+// Push into lattice. Type 8 = absorption, 9 = imbalance (spec table).
+if absorbBull
+    f_pushEvent(1, c, 8)
+if absorbBear
+    f_pushEvent(-1, c, 8)
+if imbBull
+    f_pushEvent(1, c, 9)
+if imbBear
+    f_pushEvent(-1, c, 9)
+
+plotshape(showOFI and absorbBull, "Abs↑", shape.circle, location.belowbar, color.new(#22c55e, 20), size=size.tiny)
+plotshape(showOFI and absorbBear, "Abs↓", shape.circle, location.abovebar, color.new(#ef4444, 20), size=size.tiny)
+plotshape(showOFI and imbBull,   "Imb↑", shape.diamond, location.belowbar, color.new(#06b6d4, 0), size=size.tiny)
+plotshape(showOFI and imbBear,   "Imb↓", shape.diamond, location.abovebar, color.new(#d946ef, 0), size=size.tiny)
+
+// ============================================================
+// DENSITY → GRADE  (moved here so same-bar FVG + OFI count)
+// ============================================================
+int densL = f_latticeDensity(1)
+int densS = f_latticeDensity(-1)
+
+string gradeL = f_gradeName(densL)
+string gradeS = f_gradeName(densS)
+
+// ============================================================
+// PILLAR 4 — 3-GATE CORE
+// ============================================================
+bool biasLongTrend  = (ribbonBull or cloudBull) and (not useHTF or htfBull)
+bool biasShortTrend = (ribbonBear or cloudBear) and (not useHTF or htfBear)
+bool biasLongRange  = atExtremeLong or inDisc
+bool biasShortRange = atExtremeShort or inPrem
+bool biasLongTrans  = ribbonBull or cloudBull or htfBull
+bool biasShortTrans = ribbonBear or cloudBear or htfBear
+
+bool gate1Long  = regime == "TREND" ? biasLongTrend : regime == "RANGE" ? biasLongRange : biasLongTrans
+bool gate1Short = regime == "TREND" ? biasShortTrend : regime == "RANGE" ? biasShortRange : biasShortTrans
+
+int biasDir = gate1Long and not gate1Short ? 1 : gate1Short and not gate1Long ? -1 : gate1Long and gate1Short ? (inDisc ? 1 : inPrem ? -1 : ribbonBias) : 0
+
+var string lastBiasState = "none"
+string biasNow = biasDir == 1 ? "bull" : biasDir == -1 ? "bear" : "none"
+bool biasBullFlip = biasNow == "bull" and lastBiasState != "bull"
+bool biasBearFlip = biasNow == "bear" and lastBiasState != "bear"
+
+var bool bullArmed = false
+var int  bullArmedBar = na
+var bool bearArmed = false
+var int  bearArmedBar = na
+var float armedSweepLo = na
+var float armedSweepHi = na
+
+bool armBull = sweepLow or vwapReclaimBull or chochBull
+bool armBear = sweepHigh or vwapReclaimBear or chochBear
+
+if armBull
+    bullArmed := true
+    bullArmedBar := bar_index
+    if sweepLow
+        armedSweepLo := l
+    bearArmed := false
+if armBear
+    bearArmed := true
+    bearArmedBar := bar_index
+    if sweepHigh
+        armedSweepHi := h
+    bullArmed := false
+
+bool bullExpired = bullArmed and not na(bullArmedBar) and (bar_index - bullArmedBar > armedBars)
+bool bearExpired = bearArmed and not na(bearArmedBar) and (bar_index - bearArmedBar > armedBars)
+if bullExpired
+    bullArmed := false
+if bearExpired
+    bearArmed := false
+
+if showBubbles and sweepLow
+    label.new(bar_index, l - atr * 0.25, "S", style=label.style_label_up, color=color.new(#22c55e, 15), textcolor=color.white, size=size.tiny)
+    label.new(bar_index, l - atr * 0.7, "ARMED", style=label.style_label_up, color=color.new(#22c55e, 55), textcolor=color.white, size=size.tiny)
+if showBubbles and sweepHigh
+    label.new(bar_index, h + atr * 0.25, "S", style=label.style_label_down, color=color.new(#ef4444, 15), textcolor=color.white, size=size.tiny)
+    label.new(bar_index, h + atr * 0.7, "ARMED", style=label.style_label_down, color=color.new(#ef4444, 55), textcolor=color.white, size=size.tiny)
+if showBubbles and vwapReclaimBull and not sweepLow
+    label.new(bar_index, l - atr * 0.3, "VWAP↑", style=label.style_label_up, color=color.new(#f97316, 20), textcolor=color.white, size=size.tiny)
+if showBubbles and vwapReclaimBear and not sweepHigh
+    label.new(bar_index, h + atr * 0.3, "VWAP↓", style=label.style_label_down, color=color.new(#f97316, 20), textcolor=color.white, size=size.tiny)
+if showBubbles and chochBull and not sweepLow and not vwapReclaimBull
+    label.new(bar_index, l - atr * 0.35, "CHoCH", style=label.style_label_up, color=color.new(#06b6d4, 25), textcolor=color.white, size=size.tiny)
+if showBubbles and chochBear and not sweepHigh and not vwapReclaimBear
+    label.new(bar_index, h + atr * 0.35, "CHoCH", style=label.style_label_down, color=color.new(#d946ef, 25), textcolor=color.white, size=size.tiny)
+
+bool chaseOKLong  = not noChase or regime == "RANGE" or not overextUp
+bool chaseOKShort = not noChase or regime == "RANGE" or not overextDn
+bool rangeFadeLong  = regime != "RANGE" or atExtremeLong or inDisc
+bool rangeFadeShort = regime != "RANGE" or atExtremeShort or inPrem
+bool confOKLong  = not requireBand or bullBandConf
+bool confOKShort = not requireBand or bearBandConf
+bool gradeOKLong  = densL >= minGradeRank
+bool gradeOKShort = densS >= minGradeRank
+
+bool buyRaw  = gate1Long  and bullArmed and inBullZone and rthOK and chaseOKLong  and rangeFadeLong  and confOKLong  and gradeOKLong
+bool sellRaw = gate1Short and bearArmed and inBearZone and rthOK and chaseOKShort and rangeFadeShort and confOKShort and gradeOKShort
+
+bool bothEqual = buyRaw and sellRaw and densL == densS
+bool buySignal  = buyRaw and (not sellRaw or densL > densS) and not bothEqual and barstate.isconfirmed
+bool sellSignal = sellRaw and (not buyRaw or densS > densL) and not bothEqual and barstate.isconfirmed
+
+if buySignal
+    if bullTapIdx >= 0
+        FVGZone z = array.get(bullZones, bullTapIdx)
+        z.mitigated := true
+        array.set(bullZones, bullTapIdx, z)
+        if not na(z.b)
+            box.set_bgcolor(z.b, color.new(color.gray, 90))
+    if bullOBIdx >= 0
+        OBZone z = array.get(bullOBs, bullOBIdx)
+        z.mitigated := true
+        array.set(bullOBs, bullOBIdx, z)
+    bullArmed := false
+
+if sellSignal
+    if bearTapIdx >= 0
+        FVGZone z = array.get(bearZones, bearTapIdx)
+        z.mitigated := true
+        array.set(bearZones, bearTapIdx, z)
+        if not na(z.b)
+            box.set_bgcolor(z.b, color.new(color.gray, 90))
+    if bearOBIdx >= 0
+        OBZone z = array.get(bearOBs, bearOBIdx)
+        z.mitigated := true
+        array.set(bearOBs, bearOBIdx, z)
+    bearArmed := false
+
+// ============================================================
+// PILLAR 6 — DYNAMIC RISK GEOMETRY
+// ============================================================
+type PathState
+    float entry
+    float sl
+    float tp1
+    float tp2
+    float tp3
+    int   dir
+    int   bar
+    bool  active
+    bool  confirmed
+    bool  broken
+    line  lnSL
+    line  lnTP1
+    line  lnTP2
+    line  lnTP3
+    line  lnE
+
+var PathState pathL = PathState.new(na, na, na, na, na, 1, na, false, false, false, na, na, na, na, na)
+var PathState pathS = PathState.new(na, na, na, na, na, -1, na, false, false, false, na, na, na, na, na)
+
+f_buildRisk(int dir, float zoneBot, float zoneTop, float sweepPx) =>
+    float entry = c
+    float sl = na
+    if dir == 1
+        float structSL = not na(sweepPx) ? sweepPx : not na(zoneBot) ? zoneBot : l
+        sl := structSL - atr * stopATR * 0.35
+    else
+        float structSL = not na(sweepPx) ? sweepPx : not na(zoneTop) ? zoneTop : h
+        sl := structSL + atr * stopATR * 0.35
+    float risk = math.abs(entry - sl)
+    if risk < atr * 0.5
+        risk := atr * 0.5
+        sl := dir == 1 ? entry - risk : entry + risk
+    float tp1 = na
+    if dir == 1
+        if entry < vwapVal
+            tp1 := vwapVal
+        else if entry < vwapUp1
+            tp1 := vwapUp1
+        else if entry < vwapUp2
+            tp1 := vwapUp2
+        else
+            tp1 := entry + risk
+    else
+        if entry > vwapVal
+            tp1 := vwapVal
+        else if entry > vwapDn1
+            tp1 := vwapDn1
+        else if entry > vwapDn2
+            tp1 := vwapDn2
+        else
+            tp1 := entry - risk
+    float tp2 = dir == 1 ? entry + risk * rr : entry - risk * rr
+    float magTP = f_nearestOpposingMagnet(dir, entry)
+    float tp3 = not na(magTP) ? magTP : (dir == 1 ? entry + (tp2 - entry) * 1.5 : entry - (entry - tp2) * 1.5)
+    [entry, sl, tp1, tp2, tp3, risk]
+
+bool pathBreakL = false
+bool pathBreakS = false
+bool pathConfL  = false
+bool pathConfS  = false
+
+if buySignal
+    [entry, sl, tp1, tp2, tp3, risk] = f_buildRisk(1, zoneBotL, zoneTopL, armedSweepLo)
+    if not na(pathL.lnSL)
+        line.delete(pathL.lnSL)
+        line.delete(pathL.lnTP1)
+        line.delete(pathL.lnTP2)
+        line.delete(pathL.lnTP3)
+        line.delete(pathL.lnE)
+    pathL.entry := entry
+    pathL.sl := sl
+    pathL.tp1 := tp1
+    pathL.tp2 := tp2
+    pathL.tp3 := tp3
+    pathL.dir := 1
+    pathL.bar := bar_index
+    pathL.active := true
+    pathL.confirmed := false
+    pathL.broken := false
+    pathL.lnE   := line.new(bar_index, entry, bar_index + 20, entry, color=color.new(#f8fafc, 30), style=line.style_dotted)
+    pathL.lnSL  := line.new(bar_index, sl, bar_index + 20, sl, color=color.new(#ef4444, 0), width=1)
+    pathL.lnTP1 := line.new(bar_index, tp1, bar_index + 20, tp1, color=color.new(#eab308, 0), width=1)
+    pathL.lnTP2 := line.new(bar_index, tp2, bar_index + 20, tp2, color=color.new(#22c55e, 0), width=1)
+    pathL.lnTP3 := line.new(bar_index, tp3, bar_index + 20, tp3, color=color.new(#06b6d4, 20), width=1, style=line.style_dashed)
+    string tag = setupTag != "" ? setupTag + " " : ""
+    string txt = tag + "BUY · " + gradeL + " · " + regime + "\nE " + str.tostring(entry, format.mintick) + "  SL " + str.tostring(sl, format.mintick) +
+         "\nTP1 " + str.tostring(tp1, format.mintick) + "  TP2 " + str.tostring(tp2, format.mintick) +
+         "\nTP3 " + str.tostring(tp3, format.mintick) + "  RR " + str.tostring(rr, "#.#") + " · " + presetName
+    label.new(bar_index, l, txt, color=color.new(#16a34a, 0), textcolor=color.white, style=label.style_label_up, size=size.normal)
+    if enableAlerts
+        alert("Meridian BUY · " + gradeL + " · " + regime + " | E " + str.tostring(entry, format.mintick) + " SL " + str.tostring(sl, format.mintick) + " TP1 " + str.tostring(tp1, format.mintick) + " TP2 " + str.tostring(tp2, format.mintick) + (setupTag != "" ? " | " + setupTag : ""), alert.freq_once_per_bar)
+
+if sellSignal
+    [entry, sl, tp1, tp2, tp3, risk] = f_buildRisk(-1, zoneBotS, zoneTopS, armedSweepHi)
+    if not na(pathS.lnSL)
+        line.delete(pathS.lnSL)
+        line.delete(pathS.lnTP1)
+        line.delete(pathS.lnTP2)
+        line.delete(pathS.lnTP3)
+        line.delete(pathS.lnE)
+    pathS.entry := entry
+    pathS.sl := sl
+    pathS.tp1 := tp1
+    pathS.tp2 := tp2
+    pathS.tp3 := tp3
+    pathS.dir := -1
+    pathS.bar := bar_index
+    pathS.active := true
+    pathS.confirmed := false
+    pathS.broken := false
+    pathS.lnE   := line.new(bar_index, entry, bar_index + 20, entry, color=color.new(#f8fafc, 30), style=line.style_dotted)
+    pathS.lnSL  := line.new(bar_index, sl, bar_index + 20, sl, color=color.new(#ef4444, 0), width=1)
+    pathS.lnTP1 := line.new(bar_index, tp1, bar_index + 20, tp1, color=color.new(#eab308, 0), width=1)
+    pathS.lnTP2 := line.new(bar_index, tp2, bar_index + 20, tp2, color=color.new(#22c55e, 0), width=1)
+    pathS.lnTP3 := line.new(bar_index, tp3, bar_index + 20, tp3, color=color.new(#06b6d4, 20), width=1, style=line.style_dashed)
+    string tag = setupTag != "" ? setupTag + " " : ""
+    string txt = tag + "SELL · " + gradeS + " · " + regime + "\nE " + str.tostring(entry, format.mintick) + "  SL " + str.tostring(sl, format.mintick) +
+         "\nTP1 " + str.tostring(tp1, format.mintick) + "  TP2 " + str.tostring(tp2, format.mintick) +
+         "\nTP3 " + str.tostring(tp3, format.mintick) + "  RR " + str.tostring(rr, "#.#") + " · " + presetName
+    label.new(bar_index, h, txt, color=color.new(#dc2626, 0), textcolor=color.white, style=label.style_label_down, size=size.normal)
+    if enableAlerts
+        alert("Meridian SELL · " + gradeS + " · " + regime + " | E " + str.tostring(entry, format.mintick) + " SL " + str.tostring(sl, format.mintick) + " TP1 " + str.tostring(tp1, format.mintick) + " TP2 " + str.tostring(tp2, format.mintick) + (setupTag != "" ? " | " + setupTag : ""), alert.freq_once_per_bar)
+
+// ============================================================
+// PILLAR 5 — PATH INTEGRITY TRACKER
+// ============================================================
+if pathL.active and not pathL.confirmed and not pathL.broken
+    if c < pathL.sl
+        pathL.broken := true
+        pathL.active := false
+        pathBreakL := true
+        label.new(bar_index, l, "PATH BREAK", color=color.new(#7f1d1d, 0), textcolor=color.white, style=label.style_label_up, size=size.small)
+        if enableAlerts
+            alert("Meridian PATH BREAK LONG — " + syminfo.ticker, alert.freq_once_per_bar)
+    else if h >= pathL.tp1
+        pathL.confirmed := true
+        pathConfL := true
+        label.new(bar_index, h, "PATH CONFIRM", color=color.new(#166534, 0), textcolor=color.white, style=label.style_label_down, size=size.small)
+        if enableAlerts
+            alert("Meridian PATH CONFIRM LONG — TP1 touched | " + syminfo.ticker, alert.freq_once_per_bar)
+
+if pathS.active and not pathS.confirmed and not pathS.broken
+    if c > pathS.sl
+        pathS.broken := true
+        pathS.active := false
+        pathBreakS := true
+        label.new(bar_index, h, "PATH BREAK", color=color.new(#7f1d1d, 0), textcolor=color.white, style=label.style_label_down, size=size.small)
+        if enableAlerts
+            alert("Meridian PATH BREAK SHORT — " + syminfo.ticker, alert.freq_once_per_bar)
+    else if l <= pathS.tp1
+        pathS.confirmed := true
+        pathConfS := true
+        label.new(bar_index, l, "PATH CONFIRM", color=color.new(#166534, 0), textcolor=color.white, style=label.style_label_up, size=size.small)
+        if enableAlerts
+            alert("Meridian PATH CONFIRM SHORT — TP1 touched | " + syminfo.ticker, alert.freq_once_per_bar)
+
+if pathL.active and not na(pathL.lnSL)
+    line.set_x2(pathL.lnSL, bar_index + 5)
+    line.set_x2(pathL.lnTP1, bar_index + 5)
+    line.set_x2(pathL.lnTP2, bar_index + 5)
+    line.set_x2(pathL.lnTP3, bar_index + 5)
+    line.set_x2(pathL.lnE, bar_index + 5)
+if pathS.active and not na(pathS.lnSL)
+    line.set_x2(pathS.lnSL, bar_index + 5)
+    line.set_x2(pathS.lnTP1, bar_index + 5)
+    line.set_x2(pathS.lnTP2, bar_index + 5)
+    line.set_x2(pathS.lnTP3, bar_index + 5)
+    line.set_x2(pathS.lnE, bar_index + 5)
+
+string pathTxt = pathL.active ? (pathL.confirmed ? "L:CONFIRM" : "L:OPEN") : pathL.broken ? "L:BREAK" : pathS.active ? (pathS.confirmed ? "S:CONFIRM" : "S:OPEN") : pathS.broken ? "S:BREAK" : "—"
+
+// ============================================================
+// ALERTS
+// ============================================================
+bool eliteFire = (buySignal and densL >= 4) or (sellSignal and densS >= 4)
+bool singularFire = (buySignal and densL >= 5) or (sellSignal and densS >= 5)
+
+alertcondition(buySignal, "BUY Entry", "Meridian Engine: BUY")
+alertcondition(sellSignal, "SELL Entry", "Meridian Engine: SELL")
+alertcondition(sweepLow, "Sweep Arm Long", "Meridian: buy-side liquidity swept — long armed")
+alertcondition(sweepHigh, "Sweep Arm Short", "Meridian: sell-side liquidity swept — short armed")
+alertcondition(eliteFire, "ELITE Signal", "Meridian: ELITE lattice grade entry")
+alertcondition(singularFire, "SINGULAR Signal", "Meridian: SINGULAR lattice + magnet confluence")
+alertcondition(pathBreakL or pathBreakS, "Path Break", "Meridian: PATH BREAK")
+alertcondition(pathConfL or pathConfS, "Path Confirm", "Meridian: PATH CONFIRM (TP1)")
+alertcondition(regimeChange, "Regime Change", "Meridian: regime changed")
+alertcondition(biasBullFlip or biasBearFlip, "Bias Flip", "Meridian: bias flipped")
+
+// OFI alerts (absorption >= PRIME, imbalance >= ELITE)
+alertcondition(absorbBull and densL >= 3, "OFI Absorption Long", "Meridian OFI: Bullish absorption at level")
+alertcondition(absorbBear and densS >= 3, "OFI Absorption Short", "Meridian OFI: Bearish absorption at level")
+alertcondition(imbBull and densL >= 4, "OFI Imbalance Long", "Meridian OFI: Strong bullish imbalance")
+alertcondition(imbBear and densS >= 4, "OFI Imbalance Short", "Meridian OFI: Strong bearish imbalance")
+
+if enableAlerts and sweepLow
+    alert("Meridian Sweep Arm Long — " + syminfo.ticker + " " + presetName, alert.freq_once_per_bar)
+if enableAlerts and sweepHigh
+    alert("Meridian Sweep Arm Short — " + syminfo.ticker + " " + presetName, alert.freq_once_per_bar)
+if enableAlerts and singularFire
+    alert("Meridian SINGULAR — " + syminfo.ticker + " dens L/S=" + str.tostring(densL) + "/" + str.tostring(densS), alert.freq_once_per_bar)
+else if enableAlerts and eliteFire
+    alert("Meridian ELITE — " + syminfo.ticker + " dens L/S=" + str.tostring(densL) + "/" + str.tostring(densS), alert.freq_once_per_bar)
+if enableAlerts and regimeChange
+    alert("Meridian Regime → " + regime + " | ADX " + str.tostring(adxVal, "#.#") + " | " + syminfo.ticker, alert.freq_once_per_bar)
+if enableAlerts and biasBullFlip
+    alert("Meridian Bias → Bull — " + syminfo.ticker, alert.freq_once_per_bar)
+if enableAlerts and biasBearFlip
+    alert("Meridian Bias → Bear — " + syminfo.ticker, alert.freq_once_per_bar)
+
+lastBiasState := biasNow
+lastRegime := regime
+
+// ============================================================
+// DASHBOARD — 13 rows now (was 12)
+// ============================================================
+var table dash = table.new(position.top_right, 2, 13, bgcolor=color.new(#0b1220, 12), border_width=1, border_color=color.new(#334155, 0))
+
+if showDash and barstate.islast
+    string biasTxt = biasDir == 1 ? "BULL" : biasDir == -1 ? "BEAR" : "FLAT"
+    color  biasCol = biasDir == 1 ? #22c55e : biasDir == -1 ? #ef4444 : #94a3b8
+    string structTxt = structTrend == 1 ? "UP" : structTrend == -1 ? "DN" : "--"
+    string latTxt = "L " + gradeL + "(" + str.tostring(densL) + ") / S " + gradeS + "(" + str.tostring(densS) + ")"
+    string armedTxt = (bullArmed ? "L" : "-") + " / " + (bearArmed ? "S" : "-")
+    string magTxt = str.tostring(activeMagnets) + (not na(topMagnetPx) ? " top@" + str.tostring(topMagnet, "#.#") : "")
+    string setupTxt = buySignal ? "BUY" : sellSignal ? "SELL" : setupTag != "" ? setupTag : "Wait"
+    color  setupCol = buySignal ? #22c55e : sellSignal ? #ef4444 : #94a3b8
+    color regCol = regime == "TREND" ? #22c55e : regime == "RANGE" ? #eab308 : #94a3b8
+
+    table.cell(dash, 0, 0, "Preset", text_color=#94a3b8, text_size=size.small)
+    table.cell(dash, 1, 0, presetName + (presetSel == "Auto" ? "·auto" : ""), text_color=#f8fafc, text_size=size.small)
+    table.cell(dash, 0, 1, "Regime", text_color=#94a3b8, text_size=size.small)
+    table.cell(dash, 1, 1, regime + " ADX" + str.tostring(adxVal, "#.#"), text_color=regCol, text_size=size.small)
+    table.cell(dash, 0, 2, "Bias", text_color=#94a3b8, text_size=size.small)
+    table.cell(dash, 1, 2, biasTxt + (useHTF ? "·HTF" : ""), text_color=biasCol, text_size=size.small)
+    table.cell(dash, 0, 3, "Struct", text_color=#94a3b8, text_size=size.small)
+    table.cell(dash, 1, 3, structTxt, text_color=#f8fafc, text_size=size.small)
+    table.cell(dash, 0, 4, "VWAP Zone", text_color=#94a3b8, text_size=size.small)
+    table.cell(dash, 1, 4, vwapZoneTxt + (inPrem ? " PREM" : inDisc ? " DISC" : ""), text_color=#f97316, text_size=size.small)
+    table.cell(dash, 0, 5, "Lattice", text_color=#94a3b8, text_size=size.small)
+    table.cell(dash, 1, 5, latTxt, text_color=#06b6d4, text_size=size.small)
+    table.cell(dash, 0, 6, "Armed L/S", text_color=#94a3b8, text_size=size.small)
+    table.cell(dash, 1, 6, armedTxt, text_color=#eab308, text_size=size.small)
+    table.cell(dash, 0, 7, "Magnets", text_color=#94a3b8, text_size=size.small)
+    table.cell(dash, 1, 7, magTxt, text_color=#d946ef, text_size=size.small)
+    table.cell(dash, 0, 8, "Path", text_color=#94a3b8, text_size=size.small)
+    table.cell(dash, 1, 8, pathTxt, text_color=#f8fafc, text_size=size.small)
+    table.cell(dash, 0, 9, "Setup", text_color=#94a3b8, text_size=size.small)
+    table.cell(dash, 1, 9, setupTxt, text_color=setupCol, text_size=size.small)
+    table.cell(dash, 0, 10, "ATR RS", text_color=#94a3b8, text_size=size.small)
+    table.cell(dash, 1, 10, str.tostring(atrRS, "#.##") + " RR " + str.tostring(rr, "#.#"), text_color=#f8fafc, text_size=size.small)
+    table.cell(dash, 0, 11, "Sess", text_color=#94a3b8, text_size=size.small)
+    table.cell(dash, 1, 11, sbWin ? "SB" : nyKZ ? "NY" : london ? "LDN" : asia ? "ASIA" : "—", text_color=#f8fafc, text_size=size.small)
+    // --- new OFI row ---
+    string ofiTxt = absorbBull ? "Abs↑" : absorbBear ? "Abs↓" : imbBull ? "Imb↑" : imbBear ? "Imb↓" : cvdRising ? "CVD↑" : cvdFalling ? "CVD↓" : "—"
+    color  ofiCol = (absorbBull or imbBull or cvdRising) ? #22c55e : (absorbBear or imbBear or cvdFalling) ? #ef4444 : #94a3b8
+    table.cell(dash, 0, 12, "OFI", text_color=#94a3b8, text_size=size.small)
+    table.cell(dash, 1, 12, ofiTxt + " " + str.tostring(cvd, format.volume), text_color=ofiCol, text_size=size.small)
+
+// ============================================================
+// KNOWN REMAINING LIMITATIONS
+// ============================================================
+// - Liquidity pools are still N-bar swing extremes, not true multi-timeframe
+//   resting liquidity (PDH/PDL, weekly open, equal-highs clusters).
+// - Regime classification still has no hysteresis; near-threshold flips can
+//   occur bar-to-bar.
+// - Arming and stage bubbles remain intrabar by design (state, not triggers).
+// - OFI absorption/imbalance use close-vs-prior-close volume split, which is
+//   a robust proxy but not true footprint / bid-ask data. On symbols with
+//   irregular volume feeds this is the best you get without exchange DOM.
+// - Density now can reach up to 9 unique event types; the grade cap at 5
+//   means PRIME/ELITE/SINGULAR are easier to reach than in v2. Watch whether
+//   that loosens your entry filter and consider raising minGrade if so.
+// - CVD reset "Session" piggybacks on VWAP's session anchor; if you change
+//   vwapAnchor preset-by-preset, CVD reset follows. That's intentional.
