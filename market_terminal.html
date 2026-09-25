@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Market Terminal | SniperTrader.ai</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/theme.css">
+<style>
+  body{margin:0;background:var(--obs);color:var(--text);font-family:var(--font-body);min-height:100vh;}
+  main{max-width:760px;margin:0 auto;padding:140px 24px 80px;}
+  .banner{border:1px solid var(--border2);background:var(--emerald-dim);border-radius:16px;padding:28px 28px 24px;}
+  h1{font-family:var(--font-display);font-size:clamp(2rem,4vw,3rem);line-height:1.15;margin:0 0 14px;}
+  p{color:var(--text2);font-size:1.05rem;line-height:1.65;margin:0 0 18px;}
+  a.cta{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#020408;font-weight:700;text-decoration:none;padding:12px 18px;border-radius:12px;}
+  .back{display:inline-block;margin-top:18px;color:var(--text3);font-family:var(--font-mono);font-size:.75rem;margin-right:16px;}
+</style>
+</head>
+<body>
+<main>
+  <div class="banner" id="banner">
+    <h1 id="title">Daily Market Picks moved.</h1>
+    <p id="copy">Daily Market Picks is now Daily Market Radar — the same decision surface, under the intelligence catalog.</p>
+    <a class="cta" id="cta" href="/market_radar.html">Open Daily Market Radar →</a>
+    <div><a class="back" href="/all_products.html">All products</a></div>
+  </div>
+</main>
+<script>
+(function () {
+  if (location.hash !== '#radar') return;
+  document.title = 'Daily Pre-Run Detection — retired | SniperTrader.ai';
+  document.getElementById('title').textContent = 'This tool has been retired.';
+  document.getElementById('copy').textContent = 'Daily Pre-Run Detection is no longer a separate product. See the new Intelligence Suite — Preflight Protocol, Market Forecaster, and Daily Market Radar.';
+  var cta = document.getElementById('cta');
+  cta.href = '/checkout.html#intelligence-suite';
+  cta.textContent = 'See the new Intelligence Suite →';
+})();
+</script>
+</body>
+</html>

@@ -481,7 +481,7 @@
   function renderAlerts(id, list) {
     var el = $(id); if (!el) return;
     if (!Array.isArray(list) || !list.length) {
-      showEmpty(id, 'No alerts in the last 7 days.', '<a class="action-btn primary" href="/market_terminal.html#radar">Run Pre-Market Scan</a>');
+      showEmpty(id, 'No alerts in the last 7 days.', '');
       return;
     }
     el.innerHTML = list.map(function (a) {
@@ -496,7 +496,7 @@
   function renderIntelligence(intel) {
     var el = $('intelBody'); if (!el) return;
     if (!intel || !Array.isArray(intel.bias) || !intel.bias.length) {
-      showEmpty('intelBody', 'No live bias scores yet.', '<a class="action-btn primary" href="/market_terminal.html">Open Market Terminal</a>');
+      showEmpty('intelBody', 'No live bias scores yet.', '<a class="action-btn primary" href="/market_radar.html">Open Market Terminal</a>');
       return;
     }
     var flag = isSimulated('intelligence') ? '<div style="margin-bottom:14px">' + simFlag() + ' <span style="font-family:var(--ff-m);font-size:.72rem;color:var(--text4);margin-left:8px">Updated ' + esc(intel.updated || '') + '</span></div>' : '';
@@ -527,7 +527,7 @@
     if (!body) return;
     var list = Array.isArray(sessions) ? sessions : [];
     if (!list.length) {
-      showEmpty('signalsWrap', 'No signals logged yet.', '<a class="action-btn primary" href="/market_terminal.html">Open Market Terminal</a>');
+      showEmpty('signalsWrap', 'No signals logged yet.', '<a class="action-btn primary" href="/market_radar.html">Open Market Terminal</a>');
       return;
     }
     var filtered = list;
@@ -565,7 +565,7 @@
     var pf = list[list.length - 1];
     if (!pf) {
       showEmpty('preflightBody', 'No pre-flight scan logged for today.',
-        '<a class="action-btn primary" href="/market_terminal.html#radar">Run Pre-Market Scan</a>');
+        '');
       return;
     }
     var nb = pf.neuralBaseline || {};
@@ -603,7 +603,7 @@
     var el = $('analysesBody'); if (!el) return;
     if (!Array.isArray(list) || !list.length) {
       showEmpty('analysesBody', 'No saved analyses yet. Open a chart to generate one.',
-        '<a class="action-btn primary" href="https://chart-ai.snipertrader.ai" target="_blank" rel="noopener">' + icon('external') + ' Open Chart AI</a>');
+        '');
       return;
     }
     var flag = isSimulated('chartAnalyses') ? '<div style="margin-bottom:14px">' + simFlag() + '</div>' : '';
@@ -613,7 +613,7 @@
         '<div class="an-tf">' + esc(a.timeframe) + ' timeframe</div>' +
         '<div class="an-flags">' + (a.flags || []).map(function (f) { return '<span class="tag">' + esc(f) + '</span>'; }).join('') + '</div>' +
         '<div class="an-meta">Saved ' + esc(a.savedAt) + '</div>' +
-        '<a class="action-btn cyan" href="' + esc(a.openHref || 'https://chart-ai.snipertrader.ai') + '" target="_blank" rel="noopener">' + icon('external') + ' Re-open analysis</a></div>';
+        '</div>';
     }).join('') + '</div>';
   }
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Market Forecaster — real-data Chart Analyzer | SniperTrader.ai</title>
+<title>Market Forecaster — structure, liquidity &amp; targets | SniperTrader.ai</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
@@ -192,7 +192,7 @@
   </div>
 
   <div class="sec"><span class="num">01</span> ANALYZE ANY SYMBOL — full read</div>
-  <div class="secdesc">Type any ticker or coin below to analyze it live: the structure, the seven signals behind the conviction, the empirical probability cone, the Monte Carlo forward path, the trade plan, and the SEC EDGAR catalyst. The daily watchlist scan lives on <a href="/market_terminal.html" style="color:var(--cyan)">Market Terminal</a>.</div>
+  <div class="secdesc">Type any ticker or coin below to analyze it live: the structure, the seven signals behind the conviction, the empirical probability cone, the Monte Carlo forward path, the trade plan, and the SEC EDGAR catalyst. The daily watchlist scan lives on <a href="/market_radar.html" style="color:var(--cyan)">Market Terminal</a>.</div>
 
   <div class="searchrow">
     <input id="symSearch" class="symsearch" type="text" list="symSuggestions" placeholder="Search any symbol — TSLA, BTC, SOLUSDT, GC…" autocomplete="off" spellcheck="false" aria-label="Search any symbol" onkeydown="if(event.key==='Enter')analyzeCustom()">
@@ -862,7 +862,7 @@ let ASOF = DATA.as_of || '';
   const inp = document.getElementById('symSearch');
   if(inp && !inp.value) inp.value = 'TSLA';
   document.getElementById('fchead').innerHTML =
-    '<div><div class="sym">Loading TSLA…</div><div class="fl" style="font-family:var(--font-m);font-size:12px;color:var(--muted)">Fetching Tesla (TSLA) — structure, 7 signals, conviction and trade plan. The daily watchlist scan lives on <a href="/market_terminal.html" style="color:var(--cyan)">Market Terminal</a>.</div></div>';
+    '<div><div class="sym">Loading TSLA…</div><div class="fl" style="font-family:var(--font-m);font-size:12px;color:var(--muted)">Fetching Tesla (TSLA) — structure, 7 signals, conviction and trade plan. The daily watchlist scan lives on <a href="/market_radar.html" style="color:var(--cyan)">Market Terminal</a>.</div></div>';
   analyzeCustom();
 })();
 

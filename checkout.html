@@ -250,6 +250,31 @@ body.light .card.suite{--acc:#9A6E00;--acc-dim:rgba(160,120,0,.12);--acc-border:
 .card.wide .wide-side{flex:0 0 360px;border-left:1px solid var(--border);background:var(--card);padding:32px 28px;display:flex;flex-direction:column;}
 @media(max-width:960px){.card.wide{flex-direction:column;}.card.wide .wide-side{border-left:none;border-top:1px solid var(--border);}}
 .badge-pop{position:absolute;top:14px;right:14px;font-family:var(--ff-m);font-size:.6rem;letter-spacing:.12em;padding:5px 11px;border-radius:20px;background:var(--acc-dim);color:var(--acc);border:1px solid var(--acc-border);z-index:2;}
+.bill-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px;}
+.seg{display:inline-flex;padding:4px;border-radius:999px;border:1px solid var(--border2);background:var(--card);gap:4px;}
+.seg button{padding:9px 16px;border-radius:999px;font-weight:700;font-size:.84rem;color:var(--text3);}
+.seg button.on{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#020408;}
+.seg button small{display:block;font-weight:500;font-size:.62rem;letter-spacing:.04em;opacity:.8;}
+.price-now{font-family:var(--ff-d);font-size:2.15rem;font-weight:600;line-height:1;margin:4px 0 8px;}
+.price-now sub{font-size:.4em;font-weight:500;color:var(--text3);margin-left:4px;}
+.offer-chip{display:inline-flex;align-self:flex-start;background:var(--acc);color:#020408;font-family:var(--ff-m);font-size:.62rem;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:.4px;margin:0 0 8px;}
+.gtee{font-size:.8rem;color:var(--emerald);margin:4px 0 12px;}
+.stack-flag{display:inline-flex;margin:0 0 10px;padding:4px 10px;border-radius:20px;font-family:var(--ff-m);font-size:.62rem;letter-spacing:.04em;color:var(--gold);border:1px solid var(--border2);background:var(--gold-dim);}
+.vs-note{font-size:.78rem;color:var(--gold);margin-bottom:8px;}
+.plat-miss{font-size:.75rem;color:var(--text3);margin-bottom:8px;line-height:1.45;}
+.sub-check{display:flex;gap:10px;align-items:flex-start;margin:8px 0 14px;font-size:.9rem;color:var(--text2);}
+.add-btn[disabled]{opacity:.45;cursor:not-allowed;}
+#engineGrid{grid-template-columns:repeat(3,1fr);}
+@media(max-width:1120px){#engineGrid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:620px){#engineGrid{grid-template-columns:1fr;}}
+.mi-grid{grid-template-columns:repeat(3,1fr);}
+.bundle-grid,.course-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+@media(max-width:800px){.bundle-grid,.course-grid{grid-template-columns:1fr;}}
+.card.ofi{--acc:#34D399;--acc-dim:rgba(52,211,153,.12);--acc-border:rgba(52,211,153,.35);}
+body.light .card.ofi{--acc:#007A44;--acc-dim:rgba(0,160,80,.12);--acc-border:rgba(0,160,80,.35);}
+.pay-placeholder{border:1px dashed var(--border2);border-radius:12px;padding:14px 16px;margin:8px 0 14px;background:var(--card);font-size:.84rem;color:var(--text2);line-height:1.55;}
+.pay-placeholder ul{margin:8px 0 0 18px;}
+.pay-placeholder code{font-family:var(--ff-m);font-size:.72rem;color:var(--gold);}
 
 /* à-la-carte breakdown panel */
 .breakdown{display:flex;flex-direction:column;gap:7px;}
@@ -378,20 +403,20 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
       <button class="nav-link" onclick="toggleDrop(this)">Market Intelligence <span class="caret">▾</span></button>
       <div class="dropdown">
         <a href="/traderedge_preflight.html"><span class="d-name">Preflight Protocol</span><span class="d-sub">Daily pre-market playbook &amp; bias calibration</span></a>
-        <a href="/market_terminal.html"><span class="d-name">Daily Market Picks</span><span class="d-sub">High-probability setups scored by ML</span></a>
-        <a href="/market_terminal.html#radar"><span class="d-name">Daily Pre-Run Detection</span><span class="d-sub">Pre-market scan across the full watchlist</span></a>
-        <a href="https://chart-ai.snipertrader.ai"><span class="d-name">AI Chart Analyzer</span><span class="d-sub">Automated structure, liquidity &amp; order blocks</span></a>
-        <a href="/sniper_market_forecaster.html"><span class="d-name">Sniper Market Forecaster</span><span class="d-sub">Macro price targets &amp; pivot windows</span></a>
+        <a href="/market_radar.html"><span class="d-name">Daily Market Radar</span><span class="d-sub">Ranked watchlist — structure, volume, filings &amp; news</span></a>
+        <a href="/market_forecaster.html"><span class="d-name">Market Forecaster</span><span class="d-sub">Structure, liquidity &amp; price targets</span></a>
+        <a href="/checkout.html#intelligence-suite"><span class="d-name">Intelligence Suite</span><span class="d-sub">All 3 services — Best Value</span></a>
       </div>
     </li>
     <li class="nav-item" data-drop>
       <button class="nav-link" onclick="toggleDrop(this)">Proprietary Algos <span class="caret">▾</span></button>
       <div class="dropdown">
-        <a href="/NoRepaint_Pivot_indicator.html"><span class="d-name">No Repaint Indicator</span><span class="d-sub">Confirmed-at-close signal execution</span></a>
-        <a href="/USME_ICT_Foundation.html"><span class="d-name">USME ICT Foundation Engine</span><span class="d-sub">Smart Money Concepts automation</span></a>
-        <a href="/USME_VWAP_Elite_Suite.html"><span class="d-name">USME VWAP Suite Engine</span><span class="d-sub">Institutional volume-weighted targeting</span></a>
-        <a href="/Meridian_Engine.html"><span class="d-name">Meridian Engine</span><span class="d-sub">Regime-aware lattice + liquidity memory map</span></a>
-        <a href="/usme_products.html"><span class="d-name">All Products</span></a>
+        <a href="/NoRepaint_Pivot_indicator.html"><span class="d-name">No Repaint Pivot</span><span class="d-sub">Confirmed-at-close signal execution</span></a>
+        <a href="/USME_ICT_Core.html"><span class="d-name">USME ICT Core</span><span class="d-sub">3-Gate Smart Money Concepts</span></a>
+        <a href="/USME_VWAP_Elite_Suite.html"><span class="d-name">USME VWAP Suite</span><span class="d-sub">Multi-anchor VWAP + graded conviction</span></a>
+        <a href="/Meridian_Engine.html"><span class="d-name">Meridian Engine</span><span class="d-sub">Regime-aware lattice + liquidity memory</span></a>
+        <a href="/Meridian_OFI_Engine.html"><span class="d-name">Meridian OFI Engine</span><span class="d-sub">Includes Stacked Imbalance Logic</span></a>
+        <a href="/all_products.html"><span class="d-name">All Products</span></a>
       </div>
     </li>
     <li class="nav-item" data-drop>
@@ -415,17 +440,18 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
 <div class="mobile-menu" id="mobileMenu">
   <div class="mm-group">Market Intelligence</div>
   <a class="mm-sub" href="/traderedge_preflight.html">Preflight Protocol</a>
-  <a class="mm-sub" href="/market_terminal.html">Daily Market Picks</a>
-  <a class="mm-sub" href="https://chart-ai.snipertrader.ai">AI Chart Analyzer</a>
-  <a class="mm-sub" href="/sniper_market_forecaster.html">Sniper Market Forecaster</a>
+  <a class="mm-sub" href="/market_radar.html">Daily Market Radar</a>
+  <a class="mm-sub" href="/market_forecaster.html">Market Forecaster</a>
+  <a class="mm-sub" href="/checkout.html#intelligence-suite">Intelligence Suite</a>
   <div class="mm-group">Proprietary Algos</div>
-  <a class="mm-sub" href="/NoRepaint_Pivot_indicator.html">No Repaint Indicator</a>
-  <a class="mm-sub" href="/USME_ICT_Foundation.html">USME ICT Foundation Engine</a>
-  <a class="mm-sub" href="/USME_VWAP_Elite_Suite.html">USME VWAP Suite Engine</a>
+  <a class="mm-sub" href="/NoRepaint_Pivot_indicator.html">No Repaint Pivot</a>
+  <a class="mm-sub" href="/USME_ICT_Core.html">USME ICT Core</a>
+  <a class="mm-sub" href="/USME_VWAP_Elite_Suite.html">USME VWAP Suite</a>
   <a class="mm-sub" href="/Meridian_Engine.html">Meridian Engine</a>
+  <a class="mm-sub" href="/Meridian_OFI_Engine.html">Meridian OFI Engine</a>
   <div class="mm-group">Academy</div>
-  <a class="mm-link" href="/USME_ICT_Foundation_Course.html">Sniper Academy</a>
-  <a class="mm-link" href="/market_terminal.html">Market Terminal</a>
+  <a class="mm-link" href="/Traders_Couch.html">Sniper Academy</a>
+  <a class="mm-link" href="/all_products.html">All Products</a>
 </div>
 
 <!-- TICKER (static product line) -->
@@ -433,24 +459,22 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
   <div class="ticker-status"><span class="live-dot"></span>Products</div>
   <div class="ticker-track">
     <div class="ticker-inner">
-      <span class="tick-item"><i></i>No Repaint Engine</span>
+      <span class="tick-item"><i></i>No Repaint Pivot</span>
       <span class="tick-item"><i></i>USME ICT Core</span>
-      <span class="tick-item"><i></i>Meridian Engine</span>
       <span class="tick-item"><i></i>USME VWAP Suite</span>
-      <span class="tick-item"><i></i>Market Forecaster</span>
-      <span class="tick-item"><i></i>Daily Market Picks</span>
-      <span class="tick-item"><i></i>Pre-Run Detection</span>
-      <span class="tick-item"><i></i>AI Chart Analyzer</span>
+      <span class="tick-item"><i></i>Meridian Engine</span>
+      <span class="tick-item"><i></i>Meridian OFI · Stacked Imbalance</span>
       <span class="tick-item"><i></i>Preflight Protocol</span>
-      <span class="tick-item"><i></i>No Repaint Engine</span>
+      <span class="tick-item"><i></i>Market Forecaster</span>
+      <span class="tick-item"><i></i>Daily Market Radar</span>
+      <span class="tick-item"><i></i>No Repaint Pivot</span>
       <span class="tick-item"><i></i>USME ICT Core</span>
-      <span class="tick-item"><i></i>Meridian Engine</span>
       <span class="tick-item"><i></i>USME VWAP Suite</span>
-      <span class="tick-item"><i></i>Market Forecaster</span>
-      <span class="tick-item"><i></i>Daily Market Picks</span>
-      <span class="tick-item"><i></i>Pre-Run Detection</span>
-      <span class="tick-item"><i></i>AI Chart Analyzer</span>
+      <span class="tick-item"><i></i>Meridian Engine</span>
+      <span class="tick-item"><i></i>Meridian OFI · Stacked Imbalance</span>
       <span class="tick-item"><i></i>Preflight Protocol</span>
+      <span class="tick-item"><i></i>Market Forecaster</span>
+      <span class="tick-item"><i></i>Daily Market Radar</span>
     </div>
   </div>
 </div>
@@ -462,15 +486,15 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
     <div>
       <div class="eyebrow">Pricing</div>
       <h1 class="hero-title">Precision, <em>priced with intent.</em></h1>
-      <p class="hero-sub">Four proprietary engines. Five market-intelligence services. One honest menu — subscribe monthly, or lock annual and keep two months. No hidden fees, no forced bundles.</p>
+      <p class="hero-sub">Five proprietary engines. Three intelligence services. Four bundles sold as single products. Annual billing is the default. “2 months free” appears only when annual is exactly ten times monthly.</p>
       <div class="hero-cta">
         <a class="btn btn-primary" href="#indicators">Browse the Engines</a>
-        <a class="btn btn-outline" href="#intelligence">Explore Market Intelligence</a>
+        <a class="btn btn-outline" href="#bundles">See the Bundles</a>
       </div>
       <div class="hero-trust">
-        <div class="trust-item"><span class="t-label">Engines</span><span class="t-value">Non-repainting</span></div>
-        <div class="trust-item"><span class="t-label">Annual</span><span class="t-value">2 months free</span></div>
-        <div class="trust-item"><span class="t-label">Billing</span><span class="t-value">Cancel anytime</span></div>
+        <div class="trust-item"><span class="t-label">Engines</span><span class="t-value">5</span></div>
+        <div class="trust-item"><span class="t-label">Intelligence</span><span class="t-value">3 services</span></div>
+        <div class="trust-item"><span class="t-label">Guarantee</span><span class="t-value">14-day money-back</span></div>
       </div>
     </div>
     <div class="hero-media">
@@ -490,397 +514,81 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
   <div class="container">
     <div class="sec-head reveal">
       <div class="eyebrow">Proprietary Engines</div>
-      <h2>Four indicators. <em>One edge each.</em></h2>
-      <p class="lede">Each engine is platform-specific and ships for your charting stack. Pick your platform, then add the engines you want — monthly or annual.</p>
+      <h2>Five engines. <em>One edge each.</em></h2>
+      <p class="lede">Meridian OFI Engine includes Stacked Imbalance Logic — a feature of that engine, not a separate product. Prices come from the catalog. Annual is selected by default.</p>
     </div>
-
-    <div class="platform-bar reveal">
+    <div class="bill-bar reveal">
+      <div class="seg" id="billToggle" role="group" aria-label="Billing cycle">
+        <button type="button" data-cycle="annual" class="on">Annual <small>default</small></button>
+        <button type="button" data-cycle="monthly">Monthly</button>
+      </div>
+      <span class="platform-hint" style="margin:0">Switching the toggle reprices every card. Savings labels are calculated, not typed in.</span>
+    </div>
+    <div class="platform-bar reveal" id="platformBar">
       <span class="pl-label">Your platform</span>
-      <button class="pfm-pill" data-platform="ThinkorSwim">ThinkorSwim</button>
-      <button class="pfm-pill" data-platform="TradingView">TradingView</button>
-      <button class="pfm-pill" data-platform="NinjaTrader">NinjaTrader</button>
+      <button type="button" class="pfm-pill selected" data-platform="TradingView">TradingView</button>
+      <button type="button" class="pfm-pill" data-platform="Thinkorswim">Thinkorswim</button>
+      <button type="button" class="pfm-pill" data-platform="NinjaTrader">NinjaTrader</button>
     </div>
-    <p class="platform-hint reveal" id="platformHint">Engines are delivered for the platform you select. Market Intelligence &amp; add-ons work on any platform.</p>
-
-    <div class="pricing-grid">
-
-      <!-- PIVOT -->
-      <div class="card pivot reveal">
-        <div class="card-body">
-          <div class="card-top">
-            <div class="card-icon">🎯</div>
-            <div class="card-tier">Engine 01</div>
-          </div>
-          <h3>No Repaint Pivot</h3>
-          <div class="card-desc">Confirmed-at-close pivot signals with anchored VWAP bands — bars never repaint.</div>
-          <ul class="card-features">
-            <li>100% non-repainting entry markers</li>
-            <li>Elite / Prime / Standard scoring</li>
-            <li>Trend cloud + triple EMA confluence</li>
-          </ul>
-          <div class="card-platforms">
-            <span class="plat-tag">ThinkorSwim</span><span class="plat-tag">TradingView</span>
-          </div>
-          <div class="plan-toggle">
-            <div class="plan-opt selected" data-product="No Repaint Pivot" data-plan="Monthly" data-price="79" data-cadence="/mo">
-              <div class="po-name">Monthly</div>
-              <div class="po-price">$79<sub>/mo</sub></div>
-            </div>
-            <div class="plan-opt" data-product="No Repaint Pivot" data-plan="Annual" data-price="599" data-cadence="/yr">
-              <span class="save-chip">SAVE 37%</span>
-              <div class="po-name">Annual</div>
-              <div class="po-price">$599<sub>/yr</sub></div>
-              <div class="po-note">≈ $49.92/mo</div>
-            </div>
-          </div>
-          <button class="add-btn" data-card="pivot">+ Add to order</button>
-        </div>
-      </div>
-
-      <!-- ICT CORE -->
-      <div class="card ict reveal">
-        <div class="card-body">
-          <div class="card-top">
-            <div class="card-icon">🧠</div>
-            <div class="card-tier">Engine 02</div>
-          </div>
-          <h3>USME ICT Core</h3>
-          <div class="card-desc">Automated Smart Money Concepts — the 3-Gate model from context to entry.</div>
-          <ul class="card-features">
-            <li>3-Gate Model: Context → Liquidity → Entry</li>
-            <li>BUY / SELL · sweep · MSS alerts</li>
-            <li>Full 6-module course + cheat sheets</li>
-          </ul>
-          <div class="card-platforms">
-            <span class="plat-tag">ThinkorSwim</span><span class="plat-tag">TradingView</span><span class="plat-tag">NinjaTrader</span>
-          </div>
-          <div class="plan-toggle">
-            <div class="plan-opt selected" data-product="USME ICT Core" data-plan="Monthly" data-price="199" data-cadence="/mo">
-              <div class="po-name">Monthly</div>
-              <div class="po-price">$199<sub>/mo</sub></div>
-            </div>
-            <div class="plan-opt" data-product="USME ICT Core" data-plan="Annual" data-price="1999" data-cadence="/yr">
-              <span class="save-chip">SAVE 16%</span>
-              <div class="po-name">Annual</div>
-              <div class="po-price">$1,999<sub>/yr</sub></div>
-              <div class="po-note">≈ $166.58/mo</div>
-            </div>
-          </div>
-          <button class="add-btn" data-card="ict">+ Add to order</button>
-        </div>
-      </div>
-
-      <!-- VWAP SUITE -->
-      <div class="card vwap reveal">
-        <div class="card-body">
-          <div class="card-top">
-            <div class="card-icon">📡</div>
-            <div class="card-tier">Engine 03</div>
-          </div>
-          <h3>USME VWAP Suite</h3>
-          <div class="card-desc">Multi-anchor VWAP with deviation bands and graded institutional conviction.</div>
-          <ul class="card-features">
-            <li>Session / weekly / custom anchors</li>
-            <li>±1σ / ±2σ deviation bands</li>
-            <li>WATCH / PRIME / ELITE alerts · all platforms</li>
-          </ul>
-          <div class="card-platforms">
-            <span class="plat-tag">ThinkorSwim</span><span class="plat-tag">TradingView</span><span class="plat-tag">NinjaTrader</span>
-          </div>
-          <div class="plan-toggle">
-            <div class="plan-opt selected" data-product="USME VWAP Suite" data-plan="Monthly" data-price="249" data-cadence="/mo">
-              <div class="po-name">Monthly</div>
-              <div class="po-price">$249<sub>/mo</sub></div>
-            </div>
-            <div class="plan-opt" data-product="USME VWAP Suite" data-plan="Annual" data-price="2490" data-cadence="/yr">
-              <span class="save-chip">SAVE 17%</span>
-              <div class="po-name">Annual</div>
-              <div class="po-price">$2,490<sub>/yr</sub></div>
-              <div class="po-note">≈ $207.50/mo</div>
-            </div>
-          </div>
-          <button class="add-btn" data-card="vwap">+ Add to order</button>
-        </div>
-      </div>
-
-      <!-- MERIDIAN -->
-      <div class="card meridian reveal">
-        <div class="badge-pop">FLAGSHIP</div>
-        <div class="card-body">
-          <div class="card-top">
-            <div class="card-icon">🧭</div>
-            <div class="card-tier">Engine 04</div>
-          </div>
-          <h3>Meridian Engine</h3>
-          <div class="card-desc">Regime-aware event lattice with a liquidity memory map — graded WATCH to SINGULAR.</div>
-          <ul class="card-features">
-            <li>Regime-aware event lattice</li>
-            <li>Liquidity memory map + magnets</li>
-            <li>WATCH → PRIME → SINGULAR grading</li>
-            <li>PATH CONFIRM / PATH BREAK tracking</li>
-          </ul>
-          <div class="card-platforms">
-            <span class="plat-tag">TradingView · Pine v6</span>
-          </div>
-          <div class="plan-toggle">
-            <div class="plan-opt selected" data-product="Meridian Engine" data-plan="Monthly" data-price="479" data-cadence="/mo">
-              <div class="po-name">Monthly</div>
-              <div class="po-price">$479<sub>/mo</sub></div>
-            </div>
-            <div class="plan-opt" data-product="Meridian Engine" data-plan="Annual" data-price="4700" data-cadence="/yr">
-              <span class="save-chip">SAVE 18%</span>
-              <div class="po-name">Annual</div>
-              <div class="po-price">$4,700<sub>/yr</sub></div>
-              <div class="po-note">≈ $391.67/mo</div>
-            </div>
-          </div>
-          <button class="add-btn" data-card="meridian">+ Add to order</button>
-        </div>
-      </div>
-
-    </div>
+    <p class="platform-hint reveal" id="platformHint"></p>
+    <div class="pricing-grid" id="engineGrid"></div>
   </div>
 </section>
 
-<!-- MARKET INTELLIGENCE SUITE -->
 <section class="sec" id="intelligence">
   <div class="container">
     <div class="sec-head reveal">
       <div class="eyebrow">Market Intelligence</div>
-      <h2>Five daily edges. <em>Or all five, together.</em></h2>
-      <p class="lede">Recurring daily and on-demand services — forecasts, picks, pre-run scans, chart analysis, and the preflight playbook. Subscribe each standalone, or take the suite and save.</p>
+      <h2>Three services. <em>Or the suite.</em></h2>
+      <p class="lede">Preflight Protocol, Market Forecaster, and Daily Market Radar. The Intelligence Suite is the Best Value way to take all three.</p>
     </div>
-
-    <!-- COMBO -->
-    <div class="card combo wide reveal">
-      <div class="badge-pop">BEST VALUE</div>
-      <div class="card-body">
-        <div class="card-top"><div class="card-icon">⚡</div><div class="card-tier">Market Intelligence Suite</div></div>
-        <h3>All five services. <em>One subscription.</em></h3>
-        <div class="card-desc">Market Forecaster + Daily Market Picks + Daily Pre-Run Detection + AI Chart Analyzer + Preflight Protocol — the full morning-to-close intelligence stack.</div>
-        <ul class="card-features">
-          <li>Market Forecaster — macro projection corridors</li>
-          <li>Daily Market Picks — ML-scored setups</li>
-          <li>Daily Pre-Run Detection — pre-market watchlist scan</li>
-          <li>AI Chart Analyzer — automated structure &amp; liquidity</li>
-          <li>Preflight Protocol — daily bias &amp; key levels</li>
-        </ul>
-        <div class="plan-toggle">
-          <div class="plan-opt selected" data-product="Market Intelligence Suite" data-plan="Monthly" data-price="149" data-cadence="/mo">
-            <div class="po-name">Monthly</div>
-            <div class="po-price">$149<sub>/mo</sub></div>
-          </div>
-          <div class="plan-opt" data-product="Market Intelligence Suite" data-plan="Annual" data-price="1490" data-cadence="/yr">
-            <span class="save-chip">SAVE 17%</span>
-            <div class="po-name">Annual</div>
-            <div class="po-price">$1,490<sub>/yr</sub></div>
-            <div class="po-note">≈ $124.17/mo</div>
-          </div>
-        </div>
-        <button class="add-btn" data-card="combo">+ Add the full suite</button>
-      </div>
-      <div class="wide-side">
-        <div class="card-tier" style="margin-bottom:12px;">À la carte · $315/mo</div>
-        <div class="breakdown">
-          <div class="breakdown-row"><span>Market Forecaster</span><span class="bd-price">$49</span></div>
-          <div class="breakdown-row"><span>Daily Market Picks</span><span class="bd-price">$79</span></div>
-          <div class="breakdown-row"><span>Daily Pre-Run Detection</span><span class="bd-price">$79</span></div>
-          <div class="breakdown-row"><span>AI Chart Analyzer</span><span class="bd-price">$59</span></div>
-          <div class="breakdown-row"><span>Preflight Protocol</span><span class="bd-price">$49</span></div>
-          <div class="breakdown-row" style="border-bottom:none;"><b>Suite price</b><b style="color:var(--acc);font-family:var(--ff-d);font-size:1.1rem;">$149/mo</b></div>
-        </div>
-        <div class="breakdown-save">SAVE $166/mo — 53% off</div>
-      </div>
-    </div>
-
-    <!-- STANDALONE -->
-    <div class="mi-grid" style="margin-top:18px;">
-
-      <div class="card mi reveal">
-        <div class="card-body">
-          <div class="card-top"><div class="card-icon">🌅</div><div class="card-tier">Standalone</div></div>
-          <h3>Preflight Protocol</h3>
-          <div class="card-desc">Daily pre-market playbook — bias, key levels, catalysts.</div>
-          <div class="plan-toggle">
-            <div class="plan-opt selected" data-product="Preflight Protocol" data-plan="Monthly" data-price="49" data-cadence="/mo">
-              <div class="po-name">Monthly</div><div class="po-price">$49<sub>/mo</sub></div>
-            </div>
-            <div class="plan-opt" data-product="Preflight Protocol" data-plan="Annual" data-price="490" data-cadence="/yr">
-              <span class="save-chip">SAVE 17%</span>
-              <div class="po-name">Annual</div><div class="po-price">$490<sub>/yr</sub></div>
-            </div>
-          </div>
-          <button class="add-btn" data-card="preflight">+ Add</button>
-        </div>
-      </div>
-
-      <div class="card mi reveal">
-        <div class="card-body">
-          <div class="card-top"><div class="card-icon">🌐</div><div class="card-tier">Standalone</div></div>
-          <h3>Market Forecaster</h3>
-          <div class="card-desc">Macro projection corridors and reversal windows.</div>
-          <div class="plan-toggle">
-            <div class="plan-opt selected" data-product="Market Forecaster" data-plan="Monthly" data-price="49" data-cadence="/mo">
-              <div class="po-name">Monthly</div><div class="po-price">$49<sub>/mo</sub></div>
-            </div>
-            <div class="plan-opt" data-product="Market Forecaster" data-plan="Annual" data-price="490" data-cadence="/yr">
-              <span class="save-chip">SAVE 17%</span>
-              <div class="po-name">Annual</div><div class="po-price">$490<sub>/yr</sub></div>
-            </div>
-          </div>
-          <button class="add-btn" data-card="forecaster">+ Add</button>
-        </div>
-      </div>
-      <div class="card mi reveal">
-        <div class="card-body">
-          <div class="card-top"><div class="card-icon">🤖</div><div class="card-tier">Standalone</div></div>
-          <h3>AI Chart Analyzer</h3>
-          <div class="card-desc">Automated structure, liquidity &amp; order-block analysis.</div>
-          <div class="plan-toggle">
-            <div class="plan-opt selected" data-product="AI Chart Analyzer" data-plan="Monthly" data-price="59" data-cadence="/mo">
-              <div class="po-name">Monthly</div><div class="po-price">$59<sub>/mo</sub></div>
-            </div>
-            <div class="plan-opt" data-product="AI Chart Analyzer" data-plan="Annual" data-price="590" data-cadence="/yr">
-              <span class="save-chip">SAVE 17%</span>
-              <div class="po-name">Annual</div><div class="po-price">$590<sub>/yr</sub></div>
-            </div>
-          </div>
-          <button class="add-btn" data-card="chartai">+ Add</button>
-        </div>
-      </div>
-
-      <div class="card mi reveal">
-        <div class="card-body">
-          <div class="card-top"><div class="card-icon">🎯</div><div class="card-tier">Standalone</div></div>
-          <h3>Daily Market Picks</h3>
-          <div class="card-desc">High-probability setups scored by machine learning.</div>
-          <div class="plan-toggle">
-            <div class="plan-opt selected" data-product="Daily Market Picks" data-plan="Monthly" data-price="79" data-cadence="/mo">
-              <div class="po-name">Monthly</div><div class="po-price">$79<sub>/mo</sub></div>
-            </div>
-            <div class="plan-opt" data-product="Daily Market Picks" data-plan="Annual" data-price="790" data-cadence="/yr">
-              <span class="save-chip">SAVE 17%</span>
-              <div class="po-name">Annual</div><div class="po-price">$790<sub>/yr</sub></div>
-            </div>
-          </div>
-          <button class="add-btn" data-card="picks">+ Add</button>
-        </div>
-      </div>
-
-      <div class="card mi reveal">
-        <div class="card-body">
-          <div class="card-top"><div class="card-icon">🔭</div><div class="card-tier">Standalone</div></div>
-          <h3>Daily Pre-Run Detection</h3>
-          <div class="card-desc">Pre-market scan across the full watchlist, before the open.</div>
-          <div class="plan-toggle">
-            <div class="plan-opt selected" data-product="Daily Pre-Run Detection" data-plan="Monthly" data-price="79" data-cadence="/mo">
-              <div class="po-name">Monthly</div><div class="po-price">$79<sub>/mo</sub></div>
-            </div>
-            <div class="plan-opt" data-product="Daily Pre-Run Detection" data-plan="Annual" data-price="790" data-cadence="/yr">
-              <span class="save-chip">SAVE 17%</span>
-              <div class="po-name">Annual</div><div class="po-price">$790<sub>/yr</sub></div>
-            </div>
-          </div>
-          <button class="add-btn" data-card="prerun">+ Add</button>
-        </div>
-      </div>
-
-    </div>
+    <div id="intelligence-suite"></div>
+    <div id="intelSuite"></div>
+    <div class="mi-grid" id="intelGrid" style="margin-top:18px;"></div>
   </div>
 </section>
 
-<!-- ADD-ONS -->
-<section class="sec alt" id="addons">
+<section class="sec alt" id="bundles">
   <div class="container">
     <div class="sec-head reveal">
-      <div class="eyebrow">Add-ons</div>
-      <h2>Round out <em>the stack.</em></h2>
-      <p class="lede">A trade journal for discipline, and the playbook that ties the frameworks together.</p>
+      <div class="eyebrow">Bundles</div>
+      <h2>Four bundles. <em>Each one line item.</em></h2>
+      <p class="lede">A bundle is a single product. The savings line compares its price to the sum of the parts on the same billing cycle.</p>
     </div>
-    <div class="pricing-grid" style="grid-template-columns:repeat(2,1fr);">
-      <div class="card psych reveal">
-        <div class="card-body">
-          <div class="card-top"><div class="card-icon">🧠</div><div class="card-tier">Add-on · Journal</div></div>
-          <h3>PSYCH App SMC Journal</h3>
-          <div class="card-desc">AI-powered trade tracker with psychology &amp; discipline scoring. 7-day free trial on monthly.</div>
-          <ul class="card-features">
-            <li>SMC-based trade logging</li>
-            <li>Psychology &amp; discipline scoring</li>
-          </ul>
-          <div class="plan-toggle">
-            <div class="plan-opt selected" data-product="PSYCH App SMC Journal" data-plan="Monthly" data-price="29" data-cadence="/mo">
-              <div class="po-name">Monthly</div><div class="po-price">$29<sub>/mo</sub></div>
-              <div class="po-note">7-day trial</div>
-            </div>
-            <div class="plan-opt" data-product="PSYCH App SMC Journal" data-plan="Lifetime" data-price="199" data-cadence="">
-              <span class="save-chip">BEST VALUE</span>
-              <div class="po-name">Lifetime</div><div class="po-price">$199</div>
-            </div>
-          </div>
-          <button class="add-btn" data-card="psych">+ Add</button>
-        </div>
-      </div>
-      <div class="card ebook reveal">
-        <div class="card-body">
-          <div class="card-top"><div class="card-icon">📖</div><div class="card-tier">Add-on · eBook</div></div>
-          <h3>From Broke to Funded</h3>
-          <div class="card-desc">200+ page ICT/SMC playbook. Instant PDF download — no platform required.</div>
-          <ul class="card-features">
-            <li>200+ pages of ICT/SMC content</li>
-            <li>Full trade playbook &amp; setups</li>
-          </ul>
-          <div class="plan-toggle single">
-            <div class="plan-opt selected" data-product="From Broke to Funded eBook" data-plan="One-Time" data-price="19" data-cadence="">
-              <div class="po-name">One-Time Purchase</div><div class="po-price">$19</div>
-            </div>
-          </div>
-          <button class="add-btn" data-card="ebook">+ Add</button>
-        </div>
-      </div>
-    </div>
+    <div class="bundle-grid" id="bundleGrid"></div>
   </div>
 </section>
 
-<!-- FULL SUITE BUNDLE -->
-<section class="sec" id="suite">
+<section class="sec" id="upgrade">
   <div class="container">
-    <div class="card suite wide reveal">
-      <div class="badge-pop">EVERYTHING</div>
-      <div class="card-body">
-        <div class="card-top"><div class="card-icon">🚀</div><div class="card-tier">Full Suite Bundle</div></div>
-        <h3>The complete <em>SniperTrader stack.</em></h3>
-        <div class="card-desc">All four engines + the full Market Intelligence Suite in one subscription — the calmest way to run every edge at once.</div>
-        <ul class="card-features">
-          <li>No Repaint Pivot · USME ICT Core · Meridian · VWAP Suite</li>
-          <li>All five Market Intelligence services</li>
-          <li>PSYCH App + From Broke to Funded eBook included</li>
-        </ul>
-        <div class="plan-toggle">
-          <div class="plan-opt selected" data-product="Full Suite Bundle" data-plan="Monthly" data-price="599" data-cadence="/mo">
-            <div class="po-name">Monthly</div>
-            <div class="po-price">$599<sub>/mo</sub></div>
-          </div>
-          <div class="plan-opt" data-product="Full Suite Bundle" data-plan="Annual" data-price="5990" data-cadence="/yr">
-            <span class="save-chip">SAVE 17%</span>
-            <div class="po-name">Annual</div>
-            <div class="po-price">$5,990<sub>/yr</sub></div>
-            <div class="po-note">≈ $499.17/mo</div>
-          </div>
-        </div>
-        <button class="add-btn" data-card="suite">+ Add everything</button>
-      </div>
-      <div class="wide-side">
-        <div class="card-tier" style="margin-bottom:12px;">Everything à la carte ≈ $1,369/mo</div>
-        <div class="breakdown">
-          <div class="breakdown-row"><span>4 Engines (monthly)</span><span class="bd-price">$1,006</span></div>
-          <div class="breakdown-row"><span>Market Intelligence (5 services)</span><span class="bd-price">$315</span></div>
-          <div class="breakdown-row"><span>PSYCH App</span><span class="bd-price">$29</span></div>
-          <div class="breakdown-row"><span>eBook (one-time)</span><span class="bd-price">$19</span></div>
-          <div class="breakdown-row" style="border-bottom:none;"><b>Full Suite</b><b style="color:var(--acc);font-family:var(--ff-d);font-size:1.1rem;">$599/mo</b></div>
-        </div>
-        <div class="breakdown-save">SAVE ≈ $770/mo — over 56%</div>
-      </div>
+    <div class="sec-head reveal">
+      <div class="eyebrow">Upsell</div>
+      <h2>Already on <em>Meridian?</em></h2>
+      <p class="lede">Upgrade to Meridian OFI and pay the difference. Stacked Imbalance Logic is included with OFI.</p>
     </div>
+    <div id="upgradeMount" style="max-width:720px;"></div>
+  </div>
+</section>
+
+<section class="sec alt" id="courses">
+  <div class="container">
+    <div class="sec-head reveal">
+      <div class="eyebrow">Courses</div>
+      <h2>Masterplans &amp; <em>Academy.</em></h2>
+      <p class="lede">One-time courses, plus Sniper Academy billed monthly or annually. Every paid product includes a 14-day money-back guarantee.</p>
+    </div>
+    <div class="course-grid" id="courseGrid"></div>
+  </div>
+</section>
+
+<section class="sec" id="coming">
+  <div class="container">
+    <div class="sec-head reveal">
+      <div class="eyebrow">Coming soon</div>
+      <h2>Training combos, <em>on the waitlist.</em></h2>
+      <p class="lede">These three packs are not for sale yet. Join the waitlist — this page does not send email and does not charge a card.</p>
+    </div>
+    <div class="mi-grid" id="comingGrid"></div>
   </div>
 </section>
 
@@ -897,18 +605,19 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
       <div class="footer-col">
         <h4>Intelligence</h4>
         <a href="/traderedge_preflight.html">Preflight Protocol</a>
-        <a href="/market_terminal.html">Daily Market Picks</a>
-        <a href="/market_terminal.html#radar">Daily Pre-Run Detection</a>
-        <a href="https://chart-ai.snipertrader.ai">AI Chart Analyzer</a>
-        <a href="/sniper_market_forecaster.html">Market Forecaster</a>
+        <a href="/market_radar.html">Daily Market Radar</a>
+        <a href="/market_forecaster.html">Market Forecaster</a>
+        <a href="/checkout.html#intelligence-suite">Intelligence Suite</a>
       </div>
       <div class="footer-col">
         <h4>Proprietary Algos</h4>
-        <a href="/NoRepaint_Pivot_indicator.html">No Repaint Engine</a>
-        <a href="/USME_ICT_Foundation.html">USME ICT Engine</a>
-        <a href="/Meridian_Engine.html">Meridian Engine</a>
+        <a href="/NoRepaint_Pivot_indicator.html">No Repaint Pivot</a>
+        <a href="/USME_ICT_Core.html">USME ICT Core</a>
         <a href="/USME_VWAP_Elite_Suite.html">USME VWAP Suite</a>
-        <a href="/all_products.html">Academy & Other Products</a>
+        <a href="/Meridian_Engine.html">Meridian Engine</a>
+        <a href="/Meridian_OFI_Engine.html">Meridian OFI Engine</a>
+        <a href="/Meridian_OFI_Stacked_imbalance_logic_Engine.html">Stacked Imbalance Logic</a>
+        <a href="/all_products.html">All Products</a>
       </div>
       <div class="footer-col">
         <h4>Academy</h4>
@@ -953,32 +662,16 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
     <div class="co-items" id="checkoutItems"></div>
     <div class="co-total-row"><span class="l">Total due today</span><span class="v" id="checkoutTotal">$0</span></div>
 
-    <div class="pay-section-label">Payment method</div>
-    <div class="pay-grid">
-      <div class="pay-opt active" data-method="crypto"><span class="pi">₿</span>Crypto</div>
-      <div class="pay-opt" data-method="card"><span class="pi">💳</span>Card</div>
+    <div class="pay-placeholder" id="payPlaceholder">
+      <strong>Payment is not connected.</strong> Nothing on this page charges a card or a wallet. Each line below is a placeholder id the owner must replace in <code>assets/catalog.js</code> before taking money.
+      <ul id="payTodos"></ul>
     </div>
 
-    <div class="crypto-detail visible" id="cryptoDetail">
-      <div class="crypto-detail-head">Select coin · send exact amount</div>
-      <div class="coin-row">
-        <div class="coin-btn active" data-coin="BTC">BTC</div>
-        <div class="coin-btn" data-coin="ETH">ETH</div>
-        <div class="coin-btn" data-coin="USDC">USDC</div>
-        <div class="coin-btn" data-coin="SOL">SOL</div>
-      </div>
-      <div class="addr-label" id="addrLabel">Bitcoin (BTC) Wallet Address</div>
-      <div class="addr-box" id="addrBox" title="Click to copy">
-        <div class="addr-text" id="addrText">bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh</div>
-        <div class="addr-copy">⧉</div>
-      </div>
-    </div>
-
-    <button class="cta-btn" id="completeBtn">Complete Order — $0</button>
+    <button class="cta-btn" id="completeBtn">Review placeholders — $0</button>
     <div class="trust-row">
-      <span class="trust-chip">Instant delivery</span>
-      <span class="trust-chip">BTC · ETH · USDC · SOL</span>
-      <span class="trust-chip">Encrypted</span>
+      <span class="trust-chip">14-day money-back</span>
+      <span class="trust-chip">No live charge</span>
+      <span class="trust-chip">Placeholder price ids</span>
     </div>
   </div>
 </div>
@@ -1036,161 +729,9 @@ document.addEventListener('click',function(e){
   document.querySelectorAll('.reveal').forEach(function(el){obs.observe(el);});
 })();
 
-/* ── Cart logic ──────────────────────────────────────────── */
-(function(){
-  var PLATFORM_KEYS=['pivot','ict','vwap'];       // engines needing a chosen platform
-  var MERIDIAN_PLATFORM='TradingView';
-  var platform=null;
-  var cart={};                                    // key -> {product,plan,price,cadence,platform}
-  var payMethod='crypto';
-  var activeCoin='BTC';
-
-  var CRYPTO_ADDRS={
-    BTC:'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
-    ETH:'0x3A7F9b2c4D5e1F8a0B2C3D4E5F6A7B8C9D0E1F2a',
-    USDC:'0x3A7F9b2c4D5e1F8a0B2C3D4E5F6A7B8C9D0E1F2a',
-    SOL:'DYw8jPZ5LmxJm8b7XnPKkHtnbhZfp5fXfNQUe2oY6dC'
-  };
-  var COIN_NAMES={BTC:'Bitcoin (BTC)',ETH:'Ethereum (ETH)',USDC:'USD Coin (USDC)',SOL:'Solana (SOL)'};
-
-  function toast(msg){
-    var el=document.getElementById('toast'); if(!el)return;
-    el.textContent=msg; el.classList.add('show');
-    clearTimeout(toast._t);
-    toast._t=setTimeout(function(){el.classList.remove('show');},2200);
-  }
-
-  /* platform selector */
-  document.querySelectorAll('.pfm-pill').forEach(function(p){
-    p.addEventListener('click',function(){
-      document.querySelectorAll('.pfm-pill').forEach(function(x){x.classList.remove('selected');});
-      p.classList.add('selected');
-      platform=p.dataset.platform;
-      document.getElementById('platformHint').textContent=
-        'Engines will be delivered for '+platform+'. Market Intelligence & add-ons work on any platform.';
-    });
-  });
-
-  /* plan toggle within each card */
-  document.querySelectorAll('.plan-opt').forEach(function(opt){
-    opt.addEventListener('click',function(){
-      var card=opt.closest('.card');
-      card.querySelectorAll('.plan-opt').forEach(function(o){o.classList.remove('selected');});
-      opt.classList.add('selected');
-    });
-  });
-
-  /* add to order */
-  document.querySelectorAll('.add-btn').forEach(function(btn){
-    btn.addEventListener('click',function(){
-      var card=btn.closest('.card');
-      var key=btn.dataset.card;
-      var selected=card.querySelector('.plan-opt.selected');
-      if(!selected){toast('Choose a plan first');return;}
-      var plat=null;
-      if(PLATFORM_KEYS.indexOf(key)>-1){
-        if(!platform){toast('Pick your platform first');return;}
-        plat=platform;
-      }else if(key==='meridian'){
-        plat=MERIDIAN_PLATFORM;
-      }
-      cart[key]={
-        product:selected.dataset.product,
-        plan:selected.dataset.plan,
-        price:parseFloat(selected.dataset.price),
-        cadence:selected.dataset.cadence||'',
-        platform:plat
-      };
-      btn.classList.add('added'); btn.textContent='✓ IN ORDER';
-      renderCart();
-      toast(selected.dataset.product+' added');
-    });
-  });
-
-  function renderCart(){
-    var entries=Object.entries(cart);
-    var total=entries.reduce(function(s,e){return s+e[1].price;},0);
-    var bar=document.getElementById('cartBar');
-    document.getElementById('cartBarCount').textContent=entries.length;
-    document.getElementById('cartBarTotal').textContent='$'+total.toLocaleString('en-US');
-    document.getElementById('cartBarEmpty').style.display=entries.length?'none':'block';
-    bar.classList.toggle('show',entries.length>0);
-
-    var list=document.getElementById('checkoutItems');
-    if(entries.length===0){list.innerHTML='';}
-    else{
-      list.innerHTML=entries.map(function(e){
-        var key=e[0],it=e[1];
-        return '<div class="co-item">'+
-          '<div><div class="co-item-name">'+it.product+'</div>'+
-          '<div class="co-item-meta">'+(it.platform?it.platform+' · ':'')+it.plan+(it.cadence?' · $'+it.price.toLocaleString()+it.cadence:'')+'</div></div>'+
-          '<div style="display:flex;align-items:center;gap:10px;">'+
-          '<div class="co-item-price">$'+it.price.toLocaleString()+'</div>'+
-          '<button class="co-remove" data-key="'+key+'">✕</button></div></div>';
-      }).join('');
-      list.querySelectorAll('.co-remove').forEach(function(b){
-        b.addEventListener('click',function(){
-          var k=b.dataset.key;
-          delete cart[k];
-          var addBtn=document.querySelector('.add-btn[data-card="'+k+'"]');
-          if(addBtn){addBtn.classList.remove('added');addBtn.textContent=addBtn.dataset.card==='combo'?'+ Add the full suite':(addBtn.dataset.card==='suite'?'+ Add everything':'+ Add');}
-          renderCart(); toast('Item removed');
-        });
-      });
-    }
-    document.getElementById('checkoutTotal').textContent='$'+total.toLocaleString('en-US');
-    document.getElementById('completeBtn').textContent='Complete Order — $'+total.toLocaleString('en-US');
-  }
-
-  /* modal open/close */
-  var modal=document.getElementById('checkoutModal');
-  document.getElementById('openCheckout').addEventListener('click',function(){
-    if(Object.keys(cart).length===0){toast('Add something to your order first');return;}
-    modal.classList.add('active');
-  });
-  document.getElementById('closeCheckout').addEventListener('click',function(){modal.classList.remove('active');});
-  modal.addEventListener('click',function(e){if(e.target===modal)modal.classList.remove('active');});
-
-  /* payment method */
-  document.querySelectorAll('.pay-opt').forEach(function(opt){
-    opt.addEventListener('click',function(){
-      document.querySelectorAll('.pay-opt').forEach(function(o){o.classList.remove('active');});
-      opt.classList.add('active');
-      payMethod=opt.dataset.method;
-      document.getElementById('cryptoDetail').classList.toggle('visible',payMethod==='crypto');
-    });
-  });
-
-  /* coin toggle + copy */
-  document.querySelectorAll('.coin-btn').forEach(function(b){
-    b.addEventListener('click',function(){
-      document.querySelectorAll('.coin-btn').forEach(function(x){x.classList.remove('active');});
-      b.classList.add('active');
-      activeCoin=b.dataset.coin;
-      document.getElementById('addrLabel').textContent=COIN_NAMES[activeCoin]+' Wallet Address';
-      document.getElementById('addrText').textContent=CRYPTO_ADDRS[activeCoin];
-    });
-  });
-  document.getElementById('addrBox').addEventListener('click',function(){
-    var addr=CRYPTO_ADDRS[activeCoin];
-    if(navigator.clipboard){navigator.clipboard.writeText(addr).catch(function(){});}
-    toast(activeCoin+' address copied');
-  });
-
-  /* complete */
-  document.getElementById('completeBtn').addEventListener('click',function(){
-    var items=Object.values(cart);
-    if(!items.length)return;
-    var total=items.reduce(function(s,v){return s+v.price;},0);
-    if(payMethod==='crypto'){
-      toast('Send $'+total.toLocaleString('en-US')+' in '+activeCoin+' to complete');
-    }else{
-      toast('Redirecting to secure card checkout…');
-    }
-  });
-
-  renderCart();
-})();
 </script>
+<script src="/assets/catalog.js"></script>
+<script src="/assets/checkout-ui.js"></script>
+<script>SniperCheckout.init();</script>
 </body>
 </html>
