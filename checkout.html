@@ -178,9 +178,26 @@ h2{font-size:clamp(1.7rem,3.2vw,2.6rem);margin-bottom:14px;}
 .pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
 @media(max-width:1120px){.pricing-grid{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:620px){.pricing-grid{grid-template-columns:1fr;}}
-.engines-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
-@media(max-width:1120px){.engines-grid{grid-template-columns:repeat(2,1fr);}}
-@media(max-width:620px){.engines-grid{grid-template-columns:1fr;}}
+/* explorer (hover-to-preview) */
+.explorer-body{display:grid;grid-template-columns:2fr 3fr;gap:20px;align-items:stretch;}
+@media(max-width:1120px){.explorer-body{grid-template-columns:1fr;}.preview-window{min-height:0;}}
+.product-list{display:flex;flex-direction:column;gap:10px;}
+.product-item{display:flex;align-items:center;gap:16px;padding:17px 20px;border-radius:14px;border:1px solid var(--border);background:var(--card);transition:all .22s;text-align:left;color:inherit;width:100%;}
+.product-item .p-idx{font-family:var(--ff-m);font-size:.66rem;color:var(--text4);width:22px;flex-shrink:0;}
+.product-item .p-body{flex:1;}
+.product-item .p-name{font-size:1.02rem;font-weight:600;color:var(--text);margin-bottom:3px;display:flex;align-items:center;gap:10px;}
+.product-item .p-desc{font-size:.82rem;color:var(--text3);line-height:1.5;}
+.product-item .p-arrow{color:var(--gold);opacity:0;transform:translateX(-4px);transition:all .22s;flex-shrink:0;}
+.product-item:hover,.product-item.active{border-color:var(--border2);background:var(--card2);transform:translateX(4px);}
+.product-item.active .p-arrow,.product-item:hover .p-arrow{opacity:1;transform:translateX(0);}
+.product-item.active{box-shadow:0 10px 30px rgba(0,0,0,.18);}
+.preview-window{min-height:440px;padding:30px;display:flex;flex-direction:column;}
+.pw-kicker{font-family:var(--ff-m);font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;}
+.pw-title{font-family:var(--ff-d);font-size:1.5rem;font-weight:600;margin-bottom:10px;line-height:1.2;}
+.pw-desc{font-size:.92rem;color:var(--text3);line-height:1.65;margin-bottom:20px;}
+.pw-highlights{display:flex;flex-direction:column;gap:8px;margin-bottom:22px;}
+.pw-hl{display:flex;align-items:center;gap:10px;font-size:.86rem;color:var(--text2);}
+.pw-hl::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--emerald);flex-shrink:0;margin-top:1px;}
 .mi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
 @media(max-width:900px){.mi-grid{grid-template-columns:1fr;}}
 
@@ -494,7 +511,7 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
   <div class="container">
     <div class="sec-head reveal">
       <div class="eyebrow">Proprietary Engines</div>
-      <h2>Five engines. <em>One edge each.</em></h2>
+      <h2>Six engines. <em>One edge each.</em></h2>
       <p class="lede">Each engine ships for its platform and includes its full companion course, free. Pick your platform, then add the engines you want — monthly or annual.</p>
     </div>
 
@@ -504,141 +521,11 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
       <button class="pfm-pill" data-platform="TradingView">TradingView</button>
       <button class="pfm-pill" data-platform="NinjaTrader">NinjaTrader</button>
     </div>
-    <p class="platform-hint reveal" id="platformHint">Engines are delivered for the platform you select. Market Intelligence, bundles &amp; add-ons work on any platform.</p>
+    <p class="platform-hint reveal" id="platformHint">Engines are delivered for the platform you select. Market Intelligence, bundles &amp; training combos work on any platform.</p>
 
-    <div class="engines-grid">
-
-      <!-- PIVOT -->
-      <div class="card pivot reveal">
-        <div class="card-body">
-          <div class="card-top"><div class="card-icon">🎯</div><div class="card-tier">Engine 01</div></div>
-          <h3>No Repaint Pivot</h3>
-          <div class="card-desc">Confirmed-at-close pivot signals with anchored VWAP bands — bars never repaint.</div>
-          <ul class="card-features">
-            <li>100% non-repainting entry markers</li>
-            <li>Elite / Prime / Standard scoring</li>
-            <li>Trend cloud + triple EMA confluence<span class="free">FREE COURSE</span></li>
-          </ul>
-          <div class="card-platforms"><span class="plat-tag">ThinkorSwim</span><span class="plat-tag">TradingView</span></div>
-          <div class="plan-toggle">
-            <div class="plan-opt selected" data-product="No Repaint Pivot" data-plan="Monthly" data-price="79" data-cadence="/mo">
-              <div class="po-name">Monthly</div><div class="po-price">$79<sub>/mo</sub></div>
-            </div>
-            <div class="plan-opt" data-product="No Repaint Pivot" data-plan="Annual" data-price="599" data-cadence="/yr">
-              <span class="save-chip">SAVE 37%</span>
-              <div class="po-name">Annual</div><div class="po-price">$599<sub>/yr</sub></div>
-              <div class="po-note">≈ $49.92/mo</div>
-            </div>
-          </div>
-          <button class="add-btn" data-card="pivot">+ Add to order</button>
-        </div>
-      </div>
-
-      <!-- ICT CORE -->
-      <div class="card ict reveal">
-        <div class="card-body">
-          <div class="card-top"><div class="card-icon">🧠</div><div class="card-tier">Engine 02</div></div>
-          <h3>USME ICT Core</h3>
-          <div class="card-desc">Automated Smart Money Concepts — the 3-Gate model from context to entry.</div>
-          <ul class="card-features">
-            <li>3-Gate Model: Context → Liquidity → Entry</li>
-            <li>BUY / SELL · sweep · MSS alerts</li>
-            <li>ICT Core Course included<span class="free">FREE COURSE</span></li>
-          </ul>
-          <div class="card-platforms"><span class="plat-tag">ThinkorSwim</span><span class="plat-tag">TradingView</span><span class="plat-tag">NinjaTrader</span></div>
-          <div class="plan-toggle">
-            <div class="plan-opt selected" data-product="USME ICT Core" data-plan="Monthly" data-price="199" data-cadence="/mo">
-              <div class="po-name">Monthly</div><div class="po-price">$199<sub>/mo</sub></div>
-            </div>
-            <div class="plan-opt" data-product="USME ICT Core" data-plan="Annual" data-price="1990" data-cadence="/yr">
-              <span class="save-chip">SAVE 17%</span>
-              <div class="po-name">Annual</div><div class="po-price">$1,990<sub>/yr</sub></div>
-              <div class="po-note">≈ $165.83/mo</div>
-            </div>
-          </div>
-          <button class="add-btn" data-card="ict">+ Add to order</button>
-        </div>
-      </div>
-
-      <!-- VWAP -->
-      <div class="card vwap reveal">
-        <div class="card-body">
-          <div class="card-top"><div class="card-icon">📡</div><div class="card-tier">Engine 03</div></div>
-          <h3>USME VWAP Suite</h3>
-          <div class="card-desc">Multi-anchor VWAP with deviation bands and graded institutional conviction.</div>
-          <ul class="card-features">
-            <li>Session / weekly / custom anchors</li>
-            <li>±1σ / ±2σ deviation bands</li>
-            <li>VWAP Suite Course included<span class="free">FREE COURSE</span></li>
-          </ul>
-          <div class="card-platforms"><span class="plat-tag">ThinkorSwim</span><span class="plat-tag">TradingView</span><span class="plat-tag">NinjaTrader</span></div>
-          <div class="plan-toggle">
-            <div class="plan-opt selected" data-product="USME VWAP Suite" data-plan="Monthly" data-price="249" data-cadence="/mo">
-              <div class="po-name">Monthly</div><div class="po-price">$249<sub>/mo</sub></div>
-            </div>
-            <div class="plan-opt" data-product="USME VWAP Suite" data-plan="Annual" data-price="2490" data-cadence="/yr">
-              <span class="save-chip">SAVE 17%</span>
-              <div class="po-name">Annual</div><div class="po-price">$2,490<sub>/yr</sub></div>
-              <div class="po-note">≈ $207.50/mo</div>
-            </div>
-          </div>
-          <button class="add-btn" data-card="vwap">+ Add to order</button>
-        </div>
-      </div>
-
-      <!-- MERIDIAN -->
-      <div class="card meridian reveal">
-        <div class="card-body">
-          <div class="card-top"><div class="card-icon">🧭</div><div class="card-tier">Engine 04</div></div>
-          <h3>Meridian Engine</h3>
-          <div class="card-desc">Regime-aware event lattice with a liquidity memory map — graded WATCH to SINGULAR.</div>
-          <ul class="card-features">
-            <li>Regime-aware event lattice</li>
-            <li>Liquidity memory map + magnets</li>
-            <li>Meridian Mastery Course included<span class="free">FREE COURSE</span></li>
-          </ul>
-          <div class="card-platforms"><span class="plat-tag">TradingView · Pine v6</span></div>
-          <div class="plan-toggle">
-            <div class="plan-opt selected" data-product="Meridian Engine" data-plan="Monthly" data-price="449" data-cadence="/mo">
-              <div class="po-name">Monthly</div><div class="po-price">$449<sub>/mo</sub></div>
-            </div>
-            <div class="plan-opt" data-product="Meridian Engine" data-plan="Annual" data-price="4490" data-cadence="/yr">
-              <span class="save-chip">SAVE 17%</span>
-              <div class="po-name">Annual</div><div class="po-price">$4,490<sub>/yr</sub></div>
-              <div class="po-note">≈ $374.17/mo</div>
-            </div>
-          </div>
-          <button class="add-btn" data-card="meridian">+ Add to order</button>
-        </div>
-      </div>
-
-      <!-- MERIDIAN OFI -->
-      <div class="card ofi reveal">
-        <div class="badge-pop">FLAGSHIP</div>
-        <div class="card-body">
-          <div class="card-top"><div class="card-icon">🔬</div><div class="card-tier">Engine 05 · Apex</div></div>
-          <h3>Meridian OFI Engine</h3>
-          <div class="card-desc">Full order-flow intelligence — CVD, absorption, imbalance &amp; stacked imbalance logic on the Meridian lattice.</div>
-          <ul class="card-features">
-            <li>CVD · absorption · imbalance detection</li>
-            <li>Stacked Imbalance Logic</li>
-            <li>Stacked Imbalance deep-dive included<span class="free">FREE COURSE</span></li>
-          </ul>
-          <div class="card-platforms"><span class="plat-tag">TradingView · Pine v6</span></div>
-          <div class="plan-toggle">
-            <div class="plan-opt selected" data-product="Meridian OFI Engine" data-plan="Monthly" data-price="599" data-cadence="/mo">
-              <div class="po-name">Monthly</div><div class="po-price">$599<sub>/mo</sub></div>
-            </div>
-            <div class="plan-opt" data-product="Meridian OFI Engine" data-plan="Annual" data-price="5990" data-cadence="/yr">
-              <span class="save-chip">SAVE 17%</span>
-              <div class="po-name">Annual</div><div class="po-price">$5,990<sub>/yr</sub></div>
-              <div class="po-note">≈ $499.17/mo</div>
-            </div>
-          </div>
-          <button class="add-btn" data-card="ofi">+ Add to order</button>
-        </div>
-      </div>
-
+    <div class="explorer-body reveal">
+      <div class="product-list" id="engineList"></div>
+      <div class="glass preview-window" id="enginePreview"></div>
     </div>
   </div>
 </section>
@@ -762,9 +649,9 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
       <div class="card-body">
         <div class="card-top"><div class="card-icon">🚀</div><div class="card-tier">Everything · Full Suite</div></div>
         <h3>The complete <em>SniperTrader stack.</em></h3>
-        <div class="card-desc">All five engines + the full Market Intelligence Suite in one subscription — every edge, every course, one calm bill.</div>
+        <div class="card-desc">All six engines + the full Market Intelligence Suite in one subscription — every edge, every course, one calm bill.</div>
         <ul class="card-features">
-          <li>All 5 engines (No Repaint → Meridian OFI)</li>
+          <li>All 6 engines (No Repaint → Meridian OFI Stacked Imbalance)</li>
           <li>Full Market Intelligence Suite</li>
           <li>Every companion course included</li>
         </ul>
@@ -781,13 +668,13 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
         <button class="add-btn" data-card="fullsuite">+ Add everything</button>
       </div>
       <div class="wide-side">
-        <div class="card-tier" style="margin-bottom:12px;">Everything à la carte ≈ $1,694/mo</div>
+        <div class="card-tier" style="margin-bottom:12px;">Everything à la carte ≈ $2,093/mo</div>
         <div class="breakdown">
-          <div class="breakdown-row"><span>5 Engines (monthly)</span><span class="bd-price">$1,575</span></div>
+          <div class="breakdown-row"><span>6 Engines (monthly)</span><span class="bd-price">$1,974</span></div>
           <div class="breakdown-row"><span>Market Intelligence Suite</span><span class="bd-price">$119</span></div>
           <div class="breakdown-row" style="border-bottom:none;"><b>Full Suite</b><b style="color:var(--acc);font-family:var(--ff-d);font-size:1.1rem;">$899/mo</b></div>
         </div>
-        <div class="breakdown-save">SAVE $795/mo — 47% off</div>
+        <div class="breakdown-save">SAVE $1,194/mo — 57% off</div>
       </div>
     </div>
 
@@ -820,8 +707,9 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
         <div class="card-body">
           <div class="card-top"><div class="card-icon">🧠</div><div class="card-tier">Bundle · Smart Money</div></div>
           <h3>Smart Money Stack</h3>
-          <div class="card-desc">USME ICT Core + USME VWAP Suite + Market Intelligence Suite.</div>
+          <div class="card-desc">No Repaint Pivot + USME ICT Core + USME VWAP Suite + Market Intelligence Suite.</div>
           <ul class="card-features">
+            <li>No Repaint Pivot Engine</li>
             <li>USME ICT Core Engine</li>
             <li>USME VWAP Suite Engine</li>
             <li>Market Intelligence Suite</li>
@@ -842,18 +730,19 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
       <div class="card bundle reveal">
         <div class="card-body">
           <div class="card-top"><div class="card-icon">🔬</div><div class="card-tier">Bundle · Flagship</div></div>
-          <h3>Flagship Meridian OFI</h3>
-          <div class="card-desc">Meridian OFI Engine + Market Intelligence Suite.</div>
+          <h3>Flagship Meridian</h3>
+          <div class="card-desc">All three Meridian engines + Market Intelligence Suite.</div>
           <ul class="card-features">
+            <li>Meridian Engine</li>
             <li>Meridian OFI Engine</li>
+            <li>Meridian OFI — Stacked Imbalance Logic</li>
             <li>Market Intelligence Suite</li>
-            <li>Stacked Imbalance deep-dive</li>
           </ul>
           <div class="plan-toggle">
-            <div class="plan-opt selected" data-product="Flagship Meridian OFI Bundle" data-plan="Monthly" data-price="649" data-cadence="/mo">
+            <div class="plan-opt selected" data-product="Flagship Meridian Bundle" data-plan="Monthly" data-price="649" data-cadence="/mo">
               <div class="po-name">Monthly</div><div class="po-price">$649<sub>/mo</sub></div>
             </div>
-            <div class="plan-opt" data-product="Flagship Meridian OFI Bundle" data-plan="Annual" data-price="6490" data-cadence="/yr">
+            <div class="plan-opt" data-product="Flagship Meridian Bundle" data-plan="Annual" data-price="6490" data-cadence="/yr">
               <span class="save-chip">SAVE 17%</span>
               <div class="po-name">Annual</div><div class="po-price">$6,490<sub>/yr</sub></div>
             </div>
@@ -1100,7 +989,7 @@ document.addEventListener('click',function(e){
 /* ── Cart logic ──────────────────────────────────────────── */
 (function(){
   var PLATFORM_KEYS=['pivot','ict','vwap'];       // engines needing a chosen platform
-  var TV_KEYS=['meridian','ofi'];                 // TradingView-only engines
+  var TV_KEYS=['meridian','ofi','ofi_sib'];       // TradingView-only engines
   var platform=null;
   var cart={};                                    // key -> {product,plan,price,cadence,platform}
   var payMethod='crypto';
@@ -1128,7 +1017,7 @@ document.addEventListener('click',function(e){
       p.classList.add('selected');
       platform=p.dataset.platform;
       document.getElementById('platformHint').textContent=
-        'Engines will be delivered for '+platform+'. Market Intelligence, bundles & add-ons work on any platform.';
+        'Engines will be delivered for '+platform+'. Market Intelligence, bundles & training combos work on any platform.';
     });
   });
 
@@ -1141,32 +1030,134 @@ document.addEventListener('click',function(e){
     });
   });
 
-  /* add to order */
+  /* shared add-to-order */
+  function addKey(key, selected){
+    if(!selected){toast('Choose a plan first');return;}
+    var plat=null;
+    if(PLATFORM_KEYS.indexOf(key)>-1){
+      if(!platform){toast('Pick your platform first');return;}
+      plat=platform;
+    }else if(TV_KEYS.indexOf(key)>-1){
+      plat='TradingView';
+    }
+    cart[key]={
+      product:selected.dataset.product,
+      plan:selected.dataset.plan,
+      price:parseFloat(selected.dataset.price),
+      cadence:selected.dataset.cadence||'',
+      platform:plat
+    };
+    var btn=document.querySelector('.add-btn[data-card="'+key+'"]');
+    if(btn){btn.classList.add('added');btn.textContent='✓ IN ORDER';}
+    renderCart();
+    toast(selected.dataset.product+' added');
+  }
+
+  /* static cards: add */
   document.querySelectorAll('.add-btn').forEach(function(btn){
     btn.addEventListener('click',function(){
       var card=btn.closest('.card');
-      var key=btn.dataset.card;
-      var selected=card.querySelector('.plan-opt.selected');
-      if(!selected){toast('Choose a plan first');return;}
-      var plat=null;
-      if(PLATFORM_KEYS.indexOf(key)>-1){
-        if(!platform){toast('Pick your platform first');return;}
-        plat=platform;
-      }else if(TV_KEYS.indexOf(key)>-1){
-        plat='TradingView';
-      }
-      cart[key]={
-        product:selected.dataset.product,
-        plan:selected.dataset.plan,
-        price:parseFloat(selected.dataset.price),
-        cadence:selected.dataset.cadence||'',
-        platform:plat
-      };
-      btn.classList.add('added'); btn.textContent='✓ IN ORDER';
-      renderCart();
-      toast(selected.dataset.product+' added');
+      addKey(btn.dataset.card, card.querySelector('.plan-opt.selected'));
     });
   });
+
+  /* ── Engines explorer (hover-to-preview) ── */
+  var ENGINES=[
+    {key:'pivot', icon:'🎯', tier:'Engine 01', name:'No Repaint Pivot',
+     desc:'Confirmed-at-close pivot signals with anchored VWAP bands — bars never repaint.',
+     features:['100% non-repainting entry markers','Elite / Prime / Standard scoring','Trend cloud + triple EMA confluence · FREE COURSE'],
+     platforms:['ThinkorSwim','TradingView'],
+     monthly:79, annual:599, save:'SAVE 37%', note:'≈ $49.92/mo'},
+    {key:'ict', icon:'🧠', tier:'Engine 02', name:'USME ICT Core',
+     desc:'Automated Smart Money Concepts — the 3-Gate model from context to entry.',
+     features:['3-Gate Model: Context → Liquidity → Entry','BUY / SELL · sweep · MSS alerts','ICT Core Course included · FREE COURSE'],
+     platforms:['ThinkorSwim','TradingView','NinjaTrader'],
+     monthly:199, annual:1990, save:'SAVE 17%', note:'≈ $165.83/mo'},
+    {key:'vwap', icon:'📡', tier:'Engine 03', name:'USME VWAP Suite',
+     desc:'Multi-anchor VWAP with deviation bands and graded institutional conviction.',
+     features:['Session / weekly / custom anchors','±1σ / ±2σ deviation bands','VWAP Suite Course included · FREE COURSE'],
+     platforms:['ThinkorSwim','TradingView','NinjaTrader'],
+     monthly:249, annual:2490, save:'SAVE 17%', note:'≈ $207.50/mo'},
+    {key:'meridian', icon:'🧭', tier:'Engine 04', name:'Meridian Engine',
+     desc:'Regime-aware event lattice with a liquidity memory map — graded WATCH to SINGULAR.',
+     features:['Regime-aware event lattice','Liquidity memory map + magnets','Meridian Mastery Course included · FREE COURSE'],
+     platforms:['TradingView · Pine v6'],
+     monthly:449, annual:4490, save:'SAVE 17%', note:'≈ $374.17/mo'},
+    {key:'ofi', icon:'🔬', tier:'Engine 05 · Apex', name:'Meridian OFI Engine',
+     desc:'Full order-flow intelligence — CVD, absorption, imbalance & stacked imbalance logic on the Meridian lattice.',
+     features:['CVD · absorption · imbalance detection','Stacked Imbalance Logic','Stacked Imbalance deep-dive included · FREE COURSE'],
+     platforms:['TradingView · Pine v6'],
+     monthly:499, annual:4990, save:'SAVE 17%', note:'≈ $415.83/mo'},
+    {key:'ofi_sib', icon:'🧬', tier:'Engine 06 · Apex', name:'Meridian OFI — Stacked Imbalance Logic',
+     desc:'The deepest order-flow read — stacked imbalance logic layered onto the Meridian lattice.',
+     features:['Stacked Imbalance Logic engine','Meridian lattice integration','Stacked Imbalance deep-dive included · FREE COURSE'],
+     platforms:['TradingView · Pine v6'],
+     monthly:499, annual:4990, save:'SAVE 17%', note:'≈ $415.83/mo'}
+  ];
+
+  function renderEngineList(){
+    var list=document.getElementById('engineList'); if(!list)return;
+    list.innerHTML=ENGINES.map(function(e,i){
+      return '<button class="product-item'+(i===0?' active':'')+'" data-key="'+e.key+'">'+
+        '<span class="p-idx">'+(i<9?'0':'')+(i+1)+'</span>'+
+        '<span class="p-body"><span class="p-name">'+e.name+'</span><span class="p-desc">'+e.desc+'</span></span>'+
+        '<span class="p-arrow">→</span></button>';
+    }).join('');
+  }
+
+  function previewEngine(key, pin){
+    var e=ENGINES.filter(function(x){return x.key===key;})[0];
+    if(!e)return;
+    if(pin){
+      document.querySelectorAll('#engineList .product-item').forEach(function(el){el.classList.toggle('active',el.dataset.key===key);});
+    }
+    var added=!!cart[key];
+    var win=document.getElementById('enginePreview'); if(!win)return;
+    var platTags=e.platforms.map(function(p){return '<span class="plat-tag">'+p+'</span>';}).join('');
+    win.innerHTML=
+      '<div class="pw-kicker">Proprietary Engines · '+e.tier+'</div>'+
+      '<div class="pw-title">'+e.name+'</div>'+
+      '<div class="pw-desc">'+e.desc+'</div>'+
+      '<div class="card-platforms">'+platTags+'<span class="plat-tag" style="color:var(--emerald);border-color:rgba(0,229,160,.3);">Companion course · FREE</span></div>'+
+      '<div class="pw-highlights">'+e.features.map(function(f){return '<div class="pw-hl">'+f+'</div>';}).join('')+'</div>'+
+      '<div class="plan-toggle">'+
+        '<div class="plan-opt selected" data-product="'+e.name+'" data-plan="Monthly" data-price="'+e.monthly+'" data-cadence="/mo">'+
+          '<div class="po-name">Monthly</div><div class="po-price">$'+e.monthly+'<sub>/mo</sub></div>'+
+        '</div>'+
+        '<div class="plan-opt" data-product="'+e.name+'" data-plan="Annual" data-price="'+e.annual+'" data-cadence="/yr">'+
+          '<span class="save-chip">'+e.save+'</span>'+
+          '<div class="po-name">Annual</div><div class="po-price">$'+e.annual.toLocaleString()+'<sub>/yr</sub></div>'+
+          '<div class="po-note">'+e.note+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<button class="add-btn" data-card="'+e.key+'">'+(added?'✓ IN ORDER':'+ Add to order')+'</button>';
+  }
+
+  var engineList=document.getElementById('engineList');
+  if(engineList){
+    engineList.addEventListener('click',function(ev){
+      var item=ev.target.closest('.product-item'); if(item){previewEngine(item.dataset.key,true);}
+    });
+    engineList.addEventListener('mouseover',function(ev){
+      var item=ev.target.closest('.product-item'); if(item){previewEngine(item.dataset.key,false);}
+    });
+  }
+  var enginePreview=document.getElementById('enginePreview');
+  if(enginePreview){
+    enginePreview.addEventListener('click',function(ev){
+      var opt=ev.target.closest('.plan-opt');
+      if(opt){
+        enginePreview.querySelectorAll('.plan-opt').forEach(function(o){o.classList.remove('selected');});
+        opt.classList.add('selected');
+        return;
+      }
+      var btn=ev.target.closest('.add-btn');
+      if(btn){ addKey(btn.dataset.card, enginePreview.querySelector('.plan-opt.selected')); }
+    });
+  }
+
+  renderEngineList();
+  previewEngine('pivot', true);
 
   /* coming-soon notify */
   document.querySelectorAll('.notify-btn').forEach(function(b){
@@ -1211,6 +1202,7 @@ document.addEventListener('click',function(e){
     if(k==='combo')return '+ Add the full suite';
     if(k==='fullsuite')return '+ Add everything';
     if(k==='starter'||k==='smartmoney'||k==='flagship')return '+ Add bundle';
+    if(['pivot','ict','vwap','meridian','ofi','ofi_sib'].indexOf(k)>-1)return '+ Add to order';
     return '+ Add';
   }
 
