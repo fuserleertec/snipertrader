@@ -57,7 +57,7 @@ Zero new serverless functions were added; the Hobby 12-function cap is untouched
 | Market Intelligence Engine | Intelligence Feed | mock (SIMULATION) + `alerts` |
 | ML Screener | Signal Log | `sessions` (pagination, filter, CSV export) |
 | Pre-Market Scan | Pre-Flight Status | `preflights` (empty → CTA) |
-| AI Chart Analyzer | Chart Analysis History | mock (SIMULATION) |
+| Intelligence Suite | Chart Analysis History | mock (SIMULATION) |
 | Psychology Gate | Discipline Dashboard | `overview` + `modules` + `alerts` |
 | — | Prop Firm Command Center | `propFirms` + live prop |
 | — | License & Billing | `licenses` + `billing` + downloads |
