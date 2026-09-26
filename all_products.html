@@ -230,6 +230,62 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
 .footer-bottom{border-top:1px solid var(--border);padding-top:24px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-family:var(--ff-m);font-size:.68rem;color:var(--text4);}
 .footer-disclaimer{max-width:820px;font-size:.72rem;color:var(--text4);line-height:1.65;margin-top:16px;opacity:.8;}
 
+/* ── Explorer (THE PRECISION SUITE) ──────────────────────── */
+#explorer{padding:96px 0;background:var(--bg2);}
+.explorer-head{text-align:center;max-width:640px;margin:0 auto 52px;}
+.explorer-head .eyebrow{justify-content:center;}
+.explorer-head h2{margin-bottom:14px;}
+.explorer-head .lede{margin:0 auto;}
+.cat-tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:36px;}
+.cat-tab{padding:11px 22px;border-radius:26px;border:1px solid var(--border);font-size:.9rem;font-weight:600;color:var(--text3);background:var(--card);transition:all .22s;}
+.cat-tab:hover{color:var(--text);border-color:var(--border2);}
+.cat-tab.active{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#020408;border-color:transparent;box-shadow:0 8px 24px rgba(240,192,64,.24);}
+.explorer-body{display:grid;grid-template-columns:2fr 3fr;gap:20px;align-items:stretch;}
+.product-list{display:flex;flex-direction:column;gap:10px;}
+.product-item{display:flex;align-items:center;gap:16px;padding:17px 20px;border-radius:14px;border:1px solid var(--border);background:var(--card);transition:all .22s;text-align:left;}
+.product-item .p-idx{font-family:var(--ff-m);font-size:.66rem;color:var(--text4);width:22px;flex-shrink:0;}
+.product-item .p-body{flex:1;}
+.product-item .p-name{font-size:1.02rem;font-weight:600;color:var(--text);margin-bottom:3px;display:flex;align-items:center;gap:10px;}
+.product-item .p-desc{font-size:.82rem;color:var(--text3);line-height:1.5;}
+.product-item .p-arrow{color:var(--gold);opacity:0;transform:translateX(-4px);transition:all .22s;flex-shrink:0;}
+.product-item:hover,.product-item.active{border-color:var(--border2);background:var(--card2);transform:translateX(4px);}
+.product-item.active .p-arrow,.product-item:hover .p-arrow{opacity:1;transform:translateX(0);}
+.product-item.active{box-shadow:0 10px 30px rgba(0,0,0,.18);}
+.preview-window{min-height:440px;padding:30px;display:flex;flex-direction:column;}
+.pw-kicker{font-family:var(--ff-m);font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;}
+.pw-title{font-size:1.6rem;margin-bottom:10px;}
+.pw-desc{font-size:.92rem;color:var(--text3);line-height:1.65;margin-bottom:20px;}
+.pw-viz{flex:1;border:1px solid var(--border);border-radius:14px;background:var(--card);padding:18px;margin-bottom:20px;overflow:hidden;position:relative;}
+.pw-viz-label{position:absolute;top:12px;right:14px;font-family:var(--ff-m);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text4);}
+.pw-highlights{display:flex;flex-direction:column;gap:8px;margin-bottom:22px;}
+.pw-hl{display:flex;align-items:center;gap:10px;font-size:.86rem;color:var(--text2);}
+.pw-hl::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--emerald);flex-shrink:0;}
+.pw-cta{align-self:flex-start;}
+/* preview mini-visuals */
+.viz-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border);}
+.viz-row:last-child{border-bottom:none;}
+.viz-row .vr-sym{font-weight:700;font-size:.92rem;}
+.viz-row .vr-name{font-size:.78rem;color:var(--text3);}
+.viz-bar{height:6px;border-radius:4px;background:var(--bg3);overflow:hidden;margin-top:6px;}
+.viz-bar span{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--emerald),var(--gold));}
+.viz-gauge{display:flex;align-items:center;gap:18px;}
+.viz-gauge .vg-track{flex:1;height:10px;border-radius:6px;background:var(--bg3);position:relative;}
+.viz-gauge .vg-track::after{content:'';position:absolute;left:0;top:0;bottom:0;width:var(--p,60%);border-radius:6px;background:linear-gradient(90deg,var(--emerald),var(--gold));}
+.viz-gauge .vg-val{font-size:1.3rem;font-weight:700;font-family:var(--ff-d);}
+.viz-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.viz-tile{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:13px;}
+.viz-tile .vt-l{font-family:var(--ff-m);font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text4);}
+.viz-tile .vt-v{font-size:1rem;font-weight:700;margin-top:3px;}
+.viz-tile .vt-v.gold{color:var(--gold);}.viz-tile .vt-v.sage{color:var(--emerald);}
+.viz-chips{display:flex;gap:8px;flex-wrap:wrap;}
+.viz-chips span{padding:5px 12px;border-radius:20px;border:1px solid var(--border);font-family:var(--ff-m);font-size:.62rem;color:var(--text3);}
+.viz-chips span.on{border-color:var(--border2);color:var(--gold);}
+.viz-status{display:flex;align-items:center;gap:12px;padding:14px;border-radius:12px;background:var(--card2);border:1px solid var(--border);}
+.viz-status .live-dot{width:9px;height:9px;}
+.viz-status .vs-t{font-size:.9rem;font-weight:600;}
+.viz-status .vs-s{font-size:.78rem;color:var(--text3);}
+@media (max-width:1080px){.explorer-body{grid-template-columns:1fr;}.preview-window{min-height:0;}}
+
 /* ── Reveal ───────────────────────────────────────────────── */
 .reveal{opacity:0;transform:translateY(26px);transition:opacity .65s ease,transform .65s ease;}
 .reveal.in{opacity:1;transform:translateY(0);}
@@ -320,14 +376,15 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
   <div class="container hero-inner">
     <div>
       <div class="eyebrow">Market Intelligence Sniper System</div>
-      <h1 class="hero-title">Every product. <em>One system.</em></h1>
-      <p class="hero-sub">The complete SniperTrader catalog — proprietary trading algos, funded-challenge masterplans, and free tools, all on one page.</p>
+      <h1 class="hero-title">The Precision <em>Suite.</em></h1>
+      <p class="hero-sub">One page. Every tool. Hover any product to preview it instantly — no page loads, no dead ends. Evaluate the entire catalog in under thirty seconds.</p>
       <div class="hero-cta">
-        <a class="btn btn-primary" href="#algos">Explore the Algos</a>
-        <a class="btn btn-outline" href="#tools">View Free Tools</a>
+        <a class="btn btn-primary" href="#explorer">Explore the Suite</a>
+        <a class="btn btn-outline" href="#explorer">Browse the Catalog</a>
       </div>
       <div class="hero-trust">
-        <div class="trust-item"><span class="t-label">Algos</span><span class="t-value">4 proprietary engines</span></div>
+        <div class="trust-item"><span class="t-label">Market Intelligence</span><span class="t-value">3 modules</span></div>
+        <div class="trust-item"><span class="t-label">Algos</span><span class="t-value">6 proprietary engines</span></div>
         <div class="trust-item"><span class="t-label">Masterplans</span><span class="t-value">4 funded blueprints</span></div>
         <div class="trust-item"><span class="t-label">Tools</span><span class="t-value">5 free tools</span></div>
       </div>
@@ -336,7 +393,7 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
       <div class="dash-top">
         <div class="dash-dots"><i></i><i></i><i></i></div>
         <span class="dash-title">System Catalog</span>
-        <span class="dash-live"><span class="live-dot"></span>13 Products</span>
+        <span class="dash-live"><span class="live-dot"></span>18 Products</span>
       </div>
       <div class="dash-asset">
         <span class="sym">USME Suite — Full Stack</span>
@@ -344,7 +401,11 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
       </div>
       <div class="cat-rows">
         <div class="cat-row">
-          <div class="cr-top"><span class="cr-name">Proprietary Trading Algos</span><span class="cr-n">04</span></div>
+          <div class="cr-top"><span class="cr-name">Market Intelligence</span><span class="cr-n">03</span></div>
+          <div class="cr-bar"><span style="width:100%"></span></div>
+        </div>
+        <div class="cat-row">
+          <div class="cr-top"><span class="cr-name">Proprietary Trading Algos</span><span class="cr-n">06</span></div>
           <div class="cr-bar"><span style="width:100%"></span></div>
         </div>
         <div class="cat-row">
@@ -360,203 +421,23 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
   </div>
 </section>
 
-<!-- SECTION 1 — PROPRIETARY TRADING ALGOS -->
-<section id="algos">
+<!-- EXPLORER (THE PRECISION SUITE) -->
+<section id="explorer">
   <div class="container">
-    <div class="sec-head reveal">
-      <div class="eyebrow">Proprietary Trading Algos</div>
-      <h2>Execution, without the noise.</h2>
-      <p class="lede">Clean chart overlays that confirm at the close — built for absolute entry precision. Each engine ships with a companion course so you learn the framework behind the signal. Tap any card to expand.</p>
+    <div class="explorer-head reveal">
+      <div class="eyebrow" style="justify-content:center">The Precision Suite</div>
+      <h2>One page. Every tool.</h2>
+      <p class="lede">Hover any product to preview it instantly — no page loads, no dead ends. Evaluate the entire catalog in under thirty seconds.</p>
     </div>
-    <div class="algo-grid">
-      <div class="algo-card reveal">
-        <div class="ac-viz">
-          <svg viewBox="0 0 300 120" width="100%" height="120" preserveAspectRatio="none" role="img" aria-label="No-repaint entry markers">
-            <path d="M0,90 C30,84 60,50 90,60 C120,70 150,40 180,46 C210,52 240,30 300,24" fill="none" stroke="#DCE8F2" stroke-width="1.8"/>
-            <path d="M90,60 L90,96" stroke="#00E5A0" stroke-width="1.4"/><path d="M90,96 h14" stroke="#00E5A0" stroke-width="2"/><circle cx="90" cy="60" r="4" fill="#00E5A0"/>
-            <path d="M210,46 L210,80" stroke="#F0C040" stroke-width="1.4"/><path d="M210,80 h14" stroke="#F0C040" stroke-width="2"/><circle cx="210" cy="46" r="4" fill="#F0C040"/>
-          </svg>
-        </div>
-        <div class="ac-body">
-          <div class="ac-plat"><span class="tag">TradingView</span><span class="tag">MT5</span></div>
-          <h3>No Repaint Indicator</h3>
-          <p>Non-repainting swing pivots, anchored VWAP bands, and a triple-EMA trend cloud — confirmed only at bar close.</p>
-          <button class="ac-toggle" onclick="toggleAlgo(this)">Details <span class="caret">▾</span></button>
-          <div class="ac-detail">
-            <ul>
-              <li>100% non-repainting signal execution</li>
-              <li>Adjustable risk profiles</li>
-              <li>Custom push &amp; Discord alerts</li>
-            </ul>
-            <div class="ac-cta-row">
-              <a class="btn btn-primary" style="padding:11px 22px;font-size:.82rem" href="/NoRepaint_Pivot_indicator.html">Get Indicator Access</a>
-              <a class="btn btn-outline" style="padding:11px 22px;font-size:.82rem" href="/NoRepaint_Pivot_Course.html">Companion Course →</a>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="algo-card reveal">
-        <div class="ac-viz">
-          <svg viewBox="0 0 300 120" width="100%" height="120" preserveAspectRatio="none" role="img" aria-label="Smart Money Concepts overlay">
-            <path d="M0,30 C30,34 60,64 90,60 C120,56 150,26 180,30 C210,34 240,64 300,60" fill="none" stroke="#DCE8F2" stroke-width="1.8"/>
-            <rect x="120" y="26" width="34" height="30" rx="3" fill="rgba(0,229,160,.16)" stroke="#00E5A0" stroke-opacity=".6"/>
-            <path d="M60,64 L40,40" stroke="#F0C040" stroke-width="1.6"/>
-            <circle cx="40" cy="40" r="3.4" fill="#F0C040"/>
-            <text x="8" y="34" font-family="monospace" font-size="9" fill="#9BB5C8">LIQ SWEEP</text>
-          </svg>
-        </div>
-        <div class="ac-body">
-          <div class="ac-plat"><span class="tag">TradingView</span><span class="tag">MT5</span></div>
-          <h3>USME ICT Core Engine</h3>
-          <p>Automated Smart Money Concepts — the 3-Gate Model: HTF bias, session filter, liquidity sweep + displacement + MSS, and VWAP-confluent FVG/OB entries.</p>
-          <button class="ac-toggle" onclick="toggleAlgo(this)">Details <span class="caret">▾</span></button>
-          <div class="ac-detail">
-            <ul>
-              <li>Automated liquidity pool tracking</li>
-              <li>Premium / discount array mapping</li>
-              <li>Silver Bullet setup finder</li>
-            </ul>
-            <div class="ac-cta-row">
-              <a class="btn btn-primary" style="padding:11px 22px;font-size:.82rem" href="/USME_ICT_Core.html">Load ICT Engine</a>
-              <a class="btn btn-outline" style="padding:11px 22px;font-size:.82rem" href="/USME_ICT_Core_Course.html">Companion Course →</a>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="algo-card reveal">
-        <div class="ac-viz">
-          <svg viewBox="0 0 300 120" width="100%" height="120" preserveAspectRatio="none" role="img" aria-label="VWAP deviation bands">
-            <path d="M0,74 C40,70 80,60 120,62 C160,64 200,56 240,58 C270,60 290,54 300,52" fill="none" stroke="#00E5A0" stroke-width="2"/>
-            <path d="M0,84 C40,80 80,72 120,74 C160,76 200,68 240,70 C270,72 290,66 300,64" fill="none" stroke="#F0C040" stroke-width="1.3" stroke-dasharray="3 5"/>
-            <path d="M0,64 C40,60 80,48 120,50 C160,52 200,44 240,46 C270,48 290,42 300,40" fill="none" stroke="#F0C040" stroke-width="1.3" stroke-dasharray="3 5"/>
-          </svg>
-        </div>
-        <div class="ac-body">
-          <div class="ac-plat"><span class="tag">TradingView</span><span class="tag">MT5</span></div>
-          <h3>USME VWAP Suite Engine</h3>
-          <p>Anchored VWAP with three deviation bands, an EMA trend cloud, and non-repainting structure signals — every setup graded WATCH, PRIME, or ELITE.</p>
-          <button class="ac-toggle" onclick="toggleAlgo(this)">Details <span class="caret">▾</span></button>
-          <div class="ac-detail">
-            <ul>
-              <li>Session, weekly &amp; custom-anchored VWAPs</li>
-              <li>Dynamic volatility bands</li>
-              <li>Order flow imbalance metrics</li>
-            </ul>
-            <div class="ac-cta-row">
-              <a class="btn btn-primary" style="padding:11px 22px;font-size:.82rem" href="/USME_VWAP_Elite_Suite.html">Load VWAP Suite</a>
-              <a class="btn btn-outline" style="padding:11px 22px;font-size:.82rem" href="/USME_VWAP_Suite_course.html">Companion Course →</a>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="algo-card reveal">
-        <div class="ac-viz">
-          <svg viewBox="0 0 300 120" width="100%" height="120" preserveAspectRatio="none" role="img" aria-label="Regime-aware liquidity memory map">
-            <path d="M0,62 C36,54 72,72 108,58 C144,44 180,68 216,56 C252,44 288,52 300,50" fill="none" stroke="#DCE8F2" stroke-width="1.8"/>
-            <circle cx="108" cy="58" r="20" fill="none" stroke="#00E5A0" stroke-opacity=".22"/><circle cx="108" cy="58" r="11" fill="none" stroke="#00E5A0" stroke-opacity=".5"/><circle cx="108" cy="58" r="4" fill="#00E5A0"/>
-            <circle cx="216" cy="56" r="16" fill="none" stroke="#F0C040" stroke-opacity=".35"/><circle cx="216" cy="56" r="5" fill="#F0C040"/>
-            <text x="6" y="30" font-family="monospace" font-size="9" fill="#9BB5C8">LIQ MEMORY</text>
-            <text x="186" y="30" font-family="monospace" font-size="9" fill="#F0C040">W→P→E→S</text>
-          </svg>
-        </div>
-        <div class="ac-body">
-          <div class="ac-plat"><span class="tag">TradingView</span></div>
-          <h3>Meridian Engine</h3>
-          <p>Regime-aware Smart Money Concepts — decaying liquidity magnets, graded WATCH→PRIME→ELITE→SINGULAR setups, and full trade-path tracking.</p>
-          <button class="ac-toggle" onclick="toggleAlgo(this)">Details <span class="caret">▾</span></button>
-          <div class="ac-detail">
-            <ul>
-              <li>Regime-aware liquidity memory map</li>
-              <li>Setup grading: WATCH → PRIME → ELITE → SINGULAR</li>
-              <li>Full trade-path tracking, entry to TP3</li>
-            </ul>
-            <div class="ac-cta-row">
-              <a class="btn btn-primary" style="padding:11px 22px;font-size:.82rem" href="/Meridian_Engine.html">Load Meridian Engine</a>
-              <a class="btn btn-outline" style="padding:11px 22px;font-size:.82rem" href="/Meridian_Engine_Mastery_Course.html">Companion Course →</a>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div class="cat-tabs reveal" id="catTabs">
+      <button class="cat-tab active" data-cat="intelligence" onclick="setCategory('intelligence')">Market Intelligence</button>
+      <button class="cat-tab" data-cat="algos" onclick="setCategory('algos')">Proprietary Algos</button>
+      <button class="cat-tab" data-cat="masterplans" onclick="setCategory('masterplans')">Masterplans</button>
+      <button class="cat-tab" data-cat="tools" onclick="setCategory('tools')">Free Tools</button>
     </div>
-  </div>
-</section>
-
-<!-- SECTION 2 — CHALLENGES & MASTERPLANS -->
-<section id="masterplans">
-  <div class="container">
-    <div class="sec-head reveal">
-      <div class="eyebrow">Challenges &amp; Masterplans</div>
-      <h2>The funded <em>path.</em></h2>
-      <p class="lede">Structured blueprints that carry you from evaluation to funded-account consistency — with risk guardrails at every step.</p>
-    </div>
-    <div class="pgrid c4">
-      <a class="pcard reveal" href="/30_days_funded_challenge.html">
-        <div class="pc-top"><div class="pc-icon">◎</div><span class="tag sage">Challenge</span></div>
-        <h3>30 Days Funded Challenge</h3>
-        <p>A structured 30-day path to funded-account consistency — daily targets and hard risk guardrails.</p>
-        <span class="pc-cta">Start the Challenge <span>→</span></span>
-      </a>
-      <a class="pcard reveal" href="/Prop_firm_MasterPlan.html">
-        <div class="pc-top"><div class="pc-icon">♟</div><span class="tag gold">Masterplan</span></div>
-        <h3>Prop Firm Masterplan</h3>
-        <p>The complete prop-firm playbook — evaluation strategy, payout math, and a scaling plan for long-term funding.</p>
-        <span class="pc-cta">View Masterplan <span>→</span></span>
-      </a>
-      <a class="pcard reveal" href="/USME_Masterplan_Course.html">
-        <div class="pc-top"><div class="pc-icon">◈</div><span class="tag gold">Mastercourse</span></div>
-        <h3>USME Futures Mastercourse</h3>
-        <p>Advanced institutional futures mechanics — four engines, one edge: SMT divergence, session execution, and volatility profiling.</p>
-        <span class="pc-cta">Start the Course <span>→</span></span>
-      </a>
-      <a class="pcard reveal" href="/complete_snipertrader_course.html">
-        <div class="pc-top"><div class="pc-icon">✦</div><span class="tag gold">MasterClass</span></div>
-        <h3>The Complete Course</h3>
-        <p>The all-in-one SniperTrader MasterClass — the complete VWAP Elite Suite curriculum, from anchor selection to confluence execution.</p>
-        <span class="pc-cta">Start the Course <span>→</span></span>
-      </a>
-    </div>
-  </div>
-</section>
-
-<!-- SECTION 3 — FREE TOOLS -->
-<section id="tools">
-  <div class="container">
-    <div class="sec-head reveal">
-      <div class="eyebrow">Free Tools</div>
-      <h2>Start here. <em>Free.</em></h2>
-      <p class="lede">No account needed. Sizing, tracking, and level calculation — the essential toolkit for every disciplined trader.</p>
-    </div>
-    <div class="pgrid c4">
-      <a class="pcard reveal" href="/sniper_pl_widget.html">
-        <div class="pc-top"><div class="pc-icon">◉</div><span class="tag sage">Free</span></div>
-        <h3>Sniper PL Widget</h3>
-        <p>Live P&amp;L dashboard — track open positions and realized performance at a glance.</p>
-        <span class="pc-cta">Open Widget <span>→</span></span>
-      </a>
-      <a class="pcard reveal" href="/conviction_calculator.html">
-        <div class="pc-top"><div class="pc-icon">∑</div><span class="tag sage">Free</span></div>
-        <h3>Conviction Calculator</h3>
-        <p>Position sizing &amp; risk controls — conviction scoring with ATR and Kelly-style guardrails.</p>
-        <span class="pc-cta">Open Calculator <span>→</span></span>
-      </a>
-      <a class="pcard reveal" href="/P&L_tracker.html">
-        <div class="pc-top"><div class="pc-icon">▤</div><span class="tag sage">Free</span></div>
-        <h3>P&amp;L Tracker</h3>
-        <p>Your trading journal — log, review, and refine every execution over time.</p>
-        <span class="pc-cta">Open Tracker <span>→</span></span>
-      </a>
-      <a class="pcard reveal" href="/USME_ICT_Calculator.html">
-        <div class="pc-top"><div class="pc-icon">⌁</div><span class="tag sage">Free</span></div>
-        <h3>USME ICT Calculator</h3>
-        <p>Compute ICT killzones and key session levels — instant precision for your trade plan.</p>
-        <span class="pc-cta">Open Calculator <span>→</span></span>
-      </a>
-      <div class="pcard reveal">
-        <div class="pc-top"><div class="pc-icon">⛨</div><span class="tag">Coming Soon</span></div>
-        <h3>Risk Reducer Widget</h3>
-        <p>Automated risk guardrails — drawdown alerts, position heat, and portfolio safety scoring.</p>
-        <span class="pc-cta" style="color:var(--text4)">Coming Soon</span>
-      </div>
+    <div class="explorer-body reveal">
+      <div class="product-list" id="productList"></div>
+      <div class="glass preview-window" id="previewWindow"></div>
     </div>
   </div>
 </section>
@@ -592,7 +473,7 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
       </div>
       <div class="footer-col">
         <h4>Academy</h4>
-        <a href="/all_products.html#masterplans">Sniper Courses</a>
+        <a href="/all_products.html#explorer">Sniper Courses</a>
         <a href="/Traders_Couch.html">Live Labs</a>
         <a href="/about.html">Mentorship</a>
         <a href="/about.html">Community</a>
@@ -698,6 +579,159 @@ footer{border-top:1px solid var(--border);background:var(--ink);padding:72px 0 3
   }
   stooq(); setInterval(stooq,30000);
 })();
+
+/* ── Explorer catalog (THE PRECISION SUITE) ───────────────── */
+var CATALOG={
+  intelligence:{
+    label:'Market Intelligence',
+    items:[
+      {name:'Preflight Protocol',desc:'Daily automated bias assessment, key liquidity pools, and the volatility catalyst calendar.',hl:['Institutional daily bias score','News sentiment heatmaps','Automated key-level mapping'],cta:'Launch Preflight Playbook',href:'/traderedge_preflight.html',viz:'bias'},
+      {name:'Daily Market Radar',desc:'A daily decision surface blending technical structure, real volume, insider filings, and breaking news into a short, ranked watchlist with plain-English reasons behind every pick.',hl:['Ranked watchlist with reasons','Structure · volume · filings · news','Late-move warning flags'],cta:'Open Daily Market Radar',href:'/market_radar.html',viz:'picks'},
+      {name:'Market Forecaster',desc:'Real-data chart analysis — automated structure, liquidity zones, and price targets from live market data.',hl:['Real-data price targets','Automated structure & liquidity','Pivot windows'],cta:'Open Market Forecaster',href:'/market_forecaster.html',viz:'forecast'}
+    ]
+  },
+  algos:{
+    label:'Proprietary Algos',
+    items:[
+      {name:'No Repaint Indicator',desc:'Non-repainting swing pivots, anchored VWAP bands, and a triple-EMA trend cloud — confirmed only at bar close.',hl:['100% non-repainting execution','Adjustable risk profiles','Custom push & Discord alerts'],cta:'Get Indicator Access',href:'/NoRepaint_Pivot_indicator.html',viz:'norepaint'},
+      {name:'USME ICT Core',desc:'Automated Smart Money Concepts — the 3-Gate Model: HTF bias, session filter, liquidity sweep + displacement + MSS, and VWAP-confluent FVG/OB entries.',hl:['Automated liquidity pool tracking','Premium / discount array mapping','Silver Bullet setup finder'],cta:'Load ICT Engine',href:'/USME_ICT_Core.html',viz:'ict'},
+      {name:'USME VWAP Suite Engine',desc:'Anchored VWAP with three deviation bands, an EMA trend cloud, and non-repainting structure signals — every setup graded WATCH, PRIME, or ELITE.',hl:['Session, weekly & custom-anchored VWAPs','Dynamic volatility bands','Order flow imbalance metrics'],cta:'Load VWAP Suite',href:'/USME_VWAP_Elite_Suite.html',viz:'vwap'},
+      {name:'Meridian Engine',desc:'Regime-aware Smart Money Concepts — decaying liquidity magnets, graded WATCH→PRIME→ELITE→SINGULAR setups, and full trade-path tracking.',hl:['Regime-aware liquidity memory map','Setup grading: WATCH → PRIME → ELITE → SINGULAR','Full trade-path tracking'],cta:'Load Meridian Engine',href:'/Meridian_Engine.html',viz:'meridian'},
+      {name:'Meridian OFI Engine',desc:'Order-flow intelligence layered onto the Meridian lattice — cumulative volume delta, absorption, and native-footprint imbalance.',hl:['Cumulative volume delta (CVD)','Absorption & native-footprint imbalance','Stacked imbalance logic'],cta:'Load OFI Engine',href:'/Meridian_OFI_Engine.html',viz:'meridian'},
+      {name:'Meridian OFI — Stacked Imbalance',desc:'Native-footprint stacked-imbalance logic — features and abilities, graded WATCH→SINGULAR with entry-to-TP3 path tracking.',hl:['Native-footprint stacked imbalance','Graded WATCH → SINGULAR','Features & abilities overview'],cta:'View Stacked Imbalance',href:'/Meridian_OFI_Stacked_imbalance_logic_Engine.html',viz:'meridian'}
+    ]
+  },
+  masterplans:{
+    label:'Masterplans',
+    items:[
+      {name:'30 Days Funded Challenge',desc:'A structured 30-day path to funded-account consistency — daily targets and hard risk guardrails.',hl:['30-day daily targets','Hard risk guardrails','Funded-account consistency'],cta:'Start the Challenge',href:'/30_days_funded_challenge.html',viz:'challenge'},
+      {name:'Prop Firm Masterplan',desc:'The complete prop-firm playbook — evaluation strategy, payout math, and a scaling plan for long-term funding.',hl:['Evaluation strategy','Payout math','Scaling plan'],cta:'View Masterplan',href:'/Prop_firm_MasterPlan.html',viz:'plan'},
+      {name:'USME Futures Mastercourse',desc:'Advanced institutional futures mechanics — four engines, one edge: SMT divergence, session execution, and volatility profiling.',hl:['Cross-market SMT divergence','High-velocity session execution','Quantitative volatility profiling'],cta:'Start the Course',href:'/USME_Masterplan_Course.html',viz:'plan'},
+      {name:'The Complete Course',desc:'The all-in-one SniperTrader MasterClass — the complete VWAP Elite Suite curriculum, from anchor selection to confluence execution.',hl:['Four pillars of institutional value','VWAP bands & volume signals','Confluence checklist & execution'],cta:'Start the Course',href:'/complete_snipertrader_course.html',viz:'plan'}
+    ]
+  },
+  tools:{
+    label:'Free Tools',
+    items:[
+      {name:'Sniper PL Widget',desc:'Live P&L dashboard — track open positions and realized performance at a glance.',hl:['Live P&L tracking','Open positions','Realized performance'],cta:'Open Widget',href:'/sniper_pl_widget.html',viz:'tool'},
+      {name:'Conviction Calculator',desc:'Position sizing & risk controls — conviction scoring with ATR and Kelly-style guardrails.',hl:['Conviction scoring','ATR position sizing','Kelly-style guardrails'],cta:'Open Calculator',href:'/conviction_calculator.html',viz:'tool'},
+      {name:'P&L Tracker',desc:'Your trading journal — log, review, and refine every execution over time.',hl:['Trade journal','Review & refine','Execution history'],cta:'Open Tracker',href:'/P&L_tracker.html',viz:'tool'},
+      {name:'USME ICT Calculator',desc:'Compute ICT killzones and key session levels — instant precision for your trade plan.',hl:['ICT killzones','Key session levels','Instant precision'],cta:'Open Calculator',href:'/USME_ICT_Calculator.html',viz:'tool'},
+      {name:'Risk Reducer Widget',desc:'Automated risk guardrails — drawdown alerts, position heat, and portfolio safety scoring.',hl:['Drawdown alerts','Position heat','Portfolio safety scoring'],cta:'Coming Soon',href:'',viz:'coming',soon:true}
+    ]
+  }
+};
+
+function vizHTML(type){
+  if(type==='bias'){
+    return '<div class="viz-gauge"><div class="vg-track" style="--p:72%"></div><div class="vg-val">Bullish</div></div>'+
+      '<div style="height:16px"></div><div class="viz-grid">'+
+      '<div class="viz-tile"><div class="vt-l">Bias Score</div><div class="vt-v sage">+72</div></div>'+
+      '<div class="viz-tile"><div class="vt-l">Key Levels</div><div class="vt-v gold">7 mapped</div></div>'+
+      '<div class="viz-tile"><div class="vt-l">Catalysts</div><div class="vt-v">CPI · FOMC</div></div>'+
+      '<div class="viz-tile"><div class="vt-l">Volatility</div><div class="vt-v gold">Elevated</div></div></div>';
+  }
+  if(type==='picks'){
+    var rows=[['NVDA','Semiconductors',86],['AAPL','Technology',78],['TSLA','Automotive',64]];
+    return rows.map(function(r){return '<div class="viz-row"><div><div class="vr-sym">'+r[0]+'</div><div class="vr-name">'+r[1]+'</div></div><div style="min-width:110px"><div class="vt-v sage" style="text-align:right">'+r[2]+'%</div><div class="viz-bar"><span style="width:'+r[2]+'%"></span></div></div></div>';}).join('');
+  }
+  if(type==='forecast'){
+    return '<svg viewBox="0 0 460 130" width="100%" height="130" preserveAspectRatio="none"><path d="M0,104 C60,96 120,70 180,66 C240,62 300,46 360,42 C400,40 430,34 460,28" fill="none" stroke="#00E5A0" stroke-width="2"/><path d="M0,116 C70,108 130,84 190,80 C250,76 310,60 370,56 C410,54 440,48 460,42" fill="none" stroke="#F0C040" stroke-width="1.3" stroke-dasharray="2 6"/><path d="M0,92 C70,84 130,56 190,52 C250,48 310,32 370,28 C410,26 440,20 460,14" fill="none" stroke="#F0C040" stroke-width="1.3" stroke-dasharray="2 6"/><rect x="404" y="12" width="56" height="44" rx="6" fill="rgba(240,192,64,.16)" stroke="#F0C040" stroke-opacity=".55"/><circle cx="460" cy="28" r="3.6" fill="#F0C040"/></svg>';
+  }
+  if(type==='norepaint'){
+    return '<svg viewBox="0 0 460 130" width="100%" height="130" preserveAspectRatio="none"><path d="M0,90 C40,84 80,48 120,58 C160,68 200,40 240,44 C280,48 320,28 360,32 C400,36 430,24 460,20" fill="none" stroke="#DCE8F2" stroke-width="1.8"/><path d="M120,58 L120,96" stroke="#00E5A0" stroke-width="1.4"/><path d="M120,96 h16" stroke="#00E5A0" stroke-width="2"/><circle cx="120" cy="58" r="4" fill="#00E5A0"/><path d="M320,32 L320,70" stroke="#F0C040" stroke-width="1.4"/><path d="M320,70 h16" stroke="#F0C040" stroke-width="2"/><circle cx="320" cy="32" r="4" fill="#F0C040"/></svg>'+
+      '<div class="viz-chips" style="margin-top:12px"><span class="on">Bar-close confirmed</span><span>Zero recalculation</span></div>';
+  }
+  if(type==='ict'){
+    return '<svg viewBox="0 0 460 130" width="100%" height="130" preserveAspectRatio="none"><path d="M0,36 C40,40 80,70 120,66 C160,62 200,32 240,36 C280,40 320,70 360,66 C400,62 440,40 460,36" fill="none" stroke="#DCE8F2" stroke-width="1.8"/><rect x="140" y="30" width="40" height="34" rx="3" fill="rgba(0,229,160,.16)" stroke="#00E5A0" stroke-opacity=".6"/><path d="M80,70 L58,44" stroke="#F0C040" stroke-width="1.6"/><circle cx="58" cy="44" r="3.4" fill="#F0C040"/><text x="12" y="38" font-family="monospace" font-size="9" fill="#9BB5C8">LIQ SWEEP</text></svg>'+
+      '<div class="viz-chips" style="margin-top:12px"><span class="on">Premium / Discount</span><span>Silver Bullet</span></div>';
+  }
+  if(type==='vwap'){
+    return '<svg viewBox="0 0 460 130" width="100%" height="130" preserveAspectRatio="none"><path d="M0,80 C50,76 100,66 150,68 C200,70 250,62 300,64 C350,66 400,60 460,58" fill="none" stroke="#00E5A0" stroke-width="2"/><path d="M0,92 C50,88 100,80 150,82 C200,84 250,76 300,78 C350,80 400,74 460,72" fill="none" stroke="#F0C040" stroke-width="1.3" stroke-dasharray="3 5"/><path d="M0,68 C50,64 100,52 150,54 C200,56 250,48 300,50 C350,52 400,46 460,44" fill="none" stroke="#F0C040" stroke-width="1.3" stroke-dasharray="3 5"/></svg>'+
+      '<div class="viz-chips" style="margin-top:12px"><span class="on">±1σ / ±2σ bands</span><span>Session anchor</span></div>';
+  }
+  if(type==='meridian'){
+    return '<svg viewBox="0 0 460 130" width="100%" height="130" preserveAspectRatio="none"><path d="M0,70 C50,62 100,80 150,66 C200,52 250,76 300,62 C350,48 410,58 460,54" fill="none" stroke="#DCE8F2" stroke-width="1.8"/><circle cx="150" cy="66" r="22" fill="none" stroke="#00E5A0" stroke-opacity=".2"/><circle cx="150" cy="66" r="12" fill="none" stroke="#00E5A0" stroke-opacity=".5"/><circle cx="150" cy="66" r="4" fill="#00E5A0"/><circle cx="300" cy="62" r="18" fill="none" stroke="#F0C040" stroke-opacity=".3"/><circle cx="300" cy="62" r="5" fill="#F0C040"/><text x="10" y="34" font-family="monospace" font-size="9" fill="#9BB5C8">LIQ MEMORY</text><text x="266" y="34" font-family="monospace" font-size="9" fill="#F0C040">W→P→E→S</text></svg>'+
+      '<div class="viz-chips" style="margin-top:12px"><span class="on">WATCH → PRIME → ELITE</span><span>SINGULAR</span></div>';
+  }
+  if(type==='challenge'){
+    return '<div class="viz-gauge"><div class="vg-track" style="--p:40%"></div><div class="vg-val">Day 12/30</div></div>'+
+      '<div style="height:16px"></div><div class="viz-grid">'+
+      '<div class="viz-tile"><div class="vt-l">Daily Target</div><div class="vt-v sage">1.5R</div></div>'+
+      '<div class="viz-tile"><div class="vt-l">Max Drawdown</div><div class="vt-v gold">4%</div></div>'+
+      '<div class="viz-tile"><div class="vt-l">Guardrails</div><div class="vt-v">Hard</div></div>'+
+      '<div class="viz-tile"><div class="vt-l">Consistency</div><div class="vt-v gold">Tracked</div></div></div>';
+  }
+  if(type==='plan'){
+    return '<div class="viz-grid">'+
+      '<div class="viz-tile"><div class="vt-l">Evaluation</div><div class="vt-v">Strategy</div></div>'+
+      '<div class="viz-tile"><div class="vt-l">Payout</div><div class="vt-v gold">Math</div></div>'+
+      '<div class="viz-tile"><div class="vt-l">Scaling</div><div class="vt-v">Plan</div></div>'+
+      '<div class="viz-tile"><div class="vt-l">Risk</div><div class="vt-v sage">Guardrails</div></div></div>'+
+      '<div class="viz-status" style="margin-top:14px"><span class="live-dot"></span><div><div class="vs-t">Blueprint ready</div><div class="vs-s">Evaluation → funded consistency</div></div></div>';
+  }
+  if(type==='tool'){
+    return '<div class="viz-status"><span class="live-dot"></span><div><div class="vs-t">Ready to use</div><div class="vs-s">No account needed</div></div></div>'+
+      '<div style="height:14px"></div><div class="viz-grid">'+
+      '<div class="viz-tile"><div class="vt-l">Data</div><div class="vt-v sage">Local</div></div>'+
+      '<div class="viz-tile"><div class="vt-l">Cost</div><div class="vt-v gold">Free</div></div></div>';
+  }
+  if(type==='coming'){
+    return '<div class="viz-status"><span class="live-dot"></span><div><div class="vs-t">Coming soon</div><div class="vs-s">Risk guardrails — drawdown, heat, portfolio safety</div></div></div>'+
+      '<div style="height:14px"></div><div class="viz-grid">'+
+      '<div class="viz-tile"><div class="vt-l">Status</div><div class="vt-v gold">In build</div></div>'+
+      '<div class="viz-tile"><div class="vt-l">Release</div><div class="vt-v">Soon</div></div></div>';
+  }
+  return '';
+}
+
+var currentCat='intelligence', currentIdx=0;
+
+function renderList(catId){
+  var list=document.getElementById('productList');
+  var cat=CATALOG[catId];
+  list.innerHTML=cat.items.map(function(item,i){
+    return '<button class="product-item'+(catId===currentCat&&i===currentIdx?' active':'')+'" '+
+      'onmouseenter="previewItem(\''+catId+'\','+i+',false)" onclick="previewItem(\''+catId+'\','+i+',true)">'+
+      '<span class="p-idx">'+(i<9?'0':'')+(i+1)+'</span>'+
+      '<span class="p-body"><span class="p-name">'+item.name+'</span><span class="p-desc">'+item.desc+'</span></span>'+
+      '<span class="p-arrow">→</span></button>';
+  }).join('');
+}
+
+function previewItem(catId,idx,pin){
+  if(pin){currentCat=catId;currentIdx=idx;}
+  var item=CATALOG[catId].items[idx];
+  var list=document.getElementById('productList');
+  var items=list.querySelectorAll('.product-item');
+  items.forEach(function(el,i){el.classList.toggle('active',i===idx);});
+  var win=document.getElementById('previewWindow');
+  var cta = item.soon
+    ? '<span class="btn btn-outline pw-cta" style="opacity:.65;cursor:default">'+item.cta+'</span>'
+    : '<a class="btn btn-primary pw-cta" href="'+item.href+'">'+item.cta+'</a>';
+  win.innerHTML=
+    '<div class="pw-kicker">'+CATALOG[catId].label+'</div>'+
+    '<div class="pw-title">'+item.name+'</div>'+
+    '<div class="pw-desc">'+item.desc+'</div>'+
+    '<div class="pw-viz">'+vizHTML(item.viz)+'</div>'+
+    '<div class="pw-highlights">'+item.hl.map(function(h){return '<div class="pw-hl">'+h+'</div>';}).join('')+'</div>'+
+    cta;
+  if(pin&&window.innerWidth<1081){
+    setTimeout(function(){win.scrollIntoView({behavior:'smooth',block:'nearest'});},60);
+  }
+}
+
+function setCategory(catId){
+  currentCat=catId; currentIdx=0;
+  document.querySelectorAll('.cat-tab').forEach(function(t){t.classList.toggle('active',t.dataset.cat===catId);});
+  renderList(catId);
+  previewItem(catId,0,true);
+}
+
+/* init explorer */
+renderList('intelligence');
+previewItem('intelligence',0,true);
+
 
 /* ── Algo toggle ─────────────────────────────────────────── */
 function toggleAlgo(btn){
