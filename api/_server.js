@@ -14,6 +14,7 @@ const propApi = require('./prop/[action]');
 const recon = require('./recon/[action]');
 const traderedge = require('./traderedge/[action]');
 const newsCatalyst = require('./news/catalyst');
+const assistant = require('./assistant/[action]');
 
 const PORT = process.env.KRONOS_PORT || 8787;
 
@@ -63,6 +64,9 @@ const server = http.createServer((req, res) => {
   }
   if (url.pathname === '/api/news/catalyst' && req.method === 'GET') {
     return newsCatalyst(req, vc(res));
+  }
+  if (url.pathname.startsWith('/api/assistant/')) {
+    return assistant(req, vc(res));
   }
   res.writeHead(404, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ error: 'not found — POST /api/kronos/forecast' }));
