@@ -56,7 +56,7 @@ const REFUSAL_SET = [
 ];
 
 const CITATION_RE = /\[\d+\]/;
-const REFUSAL_RE = /do(?:n't| not) have|do(?:es)?n't cover|no pricing|not covered|can(?:not|'t) (?:provide|confirm)|don't have that detail/i;
+const REFUSAL_RE = /do(?:es)?n't have|do(?:es)? not have|do(?:es)?n't cover|do(?:es)? not cover|no pricing|not covered|not available|can(?:not|'t) (?:answer|provide|share|confirm|help)|does(?:n't| not) provide|don't have that detail/i;
 
 function ci(s) { return String(s || '').toLowerCase(); }
 
@@ -99,7 +99,7 @@ async function answer(message, history) {
       ...(history || []),
       { role: 'user', content: message }
     ],
-    options: { temperature: 0.2, maxTokens: 500 }
+    options: { temperature: 0, maxTokens: 500 }  // temp 0 for a deterministic gate (prod uses 0.2)
   });
   return completion.content;
 }
