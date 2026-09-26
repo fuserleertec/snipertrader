@@ -854,5 +854,6 @@
   const observer = new IntersectionObserver(entries=>{ entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('visible'); observer.unobserve(e.target); } }); },{threshold:0.1}); document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
   document.addEventListener('mousemove',e=>{ const dx=(e.clientX-window.innerWidth/2)/(window.innerWidth/2); const dy=(e.clientY-window.innerHeight/2)/(window.innerHeight/2); document.querySelectorAll('.hero-glow-orb').forEach(el=>el.style.transform=`translate(calc(-50% + ${dx*30}px), calc(-50% + ${dy*20}px))`); document.querySelectorAll('.cta-glow').forEach(el=>el.style.transform=`translate(calc(-50% + ${dx*20}px), calc(-50% + ${dy*15}px))`); });
 </script>
+  <script src="/assets/assistant-widget.js" defer></script>
 </body>
 </html>
