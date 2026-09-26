@@ -15,6 +15,7 @@ const { embedOne, isConfigured: embeddingsOn, activeEmbedder } = require('./embe
 const { aiChat, isConfigured: llmOn } = require('../../_ai_providers');
 const { rewriteQuery } = require('./query');
 const { rerank, isRerankerConfigured } = require('./rerank');
+const guard = require('./guard');
 
 const HISTORY_TURNS = Number(process.env.ASSISTANT_HISTORY_TURNS) || 8;
 const FINAL_K = Number(process.env.ASSISTANT_FINAL_K) || 5;
@@ -45,6 +46,17 @@ async function chat(req, res) {
 
   const started = Date.now();
   try {
+    // Rate limit per client IP (deterministic, Postgres-backed fixed window).
+    const rl = await guard.rateLimit('ip:' + (memory.ipHash(req) || 'unknown'), Date.now());
+    if (!rl.allowed) {
+      res.setHeader('Retry-After', String(rl.windowSeconds));
+      return respond(res, 429, { error: 'rate limit exceeded', retry_after_seconds: rl.windowSeconds, limit: rl.limit });
+    }
+    // Best-effort moderation (key-gated on the LLM provider; ASSISTANT_MODERATION=off disables).
+    if (process.env.ASSISTANT_MODERATION !== 'off') {
+      const mod = await guard.moderate(message);
+      if (mod.flagged) return respond(res, 403, { error: 'message blocked', reason: mod.reason });
+    }
     const sid = await memory.ensureSession(body.session_id, req);
     const history = await memory.loadHistory(sid, HISTORY_TURNS);
     await memory.saveMessage(sid, 'user', message);
@@ -100,6 +112,11 @@ async function feedback(req, res) {
   const rating = Number(body.rating);
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) return respond(res, 400, { error: 'rating required (1..5)' });
   try {
+    const rl = await guard.rateLimit('fb:' + (memory.ipHash(req) || 'unknown'), Date.now());
+    if (!rl.allowed) {
+      res.setHeader('Retry-After', String(rl.windowSeconds));
+      return respond(res, 429, { error: 'rate limit exceeded', retry_after_seconds: rl.windowSeconds, limit: rl.limit });
+    }
     await memory.saveFeedback(id, rating, body.reason, body.comment);
     respond(res, 200, { ok: true });
   } catch (e) {

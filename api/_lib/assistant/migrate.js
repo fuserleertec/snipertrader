@@ -80,6 +80,12 @@ create table if not exists assistant_feedback (
   comment    text,
   created_at timestamptz not null default now()
 );
+
+create table if not exists assistant_rate_limit (
+  key          text primary key,
+  window_start timestamptz not null,
+  count        int not null default 0
+);
 `;
 
 async function run() {

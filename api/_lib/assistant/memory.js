@@ -62,4 +62,4 @@ async function saveFeedback(messageId, rating, reason, comment) {
   );
 }
 
-module.exports = { ensureSession, loadHistory, saveMessage, saveFeedback };
+module.exports = { ensureSession, loadHistory, saveMessage, saveFeedback, ipHash };
