@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meridian Dashboard — User Guide | SniperTrader.ai</title>
+<meta name="description" content="How to read the Meridian OFI Dashboard: Regime → 3-Gate → Lattice → Order Flow → Liquidity → Signal. A field-by-field guide with illustrations, broker setup, alerts, journal, watchlist, and honest limitations.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   Meridian Dashboard — User Guide
+   SniperTrader.ai · high-contrast light-first document
+   (both dark + light modes preserved; light is the default)
+   ============================================================ */
+
+:root{
+  --bg:#04120D; --bg2:#061811; --bg3:#0A1F17; --ink:#030B08;
+  --card:rgba(255,255,255,.03); --card2:rgba(255,255,255,.055);
+  --glass:rgba(10,31,23,.68);
+  --text:#FFFFFF; --text2:#E7F3ED; --text3:#93B4A5; --text4:#5A7567;
+  --brand:#10B981; --brand2:#059669; --brand-dim:rgba(16,185,129,.12);
+  --bull:#22C55E; --bear:#EF4444;
+  --bull-dim:rgba(34,197,94,.10); --bear-dim:rgba(239,68,68,.10);
+  --amber:#FBBF24; --amber-dim:rgba(251,191,36,.10);
+  --border:rgba(16,185,129,.15); --border2:rgba(16,185,129,.32);
+  --nav-bg:rgba(4,18,13,.94);
+  --shadow:0 30px 80px rgba(0,0,0,.6);
+  /* Order Flow Intelligence — special color format */
+  --ofi-up:#22C55E; --ofi-dn:#EF4444;                 /* CVD slope · absorption (line · circle) */
+  --ofi-imb-up:#06B6D4; --ofi-imb-dn:#D946EF;         /* imbalance (diamond) */
+  --ofi-stack-up:#16A34A; --ofi-stack-dn:#DC2626;      /* stacked imbalance (bar) */
+  --ofi-up-dim:rgba(34,197,94,.10); --ofi-dn-dim:rgba(239,68,68,.10);
+  --ofi-imb-up-dim:rgba(6,182,212,.12); --ofi-imb-dn-dim:rgba(217,70,239,.12);
+  --ff-d:'Playfair Display',serif;
+  --ff-b:'Plus Jakarta Sans',sans-serif;
+  --ff-m:'Space Mono',monospace;
+}
+body.light{
+  --bg:#EAF3EE; --bg2:#DFEBE4; --bg3:#D2E1D9; --ink:#FFFFFF;
+  --card:rgba(255,255,255,.62); --card2:rgba(255,255,255,.88);
+  --glass:rgba(255,255,255,.72);
+  --text:#0A1F17; --text2:#0B2A1F; --text3:#33564A; --text4:#5A7567;
+  --brand:#047857; --brand2:#065F46; --brand-dim:rgba(4,120,87,.10);
+  --bull:#15803D; --bear:#DC2626;
+  --bull-dim:rgba(21,128,61,.12); --bear-dim:rgba(220,38,38,.10);
+  --amber:#8A5B00; --amber-dim:rgba(138,91,0,.10);
+  --border:rgba(4,120,87,.16); --border2:rgba(4,120,87,.30);
+  --nav-bg:rgba(234,243,238,.96);
+  --shadow:0 30px 70px rgba(36,60,50,.16);
+  --ofi-up:#15803D; --ofi-dn:#B91C1C;
+  --ofi-imb-up:#0E7490; --ofi-imb-dn:#A21CAF;
+  --ofi-stack-up:#166534; --ofi-stack-dn:#991B1B;
+  --ofi-up-dim:rgba(21,128,61,.10); --ofi-dn-dim:rgba(185,28,28,.10);
+  --ofi-imb-up-dim:rgba(14,116,144,.12); --ofi-imb-dn-dim:rgba(162,28,175,.12);
+}
+/* Light-mode SVG recolor — map every dark hex used in inline SVGs to its light variant */
+body.light [stroke="#E9ECF7"]{stroke:#1C2240;}
+body.light [stroke="#9CA5C4"]{stroke:#3A4470;}
+body.light [stroke="#64748B"]{stroke:#475569;}
+body.light [stroke="#22C55E"]{stroke:#15803D;}
+body.light [stroke="#EF4444"]{stroke:#DC2626;}
+body.light [stroke="#10B981"]{stroke:#047857;}
+body.light [stroke="#FBBF24"]{stroke:#8A5B00;}
+body.light [stroke="#06B6D4"]{stroke:#0E7490;}
+body.light [stroke="#D946EF"]{stroke:#A21CAF;}
+body.light [stroke="#16A34A"]{stroke:#166534;}
+body.light [stroke="#DC2626"]{stroke:#991B1B;}
+body.light [stroke="#F97316"]{stroke:#C2410C;}
+body.light [stroke="#F87171"]{stroke:#DC2626;}
+body.light [fill="#E9ECF7"]{fill:#1C2240;}
+body.light [fill="#9CA5C4"]{fill:#3A4470;}
+body.light [fill="#64748B"]{fill:#475569;}
+body.light [fill="#22C55E"]{fill:#15803D;}
+body.light [fill="#EF4444"]{fill:#DC2626;}
+body.light [fill="#10B981"]{fill:#047857;}
+body.light [fill="#FBBF24"]{fill:#8A5B00;}
+body.light [fill="#06B6D4"]{fill:#0E7490;}
+body.light [fill="#D946EF"]{fill:#A21CAF;}
+body.light [fill="#16A34A"]{fill:#166534;}
+body.light [fill="#DC2626"]{fill:#991B1B;}
+
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg); color:var(--text); font-family:var(--ff-b);
+  line-height:1.66; overflow-x:hidden; cursor:none;
+  -webkit-font-smoothing:antialiased; transition:background .4s,color .4s;
+}
+a{text-decoration:none;color:inherit;}
+button{font-family:inherit;cursor:none;border:none;background:none;color:inherit;}
+::selection{background:var(--brand);color:#fff;}
+::-webkit-scrollbar{width:9px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:8px;}
+img,svg{display:block;max-width:100%;}
+code{font-family:var(--ff-m);font-size:.9em;color:var(--brand);background:var(--brand-dim);padding:1px 6px;border-radius:5px;}
+
+/* ── Precision scope cursor ─────────────────────────────── */
+#scope{position:fixed;top:0;left:0;pointer-events:none;z-index:9990;width:240px;height:240px;transform:translate(-50%,-50%);will-change:transform;}
+#scope .s-ring{position:absolute;border-radius:50%;pointer-events:none;}
+#scope .s-r1{inset:0;border:1px solid rgba(16,185,129,.22);}
+#scope .s-r2{inset:36px;border:1px dashed rgba(34,197,94,.26);}
+#scope .s-h{position:absolute;left:0;right:0;top:50%;height:1px;transform:translateY(-50%);background:linear-gradient(90deg,transparent,rgba(16,185,129,.36) 30%,rgba(16,185,129,.36) 70%,transparent);}
+#scope .s-v{position:absolute;top:0;bottom:0;left:50%;width:1px;transform:translateX(-50%);background:linear-gradient(180deg,transparent,rgba(16,185,129,.36) 30%,rgba(16,185,129,.36) 70%,transparent);}
+#scope .s-center{position:absolute;top:50%;left:50%;width:8px;height:8px;transform:translate(-50%,-50%);border-radius:50%;background:var(--bull);box-shadow:0 0 10px var(--bull),0 0 22px rgba(34,197,94,.5);}
+#scope-ring{position:fixed;top:0;left:0;pointer-events:none;z-index:9991;width:32px;height:32px;border-radius:50%;border:1.5px solid var(--bull);box-shadow:0 0 12px var(--bull),0 0 28px rgba(34,197,94,.32);transform:translate(-50%,-50%);will-change:transform;}
+#scope-dot{position:fixed;top:0;left:0;pointer-events:none;z-index:9992;width:5px;height:5px;border-radius:50%;background:var(--bull);box-shadow:0 0 8px var(--bull);transform:translate(-50%,-50%);}
+
+/* ── Nav ────────────────────────────────────────────────── */
+nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;align-items:center;gap:8px;padding:0 40px;height:70px;background:var(--nav-bg);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border-bottom:1px solid var(--border);transition:background .4s,border-color .4s;}
+.logo{display:flex;align-items:baseline;gap:1px;font-family:var(--ff-d);font-weight:600;font-size:1.22rem;letter-spacing:.01em;color:var(--text);margin-right:26px;}
+.logo b{font-weight:700;}
+.logo span{color:var(--brand);font-size:.82rem;font-family:var(--ff-m);letter-spacing:.04em;margin-left:2px;}
+.nav-menu{display:flex;align-items:center;gap:4px;list-style:none;flex:1;}
+.nav-link{display:flex;align-items:center;gap:7px;padding:10px 14px;font-size:.86rem;font-weight:500;color:var(--text3);border-radius:10px;transition:color .2s,background .2s;letter-spacing:.01em;}
+.nav-link:hover{color:var(--text);background:var(--card2);}
+.nav-link .caret{transition:transform .25s;}
+.nav-item.open .nav-link{color:var(--text);background:var(--card2);}
+.nav-item.open .nav-link .caret{transform:rotate(180deg);}
+.nav-item{position:relative;}
+.nav-link.active{color:var(--brand);}
+.dropdown{position:absolute;top:calc(100% + 10px);left:0;min-width:300px;background:var(--glass);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid var(--border);border-radius:16px;padding:8px;opacity:0;visibility:hidden;transform:translateY(-8px);transition:all .22s ease;box-shadow:var(--shadow);}
+.nav-item.open .dropdown,.nav-item:hover .dropdown{opacity:1;visibility:visible;transform:translateY(0);}
+.dropdown a{display:flex;flex-direction:column;gap:2px;padding:11px 14px;border-radius:11px;transition:background .18s;}
+.dropdown a:hover{background:var(--card2);}
+.dropdown a .d-name{font-size:.9rem;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;}
+.dropdown a .d-name::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--brand);flex-shrink:0;}
+.dropdown a.active .d-name{color:var(--brand);}
+.dropdown a .d-sub{font-size:.78rem;color:var(--text3);line-height:1.45;}
+.nav-right{display:flex;align-items:center;gap:12px;margin-left:auto;}
+.theme-toggle{display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:24px;border:1px solid var(--border);color:var(--text3);font-size:.78rem;font-weight:500;transition:border-color .2s,color .2s;}
+.theme-toggle:hover{border-color:var(--brand);color:var(--brand);}
+.nav-cta{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:24px;background:linear-gradient(135deg,var(--brand),var(--bull));color:#05060D;font-weight:700;font-size:.84rem;letter-spacing:.01em;transition:transform .2s,box-shadow .2s;box-shadow:0 6px 22px rgba(16,185,129,.25);}
+.nav-cta:hover{transform:translateY(-1px);box-shadow:0 10px 30px rgba(16,185,129,.36);}
+.nav-burger{display:none;flex-direction:column;gap:5px;padding:10px;border-radius:10px;border:1px solid var(--border);}
+.nav-burger span{width:18px;height:1.5px;background:var(--text2);}
+.mobile-menu{display:none;position:fixed;top:70px;left:0;right:0;z-index:499;background:var(--nav-bg);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);padding:16px 24px 24px;max-height:calc(100vh - 70px);overflow-y:auto;}
+.mobile-menu.open{display:block;}
+.mobile-menu a.mm-link{display:block;padding:13px 6px;font-size:1rem;font-weight:600;color:var(--text);border-bottom:1px solid var(--border);}
+.mobile-menu .mm-group{font-family:var(--ff-m);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--brand);margin:18px 6px 6px;}
+.mobile-menu a.mm-sub{display:block;padding:9px 6px;font-size:.9rem;color:var(--text3);}
+.mobile-menu a.mm-sub:hover{color:var(--text);}
+
+/* ── Ticker ─────────────────────────────────────────────── */
+.ticker{position:fixed;top:70px;left:0;right:0;z-index:499;height:34px;background:var(--nav-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;overflow:hidden;transition:background .4s,border-color .4s;}
+.ticker-status{flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 18px;font-family:var(--ff-m);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);border-right:1px solid var(--border);height:100%;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--bull);box-shadow:0 0 8px var(--bull);animation:blink 1.6s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.ticker-track{flex:1;overflow:hidden;}
+.ticker-inner{display:flex;gap:44px;width:max-content;animation:scrollTick 44s linear infinite;padding-left:20px;}
+.ticker:hover .ticker-inner{animation-play-state:paused;}
+@keyframes scrollTick{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.tick-item{display:flex;align-items:center;gap:8px;white-space:nowrap;font-family:var(--ff-m);font-size:.68rem;color:var(--text3);}
+.tick-item .t-brand{color:var(--brand);}
+
+/* ── Shared ─────────────────────────────────────────────── */
+.container{max-width:1240px;margin:0 auto;padding:0 40px;}
+section{position:relative;padding:84px 0;}
+section.alt{background:var(--bg2);}
+.eyebrow{display:flex;align-items:center;gap:12px;font-family:var(--ff-m);font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;color:var(--brand);margin-bottom:18px;}
+.eyebrow::before{content:'';width:30px;height:1px;background:var(--brand);opacity:.6;}
+h1,h2,h3{font-family:var(--ff-d);font-weight:600;line-height:1.14;letter-spacing:-.01em;}
+h2{font-size:clamp(1.6rem,3vw,2.4rem);margin-bottom:14px;}
+h2 em{font-style:italic;color:var(--brand);}
+h3{font-size:1.28rem;}
+.lede{color:var(--text3);font-size:1.02rem;max-width:620px;line-height:1.7;margin-bottom:36px;}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:13px 28px;border-radius:14px;font-size:.9rem;font-weight:600;letter-spacing:.01em;transition:transform .2s,box-shadow .2s,border-color .2s,background .2s;}
+.btn:hover{transform:translateY(-2px);}
+.btn-primary{background:linear-gradient(135deg,var(--brand),var(--bull));color:#05060D;box-shadow:0 10px 28px rgba(16,185,129,.22);}
+.btn-primary:hover{box-shadow:0 16px 40px rgba(16,185,129,.34);}
+.btn-outline{border:1px solid var(--border2);color:var(--text);background:var(--card);}
+.btn-outline:hover{border-color:var(--brand);color:var(--brand);}
+.tag{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-family:var(--ff-m);font-size:.64rem;letter-spacing:.04em;border:1px solid var(--border);color:var(--text3);background:var(--card);}
+.tag.brand{border-color:var(--border2);color:var(--brand);background:var(--brand-dim);}
+.tag.north{border-color:var(--bull);color:var(--bull);background:var(--bull-dim);}
+.tag.south{border-color:var(--bear);color:var(--bear);background:var(--bear-dim);}
+.glass{background:var(--glass);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid var(--border);border-radius:18px;}
+
+/* ── Hero ───────────────────────────────────────────────── */
+#hero{min-height:92vh;display:flex;align-items:center;padding:150px 0 60px;overflow:hidden;}
+.hero-bg{position:absolute;inset:0;pointer-events:none;}
+.hero-bg .grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:76px 76px;mask-image:radial-gradient(ellipse 75% 75% at 50% 40%,black,transparent 80%);}
+body.light .hero-bg .grid{background-image:linear-gradient(rgba(10,31,23,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(10,31,23,.045) 1px,transparent 1px);}
+.hero-bg .glow1{position:absolute;top:-15%;left:-8%;width:60%;height:70%;background:radial-gradient(ellipse,rgba(16,185,129,.10),transparent 62%);}
+.hero-bg .glow2{position:absolute;bottom:-12%;right:-6%;width:46%;height:58%;background:radial-gradient(ellipse,rgba(6,182,212,.08),transparent 62%);}
+.hero-inner{position:relative;z-index:2;}
+.hero-pill{display:inline-flex;align-items:center;gap:12px;flex-wrap:wrap;padding:9px 18px;border-radius:40px;border:1px solid var(--border2);background:var(--card);margin-bottom:26px;font-family:var(--ff-m);font-size:.68rem;letter-spacing:.08em;color:var(--text2);}
+.hero-pill .hp-dot{width:7px;height:7px;border-radius:50%;background:var(--bull);box-shadow:0 0 10px var(--bull);}
+.hero-title{font-size:clamp(2.3rem,4.6vw,3.7rem);margin-bottom:20px;max-width:880px;}
+.hero-title em{font-style:italic;color:var(--brand);}
+.hero-sub{font-size:1.08rem;color:var(--text3);line-height:1.75;max-width:720px;margin-bottom:34px;}
+.hero-sub strong{color:var(--text2);font-weight:600;}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:42px;}
+
+/* ── Mental model intro block ───────────────────────────── */
+.intro{border-left:3px solid var(--brand);background:var(--card);border-radius:0 16px 16px 0;padding:26px 30px;margin-bottom:44px;}
+.intro .intro-label{font-family:var(--ff-m);font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--brand);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.intro p{font-size:1.14rem;line-height:1.8;color:var(--text2);}
+.intro p strong{color:var(--text);font-weight:700;}
+.intro .intro-note{margin-top:16px;font-family:var(--ff-m);font-size:.78rem;color:var(--text3);display:flex;gap:8px;align-items:flex-start;}
+
+/* ── Read-order flow diagram ────────────────────────────── */
+.readflow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:30px 0 8px;}
+.rf-node{display:flex;flex-direction:column;gap:2px;padding:12px 18px;border-radius:14px;border:1px solid var(--border);background:var(--card);min-width:118px;}
+.rf-node .rf-k{font-family:var(--ff-m);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text4);}
+.rf-node .rf-v{font-family:var(--ff-d);font-weight:600;font-size:1.02rem;color:var(--text);}
+.rf-node.terminal{border-color:var(--border2);background:var(--brand-dim);}
+.rf-node.terminal .rf-v{color:var(--brand);}
+.rf-arrow{font-family:var(--ff-m);color:var(--brand);font-size:1.1rem;flex-shrink:0;}
+.readflow-note{font-family:var(--ff-m);font-size:.74rem;color:var(--text4);margin-top:14px;}
+
+/* ── On-this-page TOC ───────────────────────────────────── */
+.toc{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px;}
+.toc a{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:24px;border:1px solid var(--border);background:var(--card);font-family:var(--ff-m);font-size:.72rem;letter-spacing:.03em;color:var(--text3);transition:border-color .2s,color .2s,background .2s;}
+.toc a:hover{border-color:var(--brand);color:var(--brand);}
+.toc a b{color:var(--brand);font-weight:700;}
+
+/* ── Module cards ───────────────────────────────────────── */
+.module{background:var(--card);border:1px solid var(--border);border-radius:20px;overflow:hidden;margin-bottom:34px;box-shadow:0 2px 18px rgba(0,0,0,.05);}
+.module-head{display:flex;align-items:center;gap:16px;padding:22px 26px;border-bottom:1px solid var(--border);}
+.module-head .m-n{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:12px;font-family:var(--ff-m);font-weight:700;font-size:.86rem;color:var(--brand);background:var(--brand-dim);border:1px solid var(--border2);flex-shrink:0;}
+.module-head .m-title h3{color:var(--text);}
+.module-head .m-title p{font-size:.84rem;color:var(--text3);margin-top:3px;}
+.module-head .m-tags{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
+.module-body{display:grid;grid-template-columns:1fr 1fr;gap:0;}
+.module-body.full{grid-template-columns:1fr;}
+.mb-viz{padding:24px;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:14px;background:var(--bg3);}
+.module-body.full .mb-viz{border-right:none;border-bottom:1px solid var(--border);}
+.mb-viz .viz-caption{font-family:var(--ff-m);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text4);}
+.mb-table{padding:24px;overflow-x:auto;}
+
+/* ── Field tables ───────────────────────────────────────── */
+.fields{width:100%;border-collapse:collapse;}
+.fields th{font-family:var(--ff-m);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text4);text-align:left;padding:10px 14px;border-bottom:1px solid var(--border2);}
+.fields td{padding:13px 14px;border-bottom:1px solid var(--border);vertical-align:top;font-size:.9rem;color:var(--text2);line-height:1.6;}
+.fields tr:last-child td{border-bottom:none;}
+.fields td.f{font-family:var(--ff-m);font-size:.8rem;color:var(--text);white-space:nowrap;min-width:150px;}
+.fields td.f .f-sub{display:block;font-size:.68rem;color:var(--text4);margin-top:3px;white-space:normal;}
+.fields td.f .mono-dot{color:var(--brand);}
+
+/* ── Grade scale ────────────────────────────────────────── */
+.grade-scale{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:20px 0;}
+.gs{text-align:center;padding:16px 8px;border-radius:12px;border:1px solid var(--border);background:var(--card);}
+.gs .g-name{font-family:var(--ff-d);font-weight:600;font-size:1.02rem;}
+.gs .g-dens{font-family:var(--ff-m);font-size:.66rem;color:var(--text4);margin-top:4px;letter-spacing:.05em;}
+.gs .g-bar{height:5px;border-radius:4px;margin-top:10px;background:var(--bg3);overflow:hidden;}
+.gs .g-bar i{display:block;height:100%;}
+.gs.watch .g-name{color:var(--text3);} .gs.watch .g-bar i{background:var(--text4);}
+.gs.prime .g-name{color:var(--bull);} .gs.prime .g-bar i{background:var(--bull);}
+.gs.elite .g-name{color:var(--brand);} .gs.elite .g-bar i{background:var(--brand);}
+.gs.singular .g-name{color:var(--amber);} .gs.singular .g-bar i{background:var(--amber);}
+
+/* ── Order Flow special color legend ────────────────────── */
+.ofi-legend{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:6px;}
+.ofi-lg{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:12px;border:1px solid var(--border);background:var(--card);}
+.ofi-lg .sw{display:flex;flex-direction:column;gap:7px;flex-shrink:0;}
+.ofi-lg .sw .row{display:flex;align-items:center;gap:7px;font-family:var(--ff-m);font-size:.66rem;color:var(--text3);}
+.ofi-lg .sw .row .glyph{width:13px;height:13px;flex-shrink:0;}
+.ofi-lg .sw .row .glyph.circle{border-radius:50%;}
+.ofi-lg .sw .row .glyph.diamond{transform:rotate(45deg);border-radius:2px;}
+.ofi-lg .sw .row .glyph.line{height:4px;width:16px;border-radius:2px;}
+.ofi-lg .lg-name{font-family:var(--ff-m);font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text);margin-bottom:2px;}
+.ofi-lg .lg-desc{font-size:.72rem;color:var(--text4);line-height:1.45;}
+
+/* ── Recipe cards ───────────────────────────────────────── */
+.recipes{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:8px;}
+.recipe{padding:24px;border-radius:18px;border:1px solid var(--border);background:var(--card);}
+.recipe .rc-n{font-family:var(--ff-m);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--brand);margin-bottom:10px;}
+.recipe h3{margin-bottom:10px;}
+.recipe p{font-size:.9rem;color:var(--text3);line-height:1.65;}
+.recipe .rc-flow{margin-top:14px;font-family:var(--ff-m);font-size:.74rem;color:var(--text2);background:var(--brand-dim);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;line-height:1.8;}
+
+/* ── Alert message sample ───────────────────────────────── */
+.alert-sample{font-family:var(--ff-m);font-size:.84rem;line-height:1.8;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-top:16px;color:var(--text2);overflow-x:auto;white-space:nowrap;}
+.alert-sample .a-buy{color:var(--bull);font-weight:700;}
+.alert-sample .a-meta{color:var(--text4);}
+
+/* ── Limitations list ───────────────────────────────────── */
+.limits{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px;}
+.limit{display:flex;gap:14px;padding:18px;border-radius:14px;border:1px solid var(--border);background:var(--card);}
+.limit .l-ico{font-family:var(--ff-m);color:var(--amber);font-size:1.1rem;line-height:1;flex-shrink:0;}
+.limit p{font-size:.88rem;color:var(--text3);line-height:1.6;}
+.limit p strong{color:var(--text2);font-weight:600;}
+
+/* ── Callout ────────────────────────────────────────────── */
+.callout{display:flex;gap:14px;padding:18px 20px;border-radius:14px;border:1px solid var(--border2);background:var(--brand-dim);margin:22px 0;}
+.callout.warn{border-color:var(--amber);background:var(--amber-dim);}
+.callout .c-ico{font-family:var(--ff-m);color:var(--brand);flex-shrink:0;line-height:1.3;}
+.callout.warn .c-ico{color:var(--amber);}
+.callout p{font-size:.9rem;color:var(--text2);line-height:1.65;}
+.callout p strong{color:var(--text);font-weight:600;}
+
+/* ── Footer ─────────────────────────────────────────────── */
+footer{background:var(--bg2);border-top:1px solid var(--border);padding:70px 0 44px;margin-top:40px;}
+.footer-grid{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr 1fr;gap:34px;margin-bottom:44px;}
+.footer-brand .f-logo{font-family:var(--ff-d);font-weight:700;font-size:1.4rem;color:var(--text);}
+.footer-brand .f-logo span{color:var(--brand);}
+.footer-brand .f-mission{font-size:.86rem;color:var(--text3);line-height:1.65;margin:14px 0 16px;max-width:300px;}
+.f-status{display:inline-flex;align-items:center;gap:8px;font-family:var(--ff-m);font-size:.68rem;color:var(--text3);}
+.f-status i{width:7px;height:7px;border-radius:50%;background:var(--bull);box-shadow:0 0 8px var(--bull);}
+.f-social{display:flex;gap:16px;margin-top:18px;font-size:.82rem;color:var(--text4);}
+.f-social a:hover{color:var(--brand);}
+.footer-col h4{font-family:var(--ff-m);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text2);margin-bottom:16px;}
+.footer-col a{display:block;font-size:.84rem;color:var(--text3);padding:5px 0;transition:color .2s;}
+.footer-col a:hover{color:var(--brand);}
+.footer-bottom{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-top:26px;border-top:1px solid var(--border);font-size:.8rem;color:var(--text4);}
+.footer-disclaimer{font-size:.72rem;color:var(--text4);line-height:1.7;margin-top:22px;}
+
+/* ── Reveal ─────────────────────────────────────────────── */
+.reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease;}
+.reveal.in{opacity:1;transform:translateY(0);}
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media(max-width:1080px){
+  .module-body{grid-template-columns:1fr;}
+  .mb-viz{border-right:none;border-bottom:1px solid var(--border);}
+  .recipes{grid-template-columns:1fr;}
+  .limits{grid-template-columns:1fr;}
+  .ofi-legend{grid-template-columns:1fr;}
+  .grade-scale{grid-template-columns:repeat(3,1fr);}
+  .footer-grid{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:900px){
+  #scope,#scope-ring,#scope-dot{display:none;}
+  body{cursor:auto;}
+  button{cursor:pointer;}
+  nav{padding:0 20px;}
+  .nav-menu{display:none;}
+  .nav-burger{display:flex;}
+  .container{padding:0 22px;}
+  section{padding:60px 0;}
+  .footer-grid{grid-template-columns:1fr;}
+  .grade-scale{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body class="light">
+
+<!-- Precision scope cursor -->
+<div id="scope" aria-hidden="true">
+  <span class="s-ring s-r1"></span>
+  <span class="s-ring s-r2"></span>
+  <span class="s-h"></span>
+  <span class="s-v"></span>
+  <span class="s-center"></span>
+</div>
+<div id="scope-ring"></div>
+<div id="scope-dot"></div>
+
+<!-- NAV -->
+<nav>
+  <a class="logo" href="/index.html"><b>SNIPERTRADER</b><span>.ai</span></a>
+  <ul class="nav-menu">
+    <li class="nav-item" data-drop>
+      <button class="nav-link" onclick="toggleDrop(this)">Market Intelligence <span class="caret">▾</span></button>
+      <div class="dropdown">
+        <a href="/market_forecaster.html"><span class="d-name">Sniper Market Forecaster</span><span class="d-sub">Macro price targets &amp; high-probability setups scored by ML</span></a>
+        <a href="/market_radar.html"><span class="d-name">Daily Market Radar</span><span class="d-sub">Pre-market scan across the full watchlist</span></a>
+        <a href="/traderedge_preflight.html"><span class="d-name">Preflight Protocol</span><span class="d-sub">Daily pre-market playbook &amp; bias calibration</span></a>
+      </div>
+    </li>
+    <li class="nav-item" data-drop>
+      <button class="nav-link active" onclick="toggleDrop(this)">Proprietary Algos <span class="caret">▾</span></button>
+      <div class="dropdown">
+        <a href="/NoRepaint_Pivot_indicator.html"><span class="d-name">No Repaint Indicator</span><span class="d-sub">Confirmed-at-close signal execution</span></a>
+        <a href="/USME_ICT_Core.html"><span class="d-name">USME ICT Core Engine</span><span class="d-sub">Smart Money Concepts automation</span></a>
+        <a href="/USME_VWAP_Elite_Suite.html"><span class="d-name">USME VWAP Suite Engine</span><span class="d-sub">Institutional volume-weighted targeting</span></a>
+        <a href="/Meridian_Engine.html"><span class="d-name">Meridian Engine</span><span class="d-sub">Regime-aware lattice + liquidity memory map</span></a>
+        <a href="/Meridian_OFI_Engine.html"><span class="d-name">Meridian OFI Engine</span><span class="d-sub">Order flow — CVD, absorption &amp; imbalance</span></a>
+        <a href="/Meridian_OFI_Stacked_imbalance_logic_Engine.html"><span class="d-name">Meridian OFI Engine — Stacked imbalance logic</span><span class="d-sub">Features &amp; abilities overview</span></a>
+        <a href="/Meridian_Dashboard_User_Guide.html" class="active"><span class="d-name">Meridian Dashboard — User Guide</span><span class="d-sub">Field-by-field reading guide + broker, alerts, journal</span></a>
+        <a href="/all_products.html"><span class="d-name">All Products</span></a>
+      </div>
+    </li>
+    <li class="nav-item" data-drop>
+      <button class="nav-link" onclick="toggleDrop(this)">Prop Firm <span class="caret">▾</span></button>
+      <div class="dropdown">
+        <a href="/traderedge_prop_firms_command_center.html"><span class="d-name">Command Center</span><span class="d-sub">Live account matrix &amp; rule guardrails</span></a>
+        <a href="/prop_firm_dashboard.html"><span class="d-name">Prop Firm Intelligence</span><span class="d-sub">Ranked firms by Sniper Score™</span></a>
+        <a href="/Prop_firm_MasterPlan.html"><span class="d-name">Prop Firm Master Plan</span><span class="d-sub">The funded-trader roadmap</span></a>
+      </div>
+    </li>
+    <li class="nav-item"><a class="nav-link" href="https://discord.com/servers/zeiierman-trading-764500290614591538">Discord</a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="theme-toggle" id="theme-btn" aria-label="Toggle light/dark mode">☀ <span id="theme-label">Dark</span></button>
+    <a class="nav-cta" href="/admin.html">LOGIN</a>
+    <button class="nav-burger" id="burger" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<!-- Mobile menu -->
+<div class="mobile-menu" id="mobileMenu">
+  <div class="mm-group">Market Intelligence</div>
+  <a class="mm-sub" href="/market_forecaster.html">Sniper Market Forecaster</a>
+  <a class="mm-sub" href="/market_radar.html">Daily Market Radar</a>
+  <a class="mm-sub" href="/traderedge_preflight.html">Preflight Protocol</a>
+  <div class="mm-group">Proprietary Algos</div>
+  <a class="mm-sub" href="/NoRepaint_Pivot_indicator.html">No Repaint Indicator</a>
+  <a class="mm-sub" href="/USME_ICT_Core.html">USME ICT Core Engine</a>
+  <a class="mm-sub" href="/USME_VWAP_Elite_Suite.html">USME VWAP Suite Engine</a>
+  <a class="mm-sub" href="/Meridian_Engine.html">Meridian Engine</a>
+  <a class="mm-sub" href="/Meridian_OFI_Engine.html">Meridian OFI Engine</a>
+  <a class="mm-sub" href="/Meridian_OFI_Stacked_imbalance_logic_Engine.html">Meridian OFI Engine — Stacked Imbalance Logic</a>
+  <a class="mm-sub" href="/Meridian_Dashboard_User_Guide.html">Meridian Dashboard — User Guide</a>
+  <div class="mm-group">Academy</div>
+  <a class="mm-link" href="/all_products.html#masterplans">Sniper Academy</a>
+  <a class="mm-link" href="/admin.html">Login</a>
+</div>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-status"><span class="live-dot"></span>Meridian Dashboard — User Guide</div>
+  <div class="ticker-track">
+    <div class="ticker-inner">
+      <span class="tick-item"><span class="t-brand">◆</span> Read order — Regime → 3-Gate → Lattice → Order Flow → Liquidity → Signal</span>
+      <span class="tick-item"><span class="t-brand">◆</span> Confirmation filter, not a signal generator</span>
+      <span class="tick-item"><span class="t-brand">◆</span> Order Flow Intelligence — CVD · Abs · Imb · Stack</span>
+      <span class="tick-item"><span class="t-brand">◆</span> Event Lattice — WATCH → SINGULAR</span>
+      <span class="tick-item"><span class="t-brand">◆</span> Paper broker — Alpaca bracket orders</span>
+      <span class="tick-item"><span class="t-brand">◆</span> Alerts — browser + webhook</span>
+      <span class="tick-item"><span class="t-brand">◆</span> Read order — Regime → 3-Gate → Lattice → Order Flow → Liquidity → Signal</span>
+      <span class="tick-item"><span class="t-brand">◆</span> Confirmation filter, not a signal generator</span>
+      <span class="tick-item"><span class="t-brand">◆</span> Order Flow Intelligence — CVD · Abs · Imb · Stack</span>
+      <span class="tick-item"><span class="t-brand">◆</span> Event Lattice — WATCH → SINGULAR</span>
+      <span class="tick-item"><span class="t-brand">◆</span> Paper broker — Alpaca bracket orders</span>
+      <span class="tick-item"><span class="t-brand">◆</span> Alerts — browser + webhook</span>
+    </div>
+  </div>
+</div>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-bg"><div class="grid"></div><div class="glow1"></div><div class="glow2"></div></div>
+  <div class="container hero-inner">
+    <div class="hero-pill"><span class="hp-dot"></span><span>Meridian Dashboard — User Guide</span><span>v2 · Order Flow Intelligence layer</span></div>
+    <h1 class="hero-title">How to read the engine. <em>In the right order.</em></h1>
+    <p class="hero-sub">A field-by-field walkthrough of the <strong>Meridian OFI Dashboard</strong> — the Order Flow Intelligence layer built on top of Meridian Engine v2. Every panel, every label, and every button, explained once, with the <strong>special color format</strong> that maps each order-flow read to its own shape and color.</p>
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="#modules">Start reading the modules</a>
+      <a class="btn btn-outline" href="#broker">Set up paper trading</a>
+    </div>
+
+    <div class="intro reveal">
+      <div class="intro-label">The one-paragraph mental model</div>
+      <p>The engine is a <strong>confirmation filter, not a signal generator.</strong> You read it in this order — <strong>Regime → 3-Gate → Lattice → Order Flow → Liquidity → Signal</strong> — and it only prints a trade when all the gates line up on one side. Most bars will show <strong>grade — and no signal.</strong> That's the engine honestly saying "no aligned setup", not a bug.</p>
+      <div class="readflow" role="img" aria-label="Read order: Regime, 3-Gate, Lattice, Order Flow, Liquidity, Signal">
+        <div class="rf-node"><span class="rf-k">1</span><span class="rf-v">Regime</span></div><span class="rf-arrow">→</span>
+        <div class="rf-node"><span class="rf-k">2</span><span class="rf-v">3-Gate</span></div><span class="rf-arrow">→</span>
+        <div class="rf-node"><span class="rf-k">3</span><span class="rf-v">Lattice</span></div><span class="rf-arrow">→</span>
+        <div class="rf-node"><span class="rf-k">4</span><span class="rf-v">Order Flow</span></div><span class="rf-arrow">→</span>
+        <div class="rf-node"><span class="rf-k">5</span><span class="rf-v">Liquidity</span></div><span class="rf-arrow">→</span>
+        <div class="rf-node terminal"><span class="rf-k">6</span><span class="rf-v">Signal</span></div>
+      </div>
+      <div class="intro-note">Educational &amp; analytical tool only. The engine computes over delayed/simulated data by default — read §6 before treating any read as executable advice.</div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 1 — MODULES -->
+<section id="modules">
+  <div class="container">
+    <div class="eyebrow reveal">1 · Reading each module</div>
+    <h2 class="reveal">Every panel, <em>field by field.</em></h2>
+    <p class="lede reveal">The dashboard is a vertical stack of seven readouts plus the top bar. Read top-to-bottom — the top bar first, then the engine, then the signal surface. Use the chapter pills to jump.</p>
+    <div class="toc reveal">
+      <a href="#mod-topbar"><b>01</b> Top bar</a>
+      <a href="#mod-regime"><b>02</b> Regime</a>
+      <a href="#mod-gates"><b>03</b> 3-Gate</a>
+      <a href="#mod-lattice"><b>04</b> Lattice</a>
+      <a href="#mod-ofi"><b>05</b> Order Flow</a>
+      <a href="#mod-liquidity"><b>06</b> Liquidity</a>
+      <a href="#mod-signal"><b>07</b> Signal &amp; Path</a>
+      <a href="#mod-chart"><b>08</b> VWAP σ chart</a>
+    </div>
+
+    <!-- 01 Top bar -->
+    <div class="module reveal" id="mod-topbar">
+      <div class="module-head">
+        <span class="m-n">01</span>
+        <div class="m-title"><h3>Top bar — tape vs bar</h3><p>The two prices are deliberately split. They are not the same thing.</p></div>
+        <div class="m-tags"><span class="tag brand">tape</span><span class="tag">bar</span><span class="tag north">●LIVE</span></div>
+      </div>
+      <div class="module-body">
+        <div class="mb-viz">
+          <span class="viz-caption">Top bar — the two prices</span>
+          <svg viewBox="0 0 460 150" width="100%" height="150" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Tape quote versus bar close comparison">
+            <rect x="20" y="16" width="420" height="54" rx="12" fill="none" stroke="#10B981" stroke-width="1" opacity=".4"/>
+            <text x="38" y="40" font-family="Space Mono,monospace" font-size="11" fill="#9CA5C4">tape</text>
+            <text x="38" y="58" font-family="Space Mono,monospace" font-size="15" font-weight="700" fill="#22C55E">$771.21</text>
+            <circle cx="420" cy="33" r="4" fill="#22C55E"/>
+            <text x="392" y="37" font-family="Space Mono,monospace" font-size="10" fill="#22C55E">LIVE</text>
+            <rect x="20" y="80" width="420" height="54" rx="12" fill="none" stroke="#64748B" stroke-width="1" opacity=".4"/>
+            <text x="38" y="104" font-family="Space Mono,monospace" font-size="11" fill="#9CA5C4">bar</text>
+            <text x="38" y="122" font-family="Space Mono,monospace" font-size="15" font-weight="700" fill="#E9ECF7">$772.04</text>
+            <text x="392" y="117" font-family="Space Mono,monospace" font-size="9" fill="#64748B">delayed</text>
+          </svg>
+          <span class="viz-caption">tape = live IEX quote · bar = delayed Polygon close</span>
+        </div>
+        <div class="mb-table">
+          <table class="fields">
+            <thead><tr><th>Label</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr><td class="f">tape <span style="color:var(--bull)">$771.21</span> <span style="color:var(--bull)">●LIVE</span></td><td>Live Alpaca quote (IEX). <strong>●LIVE</strong> = fresh (&lt;5 min); <strong>○stale</strong> = market closed / no fresh tape.</td></tr>
+              <tr><td class="f">bar <span style="color:var(--text)">$772.04</span></td><td>The engine's last delayed Polygon candle close — what the engine actually computes on.</td></tr>
+            </tbody>
+          </table>
+          <div class="callout">
+            <span class="c-ico">ⓘ</span>
+            <p>They can differ ~1% (raw IEX last vs Polygon adjusted close) — that's two different things, which is exactly why they're split. Also in the top bar: <strong>bias chip</strong> (BULL/BEAR/FLAT), <strong>LIVE·DELAYED / SIMULATION</strong> (real vs synthetic data), and the <strong>broker badge</strong> (PAPER · connected, SIMULATED · no key, etc.).</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 02 Regime -->
+    <div class="module reveal" id="mod-regime">
+      <div class="module-head">
+        <span class="m-n">02</span>
+        <div class="m-title"><h3>Regime Engine panel</h3><p>What kind of market you are in — every downstream read leans on it.</p></div>
+        <div class="m-tags"><span class="tag brand">TREND</span><span class="tag">RANGE</span><span class="tag">TRANSITION</span></div>
+      </div>
+      <div class="module-body">
+        <div class="mb-viz">
+          <span class="viz-caption">Regime classification — ADX × ribbon</span>
+          <svg viewBox="0 0 460 150" width="100%" height="150" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Regime bands: trend, range, transition">
+            <rect x="0" y="10" width="150" height="130" fill="rgba(34,197,94,.06)"/>
+            <rect x="310" y="10" width="150" height="130" fill="rgba(251,191,36,.06)"/>
+            <text x="24" y="30" font-family="Space Mono,monospace" font-size="10" fill="#9CA5C4">TREND</text>
+            <text x="180" y="30" font-family="Space Mono,monospace" font-size="10" fill="#9CA5C4">RANGE</text>
+            <text x="326" y="30" font-family="Space Mono,monospace" font-size="10" fill="#9CA5C4">TRANSITION</text>
+            <path d="M10,120 C70,110 120,70 180,84 C240,98 300,88 360,60 C400,44 430,40 452,34" fill="none" stroke="#22C55E" stroke-width="2"/>
+            <line x1="10" y1="120" x2="452" y2="120" stroke="#64748B" stroke-width="1" stroke-dasharray="3 5" opacity=".5"/>
+            <text x="360" y="92" font-family="Space Mono,monospace" font-size="9" fill="#FBBF24">ADX &lt; 20</text>
+            <text x="24" y="146" font-family="Space Mono,monospace" font-size="9" fill="#9CA5C4">EMA 9&gt;21&gt;50 = ribbon aligned</text>
+          </svg>
+          <span class="viz-caption">ADX(14) ≥ 25 + aligned ribbon → TREND</span>
+        </div>
+        <div class="mb-table">
+          <table class="fields">
+            <thead><tr><th>Field</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr><td class="f">TREND / RANGE / TRANSITION</td><td>ADX(14) ≥ 25 + aligned ribbon = <strong>TREND</strong>; ADX &lt; 20 + mixed ribbon = <strong>RANGE</strong>; else <strong>TRANSITION</strong>.</td></tr>
+              <tr><td class="f">ADX</td><td>Trend strength. <strong>&gt;25</strong> = trend, <strong>&lt;20</strong> = no trend.</td></tr>
+              <tr><td class="f">ATR RS</td><td>ATR ÷ its 100-bar average — volatility expanding vs contracting.</td></tr>
+              <tr><td class="f">Ribbon</td><td><strong>BULL</strong> (EMA9&gt;21&gt;50) / <strong>BEAR</strong> / <strong>MIXED</strong> — medium-term direction.</td></tr>
+              <tr><td class="f">RR</td><td>Target R:R — TP2 is priced at (base preset ± regime adjustment).</td></tr>
+              <tr><td class="f">Timeframe → preset</td><td>5m/15m→<strong>Intraday</strong>, 1h/4h→<strong>Swing</strong>, 1d→<strong>Position</strong> — each changes stop distance and base R:R.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 03 3-Gate -->
+    <div class="module reveal" id="mod-gates">
+      <div class="module-head">
+        <span class="m-n">03</span>
+        <div class="m-title"><h3>3-Gate Core panel</h3><p>A signal must clear all three gates on one side only.</p></div>
+        <div class="m-tags"><span class="tag brand">bias</span><span class="tag north">armed</span><span class="tag">zone</span></div>
+      </div>
+      <div class="module-body">
+        <div class="mb-viz">
+          <span class="viz-caption">Three gates in series — all must pass</span>
+          <svg viewBox="0 0 460 150" width="100%" height="150" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Three gates: bias, armed, zone, into signal">
+            <rect x="16" y="52" width="112" height="46" rx="10" fill="none" stroke="#10B981" stroke-width="1.4"/>
+            <text x="72" y="70" text-anchor="middle" font-family="Space Mono,monospace" font-size="10" fill="#E9ECF7">1 · BIAS</text>
+            <text x="72" y="85" text-anchor="middle" font-family="Space Mono,monospace" font-size="8" fill="#9CA5C4">gate1_long/short</text>
+            <path d="M128,75 L156,75" stroke="#10B981" stroke-width="1.4" fill="none"/>
+            <path d="M150,75 l6,-5 l0,10 z" fill="#10B981"/>
+            <rect x="158" y="52" width="112" height="46" rx="10" fill="none" stroke="#22C55E" stroke-width="1.4"/>
+            <text x="214" y="70" text-anchor="middle" font-family="Space Mono,monospace" font-size="10" fill="#E9ECF7">2 · ARMED</text>
+            <text x="214" y="85" text-anchor="middle" font-family="Space Mono,monospace" font-size="8" fill="#9CA5C4">sweep · vwap · choch</text>
+            <path d="M270,75 L298,75" stroke="#22C55E" stroke-width="1.4" fill="none"/>
+            <path d="M292,75 l6,-5 l0,10 z" fill="#22C55E"/>
+            <rect x="300" y="52" width="112" height="46" rx="10" fill="none" stroke="#06B6D4" stroke-width="1.4"/>
+            <text x="356" y="70" text-anchor="middle" font-family="Space Mono,monospace" font-size="10" fill="#E9ECF7">3 · ZONE</text>
+            <text x="356" y="85" text-anchor="middle" font-family="Space Mono,monospace" font-size="8" fill="#9CA5C4">FVG retest</text>
+            <text x="230" y="128" text-anchor="middle" font-family="Space Mono,monospace" font-size="9" fill="#9CA5C4">filter: grade_ok (lattice ≥ min grade)</text>
+            <rect x="150" y="112" width="160" height="20" rx="10" fill="rgba(16,185,129,.10)" stroke="#10B981" stroke-width="1" opacity=".8"/>
+            <text x="230" y="126" text-anchor="middle" font-family="Space Mono,monospace" font-size="9" fill="#22C55E">all clear → SIGNAL</text>
+          </svg>
+          <span class="viz-caption">One side only — never a conflicting pair</span>
+        </div>
+        <div class="mb-table">
+          <table class="fields">
+            <thead><tr><th>Gate</th><th>Field</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr><td class="f">1 · Bias</td><td class="f">gate1_long / gate1_short</td><td>Regime-aware direction (ribbon/cloud in TREND; extremes in RANGE).</td></tr>
+              <tr><td class="f">2 · Armed</td><td class="f">bull_armed / bear_armed <span class="f-sub">+ armed_type</span></td><td>A trigger fired: <strong>sweep</strong> (liquidity grab), <strong>vwap</strong> (reclaim), or <strong>choch</strong> (change of character). Expires after a few bars.</td></tr>
+              <tr><td class="f">3 · Zone</td><td class="f">in_bull_zone / in_bear_zone</td><td>Price retested an unmitigated FVG zone.</td></tr>
+              <tr><td class="f">Filter</td><td class="f">grade_ok_l / grade_ok_s</td><td>Lattice grade clears your min grade.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 04 Lattice -->
+    <div class="module reveal" id="mod-lattice">
+      <div class="module-head">
+        <span class="m-n">04</span>
+        <div class="m-title"><h3>Event Lattice panel</h3><p>How many distinct event types cluster near price — density becomes a grade.</p></div>
+        <div class="m-tags"><span class="tag brand">WATCH → SINGULAR</span><span class="tag">distinct types</span></div>
+      </div>
+      <div class="module-body">
+        <div class="mb-viz">
+          <span class="viz-caption">Density → grade (distinct event types, not total events)</span>
+          <svg viewBox="0 0 460 150" width="100%" height="150" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Event density maps to grade">
+            <circle cx="70" cy="52" r="5" fill="#22C55E"/><circle cx="104" cy="44" r="5" fill="#10B981"/><circle cx="138" cy="56" r="5" fill="#06B6D4"/><circle cx="96" cy="74" r="5" fill="#FBBF24"/><circle cx="132" cy="30" r="5" fill="#D946EF"/>
+            <text x="104" y="98" text-anchor="middle" font-family="Space Mono,monospace" font-size="9" fill="#22C55E">dense → SINGULAR</text>
+            <path d="M150,52 C200,54 230,48 260,40" stroke="#64748B" stroke-width="1" stroke-dasharray="3 5" opacity=".6"/>
+            <circle cx="322" cy="50" r="5" fill="#EF4444"/><circle cx="372" cy="60" r="5" fill="#DC2626"/>
+            <text x="347" y="98" text-anchor="middle" font-family="Space Mono,monospace" font-size="9" fill="#9CA5C4">sparse → WATCH</text>
+            <line x1="20" y1="122" x2="440" y2="122" stroke="#64748B" stroke-width="1" opacity=".4"/>
+            <text x="20" y="140" font-family="Space Mono,monospace" font-size="9" fill="#9CA5C4">sweep · CHoCH · BOS · VWAP reclaim · band touch · FVG · absorption · imbalance · stacked imbalance</text>
+          </svg>
+          <span class="viz-caption">Two sweeps = one type · magnet nearby bumps +1</span>
+        </div>
+        <div class="mb-table">
+          <table class="fields">
+            <thead><tr><th>Grade</th><th>Density</th></tr></thead>
+            <tbody>
+              <tr><td class="f">—</td><td>&lt; 2</td></tr>
+              <tr><td class="f"><span style="color:var(--text3)">WATCH</span></td><td>2</td></tr>
+              <tr><td class="f"><span style="color:var(--bull)">PRIME</span></td><td>3</td></tr>
+              <tr><td class="f"><span style="color:var(--brand)">ELITE</span></td><td>4</td></tr>
+              <tr><td class="f"><span style="color:var(--amber)">SINGULAR</span></td><td>5+</td></tr>
+            </tbody>
+          </table>
+          <p style="font-size:.86rem;color:var(--text3);margin-top:14px;line-height:1.7;">Events counted: <strong>sweep · CHoCH · BOS · VWAP reclaim · band touch · FVG · absorption · imbalance · stacked imbalance</strong>. <em>Distinct types, not total events</em> (two sweeps = one type). A nearby liquidity magnet can bump grade <strong>+1</strong>.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 05 Order Flow (special color format) -->
+    <div class="module reveal" id="mod-ofi">
+      <div class="module-head">
+        <span class="m-n">05</span>
+        <div class="m-title"><h3>Order Flow Intelligence panel</h3><p>Four order-flow reads — each with its own <strong>special color format</strong>.</p></div>
+        <div class="m-tags"><span class="tag brand">special color format</span><span class="tag north">CVD</span><span class="tag">·px</span></div>
+      </div>
+      <div class="module-body full">
+        <div class="mb-viz">
+          <span class="viz-caption">Order Flow Intelligence — the special color format</span>
+          <svg viewBox="0 0 760 210" width="100%" height="210" preserveAspectRatio="xMidYMid meet" role="img" aria-label="CVD line, absorption circles, imbalance diamonds, and stacked imbalance bars">
+            <line x1="20" y1="60" x2="740" y2="60" stroke="#64748B" stroke-width="1" opacity=".35"/>
+            <line x1="20" y1="150" x2="740" y2="150" stroke="#64748B" stroke-width="1" opacity=".35"/>
+            <text x="20" y="30" font-family="Space Mono,monospace" font-size="9" fill="#9CA5C4">CVD slope (3-bar) — line</text>
+            <text x="20" y="190" font-family="Space Mono,monospace" font-size="9" fill="#9CA5C4">stacked imbalance — bar (≥3 consecutive same-side bars)</text>
+            <path d="M30,52 C90,46 150,30 210,36 C270,42 330,58 390,50" fill="none" stroke="#22C55E" stroke-width="2"/>
+            <path d="M390,50 C440,44 480,60 520,68 C560,76 600,78 640,82" fill="none" stroke="#EF4444" stroke-width="2"/>
+            <circle cx="150" cy="30" r="7" fill="#22C55E"/>
+            <circle cx="480" cy="60" r="7" fill="#EF4444"/>
+            <circle cx="240" cy="42" r="6" fill="#22C55E" opacity=".85"/>
+            <polygon points="330,50 337,43 344,50 337,57" fill="#06B6D4"/>
+            <polygon points="520,68 527,61 534,68 527,75" fill="#D946EF"/>
+            <polygon points="420,44 427,37 434,44 427,51" fill="#06B6D4" opacity=".85"/>
+            <rect x="540" y="150" width="14" height="14" fill="#16A34A"/>
+            <rect x="560" y="150" width="14" height="20" fill="#16A34A"/>
+            <rect x="580" y="150" width="14" height="26" fill="#16A34A"/>
+            <rect x="620" y="150" width="14" height="20" fill="#DC2626"/>
+            <rect x="640" y="150" width="14" height="26" fill="#DC2626"/>
+            <rect x="660" y="150" width="14" height="32" fill="#DC2626"/>
+            <text x="590" y="172" text-anchor="middle" font-family="Space Mono,monospace" font-size="9" fill="#16A34A">↑ buy</text>
+            <text x="650" y="136" text-anchor="middle" font-family="Space Mono,monospace" font-size="9" fill="#DC2626">↓ sell</text>
+            <text x="330" y="40" font-family="Space Mono,monospace" font-size="8" fill="#06B6D4">imb (diamond)</text>
+            <text x="168" y="22" font-family="Space Mono,monospace" font-size="8" fill="#22C55E">absorption (circle)</text>
+          </svg>
+          <div class="ofi-legend" role="img" aria-label="Special color format legend">
+            <div class="ofi-lg">
+              <div class="sw">
+                <div class="row"><span class="glyph line" style="background:#22C55E"></span><span>up · rising</span></div>
+                <div class="row"><span class="glyph line" style="background:#EF4444"></span><span>dn · falling</span></div>
+              </div>
+              <div><div class="lg-name">CVD slope</div><div class="lg-desc">Net buying/selling over last 3 bars — line.</div></div>
+            </div>
+            <div class="ofi-lg">
+              <div class="sw">
+                <div class="row"><span class="glyph circle" style="background:#22C55E"></span><span>up</span></div>
+                <div class="row"><span class="glyph circle" style="background:#EF4444"></span><span>dn</span></div>
+              </div>
+              <div><div class="lg-name">Absorption</div><div class="lg-desc">Level hit but price didn't move — circle. Reversal hint.</div></div>
+            </div>
+            <div class="ofi-lg">
+              <div class="sw">
+                <div class="row"><span class="glyph diamond" style="background:#06B6D4"></span><span>up</span></div>
+                <div class="row"><span class="glyph diamond" style="background:#D946EF"></span><span>dn</span></div>
+              </div>
+              <div><div class="lg-name">Imbalance</div><div class="lg-desc">Strong one-sided delta — diamond. Continuation hint.</div></div>
+            </div>
+          </div>
+          <div class="ofi-legend" style="margin-top:12px;">
+            <div class="ofi-lg">
+              <div class="sw">
+                <div class="row"><span class="glyph line" style="background:#16A34A;width:14px;height:8px"></span><span>up</span></div>
+                <div class="row"><span class="glyph line" style="background:#DC2626;width:14px;height:8px"></span><span>dn</span></div>
+              </div>
+              <div><div class="lg-name">Stacked imbalance</div><div class="lg-desc">≥3 consecutive strong-delta bars — bar. Rarest, most aggressive.</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="mb-table">
+          <table class="fields">
+            <thead><tr><th>Field</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr><td class="f"><span style="color:var(--ofi-up)">CVD slope</span></td><td>Net buying/selling over last 3 bars (rising/falling/flat) — drawn as a <strong>line</strong>.</td></tr>
+              <tr><td class="f"><span style="color:var(--ofi-up)">absorption ↑</span> / <span style="color:var(--ofi-dn)">↓</span></td><td>Sellers/buyers hit a level but price didn't move — the other side is absorbing. <strong>Reversal hint</strong> (circle).</td></tr>
+              <tr><td class="f"><span style="color:var(--ofi-imb-up)">imbalance ↑</span> / <span style="color:var(--ofi-imb-dn)">↓</span></td><td>Strong one-sided delta with structure confirm. <strong>Continuation hint</strong> (diamond).</td></tr>
+              <tr><td class="f"><span style="color:var(--ofi-stack-up)">stacked imbalance ↑</span> / <span style="color:var(--ofi-stack-dn)">↓</span></td><td>≥3 consecutive strong-delta bars. <strong>Rarest, most aggressive</strong> (bar).</td></tr>
+              <tr><td class="f">source ·px</td><td>Stacked uses the <strong>CVD proxy</strong> (native footprint unavailable from OHLCV).</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 06 Liquidity -->
+    <div class="module reveal" id="mod-liquidity">
+      <div class="module-head">
+        <span class="m-n">06</span>
+        <div class="m-title"><h3>Liquidity Memory Map panel</h3><p>Where the magnets are — and where TP3 gets aimed.</p></div>
+        <div class="m-tags"><span class="tag brand">×0.92/bar</span><span class="tag north">top magnet</span></div>
+      </div>
+      <div class="module-body">
+        <div class="mb-viz">
+          <span class="viz-caption">Pools form on sweeps &amp; stacked imbalances — magnets decay and re-charge</span>
+          <svg viewBox="0 0 460 150" width="100%" height="150" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Liquidity magnets above and below price">
+            <path d="M20,78 C80,74 140,82 200,78 C260,74 320,82 380,78 C410,76 430,75 442,74" fill="none" stroke="#E9ECF7" stroke-width="1.6"/>
+            <line x1="120" y1="78" x2="180" y2="78" stroke="#22C55E" stroke-width="1" stroke-dasharray="2 4"/>
+            <circle cx="120" cy="78" r="4" fill="#22C55E"/>
+            <circle cx="150" cy="78" r="8" fill="none" stroke="#22C55E" stroke-width="1" opacity=".5"/>
+            <text x="126" y="56" font-family="Space Mono,monospace" font-size="9" fill="#22C55E">buy-side pool (TP3)</text>
+            <line x1="300" y1="78" x2="360" y2="78" stroke="#EF4444" stroke-width="1" stroke-dasharray="2 4"/>
+            <circle cx="330" cy="78" r="4" fill="#EF4444"/>
+            <text x="306" y="104" font-family="Space Mono,monospace" font-size="9" fill="#EF4444">sell-side pool</text>
+            <text x="20" y="140" font-family="Space Mono,monospace" font-size="9" fill="#9CA5C4">magnet ×0.92/bar · re-charges on reaction · price pulled toward pools</text>
+          </svg>
+          <span class="viz-caption">Top magnet = strongest active pool</span>
+        </div>
+        <div class="mb-table">
+          <p style="font-size:.92rem;color:var(--text2);line-height:1.75;">Pools form on <strong>liquidity sweeps</strong> and <strong>stacked imbalances</strong>. Each has a <strong>magnet</strong> that decays <code>×0.92/bar</code> and re-charges on reaction. <strong>Top magnet</strong> = strongest active pool — that's where <strong>TP3</strong> gets aimed. Price is pulled toward these.</p>
+          <div class="callout">
+            <span class="c-ico">◎</span>
+            <p>Read it directionally, not literally: the map shows <em>where</em> opposing liquidity is sitting relative to price, so you know the most likely magnet the engine is aiming TP3 at.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 07 Signal & Path -->
+    <div class="module reveal" id="mod-signal">
+      <div class="module-head">
+        <span class="m-n">07</span>
+        <div class="m-title"><h3>Signal &amp; Path Integrity panel</h3><p>When it prints: side, levels, and what happened after.</p></div>
+        <div class="m-tags"><span class="tag brand">entry → TP3</span><span class="tag north">CONFIRM</span><span class="tag south">BREAK</span></div>
+      </div>
+      <div class="module-body">
+        <div class="mb-viz">
+          <span class="viz-caption">Price ladder — SL · entry · TP1 · TP2 · TP3</span>
+          <svg viewBox="0 0 460 190" width="100%" height="190" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Signal price ladder and path integrity">
+            <line x1="230" y1="14" x2="230" y2="178" stroke="#64748B" stroke-width="1" opacity=".4"/>
+            <line x1="150" y1="160" x2="310" y2="160" stroke="#EF4444" stroke-width="1.4"/>
+            <text x="120" y="164" text-anchor="end" font-family="Space Mono,monospace" font-size="10" fill="#EF4444">SL</text>
+            <line x1="150" y1="120" x2="310" y2="120" stroke="#E9ECF7" stroke-width="1.6"/>
+            <text x="120" y="124" text-anchor="end" font-family="Space Mono,monospace" font-size="10" fill="#E9ECF7">entry</text>
+            <line x1="150" y1="88" x2="310" y2="88" stroke="#FBBF24" stroke-width="1.4"/>
+            <text x="120" y="92" text-anchor="end" font-family="Space Mono,monospace" font-size="10" fill="#FBBF24">TP1 · 1R</text>
+            <line x1="150" y1="56" x2="310" y2="56" stroke="#22C55E" stroke-width="1.4"/>
+            <text x="120" y="60" text-anchor="end" font-family="Space Mono,monospace" font-size="10" fill="#22C55E">TP2 · RR×risk</text>
+            <line x1="150" y1="26" x2="310" y2="26" stroke="#06B6D4" stroke-width="1.4"/>
+            <text x="120" y="30" text-anchor="end" font-family="Space Mono,monospace" font-size="10" fill="#06B6D4">TP3 · pool</text>
+            <rect x="330" y="112" width="110" height="26" rx="8" fill="rgba(251,191,36,.12)" stroke="#FBBF24" stroke-width="1"/>
+            <text x="385" y="129" text-anchor="middle" font-family="Space Mono,monospace" font-size="9" fill="#FBBF24">OPEN → …</text>
+            <rect x="330" y="82" width="110" height="24" rx="8" fill="rgba(34,197,94,.12)" stroke="#22C55E" stroke-width="1"/>
+            <text x="385" y="98" text-anchor="middle" font-family="Space Mono,monospace" font-size="9" fill="#22C55E">CONFIRM +1R</text>
+            <rect x="330" y="144" width="110" height="24" rx="8" fill="rgba(239,68,68,.12)" stroke="#EF4444" stroke-width="1"/>
+            <text x="385" y="160" text-anchor="middle" font-family="Space Mono,monospace" font-size="9" fill="#EF4444">BREAK −1R</text>
+          </svg>
+          <span class="viz-caption">Path = journal metric on the engine's own bars, not a real fill</span>
+        </div>
+        <div class="mb-table">
+          <p style="font-size:.92rem;color:var(--text2);line-height:1.75;margin-bottom:12px;">When a signal prints: <strong>side</strong>, <strong>entry</strong> (bar close), <strong>SL</strong> (swept low/high, padded <code>0.35 × stopATR × ATR</code>), <strong>TP1</strong> (1R), <strong>TP2</strong> (RR × risk), <strong>TP3</strong> (nearest opposing pool), <strong>RR</strong>, <strong>grade</strong>.</p>
+          <table class="fields">
+            <thead><tr><th>Path integrity</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr><td class="f"><span style="color:var(--amber)">OPEN</span></td><td>Unresolved — signal fired, waiting on TP1 or stop.</td></tr>
+              <tr><td class="f"><span style="color:var(--bull)">CONFIRM</span></td><td>TP1 touched first = <strong>+1R</strong>.</td></tr>
+              <tr><td class="f"><span style="color:var(--bear)">BREAK</span></td><td>Stop crossed first = <strong>−1R</strong>.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 08 VWAP chart -->
+    <div class="module reveal" id="mod-chart">
+      <div class="module-head">
+        <span class="m-n">08</span>
+        <div class="m-title"><h3>Price · VWAP σ · CVD chart</h3><p>The context pane — bands, moving averages, and day-scoped flow.</p></div>
+        <div class="m-tags"><span class="tag brand">±1σ / ±2σ</span><span class="tag">EMA 9/21/50</span><span class="tag north">CVD</span></div>
+      </div>
+      <div class="module-body">
+        <div class="mb-viz">
+          <span class="viz-caption">Close + VWAP bands + EMA · CVD below</span>
+          <svg viewBox="0 0 460 190" width="100%" height="190" preserveAspectRatio="xMidYMid meet" role="img" aria-label="VWAP standard deviation bands with CVD subchart">
+            <path d="M20,96 C60,92 100,84 140,88 C180,92 220,86 260,90 C300,94 340,80 380,76 C410,73 430,70 442,68" fill="none" stroke="#E9ECF7" stroke-width="1.6"/>
+            <path d="M20,70 C60,66 100,58 140,62 C180,66 220,60 260,64 C300,68 340,54 380,50" fill="none" stroke="#EF4444" stroke-width="1" stroke-dasharray="3 3" opacity=".55"/>
+            <path d="M20,122 C60,118 100,110 140,114 C180,118 220,112 260,116 C300,120 340,106 380,102" fill="none" stroke="#EF4444" stroke-width="1" stroke-dasharray="3 3" opacity=".55"/>
+            <path d="M20,83 C60,79 100,71 140,75 C180,79 220,73 260,77 C300,81 340,67 380,63" fill="none" stroke="#10B981" stroke-width="1" opacity=".6"/>
+            <path d="M20,109 C60,105 100,97 140,101 C180,105 220,99 260,103 C300,107 340,93 380,89" fill="none" stroke="#10B981" stroke-width="1" opacity=".6"/>
+            <path d="M20,88 C60,86 100,80 140,84 C180,88 220,82 260,86 C300,90 340,76 380,72" fill="none" stroke="#F97316" stroke-width="1.6"/>
+            <path d="M20,80 C60,78 100,72 140,76 C180,80 220,74 260,78 C300,82 340,68 380,64" fill="none" stroke="#22C55E" stroke-width="1" opacity=".6"/>
+            <path d="M20,100 C60,96 100,90 140,94 C180,98 220,92 260,96 C300,100 340,86 380,82" fill="none" stroke="#F87171" stroke-width="1" opacity=".6"/>
+            <path d="M20,108 C60,104 100,98 140,102 C180,106 220,100 260,104 C300,108 340,94 380,90" fill="none" stroke="#64748B" stroke-width="1.2" opacity=".6"/>
+            <line x1="20" y1="150" x2="442" y2="150" stroke="#64748B" stroke-width="1"/>
+            <path d="M20,150 C60,144 100,132 140,138 C180,144 220,132 260,142 C300,148 340,162 380,166 C410,168 430,170 442,171" fill="none" stroke="#10B981" stroke-width="1.4"/>
+            <text x="20" y="26" font-family="Space Mono,monospace" font-size="9" fill="#9CA5C4">close · VWAP ±1σ/±2σ · EMA 9/21/50</text>
+            <text x="20" y="184" font-family="Space Mono,monospace" font-size="9" fill="#9CA5C4">CVD (day-scoped) — below</text>
+            <text x="310" y="118" font-family="Space Mono,monospace" font-size="8" fill="#9CA5C4">+2σ</text>
+            <text x="310" y="72" font-family="Space Mono,monospace" font-size="8" fill="#9CA5C4">−2σ</text>
+          </svg>
+          <span class="viz-caption">VWAP zone (+2σ … FV … −2σ) feeds the RANGE bias</span>
+        </div>
+        <div class="mb-table">
+          <p style="font-size:.92rem;color:var(--text2);line-height:1.75;">Close + <strong>VWAP ±1σ/±2σ bands</strong> + <strong>EMA 9/21/50</strong>, with <strong>day-scoped CVD</strong> below. The <strong>VWAP zone</strong> (+2σ … fair value … −2σ) feeds the RANGE bias.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2 — BROKER -->
+<section id="broker" class="alt">
+  <div class="container">
+    <div class="eyebrow reveal">2 · How to set up trades</div>
+    <h2 class="reveal">Broker — <em>paper first, always.</em></h2>
+    <p class="lede reveal">The dashboard wires to Alpaca for paper bracket orders. One-time setup, then a one-click execute from the signal surface.</p>
+
+    <div class="module reveal">
+      <div class="module-head">
+        <span class="m-n">⚙</span>
+        <div class="m-title"><h3>Setup &amp; the trade flow</h3><p>Key once, click per signal.</p></div>
+        <div class="m-tags"><span class="tag brand">PAPER · connected</span></div>
+      </div>
+      <div class="module-body full">
+        <div class="mb-table">
+          <div class="callout">
+            <span class="c-ico">🔑</span>
+            <p><strong>One-time:</strong> <code>ALPACA_API_KEY</code> / <code>ALPACA_SECRET_KEY</code> in <code>backend/.env</code> (already wired locally with paper keys). Badge reads <strong>PAPER · connected</strong>.</p>
+          </div>
+          <h3 style="margin:6px 0 14px;font-size:1.1rem;">To trade</h3>
+          <table class="fields">
+            <thead><tr><th>Step</th><th>What happens</th></tr></thead>
+            <tbody>
+              <tr><td class="f">1 · Signal</td><td>Wait for a signal → the Signal panel shows <strong>▶ Execute paper bracket</strong>.</td></tr>
+              <tr><td class="f">2 · Click</td><td>Places an Alpaca bracket: <strong>market entry + TP1 limit + SL stop</strong> as an OCO.</td></tr>
+              <tr><td class="f">3 · Result</td><td>Shows <strong>order id + both legs</strong> + live-anchored or delayed (market closed).</td></tr>
+              <tr><td class="f">4 · Positions</td><td>Positions button → <strong>Positions</strong> tab (close buttons) + <strong>Orders</strong> tab (bracket legs with live status).</td></tr>
+              <tr><td class="f">5 · Cancel</td><td>Cancel via the link under a just-placed order.</td></tr>
+            </tbody>
+          </table>
+          <div class="callout">
+            <span class="c-ico">◎</span>
+            <p><strong>Sizing:</strong> default <strong>$5,000 notional</strong> (qty = $5k ÷ entry); override via API <code>qty</code>/<code>notional</code>. <strong>Live re-anchoring:</strong> when tape is ●LIVE, entry/SL/TP1 re-anchor to the live mid, preserving R:R distances; when closed it uses delayed levels and says so.</p>
+          </div>
+          <div class="callout warn">
+            <span class="c-ico">⚠</span>
+            <p><strong>Going live (real money):</strong> two gates, both required — <code>ALPACA_LIVE=1</code> in env <em>and</em> <code>confirm="LIVE"</code> in the request. No accidental real orders. <strong>TP2/TP3 are never auto-executed</strong> — journal-only scale targets.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3 — ALERTS -->
+<section id="alerts">
+  <div class="container">
+    <div class="eyebrow reveal">3 · How to use alerts</div>
+    <h2 class="reveal">Alerts — <em>fire the instant it prints.</em></h2>
+    <p class="lede reveal">Bell button → settings. Alerts fire the instant the engine prints BUY/SELL (same as journal capture), deduped per signal.</p>
+
+    <div class="module reveal">
+      <div class="module-head">
+        <span class="m-n">🔔</span>
+        <div class="m-title"><h3>Alert settings</h3><p>Master switch, browser popups, and a webhook.</p></div>
+        <div class="m-tags"><span class="tag brand">BUY/SELL</span></div>
+      </div>
+      <div class="module-body full">
+        <div class="mb-table">
+          <table class="fields">
+            <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
+            <tbody>
+              <tr><td class="f">Alerts enabled</td><td>Master switch.</td></tr>
+              <tr><td class="f">Browser notification</td><td>Requests permission, then toggles desktop popups.</td></tr>
+              <tr><td class="f">Webhook URL</td><td>Discord/Slack webhook → POSTs <code>{ content, signal }</code>.</td></tr>
+              <tr><td class="f">Send test alert</td><td>Fires one now to verify.</td></tr>
+            </tbody>
+          </table>
+          <div class="alert-sample"><span class="a-meta">Meridian</span> <span class="a-buy">BUY</span> <span class="a-meta">NVDA·5m —</span> <span style="color:var(--bull)">PRIME</span> <span class="a-meta">· TREND · E 123.45 SL 122.10 TP1 124.80 (RR 2.0)</span></div>
+          <div class="callout warn">
+            <span class="c-ico">ⓘ</span>
+            <p><strong>Honest caveats:</strong> alerts are <strong>frontend-side</strong> (tab must be open), ~10s latency (WS 3s + cache), not bar-by-bar like native Pine <code>alert()</code>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTIONS 4–5 — JOURNAL & WATCHLIST -->
+<section id="journal" class="alt">
+  <div class="container">
+    <div class="eyebrow reveal">4–5 · Journal &amp; Watchlist</div>
+    <h2 class="reveal">The other <em>two buttons.</em></h2>
+    <p class="lede reveal">Journal scores every signal forward-only; Watchlist pins the symbols you keep coming back to.</p>
+
+    <div class="recipes">
+      <div class="recipe reveal">
+        <div class="rc-n">Journal</div>
+        <h3>Auto-capture, forward-only</h3>
+        <p>Every signal is captured automatically (forward-only), scored <strong>CONFIRM</strong>/<strong>BREAK</strong>, and surfaced as <strong>Confirm %</strong> and <strong>Profit Factor (R)</strong>. Export to JSON/CSV.</p>
+      </div>
+      <div class="recipe reveal">
+        <div class="rc-n">Watchlist</div>
+        <h3>Pin what you watch</h3>
+        <p>☆ pins the current symbol; chips jump to it or remove it. Stored in <strong>localStorage</strong> — nothing leaves your browser.</p>
+      </div>
+      <div class="recipe reveal">
+        <div class="rc-n">Both together</div>
+        <h3>Study → trade → review</h3>
+        <p>Watch a symbol, let the engine grade it, trade the paper bracket when it aligns, then read the journal to see if the path confirmed or broke.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 6 — LIMITATIONS -->
+<section id="limitations">
+  <div class="container">
+    <div class="eyebrow reveal">6 · Honest limitations</div>
+    <h2 class="reveal">What this engine <em>isn't.</em></h2>
+    <p class="lede reveal">Stated plainly, so you can calibrate your trust.</p>
+
+    <div class="limits">
+      <div class="limit reveal"><span class="l-ico">·</span><p><strong>Delayed data</strong> — Polygon OHLCV is delayed; the tape (IEX) is fresher but still not tick-perfect.</p></div>
+      <div class="limit reveal"><span class="l-ico">·</span><p><strong>Stacked imbalance = the ·px proxy</strong> — native diagonal footprint isn't available from OHLCV aggregates.</p></div>
+      <div class="limit reveal"><span class="l-ico">·</span><p><strong>HTF bias omitted</strong> — the higher-timeframe context flag is off.</p></div>
+      <div class="limit reveal"><span class="l-ico">·</span><p><strong>VWAP daily-anchored</strong> — no exchange-session feed, so it anchors to the day.</p></div>
+      <div class="limit reveal"><span class="l-ico">·</span><p><strong>Stocks only</strong> — futures need a separate Polygon entitlement.</p></div>
+      <div class="limit reveal"><span class="l-ico">·</span><p><strong>Paper account</strong> = $100k / $400k buying power — not real capital.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 7 — RECIPES -->
+<section id="recipes" class="alt">
+  <div class="container">
+    <div class="eyebrow reveal">7 · Quick-start recipes</div>
+    <h2 class="reveal">Get it <em>firing in three moves.</em></h2>
+
+    <div class="recipes">
+      <div class="recipe reveal">
+        <div class="rc-n">Make it fire</div>
+        <h3>NVDA · 5m · min WATCH</h3>
+        <p>During market hours, load NVDA on the 5m with a minimum grade of WATCH. The denser bars will cluster enough event types to print a grade.</p>
+        <div class="rc-flow">NVDA → 5m → min WATCH → market hours</div>
+      </div>
+      <div class="recipe reveal">
+        <div class="rc-n">Everything —?</div>
+        <h3>Normal. PRIME+ is rare by design.</h3>
+        <p>Most bars show a grade and no signal. PRIME+ and actual signals are rare on quiet bars — that's the filter doing its job, not a bug.</p>
+        <div class="rc-flow">grade ✓ · signal ✗ = "no aligned setup"</div>
+      </div>
+      <div class="recipe reveal">
+        <div class="rc-n">End-to-end paper trade</div>
+        <h3>Signal → Execute → close</h3>
+        <p>The full loop: wait for a signal, click <strong>▶ Execute paper bracket</strong>, watch the legs in the Orders tab, then close from Positions.</p>
+        <div class="rc-flow">signal → Execute → Positions → Orders → close</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a class="f-logo" href="/index.html">SniperTrader<span>.ai</span></a>
+        <p class="f-mission">Precision market systems &amp; algorithmic engines — calm, surgical execution for the disciplined trader.</p>
+        <div class="f-status"><i></i> System Status: Operational</div>
+        <div class="f-social">
+          <a href="#">X</a><a href="#">YouTube</a><a href="#">Discord</a><a href="#">Telegram</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Intelligence</h4>
+        <a href="/market_forecaster.html">Market Forecaster</a>
+        <a href="/market_radar.html">Daily Market Radar</a>
+        <a href="/traderedge_preflight.html">Preflight Protocol</a>
+      </div>
+      <div class="footer-col">
+        <h4>Proprietary Algos</h4>
+        <a href="/NoRepaint_Pivot_indicator.html">No Repaint Engine</a>
+        <a href="/USME_ICT_Core.html">USME ICT Core Engine</a>
+        <a href="/USME_VWAP_Elite_Suite.html">USME VWAP Suite Engine</a>
+        <a href="/Meridian_Engine.html">Meridian Engine</a>
+        <a href="/Meridian_OFI_Engine.html">Meridian OFI Engine</a>
+        <a href="/Meridian_OFI_Stacked_imbalance_logic_Engine.html">Meridian OFI Engine — Stacked imbalance logic</a>
+        <a href="/Meridian_Dashboard_User_Guide.html">Meridian Dashboard — User Guide</a>
+        <a href="/all_products.html">Courses &amp; Other Products</a>
+      </div>
+      <div class="footer-col">
+        <h4>Academy</h4>
+        <a href="/all_products.html#masterplans">Courses</a>
+        <a href="/Traders_Couch.html">Live Labs</a>
+        <a href="/about.html">Mentorship</a>
+        <a href="/about.html">Community</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="/about.html">About Us</a>
+        <a href="/checkout.html">Pricing</a>
+        <a href="/about.html">Contact</a>
+        <a href="/terms.html">Terms</a>
+        <a href="/privacy.html">Privacy</a>
+        <a href="/disclaimer.html">Legal</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 SniperTrader.ai — All rights reserved.</span>
+      <span>Calm. Precise. Deliberate.</span>
+    </div>
+    <p class="footer-disclaimer">DISCLAIMER: Trading involves substantial risk of loss and is not suitable for every investor. Past performance does not guarantee future results. The Meridian Dashboard and Meridian OFI Engine are educational and analytical tools, not financial advice. All content on this site is for educational purposes only and does not constitute financial or investment advice.</p>
+  </div>
+</footer>
+
+<script>
+/* ── Precision scope cursor ──────────────────────────────── */
+(function(){
+  var scope=document.getElementById('scope'), ring=document.getElementById('scope-ring'), dot=document.getElementById('scope-dot');
+  var mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my;
+  document.addEventListener('mousemove',function(e){
+    mx=e.clientX;my=e.clientY;
+    if(dot){dot.style.left=mx+'px';dot.style.top=my+'px';}
+    if(scope){scope.style.left=mx+'px';scope.style.top=my+'px';}
+  });
+  (function loop(){
+    rx+=(mx-rx)*0.16; ry+=(my-ry)*0.16;
+    if(ring){ring.style.left=rx+'px';ring.style.top=ry+'px';}
+    requestAnimationFrame(loop);
+  })();
+})();
+
+/* ── Theme toggle (default LIGHT — this guide is a light-first document) ── */
+(function(){
+  var btn=document.getElementById('theme-btn'), label=document.getElementById('theme-label');
+  var light=true;
+  function apply(l){
+    light=l; document.body.classList.toggle('light',l);
+    if(btn) btn.childNodes[0].nodeValue = l ? '☀ ' : '☾ ';
+    if(label) label.textContent = l ? 'Dark' : 'Light';
+  }
+  if(btn) btn.addEventListener('click',function(){apply(!light);});
+  apply(true);
+})();
+
+/* ── Nav dropdowns + mobile menu ─────────────────────────── */
+function toggleDrop(btn){
+  var item=btn.closest('.nav-item');
+  var wasOpen=item.classList.contains('open');
+  document.querySelectorAll('.nav-item.open').forEach(function(i){i.classList.remove('open');});
+  if(!wasOpen) item.classList.add('open');
+}
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.nav-item')) document.querySelectorAll('.nav-item.open').forEach(function(i){i.classList.remove('open');});
+});
+(function(){
+  var burger=document.getElementById('burger'), menu=document.getElementById('mobileMenu');
+  if(burger&&menu) burger.addEventListener('click',function(){menu.classList.toggle('open');});
+})();
+
+/* ── Smooth scroll for in-page anchors ───────────────────── */
+document.querySelectorAll('a[href^="#"]').forEach(function(anchor){
+  anchor.addEventListener('click',function(e){
+    var target=document.querySelector(this.getAttribute('href'));
+    if(target){ e.preventDefault(); target.scrollIntoView({behavior:'smooth',block:'start'}); }
+  });
+});
+
+/* ── Scroll reveal ───────────────────────────────────────── */
+(function(){
+  var obs=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)e.target.classList.add('in');});},{threshold:.08});
+  document.querySelectorAll('.reveal').forEach(function(el){obs.observe(el);});
+})();
+</script>
+<script src="/assets/assistant-widget.js" defer></script>
+</body>
+</html>
