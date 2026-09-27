@@ -1,0 +1,2183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meridian OFI Stacked Imbalance Mastery · SniperTrader Education</title>
+  <meta name="description" content="Meridian OFI Stacked Imbalance Mastery — native diagonal footprint stacks, the CVD proxy fallback, lattice type 10, and stack magnets on Meridian Engine v2.2. SniperTrader education course.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+:root {
+  --bg: #F2F3FB;
+  --bg2: #E9EBF6;
+  --bg3: #DEE1F0;
+  --obs: #FFFFFF;
+  --obs2: #E9EBF6;
+  --obs3: #DEE1F0;
+  --surface: #FFFFFF;
+  --surface-alt: #E9EBF6;
+  --card: rgba(255,255,255,.6);
+  --card2: rgba(255,255,255,.82);
+  --text: #0A0C18;
+  --text2: #1C2240;
+  --text3: #3A4470;
+  --text4: #5A6690;
+  --violet: #6D28D9;
+  --violet2: #5B21B6;
+  --violet-dim: rgba(124,58,237,.10);
+  --cyan: #0086A8;
+  --cyan2: #006E8A;
+  --cyan-dim: rgba(0,150,200,.12);
+  --fuchsia: #C026D3;
+  --magenta: #C026D3;
+  --gold: #8A5B00;
+  --gold2: #8A5B00;
+  --gold-dim: rgba(138,91,0,.10);
+  --amber: #8A5B00;
+  --amber-dim: rgba(138,91,0,.10);
+  --emerald: #059669;
+  --emerald2: #059669;
+  --emerald-dim: rgba(5,150,105,.10);
+  --bear: #BE1E3C;
+  --bear-dim: rgba(190,30,60,.12);
+  --red: #BE1E3C;
+  --stack-buy: #16A34A;
+  --stack-sell: #DC2626;
+  --border: rgba(109,40,217,.18);
+  --border2: rgba(109,40,217,.34);
+  --border-cyan: rgba(0,150,200,.18);
+  --nav-bg: rgba(242,243,251,.96);
+  --nav-h: 56px;
+  --font-display: 'Playfair Display', serif;
+  --font-mono: 'Space Mono', monospace;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+  --ff-d: 'Playfair Display', serif;
+  --ff-b: 'Plus Jakarta Sans', sans-serif;
+  --ff-m: 'Space Mono', monospace;
+  --shadow: 0 30px 70px rgba(60,70,110,.20);
+  --radius: 14px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: calc(var(--nav-h) + 12px); }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+img, svg { max-width: 100%; height: auto; display: block; }
+a { color: var(--violet); }
+code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  color: var(--cyan2);
+}
+.container {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 22px;
+  position: relative;
+  z-index: 1;
+}
+.topbar {
+  background: var(--obs);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 0;
+}
+.topbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+}
+.brand-mark {
+  width: 36px; height: 36px;
+  border: 2px solid var(--violet);
+  border-radius: 50%;
+  position: relative;
+  flex-shrink: 0;
+  box-shadow: 0 0 14px rgba(109,40,217,0.28);
+}
+.brand-mark::before,
+.brand-mark::after {
+  content: '';
+  position: absolute;
+  background: var(--violet);
+}
+.brand-mark::before {
+  width: 2px; height: 14px;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+.brand-mark::after {
+  width: 14px; height: 2px;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+.brand-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 1.5px;
+  color: var(--text);
+}
+.brand-name span { color: var(--violet); }
+.brand-tag {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text4);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+.edu-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--violet);
+  background: var(--violet-dim);
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: 20px;
+}
+.edu-pill::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--cyan);
+  animation: pulse 1.6s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.course-nav {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: var(--nav-bg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 4px 24px rgba(60,70,110,0.12);
+}
+.nav-row { display: flex; align-items: stretch; gap: 0; }
+.nav-scroll {
+  flex: 1;
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.nav-scroll::-webkit-scrollbar { display: none; }
+.nav-btn {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text4);
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 16px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .2s, border-color .2s, background .2s;
+  text-decoration: none;
+}
+.nav-btn:hover { color: var(--text); background: var(--obs2); }
+.nav-btn.active {
+  color: var(--violet);
+  border-bottom-color: var(--violet);
+}
+.progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  border-left: 1px solid var(--border);
+  flex-shrink: 0;
+  min-width: 108px;
+}
+.progress-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text4);
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+.progress-label strong { color: var(--cyan); font-weight: 700; }
+.progress-bar {
+  width: 44px; height: 4px;
+  background: var(--obs3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--cyan), var(--violet));
+  transition: width .25s ease;
+}
+.disclaimer-strip {
+  background: var(--gold-dim);
+  border-bottom: 1px solid rgba(138,91,0,0.28);
+  padding: 10px 0;
+}
+.disclaimer-strip p {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--gold2);
+  letter-spacing: 0.4px;
+  text-align: center;
+  line-height: 1.5;
+}
+.hero {
+  padding: 48px 0 36px;
+  background:
+    radial-gradient(ellipse 80% 60% at 10% 0%, var(--violet-dim), transparent 55%),
+    radial-gradient(ellipse 60% 50% at 90% 20%, var(--cyan-dim), transparent 50%);
+}
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--violet);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-label::before {
+  content: '';
+  width: 18px; height: 2px;
+  background: var(--violet);
+}
+.hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(26px, 4.4vw, 40px);
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  line-height: 1.18;
+  color: var(--text);
+  margin-bottom: 14px;
+  max-width: 780px;
+}
+.hero h1 em { font-style: italic; color: var(--violet); }
+.hero .lead {
+  font-size: 17px;
+  color: var(--text3);
+  max-width: 680px;
+  margin-bottom: 14px;
+}
+.hero .lead-note {
+  font-size: 14px;
+  color: var(--text4);
+  max-width: 720px;
+  margin-bottom: 22px;
+}
+.hero-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 7px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text3);
+}
+.chip.cyan {
+  border-color: var(--border-cyan);
+  color: var(--cyan2);
+  background: var(--cyan-dim);
+}
+.chip.gold {
+  border-color: rgba(138,91,0,0.35);
+  color: var(--amber);
+  background: var(--amber-dim);
+}
+.chip.emerald {
+  border-color: rgba(5,150,105,0.35);
+  color: var(--emerald);
+  background: var(--emerald-dim);
+}
+.chip.violet {
+  border-color: var(--border2);
+  color: var(--violet);
+  background: var(--violet-dim);
+}
+.chip.bear {
+  border-color: rgba(190,30,60,0.35);
+  color: var(--bear);
+  background: var(--bear-dim);
+}
+.sec-h2 {
+  font-family: var(--font-display);
+  font-size: clamp(16px, 2.5vw, 20px);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 18px;
+  color: var(--text);
+}
+.steps { padding: 8px 0 28px; }
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.step-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 20px;
+  box-shadow: var(--shadow);
+  transition: border-color .2s, transform .2s;
+}
+.step-card:hover {
+  border-color: var(--border2);
+  transform: translateY(-2px);
+}
+.step-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--violet);
+  margin-bottom: 10px;
+}
+.step-card h3 {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text);
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+.step-card p {
+  font-size: 13px;
+  color: var(--text4);
+  line-height: 1.55;
+}
+.module { padding: 28px 0 8px; }
+.module-header {
+  margin-bottom: 22px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--border);
+}
+.module-header h2 {
+  font-family: var(--font-display);
+  font-size: clamp(18px, 3vw, 24px);
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.module-header p {
+  font-size: 14px;
+  color: var(--text4);
+  max-width: 680px;
+}
+.mod-time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--violet);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.lesson {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 26px 24px 22px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+  scroll-margin-top: calc(var(--nav-h) + 18px);
+  transition: border-color .25s, box-shadow .25s;
+}
+.lesson.in-view {
+  border-color: var(--border2);
+  box-shadow: 0 8px 32px rgba(109,40,217,0.12);
+}
+.lesson.done { border-color: rgba(0,134,168,0.45); }
+.lesson-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.lesson-title {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--text);
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.lesson-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--violet);
+  letter-spacing: 1px;
+}
+.lesson p {
+  font-size: 15px;
+  color: var(--text3);
+  margin-bottom: 12px;
+}
+.lesson ul, .lesson ol {
+  margin: 0 0 14px 18px;
+  color: var(--text3);
+  font-size: 14px;
+}
+.lesson li { margin-bottom: 7px; }
+.lesson li strong { color: var(--text); }
+.mark-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text4);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--obs);
+  transition: color .2s, border-color .2s, background .2s;
+}
+.mark-done:hover { color: var(--text); border-color: var(--border-cyan); }
+.mark-done input {
+  accent-color: var(--violet);
+  width: 14px; height: 14px;
+  cursor: pointer;
+}
+.mark-done.checked {
+  color: var(--cyan);
+  border-color: rgba(0,134,168,0.45);
+  background: var(--cyan-dim);
+}
+.callout {
+  background: var(--bg2);
+  border-left: 3px solid var(--violet);
+  border-radius: 0 10px 10px 0;
+  padding: 14px 16px;
+  margin: 14px 0;
+  font-size: 14px;
+  color: var(--text2);
+}
+.callout.gold { border-left-color: var(--gold2); background: var(--gold-dim); }
+.callout.emerald { border-left-color: var(--emerald); background: var(--emerald-dim); }
+.callout.cyan { border-left-color: var(--cyan); background: var(--cyan-dim); }
+.callout.bear { border-left-color: var(--bear); background: var(--bear-dim); }
+.figure {
+  margin: 18px 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--obs);
+}
+.figure .svg-wrap { background: #F2F3FB; padding: 12px; }
+.figure figcaption {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--text4);
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-alt);
+  line-height: 1.45;
+}
+.checklist { display: grid; gap: 8px; margin: 14px 0; }
+.check-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: var(--obs);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: var(--text3);
+}
+.check-box {
+  flex-shrink: 0;
+  width: 18px; height: 18px;
+  border: 2px solid var(--cyan);
+  border-radius: 4px;
+  margin-top: 1px;
+}
+.rules-ol {
+  counter-reset: rule;
+  list-style: none;
+  margin: 14px 0;
+  padding: 0;
+}
+.rules-ol li {
+  counter-increment: rule;
+  position: relative;
+  background: var(--obs);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px 14px 52px;
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: var(--text3);
+}
+.rules-ol li::before {
+  content: counter(rule);
+  position: absolute;
+  left: 14px; top: 14px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--violet);
+  width: 28px; height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--violet-dim);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.rules-ol li strong { color: var(--text); }
+.sheet-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 12px 0;
+}
+.sheet-grid.thirds { grid-template-columns: repeat(3, 1fr); }
+.sheet {
+  background: var(--obs);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+.sheet h4 {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--violet);
+  margin-bottom: 10px;
+}
+.sheet.trend h4 { color: var(--emerald); }
+.sheet.range h4 { color: var(--cyan); }
+.sheet.trans h4 { color: var(--amber); }
+.sheet.bear h4 { color: var(--bear); }
+.sheet.buy h4 { color: var(--stack-buy); }
+.sheet.sell h4 { color: var(--stack-sell); }
+.sheet ul {
+  margin: 0 0 0 16px;
+  font-size: 13px;
+  color: var(--text3);
+}
+.sheet li { margin-bottom: 5px; }
+.sheet p { font-size: 13px; color: var(--text3); margin: 0; }
+.score-wrap { overflow-x: auto; margin: 16px 0; max-width: 100%; }
+.score-table {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.score-table th {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--text4);
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--border2);
+  background: var(--bg2);
+}
+.score-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text3);
+  vertical-align: top;
+  line-height: 1.5;
+}
+.score-table td:first-child {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--violet);
+  white-space: nowrap;
+}
+.score-table tr:last-child td { border-bottom: none; }
+.grade-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 16px 0;
+}
+.grade-card {
+  background: var(--obs);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 12px;
+  border-top: 3px solid var(--border);
+}
+.grade-card.watch { border-top-color: var(--cyan); }
+.grade-card.prime { border-top-color: var(--emerald); }
+.grade-card.elite { border-top-color: var(--violet); }
+.grade-card.singular { border-top-color: var(--amber); }
+.grade-card .g-name {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.grade-card.watch .g-name { color: var(--cyan); }
+.grade-card.prime .g-name { color: var(--emerald); }
+.grade-card.elite .g-name { color: var(--violet); }
+.grade-card.singular .g-name { color: var(--amber); }
+.grade-card .g-count {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.grade-card p {
+  font-size: 12px;
+  color: var(--text4);
+  margin: 0;
+  line-height: 1.45;
+}
+.path-stack { display: grid; gap: 8px; margin: 16px 0; }
+.path-row {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 12px;
+  align-items: center;
+  background: var(--obs);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+.path-row .pr-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  font-weight: 700;
+}
+.path-row .pr-tag.sl { color: var(--bear); }
+.path-row .pr-tag.en { color: var(--cyan); }
+.path-row .pr-tag.tp1 { color: var(--emerald); }
+.path-row .pr-tag.abs { color: var(--emerald); }
+.path-row .pr-tag.imb { color: var(--cyan); }
+.path-row .pr-tag.stk { color: var(--stack-buy); }
+.path-row p { margin: 0; font-size: 13px; color: var(--text3); }
+.mark-key { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; }
+.mk {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  background: var(--obs);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: var(--text2);
+}
+.mk i { width: 10px; height: 10px; display: block; flex-shrink: 0; }
+.mk i.circ { border-radius: 50%; }
+.mk i.dia { width: 9px; height: 9px; transform: rotate(45deg); border-radius: 1px; }
+.mk i.sq { width: 9px; height: 9px; border-radius: 1px; }
+.takeaways {
+  list-style: none;
+  margin: 0 auto 20px;
+  padding: 0;
+  text-align: left;
+  max-width: 680px;
+}
+.takeaways li {
+  position: relative;
+  padding: 10px 0 10px 28px;
+  color: var(--text3);
+  font-size: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.takeaways li::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 16px;
+  width: 10px; height: 10px;
+  border: 2px solid var(--violet);
+  border-radius: 2px;
+}
+.closing { padding: 36px 0 48px; }
+.closing-card {
+  background: linear-gradient(145deg, #FFFFFF, #E9EBF6);
+  color: var(--text);
+  border: 1px solid var(--border2);
+  border-radius: 18px;
+  padding: 36px 28px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.closing-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(109,40,217,0.12), transparent 45%),
+    radial-gradient(circle at 80% 70%, rgba(0,134,168,0.10), transparent 40%);
+  pointer-events: none;
+}
+.closing-card > * { position: relative; z-index: 1; }
+.closing-card h2 {
+  font-family: var(--font-display);
+  font-size: clamp(18px, 3vw, 26px);
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+.closing-card > p {
+  color: var(--text3);
+  max-width: 560px;
+  margin: 0 auto 18px;
+  font-size: 15px;
+}
+.closing-cta {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #FFFFFF;
+  background: var(--violet);
+  padding: 12px 22px;
+  border-radius: 24px;
+  text-decoration: none;
+  font-weight: 700;
+  margin: 8px 6px 0;
+  box-shadow: 0 8px 24px rgba(109,40,217,0.28);
+}
+.closing-cta:hover { background: var(--violet2); }
+.closing-cta.ghost {
+  background: var(--obs);
+  color: var(--violet);
+  border: 1px solid var(--border2);
+  box-shadow: none;
+}
+.closing-cta.ghost:hover { background: var(--violet-dim); }
+footer {
+  border-top: 1px solid var(--border);
+  padding: 28px 0 40px;
+  background: var(--obs);
+}
+.footer-brand {
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 3px;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.footer-brand span { color: var(--violet); }
+.footer-disc {
+  font-size: 12px;
+  color: var(--text4);
+  max-width: 680px;
+  line-height: 1.6;
+}
+.footer-meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text4);
+  margin-top: 14px;
+  text-transform: uppercase;
+}
+@media (max-width: 860px) {
+  .steps-grid { grid-template-columns: 1fr 1fr; }
+  .sheet-grid, .sheet-grid.thirds { grid-template-columns: 1fr; }
+  .grade-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 560px) {
+  .container { padding: 0 16px; }
+  .lesson { padding: 20px 16px; }
+  .progress-wrap { min-width: auto; padding: 0 10px; }
+  .progress-bar { display: none; }
+  .nav-btn { padding: 14px 10px; font-size: 8px; letter-spacing: 1px; }
+  .hero { padding: 32px 0 24px; }
+  .rules-ol li { padding-left: 48px; }
+  .grade-grid { grid-template-columns: 1fr; }
+  .steps-grid { grid-template-columns: 1fr; }
+  .path-row { grid-template-columns: 1fr; gap: 4px; }
+  .lesson-title { font-size: 18px; }
+  .closing-card { padding: 28px 16px; }
+}
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="/index.html" aria-label="SniperTrader home">
+        <div class="brand-mark" aria-hidden="true"></div>
+        <div>
+          <div class="brand-name">SNIPER<span>TRADER</span></div>
+          <div class="brand-tag">Education · Precision · Edge</div>
+        </div>
+      </a>
+      <div class="edu-pill">Education · SniperTrader</div>
+    </div>
+  </div>
+
+  <nav class="course-nav" id="courseNav" aria-label="Course modules">
+    <div class="container nav-row">
+      <div class="nav-scroll">
+        <a class="nav-btn active" href="#overview" data-section="overview">Overview</a>
+        <a class="nav-btn" href="#m1" data-section="m1">M1</a>
+        <a class="nav-btn" href="#m2" data-section="m2">M2</a>
+        <a class="nav-btn" href="#m3" data-section="m3">M3</a>
+        <a class="nav-btn" href="#m4" data-section="m4">M4</a>
+        <a class="nav-btn" href="#m5" data-section="m5">M5</a>
+        <a class="nav-btn" href="#m6" data-section="m6">M6</a>
+        <a class="nav-btn" href="#m7" data-section="m7">M7</a>
+        <a class="nav-btn" href="#close" data-section="close">Close</a>
+      </div>
+      <div class="progress-wrap" title="Course progress">
+        <span class="progress-label"><strong id="progressPct">0%</strong></span>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="disclaimer-strip">
+    <div class="container">
+      <p>For education only. Not financial advice. Past patterns do not guarantee future results. Protect capital first.</p>
+    </div>
+  </div>
+
+  <main id="top">
+
+    <section class="hero" id="overview">
+      <div class="container">
+        <div class="section-label">Education · SniperTrader · Course 3</div>
+        <h1>Meridian OFI Stacked Imbalance <em>Mastery</em></h1>
+        <p class="lead">
+          From the CVD proxy to native footprint order flow.
+          Version 2.2 reads real bid and ask rows, then stacks the diagonal imbalances into lattice type 10.
+        </p>
+        <p class="lead-note">
+          This course follows the Pine v6 script titled <strong>Meridian Engine v2.2 OFI</strong>.
+          Course one is <a href="Meridian_Engine_Mastery_Course.html">Meridian Engine v2 Mastery</a>.
+          Course two is <a href="Meridian_OFI_Engine_Mastery_Course.html">Meridian OFI Engine Mastery</a>, where cumulative volume delta, absorption, and imbalance are taught in full.
+          This page recaps types 8 and 9 in a few lines, then stays on the stack.
+        </p>
+        <div class="hero-chips">
+          <span class="chip violet">v2.2 · Type 10</span>
+          <span class="chip cyan">Diagonal footprint</span>
+          <span class="chip emerald">+1 grade nudge</span>
+          <span class="chip gold">FP or px on the row</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="steps">
+      <div class="container">
+        <div class="section-label">Course map</div>
+        <h2 class="sec-h2">Seven modules. One new event.</h2>
+        <div class="steps-grid">
+          <article class="step-card">
+            <div class="step-num">01 · BRIDGE</div>
+            <h3>From v2.1 to v2.2</h3>
+            <p>Types 8 and 9 stay. The missing piece is a run of diagonal imbalances, still pointed at one side.</p>
+          </article>
+          <article class="step-card">
+            <div class="step-num">02 · ROWS</div>
+            <h3>Footprint in plain English</h3>
+            <p>Price rows, bid volume, ask volume, ticks per row, and why the comparison steps down or up one row.</p>
+          </article>
+          <article class="step-card">
+            <div class="step-num">03 · RUNS</div>
+            <h3>How a stack is found</h3>
+            <p>Walk the rows. Keep the longest same-side run. Default length is 3. A tie keeps the buy stack.</p>
+          </article>
+          <article class="step-card">
+            <div class="step-num">04 · FALLBACK</div>
+            <h3>Native, or the CVD proxy</h3>
+            <p>Prefer native footprint is on by default. If the footprint is missing, consecutive strong delta bars stand in.</p>
+          </article>
+          <article class="step-card">
+            <div class="step-num">05 · LATTICE</div>
+            <h3>Type 10, grade, magnets</h3>
+            <p>The bitmask now holds types 1 through 10. A stack can add one grade step. The zone can become a magnet.</p>
+          </article>
+          <article class="step-card">
+            <div class="step-num">06 · READ</div>
+            <h3>Marks, row, alerts, tune</h3>
+            <p>Green and red squares, one zone box, the OFI dashboard cell, and the six new inputs.</p>
+          </article>
+          <article class="step-card">
+            <div class="step-num">07 · PLAY</div>
+            <h3>Three ways to use a stack</h3>
+            <p>Continuation at a zone, a later magnet retest, and a stack beside absorption. Every rule is in the script.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="module" id="m1">
+      <div class="container">
+        <div class="module-header">
+          <div class="mod-time">Module 01 · The bridge</div>
+          <h2>From v2.1 to v2.2</h2>
+          <p>Stacked imbalance sits on the order-flow layer you already have. It does not replace it.</p>
+        </div>
+
+        <article class="lesson" id="l1-1" data-lesson="l1-1">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">1.1</span> What types 8 and 9 already do</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l1-1"> Mark complete</label>
+          </div>
+          <p>
+            <strong>Order flow</strong> means who is pushing, read from volume.
+            In v2.1 that read is a proxy called <strong>cumulative volume delta</strong> (CVD).
+            Each bar splits its volume by the close versus the prior close.
+            Up volume minus down volume is the bar delta.
+            CVD is the running sum.
+            The full reset modes, the 3-bar slope, and the level tests live in
+            <a href="Meridian_OFI_Engine_Mastery_Course.html">Meridian OFI Engine Mastery</a>.
+          </p>
+          <p>Two event types from that course still run in v2.2, on every bar, underneath the stack.</p>
+          <div class="path-stack">
+            <div class="path-row">
+              <div class="pr-tag abs">TYPE 8</div>
+              <p><strong>Absorption.</strong> Strong delta fights the candle, and the candle wins, at a zone, a VWAP band, or the top magnet. A tiny circle marks it. Bullish absorption is a green circle under the bar.</p>
+            </div>
+            <div class="path-row">
+              <div class="pr-tag imb">TYPE 9</div>
+              <p><strong>Imbalance.</strong> Strong delta agrees with the CVD slope, and with a break of structure, a VWAP reclaim, a zone, or a change of character. A tiny diamond marks it.</p>
+            </div>
+            <div class="path-row">
+              <div class="pr-tag stk">TYPE 10</div>
+              <p><strong>Stacked imbalance.</strong> New in v2.2. Several neighboring price rows each show a one-sided diagonal imbalance. A tiny square marks it. That is the rest of this course.</p>
+            </div>
+          </div>
+          <div class="callout">
+            Strong delta still means the bar delta is larger than <strong>OFI strong-delta × avg</strong> (default 1.5) times the 20-bar average of absolute delta. Types 8 and 9 use that test. The native stack does not. The proxy fallback does.
+          </div>
+          <p>
+            The engine under both layers is unchanged.
+            The lattice, the magnets, the regime, the three gates, and the path are taught in
+            <a href="Meridian_Engine_Mastery_Course.html">Meridian Engine v2 Mastery</a>.
+            A <strong>lattice</strong> is a short memory of event types near price.
+            Each type counts once.
+            The count becomes a grade.
+          </p>
+
+          <figure class="figure">
+            <div class="svg-wrap">
+              <svg viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="v2.2 layer stack with type 10 on top of types 8 and 9">
+                <rect width="720" height="380" fill="#F2F3FB"/>
+                <text x="24" y="28" fill="#5A6690" font-family="monospace" font-size="11" letter-spacing="2">FIG 01 · V2.2 LAYER STACK</text>
+                <rect x="28" y="48" width="320" height="40" rx="8" fill="#FFFFFF" stroke="rgba(109,40,217,0.30)"/>
+                <text x="44" y="73" fill="#6D28D9" font-family="monospace" font-size="12">V2 · TYPES 1–7 · STRUCTURE AND VWAP</text>
+                <rect x="28" y="98" width="320" height="52" rx="8" fill="#FFFFFF" stroke="rgba(0,134,168,0.45)"/>
+                <text x="44" y="120" fill="#0086A8" font-family="monospace" font-size="12">V2.1 · CVD PROXY</text>
+                <text x="44" y="138" fill="#3A4470" font-family="monospace" font-size="11">TYPE 8 ABSORB · TYPE 9 IMBALANCE</text>
+                <rect x="28" y="160" width="320" height="64" rx="8" fill="#E9EBF6" stroke="#6D28D9" stroke-width="1.8"/>
+                <text x="44" y="184" fill="#6D28D9" font-family="monospace" font-size="12">V2.2 · NATIVE FOOTPRINT</text>
+                <text x="44" y="204" fill="#16A34A" font-family="monospace" font-size="11">TYPE 10 STACK · OR CVD MULTI-BAR PROXY</text>
+                <path d="M360 192 H408" stroke="#6D28D9" stroke-width="1.6" fill="none"/>
+                <path d="M400 186 L414 192 L400 198" fill="#6D28D9"/>
+                <rect x="424" y="48" width="268" height="36" rx="8" fill="#FFFFFF" stroke="rgba(109,40,217,0.28)"/>
+                <text x="440" y="71" fill="#1C2240" font-family="monospace" font-size="12">DENSITY · EACH TYPE ONCE</text>
+                <rect x="424" y="94" width="268" height="36" rx="8" fill="#FFFFFF" stroke="rgba(5,150,105,0.40)"/>
+                <text x="440" y="117" fill="#059669" font-family="monospace" font-size="12">GRADE · THEN +1 IF STACK</text>
+                <rect x="424" y="140" width="268" height="36" rx="8" fill="#FFFFFF" stroke="rgba(190,30,60,0.35)"/>
+                <text x="440" y="163" fill="#BE1E3C" font-family="monospace" font-size="12">GATE 2 · STACK DOES NOT ARM</text>
+                <rect x="424" y="186" width="268" height="36" rx="8" fill="#FFFFFF" stroke="rgba(0,134,168,0.45)"/>
+                <text x="440" y="209" fill="#0086A8" font-family="monospace" font-size="12">GATE 3 · GRADE MUST CLEAR</text>
+                <text x="28" y="260" fill="#5A6690" font-family="monospace" font-size="11">TYPES 8 AND 9 STILL REQUIRE A LEVEL</text>
+                <text x="28" y="280" fill="#5A6690" font-family="monospace" font-size="11">TYPE 10 IS PUSHED WHEN THE RUN QUALIFIES</text>
+                <text x="28" y="308" fill="#16A34A" font-family="monospace" font-size="11">BUY SQUARE #16A34A</text>
+                <rect x="168" y="298" width="10" height="10" fill="#16A34A"/>
+                <text x="200" y="308" fill="#DC2626" font-family="monospace" font-size="11">SELL SQUARE #DC2626</text>
+                <rect x="360" y="298" width="10" height="10" fill="#DC2626"/>
+                <text x="28" y="348" fill="#5A6690" font-family="monospace" font-size="11">SAME GATES · SAME PATH · ONE NEW EVENT TYPE</text>
+              </svg>
+            </div>
+            <figcaption>FIG 01 · TYPE 10 SITS ON TYPES 8 AND 9 · THE GRADE CAN MOVE · GATE 2 STAYS A SWEEP, A RECLAIM, OR A CHOCH</figcaption>
+          </figure>
+        </article>
+
+        <article class="lesson" id="l1-2" data-lesson="l1-2">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">1.2</span> The missing piece, and where a stack is allowed to count</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l1-2"> Mark complete</label>
+          </div>
+          <p>
+            A single diagonal imbalance is one loud price row.
+            A <strong>stack</strong> is several of those rows in a row, all on the same side.
+            That run is the high-value piece v2.1 could not see, because v2.1 never read a footprint.
+            v2.2 asks TradingView for one, with <code>request.footprint</code>.
+          </p>
+          <p>
+            The design stays <strong>direction-aware</strong>.
+            A buy stack pushes lattice direction 1.
+            A sell stack pushes direction −1.
+            Only one side is kept on a bar.
+            The long grade and the short grade are still scored apart.
+          </p>
+          <p>
+            Types 8 and 9 still fire only at a level the engine already tracks: a fair value gap or order block, a VWAP sigma band, or the strongest magnet, inside <strong>OFI level proximity (×ATR)</strong> (default 0.4).
+            Type 10 is different.
+            The script pushes it whenever the run is long enough.
+            It does not run that level test first.
+          </p>
+          <p>
+            The stack still has to sit near price to affect the grade.
+            Density keeps an event only when its price is inside <strong>Lattice price proximity (×ATR)</strong> (default 1.5) of the close, and the event is inside the lattice lookback.
+            The stored price of a stack is the midpoint of its zone.
+            On the bar it prints, that midpoint is inside the bar, so the stack usually counts immediately.
+            On later bars it counts only while price is still near that midpoint.
+          </p>
+          <div class="callout gold">
+            An entry still needs Gate 1, an arm, a zone, the filters, the grade, and a confirmed bar. The square is evidence. Gate 2 arms only on a sweep, a VWAP reclaim, or a CHoCH.
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="module" id="m2">
+      <div class="container">
+        <div class="module-header">
+          <div class="mod-time">Module 02 · The rows</div>
+          <h2>Footprint basics in plain English</h2>
+          <p>A footprint is the inside of one bar, split into price rows, with buy volume and sell volume on each row.</p>
+        </div>
+
+        <article class="lesson" id="l2-1" data-lesson="l2-1">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">2.1</span> Rows, bid, ask, and ticks per row</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l2-1"> Mark complete</label>
+          </div>
+          <p>
+            A normal candle hides the volume inside the high and the low.
+            A <strong>footprint</strong> opens that range into rows.
+            Each row is a thin slice of price.
+          </p>
+          <ul>
+            <li><strong>Sell volume</strong> on a row is trade that hit the bid. Someone sold into a resting buy.</li>
+            <li><strong>Buy volume</strong> on a row is trade that lifted the ask. Someone bought into a resting sell.</li>
+            <li><strong>Ticks per row</strong> is how thick that slice is. A tick is the symbol’s smallest price step. The input is <strong>Footprint ticks/row</strong>. Default is 100. Minimum is 1.</li>
+          </ul>
+          <p>
+            Thinner rows mean more rows inside one bar.
+            Thicker rows mean fewer rows, and a stack is harder to build.
+            The script’s own note says to aim for about 15 to 40 rows on a typical bar.
+            Module 6 shows how to tune that.
+          </p>
+          <p>
+            The call is always <code>request.footprint(fpTicks, 70, fpImbPct)</code>.
+            Pine needs that request on every bar, so the script calls it even when you turn native footprints off.
+            The middle number, 70, is fixed.
+            It is the value-area percent TradingView uses inside the footprint object.
+            You do not have an input for it.
+            You tune the ticks and the imbalance percent.
+          </p>
+
+          <figure class="figure">
+            <div class="svg-wrap">
+              <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Anatomy of one footprint bar with price rows">
+                <rect width="720" height="360" fill="#F2F3FB"/>
+                <text x="24" y="28" fill="#5A6690" font-family="monospace" font-size="11" letter-spacing="2">FIG 02 · ONE BAR, OPENED INTO ROWS</text>
+                <rect x="36" y="52" width="70" height="250" rx="6" fill="#FFFFFF" stroke="rgba(109,40,217,0.25)"/>
+                <text x="48" y="78" fill="#5A6690" font-family="monospace" font-size="10">HIGH</text>
+                <line x1="48" y1="92" x2="94" y2="92" stroke="#DEE1F0"/>
+                <rect x="58" y="150" width="26" height="70" fill="#E9EBF6" stroke="#6D28D9"/>
+                <line x1="71" y1="92" x2="71" y2="150" stroke="#1C2240" stroke-width="2"/>
+                <line x1="71" y1="220" x2="71" y2="270" stroke="#1C2240" stroke-width="2"/>
+                <text x="46" y="286" fill="#5A6690" font-family="monospace" font-size="10">LOW</text>
+                <text x="36" y="328" fill="#5A6690" font-family="monospace" font-size="10">CANDLE</text>
+                <rect x="150" y="48" width="540" height="28" rx="4" fill="#FFFFFF" stroke="#DEE1F0"/>
+                <text x="162" y="67" fill="#5A6690" font-family="monospace" font-size="11">ROW 6 · 105–106 · SELL 40 · BUY 15</text>
+                <rect x="150" y="84" width="540" height="28" rx="4" fill="#E9EBF6" stroke="#16A34A"/>
+                <text x="162" y="103" fill="#16A34A" font-family="monospace" font-size="11">ROW 5 · 104–105 · SELL 8 · BUY 70 · BUY IMB</text>
+                <rect x="150" y="120" width="540" height="28" rx="4" fill="#E9EBF6" stroke="#16A34A"/>
+                <text x="162" y="139" fill="#16A34A" font-family="monospace" font-size="11">ROW 4 · 103–104 · SELL 12 · BUY 80 · BUY IMB</text>
+                <rect x="150" y="156" width="540" height="28" rx="4" fill="#E9EBF6" stroke="#16A34A"/>
+                <text x="162" y="175" fill="#16A34A" font-family="monospace" font-size="11">ROW 3 · 102–103 · SELL 10 · BUY 90 · BUY IMB</text>
+                <rect x="150" y="192" width="540" height="28" rx="4" fill="#FFFFFF" stroke="#DEE1F0"/>
+                <text x="162" y="211" fill="#5A6690" font-family="monospace" font-size="11">ROW 2 · 101–102 · SELL 20 · BUY 40 · QUIET</text>
+                <rect x="150" y="228" width="540" height="28" rx="4" fill="#FFFFFF" stroke="#DEE1F0"/>
+                <text x="162" y="247" fill="#5A6690" font-family="monospace" font-size="11">ROW 1 · 100–101 · SELL 100 · BUY 10 · QUIET</text>
+                <text x="150" y="290" fill="#3A4470" font-family="monospace" font-size="11">EACH ROW IS FOOTPRINT TICKS/ROW THICK · DEFAULT 100 TICKS</text>
+                <text x="150" y="314" fill="#3A4470" font-family="monospace" font-size="11">SELL = HIT THE BID · BUY = LIFTED THE ASK</text>
+                <text x="150" y="338" fill="#6D28D9" font-family="monospace" font-size="11">THE SCRIPT READS THE FLAGS · IT DOES NOT RECOMPUTE THE VOLUMES</text>
+              </svg>
+            </div>
+            <figcaption>FIG 02 · A FOOTPRINT BAR IS PRICE ROWS · EACH ROW HAS SELL VOLUME AND BUY VOLUME · TICKS PER ROW SETS THE SLICE</figcaption>
+          </figure>
+        </article>
+
+        <article class="lesson" id="l2-2" data-lesson="l2-2">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">2.2</span> Why the comparison is diagonal, and what 300% means</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l2-2"> Mark complete</label>
+          </div>
+          <p>
+            The best bid and the best ask sit one tick apart.
+            A market buy lifts the ask.
+            A market sell hits the bid.
+            Comparing buy and sell on the <em>same</em> row mixes both sides of that spread.
+            The useful comparison steps to the neighbor.
+          </p>
+          <p>TradingView’s rule, which this script uses through the footprint flags, is written in the header comment:</p>
+          <ul>
+            <li><strong>Buy imbalance</strong> on a row: buy volume at that row is at least the threshold percent times the sell volume of the row below.</li>
+            <li><strong>Sell imbalance</strong> on a row: sell volume at that row is at least the threshold percent times the buy volume of the row above.</li>
+          </ul>
+          <p>
+            The input is <strong>Imbalance threshold %</strong>.
+            Default is 300.
+            Minimum is 100.
+            The step is 50.
+            300% means 3 times.
+            Buy 90 against sell 20 on the row below is a buy imbalance, because 90 is at least 3 × 20.
+            Buy 40 against sell 100 on the row below is quiet, because 40 is far under 300.
+          </p>
+          <p>
+            The script does not do that multiply itself.
+            It reads <code>has_buy_imbalance</code> and <code>has_sell_imbalance</code> on each <code>volume_row</code>.
+            The percent you set is passed into <code>request.footprint</code>, and TradingView sets the flags.
+          </p>
+          <div class="callout cyan">
+            Native footprint data needs a TradingView Premium or Ultimate plan. The input label says <strong>Prefer native footprint (Premium+)</strong>. On other plans, or on a symbol with no footprint, the request comes back empty and Module 4’s proxy takes over.
+          </div>
+
+          <figure class="figure">
+            <div class="svg-wrap">
+              <svg viewBox="0 0 720 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagonal buy and sell imbalance arrows between neighboring rows">
+                <rect width="720" height="340" fill="#F2F3FB"/>
+                <text x="24" y="28" fill="#5A6690" font-family="monospace" font-size="11" letter-spacing="2">FIG 03 · THE DIAGONAL RULE · 300% IS 3 TO 1</text>
+                <rect x="40" y="70" width="250" height="56" rx="8" fill="#FFFFFF" stroke="#16A34A" stroke-width="1.6"/>
+                <text x="54" y="94" fill="#16A34A" font-family="monospace" font-size="12">ROW ABOVE · BUY VOL</text>
+                <text x="54" y="112" fill="#3A4470" font-family="monospace" font-size="11">THIS ROW’S BUY</text>
+                <rect x="40" y="168" width="250" height="56" rx="8" fill="#FFFFFF" stroke="#DEE1F0"/>
+                <text x="54" y="192" fill="#1C2240" font-family="monospace" font-size="12">ROW BELOW · SELL VOL</text>
+                <text x="54" y="210" fill="#3A4470" font-family="monospace" font-size="11">NEIGHBOR’S SELL</text>
+                <path d="M165 168 C165 140, 165 130, 165 126" stroke="#16A34A" stroke-width="1.8" fill="none"/>
+                <path d="M159 138 L165 124 L171 138" fill="#16A34A"/>
+                <text x="178" y="150" fill="#16A34A" font-family="monospace" font-size="10">BUY ≥ 300% × SELL BELOW</text>
+                <rect x="420" y="70" width="260" height="56" rx="8" fill="#FFFFFF" stroke="#DEE1F0"/>
+                <text x="434" y="94" fill="#1C2240" font-family="monospace" font-size="12">ROW ABOVE · BUY VOL</text>
+                <text x="434" y="112" fill="#3A4470" font-family="monospace" font-size="11">NEIGHBOR’S BUY</text>
+                <rect x="420" y="168" width="260" height="56" rx="8" fill="#FFFFFF" stroke="#DC2626" stroke-width="1.6"/>
+                <text x="434" y="192" fill="#DC2626" font-family="monospace" font-size="12">THIS ROW · SELL VOL</text>
+                <text x="434" y="210" fill="#3A4470" font-family="monospace" font-size="11">SELL IMBALANCE LIVES HERE</text>
+                <path d="M550 126 C550 150, 550 160, 550 168" stroke="#DC2626" stroke-width="1.8" fill="none"/>
+                <path d="M544 156 L550 170 L556 156" fill="#DC2626"/>
+                <text x="434" y="248" fill="#DC2626" font-family="monospace" font-size="10">SELL ≥ 300% × BUY ABOVE</text>
+                <text x="40" y="292" fill="#5A6690" font-family="monospace" font-size="11">SAME-ROW BID VERSUS ASK IS NOT THE TEST</text>
+                <text x="40" y="316" fill="#5A6690" font-family="monospace" font-size="11">THRESHOLD INPUT DEFAULT 300 · STEP 50 · FLOOR 100</text>
+              </svg>
+            </div>
+            <figcaption>FIG 03 · BUY VOLUME VERSUS THE SELL OF THE ROW BELOW · SELL VOLUME VERSUS THE BUY OF THE ROW ABOVE</figcaption>
+          </figure>
+        </article>
+      </div>
+    </section>
+
+    <section class="module" id="m3">
+      <div class="container">
+        <div class="module-header">
+          <div class="mod-time">Module 03 · The walk</div>
+          <h2>Stack detection</h2>
+          <p>The script walks every row, keeps consecutive one-sided flags, and remembers the longest run on each side.</p>
+        </div>
+
+        <article class="lesson" id="l3-1" data-lesson="l3-1">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">3.1</span> Consecutive runs, and the minimum length</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l3-1"> Mark complete</label>
+          </div>
+          <p>
+            When <strong>Prefer native footprint (Premium+)</strong> is on, and the footprint is not empty, the script sets a flag that this bar used real footprint data.
+            It then walks <code>rows()</code> from the first row to the last.
+          </p>
+          <p>Each row is one of three things:</p>
+          <ol class="rules-ol">
+            <li><strong>Buy only.</strong> The buy flag is on and the sell flag is off. The buy run grows by one. The sell count goes back to zero.</li>
+            <li><strong>Sell only.</strong> The sell flag is on and the buy flag is off. The sell run grows by one. The buy count goes back to zero.</li>
+            <li><strong>Anything else.</strong> Both flags, or neither flag. Both counts go to zero, and the running price span is cleared.</li>
+          </ol>
+          <p>
+            A row that is both sides is a break.
+            It does not count for either run.
+            The script keeps the <strong>longest</strong> buy run and the <strong>longest</strong> sell run it saw on that walk.
+            If two buy runs have the same length, the first one is kept, because the script replaces a best run only when the new run is strictly longer.
+          </p>
+          <p>
+            The price span of a run is the lowest <code>down_price</code> and the highest <code>up_price</code> of the rows inside it.
+            A direct flip from buy rows to sell rows, with no quiet row between them, starts a new count.
+            The span is not cleared on that flip, so the new side’s box can still include the earlier rows until a quiet row or a both-sides row wipes it.
+          </p>
+          <p>
+            <strong>Min stacked imbalance rows</strong> defaults to 3.
+            The smallest allowed value is 2.
+            The largest is 12.
+            A run shorter than that minimum is ignored.
+          </p>
+
+          <figure class="figure">
+            <div class="svg-wrap">
+              <svg viewBox="0 0 720 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Worked footprint with a three-row buy stack">
+                <rect width="720" height="400" fill="#F2F3FB"/>
+                <text x="24" y="26" fill="#5A6690" font-family="monospace" font-size="11" letter-spacing="2">FIG 04 · A RUN OF THREE BUY ROWS · THRESHOLD 300</text>
+                <rect x="28" y="44" width="664" height="26" rx="4" fill="#FFFFFF" stroke="#DEE1F0"/>
+                <text x="40" y="62" fill="#5A6690" font-family="monospace" font-size="11">ROW 6 · BUY 15 VS 3×8 = 24 · QUIET · BREAKS THE RUN</text>
+                <rect x="28" y="76" width="664" height="30" rx="4" fill="#FFFFFF" stroke="#16A34A" stroke-width="1.6"/>
+                <text x="40" y="96" fill="#16A34A" font-family="monospace" font-size="12">ROW 5 · 104–105 · BUY 70 ≥ 3×12 · BUY RUN = 3</text>
+                <rect x="28" y="112" width="664" height="30" rx="4" fill="#FFFFFF" stroke="#16A34A" stroke-width="1.6"/>
+                <text x="40" y="132" fill="#16A34A" font-family="monospace" font-size="12">ROW 4 · 103–104 · BUY 80 ≥ 3×10 · BUY RUN = 2</text>
+                <rect x="28" y="148" width="664" height="30" rx="4" fill="#FFFFFF" stroke="#16A34A" stroke-width="1.6"/>
+                <text x="40" y="168" fill="#16A34A" font-family="monospace" font-size="12">ROW 3 · 102–103 · BUY 90 ≥ 3×20 · BUY RUN = 1</text>
+                <rect x="28" y="184" width="664" height="26" rx="4" fill="#FFFFFF" stroke="#DEE1F0"/>
+                <text x="40" y="202" fill="#5A6690" font-family="monospace" font-size="11">ROW 2 · BUY 40 VS 3×100 = 300 · QUIET</text>
+                <rect x="28" y="216" width="664" height="26" rx="4" fill="#FFFFFF" stroke="#DEE1F0"/>
+                <text x="40" y="234" fill="#5A6690" font-family="monospace" font-size="11">ROW 1 · 100–101 · SELL 100 · BUY 10 · QUIET</text>
+                <rect x="28" y="260" width="320" height="112" rx="10" fill="#FFFFFF" stroke="#16A34A"/>
+                <text x="44" y="284" fill="#16A34A" font-family="monospace" font-size="12">QUALIFIES · BUY STACK</text>
+                <text x="44" y="308" fill="#1C2240" font-family="monospace" font-size="11">LENGTH 3 · MIN IS 3</text>
+                <text x="44" y="328" fill="#1C2240" font-family="monospace" font-size="11">ZONE 102 TO 105</text>
+                <text x="44" y="348" fill="#1C2240" font-family="monospace" font-size="11">LATTICE PRICE = MID 103.5</text>
+                <rect x="364" y="260" width="328" height="112" rx="10" fill="#FFFFFF" stroke="rgba(109,40,217,0.35)"/>
+                <text x="380" y="284" fill="#6D28D9" font-family="monospace" font-size="12">SELL SIDE ON THIS BAR</text>
+                <text x="380" y="308" fill="#3A4470" font-family="monospace" font-size="11">NO SELL-ONLY RUN</text>
+                <text x="380" y="328" fill="#3A4470" font-family="monospace" font-size="11">BEST SELL LENGTH = 0</text>
+                <text x="380" y="348" fill="#3A4470" font-family="monospace" font-size="11">ONE STACK PER BAR</text>
+              </svg>
+            </div>
+            <figcaption>FIG 04 · ROWS 3, 4, AND 5 ARE BUY-ONLY AT A 3:1 TEST · LENGTH 3 MEETS THE DEFAULT MINIMUM · ZONE IS 102 TO 105</figcaption>
+          </figure>
+        </article>
+
+        <article class="lesson" id="l3-2" data-lesson="l3-2">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">3.2</span> Which side wins, including a tie</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l3-2"> Mark complete</label>
+          </div>
+          <p>After the walk, the script picks one stack for the bar. The test is in this order:</p>
+          <ul>
+            <li>If the best buy run is at least the minimum, and it is at least as long as the best sell run, the bar is a <strong>buy stack</strong>.</li>
+            <li>Otherwise, if the best sell run is at least the minimum, the bar is a <strong>sell stack</strong>.</li>
+            <li>Otherwise there is no stack.</li>
+          </ul>
+          <p>
+            A tie goes to the buy side.
+            The comparison is <code>bestBuyRun &gt;= bestSellRun</code>.
+            Buy length 3 and sell length 3, with a minimum of 3, prints the buy stack.
+            Sell length 4 and buy length 3 prints the sell stack, because the buy run is no longer at least as long.
+            Buy length 2 and sell length 3, with a minimum of 3, prints the sell stack, because the buy run never cleared the minimum.
+          </p>
+          <div class="sheet-grid">
+            <div class="sheet buy">
+              <h4>Buy wins the tie</h4>
+              <p>Best buy 3, best sell 3, minimum 3. Direction is +1. Count is 3. The zone uses the buy run’s top and bottom.</p>
+            </div>
+            <div class="sheet sell">
+              <h4>Longer sell wins</h4>
+              <p>Best buy 3, best sell 4, minimum 3. Direction is −1. Count is 4. The shorter buy run is dropped for this bar.</p>
+            </div>
+          </div>
+
+          <figure class="figure">
+            <div class="svg-wrap">
+              <svg viewBox="0 0 720 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Flowchart of the row walk and the buy-wins tie rule">
+                <rect width="720" height="420" fill="#F2F3FB"/>
+                <text x="24" y="26" fill="#5A6690" font-family="monospace" font-size="11" letter-spacing="2">FIG 05 · THE RUN WALK</text>
+                <rect x="230" y="42" width="260" height="36" rx="8" fill="#FFFFFF" stroke="#6D28D9"/>
+                <text x="360" y="65" text-anchor="middle" fill="#6D28D9" font-family="monospace" font-size="12">NEXT ROW</text>
+                <rect x="40" y="110" width="190" height="48" rx="8" fill="#FFFFFF" stroke="#16A34A"/>
+                <text x="135" y="130" text-anchor="middle" fill="#16A34A" font-family="monospace" font-size="11">BUY ONLY</text>
+                <text x="135" y="148" text-anchor="middle" fill="#3A4470" font-family="monospace" font-size="10">BUY +1 · SELL COUNT 0</text>
+                <rect x="265" y="110" width="190" height="48" rx="8" fill="#FFFFFF" stroke="#DC2626"/>
+                <text x="360" y="130" text-anchor="middle" fill="#DC2626" font-family="monospace" font-size="11">SELL ONLY</text>
+                <text x="360" y="148" text-anchor="middle" fill="#3A4470" font-family="monospace" font-size="10">SELL +1 · BUY COUNT 0</text>
+                <rect x="490" y="110" width="190" height="48" rx="8" fill="#FFFFFF" stroke="#8A5B00"/>
+                <text x="585" y="130" text-anchor="middle" fill="#8A5B00" font-family="monospace" font-size="11">BOTH OR NEITHER</text>
+                <text x="585" y="148" text-anchor="middle" fill="#3A4470" font-family="monospace" font-size="10">CLEAR COUNTS AND SPAN</text>
+                <path d="M360 78 V98" stroke="#6D28D9" stroke-width="1.4"/>
+                <path d="M200 98 H585" stroke="#6D28D9" stroke-width="1.4" fill="none"/>
+                <path d="M135 98 V110" stroke="#16A34A" stroke-width="1.4"/>
+                <path d="M360 98 V110" stroke="#DC2626" stroke-width="1.4"/>
+                <path d="M585 98 V110" stroke="#8A5B00" stroke-width="1.4"/>
+                <rect x="170" y="186" width="380" height="40" rx="8" fill="#E9EBF6" stroke="#6D28D9"/>
+                <text x="360" y="211" text-anchor="middle" fill="#1C2240" font-family="monospace" font-size="12">KEEP THE LONGEST RUN ON EACH SIDE</text>
+                <path d="M360 158 V186" stroke="#6D28D9" stroke-width="1.4"/>
+                <rect x="40" y="256" width="300" height="64" rx="8" fill="#FFFFFF" stroke="#16A34A"/>
+                <text x="190" y="282" text-anchor="middle" fill="#16A34A" font-family="monospace" font-size="12">BUY ≥ MIN AND BUY ≥ SELL</text>
+                <text x="190" y="302" text-anchor="middle" fill="#3A4470" font-family="monospace" font-size="11">BUY STACK · TIES INCLUDED</text>
+                <rect x="380" y="256" width="300" height="64" rx="8" fill="#FFFFFF" stroke="#DC2626"/>
+                <text x="530" y="282" text-anchor="middle" fill="#DC2626" font-family="monospace" font-size="12">ELSE SELL ≥ MIN</text>
+                <text x="530" y="302" text-anchor="middle" fill="#3A4470" font-family="monospace" font-size="11">SELL STACK</text>
+                <text x="40" y="360" fill="#5A6690" font-family="monospace" font-size="11">EQUAL LENGTH INSIDE ONE SIDE KEEPS THE EARLIER RUN</text>
+                <text x="40" y="384" fill="#5A6690" font-family="monospace" font-size="11">IF NEITHER SIDE CLEARS THE MINIMUM · NO STACK THIS BAR</text>
+              </svg>
+            </div>
+            <figcaption>FIG 05 · WALK EACH ROW · A QUIET ROW BREAKS THE RUN · THE BUY SIDE WINS WHEN THE TWO BEST RUNS TIE</figcaption>
+          </figure>
+        </article>
+      </div>
+    </section>
+
+    <section class="module" id="m4">
+      <div class="container">
+        <div class="module-header">
+          <div class="mod-time">Module 04 · When the rows are missing</div>
+          <h2>The graceful fallback</h2>
+          <p>The feature still runs when the footprint is empty, or when you turn native data off. The stand-in is coarser.</p>
+        </div>
+
+        <article class="lesson" id="l4-1" data-lesson="l4-1">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">4.1</span> useTrueFP, and what “na” does</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l4-1"> Mark complete</label>
+          </div>
+          <p>
+            <code>useTrueFP</code> is the input <strong>Prefer native footprint (Premium+)</strong>.
+            Default is on.
+            <strong>na</strong> means “no value.”
+            If TradingView cannot build a footprint, <code>request.footprint</code> returns na.
+          </p>
+          <p>The script treats the bar as native only when both of these are true:</p>
+          <ul>
+            <li>Prefer native footprint is on.</li>
+            <li>The footprint object is not na.</li>
+          </ul>
+          <p>
+            That bar is then marked <code>fpNative</code>.
+            The dashboard will end the OFI text with <strong>·FP</strong>.
+            FP means footprint.
+          </p>
+          <p>
+            If the toggle is off, the footprint is still requested, and then ignored.
+            <code>fpNative</code> stays false.
+            The proxy runs.
+            The dashboard ends with <strong>·px</strong>.
+            px means the price-bar proxy.
+          </p>
+          <div class="callout">
+            A real footprint that simply has no long enough run does not fall through to the proxy. Native data, even a quiet footprint, blocks the proxy for that bar. The proxy runs when the object is na, or when the toggle is off.
+          </div>
+
+          <figure class="figure">
+            <div class="svg-wrap">
+              <svg viewBox="0 0 720 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Decision between native footprint and the CVD proxy">
+                <rect width="720" height="400" fill="#F2F3FB"/>
+                <text x="24" y="26" fill="#5A6690" font-family="monospace" font-size="11" letter-spacing="2">FIG 06 · NATIVE OR PROXY</text>
+                <rect x="180" y="44" width="360" height="40" rx="8" fill="#FFFFFF" stroke="#6D28D9"/>
+                <text x="360" y="69" text-anchor="middle" fill="#6D28D9" font-family="monospace" font-size="12">REQUEST.FOOTPRINT EVERY BAR</text>
+                <rect x="160" y="110" width="400" height="44" rx="8" fill="#E9EBF6" stroke="#0086A8"/>
+                <text x="360" y="137" text-anchor="middle" fill="#0086A8" font-family="monospace" font-size="12">TOGGLE ON AND OBJECT NOT NA?</text>
+                <path d="M360 84 V110" stroke="#6D28D9" stroke-width="1.4"/>
+                <rect x="36" y="196" width="300" height="88" rx="10" fill="#FFFFFF" stroke="#16A34A"/>
+                <text x="186" y="224" text-anchor="middle" fill="#16A34A" font-family="monospace" font-size="13">YES · NATIVE</text>
+                <text x="186" y="246" text-anchor="middle" fill="#1C2240" font-family="monospace" font-size="11">WALK THE ROWS</text>
+                <text x="186" y="266" text-anchor="middle" fill="#0086A8" font-family="monospace" font-size="11">DASHBOARD TAG ·FP</text>
+                <rect x="384" y="196" width="300" height="88" rx="10" fill="#FFFFFF" stroke="#8A5B00"/>
+                <text x="534" y="224" text-anchor="middle" fill="#8A5B00" font-family="monospace" font-size="13">NO · PROXY</text>
+                <text x="534" y="246" text-anchor="middle" fill="#1C2240" font-family="monospace" font-size="11">STRONG DELTA BARS</text>
+                <text x="534" y="266" text-anchor="middle" fill="#8A5B00" font-family="monospace" font-size="11">DASHBOARD TAG ·px</text>
+                <path d="M250 154 V180 H186 V196" stroke="#16A34A" stroke-width="1.4" fill="none"/>
+                <path d="M470 154 V180 H534 V196" stroke="#8A5B00" stroke-width="1.4" fill="none"/>
+                <text x="48" y="318" fill="#16A34A" font-family="monospace" font-size="11">YES PATH</text>
+                <text x="48" y="338" fill="#3A4470" font-family="monospace" font-size="11">QUIET ROWS STILL COUNT AS NATIVE</text>
+                <text x="48" y="358" fill="#3A4470" font-family="monospace" font-size="11">NO QUALIFYING RUN · PROXY STAYS OFF</text>
+                <text x="380" y="318" fill="#8A5B00" font-family="monospace" font-size="11">NO PATH</text>
+                <text x="380" y="338" fill="#3A4470" font-family="monospace" font-size="11">PLAN, SYMBOL, OR TOGGLE OFF</text>
+                <text x="380" y="378" fill="#5A6690" font-family="monospace" font-size="11">TAG IS THE DATA SOURCE · NOT THE WORD NATIVE</text>
+              </svg>
+            </div>
+            <figcaption>FIG 06 · ·FP MEANS THIS BAR RECEIVED A FOOTPRINT OBJECT · ·px MEANS THE PROXY RAN · A QUIET FOOTPRINT DOES NOT SWITCH TO THE PROXY</figcaption>
+          </figure>
+        </article>
+
+        <article class="lesson" id="l4-2" data-lesson="l4-2">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">4.2</span> The CVD multi-bar proxy, and why it is coarser</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l4-2"> Mark complete</label>
+          </div>
+          <p>
+            The proxy does not look inside the bar.
+            It looks backward across bars.
+            It starts at the current bar.
+            A strong up delta adds one to the buy count and clears the sell count.
+            A strong down delta does the opposite.
+            The first bar that is neither strong up nor strong down stops the walk.
+          </p>
+          <p>
+            The current bar has to be part of the run.
+            Three strong bars in the past, with a quiet bar now, do not print a stack.
+            The loop breaks on bar zero.
+          </p>
+          <p>
+            The window is short.
+            The loop runs from 0 through <code>min(min stacked rows + 2, 8)</code>.
+            That is at most nine bars, indexes 0 through 8.
+            If you set <strong>Min stacked imbalance rows</strong> to 10, 11, or 12, the proxy can never qualify.
+            A native footprint still can, up to the input maximum of 12.
+          </p>
+          <p>
+            When the proxy qualifies, the zone is not a set of footprint rows.
+            The top is the highest high of those bars.
+            The bottom is the lowest low.
+            The count is the number of strong bars.
+            There is no diagonal test.
+            The same strong-delta multiple used by absorption, default 1.5, is the test.
+          </p>
+          <div class="sheet-grid">
+            <div class="sheet trend">
+              <h4>Native stack</h4>
+              <p>Neighboring price rows. Diagonal 3:1 flags. Zone is the row prices of the winning run. Dashboard tag ·FP.</p>
+            </div>
+            <div class="sheet trans">
+              <h4>Proxy stack</h4>
+              <p>Neighboring bars with strong same-side delta. Zone is the high-low of that streak. Dashboard tag ·px. Coarser on purpose.</p>
+            </div>
+          </div>
+          <div class="callout gold">
+            Example. Minimum is 3. This bar and the two before it are each stronger than 1.5 times their own average absolute delta, all to the upside. The bar before those three is quiet, so the walk stops. Buy count is 3. The script prints a buy stack and tags the row ·px.
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="module" id="m5">
+      <div class="container">
+        <div class="module-header">
+          <div class="mod-time">Module 05 · Where the stack goes</div>
+          <h2>Lattice and magnets</h2>
+          <p>Type 10 joins the bitmask. A small grade nudge can follow. The zone can be stored as a liquidity pool.</p>
+        </div>
+
+        <article class="lesson" id="l5-1" data-lesson="l5-1">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">5.1</span> Type 10, the +1 nudge, and Gate 3</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l5-1"> Mark complete</label>
+          </div>
+          <p>
+            Event codes in this script are fixed.
+            1 sweep, 2 CHoCH, 3 BOS, 4 VWAP reclaim, 5 band touch, 6 session tag, 7 fair value gap, 8 absorption, 9 imbalance, 10 stacked imbalance.
+            A stack pushes type 10 at the midpoint of its zone, direction +1 or −1.
+          </p>
+          <p>
+            Density uses a <strong>bitmask</strong>.
+            A bitmask is a row of on/off switches, one per event type.
+            The loop checks bits 0 through 9, which are types 1 through 10.
+            Repeating the same type does not raise the count.
+            Two stacks in the lookback still count as one type 10.
+          </p>
+          <p>The grade is built in this order. Learn the order. The nudge is last.</p>
+          <ol class="rules-ol">
+            <li><strong>Count</strong> the distinct types near this close. The lookback is <strong>Lattice lookback bars</strong> (default 12), shortened on Scalp and lengthened on Position. The price window is 1.5 × ATR by default.</li>
+            <li><strong>Session boost.</strong> London, the NY killzone, or the Silver Bullet multiplies that count by 1.25. These windows amplify. They are not a required gate.</li>
+            <li><strong>Round</strong> to a whole grade.</li>
+            <li><strong>Magnet bump.</strong> A direction-matched magnet of strength at least 1.0, within 1.2 × ATR, adds 1 if the grade is already at least 3. The cap here is 5.</li>
+            <li><strong>Transition haircut.</strong> In TRANSITION, if the grade is under 4 and the raw density is under 3.5, the grade is capped at 2.</li>
+            <li><strong>Stack nudge.</strong> If this side has a stack and the grade is already at least 2, add 1. The result is capped at 5.</li>
+          </ol>
+          <div class="grade-grid">
+            <article class="grade-card watch">
+              <div class="g-name">Watch</div>
+              <div class="g-count">2</div>
+              <p>Grade 2. A stack nudge can lift this to PRIME.</p>
+            </article>
+            <article class="grade-card prime">
+              <div class="g-name">Prime</div>
+              <div class="g-count">3</div>
+              <p>Default minimum to enter. Stacked alerts use this line.</p>
+            </article>
+            <article class="grade-card elite">
+              <div class="g-name">Elite</div>
+              <div class="g-count">4</div>
+              <p>Grade 4. Imbalance alerts start here. A nudge can reach SINGULAR.</p>
+            </article>
+            <article class="grade-card singular">
+              <div class="g-name">Singular</div>
+              <div class="g-count">5</div>
+              <p>The cap. Extra types and extra nudges stop here.</p>
+            </article>
+          </div>
+          <p>
+            A stack by itself is one type.
+            Rounded grade 1 is shown as a dash, and 1 is below 2, so the nudge does not fire.
+            The stack needs company already inside the window before the +1 is allowed.
+            Two types make WATCH. The nudge then makes PRIME.
+          </p>
+          <p>
+            Gate 3 reads the grade after the nudge.
+            <strong>Min lattice grade to enter</strong> defaults to PRIME, which is rank 3.
+            Gate 2 does not read the stack.
+            A buy arm is still a sweep of the lows, a bullish VWAP reclaim, or a bullish CHoCH.
+            The arm expires after a preset number of bars.
+            The entry label still requires <code>barstate.isconfirmed</code>, so the bar has closed.
+          </p>
+          <div class="callout emerald">
+            The nudge can undo a one-step transition haircut. A TRANSITION grade capped at 2, with a stack on that side, becomes 3. It can also stack on the magnet bump: three types can be PRIME, a strong magnet can make ELITE, and the stack nudge can make SINGULAR. The cap is still 5.
+          </div>
+
+          <figure class="figure">
+            <div class="svg-wrap">
+              <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Lattice bitmask types 1 through 10 and the plus one grade nudge">
+                <rect width="720" height="360" fill="#F2F3FB"/>
+                <text x="24" y="26" fill="#5A6690" font-family="monospace" font-size="11" letter-spacing="2">FIG 07 · BITMASK 1–10 · THEN THE NUDGE</text>
+                <g font-family="monospace" font-size="10" text-anchor="middle">
+                  <rect x="24" y="48" width="60" height="44" rx="6" fill="#FFFFFF" stroke="#DEE1F0"/>
+                  <text x="54" y="68" fill="#5A6690">1</text><text x="54" y="84" fill="#3A4470">SWEEP</text>
+                  <rect x="90" y="48" width="60" height="44" rx="6" fill="#FFFFFF" stroke="#DEE1F0"/>
+                  <text x="120" y="68" fill="#5A6690">2</text><text x="120" y="84" fill="#3A4470">CHOCH</text>
+                  <rect x="156" y="48" width="60" height="44" rx="6" fill="#FFFFFF" stroke="#DEE1F0"/>
+                  <text x="186" y="68" fill="#5A6690">3</text><text x="186" y="84" fill="#3A4470">BOS</text>
+                  <rect x="222" y="48" width="60" height="44" rx="6" fill="#FFFFFF" stroke="#DEE1F0"/>
+                  <text x="252" y="68" fill="#5A6690">4</text><text x="252" y="84" fill="#3A4470">VWAP</text>
+                  <rect x="288" y="48" width="60" height="44" rx="6" fill="#FFFFFF" stroke="#DEE1F0"/>
+                  <text x="318" y="68" fill="#5A6690">5</text><text x="318" y="84" fill="#3A4470">BAND</text>
+                  <rect x="354" y="48" width="60" height="44" rx="6" fill="#FFFFFF" stroke="#DEE1F0"/>
+                  <text x="384" y="68" fill="#5A6690">6</text><text x="384" y="84" fill="#3A4470">SESS</text>
+                  <rect x="420" y="48" width="60" height="44" rx="6" fill="#FFFFFF" stroke="#DEE1F0"/>
+                  <text x="450" y="68" fill="#5A6690">7</text><text x="450" y="84" fill="#3A4470">FVG</text>
+                  <rect x="486" y="48" width="60" height="44" rx="6" fill="#FFFFFF" stroke="#0086A8"/>
+                  <text x="516" y="68" fill="#0086A8">8</text><text x="516" y="84" fill="#0086A8">ABS</text>
+                  <rect x="552" y="48" width="60" height="44" rx="6" fill="#FFFFFF" stroke="#6D28D9"/>
+                  <text x="582" y="68" fill="#6D28D9">9</text><text x="582" y="84" fill="#6D28D9">IMB</text>
+                  <rect x="618" y="48" width="78" height="44" rx="6" fill="#E9EBF6" stroke="#16A34A" stroke-width="1.8"/>
+                  <text x="657" y="68" fill="#16A34A">10</text><text x="657" y="84" fill="#16A34A">STACK</text>
+                </g>
+                <text x="24" y="124" fill="#5A6690" font-family="monospace" font-size="11">EACH TYPE COUNTS ONCE · THE ARRAY HOLDS AT MOST 30 EVENTS</text>
+                <rect x="24" y="146" width="210" height="70" rx="8" fill="#FFFFFF" stroke="#0086A8"/>
+                <text x="129" y="174" text-anchor="middle" fill="#0086A8" font-family="monospace" font-size="12">BASE GRADE 2</text>
+                <text x="129" y="196" text-anchor="middle" fill="#3A4470" font-family="monospace" font-size="11">WATCH · TWO TYPES</text>
+                <path d="M244 181 H300" stroke="#6D28D9" stroke-width="1.6"/>
+                <path d="M292 175 L306 181 L292 187" fill="#6D28D9"/>
+                <text x="248" y="170" fill="#6D28D9" font-family="monospace" font-size="10">STACK AND ≥2</text>
+                <rect x="314" y="146" width="210" height="70" rx="8" fill="#FFFFFF" stroke="#059669"/>
+                <text x="419" y="174" text-anchor="middle" fill="#059669" font-family="monospace" font-size="12">GRADE 3</text>
+                <text x="419" y="196" text-anchor="middle" fill="#3A4470" font-family="monospace" font-size="11">PRIME · AFTER +1</text>
+                <rect x="544" y="146" width="152" height="70" rx="8" fill="#FFFFFF" stroke="#8A5B00"/>
+                <text x="620" y="174" text-anchor="middle" fill="#8A5B00" font-family="monospace" font-size="12">CAP 5</text>
+                <text x="620" y="196" text-anchor="middle" fill="#3A4470" font-family="monospace" font-size="11">SINGULAR</text>
+                <text x="24" y="252" fill="#BE1E3C" font-family="monospace" font-size="12">GATE 2 IS NOT IN THIS PICTURE</text>
+                <text x="24" y="276" fill="#3A4470" font-family="monospace" font-size="11">GATE 3 COMPARES THE NUDGED GRADE TO MIN LATTICE GRADE</text>
+                <text x="24" y="300" fill="#3A4470" font-family="monospace" font-size="11">A LONE STACK IS GRADE 1 · THE NUDGE STAYS OFF</text>
+                <text x="24" y="332" fill="#5A6690" font-family="monospace" font-size="11">WATCH CYAN · PRIME EMERALD · ELITE VIOLET · SINGULAR AMBER</text>
+              </svg>
+            </div>
+            <figcaption>FIG 07 · TYPE 10 IS ONE BIT · THE +1 NUDGE RUNS ONLY WHEN THAT SIDE’S GRADE IS ALREADY AT LEAST WATCH · THE CAP IS SINGULAR</figcaption>
+          </figure>
+        </article>
+
+        <article class="lesson" id="l5-2" data-lesson="l5-2">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">5.2</span> Registering the stack in the Liquidity Memory Map</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l5-2"> Mark complete</label>
+          </div>
+          <p>
+            <strong>Register stack as liquidity magnet</strong> defaults to on.
+            A <strong>magnet</strong> is a stored liquidity pool.
+            It has a price, a direction, an intensity, and a strength that decays.
+          </p>
+          <ul>
+            <li><strong>Buy stack.</strong> The pool is placed at the stack bottom. Direction is +1, so it can support a long grade later.</li>
+            <li><strong>Sell stack.</strong> The pool is placed at the stack top. Direction is −1, so it can support a short grade later.</li>
+            <li><strong>Intensity</strong> is stack length × 1.5 × volume ratio. Volume ratio is this bar’s volume divided by the 20-bar average volume. If that average is zero, the ratio is 1.</li>
+          </ul>
+          <p>
+            A stack of 3 on a bar with twice the average volume starts at intensity 3 × 1.5 × 2 = 9.
+            That is a strong start next to many sweep pools.
+            The blueprint’s phrase “length times volume ratio” leaves out the 1.5. The script multiplies by 1.5.
+          </p>
+          <p>Every cap the map already enforces still applies to these pools:</p>
+          <ul>
+            <li><strong>Max liquidity pools</strong> defaults to 20, and the input itself cannot go above 30 or below 5. A new pool past the cap deletes the oldest pool and its ray.</li>
+            <li><strong>Magnet decay / bar</strong> defaults to 0.92. Each bar multiplies strength by that number. Under 0.15 the pool turns off and the ray is deleted.</li>
+            <li>A revisit adds strength only when price tags the level (within 0.35 × ATR, or the bar crosses it), volume is above 1.2 × average, and the candle closes in the pool’s direction. The add is half the original intensity.</li>
+            <li>The grade’s magnet bump needs strength at least 1.0, a matching direction, and a grade already at least 3, inside 1.2 × ATR.</li>
+            <li>TP3 can use the nearest opposing pool only when that pool’s strength is at least 0.8.</li>
+            <li>The lattice event list itself stops at 30 events. Older events fall off the back.</li>
+            <li>The chart box is a separate, tighter limit. Only the latest stack box is kept. The previous box is deleted. The box extends 12 bars to the right. The magnet ray is the memory that can outlive the box.</li>
+          </ul>
+
+          <figure class="figure">
+            <div class="svg-wrap">
+              <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A buy stack zone registered as a magnet at the stack bottom">
+                <rect width="720" height="360" fill="#F2F3FB"/>
+                <text x="24" y="26" fill="#5A6690" font-family="monospace" font-size="11" letter-spacing="2">FIG 08 · STACK ZONE BECOMES A MAGNET</text>
+                <rect x="80" y="70" width="70" height="150" rx="4" fill="rgba(22,163,74,0.16)" stroke="#16A34A"/>
+                <text x="115" y="58" text-anchor="middle" fill="#16A34A" font-family="monospace" font-size="11">BOX</text>
+                <text x="160" y="84" fill="#16A34A" font-family="monospace" font-size="11">TOP 105</text>
+                <text x="160" y="214" fill="#16A34A" font-family="monospace" font-size="11">BOTTOM 102 · POOL LIVES HERE</text>
+                <circle cx="115" cy="220" r="6" fill="#0086A8"/>
+                <line x1="121" y1="220" x2="520" y2="220" stroke="#0086A8" stroke-width="1.4" stroke-dasharray="3 4"/>
+                <text x="530" y="216" fill="#0086A8" font-family="monospace" font-size="11">DIR +1 RAY</text>
+                <polyline fill="none" stroke="#1C2240" stroke-width="2" points="200,180 260,160 320,190 390,150 460,200 520,170"/>
+                <circle cx="460" cy="206" r="5" fill="#059669"/>
+                <text x="472" y="198" fill="#059669" font-family="monospace" font-size="11">LATER TAG</text>
+                <rect x="80" y="250" width="560" height="78" rx="10" fill="#FFFFFF" stroke="rgba(109,40,217,0.28)"/>
+                <text x="98" y="276" fill="#1C2240" font-family="monospace" font-size="12">INTENSITY = 3 × 1.5 × VOL RATIO</text>
+                <text x="98" y="298" fill="#3A4470" font-family="monospace" font-size="11">DECAY 0.92 / BAR · DROP UNDER 0.15 · CAP 20 POOLS</text>
+                <text x="98" y="316" fill="#3A4470" font-family="monospace" font-size="11">SELL STACK REGISTERS THE TOP · DIRECTION −1</text>
+              </svg>
+            </div>
+            <figcaption>FIG 08 · A BUY STACK STORES THE BOTTOM · A SELL STACK STORES THE TOP · THE BOX IS TEMPORARY · THE POOL DECAYS</figcaption>
+          </figure>
+        </article>
+      </div>
+    </section>
+
+    <section class="module" id="m6">
+      <div class="container">
+        <div class="module-header">
+          <div class="mod-time">Module 06 · On the chart</div>
+          <h2>Chart, dashboard, alerts, and tuning</h2>
+          <p>The visuals stay small. The row tells you the side, the length, and whether the bar used a footprint.</p>
+        </div>
+
+        <article class="lesson" id="l6-1" data-lesson="l6-1">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">6.1</span> Squares, boxes, the OFI row, and the alerts</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l6-1"> Mark complete</label>
+          </div>
+          <div class="mark-key">
+            <span class="mk"><i class="circ" style="background:#16A34A"></i> Abs ↑ circle</span>
+            <span class="mk"><i class="dia" style="background:#0086A8"></i> Imb ↑ diamond</span>
+            <span class="mk"><i class="sq" style="background:#16A34A"></i> Stack ↑ square #16A34A</span>
+            <span class="mk"><i class="sq" style="background:#DC2626"></i> Stack ↓ square #DC2626</span>
+          </div>
+          <p>
+            Buy squares print under the bar.
+            Sell squares print above the bar.
+            Both are tiny.
+            Both use the input <strong>Show OFI absorption marks</strong> (default on).
+            Turning that input off hides the circles, the diamonds, and the squares together.
+            There is no separate switch for the squares.
+          </p>
+          <p>
+            <strong>Show stacked imbalance zones</strong> defaults to on.
+            A qualifying stack draws one box from the zone top to the zone bottom, starting at this bar and ending 12 bars later.
+            Buy boxes use green <span style="color:#15803D">#22C55E</span>.
+            Sell boxes use red <span style="color:#DC2626">#EF4444</span>.
+            The fill is very transparent.
+            The border is slightly stronger.
+            The next stack deletes the previous box.
+            You will not see a trail of old boxes.
+          </p>
+          <p>
+            The dashboard is the table at the top right, when <strong>Show dashboard</strong> is on.
+            The last row is labeled <strong>OFI</strong>.
+            If this bar has a stack, the cell leads with the stack.
+            A buy stack of 3 on native data reads <strong>Stk↑3·FP</strong>, then a space, then the CVD number in volume format.
+            A sell stack of 4 on the proxy reads <strong>Stk↓4·px</strong>, then the CVD number.
+            The examples in the blueprint match that pattern.
+          </p>
+          <p>
+            When there is no stack, the same cell falls through: absorption, then imbalance, then the CVD slope (CVD↑, CVD↓, or a dash).
+            The source tag is still attached.
+            A quiet bar with a live footprint can read <strong>CVD↑·FP</strong>.
+            The tag describes the data source of the bar, and the stack text describes the event.
+          </p>
+          <p>Stacked alerts are <code>alertcondition</code> entries. You create them in TradingView’s alert dialog. The names and messages are:</p>
+          <div class="score-wrap">
+            <table class="score-table">
+              <thead>
+                <tr><th>Alert name</th><th>When it can fire</th><th>Message</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>OFI Stacked Imbalance Long</td>
+                  <td>Buy stack, and the long grade is at least 3 (PRIME). The nudge counts.</td>
+                  <td>Meridian OFI: stacked buy imbalance</td>
+                </tr>
+                <tr>
+                  <td>OFI Stacked Imbalance Short</td>
+                  <td>Sell stack, and the short grade is at least 3.</td>
+                  <td>Meridian OFI: stacked sell imbalance</td>
+                </tr>
+                <tr>
+                  <td>OFI Absorption Long / Short</td>
+                  <td>Absorption, and that side’s grade is at least 3.</td>
+                  <td>Meridian OFI: bullish / bearish absorption at level</td>
+                </tr>
+                <tr>
+                  <td>OFI Imbalance Long / Short</td>
+                  <td>Imbalance, and that side’s grade is at least 4 (ELITE).</td>
+                  <td>Meridian OFI: strong bullish / bearish imbalance</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            <strong>Enable alert() calls</strong> gates the script’s runtime <code>alert()</code> lines, such as the entry text and the path text. The stacked alerts are alert conditions. That toggle does not turn them on or off.
+          </div>
+
+          <figure class="figure">
+            <div class="svg-wrap">
+              <svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Dashboard OFI row showing a buy stack on footprint and a sell stack on the proxy">
+                <rect width="720" height="300" fill="#F2F3FB"/>
+                <text x="24" y="26" fill="#5A6690" font-family="monospace" font-size="11" letter-spacing="2">FIG 09 · DASHBOARD OFI ROW</text>
+                <rect x="36" y="48" width="310" height="200" rx="12" fill="#FFFFFF" stroke="rgba(109,40,217,0.28)"/>
+                <text x="52" y="76" fill="#5A6690" font-family="monospace" font-size="11">NATIVE BAR</text>
+                <rect x="52" y="92" width="278" height="36" rx="6" fill="#E9EBF6"/>
+                <text x="64" y="115" fill="#5A6690" font-family="monospace" font-size="12">OFI</text>
+                <text x="130" y="115" fill="#16A34A" font-family="monospace" font-size="13">Stk↑3·FP  12.4K</text>
+                <text x="52" y="156" fill="#3A4470" font-family="monospace" font-size="11">BUY · LENGTH 3 · FOOTPRINT</text>
+                <text x="52" y="178" fill="#3A4470" font-family="monospace" font-size="11">CVD VALUE FOLLOWS THE TAG</text>
+                <text x="52" y="210" fill="#5A6690" font-family="monospace" font-size="11">SQUARE UNDER THE BAR</text>
+                <rect x="52" y="222" width="10" height="10" fill="#16A34A"/>
+                <rect x="374" y="48" width="310" height="200" rx="12" fill="#FFFFFF" stroke="rgba(109,40,217,0.28)"/>
+                <text x="390" y="76" fill="#5A6690" font-family="monospace" font-size="11">PROXY BAR</text>
+                <rect x="390" y="92" width="278" height="36" rx="6" fill="#E9EBF6"/>
+                <text x="402" y="115" fill="#5A6690" font-family="monospace" font-size="12">OFI</text>
+                <text x="468" y="115" fill="#DC2626" font-family="monospace" font-size="13">Stk↓4·px  8.1K</text>
+                <text x="390" y="156" fill="#3A4470" font-family="monospace" font-size="11">SELL · LENGTH 4 · PRICE BARS</text>
+                <text x="390" y="178" fill="#3A4470" font-family="monospace" font-size="11">NO SEPARATE NATIVE / PROXY ROW</text>
+                <text x="390" y="210" fill="#5A6690" font-family="monospace" font-size="11">SQUARE ABOVE THE BAR</text>
+                <rect x="390" y="222" width="10" height="10" fill="#DC2626"/>
+                <text x="36" y="276" fill="#5A6690" font-family="monospace" font-size="11">STACK TEXT WINS THE CELL · ABS AND IMB SHOW ONLY WHEN THERE IS NO STACK</text>
+              </svg>
+            </div>
+            <figcaption>FIG 09 · THE OFI CELL READS STK↑3·FP OR STK↓4·px · THEN THE CVD NUMBER · ONE ROW, NOT A STACK OF NEW ROWS</figcaption>
+          </figure>
+        </article>
+
+        <article class="lesson" id="l6-2" data-lesson="l6-2">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">6.2</span> The new inputs, and how to tune the rows</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l6-2"> Mark complete</label>
+          </div>
+          <p>These six inputs sit in the <strong>Event Lattice</strong> group. Labels and defaults are the script’s.</p>
+          <div class="score-wrap">
+            <table class="score-table">
+              <thead>
+                <tr><th>Input</th><th>Default</th><th>What it does</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Prefer native footprint (Premium+)</td>
+                  <td>true</td>
+                  <td>Use the footprint when the object is not empty. Off forces the proxy and the ·px tag.</td>
+                </tr>
+                <tr>
+                  <td>Footprint ticks/row</td>
+                  <td>100</td>
+                  <td>How many minimum price steps sit in one row. Minimum 1. Tune per symbol.</td>
+                </tr>
+                <tr>
+                  <td>Imbalance threshold %</td>
+                  <td>300</td>
+                  <td>The diagonal ratio. 300 means 3 to 1. Minimum 100. Step 50.</td>
+                </tr>
+                <tr>
+                  <td>Min stacked imbalance rows</td>
+                  <td>3</td>
+                  <td>How long a run must be. Minimum 2. Maximum 12. The proxy cannot reach 10, 11, or 12.</td>
+                </tr>
+                <tr>
+                  <td>Show stacked imbalance zones</td>
+                  <td>true</td>
+                  <td>Draw the zone box. Only the latest box is kept.</td>
+                </tr>
+                <tr>
+                  <td>Register stack as liquidity magnet</td>
+                  <td>true</td>
+                  <td>Push the buy bottom or the sell top into the Liquidity Memory Map.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            A few older inputs change the stack even though they are not new.
+            <strong>Show OFI absorption marks</strong> shows or hides the squares.
+            <strong>OFI strong-delta × avg</strong> (default 1.5) is the proxy’s strength test.
+            <strong>Lattice lookback bars</strong> and <strong>Lattice price proximity (×ATR)</strong> decide how long type 10 stays in the grade.
+            <strong>Max liquidity pools</strong> and <strong>Magnet decay / bar</strong> bound the magnet.
+          </p>
+          <p>
+            The script’s closing note says footprint calls are limited to one per script, and ticks per row should be tuned so a bar holds about 15 to 40 rows.
+            It gives ES as about 4 to 20 ticks per row, and says crypto should be larger.
+            The owner’s tuning note, which is guidance and not a second coded limit, is tighter: try 4 to 20 on ES or NQ, and 50 to 200 on crypto or on large-range bars.
+            If stacks print too often, raise <strong>Imbalance threshold %</strong> to 400 or 500.
+            The input will accept those values. The step is 50.
+          </p>
+          <div class="callout cyan">
+            Start from the default of 100 only as a placeholder. If a typical bar has a handful of rows, lower the ticks per row. If the bar is a smear of tiny rows, raise it, until you land near 15 to 40 rows. Then, if the squares are still common, raise the percent before you raise the minimum length.
+          </div>
+
+          <figure class="figure">
+            <div class="svg-wrap">
+              <svg viewBox="0 0 720 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Same price range split into thick rows and thin rows">
+                <rect width="720" height="340" fill="#F2F3FB"/>
+                <text x="24" y="26" fill="#5A6690" font-family="monospace" font-size="11" letter-spacing="2">FIG 10 · TICKS PER ROW · AIM FOR 15–40 ROWS</text>
+                <text x="40" y="58" fill="#8A5B00" font-family="monospace" font-size="12">TOO THICK · FEW ROWS</text>
+                <rect x="40" y="72" width="280" height="36" rx="4" fill="#FFFFFF" stroke="#8A5B00"/>
+                <rect x="40" y="114" width="280" height="36" rx="4" fill="#FFFFFF" stroke="#8A5B00"/>
+                <rect x="40" y="156" width="280" height="36" rx="4" fill="#FFFFFF" stroke="#8A5B00"/>
+                <rect x="40" y="198" width="280" height="36" rx="4" fill="#FFFFFF" stroke="#8A5B00"/>
+                <text x="40" y="258" fill="#3A4470" font-family="monospace" font-size="11">4 ROWS · A STACK OF 3 IS MOST OF THE BAR</text>
+                <text x="400" y="58" fill="#059669" font-family="monospace" font-size="12">IN RANGE · ABOUT 15–40</text>
+                <g fill="#FFFFFF" stroke="#059669">
+                  <rect x="400" y="72" width="280" height="10" rx="2"/>
+                  <rect x="400" y="84" width="280" height="10" rx="2"/>
+                  <rect x="400" y="96" width="280" height="10" rx="2"/>
+                  <rect x="400" y="108" width="280" height="10" rx="2"/>
+                  <rect x="400" y="120" width="280" height="10" rx="2"/>
+                  <rect x="400" y="132" width="280" height="10" rx="2"/>
+                  <rect x="400" y="144" width="280" height="10" rx="2"/>
+                  <rect x="400" y="156" width="280" height="10" rx="2"/>
+                  <rect x="400" y="168" width="280" height="10" rx="2"/>
+                  <rect x="400" y="180" width="280" height="10" rx="2"/>
+                  <rect x="400" y="192" width="280" height="10" rx="2"/>
+                  <rect x="400" y="204" width="280" height="10" rx="2"/>
+                  <rect x="400" y="216" width="280" height="10" rx="2"/>
+                  <rect x="400" y="228" width="280" height="10" rx="2"/>
+                </g>
+                <text x="400" y="258" fill="#3A4470" font-family="monospace" font-size="11">ES/NQ TRY 4–20 · CRYPTO TRY 50–200</text>
+                <text x="40" y="292" fill="#5A6690" font-family="monospace" font-size="11">SAME PRICE RANGE · SMALLER TICKS/ROW · MORE ROWS</text>
+                <text x="40" y="316" fill="#5A6690" font-family="monospace" font-size="11">TOO MANY STACKS · RAISE THRESHOLD TO 400–500%</text>
+              </svg>
+            </div>
+            <figcaption>FIG 10 · TICKS PER ROW SETS HOW MANY SLICES FIT IN THE BAR · THE SCRIPT ASKS FOR ABOUT 15 TO 40 · 400–500% IS THE OWNER’S FIX WHEN STACKS ARE TOO COMMON</figcaption>
+          </figure>
+        </article>
+      </div>
+    </section>
+
+    <section class="module" id="m7">
+      <div class="container">
+        <div class="module-header">
+          <div class="mod-time">Module 07 · How to read it</div>
+          <h2>Playbooks</h2>
+          <p>Three readings. Each one uses a rule the script already enforces. None of them is a win rate.</p>
+        </div>
+
+        <article class="lesson" id="l7-1" data-lesson="l7-1">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">7.1</span> A stack at a zone, as initiative</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l7-1"> Mark complete</label>
+          </div>
+          <p>
+            Initiative here means aggressive one-sided trade, which is what a stack measures.
+            The script calls the nudge a high-conviction add when the stack lines up with the grade you already have.
+          </p>
+          <p>A long continuation, read off the script, needs all of this on a closed bar:</p>
+          <ul>
+            <li><strong>Gate 1.</strong> The regime allows a long. TREND wants the ribbon or the cloud on the long side. RANGE wants discount or the lower extreme. TRANSITION is looser on bias and stricter on grade.</li>
+            <li><strong>Gate 2.</strong> The long is armed by a sweep of the lows, a bullish VWAP reclaim, or a bullish CHoCH, and the arm has not expired.</li>
+            <li><strong>A zone.</strong> Price is tapping an unmitigated bullish fair value gap, or an order block if those are shown.</li>
+            <li><strong>The stack.</strong> A buy stack on this bar pushes type 10 and, if the long grade is already at least WATCH, adds 1, capped at 5.</li>
+            <li><strong>Gate 3.</strong> The nudged long grade clears <strong>Min lattice grade to enter</strong>. Default is PRIME. No-chase, the RTH window on Scalp and Intraday, and band confluence if you required it, still apply.</li>
+            <li><strong>One side.</strong> If the short grade is higher, the long stays quiet. If the grades tie, both stay quiet.</li>
+          </ul>
+          <div class="callout bear">
+            The square under a bullish zone is not the entry. If the arm is missing, or the grade is still a dash, the script will not print BUY. Do not click because the square is green.
+          </div>
+        </article>
+
+        <article class="lesson" id="l7-2" data-lesson="l7-2">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">7.2</span> The stack zone as a later retest</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l7-2"> Mark complete</label>
+          </div>
+          <p>
+            The box fades from the chart when the next stack replaces it.
+            The pool can remain.
+            With <strong>Register stack as liquidity magnet</strong> on, a buy stack leaves a long-side pool at the bottom of the zone.
+            A later bar can use that pool in three ways the script already has.
+          </p>
+          <ol class="rules-ol">
+            <li><strong>A grade bump on a revisit.</strong> If the magnet is still at least 1.0, price is within 1.2 × ATR, the direction matches, and the grade is already PRIME or better, the density function adds 1 before the stack nudge. A fresh stack on the retest bar can add one more, still capped at 5.</li>
+            <li><strong>A level for absorption.</strong> Types 8 and 9 can use the top magnet when it is within OFI level proximity, default 0.4 × ATR. A stack pool becomes that top magnet only if it is the strongest active pool. Absorption still needs its own tests: opposing strong delta, a rejection candle, and the CVD condition.</li>
+            <li><strong>A target.</strong> A sell-stack pool above a long, with strength at least 0.8, can be chosen as TP3. A buy-stack pool below a short can do the same. The path still confirms on TP1 and breaks on a close through the stop.</li>
+          </ol>
+          <p>
+            The pool only gets stronger on a revisit when volume expands and the candle closes in the pool’s direction.
+            A tag with no volume, or a close the wrong way, does not add strength.
+            Decay still runs, at 0.92 per bar by default, until the pool falls under 0.15.
+          </p>
+
+          <figure class="figure">
+            <div class="svg-wrap">
+              <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two playbooks: stack at a live zone, and a later magnet retest">
+                <rect width="720" height="320" fill="#F2F3FB"/>
+                <text x="24" y="26" fill="#5A6690" font-family="monospace" font-size="11" letter-spacing="2">FIG 11 · CONTINUATION NOW · MAGNET LATER</text>
+                <rect x="28" y="48" width="320" height="230" rx="12" fill="#FFFFFF" stroke="#059669"/>
+                <text x="188" y="74" text-anchor="middle" fill="#059669" font-family="monospace" font-size="12">AT THE ZONE · THIS BAR</text>
+                <rect x="70" y="100" width="200" height="36" rx="6" fill="rgba(5,150,105,0.12)" stroke="#059669"/>
+                <text x="170" y="122" text-anchor="middle" fill="#059669" font-family="monospace" font-size="11">BULL FVG · GATE 3 ZONE</text>
+                <rect x="148" y="150" width="14" height="14" fill="#16A34A"/>
+                <text x="170" y="162" fill="#16A34A" font-family="monospace" font-size="11">STK↑ · TYPE 10 · +1</text>
+                <text x="48" y="200" fill="#3A4470" font-family="monospace" font-size="11">STILL NEEDS ARM + GRADE</text>
+                <text x="48" y="222" fill="#3A4470" font-family="monospace" font-size="11">CONFIRMED BAR · ONE SIDE</text>
+                <text x="48" y="248" fill="#BE1E3C" font-family="monospace" font-size="11">SQUARE DOES NOT ARM</text>
+                <rect x="372" y="48" width="320" height="230" rx="12" fill="#FFFFFF" stroke="#0086A8"/>
+                <text x="532" y="74" text-anchor="middle" fill="#0086A8" font-family="monospace" font-size="12">LATER · POOL STILL ACTIVE</text>
+                <line x1="400" y1="150" x2="660" y2="150" stroke="#0086A8" stroke-dasharray="3 4"/>
+                <text x="400" y="142" fill="#0086A8" font-family="monospace" font-size="11">BUY STACK BOTTOM</text>
+                <polyline fill="none" stroke="#1C2240" stroke-width="2" points="410,110 470,130 520,148 560,120 640,100"/>
+                <circle cx="520" cy="148" r="5" fill="#059669"/>
+                <text x="400" y="190" fill="#3A4470" font-family="monospace" font-size="11">TAG + VOLUME + CLOSE UP</text>
+                <text x="400" y="212" fill="#3A4470" font-family="monospace" font-size="11">CAN BUMP A PRIME GRADE</text>
+                <text x="400" y="248" fill="#5A6690" font-family="monospace" font-size="11">BOX MAY ALREADY BE GONE</text>
+              </svg>
+            </div>
+            <figcaption>FIG 11 · A STACK AT A TAPPED ZONE CAN LIFT THE GRADE · THE STORED PRICE CAN MATTER AGAIN ON A LATER TAG</figcaption>
+          </figure>
+        </article>
+
+        <article class="lesson" id="l7-3" data-lesson="l7-3">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">7.3</span> Beside absorption and imbalance</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l7-3"> Mark complete</label>
+          </div>
+          <p>
+            Types 8, 9, and 10 can all be true on the same bar.
+            They are separate pushes.
+            The bitmask will count each type once inside the lookback.
+            A circle plus a square is two types, not two copies of one type.
+          </p>
+          <div class="sheet-grid thirds">
+            <div class="sheet trend">
+              <h4>Type 8 · circle</h4>
+              <p>Opposing strong delta, a rejection candle, and a level. It is a defense. It still needs the level test that type 10 skips.</p>
+            </div>
+            <div class="sheet range">
+              <h4>Type 9 · diamond</h4>
+              <p>Same-side strong delta, a CVD slope that agrees, and structure or a zone. It is one bar of push, not a stack of rows.</p>
+            </div>
+            <div class="sheet buy">
+              <h4>Type 10 · square</h4>
+              <p>A run of diagonal rows, or a run of strong bars in the proxy. It can add the extra grade step. The dashboard prefers its text.</p>
+            </div>
+          </div>
+          <p>
+            If a buy stack and bullish absorption both print, the OFI cell shows the stack, not Abs↑.
+            Look at the chart for the circle.
+            The grade still received both types, if both prices sit inside the lattice window.
+          </p>
+          <p>
+            A useful pairing is a stack in the direction of the trade, and absorption at the level you are leaning on.
+            The script allows that pairing.
+            It does not score it as a special setup.
+            You still need the arm, the zone, and the minimum grade.
+            There is no win rate in this script for “stack plus absorption.”
+            The known limits at the bottom of the file say to use a companion backtest if you want those numbers, and that no walk-forward test is built in here.
+          </p>
+          <div class="callout">
+            Path integrity does not grow a new rule for squares. TP1 first is PATH CONFIRM. A close through the stop first is PATH BREAK. The square can help create the path, through the grade. It does not move the stop.
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="module" id="roadmap">
+      <div class="container">
+        <div class="module-header">
+          <div class="mod-time">After v2.2 · Not in this script</div>
+          <h2>What’s next on the roadmap</h2>
+          <p>The owner’s blueprint lists these as unfinished. They are not in Meridian Engine v2.2 OFI. Do not look for them on the chart.</p>
+        </div>
+        <article class="lesson">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">Next</span> Four items still on paper</h3>
+          </div>
+          <div class="sheet-grid">
+            <div class="sheet trans">
+              <h4>Unfinished-auction magnets</h4>
+              <p>The idea is to mark an extreme row that still has volume on both sides, and to project that price until it is filled. The v2.2 script has no unfinished-auction test and does not push that kind of pool.</p>
+            </div>
+            <div class="sheet trans">
+              <h4>Effort versus result</h4>
+              <p>The idea is a z-score of delta against the price result, to filter weak absorption, on both true delta and the CVD proxy. The script’s absorption test is still the strong-delta multiple, the candle, and the level. There is no z-score.</p>
+            </div>
+            <div class="sheet trans">
+              <h4>Delta divergence</h4>
+              <p>The idea is a new price extreme with opposing bar delta or CVD, used as an early path break or a grade penalty. The script does not compare price extremes to delta. Path break is still a close through the stop.</p>
+            </div>
+            <div class="sheet trans">
+              <h4>Extra dashboard rows</h4>
+              <p>The blueprint describes separate rows for FP Stack, unfinished auctions, delta effort, and a Native / Proxy label. v2.2 keeps one OFI row. The stack and the ·FP or ·px tag live inside that cell, next to the CVD number.</p>
+            </div>
+          </div>
+          <div class="callout gold">
+            Shipped in this script: the native diagonal footprint, the run walk, type 10, the +1 nudge, optional magnet registration, the multi-bar CVD proxy, the squares, the single zone box, the OFI row, and the two stacked alert conditions.
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="closing" id="close">
+      <div class="container">
+        <div class="closing-card">
+          <h2>Seven takeaways. Then practice.</h2>
+          <ul class="takeaways">
+            <li>v2.2 adds stacked imbalance as lattice type 10. Types 8 and 9 still run. The full CVD lesson is in the OFI Mastery course.</li>
+            <li>A buy imbalance compares buy volume to the sell volume of the row below. A sell imbalance compares sell volume to the buy volume of the row above. 300% means 3 to 1.</li>
+            <li>The script keeps the longest one-sided run. Default minimum is 3. A tie keeps the buy stack. A both-sides row or a quiet row breaks the run.</li>
+            <li>Prefer native footprint defaults to on. Empty footprint data, or the toggle off, uses consecutive strong delta bars and tags the row ·px. A quiet but real footprint stays ·FP and does not use the proxy.</li>
+            <li>Type 10 counts once. The +1 nudge needs a grade of at least WATCH and stops at SINGULAR. Gate 3 reads that grade. Gate 2 does not arm from a square.</li>
+            <li>A buy stack can store its bottom as a magnet. A sell stack can store its top. Intensity is length × 1.5 × volume ratio. Pools cap at 20 by default, decay at 0.92, and drop under 0.15.</li>
+            <li>Squares are #16A34A and #DC2626, tied to Show OFI absorption marks. The OFI cell can read Stk↑3·FP or Stk↓4·px. Stacked alerts need PRIME. Unfinished auctions, effort z-scores, delta divergence, and extra dashboard rows are still roadmap.</li>
+          </ul>
+          <p>
+            Replay one closed bar.
+            Name the data source, the winning side, the run length, and whether the grade was allowed to take the nudge.
+            If you cannot, leave the square on the chart.
+          </p>
+          <a class="closing-cta" href="Meridian_OFI_Stacked_imbalance_logic_Engine.html">Stacked imbalance page →</a>
+          <a class="closing-cta ghost" href="Meridian_OFI_Engine_Mastery_Course.html">OFI Mastery course →</a>
+          <a class="closing-cta ghost" href="Meridian_Engine_Mastery_Course.html">v2 Mastery course →</a>
+          <p style="margin-top:22px;font-family:var(--font-mono);font-size:10px;letter-spacing:1px;color:#8A5B00;">
+            FOR EDUCATION ONLY · NOT FINANCIAL ADVICE · MANAGE RISK ON EVERY TRADE
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="footer-brand">SNIPER<span>TRADER</span></div>
+      <p class="footer-disc">
+        This course is for educational purposes only and does not constitute financial, investment, or trading advice.
+        Markets involve substantial risk of loss. You are solely responsible for your decisions.
+        Native footprint rows require a plan and a symbol that provide them. Otherwise the script uses a coarser bar-delta proxy.
+        Indicators can fail. Manage risk on every trade.
+      </p>
+      <div class="footer-meta">Meridian OFI Stacked Imbalance Mastery · Education · v2.2 script</div>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var STORAGE_KEY = 'st_meridian_ofi_stack_course_v1';
+      var navBtns = Array.prototype.slice.call(document.querySelectorAll('.nav-btn'));
+      var sections = ['overview','m1','m2','m3','m4','m5','m6','m7','close'].map(function (id) {
+        return document.getElementById(id);
+      }).filter(Boolean);
+      var lessons = Array.prototype.slice.call(document.querySelectorAll('.lesson'));
+      var fill = document.getElementById('progressFill');
+      var pctEl = document.getElementById('progressPct');
+
+      function loadDone() {
+        try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+        catch (e) { return {}; }
+      }
+      function saveDone(map) {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(map)); } catch (e) {}
+      }
+
+      var doneMap = loadDone();
+      Array.prototype.slice.call(document.querySelectorAll('input[data-complete]')).forEach(function (cb) {
+        var id = cb.getAttribute('data-complete');
+        var label = cb.closest('.mark-done');
+        var lesson = cb.closest('.lesson');
+        if (doneMap[id]) {
+          cb.checked = true;
+          if (label) label.classList.add('checked');
+          if (lesson) lesson.classList.add('done');
+        }
+        cb.addEventListener('change', function () {
+          doneMap[id] = !!cb.checked;
+          saveDone(doneMap);
+          if (label) label.classList.toggle('checked', cb.checked);
+          if (lesson) lesson.classList.toggle('done', cb.checked);
+          updateProgress();
+        });
+      });
+
+      function updateProgress() {
+        var checks = Array.prototype.slice.call(document.querySelectorAll('input[data-complete]'));
+        var total = checks.length || 1;
+        var completed = 0;
+        lessons.forEach(function (el) {
+          var r = el.getBoundingClientRect();
+          var visible = r.top < window.innerHeight * 0.7 && r.bottom > 80;
+          el.classList.toggle('in-view', visible);
+        });
+        checks.forEach(function (cb) {
+          if (cb.checked) completed++;
+        });
+        var scrollY = window.scrollY || window.pageYOffset;
+        var docH = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
+        var scrollPct = Math.min(100, Math.round((scrollY / docH) * 100));
+        var lessonPct = Math.round((completed / total) * 100);
+        var pct = Math.max(scrollPct, Math.round(scrollPct * 0.6 + lessonPct * 0.4));
+        if (fill) fill.style.width = pct + '%';
+        if (pctEl) pctEl.textContent = pct + '%';
+      }
+
+      function setActive(id) {
+        navBtns.forEach(function (btn) {
+          btn.classList.toggle('active', btn.getAttribute('data-section') === id);
+        });
+      }
+
+      function onScroll() {
+        var current = sections[0] && sections[0].id;
+        var offset = 80;
+        for (var i = 0; i < sections.length; i++) {
+          var top = sections[i].getBoundingClientRect().top;
+          if (top - offset <= 0) current = sections[i].id;
+        }
+        setActive(current);
+        updateProgress();
+      }
+
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', onScroll);
+      onScroll();
+
+      navBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          setActive(btn.getAttribute('data-section'));
+        });
+      });
+    })();
+  </script>
+  <script src="/assets/assistant-widget.js" defer></script>
+</body>
+</html>
