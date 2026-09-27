@@ -1,0 +1,1983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meridian OFI Engine Mastery · SniperTrader Education</title>
+  <meta name="description" content="Meridian OFI Engine Mastery — cumulative volume delta, absorption, and imbalance on the Meridian Engine v2 lattice. SniperTrader education course.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+:root {
+  --bg: #F2F3FB;
+  --bg2: #E9EBF6;
+  --bg3: #DEE1F0;
+  --obs: #FFFFFF;
+  --obs2: #E9EBF6;
+  --obs3: #DEE1F0;
+  --surface: #FFFFFF;
+  --surface-alt: #E9EBF6;
+  --card: rgba(255,255,255,.6);
+  --card2: rgba(255,255,255,.82);
+  --text: #0A0C18;
+  --text2: #1C2240;
+  --text3: #3A4470;
+  --text4: #5A6690;
+  --violet: #6D28D9;
+  --violet2: #5B21B6;
+  --violet-dim: rgba(124,58,237,.10);
+  --cyan: #0086A8;
+  --cyan2: #006E8A;
+  --cyan-dim: rgba(0,150,200,.12);
+  --fuchsia: #C026D3;
+  --magenta: #C026D3;
+  --gold: #8A5B00;
+  --gold2: #8A5B00;
+  --gold-dim: rgba(138,91,0,.10);
+  --amber: #8A5B00;
+  --amber-dim: rgba(138,91,0,.10);
+  --emerald: #059669;
+  --emerald2: #059669;
+  --emerald-dim: rgba(5,150,105,.10);
+  --bear: #BE1E3C;
+  --bear-dim: rgba(190,30,60,.12);
+  --red: #BE1E3C;
+  --border: rgba(109,40,217,.18);
+  --border2: rgba(109,40,217,.34);
+  --border-cyan: rgba(0,150,200,.18);
+  --nav-bg: rgba(242,243,251,.96);
+  --nav-h: 56px;
+  --font-display: 'Playfair Display', serif;
+  --font-mono: 'Space Mono', monospace;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+  --ff-d: 'Playfair Display', serif;
+  --ff-b: 'Plus Jakarta Sans', sans-serif;
+  --ff-m: 'Space Mono', monospace;
+  --shadow: 0 30px 70px rgba(60,70,110,.20);
+  --radius: 14px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: calc(var(--nav-h) + 12px); }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+img, svg { max-width: 100%; height: auto; display: block; }
+a { color: var(--violet); }
+code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  color: var(--cyan2);
+}
+.container {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 22px;
+  position: relative;
+  z-index: 1;
+}
+.topbar {
+  background: var(--obs);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 0;
+}
+.topbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+}
+.brand-mark {
+  width: 36px; height: 36px;
+  border: 2px solid var(--violet);
+  border-radius: 50%;
+  position: relative;
+  flex-shrink: 0;
+  box-shadow: 0 0 14px rgba(109,40,217,0.28);
+}
+.brand-mark::before,
+.brand-mark::after {
+  content: '';
+  position: absolute;
+  background: var(--violet);
+}
+.brand-mark::before {
+  width: 2px; height: 14px;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+.brand-mark::after {
+  width: 14px; height: 2px;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+.brand-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 1.5px;
+  color: var(--text);
+}
+.brand-name span { color: var(--violet); }
+.brand-tag {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text4);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+.edu-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--violet);
+  background: var(--violet-dim);
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: 20px;
+}
+.edu-pill::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--cyan);
+  animation: pulse 1.6s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.course-nav {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: var(--nav-bg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 4px 24px rgba(60,70,110,0.12);
+}
+.nav-row { display: flex; align-items: stretch; gap: 0; }
+.nav-scroll {
+  flex: 1;
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.nav-scroll::-webkit-scrollbar { display: none; }
+.nav-btn {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text4);
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 16px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .2s, border-color .2s, background .2s;
+  text-decoration: none;
+}
+.nav-btn:hover { color: var(--text); background: var(--obs2); }
+.nav-btn.active {
+  color: var(--violet);
+  border-bottom-color: var(--violet);
+}
+.progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  border-left: 1px solid var(--border);
+  flex-shrink: 0;
+  min-width: 108px;
+}
+.progress-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text4);
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+.progress-label strong { color: var(--cyan); font-weight: 700; }
+.progress-bar {
+  width: 44px; height: 4px;
+  background: var(--obs3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--cyan), var(--violet));
+  transition: width .25s ease;
+}
+.disclaimer-strip {
+  background: var(--gold-dim);
+  border-bottom: 1px solid rgba(138,91,0,0.28);
+  padding: 10px 0;
+}
+.disclaimer-strip p {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--gold2);
+  letter-spacing: 0.4px;
+  text-align: center;
+  line-height: 1.5;
+}
+.hero {
+  padding: 48px 0 36px;
+  background:
+    radial-gradient(ellipse 80% 60% at 10% 0%, var(--violet-dim), transparent 55%),
+    radial-gradient(ellipse 60% 50% at 90% 20%, var(--cyan-dim), transparent 50%);
+}
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--violet);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-label::before {
+  content: '';
+  width: 18px; height: 2px;
+  background: var(--violet);
+}
+.hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(26px, 4.4vw, 40px);
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  line-height: 1.18;
+  color: var(--text);
+  margin-bottom: 14px;
+  max-width: 780px;
+}
+.hero h1 em { font-style: italic; color: var(--violet); }
+.hero .lead {
+  font-size: 17px;
+  color: var(--text3);
+  max-width: 680px;
+  margin-bottom: 14px;
+}
+.hero .lead-note {
+  font-size: 14px;
+  color: var(--text4);
+  max-width: 680px;
+  margin-bottom: 22px;
+}
+.hero-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 7px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text3);
+}
+.chip.cyan {
+  border-color: var(--border-cyan);
+  color: var(--cyan2);
+  background: var(--cyan-dim);
+}
+.chip.gold {
+  border-color: rgba(138,91,0,0.35);
+  color: var(--amber);
+  background: var(--amber-dim);
+}
+.chip.emerald {
+  border-color: rgba(5,150,105,0.35);
+  color: var(--emerald);
+  background: var(--emerald-dim);
+}
+.chip.violet {
+  border-color: var(--border2);
+  color: var(--violet);
+  background: var(--violet-dim);
+}
+.chip.bear {
+  border-color: rgba(190,30,60,0.35);
+  color: var(--bear);
+  background: var(--bear-dim);
+}
+.sec-h2 {
+  font-family: var(--font-display);
+  font-size: clamp(16px, 2.5vw, 20px);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 18px;
+  color: var(--text);
+}
+.steps { padding: 8px 0 28px; }
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.step-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 20px;
+  box-shadow: var(--shadow);
+  transition: border-color .2s, transform .2s;
+}
+.step-card:hover {
+  border-color: var(--border2);
+  transform: translateY(-2px);
+}
+.step-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--violet);
+  margin-bottom: 10px;
+}
+.step-card h3 {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text);
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+.step-card p {
+  font-size: 13px;
+  color: var(--text4);
+  line-height: 1.55;
+}
+.module { padding: 28px 0 8px; }
+.module-header {
+  margin-bottom: 22px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--border);
+}
+.module-header h2 {
+  font-family: var(--font-display);
+  font-size: clamp(18px, 3vw, 24px);
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.module-header p {
+  font-size: 14px;
+  color: var(--text4);
+  max-width: 680px;
+}
+.mod-time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--violet);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.lesson {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 26px 24px 22px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+  scroll-margin-top: calc(var(--nav-h) + 18px);
+  transition: border-color .25s, box-shadow .25s;
+}
+.lesson.in-view {
+  border-color: var(--border2);
+  box-shadow: 0 8px 32px rgba(109,40,217,0.12);
+}
+.lesson.done { border-color: rgba(0,134,168,0.45); }
+.lesson-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.lesson-title {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--text);
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.lesson-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--violet);
+  letter-spacing: 1px;
+}
+.lesson p {
+  font-size: 15px;
+  color: var(--text3);
+  margin-bottom: 12px;
+}
+.lesson ul, .lesson ol {
+  margin: 0 0 14px 18px;
+  color: var(--text3);
+  font-size: 14px;
+}
+.lesson li { margin-bottom: 7px; }
+.lesson li strong { color: var(--text); }
+.mark-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text4);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--obs);
+  transition: color .2s, border-color .2s, background .2s;
+}
+.mark-done:hover { color: var(--text); border-color: var(--border-cyan); }
+.mark-done input {
+  accent-color: var(--violet);
+  width: 14px; height: 14px;
+  cursor: pointer;
+}
+.mark-done.checked {
+  color: var(--cyan);
+  border-color: rgba(0,134,168,0.45);
+  background: var(--cyan-dim);
+}
+.callout {
+  background: var(--bg2);
+  border-left: 3px solid var(--violet);
+  border-radius: 0 10px 10px 0;
+  padding: 14px 16px;
+  margin: 14px 0;
+  font-size: 14px;
+  color: var(--text2);
+}
+.callout.gold { border-left-color: var(--gold2); background: var(--gold-dim); }
+.callout.emerald { border-left-color: var(--emerald); background: var(--emerald-dim); }
+.callout.cyan { border-left-color: var(--cyan); background: var(--cyan-dim); }
+.callout.bear { border-left-color: var(--bear); background: var(--bear-dim); }
+.figure {
+  margin: 18px 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--obs);
+}
+.figure .svg-wrap { background: #F2F3FB; padding: 12px; }
+.figure figcaption {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--text4);
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-alt);
+  line-height: 1.45;
+}
+.checklist { display: grid; gap: 8px; margin: 14px 0; }
+.check-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: var(--obs);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: var(--text3);
+}
+.check-box {
+  flex-shrink: 0;
+  width: 18px; height: 18px;
+  border: 2px solid var(--cyan);
+  border-radius: 4px;
+  margin-top: 1px;
+}
+.rules-ol {
+  counter-reset: rule;
+  list-style: none;
+  margin: 14px 0;
+  padding: 0;
+}
+.rules-ol li {
+  counter-increment: rule;
+  position: relative;
+  background: var(--obs);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px 14px 52px;
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: var(--text3);
+}
+.rules-ol li::before {
+  content: counter(rule);
+  position: absolute;
+  left: 14px; top: 14px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--violet);
+  width: 28px; height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--violet-dim);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.rules-ol li strong { color: var(--text); }
+.sheet-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 12px 0;
+}
+.sheet-grid.thirds { grid-template-columns: repeat(3, 1fr); }
+.sheet {
+  background: var(--obs);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+.sheet h4 {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--violet);
+  margin-bottom: 10px;
+}
+.sheet.trend h4 { color: var(--emerald); }
+.sheet.range h4 { color: var(--cyan); }
+.sheet.trans h4 { color: var(--amber); }
+.sheet.bear h4 { color: var(--bear); }
+.sheet ul {
+  margin: 0 0 0 16px;
+  font-size: 13px;
+  color: var(--text3);
+}
+.sheet li { margin-bottom: 5px; }
+.sheet p { font-size: 13px; color: var(--text3); margin: 0; }
+.score-wrap { overflow-x: auto; margin: 16px 0; }
+.score-table {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.score-table th {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--text4);
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--border2);
+  background: var(--bg2);
+}
+.score-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text3);
+  vertical-align: top;
+  line-height: 1.5;
+}
+.score-table td:first-child {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--violet);
+  white-space: nowrap;
+}
+.score-table tr:last-child td { border-bottom: none; }
+.grade-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 16px 0;
+}
+.grade-card {
+  background: var(--obs);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 12px;
+  border-top: 3px solid var(--border);
+}
+.grade-card.watch { border-top-color: var(--cyan); }
+.grade-card.prime { border-top-color: var(--emerald); }
+.grade-card.elite { border-top-color: var(--violet); }
+.grade-card.singular { border-top-color: var(--amber); }
+.grade-card .g-name {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.grade-card.watch .g-name { color: var(--cyan); }
+.grade-card.prime .g-name { color: var(--emerald); }
+.grade-card.elite .g-name { color: var(--violet); }
+.grade-card.singular .g-name { color: var(--amber); }
+.grade-card .g-count {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.grade-card p {
+  font-size: 12px;
+  color: var(--text4);
+  margin: 0;
+  line-height: 1.45;
+}
+.path-stack { display: grid; gap: 8px; margin: 16px 0; }
+.path-row {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 12px;
+  align-items: center;
+  background: var(--obs);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+.path-row .pr-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  font-weight: 700;
+}
+.path-row .pr-tag.sl { color: var(--bear); }
+.path-row .pr-tag.en { color: var(--cyan); }
+.path-row .pr-tag.tp1 { color: var(--emerald); }
+.path-row .pr-tag.abs { color: var(--emerald); }
+.path-row .pr-tag.imb { color: var(--cyan); }
+.path-row p { margin: 0; font-size: 13px; color: var(--text3); }
+.mark-key { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; }
+.mk {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  background: var(--obs);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: var(--text2);
+}
+.mk i { width: 10px; height: 10px; display: block; flex-shrink: 0; }
+.mk i.circ { border-radius: 50%; }
+.mk i.dia { width: 9px; height: 9px; transform: rotate(45deg); border-radius: 1px; }
+.takeaways {
+  list-style: none;
+  margin: 0 auto 20px;
+  padding: 0;
+  text-align: left;
+  max-width: 640px;
+}
+.takeaways li {
+  position: relative;
+  padding: 10px 0 10px 28px;
+  color: var(--text3);
+  font-size: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.takeaways li::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 16px;
+  width: 10px; height: 10px;
+  border: 2px solid var(--violet);
+  border-radius: 2px;
+}
+.closing { padding: 36px 0 48px; }
+.closing-card {
+  background: linear-gradient(145deg, #FFFFFF, #E9EBF6);
+  color: var(--text);
+  border: 1px solid var(--border2);
+  border-radius: 18px;
+  padding: 36px 28px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.closing-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(109,40,217,0.12), transparent 45%),
+    radial-gradient(circle at 80% 70%, rgba(0,134,168,0.10), transparent 40%);
+  pointer-events: none;
+}
+.closing-card > * { position: relative; z-index: 1; }
+.closing-card h2 {
+  font-family: var(--font-display);
+  font-size: clamp(18px, 3vw, 26px);
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+.closing-card > p {
+  color: var(--text3);
+  max-width: 560px;
+  margin: 0 auto 18px;
+  font-size: 15px;
+}
+.closing-cta {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #FFFFFF;
+  background: var(--violet);
+  padding: 12px 22px;
+  border-radius: 24px;
+  text-decoration: none;
+  font-weight: 700;
+  margin: 8px 6px 0;
+  box-shadow: 0 8px 24px rgba(109,40,217,0.28);
+}
+.closing-cta:hover { background: var(--violet2); }
+.closing-cta.ghost {
+  background: var(--obs);
+  color: var(--violet);
+  border: 1px solid var(--border2);
+  box-shadow: none;
+}
+.closing-cta.ghost:hover { background: var(--violet-dim); }
+footer {
+  border-top: 1px solid var(--border);
+  padding: 28px 0 40px;
+  background: var(--obs);
+}
+.footer-brand {
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 3px;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.footer-brand span { color: var(--violet); }
+.footer-disc {
+  font-size: 12px;
+  color: var(--text4);
+  max-width: 680px;
+  line-height: 1.6;
+}
+.footer-meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text4);
+  margin-top: 14px;
+  text-transform: uppercase;
+}
+@media (max-width: 860px) {
+  .steps-grid { grid-template-columns: 1fr 1fr; }
+  .sheet-grid, .sheet-grid.thirds { grid-template-columns: 1fr; }
+  .grade-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 560px) {
+  .lesson { padding: 20px 16px; }
+  .progress-wrap { min-width: auto; padding: 0 10px; }
+  .progress-bar { display: none; }
+  .nav-btn { padding: 14px 10px; font-size: 8px; }
+  .hero { padding: 32px 0 24px; }
+  .rules-ol li { padding-left: 48px; }
+  .grade-grid { grid-template-columns: 1fr; }
+  .steps-grid { grid-template-columns: 1fr; }
+  .path-row { grid-template-columns: 1fr; gap: 4px; }
+}
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="/index.html" aria-label="SniperTrader home">
+        <div class="brand-mark" aria-hidden="true"></div>
+        <div>
+          <div class="brand-name">SNIPER<span>TRADER</span></div>
+          <div class="brand-tag">Education · Precision · Edge</div>
+        </div>
+      </a>
+      <div class="edu-pill">Education · SniperTrader</div>
+    </div>
+  </div>
+
+  <nav class="course-nav" id="courseNav" aria-label="Course modules">
+    <div class="container nav-row">
+      <div class="nav-scroll">
+        <a class="nav-btn active" href="#overview" data-section="overview">Overview</a>
+        <a class="nav-btn" href="#m1" data-section="m1">M1</a>
+        <a class="nav-btn" href="#m2" data-section="m2">M2</a>
+        <a class="nav-btn" href="#m3" data-section="m3">M3</a>
+        <a class="nav-btn" href="#m4" data-section="m4">M4</a>
+        <a class="nav-btn" href="#m5" data-section="m5">M5</a>
+        <a class="nav-btn" href="#m6" data-section="m6">M6</a>
+        <a class="nav-btn" href="#close" data-section="close">Close</a>
+      </div>
+      <div class="progress-wrap" title="Course progress">
+        <span class="progress-label"><strong id="progressPct">0%</strong></span>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="disclaimer-strip">
+    <div class="container">
+      <p>For education only. Not financial advice. Past patterns do not guarantee future results. Protect capital first.</p>
+    </div>
+  </div>
+
+  <main id="top">
+
+    <section class="hero" id="overview">
+      <div class="container">
+        <div class="section-label">Education · SniperTrader</div>
+        <h1>Meridian OFI Engine <em>Mastery</em></h1>
+        <p class="lead">
+          Order Flow Intelligence, layered on Meridian Engine v2.
+          Cumulative volume delta, absorption, and imbalance join the lattice you already trade.
+        </p>
+        <p class="lead-note">
+          This course follows the Pine v6 script titled <strong>Meridian Engine v2.1 — OFI</strong>.
+          If the lattice, the three gates, and the path are new, start with
+          <a href="/Meridian_Engine_Mastery_Course.html">Meridian Engine v2 Mastery</a>.
+        </p>
+        <div class="hero-chips">
+          <span class="chip violet">Education · SniperTrader</span>
+          <span class="chip cyan">CVD · Type 8 · Type 9</span>
+          <span class="chip emerald">Grade, same gates</span>
+          <span class="chip gold">Path stays the path</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="steps">
+      <div class="container">
+        <div class="section-label">Course map</div>
+        <h2 class="sec-h2">Six modules. One layer.</h2>
+        <div class="steps-grid">
+          <article class="step-card">
+            <div class="step-num">01 · WHY</div>
+            <h3>Order flow on Meridian</h3>
+            <p>The lattice, the magnets, the regime, and the path are already here. OFI adds evidence. It does not add a gate.</p>
+          </article>
+          <article class="step-card">
+            <div class="step-num">02 · CVD</div>
+            <h3>Cumulative volume delta</h3>
+            <p>A close-versus-prior-close volume split. Three reset modes. A 3-bar slope. Session high and low.</p>
+          </article>
+          <article class="step-card">
+            <div class="step-num">03 · EVENTS</div>
+            <h3>Absorption and imbalance</h3>
+            <p>Type 8 is a rejection at a level. Type 9 is directional delta that agrees with the CVD slope and with structure.</p>
+          </article>
+          <article class="step-card">
+            <div class="step-num">04 · LATTICE</div>
+            <h3>Types 1 through 9</h3>
+            <p>Each type counts once. Density runs after the same-bar events. OFI alone cannot print SINGULAR.</p>
+          </article>
+          <article class="step-card">
+            <div class="step-num">05 · READ</div>
+            <h3>Marks, row 12, alerts</h3>
+            <p>Tiny circles and diamonds. One dashboard row. Four alerts, and only when the grade is already high.</p>
+          </article>
+          <article class="step-card">
+            <div class="step-num">06 · PLAY</div>
+            <h3>Playbooks and the path</h3>
+            <p>RANGE can fade absorption. TREND can continue on imbalance. The path still confirms at TP1 and breaks on a stop close.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- MODULE 01 -->
+    <section class="module" id="m1">
+      <div class="container">
+        <div class="module-header">
+          <div class="mod-time">Module 01 · Foundation</div>
+          <h2>Why Order Flow on Meridian</h2>
+          <p>Order Flow Intelligence (OFI) is a volume read added on top of Meridian Engine v2. It sits on levels the engine already tracks.</p>
+        </div>
+
+        <article class="lesson" id="l1-1" data-lesson="l1-1">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">1.1</span> The foundation is already built</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l1-1"> Mark complete</label>
+          </div>
+          <p>
+            <strong>Order flow</strong> means who is pushing, measured with volume.
+            A footprint chart shows bid and ask at each price. This script does not have that feed.
+            It uses a proxy, then drops the result onto the Meridian map you already know.
+          </p>
+          <p>Five pieces of v2 make that possible. Each one already exists. OFI borrows them.</p>
+          <ul>
+            <li><strong>Event lattice.</strong> A short memory of event types near price. Each type counts once. The count becomes a grade: WATCH, PRIME, ELITE, or SINGULAR.</li>
+            <li><strong>Liquidity Memory Map.</strong> A swept pool is stored as a <strong>magnet</strong>. The magnet decays each bar. A revisit with volume can strengthen it. Opposing magnets can become TP3.</li>
+            <li><strong>Regime.</strong> TREND, RANGE, or TRANSITION. TREND needs ADX at or above the ADX TREND threshold (default 25) and a stacked EMA ribbon. RANGE needs ADX under the ADX RANGE threshold (default 20) and a mixed ribbon. Everything else is TRANSITION.</li>
+            <li><strong>Path integrity.</strong> After an entry, the engine watches the map it drew. TP1 first is PATH CONFIRM. A close through the stop first is PATH BREAK.</li>
+            <li><strong>Confirmed bars.</strong> A buy or sell label requires <code>barstate.isconfirmed</code>. The bar has closed. Mid-bar flicker cannot print the entry.</li>
+          </ul>
+          <p>
+            <strong>ATR</strong> is the average true range. It is a typical bar size.
+            Several inputs are written as a multiple of ATR, so the same setting scales from a quiet chart to a wild one.
+          </p>
+          <div class="callout">
+            OFI does not build a second engine beside Meridian. It pushes two new event types into the lattice that is already there.
+          </div>
+
+          <figure class="figure">
+            <div class="svg-wrap">
+              <svg viewBox="0 0 720 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="OFI layer stacked on Meridian Engine v2">
+                <rect width="720" height="340" fill="#F2F3FB"/>
+                <text x="24" y="28" fill="#5A6690" font-family="monospace" font-size="11" letter-spacing="2">FIG 01 · OFI ON THE V2 STACK</text>
+                <rect x="36" y="52" width="300" height="44" rx="8" fill="#FFFFFF" stroke="rgba(109,40,217,0.35)"/>
+                <text x="52" y="78" fill="#6D28D9" font-family="monospace" font-size="12">REGIME · TREND / RANGE / TRANSITION</text>
+                <rect x="36" y="104" width="300" height="44" rx="8" fill="#FFFFFF" stroke="rgba(138,91,0,0.40)"/>
+                <text x="52" y="130" fill="#8A5B00" font-family="monospace" font-size="12">MAGNETS · DECAYING LIQUIDITY POOLS</text>
+                <rect x="36" y="156" width="300" height="44" rx="8" fill="#FFFFFF" stroke="rgba(0,134,168,0.45)"/>
+                <text x="52" y="182" fill="#0086A8" font-family="monospace" font-size="12">LATTICE · TYPES 1–7</text>
+                <rect x="36" y="208" width="300" height="52" rx="8" fill="#E9EBF6" stroke="#6D28D9" stroke-width="1.6"/>
+                <text x="52" y="230" fill="#6D28D9" font-family="monospace" font-size="12">OFI LAYER</text>
+                <text x="52" y="248" fill="#3A4470" font-family="monospace" font-size="11">CVD · ABSORPTION 8 · IMBALANCE 9</text>
+                <path d="M348 234 H400" stroke="#6D28D9" stroke-width="1.6" fill="none"/>
+                <path d="M394 228 L406 234 L394 240" fill="#6D28D9"/>
+                <text x="348" y="222" fill="#6D28D9" font-family="monospace" font-size="9">FEEDS GRADE</text>
+                <rect x="420" y="52" width="264" height="36" rx="8" fill="#FFFFFF" stroke="rgba(109,40,217,0.28)"/>
+                <text x="436" y="75" fill="#1C2240" font-family="monospace" font-size="12">GATE 1 · BIAS</text>
+                <rect x="420" y="98" width="264" height="36" rx="8" fill="#FFFFFF" stroke="rgba(190,30,60,0.35)"/>
+                <text x="436" y="121" fill="#BE1E3C" font-family="monospace" font-size="12">GATE 2 · ARMED · OFI STAYS OUT</text>
+                <rect x="420" y="144" width="264" height="36" rx="8" fill="#FFFFFF" stroke="rgba(5,150,105,0.45)"/>
+                <text x="436" y="167" fill="#059669" font-family="monospace" font-size="12">GATE 3 · GRADE OK</text>
+                <rect x="420" y="190" width="264" height="36" rx="8" fill="#FFFFFF" stroke="rgba(138,91,0,0.40)"/>
+                <text x="436" y="213" fill="#8A5B00" font-family="monospace" font-size="12">PATH · CONFIRM OR BREAK</text>
+                <text x="36" y="292" fill="#5A6690" font-family="monospace" font-size="11">SAME LEVELS · SAME GATES · TWO NEW EVENT TYPES</text>
+                <text x="36" y="314" fill="#5A6690" font-family="monospace" font-size="11">CONFIRMED BAR BEFORE A BUY OR SELL LABEL</text>
+              </svg>
+            </div>
+            <figcaption>FIG 01 · OFI SITS ON THE V2 STACK AND FEEDS GRADE · GATE 2 STAYS SWEEP, RECLAIM, OR CHOCH</figcaption>
+          </figure>
+        </article>
+
+        <article class="lesson" id="l1-2" data-lesson="l1-2">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">1.2</span> Why this engine, and what OFI is not allowed to do</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l1-2"> Mark complete</label>
+          </div>
+          <p>
+            OFI needs a place to land. The place is a list of event types, a price memory, and a grade that already decides entries.
+            Two earlier engines were considered. They do not give OFI that place.
+          </p>
+          <div class="sheet-grid thirds">
+            <div class="sheet">
+              <h4>ICT Core</h4>
+              <p>A simple 3-gate model, one FVG or order block, and a basic dashboard. There is no graded lattice to extend, and no magnet map to hang a level test on.</p>
+            </div>
+            <div class="sheet">
+              <h4>USME</h4>
+              <p>Smart Money Score, SOTD tiers, and a multi-anchor VWAP. The score is flatter. Liquidity is simpler: cooldown-filtered PDH, PDL, and swing raids.</p>
+            </div>
+            <div class="sheet trend">
+              <h4>Meridian v2</h4>
+              <p>Direction-matched magnets, a type-by-type lattice, regime gates, confirmed-bar entries, and mutual exclusion. New event types can join without a new signal path.</p>
+            </div>
+          </div>
+          <p>
+            <strong>Gate 2</strong> is the arm. The engine is armed only by a liquidity sweep, a VWAP reclaim, or a CHoCH.
+            A long arm is a sweep of the lows, a bullish VWAP reclaim, or a bullish CHoCH.
+            A short arm is a sweep of the highs, a bearish VWAP reclaim, or a bearish CHoCH.
+          </p>
+          <p>
+            <strong>CHoCH</strong> means change of character. In this script it is a break of structure that flips the structure trend.
+            <strong>BOS</strong> means break of structure: a close through the last swing pivot.
+            A CHoCH is a BOS. A BOS is not always a CHoCH.
+          </p>
+          <div class="callout bear">
+            Absorption does not arm Gate 2. Imbalance does not arm Gate 2. OFI can raise the grade, and it can change which side wins. It cannot arm the engine by itself.
+          </div>
+          <p>
+            There is also no separate “OFI Ready” badge in the script.
+            The shipped stand-in is the alert thresholds in Module 05: absorption only when the grade is already PRIME or higher, imbalance only when the grade is already ELITE or higher.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <!-- MODULE 02 -->
+    <section class="module" id="m2">
+      <div class="container">
+        <div class="module-header">
+          <div class="mod-time">Module 02 · Cumulative Volume Delta</div>
+          <h2>Cumulative Volume Delta</h2>
+          <p>CVD is a running total of bar delta. Bar delta is a proxy. It is built from the close, because many feeds have no bid and ask.</p>
+        </div>
+
+        <article class="lesson" id="l2-1" data-lesson="l2-1">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">2.1</span> The up/down split, the slope, the session range</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l2-1"> Mark complete</label>
+          </div>
+          <p>
+            <strong>Bar delta</strong> is up volume minus down volume on one bar.
+            The split looks at this close against the prior close.
+          </p>
+          <ul>
+            <li><strong>Close above the prior close.</strong> The whole bar’s volume counts as up volume. Down volume is zero.</li>
+            <li><strong>Close below the prior close.</strong> The whole bar’s volume counts as down volume. Up volume is zero.</li>
+            <li><strong>Close unchanged.</strong> Volume is split in half. Up volume and down volume are each half the bar. Bar delta is zero.</li>
+          </ul>
+          <p>
+            <strong>CVD</strong> (cumulative volume delta) adds each bar delta onto a running total.
+            <strong>Session CVD high</strong> and <strong>session CVD low</strong> are the highest and lowest values of that total since the last reset.
+            They are tracked in the script. They are not a separate dashboard row.
+          </p>
+          <p>
+            The <strong>3-bar slope</strong> is CVD now minus CVD three bars ago.
+            Slope above zero means <strong>CVD rising</strong>. Slope below zero means <strong>CVD falling</strong>.
+            Until three bars of history exist, both flags stay off.
+          </p>
+          <div class="callout gold">
+            Right after a reset, the three bars behind the slope can still belong to the old session. The slope can jump. Give the new session a few bars before you trust a CVD↑ or CVD↓ read.
+          </div>
+
+          <figure class="figure">
+            <div class="svg-wrap">
+              <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="CVD line with session resets, high, and low">
+                <rect width="720" height="320" fill="#F2F3FB"/>
+                <text x="24" y="28" fill="#5A6690" font-family="monospace" font-size="11" letter-spacing="2">FIG 02 · CVD · RESET, HIGH, LOW, 3-BAR SLOPE</text>
+                <line x1="48" y1="250" x2="680" y2="250" stroke="#DEE1F0" stroke-width="1"/>
+                <polyline fill="none" stroke="#059669" stroke-width="2.4" points="60,210 110,190 160,170 210,150 250,158 300,120"/>
+                <line x1="300" y1="48" x2="300" y2="270" stroke="#8A5B00" stroke-width="1.2" stroke-dasharray="4 3"/>
+                <text x="308" y="64" fill="#8A5B00" font-family="monospace" font-size="10">SESSION RESET</text>
+                <polyline fill="none" stroke="#0086A8" stroke-width="2.4" points="300,200 360,180 410,160 470,140 520,150 580,110"/>
+                <line x1="580" y1="48" x2="580" y2="270" stroke="#6D28D9" stroke-width="1.2" stroke-dasharray="4 3"/>
+                <text x="500" y="64" fill="#6D28D9" font-family="monospace" font-size="10">NEXT RESET</text>
+                <line x1="60" y1="120" x2="290" y2="120" stroke="#059669" stroke-width="1" stroke-dasharray="2 3"/>
+                <text x="64" y="114" fill="#059669" font-family="monospace" font-size="10">CVD HIGH</text>
+                <line x1="60" y1="210" x2="290" y2="210" stroke="#BE1E3C" stroke-width="1" stroke-dasharray="2 3"/>
+                <text x="64" y="226" fill="#BE1E3C" font-family="monospace" font-size="10">CVD LOW</text>
+                <line x1="410" y1="160" x2="470" y2="140" stroke="#0086A8" stroke-width="1.4"/>
+                <text x="360" y="132" fill="#0086A8" font-family="monospace" font-size="10">SLOPE = CVD − CVD[3]</text>
+                <text x="48" y="296" fill="#5A6690" font-family="monospace" font-size="11">RESET SETS CVD, HIGH, AND LOW TO THIS BAR’S DELTA · THEN THE TOTAL RUNS AGAIN</text>
+              </svg>
+            </div>
+            <figcaption>FIG 02 · CVD RESETS TO THE BAR’S DELTA · HIGH AND LOW TRACK THAT RUN · SLOPE IS THREE BARS</figcaption>
+          </figure>
+        </article>
+
+        <article class="lesson" id="l2-2" data-lesson="l2-2">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">2.2</span> CVD Reset — the input and the setup</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l2-2"> Mark complete</label>
+          </div>
+          <p>
+            Open the indicator settings. Find the group <strong>Event Lattice</strong>.
+            The input is labeled <strong>CVD Reset</strong>. The default is <strong>Session</strong>.
+            The choices are <strong>None</strong>, <strong>Session</strong>, and <strong>Daily</strong>.
+          </p>
+          <div class="sheet-grid thirds">
+            <div class="sheet">
+              <h4>None</h4>
+              <p>CVD does not reset after the first bar. The total keeps running. Use this only when you want one long cumulative line.</p>
+            </div>
+            <div class="sheet trend">
+              <h4>Session · default</h4>
+              <p>CVD resets when VWAP resets. It follows the preset’s VWAP anchor on purpose. Change the preset, and this reset follows.</p>
+            </div>
+            <div class="sheet trans">
+              <h4>Daily</h4>
+              <p>CVD resets on each new New York day. It ignores the VWAP anchor. A weekly VWAP can sit under a daily CVD.</p>
+            </div>
+          </div>
+          <p>
+            On a reset bar, CVD, the session high, and the session low are all set to that bar’s delta.
+            They do not start at zero and then add. The first bar of the new run <em>is</em> the delta.
+          </p>
+          <p>Session mode follows the preset anchor. Auto picks the preset from the chart timeframe.</p>
+          <div class="score-wrap">
+            <table class="score-table">
+              <thead>
+                <tr><th>Preset</th><th>Auto when</th><th>VWAP anchor</th><th>What Session reset uses</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Scalp</td><td>3 minutes or faster</td><td>Session</td><td>The VWAP session window</td></tr>
+                <tr><td>Intraday</td><td>Above 3 min, up to 15 min</td><td>Session</td><td>The same session window</td></tr>
+                <tr><td>Swing</td><td>Above 15 min, up to 4 hours</td><td>Daily</td><td>The new New York day</td></tr>
+                <tr><td>Position</td><td>Slower than 4 hours</td><td>Weekly</td><td>The new New York week</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            The session window itself depends on the symbol.
+            Non-crypto uses 09:30–16:00 New York. Crypto uses a full 00:00–24:00 day, so the window never “opens” mid-week and the New York weekday change is what resets it.
+            On Scalp or Intraday, a Session reset fires when that window opens, or when the New York weekday changes.
+          </p>
+          <ol class="rules-ol">
+            <li><strong>Add the script.</strong> The indicator name is “Meridian Engine v2.1 — OFI”. It is Pine v6, and it overlays price.</li>
+            <li><strong>Open Event Lattice.</strong> Set <strong>CVD Reset</strong>. Leave it on Session unless you have a reason to break it away from VWAP.</li>
+            <li><strong>Leave the delta multiple.</strong> <strong>OFI strong-delta × avg</strong> defaults to 1.5. Minimum 0.5. Step 0.1. Module 03 uses this number.</li>
+            <li><strong>Leave the proximity.</strong> <strong>OFI level proximity (×ATR)</strong> defaults to 0.4. Minimum 0.1. Step 0.05. That is the magnet distance for absorption.</li>
+            <li><strong>Leave marks on.</strong> <strong>Show OFI marks</strong> defaults to on. One switch covers circles and diamonds.</li>
+            <li><strong>Read the closed bar.</strong> Entries wait for a confirmed bar. A mark can still change while the bar is forming, because delta uses the live close.</li>
+          </ol>
+
+          <figure class="figure">
+            <div class="svg-wrap">
+              <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three bars splitting volume into delta that feeds CVD">
+                <rect width="720" height="320" fill="#F2F3FB"/>
+                <text x="24" y="28" fill="#5A6690" font-family="monospace" font-size="11" letter-spacing="2">FIG 03 · CLOSE VS PRIOR CLOSE · DELTA FEEDS CVD</text>
+                <rect x="48" y="70" width="150" height="180" rx="10" fill="#FFFFFF" stroke="rgba(5,150,105,0.35)"/>
+                <line x1="108" y1="96" x2="108" y2="200" stroke="#5A6690" stroke-width="1.4"/>
+                <rect x="96" y="120" width="24" height="56" fill="#059669"/>
+                <text x="123" y="150" fill="#059669" font-family="monospace" font-size="10">UP</text>
+                <text x="64" y="228" fill="#059669" font-family="monospace" font-size="10">CLOSE &gt; PRIOR</text>
+                <text x="64" y="244" fill="#3A4470" font-family="monospace" font-size="10">ALL VOLUME UP</text>
+                <rect x="230" y="70" width="150" height="180" rx="10" fill="#FFFFFF" stroke="rgba(138,91,0,0.35)"/>
+                <line x1="290" y1="110" x2="290" y2="190" stroke="#5A6690" stroke-width="1.4"/>
+                <rect x="278" y="140" width="24" height="20" fill="#8A5B00"/>
+                <text x="246" y="228" fill="#8A5B00" font-family="monospace" font-size="10">CLOSE = PRIOR</text>
+                <text x="246" y="244" fill="#3A4470" font-family="monospace" font-size="10">VOLUME SPLIT 50/50</text>
+                <rect x="412" y="70" width="150" height="180" rx="10" fill="#FFFFFF" stroke="rgba(190,30,60,0.35)"/>
+                <line x1="472" y1="96" x2="472" y2="200" stroke="#5A6690" stroke-width="1.4"/>
+                <rect x="460" y="110" width="24" height="56" fill="#BE1E3C"/>
+                <text x="428" y="228" fill="#BE1E3C" font-family="monospace" font-size="10">CLOSE &lt; PRIOR</text>
+                <text x="428" y="244" fill="#3A4470" font-family="monospace" font-size="10">ALL VOLUME DOWN</text>
+                <path d="M562 160 H640" stroke="#6D28D9" stroke-width="1.6" fill="none"/>
+                <path d="M632 154 L646 160 L632 166" fill="#6D28D9"/>
+                <text x="590" y="148" fill="#6D28D9" font-family="monospace" font-size="10">CVD</text>
+                <text x="48" y="292" fill="#5A6690" font-family="monospace" font-size="11">BAR DELTA = UP VOLUME − DOWN VOLUME · THIS IS A PROXY, NOT A FOOTPRINT</text>
+              </svg>
+            </div>
+            <figcaption>FIG 03 · THREE CLOSES · ALL UP, HALF AND HALF, OR ALL DOWN · THE DIFFERENCE IS BAR DELTA</figcaption>
+          </figure>
+        </article>
+      </div>
+    </section>
+
+    <!-- MODULE 03 -->
+    <section class="module" id="m3">
+      <div class="container">
+        <div class="module-header">
+          <div class="mod-time">Module 03 · Types 8 and 9</div>
+          <h2>Absorption and Imbalance</h2>
+          <p>Type 8 and type 9 are direction-aware. A bullish event joins the long lattice only. A bearish event joins the short lattice only.</p>
+        </div>
+
+        <article class="lesson" id="l3-1" data-lesson="l3-1">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">3.1</span> Absorption — type 8</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l3-1"> Mark complete</label>
+          </div>
+          <p>
+            <strong>Absorption</strong> means heavy volume in one direction that fails to continue.
+            Sellers hit, and the candle still closes up. Or buyers hit, and the candle still closes down.
+            The script stores both directions as type <strong>8</strong>. The direction is a separate flag.
+          </p>
+          <p>
+            <strong>Strong delta</strong> uses the input <strong>OFI strong-delta × avg</strong>. Default 1.5.
+            The script takes the 20-bar average of the absolute bar delta. Call that the average size.
+            Strong up delta means this bar’s delta is greater than 1.5 times that average.
+            Strong down delta means it is more negative than −1.5 times that average.
+          </p>
+          <div class="sheet-grid">
+            <div class="sheet trend">
+              <h4>Abs↑ · bullish · direction +1</h4>
+              <ul>
+                <li>Strong <em>down</em> delta. Sellers are the effort.</li>
+                <li>Close above the open. The candle rejected that effort.</li>
+                <li>A long level is nearby. Any one of the three tests below.</li>
+              </ul>
+            </div>
+            <div class="sheet bear">
+              <h4>Abs↓ · bearish · direction −1</h4>
+              <ul>
+                <li>Strong <em>up</em> delta. Buyers are the effort.</li>
+                <li>Close below the open.</li>
+                <li>A short level is nearby. The mirror of the three tests.</li>
+              </ul>
+            </div>
+          </div>
+          <p>The level test is an OR. One true test is enough. Absorption does not also require the CVD slope. That requirement belongs to imbalance.</p>
+          <ol class="rules-ol">
+            <li><strong>Zone edge.</strong> A bullish FVG or order block is being tapped, and the low is at or below that zone’s bottom. On a bullish FVG the tap already keeps the low inside the gap, so the low has to sit on the lower edge. On a bullish order block the low has to reach the bottom of the block. The bearish test uses the high at or above the zone top. If no zone is tapped, this test is false. A missing zone is never treated as nearby.</li>
+            <li><strong>VWAP band.</strong> The close is within <strong>Band proximity (×ATR)</strong> of +1σ, −1σ, +2σ, or −2σ. That input lives in the group <strong>3-Gate / Risk</strong>. Default 0.3. The ±1σ and ±2σ multipliers default to 1.0 and 2.0.</li>
+            <li><strong>Top magnet.</strong> A top magnet exists, and the close is within <strong>OFI level proximity (×ATR)</strong> of it. Default 0.4. This distance is the absorption magnet test. It is not the lattice’s own 1.5 × ATR proximity.</li>
+          </ol>
+          <div class="callout cyan">
+            <strong>FVG</strong> means fair value gap, a three-bar price gap. In this lattice the FVG is type 7.
+            <strong>Order block</strong> is optional and off by default (<strong>Show Order Blocks</strong>).
+            Type 9 later in this module is an order-flow imbalance. It is not another name for the FVG.
+          </div>
+
+          <figure class="figure">
+            <div class="svg-wrap">
+              <svg viewBox="0 0 720 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bullish absorption at a magnet and sigma band">
+                <rect width="720" height="340" fill="#F2F3FB"/>
+                <text x="24" y="28" fill="#5A6690" font-family="monospace" font-size="11" letter-spacing="2">FIG 04 · TYPE 8 · ABSORPTION AT A LEVEL</text>
+                <line x1="40" y1="168" x2="460" y2="168" stroke="#8A5B00" stroke-width="1.4" stroke-dasharray="5 4"/>
+                <text x="40" y="160" fill="#8A5B00" font-family="monospace" font-size="11">MAGNET OR −1σ</text>
+                <line x1="250" y1="70" x2="250" y2="230" stroke="#5A6690" stroke-width="1.5"/>
+                <rect x="236" y="150" width="28" height="70" fill="#BE1E3C"/>
+                <text x="274" y="200" fill="#BE1E3C" font-family="monospace" font-size="11">STRONG Δ DOWN</text>
+                <line x1="360" y1="78" x2="360" y2="210" stroke="#5A6690" stroke-width="1.5"/>
+                <rect x="346" y="110" width="28" height="58" fill="#059669"/>
+                <text x="384" y="140" fill="#059669" font-family="monospace" font-size="11">CLOSE &gt; OPEN</text>
+                <circle cx="360" cy="224" r="7" fill="#059669"/>
+                <text x="374" y="228" fill="#059669" font-family="monospace" font-size="12">Abs↑</text>
+                <rect x="500" y="56" width="190" height="210" rx="10" fill="#FFFFFF" stroke="rgba(109,40,217,0.28)"/>
+                <text x="516" y="82" fill="#6D28D9" font-family="monospace" font-size="11">ALL THREE</text>
+                <text x="516" y="112" fill="#3A4470" font-family="monospace" font-size="11">1 · OPPOSING DELTA</text>
+                <text x="516" y="140" fill="#3A4470" font-family="monospace" font-size="11">2 · REJECTION CANDLE</text>
+                <text x="516" y="168" fill="#3A4470" font-family="monospace" font-size="11">3 · ZONE EDGE, OR</text>
+                <text x="534" y="190" fill="#3A4470" font-family="monospace" font-size="11">σ BAND, OR MAGNET</text>
+                <text x="516" y="230" fill="#059669" font-family="monospace" font-size="11">PUSH TYPE 8 · LONG</text>
+                <text x="40" y="300" fill="#5A6690" font-family="monospace" font-size="11">BEARISH ABSORPTION MIRRORS THIS · STRONG UP DELTA · RED CANDLE · SHORT LEVEL</text>
+              </svg>
+            </div>
+            <figcaption>FIG 04 · ABS↑ IS STRONG SELLING DELTA, A GREEN CLOSE, AND A LONG LEVEL · TYPE 8, LONG SIDE ONLY</figcaption>
+          </figure>
+        </article>
+
+        <article class="lesson" id="l3-2" data-lesson="l3-2">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">3.2</span> Imbalance — type 9 — and the trap idea</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l3-2"> Mark complete</label>
+          </div>
+          <p>
+            <strong>Imbalance</strong> here means aggressive continuation.
+            Strong delta in the trade’s direction, a CVD slope that agrees, and a structure or location event on the same bar.
+            Both directions are type <strong>9</strong>.
+          </p>
+          <div class="sheet-grid">
+            <div class="sheet">
+              <h4 style="color:var(--cyan)">Imb↑ · direction +1</h4>
+              <ul>
+                <li>Strong up delta. Same multiple as absorption. Default 1.5 × the 20-bar average.</li>
+                <li>CVD rising. The 3-bar slope is above zero.</li>
+                <li>A bullish BOS, or a bullish VWAP reclaim, or a tap of a bullish FVG or order block.</li>
+              </ul>
+            </div>
+            <div class="sheet">
+              <h4 style="color:var(--magenta)">Imb↓ · direction −1</h4>
+              <ul>
+                <li>Strong down delta.</li>
+                <li>CVD falling.</li>
+                <li>A bearish BOS, or a bearish VWAP reclaim, or a tap of a bearish zone.</li>
+              </ul>
+            </div>
+          </div>
+          <p>
+            A bullish CHoCH counts, because a CHoCH is a bullish BOS that flips the trend.
+            A plain continuation BOS counts for the imbalance test too.
+            A plain BOS does not arm Gate 2. Only the CHoCH form of that break arms.
+          </p>
+          <p>
+            A <strong>VWAP reclaim</strong> is a close back through VWAP, with volume above 1.2 times the 20-bar average volume.
+            Bullish: this close is above VWAP and the prior close was at or below it.
+            Bearish is the mirror.
+          </p>
+          <p>
+            The zone door for imbalance is the tap itself. Price is in the zone.
+            That is wider than absorption’s edge test.
+            Imbalance does not use <strong>OFI level proximity (×ATR)</strong>.
+            That input is the magnet distance on the absorption test.
+            A magnet alone, with no BOS, no reclaim, and no zone tap, does not print type 9.
+          </p>
+          <div class="callout gold">
+            <strong>Exhaustion / trap, as this script actually handles it.</strong>
+            There is no input that subtracts grade for “absorption against the regime.”
+            The guard is the gates you already have.
+            <strong>No-chase (±2σ in TREND)</strong> defaults to on.
+            In TREND or TRANSITION, a long is blocked when the high reaches +2σ.
+            A short is blocked when the low reaches −2σ.
+            RANGE is allowed to touch those bands.
+            TRANSITION also caps a soft grade at WATCH, which Module 04 covers.
+            A green circle at +2σ in a strong trend is not a fade signal. With no-chase on, that long cannot print.
+          </div>
+
+          <figure class="figure">
+            <div class="svg-wrap">
+              <svg viewBox="0 0 720 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bullish imbalance through a break of structure">
+                <rect width="720" height="340" fill="#F2F3FB"/>
+                <text x="24" y="28" fill="#5A6690" font-family="monospace" font-size="11" letter-spacing="2">FIG 05 · TYPE 9 · IMBALANCE WITH STRUCTURE</text>
+                <line x1="40" y1="120" x2="430" y2="120" stroke="#0086A8" stroke-width="1.3" stroke-dasharray="4 3"/>
+                <text x="40" y="110" fill="#0086A8" font-family="monospace" font-size="11">LAST SWING HIGH · BOS WHEN CLOSE BREAKS IT</text>
+                <line x1="120" y1="210" x2="120" y2="250" stroke="#5A6690" stroke-width="1.4"/>
+                <rect x="108" y="220" width="24" height="22" fill="#059669"/>
+                <line x1="190" y1="180" x2="190" y2="240" stroke="#5A6690" stroke-width="1.4"/>
+                <rect x="178" y="196" width="24" height="28" fill="#059669"/>
+                <line x1="280" y1="70" x2="280" y2="200" stroke="#5A6690" stroke-width="1.6"/>
+                <rect x="266" y="96" width="28" height="70" fill="#059669"/>
+                <polygon points="280,214 289,224 280,234 271,224" fill="#0086A8"/>
+                <text x="300" y="228" fill="#0086A8" font-family="monospace" font-size="12">Imb↑</text>
+                <rect x="470" y="64" width="214" height="200" rx="10" fill="#FFFFFF" stroke="rgba(0,134,168,0.40)"/>
+                <text x="486" y="92" fill="#0086A8" font-family="monospace" font-size="11">AND, NOT OR</text>
+                <text x="486" y="122" fill="#3A4470" font-family="monospace" font-size="11">STRONG Δ UP</text>
+                <text x="486" y="150" fill="#3A4470" font-family="monospace" font-size="11">CVD RISING</text>
+                <text x="486" y="178" fill="#3A4470" font-family="monospace" font-size="11">BOS, RECLAIM, OR ZONE</text>
+                <text x="486" y="220" fill="#0086A8" font-family="monospace" font-size="11">PUSH TYPE 9 · LONG</text>
+                <text x="40" y="300" fill="#5A6690" font-family="monospace" font-size="11">CHOCH COUNTS BECAUSE IT IS A BOS · A PLAIN BOS DOES NOT ARM GATE 2</text>
+              </svg>
+            </div>
+            <figcaption>FIG 05 · IMB↑ NEEDS STRONG UP DELTA, A RISING CVD, AND A BOS, VWAP RECLAIM, OR ZONE TAP</figcaption>
+          </figure>
+        </article>
+      </div>
+    </section>
+
+    <!-- MODULE 04 -->
+    <section class="module" id="m4">
+      <div class="container">
+        <div class="module-header">
+          <div class="mod-time">Module 04 · Lattice</div>
+          <h2>Lattice Integration</h2>
+          <p>Types 1 through 9 share one density function. The grade still enters through Gate 3. There is no fourth gate.</p>
+        </div>
+
+        <article class="lesson" id="l4-1" data-lesson="l4-1">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">4.1</span> Nine types, counted once, on the same bar</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l4-1"> Mark complete</label>
+          </div>
+          <p>
+            The lattice keeps up to 30 recent events. Each event has a bar, a price, a direction, and a type code.
+            <strong>Density</strong> asks a simple question: how many different types, on this side, are still in range?
+          </p>
+          <div class="score-wrap">
+            <table class="score-table">
+              <thead>
+                <tr><th>Code</th><th>Event</th><th>When it is pushed</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>1</td><td>Sweep</td><td>Sell-side sweep is long. Buy-side sweep is short.</td></tr>
+                <tr><td>2</td><td>CHoCH</td><td>A BOS that flips the structure trend.</td></tr>
+                <tr><td>3</td><td>BOS</td><td>A BOS that does not flip the trend. A CHoCH is not also stored as type 3.</td></tr>
+                <tr><td>4</td><td>VWAP reclaim</td><td>Close back through VWAP with expanded volume.</td></tr>
+                <tr><td>5</td><td>Band touch</td><td>A σ-band touch while price is in discount (long) or premium (short).</td></tr>
+                <tr><td>6</td><td>Session tag</td><td>Silver Bullet, NY defense, or Asia tag on that side.</td></tr>
+                <tr><td>7</td><td>FVG</td><td>A bullish or bearish fair value gap on this bar.</td></tr>
+                <tr><td>8</td><td>Absorption</td><td>The type 8 test in Module 03. Direction follows the rejection.</td></tr>
+                <tr><td>9</td><td>Imbalance</td><td>The type 9 test in Module 03. Direction follows the delta.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            An event counts only when three things are true.
+            The direction matches the side you are scoring.
+            The event is no older than the lattice window.
+            The event price is within <strong>Lattice price proximity (×ATR)</strong> of the current close. Default 1.5.
+          </p>
+          <p>
+            The window input is <strong>Lattice lookback bars</strong>. Default 12. Minimum 3.
+            Presets resize it. With the input left at 12, Scalp uses 8 bars, Intraday and Swing use 12, and Position uses 18.
+            That is the time box for OFI events. There is no second OFI lookback input.
+            A repeated absorption inside the window does not add a second point. Type 8 is already seen.
+          </p>
+          <p>
+            v2 counted each type once, in the spirit of a bitmask: one slot per type.
+            Pine has no bitwise operators, so v2.1 stores nine true/false flags.
+            The count is the same. Slots 8 and 9 are the new ones.
+          </p>
+          <div class="callout emerald">
+            Density is calculated <em>after</em> this bar’s FVG and this bar’s OFI events are pushed.
+            In v2, a same-bar FVG (type 7) missed the count until the next bar. That gap is closed. Types 8 and 9 are included on the bar they print.
+          </div>
+
+          <figure class="figure">
+            <div class="svg-wrap">
+              <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Lattice types 1 to 9 feeding density and grade">
+                <rect width="720" height="360" fill="#F2F3FB"/>
+                <text x="24" y="28" fill="#5A6690" font-family="monospace" font-size="11" letter-spacing="2">FIG 06 · TYPES 1–9 · ONE SLOT EACH · THEN THE GRADE</text>
+                <g font-family="monospace" font-size="11">
+                  <rect x="28" y="52" width="70" height="36" rx="6" fill="#FFFFFF" stroke="rgba(90,102,144,0.45)"/>
+                  <text x="42" y="74" fill="#3A4470">1 SWEEP</text>
+                  <rect x="106" y="52" width="78" height="36" rx="6" fill="#FFFFFF" stroke="rgba(90,102,144,0.45)"/>
+                  <text x="116" y="74" fill="#3A4470">2 CHOCH</text>
+                  <rect x="192" y="52" width="62" height="36" rx="6" fill="#FFFFFF" stroke="rgba(90,102,144,0.45)"/>
+                  <text x="204" y="74" fill="#3A4470">3 BOS</text>
+                  <rect x="262" y="52" width="70" height="36" rx="6" fill="#FFFFFF" stroke="rgba(90,102,144,0.45)"/>
+                  <text x="274" y="74" fill="#3A4470">4 VWAP</text>
+                  <rect x="340" y="52" width="70" height="36" rx="6" fill="#FFFFFF" stroke="rgba(90,102,144,0.45)"/>
+                  <text x="352" y="74" fill="#3A4470">5 BAND</text>
+                  <rect x="28" y="100" width="92" height="36" rx="6" fill="#FFFFFF" stroke="rgba(90,102,144,0.45)"/>
+                  <text x="40" y="122" fill="#3A4470">6 SESSION</text>
+                  <rect x="128" y="100" width="62" height="36" rx="6" fill="#FFFFFF" stroke="rgba(90,102,144,0.45)"/>
+                  <text x="142" y="122" fill="#3A4470">7 FVG</text>
+                  <rect x="198" y="100" width="100" height="36" rx="6" fill="#E9EBF6" stroke="#059669" stroke-width="1.6"/>
+                  <text x="212" y="122" fill="#059669">8 ABSORB</text>
+                  <rect x="306" y="100" width="104" height="36" rx="6" fill="#E9EBF6" stroke="#0086A8" stroke-width="1.6"/>
+                  <text x="322" y="122" fill="#0086A8">9 IMBALANCE</text>
+                </g>
+                <path d="M360 156 V186" stroke="#6D28D9" stroke-width="1.5" fill="none"/>
+                <path d="M354 180 L360 194 L366 180" fill="#6D28D9"/>
+                <text x="372" y="180" fill="#6D28D9" font-family="monospace" font-size="11">COUNT EACH TYPE ONCE</text>
+                <rect x="28" y="206" width="150" height="64" rx="8" fill="#FFFFFF" stroke="rgba(0,134,168,0.4)"/>
+                <text x="42" y="232" fill="#0086A8" font-family="monospace" font-size="12">WATCH · 2</text>
+                <text x="42" y="252" fill="#5A6690" font-family="monospace" font-size="10">TWO TYPES</text>
+                <rect x="190" y="206" width="150" height="64" rx="8" fill="#FFFFFF" stroke="rgba(5,150,105,0.45)"/>
+                <text x="204" y="232" fill="#059669" font-family="monospace" font-size="12">PRIME · 3</text>
+                <text x="204" y="252" fill="#5A6690" font-family="monospace" font-size="10">DEFAULT MIN GRADE</text>
+                <rect x="352" y="206" width="150" height="64" rx="8" fill="#FFFFFF" stroke="rgba(109,40,217,0.4)"/>
+                <text x="366" y="232" fill="#6D28D9" font-family="monospace" font-size="12">ELITE · 4</text>
+                <text x="366" y="252" fill="#5A6690" font-family="monospace" font-size="10">OFI-ONLY CEILING</text>
+                <rect x="514" y="206" width="174" height="64" rx="8" fill="#FFFFFF" stroke="rgba(138,91,0,0.45)"/>
+                <text x="528" y="232" fill="#8A5B00" font-family="monospace" font-size="12">SINGULAR · 5</text>
+                <text x="528" y="252" fill="#5A6690" font-family="monospace" font-size="10">NEEDS MORE TYPES</text>
+                <text x="28" y="306" fill="#5A6690" font-family="monospace" font-size="11">TYPES 8 + 9 ONLY: 2 POINTS · ×1.25 SESSION = 2.5 → ROUNDS TO PRIME</text>
+                <text x="28" y="328" fill="#5A6690" font-family="monospace" font-size="11">MAGNET +1 IF GRADE IS ALREADY ≥ 3 → ELITE · SINGULAR STAYS OUT OF REACH</text>
+              </svg>
+            </div>
+            <figcaption>FIG 06 · NINE SLOTS · DENSITY AFTER THE SAME-BAR PUSH · OFI ALONE TOPS OUT AT ELITE</figcaption>
+          </figure>
+        </article>
+
+        <article class="lesson" id="l4-2" data-lesson="l4-2">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">4.2</span> Grade, the cap, mutual exclusion, regime</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l4-2"> Mark complete</label>
+          </div>
+          <p>
+            The number you see is the <strong>grade</strong>, not a raw tally that skipped the adjustments.
+            The dashboard prints the name and that number together, like <code>L ELITE(4)</code>.
+          </p>
+          <ol class="rules-ol">
+            <li><strong>Count the slots</strong> that passed the window and the 1.5 × ATR price test.</li>
+            <li><strong>Session boost.</strong> Inside London (02:00–05:00 New York), the NY killzone (09:30–12:00), or the Silver Bullet (default 08:00–09:00), multiply by 1.25. Asia does not multiply.</li>
+            <li><strong>Round</strong> to the nearest integer. That integer is the grade, before the next two steps.</li>
+            <li><strong>Magnet bump.</strong> If a same-direction magnet has strength at least 1.0, price is within 1.2 × ATR of it, and the grade is already 3 or more, add 1. Cap at 5.</li>
+            <li><strong>TRANSITION cap.</strong> If the regime is TRANSITION, the grade is still under 4, and the pre-round density is under 3.5, cap the grade at 2. That is WATCH.</li>
+          </ol>
+          <div class="grade-grid">
+            <article class="grade-card watch">
+              <div class="g-name">Watch</div>
+              <div class="g-count">2</div>
+              <p>Below the default entry filter.</p>
+            </article>
+            <article class="grade-card prime">
+              <div class="g-name">Prime</div>
+              <div class="g-count">3</div>
+              <p>Default minimum. <strong>Min lattice grade to enter</strong> is PRIME.</p>
+            </article>
+            <article class="grade-card elite">
+              <div class="g-name">Elite</div>
+              <div class="g-count">4</div>
+              <p>Highest grade two OFI types can reach.</p>
+            </article>
+            <article class="grade-card singular">
+              <div class="g-name">Singular</div>
+              <div class="g-count">5</div>
+              <p>Needs a wider lattice than types 8 and 9.</p>
+            </article>
+          </div>
+          <p>
+            Do the OFI-only math once. Two types, and a session boost: 2 × 1.25 = 2.5, which rounds to 3 (PRIME).
+            The magnet bump can then add 1, because the grade is already at least 3. That is 4, ELITE.
+            SINGULAR is 5. Types 8 and 9 cannot get there by themselves, even with the session boost and the magnet bump.
+            Without the session boost, two types round to 2 (WATCH), and the magnet bump does not apply, because the grade is under 3.
+          </p>
+          <p>
+            <strong>Gate 3</strong> compares that grade with your minimum. The long passes when the long grade is at least the rank of <strong>Min lattice grade to enter</strong>.
+            PRIME is rank 3. ELITE is 4. SINGULAR is 5. WATCH is 2.
+            The same test runs on the short side.
+          </p>
+          <p>
+            <strong>Mutual exclusion</strong> runs after both raw signals exist.
+            If both long and short qualify and the grades are equal, neither prints.
+            If the grades differ, the higher grade prints.
+            The winner still has to be a confirmed bar.
+          </p>
+          <div class="callout">
+            Regime does not multiply OFI by a hidden factor. RANGE, TREND, and TRANSITION change Gate 1, the no-chase rule, and the TRANSITION cap. The slot count itself uses the same formula. Module 06 is how you read absorption and imbalance inside those gates.
+          </div>
+
+          <figure class="figure">
+            <div class="svg-wrap">
+              <svg viewBox="0 0 720 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Regime modulation of absorption and imbalance">
+                <rect width="720" height="340" fill="#F2F3FB"/>
+                <text x="24" y="28" fill="#5A6690" font-family="monospace" font-size="11" letter-spacing="2">FIG 07 · REGIME CHANGES THE GATE, NOT A SECRET OFI MULTIPLIER</text>
+                <rect x="28" y="52" width="210" height="220" rx="12" fill="#FFFFFF" stroke="rgba(0,134,168,0.45)"/>
+                <text x="44" y="80" fill="#0086A8" font-family="monospace" font-size="13">RANGE</text>
+                <text x="44" y="108" fill="#3A4470" font-family="monospace" font-size="11">ADX &lt; 20</text>
+                <text x="44" y="128" fill="#3A4470" font-family="monospace" font-size="11">RIBBON MIXED</text>
+                <circle cx="52" cy="164" r="6" fill="#059669"/>
+                <text x="66" y="168" fill="#059669" font-family="monospace" font-size="11">FADE ABSORPTION</text>
+                <text x="44" y="200" fill="#5A6690" font-family="monospace" font-size="10">AT A MAGNET OR σ BAND</text>
+                <text x="44" y="220" fill="#5A6690" font-family="monospace" font-size="10">NO-CHASE ALLOWS ±2σ</text>
+                <text x="44" y="246" fill="#5A6690" font-family="monospace" font-size="10">ZONE STILL REQUIRED</text>
+                <rect x="254" y="52" width="210" height="220" rx="12" fill="#FFFFFF" stroke="rgba(5,150,105,0.45)"/>
+                <text x="270" y="80" fill="#059669" font-family="monospace" font-size="13">TREND</text>
+                <text x="270" y="108" fill="#3A4470" font-family="monospace" font-size="11">ADX ≥ 25</text>
+                <text x="270" y="128" fill="#3A4470" font-family="monospace" font-size="11">RIBBON STACKED</text>
+                <polygon points="278,164 286,172 278,180 270,172" fill="#0086A8"/>
+                <text x="294" y="176" fill="#0086A8" font-family="monospace" font-size="11">IMBALANCE</text>
+                <text x="270" y="208" fill="#5A6690" font-family="monospace" font-size="10">AFTER SWEEP OR CHOCH</text>
+                <text x="270" y="228" fill="#5A6690" font-family="monospace" font-size="10">NO-CHASE BLOCKS ±2σ</text>
+                <text x="270" y="248" fill="#5A6690" font-family="monospace" font-size="10">CONTINUATION SIDE</text>
+                <rect x="480" y="52" width="212" height="220" rx="12" fill="#FFFFFF" stroke="rgba(138,91,0,0.45)"/>
+                <text x="496" y="80" fill="#8A5B00" font-family="monospace" font-size="13">TRANSITION</text>
+                <text x="496" y="108" fill="#3A4470" font-family="monospace" font-size="11">EVERYTHING ELSE</text>
+                <text x="496" y="140" fill="#8A5B00" font-family="monospace" font-size="11">SOFT GRADE → WATCH</text>
+                <text x="496" y="168" fill="#5A6690" font-family="monospace" font-size="10">IF GRADE &lt; 4 AND</text>
+                <text x="496" y="186" fill="#5A6690" font-family="monospace" font-size="10">DENSITY &lt; 3.5</text>
+                <text x="496" y="220" fill="#5A6690" font-family="monospace" font-size="10">DEFAULT FILTER IS PRIME</text>
+                <text x="496" y="240" fill="#5A6690" font-family="monospace" font-size="10">WATCH DOES NOT ENTER</text>
+                <text x="28" y="308" fill="#5A6690" font-family="monospace" font-size="11">SAME DENSITY FORMULA · THE REGIME DECIDES WHICH GATE YOU MUST CLEAR</text>
+              </svg>
+            </div>
+            <figcaption>FIG 07 · RANGE FADES ABSORPTION · TREND WANTS CONTINUATION IMBALANCE · TRANSITION CAPS A SOFT GRADE AT WATCH</figcaption>
+          </figure>
+        </article>
+      </div>
+    </section>
+
+    <!-- MODULE 05 -->
+    <section class="module" id="m5">
+      <div class="container">
+        <div class="module-header">
+          <div class="mod-time">Module 05 · Chart and dashboard</div>
+          <h2>Reading the Chart</h2>
+          <p>The chart stays quiet. Two shapes, one dashboard row, four alerts. No footprint and no volume profile.</p>
+        </div>
+
+        <article class="lesson" id="l5-1" data-lesson="l5-1">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">5.1</span> Circles, diamonds, and a hidden CVD line</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l5-1"> Mark complete</label>
+          </div>
+          <p>
+            <strong>Show OFI marks</strong> defaults to on. Turn it off and both shapes disappear.
+            The shapes are tiny. They are cues, not a second panel.
+          </p>
+          <div class="mark-key">
+            <span class="mk"><i class="circ" style="background:#059669"></i> Abs↑ · green circle · below the bar</span>
+            <span class="mk"><i class="circ" style="background:#BE1E3C"></i> Abs↓ · red circle · above the bar</span>
+            <span class="mk"><i class="dia" style="background:#0086A8"></i> Imb↑ · cyan diamond · below the bar</span>
+            <span class="mk"><i class="dia" style="background:#C026D3"></i> Imb↓ · magenta diamond · above the bar</span>
+          </div>
+          <ul>
+            <li>A bullish mark sits under the bar. A bearish mark sits over the bar.</li>
+            <li>The CVD series is plotted with <code>display.none</code>. It does not take over the price scale. Read the number on the dashboard.</li>
+            <li>Marks are not wrapped in <code>barstate.isconfirmed</code>. Delta uses the live close, so a mark can appear and vanish before the bar finishes. Treat it as final on the close.</li>
+            <li>The entry label is stricter. Buy and sell require a confirmed bar, the three gates, and the grade filter.</li>
+          </ul>
+          <div class="callout">
+            Minimal on purpose. The script does not tint whole zones, draw a footprint, or add a volume profile. If you need a louder chart, you are reading the wrong tool.
+          </div>
+
+          <figure class="figure">
+            <div class="svg-wrap">
+              <svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Absorption circles and imbalance diamonds on a price path">
+                <rect width="720" height="300" fill="#F2F3FB"/>
+                <text x="24" y="28" fill="#5A6690" font-family="monospace" font-size="11" letter-spacing="2">FIG 08 · FOUR MARKS · NOTHING ELSE ADDED TO PRICE</text>
+                <polyline fill="none" stroke="#C5CAE0" stroke-width="2" points="40,180 120,200 200,150 280,170 360,110 440,130 520,80 640,100"/>
+                <circle cx="120" cy="214" r="7" fill="#059669"/>
+                <text x="96" y="242" fill="#059669" font-family="monospace" font-size="11">Abs↑</text>
+                <circle cx="280" cy="156" r="7" fill="#BE1E3C"/>
+                <text x="256" y="146" fill="#BE1E3C" font-family="monospace" font-size="11">Abs↓</text>
+                <polygon points="360,124 369,134 360,144 351,134" fill="#0086A8"/>
+                <text x="336" y="168" fill="#0086A8" font-family="monospace" font-size="11">Imb↑</text>
+                <polygon points="520,66 529,76 520,86 511,76" fill="#C026D3"/>
+                <text x="496" y="58" fill="#C026D3" font-family="monospace" font-size="11">Imb↓</text>
+                <text x="40" y="276" fill="#5A6690" font-family="monospace" font-size="11">BULLISH MARKS BELOW THE BAR · BEARISH MARKS ABOVE · CVD LINE STAYS HIDDEN</text>
+              </svg>
+            </div>
+            <figcaption>FIG 08 · GREEN AND RED CIRCLES ARE ABSORPTION · CYAN AND MAGENTA DIAMONDS ARE IMBALANCE</figcaption>
+          </figure>
+        </article>
+
+        <article class="lesson" id="l5-2" data-lesson="l5-2">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">5.2</span> Dashboard row 12 and the four alerts</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l5-2"> Mark complete</label>
+          </div>
+          <p>
+            The dashboard is a 13-row table. Rows are numbered from 0.
+            <strong>Row 12</strong> is the last row. Its label is <strong>OFI</strong>.
+            The cell shows one state word, then the live CVD value in volume format.
+          </p>
+          <p>The word is chosen in this order. The first match wins.</p>
+          <div class="path-stack">
+            <div class="path-row">
+              <span class="pr-tag abs">Abs↑ / Abs↓</span>
+              <p>A bullish or bearish absorption is true on this bar. Absorption beats everything else in the cell.</p>
+            </div>
+            <div class="path-row">
+              <span class="pr-tag imb">Imb↑ / Imb↓</span>
+              <p>No absorption, and an imbalance is true. Imbalance beats the slope.</p>
+            </div>
+            <div class="path-row">
+              <span class="pr-tag en">CVD↑ / CVD↓</span>
+              <p>No absorption and no imbalance. The 3-bar slope decides. If the slope is flat, the word is an em dash.</p>
+            </div>
+          </div>
+          <div class="callout gold">
+            Read the word first. The tint checks bullish states before bearish states: Abs↑, Imb↑, or a rising CVD tints green. Otherwise Abs↓, Imb↓, or a falling CVD tints red.
+            A bearish absorption that prints while CVD is still rising can show the word Abs↓ in a green tint. The word is the event. The tint followed the slope.
+          </div>
+          <p>
+            Four <code>alertcondition</code> names were added. They are separate from <strong>Enable alert() calls</strong>.
+            That switch gates the other messages (entries, sweeps, regime, bias, path). It does not turn these four on or off.
+            When you create the alert, choose once per bar close.
+          </p>
+          <div class="score-wrap">
+            <table class="score-table">
+              <thead>
+                <tr><th>Alert name</th><th>Fires when</th><th>Message</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>OFI Absorption Long</td>
+                  <td>Bullish absorption and the long grade is at least 3 (PRIME)</td>
+                  <td>Meridian OFI: Bullish absorption at level</td>
+                </tr>
+                <tr>
+                  <td>OFI Absorption Short</td>
+                  <td>Bearish absorption and the short grade is at least 3 (PRIME)</td>
+                  <td>Meridian OFI: Bearish absorption at level</td>
+                </tr>
+                <tr>
+                  <td>OFI Imbalance Long</td>
+                  <td>Bullish imbalance and the long grade is at least 4 (ELITE)</td>
+                  <td>Meridian OFI: Strong bullish imbalance</td>
+                </tr>
+                <tr>
+                  <td>OFI Imbalance Short</td>
+                  <td>Bearish imbalance and the short grade is at least 4 (ELITE)</td>
+                  <td>Meridian OFI: Strong bearish imbalance</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            A lone absorption on a weak lattice still draws the circle. It does not alert.
+            The grade in the test already includes this bar’s event, because density runs after the push.
+          </p>
+
+          <figure class="figure">
+            <div class="svg-wrap">
+              <svg viewBox="0 0 720 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Dashboard mock with OFI on row 12">
+                <rect width="720" height="420" fill="#F2F3FB"/>
+                <text x="24" y="28" fill="#5A6690" font-family="monospace" font-size="11" letter-spacing="2">FIG 09 · DASHBOARD · ROW 12 IS OFI</text>
+                <rect x="150" y="48" width="420" height="340" rx="12" fill="#FFFFFF" stroke="rgba(109,40,217,0.28)"/>
+                <g font-family="monospace" font-size="12">
+                  <text x="174" y="76" fill="#5A6690">0  Preset</text><text x="390" y="76" fill="#1C2240">Intraday</text>
+                  <text x="174" y="100" fill="#5A6690">1  Regime</text><text x="390" y="100" fill="#059669">TREND</text>
+                  <text x="174" y="124" fill="#5A6690">2  Bias</text><text x="390" y="124" fill="#059669">BULL</text>
+                  <text x="174" y="148" fill="#5A6690">3  Struct</text><text x="390" y="148" fill="#1C2240">UP</text>
+                  <text x="174" y="172" fill="#5A6690">4  VWAP Zone</text><text x="390" y="172" fill="#8A5B00">FV</text>
+                  <text x="174" y="196" fill="#5A6690">5  Lattice</text><text x="390" y="196" fill="#0086A8">L PRIME(3)</text>
+                  <text x="174" y="220" fill="#5A6690">6  Armed L/S</text><text x="390" y="220" fill="#8A5B00">L / -</text>
+                  <text x="174" y="244" fill="#5A6690">7  Magnets</text><text x="390" y="244" fill="#C026D3">active pools</text>
+                  <text x="174" y="268" fill="#5A6690">8  Path</text><text x="390" y="268" fill="#1C2240">L:OPEN</text>
+                  <text x="174" y="292" fill="#5A6690">9  Setup</text><text x="390" y="292" fill="#5A6690">Wait</text>
+                  <text x="174" y="316" fill="#5A6690">10 ATR RS</text><text x="390" y="316" fill="#1C2240">RS · RR</text>
+                  <text x="174" y="340" fill="#5A6690">11 Sess</text><text x="390" y="340" fill="#1C2240">NY</text>
+                </g>
+                <rect x="162" y="350" width="396" height="26" rx="4" fill="#E9EBF6"/>
+                <text x="174" y="368" fill="#6D28D9" font-family="monospace" font-size="12">12 OFI</text>
+                <text x="390" y="368" fill="#059669" font-family="monospace" font-size="12">Abs↑  ·  live CVD</text>
+                <text x="150" y="408" fill="#5A6690" font-family="monospace" font-size="10">LAYOUT SAMPLE · THE CVD FIGURE IS WHATEVER THE SYMBOL PRINTS · NOT A RESULT</text>
+              </svg>
+            </div>
+            <figcaption>FIG 09 · ROW 12 WORD ORDER IS ABS, THEN IMB, THEN CVD SLOPE, THEN THE LIVE CVD VALUE</figcaption>
+          </figure>
+        </article>
+      </div>
+    </section>
+
+    <!-- MODULE 06 -->
+    <section class="module" id="m6">
+      <div class="container">
+        <div class="module-header">
+          <div class="mod-time">Module 06 · Playbooks and path</div>
+          <h2>Playbooks and Path Integrity</h2>
+          <p>Two ways to use the marks. Then the same path rules as v2, read with absorption in view.</p>
+        </div>
+
+        <article class="lesson" id="l6-1" data-lesson="l6-1">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">6.1</span> RANGE fade, TREND continuation</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l6-1"> Mark complete</label>
+          </div>
+          <p>
+            These are reading rules. They use gates the script already has.
+            A mark is not an entry. The entry still needs Gate 1, an arm, a zone, the filters, the grade, and a confirmed bar.
+          </p>
+          <div class="sheet-grid">
+            <div class="sheet range">
+              <h4>RANGE · absorption fade</h4>
+              <ul>
+                <li>Regime is RANGE. ADX is under 20 and the EMA ribbon is mixed.</li>
+                <li>Location is a magnet or a σ band. That is where type 8 is allowed to print. The lower band suits a bullish fade. The upper band suits a bearish fade.</li>
+                <li>Gate 1 for a RANGE long wants discount (close under VWAP minus half a standard deviation) or the lower extreme. The short wants premium or the upper extreme.</li>
+                <li>Gate 2 still needs a sweep, a VWAP reclaim, or a CHoCH. The circle does not arm.</li>
+                <li>Gate 3 still needs a tapped FVG or order block. A magnet with no zone does not enter.</li>
+                <li>No-chase does not block RANGE, so a ±2σ tag is allowed here.</li>
+              </ul>
+            </div>
+            <div class="sheet trend">
+              <h4>TREND · imbalance continuation</h4>
+              <ul>
+                <li>Regime is TREND. ADX is at least 25 and the ribbon is stacked.</li>
+                <li>Gate 1 wants that stack, or price outside the cloud, on the trend side.</li>
+                <li>Type 9 agrees: strong delta with the trend, CVD slope with the trend, and a BOS, a reclaim, or a zone.</li>
+                <li>The arm is still a sweep, a reclaim, or a CHoCH. A CHoCH can arm and satisfy the BOS leg of imbalance on the same bar. A sweep arms, then imbalance has to show up with its own three tests.</li>
+                <li>No-chase blocks a long at +2σ and a short at −2σ. Continuation means you are not chasing the stretch.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="callout bear">
+            Bullish absorption at +2σ during TREND is the trap the blueprint warns about. The circle can print if a long level is there. The long entry stays blocked while no-chase is on and the high is at +2σ. Do not override that block because the circle is green.
+          </div>
+          <p>
+            Whichever play you use, the grade still has to clear the minimum. Default is PRIME.
+            If the other side’s grade is higher, mutual exclusion keeps this side quiet.
+            If the grades tie, both stay quiet.
+          </p>
+        </article>
+
+        <article class="lesson" id="l6-2" data-lesson="l6-2">
+          <div class="lesson-head">
+            <h3 class="lesson-title"><span class="lesson-num">6.2</span> Absorption on an open path</h3>
+            <label class="mark-done"><input type="checkbox" data-complete="l6-2"> Mark complete</label>
+          </div>
+          <p>
+            OFI changes whether a path is created, because the grade includes types 8 and 9.
+            Once the path exists, the tracker does not grow a new rule.
+            The long path confirms when the high touches TP1.
+            The long path breaks when a bar closes under the stop.
+            The short path confirms when the low touches TP1, and breaks when a bar closes above the stop.
+          </p>
+          <div class="sheet-grid">
+            <div class="sheet trend">
+              <h4>Holding the stop</h4>
+              <p>A long is open. A bullish absorption prints, and the close stays above the stop. Sellers tried to push through the stop and failed. The dashboard path cell stays <strong>L:OPEN</strong>. That is the confidence the blueprint describes. PATH CONFIRM still waits for TP1. The circle does not move the stop and does not confirm the trade.</p>
+            </div>
+            <div class="sheet bear">
+              <h4>Failed absorption</h4>
+              <p>The same defense appeared, and a later bar closes through the stop. The script prints <strong>PATH BREAK</strong>, clears that path, and can alert if <strong>Enable alert() calls</strong> is on. There is no second “failed absorption” alert. The break is the warning. The idea is over.</p>
+            </div>
+          </div>
+          <ul>
+            <li><strong>L:OPEN / S:OPEN</strong> means the path is active and TP1 has not printed.</li>
+            <li><strong>L:CONFIRM / S:CONFIRM</strong> means TP1 was touched first.</li>
+            <li><strong>L:BREAK / S:BREAK</strong> means the stop close happened first.</li>
+            <li>A wick through the stop is not a break. The script waits for the close.</li>
+          </ul>
+          <div class="callout">
+            Path integrity and the regime both read the same grade OFI just helped build. That is the whole wiring. No extra gate. No extra path engine.
+          </div>
+
+          <figure class="figure">
+            <div class="svg-wrap">
+              <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Path confirm and path break with absorption marks">
+                <rect width="720" height="360" fill="#F2F3FB"/>
+                <text x="24" y="28" fill="#5A6690" font-family="monospace" font-size="11" letter-spacing="2">FIG 10 · ABSORPTION ON THE PATH · CONFIRM STILL MEANS TP1</text>
+                <rect x="28" y="48" width="320" height="250" rx="12" fill="#FFFFFF" stroke="rgba(5,150,105,0.40)"/>
+                <text x="188" y="74" text-anchor="middle" fill="#059669" font-family="monospace" font-size="12">HOLD · THEN PATH CONFIRM</text>
+                <line x1="52" y1="230" x2="310" y2="230" stroke="#BE1E3C" stroke-width="1.5" stroke-dasharray="4 3"/>
+                <text x="56" y="224" fill="#BE1E3C" font-family="monospace" font-size="10">SL</text>
+                <line x1="52" y1="190" x2="310" y2="190" stroke="#0086A8" stroke-width="1.5"/>
+                <text x="56" y="184" fill="#0086A8" font-family="monospace" font-size="10">ENTRY</text>
+                <line x1="52" y1="120" x2="310" y2="120" stroke="#059669" stroke-width="1.5"/>
+                <text x="56" y="114" fill="#059669" font-family="monospace" font-size="10">TP1</text>
+                <polyline fill="none" stroke="#059669" stroke-width="2.2" points="80,200 120,214 160,200 210,150 270,110"/>
+                <circle cx="120" cy="228" r="6" fill="#059669"/>
+                <text x="132" y="252" fill="#059669" font-family="monospace" font-size="10">Abs↑ HOLDS ABOVE SL</text>
+                <text x="52" y="280" fill="#059669" font-family="monospace" font-size="10">L:OPEN UNTIL TP1 · THEN CONFIRM</text>
+                <rect x="372" y="48" width="320" height="250" rx="12" fill="#FFFFFF" stroke="rgba(190,30,60,0.40)"/>
+                <text x="532" y="74" text-anchor="middle" fill="#BE1E3C" font-family="monospace" font-size="12">FAIL · THEN PATH BREAK</text>
+                <line x1="396" y1="230" x2="654" y2="230" stroke="#BE1E3C" stroke-width="1.5" stroke-dasharray="4 3"/>
+                <text x="400" y="224" fill="#BE1E3C" font-family="monospace" font-size="10">SL</text>
+                <line x1="396" y1="170" x2="654" y2="170" stroke="#0086A8" stroke-width="1.5"/>
+                <text x="400" y="164" fill="#0086A8" font-family="monospace" font-size="10">ENTRY</text>
+                <polyline fill="none" stroke="#BE1E3C" stroke-width="2.2" points="430,186 480,210 520,200 580,248 640,262"/>
+                <circle cx="480" cy="224" r="6" fill="#059669"/>
+                <circle cx="580" cy="248" r="6" fill="#BE1E3C"/>
+                <text x="400" y="280" fill="#BE1E3C" font-family="monospace" font-size="10">CLOSE UNDER SL · PATH BREAK</text>
+                <text x="28" y="332" fill="#5A6690" font-family="monospace" font-size="11">THE CIRCLE IS EVIDENCE · CONFIRM IS TP1 · BREAK IS A CLOSE THROUGH THE STOP</text>
+              </svg>
+            </div>
+            <figcaption>FIG 10 · ABSORPTION ABOVE THE STOP KEEPS THE PATH OPEN · A LATER STOP CLOSE IS PATH BREAK</figcaption>
+          </figure>
+        </article>
+      </div>
+    </section>
+
+    <section class="closing" id="close">
+      <div class="container">
+        <div class="closing-card">
+          <h2>Six takeaways. Then practice.</h2>
+          <ul class="takeaways">
+            <li>OFI is CVD, absorption (type 8), and imbalance (type 9) on the Meridian v2 lattice. It does not arm Gate 2.</li>
+            <li>CVD Reset defaults to Session, so it follows the VWAP anchor. Daily is the New York day. None never resets. The slope is three bars.</li>
+            <li>Absorption is strong opposing delta, a rejection candle, and a zone edge, a σ band, or the top magnet. Imbalance is strong same-side delta, a CVD slope that agrees, and a BOS, a reclaim, or a zone.</li>
+            <li>Density counts each of the nine types once, after the same-bar FVG and OFI pushes. Two OFI types cannot reach SINGULAR.</li>
+            <li>Circles and diamonds stay small. Row 12 shows Abs, Imb, or the CVD slope, plus the live CVD. Absorption alerts need PRIME. Imbalance alerts need ELITE.</li>
+            <li>RANGE can fade absorption at a magnet or a σ band. TREND can continue on imbalance after a sweep or a CHoCH. PATH CONFIRM is still TP1. PATH BREAK is still a close through the stop.</li>
+          </ul>
+          <p>
+            Replay the closed bar. Name the type, the direction, and the gate it is allowed to touch.
+            If you cannot, leave the mark on the chart and keep your hands off the order.
+          </p>
+          <a class="closing-cta" href="/Meridian_OFI_Engine.html">OFI product page →</a>
+          <a class="closing-cta ghost" href="/Meridian_Engine_Mastery_Course.html">v2 Mastery course →</a>
+          <p style="margin-top:22px;font-family:var(--font-mono);font-size:10px;letter-spacing:1px;color:#8A5B00;">
+            FOR EDUCATION ONLY · NOT FINANCIAL ADVICE · MANAGE RISK ON EVERY TRADE
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="footer-brand">SNIPER<span>TRADER</span></div>
+      <p class="footer-disc">
+        This course is for educational purposes only and does not constitute financial, investment, or trading advice.
+        Markets involve substantial risk of loss. You are solely responsible for your decisions.
+        The volume split is a proxy, not bid/ask data. Indicators can fail. Manage risk on every trade.
+      </p>
+      <div class="footer-meta">Meridian OFI Engine Mastery · Education · v2.1 script</div>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var STORAGE_KEY = 'st_meridian_ofi_course_v1';
+      var navBtns = Array.prototype.slice.call(document.querySelectorAll('.nav-btn'));
+      var sections = ['overview','m1','m2','m3','m4','m5','m6','close'].map(function (id) {
+        return document.getElementById(id);
+      }).filter(Boolean);
+      var lessons = Array.prototype.slice.call(document.querySelectorAll('.lesson'));
+      var fill = document.getElementById('progressFill');
+      var pctEl = document.getElementById('progressPct');
+
+      function loadDone() {
+        try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+        catch (e) { return {}; }
+      }
+      function saveDone(map) {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(map)); } catch (e) {}
+      }
+
+      var doneMap = loadDone();
+      Array.prototype.slice.call(document.querySelectorAll('input[data-complete]')).forEach(function (cb) {
+        var id = cb.getAttribute('data-complete');
+        var label = cb.closest('.mark-done');
+        var lesson = cb.closest('.lesson');
+        if (doneMap[id]) {
+          cb.checked = true;
+          if (label) label.classList.add('checked');
+          if (lesson) lesson.classList.add('done');
+        }
+        cb.addEventListener('change', function () {
+          doneMap[id] = !!cb.checked;
+          saveDone(doneMap);
+          if (label) label.classList.toggle('checked', cb.checked);
+          if (lesson) lesson.classList.toggle('done', cb.checked);
+          updateProgress();
+        });
+      });
+
+      function updateProgress() {
+        var total = lessons.length || 1;
+        var completed = 0;
+        lessons.forEach(function (el) {
+          var r = el.getBoundingClientRect();
+          var visible = r.top < window.innerHeight * 0.7 && r.bottom > 80;
+          el.classList.toggle('in-view', visible);
+          if (el.classList.contains('done')) completed++;
+        });
+        var scrollY = window.scrollY || window.pageYOffset;
+        var docH = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
+        var scrollPct = Math.min(100, Math.round((scrollY / docH) * 100));
+        var lessonPct = Math.round((completed / total) * 100);
+        var pct = Math.max(scrollPct, Math.round(scrollPct * 0.6 + lessonPct * 0.4));
+        if (fill) fill.style.width = pct + '%';
+        if (pctEl) pctEl.textContent = pct + '%';
+      }
+
+      function setActive(id) {
+        navBtns.forEach(function (btn) {
+          btn.classList.toggle('active', btn.getAttribute('data-section') === id);
+        });
+      }
+
+      function onScroll() {
+        var current = sections[0] && sections[0].id;
+        var offset = 80;
+        for (var i = 0; i < sections.length; i++) {
+          var top = sections[i].getBoundingClientRect().top;
+          if (top - offset <= 0) current = sections[i].id;
+        }
+        setActive(current);
+        updateProgress();
+      }
+
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', onScroll);
+      onScroll();
+
+      navBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          setActive(btn.getAttribute('data-section'));
+        });
+      });
+    })();
+  </script>
+  <script src="/assets/assistant-widget.js" defer></script>
+</body>
+</html>
