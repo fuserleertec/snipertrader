@@ -593,12 +593,12 @@ var CATALOG={
   algos:{
     label:'Proprietary Algos',
     items:[
-      {name:'No Repaint Indicator',desc:'Non-repainting swing pivots, anchored VWAP bands, and a triple-EMA trend cloud — confirmed only at bar close.',hl:['100% non-repainting execution','Adjustable risk profiles','Custom push & Discord alerts'],cta:'Get Indicator Access',href:'/NoRepaint_Pivot_indicator.html',viz:'norepaint'},
-      {name:'USME ICT Core',desc:'Automated Smart Money Concepts — the 3-Gate Model: HTF bias, session filter, liquidity sweep + displacement + MSS, and VWAP-confluent FVG/OB entries.',hl:['Automated liquidity pool tracking','Premium / discount array mapping','Silver Bullet setup finder'],cta:'Load ICT Engine',href:'/USME_ICT_Core.html',viz:'ict'},
-      {name:'USME VWAP Suite Engine',desc:'Anchored VWAP with three deviation bands, an EMA trend cloud, and non-repainting structure signals — every setup graded WATCH, PRIME, or ELITE.',hl:['Session, weekly & custom-anchored VWAPs','Dynamic volatility bands','Order flow imbalance metrics'],cta:'Load VWAP Suite',href:'/USME_VWAP_Elite_Suite.html',viz:'vwap'},
-      {name:'Meridian Engine',desc:'Regime-aware Smart Money Concepts — decaying liquidity magnets, graded WATCH→PRIME→ELITE→SINGULAR setups, and full trade-path tracking.',hl:['Regime-aware liquidity memory map','Setup grading: WATCH → PRIME → ELITE → SINGULAR','Full trade-path tracking'],cta:'Load Meridian Engine',href:'/Meridian_Engine.html',viz:'meridian'},
-      {name:'Meridian OFI Engine',desc:'Order-flow intelligence layered onto the Meridian lattice — cumulative volume delta, absorption, and native-footprint imbalance.',hl:['Cumulative volume delta (CVD)','Absorption & native-footprint imbalance','Stacked imbalance logic'],cta:'Load OFI Engine',href:'/Meridian_OFI_Engine.html',viz:'meridian'},
-      {name:'Meridian OFI — Stacked Imbalance',desc:'Native-footprint stacked-imbalance logic — features and abilities, graded WATCH→SINGULAR with entry-to-TP3 path tracking.',hl:['Native-footprint stacked imbalance','Graded WATCH → SINGULAR','Features & abilities overview'],cta:'View Stacked Imbalance',href:'/Meridian_OFI_Stacked_imbalance_logic_Engine.html',viz:'meridian'}
+      {name:'No Repaint Indicator',desc:'Non-repainting swing pivots, anchored VWAP bands, and a triple-EMA trend cloud — confirmed only at bar close.',hl:['100% non-repainting execution','Adjustable risk profiles','Custom push & Discord alerts'],cta:'Get Indicator Access',href:'/NoRepaint_Pivot_indicator.html',viz:'norepaint',course:'/NoRepaint_Pivot_Course.html'},
+      {name:'USME ICT Core',desc:'Automated Smart Money Concepts — the 3-Gate Model: HTF bias, session filter, liquidity sweep + displacement + MSS, and VWAP-confluent FVG/OB entries.',hl:['Automated liquidity pool tracking','Premium / discount array mapping','Silver Bullet setup finder'],cta:'Load ICT Engine',href:'/USME_ICT_Core.html',viz:'ict',course:'/USME_ICT_Core_Course.html'},
+      {name:'USME VWAP Suite Engine',desc:'Anchored VWAP with three deviation bands, an EMA trend cloud, and non-repainting structure signals — every setup graded WATCH, PRIME, or ELITE.',hl:['Session, weekly & custom-anchored VWAPs','Dynamic volatility bands','Order flow imbalance metrics'],cta:'Load VWAP Suite',href:'/USME_VWAP_Elite_Suite.html',viz:'vwap',course:'/USME_VWAP_Suite_course.html'},
+      {name:'Meridian Engine',desc:'Regime-aware Smart Money Concepts — decaying liquidity magnets, graded WATCH→PRIME→ELITE→SINGULAR setups, and full trade-path tracking.',hl:['Regime-aware liquidity memory map','Setup grading: WATCH → PRIME → ELITE → SINGULAR','Full trade-path tracking'],cta:'Load Meridian Engine',href:'/Meridian_Engine.html',viz:'meridian',course:'/Meridian_Engine_Mastery_Course.html'},
+      {name:'Meridian OFI Engine',desc:'Order-flow intelligence layered onto the Meridian lattice — cumulative volume delta, absorption, and native-footprint imbalance.',hl:['Cumulative volume delta (CVD)','Absorption & native-footprint imbalance','Stacked imbalance logic'],cta:'Load OFI Engine',href:'/Meridian_OFI_Engine.html',viz:'meridian',course:'/Meridian_OFI_Engine_Mastery_Course.html'},
+      {name:'Meridian OFI — Stacked Imbalance',desc:'Native-footprint stacked-imbalance logic — features and abilities, graded WATCH→SINGULAR with entry-to-TP3 path tracking.',hl:['Native-footprint stacked imbalance','Graded WATCH → SINGULAR','Features & abilities overview'],cta:'View Stacked Imbalance',href:'/Meridian_OFI_Stacked_imbalance_logic_Engine.html',viz:'meridian',course:'/Meridian_OFI_Stacked_Imbalance_Mastery_Course.html'}
     ]
   },
   masterplans:{
@@ -607,7 +607,7 @@ var CATALOG={
       {name:'30 Days Funded Challenge',desc:'A structured 30-day path to funded-account consistency — daily targets and hard risk guardrails.',hl:['30-day daily targets','Hard risk guardrails','Funded-account consistency'],cta:'Start the Challenge',href:'/30_days_funded_challenge.html',viz:'challenge'},
       {name:'Prop Firm Masterplan',desc:'The complete prop-firm playbook — evaluation strategy, payout math, and a scaling plan for long-term funding.',hl:['Evaluation strategy','Payout math','Scaling plan'],cta:'View Masterplan',href:'/Prop_firm_MasterPlan.html',viz:'plan'},
       {name:'USME Futures Mastercourse',desc:'Advanced institutional futures mechanics — four engines, one edge: SMT divergence, session execution, and volatility profiling.',hl:['Cross-market SMT divergence','High-velocity session execution','Quantitative volatility profiling'],cta:'Start the Course',href:'/USME_Masterplan_Course.html',viz:'plan'},
-      {name:'The Complete Course',desc:'The all-in-one SniperTrader MasterClass — the complete VWAP Elite Suite curriculum, from anchor selection to confluence execution.',hl:['Four pillars of institutional value','VWAP bands & volume signals','Confluence checklist & execution'],cta:'Start the Course',href:'/complete_snipertrader_course.html',viz:'plan'}
+      {name:'Meridian Masterplan',desc:'The Meridian Masterplan — a structured blueprint from zero to funded, built on the Meridian engines with scaling and risk guardrails.',hl:['Zero to funded blueprint','Meridian engine integration','Scaling & risk guardrails'],cta:'View Masterplan',href:'/Meridian_Masterplan.html',viz:'plan'}
     ]
   },
   tools:{
@@ -706,9 +706,12 @@ function previewItem(catId,idx,pin){
   var items=list.querySelectorAll('.product-item');
   items.forEach(function(el,i){el.classList.toggle('active',i===idx);});
   var win=document.getElementById('previewWindow');
-  var cta = item.soon
-    ? '<span class="btn btn-outline pw-cta" style="opacity:.65;cursor:default">'+item.cta+'</span>'
-    : '<a class="btn btn-primary pw-cta" href="'+item.href+'">'+item.cta+'</a>';
+  var cta = '<div class="pw-cta" style="display:flex;gap:10px;flex-wrap:wrap;">' +
+    (item.soon
+      ? '<span class="btn btn-outline" style="opacity:.65;cursor:default">'+item.cta+'</span>'
+      : '<a class="btn btn-primary" href="'+item.href+'">'+item.cta+'</a>') +
+    (item.course ? '<a class="btn btn-outline" href="'+item.course+'">Companion Course →</a>' : '') +
+    '</div>';
   win.innerHTML=
     '<div class="pw-kicker">'+CATALOG[catId].label+'</div>'+
     '<div class="pw-title">'+item.name+'</div>'+
