@@ -1,0 +1,290 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Meridian Masterplan — From Zero to Funded</title><style>
+:root{--bg:#0a0e15;--bg2:#0f1520;--panel:#121a27;--panel2:#172133;--line:#223049;--tx:#d8e1ee;--mut:#8b9ab3;--acc:#2dd4bf;--acc2:#f5b942;--blue:#60a5fa;--pur:#a78bfa;--grn:#22c55e;--red:#f43f5e;--mono:"JetBrains Mono","SFMono-Regular",Menlo,Consolas,"DejaVu Sans Mono",monospace}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:20px}
+body{margin:0;background:radial-gradient(1200px 600px at 70% -10%,#12324a33,transparent),var(--bg);color:var(--tx);font:15.5px/1.65 Inter,"Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif}
+a{color:var(--acc);text-decoration:none}
+.layout{display:grid;grid-template-columns:290px minmax(0,1fr);min-height:100vh}
+.toc{position:sticky;top:0;height:100vh;overflow:auto;background:linear-gradient(180deg,#0d131d,#0a0f17);border-right:1px solid var(--line);padding:22px 14px 40px}
+.toc .brand{font-weight:800;letter-spacing:.14em;font-size:12px;color:var(--acc);text-transform:uppercase;margin:0 8px 2px}
+.toc .brand2{font-size:12px;color:var(--mut);margin:0 8px 18px}
+.toc ul{list-style:none;margin:0;padding:0}.toc li.top{margin:2px 0}
+.toc a{display:block;padding:5px 10px;border-radius:7px;color:var(--mut);font-size:13px;line-height:1.35;border-left:2px solid transparent}
+.toc li.top>a{color:#c3cee0;font-weight:600}
+.toc li li a{padding-left:22px;font-size:12.5px}
+.toc a:hover{background:#16213280;color:#fff}
+.toc a.active{color:#fff;background:#14283a;border-left-color:var(--acc)}
+.toc .tools a{color:var(--acc2)}
+.toc-toggle{display:none}
+main{padding:0 56px 120px;max-width:1040px}
+.hero{padding:64px 0 30px;border-bottom:1px solid var(--line);margin-bottom:10px}
+.hero .kicker{font:600 12px/1 var(--mono);letter-spacing:.2em;color:var(--acc);text-transform:uppercase}
+.hero h1{font-size:46px;line-height:1.08;margin:14px 0 6px;letter-spacing:-.02em;background:linear-gradient(90deg,#fff,#9fe7dc);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero .sub{font-size:22px;color:var(--acc2);font-weight:600;margin:0 0 18px}
+.lede{font-size:17px;color:#c6d1e2;max-width:760px}
+.timeline{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:26px 0 8px}
+.timeline a{display:block;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--tx);transition:.15s}
+.timeline a:hover{border-color:var(--acc);transform:translateY(-2px)}
+.timeline .p{font:700 11px var(--mono);color:var(--acc)}.timeline .w{font-size:11px;color:var(--mut)}.timeline .f{font-size:12.5px;line-height:1.3;margin-top:4px}
+.quick{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+.btn{display:inline-block;border:1px solid var(--acc);color:#04211d;background:var(--acc);padding:8px 14px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--acc)}.btn.danger{background:transparent;border-color:var(--red);color:var(--red)}
+section.phase{padding-top:34px}
+.phase-head{margin:10px 0 6px;padding:22px 24px;border-radius:14px;background:linear-gradient(120deg,#133046,#121a27 60%);border:1px solid var(--line);position:relative;overflow:hidden}
+.phase-head:after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:radial-gradient(#2dd4bf33,transparent 70%)}
+.eyebrow{font:700 12px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--acc2)}
+.phase-head h1{margin:6px 0 0;font-size:28px;letter-spacing:-.01em}
+h2{font-size:20px;margin:34px 0 10px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+h2 .num{font:700 13px var(--mono);color:#04211d;background:var(--acc);padding:3px 7px;border-radius:6px;margin-right:6px;vertical-align:2px}
+p{margin:10px 0}p.label{font-weight:600;color:#e8eef8;margin-top:16px}
+strong{color:#fff}
+main ul{margin:8px 0 14px;padding-left:4px;list-style:none}
+main ul li{position:relative;padding:6px 10px 6px 26px;margin:4px 0;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+main ul li:before{content:"";position:absolute;left:10px;top:15px;width:7px;height:7px;border-radius:2px;background:var(--acc);transform:rotate(45deg)}
+.tbl-wrap{overflow-x:auto;margin:14px 0 18px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{background:#182538;color:#9fe7dc;text-align:left;font:700 12px/1.3 var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:11px 14px;border-bottom:1px solid var(--line)}
+td{padding:10px 14px;border-bottom:1px solid #1b263a;vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:nth-child(even) td{background:#0f1622}
+tbody tr:hover td{background:#16233a}
+td:first-child{font-weight:600;color:#eef3fb}
+.compact table{font-size:13.5px}.compact td,.compact th{padding:7px 12px}
+figure.code{margin:16px 0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#070b11}
+figure.code figcaption{font:700 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mut);background:#0e1520;padding:8px 14px;border-bottom:1px solid var(--line)}
+figure.code pre{margin:0;padding:16px 18px;overflow-x:auto;font:13.5px/1.6 var(--mono);color:#cfe9e4;white-space:pre}
+figure.formula pre{color:#fde68a;font-size:14.5px}
+.addition{border:1px dashed #f5b94299;background:#f5b9420d;border-radius:12px;padding:12px 16px;margin:14px 0}
+.add-h{font:700 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--acc2)}
+.addition .tbl-wrap{margin:10px 0}
+.callout{display:flex;gap:14px;align-items:flex-start;border-radius:12px;padding:12px 16px;margin:14px 0;border:1px solid var(--line);background:var(--panel2)}
+.callout .c-lead{flex:0 0 auto;font:700 12.5px/1.9 var(--mono);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+.callout .ic{margin-right:7px}
+.callout.gate{border-color:#2dd4bf66;background:linear-gradient(90deg,#0f2e2d,#121a27)}.callout.gate .c-lead{color:var(--acc)}
+.callout.drill{border-left:3px solid var(--blue)}.callout.drill .c-lead{color:var(--blue)}
+.callout.goal{border-left:3px solid var(--acc2)}.callout.goal .c-lead{color:var(--acc2)}
+.callout.milestone{border-color:#22c55e55;background:#0f2419}.callout.milestone .c-lead{color:var(--grn)}
+.tag{font:700 11.5px var(--mono);padding:1px 6px;border-radius:5px;white-space:nowrap}
+.tag.fp{background:#2dd4bf22;color:#5eead4;border:1px solid #2dd4bf55}.tag.px{background:#f5b94222;color:#fcd34d;border:1px solid #f5b94255}
+.g{font-weight:700;font-family:var(--mono);font-size:.92em}.g-watch{color:#94a3b8}.g-prime{color:var(--blue)}.g-elite{color:var(--pur)}.g-singular{color:var(--acc2)}
+.rg{font:700 12.5px var(--mono);padding:2px 8px;border-radius:6px}.rg-trend{background:#22c55e22;color:#4ade80}.rg-range{background:#60a5fa22;color:#93c5fd}.rg-transition{background:#f43f5e22;color:#fda4af}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;margin:14px 0}
+.calc-grid{display:grid;grid-template-columns:1fr 1.1fr;gap:22px}
+.inputs label{display:block;font-size:12.5px;color:var(--mut);margin-bottom:10px}.inputs em{color:#6b7a93;font-style:normal}
+input,select,textarea{width:100%;margin-top:4px;background:#0a111b;color:#fff;border:1px solid #2a3a55;border-radius:8px;padding:8px 10px;font:14px var(--mono)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px #2dd4bf22}
+input[type=checkbox]{width:18px;height:18px;margin:0;accent-color:var(--acc)}
+.outputs{background:#0b121c;border:1px solid var(--line);border-radius:12px;padding:16px}
+.outputs .big{text-align:center;padding:10px 0 16px;border-bottom:1px solid var(--line);margin-bottom:8px}
+.outputs .big .k{color:var(--mut);font-size:13px}.outputs .big .v{font:800 64px/1.1 var(--mono);color:var(--acc)}.outputs .big .f{font:12.5px var(--mono);color:#fde68a}
+.outputs .row{display:flex;justify-content:space-between;gap:10px;padding:9px 2px;border-bottom:1px dashed #1f2c42;font-size:13.5px}.outputs .row b{font-family:var(--mono);color:#fff;text-align:right}
+.warn{margin-top:10px;padding:9px 12px;border-radius:8px;background:#f43f5e1f;border:1px solid #f43f5e66;color:#fecdd3;font-size:13px}
+.fine{font-size:12.5px;color:var(--mut)}
+.tr-top{display:flex;align-items:center;gap:18px;flex-wrap:wrap}.tr-sum .k{font-size:12px;color:var(--mut)}.tr-sum .v{font:800 30px var(--mono);color:var(--acc)}
+.bar{flex:1;min-width:160px;height:10px;background:#0a111b;border:1px solid var(--line);border-radius:99px;overflow:hidden}.bar div{height:100%;background:linear-gradient(90deg,var(--acc),#22c55e);width:0;transition:.3s}
+.tr-btns{display:flex;gap:8px}
+.gates{display:grid;gap:12px;margin-top:10px}
+.gate{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:#0e1520;transition:.2s}
+.gate.passed{border-color:#22c55e88;background:linear-gradient(90deg,#0f2419,#0e1520)}
+.gh{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.gid{font:800 12px var(--mono);background:var(--acc);color:#04211d;padding:3px 8px;border-radius:6px}.gt{font-weight:700}.gp{color:var(--mut);font-size:12.5px}
+.pill{margin-left:auto;font:700 11px var(--mono);padding:3px 9px;border-radius:99px;letter-spacing:.06em}.p-prog{background:#1e293b;color:#94a3b8}.p-ready{background:#f5b94222;color:#fcd34d;border:1px solid #f5b94266}.p-pass{background:#22c55e;color:#052e14}
+.gc{font-size:13.5px;color:#b8c4d6;margin:8px 0}
+.metric{display:grid;grid-template-columns:minmax(180px,1.4fr) minmax(200px,1.3fr) 110px 22px;gap:12px;align-items:center;padding:6px 0;border-top:1px dashed #1c283c;font-size:13.5px}
+.mi{display:flex;align-items:center;gap:8px}.mi input[type=number]{max-width:130px;margin:0;padding:5px 8px}.mt{color:var(--mut);font:12.5px var(--mono);white-space:nowrap}
+.duo{display:flex;gap:6px}.duo input{max-width:none!important}
+output{font:700 13px var(--mono);color:#fde68a;min-width:52px}
+.mb{height:6px;background:#0a111b;border-radius:99px;overflow:hidden;border:1px solid #1c283c}.mb i{display:block;height:100%;width:0;background:var(--acc2);transition:.3s}
+.metric.ok .mb i{background:var(--grn)}.mk{color:#2a3a55;font-weight:900}.metric.ok .mk{color:var(--grn)}
+.gf{display:grid;grid-template-columns:auto 190px 1fr;gap:12px;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.gf .pass{display:flex;gap:8px;align-items:center;font-weight:700;color:#e8eef8;cursor:pointer}.gf .dt{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--mut)}.gf .dt input{margin:0;padding:5px 8px}
+.gf textarea{margin:0;resize:vertical;min-height:34px;font-size:13px}
+footer.end{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);color:var(--mut);font-size:12.5px}
+@media (max-width:980px){.layout{grid-template-columns:minmax(0,1fr)}.timeline{grid-template-columns:repeat(2,1fr)!important}.quick .btn{flex:1;text-align:center}.toc{position:fixed;left:0;top:0;width:290px;z-index:20;transform:translateX(-100%);transition:.2s}body.toc-open .toc{transform:none}
+.toc-toggle{display:block;position:fixed;right:14px;bottom:14px;z-index:30;border-radius:99px;padding:10px 16px}main{padding:0 18px 90px}.hero h1{font-size:34px}.timeline{grid-template-columns:repeat(3,1fr)}.calc-grid{grid-template-columns:1fr}.metric{grid-template-columns:1fr}.gf{grid-template-columns:1fr}.callout{flex-direction:column;gap:4px}}
+@media print{.toc,.toc-toggle,.quick{display:none}.layout{display:block}body{background:#fff;color:#000}}
+</style></head><body>
+<div class="layout"><nav class="toc" aria-label="Table of contents"><div class="brand">Meridian Masterplan</div><div class="brand2">From Zero to Funded</div><ul><li class="top"><a href="#phase-0">Phase 0 — Infrastructure &amp; Reality Check</a><ul><li><a href="#s0-1">0.1 Platform prerequisites</a></li><li><a href="#s0-2">0.2 Pick your prop firm BEFORE you build the plan</a></li><li><a href="#s0-3">0.3 The sizing formula (memorize this)</a></li><li><a href="#s0-4">0.4 Journal schema (build it now)</a></li></ul></li><li class="top"><a href="#phase-1">Phase 1 — Meridian Engine v2 Mastery</a><ul><li><a href="#s1-1">1.1 Week 1 — Regime Engine</a></li><li><a href="#s1-2">1.2 Week 2 — Liquidity Memory Map</a></li><li><a href="#s1-3">1.3 Week 3 — 3-Gate Core + Event Lattice (structure only)</a></li></ul></li><li class="top"><a href="#phase-2">Phase 2 — Meridian OFI Stacked Imbalance Mastery</a><ul><li><a href="#s2-1">2.1 Week 4 — CVD (the primitive)</a></li><li><a href="#s2-2">2.2 Week 5 — Absorption (Type 8) &amp; Imbalance (Type 9)</a></li><li><a href="#s2-3">2.3 Week 6 — Stacked Imbalance (Type 10) — the differentiator</a></li></ul></li><li class="top"><a href="#phase-3">Phase 3 — Integration &amp; Playbook Construction</a><ul><li><a href="#s3-1">3.1 Preset mapping</a></li><li><a href="#s3-2">3.2 Write 3 core setups</a></li><li><a href="#s3-3">3.3 Session amplification rules</a></li><li><a href="#s3-4">3.4 The daily operating cadence</a></li></ul></li><li class="top"><a href="#phase-4">Phase 4 — Backtest → Forward Test → Evaluation</a><ul><li><a href="#s4-1">4.1 Backtest (Weeks 10–11)</a></li><li><a href="#s4-2">4.2 Forward test on sim (Weeks 12–13)</a></li><li><a href="#s4-3">4.3 Evaluation (Week 14)</a></li></ul></li><li class="top"><a href="#phase-5">Phase 5 — Funded Account Management</a><ul><li><a href="#s5-1">5.1 The first 10 funded days</a></li><li><a href="#s5-2">5.2 Scale-up ladder</a></li></ul></li><li class="top"><a href="#failure-modes-kill-switches">Failure Modes &amp; Kill Switches</a></li><li class="top"><a href="#mastery-timeline-summary">Mastery Timeline Summary</a></li><li class="top"><a href="#the-one-paragraph-version">The One-Paragraph Version</a></li><li class="top tools"><a href="#toolkit">Toolkit</a><ul><li><a href="#calc">Sizing &amp; Prop Rules Calculator</a></li><li><a href="#tracker">Gate Progress Tracker</a></li></ul></li></ul></nav>
+<main><header class="hero"><div class="kicker">Futures prop-firm curriculum · ES · NQ · YM · GC</div><h1>The Meridian Masterplan</h1><div class="sub">From Zero to Funded</div>
+<p class="lede">Below is a phased curriculum with objective graduation gates. You don't advance because you "feel ready" — you advance because you passed the gate. This is what separates a masterplan from a course list.</p><div class="timeline"><a href="#phase-0"><div class="p">PHASE 0</div><div class="w">Week 0</div><div class="f">Infrastructure, firm rules, sizing, journal</div></a><a href="#phase-1"><div class="p">PHASE 1</div><div class="w">Weeks 1–3</div><div class="f">Regime, Liquidity Map, 3-Gate, Lattice</div></a><a href="#phase-2"><div class="p">PHASE 2</div><div class="w">Weeks 4–6</div><div class="f">CVD, Absorption, Imbalance, Stacked Imbalance</div></a><a href="#phase-3"><div class="p">PHASE 3</div><div class="w">Weeks 7–9</div><div class="f">Integration, 3 written setups, cadence</div></a><a href="#phase-4"><div class="p">PHASE 4</div><div class="w">Weeks 10–14</div><div class="f">Backtest → forward → evaluation</div></a><a href="#phase-5"><div class="p">PHASE 5</div><div class="w"> Ongoing</div><div class="f">Funded management, scale ladder</div></a></div>
+<div class="quick"><a class="btn" href="#calc">Sizing calculator</a><a class="btn ghost" href="#tracker">Gate tracker</a><a class="btn ghost" href="#mastery-timeline-summary">Timeline summary</a></div></header>
+<section class="phase" id="phase-0"><header class="phase-head"><div class="eyebrow">Phase 0 · Week 0</div><h1>Infrastructure &amp; Reality Check</h1></header><p>Do not skip this. Most prop firm failures are plumbing failures, not signal failures.</p><h2 id="s0-1"><span class="num">0.1</span> Platform prerequisites</h2><div class="tbl-wrap "><table><thead><tr><th>Requirement</th><th>Why</th><th>Fallback</th></tr></thead><tbody><tr><td>TradingView Premium or Ultimate</td><td>request.footprint() — native diagonal bid/ask — only works here</td><td>Lower plans get the CVD proxy (dashboard tags <span class="tag px">·px</span> instead of <span class="tag fp">·FP</span>). Coarser, not diagonal.</td></tr><tr><td>Futures data feed (CME real-time)</td><td>ES/NQ/YM/GC need live exchange data</td><td>Delayed data ruins the Silver Bullet window timing</td></tr><tr><td>Companion backtest strategy script</td><td>The engine is an indicator, not a strategy. No fills, no equity curve.</td><td>You must measure win rate / PF / DD yourself</td></tr></tbody></table></div><h2 id="s0-2"><span class="num">0.2</span> Pick your prop firm BEFORE you build the plan</h2><p>The firm's rules become hard constraints in your position-sizing math — not afterthoughts.</p><p class="label">Extract these numbers and write them on a card:</p><ul><li>Daily loss limit ($ and %)</li><li>Trailing / static max drawdown</li><li>Profit target</li><li>Consistency rule (e.g. "no single day &gt; 50% of total profit")</li><li>Minimum trading days</li><li>News-trading restrictions</li><li>Instrument restrictions (some firms limit contracts on NQ/ES)</li></ul><h2 id="s0-3"><span class="num">0.3</span> The sizing formula (memorize this)</h2><figure class="code formula"><figcaption>Sizing formula</figcaption><pre>Contracts = (Daily Loss Limit × 0.40) / (Stop in points × $ per point)
+
+NQ: $20/pt   ES: $50/pt   YM: $5/pt   GC: $100/pt
+Example: $1,500 daily loss limit, NQ, structural stop = 12 points
+→ (1500 × 0.40) / (12 × 20) = 2 contracts maximum</pre></figure><aside class="addition"><div class="add-h">Added note — micro contracts &amp; rounding</div><div class="tbl-wrap compact"><table><thead><tr><th>Full-size</th><th>$ per point</th><th>Micro</th><th>$ per point</th></tr></thead><tbody><tr><td>NQ</td><td>$20</td><td>MNQ</td><td>$2</td></tr><tr><td>ES</td><td>$50</td><td>MES</td><td>$5</td></tr><tr><td>YM</td><td>$5</td><td>MYM</td><td>$0.50</td></tr><tr><td>GC</td><td>$100</td><td>MGC</td><td>$10</td></tr></tbody></table></div><p>Micros are one-tenth the $/pt of the full-size contract, so the formula allows ten times the contract count.</p><p>Fractional results always round DOWN. The example works out to 600 ÷ 240 = 2.5, which becomes 2 contracts.</p></aside><p>You deliberately use 40% of the daily limit, not 100%. This gives you room for a second and third attempt on a bad day without breaching.</p><h2 id="s0-4"><span class="num">0.4</span> Journal schema (build it now)</h2><p class="label">Every trade logs these fields — they map 1:1 to the engine's outputs:</p><figure class="code journal"><figcaption>Journal schema</figcaption><pre>Date | Session (SB/NYDef/LDN/Asia) | Preset (Auto→Scalp/Intraday/Swing/Position)
+Regime (TREND/RANGE/TRANSITION) | Bias | Gate1 cleared? | Gate2 arm type (Sweep/VWAP↑/CHoCH) | Gate3 zone
+Lattice grade (WATCH/PRIME/ELITE/SINGULAR) | Event types present (1–10)
+OFI reads present: CVD / Abs↑↓ / Imb↑↓ / Stk↑↓  →  data source ·FP or ·px
+Entry | SL | TP1 | TP2 | TP3 | RR planned
+Path outcome: CONFIRM / BREAK | R multiple | $ P&amp;L | Rule breach? (Y/N)</pre></figure><div class="callout gate"><div class="c-lead"><span class="ic">◆</span>Gate 0 passed when</div><div class="c-body">Firm rules documented, sizing formula calculated for your instrument, journal built, footprint data confirmed working (<span class="tag fp">·FP</span> tag visible in the dashboard).</div></div></section><section class="phase" id="phase-1"><header class="phase-head"><div class="eyebrow">Phase 1 · Weeks 1–3</div><h1>Meridian Engine v2 Mastery</h1></header><div class="callout goal"><div class="c-lead"><span class="ic">◎</span>Goal</div><div class="c-body">Learn the context layer in isolation. No order flow yet. You must be able to read regime and liquidity without the OFI crutch.</div></div><h2 id="s1-1"><span class="num">1.1</span> Week 1 — Regime Engine</h2><p>The engine classifies every bar from three inputs: ATR relative strength, manual ADX(14), EMA ribbon 9/21/50 alignment.</p><div class="tbl-wrap "><table><thead><tr><th>Regime</th><th>What the engine does</th><th>Your job</th></tr></thead><tbody><tr><td><span class="rg rg-trend">TREND</span></td><td>Trades only with ribbon + cloud; no-chase blocks stretched entries</td><td>Join pullbacks, never chase</td></tr><tr><td><span class="rg rg-range">RANGE</span></td><td>Fades premium/discount extremes; gets a fade-into-extremes exception to no-chase</td><td>Sell premium, buy discount</td></tr><tr><td><span class="rg rg-transition">TRANSITION</span></td><td>Demands a denser lattice before anything fires</td><td>Stand down or halve size</td></tr></tbody></table></div><div class="callout drill"><div class="c-lead"><span class="ic">▶</span>Drill</div><div class="c-body">Bar Replay, 200 bars, ES + NQ. Call the regime out loud on each bar and say why.</div></div><div class="callout gate"><div class="c-lead"><span class="ic">◆</span>Gate 1a</div><div class="c-body">20 consecutive correct regime reads with correct reasoning.</div></div><h2 id="s1-2"><span class="num">1.2</span> Week 2 — Liquidity Memory Map</h2><p>Confirmed sweeps register a pool with price, direction, intensity, and a decaying magnet. Magnet decays bar by bar, strengthens when price revisits and reverses with volume. Cap is 20 pools; high-magnet pools add lattice weight and can become TP3.</p><div class="callout drill"><div class="c-lead"><span class="ic">▶</span>Drill</div><div class="c-body">Mark every sweep. Track which pools get revisited and which decay to nothing. Log: did the opposing pool actually become TP3?</div></div><div class="callout gate"><div class="c-lead"><span class="ic">◆</span>Gate 1b</div><div class="c-body">You can point to the 3 most magnetically significant pools on any chart and justify each.</div></div><h2 id="s1-3"><span class="num">1.3</span> Week 3 — 3-Gate Core + Event Lattice (structure only)</h2><p class="label">The three gates clear in order:</p><ul><li><strong>Gate 1 — Bias:</strong> regime-aware direction</li><li><strong>Gate 2 — Armed:</strong> confirmed liquidity sweep OR volume-backed VWAP reclaim OR bullish/bearish CHoCH. Arms expire after a preset number of bars — stale setups auto-drop.</li><li><strong>Gate 3 — Zone retest:</strong> price taps an untapped FVG/OB while the lattice reads at least your minimum grade</li></ul><p class="label">Lattice grading (structure events only, in this phase):</p><div class="tbl-wrap "><table><thead><tr><th>Grade</th><th>Event types</th><th>Action</th></tr></thead><tbody><tr><td><span class="g g-watch">WATCH</span></td><td>2</td><td>Research only — never live size</td></tr><tr><td><span class="g g-prime">PRIME</span></td><td>3</td><td>Standard size (this is your live minimum)</td></tr><tr><td><span class="g g-elite">ELITE</span></td><td>4</td><td>Full size</td></tr><tr><td><span class="g g-singular">SINGULAR</span></td><td>5+ and a high-magnet pool in range</td><td>Maximum size and RR</td></tr></tbody></table></div><p><strong>Also internalize:</strong> mutual exclusion — if long and short fire the same bar, the engine keeps the higher-density side or stands aside on a tie. You will do the same.</p><div class="callout gate"><div class="c-lead"><span class="ic">◆</span>Gate 1c</div><div class="c-body">In Bar Replay, pre-write the trade (direction, entry, SL, TP1–3) before the BUY/SELL label prints. Hit 15/20 correct gate sequences.</div></div><div class="callout milestone"><div class="c-lead"><span class="ic">✔</span>Phase 1 complete when</div><div class="c-body">You can narrate a chart cold — regime → pools → arm → zone → grade — without the OFI layer.</div></div></section><section class="phase" id="phase-2"><header class="phase-head"><div class="eyebrow">Phase 2 · Weeks 4–6</div><h1>Meridian OFI Stacked Imbalance Mastery</h1></header><div class="callout goal"><div class="c-lead"><span class="ic">◎</span>Goal</div><div class="c-body">Layer order flow on top of the context you already own. Critically — no new gates. OFI events raise density, which raises grade.</div></div><h2 id="s2-1"><span class="num">2.1</span> Week 4 — CVD (the primitive)</h2><p>Volume split by close vs. prior close, accumulated. 3-bar slope sets rising/falling state. Session high/low tracked live. Reset: None / Session / Daily.</p><div class="callout drill"><div class="c-lead"><span class="ic">▶</span>Drill</div><div class="c-body">On 100 bars, mark accumulation vs. distribution phases. Note how often CVD slope flip precedes or lags the regime change.</div></div><h2 id="s2-2"><span class="num">2.2</span> Week 5 — Absorption (Type 8) &amp; Imbalance (Type 9)</h2><div class="tbl-wrap "><table><thead><tr><th>Event</th><th>Trigger</th><th>Visual</th><th>Meaning</th></tr></thead><tbody><tr><td>Absorption ↑/↓</td><td>Strong opposing delta + rejection at FVG/OB, magnet, or VWAP band</td><td>Small green/red circle</td><td>Demand absorbing supply / supply absorbing demand</td></tr><tr><td>Imbalance ↑/↓</td><td>Strong directional delta + CVD agreement + BOS/CHoCH/VWAP reclaim/zone tap</td><td>Small cyan/magenta diamond</td><td>Conviction continuation, not just a level reaction</td></tr></tbody></table></div><div class="callout drill"><div class="c-lead"><span class="ic">▶</span>Drill</div><div class="c-body">Classify every Abs and Imb on 100 bars. Which ones had a level behind them? Those are the ones that matter.</div></div><h2 id="s2-3"><span class="num">2.3</span> Week 6 — Stacked Imbalance (Type 10) — the differentiator</h2><p>This is the whole reason to buy the OFI edition.</p><p class="label">How it works:</p><ul><li>request.footprint(fpTicks, 70, fpImbPct) reads true bid/ask at every price row</li><li>A buy imbalance flags when a row's buy volume ≥ threshold% of the sell volume of the row below it → diagonal, 3:1 default</li><li>A sell imbalance mirrors it above</li><li>≥3 consecutive same-side rows = a stacked zone → pushed as lattice type 10</li><li>Optionally registers as a high-intensity magnet (intensity = stack length × volume ratio)</li><li>Aligned stacks earn a +1 grade nudge</li></ul><p><strong>Why diagonal, not same-row:</strong> best bid and best ask sit one tick apart. Comparing same-row mixes both sides of the spread and is dominated by microstructure noise. Diagonal isolates genuine initiative.</p><p class="label">Tuning table (from the docs):</p><div class="tbl-wrap "><table><thead><tr><th>Instrument</th><th>ticks/row</th><th>Target rows/bar</th></tr></thead><tbody><tr><td>ES / NQ</td><td>4–20</td><td>15–40</td></tr><tr><td>Crypto / large-range bars</td><td>50–200</td><td>15–40</td></tr></tbody></table></div><p>If stacks fire too often, raise Imbalance threshold % from 300 → 400–500%.</p><div class="callout gate"><div class="c-lead"><span class="ic">◆</span>Gate 2a</div><div class="c-body">20 consecutive correct <span class="tag fp">·FP</span> (native) stack reads. You must distinguish them from <span class="tag px">·px</span> (proxy) fallback reads and know the difference in reliability.</div></div><div class="callout gate"><div class="c-lead"><span class="ic">◆</span>Gate 2b</div><div class="c-body">Explain in writing why a stack that aligns with the lattice is stronger than a stack in isolation.</div></div><div class="callout milestone"><div class="c-lead"><span class="ic">✔</span>Phase 2 complete when</div><div class="c-body">You can identify a stacked imbalance, state whether it's <span class="tag fp">·FP</span> or <span class="tag px">·px</span>, and say whether it lands on a level you already care about.</div></div></section><section class="phase" id="phase-3"><header class="phase-head"><div class="eyebrow">Phase 3 · Weeks 7–9</div><h1>Integration &amp; Playbook Construction</h1></header><p>Now fuse the layers. You are building a written, repeatable playbook — not vibes.</p><h2 id="s3-1"><span class="num">3.1</span> Preset mapping</h2><p>Start on Preset = Auto (derives Scalp / Intraday / Swing / Position from your chart timeframe). Once you have 30+ logged trades, you can justify a manual preset. Not before.</p><h2 id="s3-2"><span class="num">3.2</span> Write 3 core setups</h2><p class="label">Each setup must be fully specified:</p><figure class="code setup"><figcaption>Setup template</figcaption><pre>SETUP NAME: ________________________________
+Instrument(s): ______________________________
+Session window: _____________________________
+Preset: _____________________________________
+Regime required: ____________________________
+
+GATE 1 (Bias): ________________________________
+GATE 2 (Arm — circle one): Sweep / VWAP reclaim / CHoCH
+GATE 3 (Zone): _______________________________
+
+MINIMUM lattice grade: PRIME / ELITE / SINGULAR
+Required OFI confluence (optional but graded):
+   [ ] CVD slope aligned
+   [ ] Abs at level
+   [ ] Imb with structure
+   [ ] Stk↑/↓ ·FP (strongest)  OR  Stk↑/↓ ·px (weaker — note it)
+
+Entry: bar close on signal
+SL: structural (beyond sweep or zone invalidation) = ____ pts
+TP1: VWAP or nearest sigma band = ____ pts
+TP2: risk × RR = ____ pts
+TP3: opposing magnet or 1.5 × TP2 = ____ pts
+
+Contracts (from formula): _____
+Invalidation / no-trade conditions: ____________</pre></figure><p><strong>Suggested three:</strong> (A) Trend pullback with Imb + stack, (B) Range fade at premium/discount with Abs, (C) Silver Bullet sweep reversal with stack.</p><h2 id="s3-3"><span class="num">3.3</span> Session amplification rules</h2><p>Sessions are amplifiers (×1.25 density), never AND-gates. You never wait for a window — you score higher inside one.</p><div class="tbl-wrap "><table><thead><tr><th>Window</th><th>ET</th><th>Use</th></tr></thead><tbody><tr><td>Asia</td><td>20:00–00:00</td><td>Asia range break, post-close</td></tr><tr><td>London</td><td>02:00–05:00</td><td>Sets the reference high/low for Silver Bullet</td></tr><tr><td>Silver Bullet</td><td>08:00–09:00</td><td>Sweep of prior London H/L — cleanest reversal read</td></tr><tr><td>NY Killzone / NYDef</td><td>09:30–12:00</td><td>Volume-spike test of prior NY extreme with trend alignment</td></tr></tbody></table></div><p><strong>Practical filter:</strong> For prop evaluations, restrict live trading to 08:00–12:00 ET. Outside that, journal only.</p><h2 id="s3-4"><span class="num">3.4</span> The daily operating cadence</h2><div class="tbl-wrap "><table><thead><tr><th>Time (ET)</th><th>Action</th></tr></thead><tbody><tr><td>Pre-market</td><td>Note Asia range, London H/L, key pools, expected regime</td></tr><tr><td>08:00–09:00</td><td>Silver Bullet window — highest priority setups</td></tr><tr><td>09:30–11:00</td><td>NY Killzone — NYDef setups</td></tr><tr><td>11:00–12:00</td><td>Manage open paths only. No new risk after 11:30.</td></tr><tr><td>Post-session</td><td>Log every trade in the journal schema. Score your rule adherence 1–10.</td></tr></tbody></table></div><div class="callout gate"><div class="c-lead"><span class="ic">◆</span>Gate 3</div><div class="c-body">You have 3 written setups, you've executed each in Bar Replay 20+ times, and your journal shows you can fill every field without thinking.</div></div></section><section class="phase" id="phase-4"><header class="phase-head"><div class="eyebrow">Phase 4 · Weeks 10–14</div><h1>Backtest → Forward Test → Evaluation</h1></header><h2 id="s4-1"><span class="num">4.1</span> Backtest (Weeks 10–11)</h2><p>Use the companion strategy script. Run across at least 3 instruments × 2 timeframes.</p><p><strong>Sample size:</strong> 100 trades minimum per configuration. Less than that is noise.</p><div class="tbl-wrap "><table><thead><tr><th>Metric</th><th>Minimum to proceed</th></tr></thead><tbody><tr><td>Profit Factor</td><td>≥ 1.3</td></tr><tr><td>Max Drawdown</td><td>≤ 60% of the firm's trailing DD</td></tr><tr><td>Win rate</td><td>Whatever it is — but RR must compensate</td></tr><tr><td>Losing streak (max)</td><td>Must be survivable under your 40%-of-daily-limit sizing</td></tr></tbody></table></div><p><strong>If low-timeframe noise inflates grades:</strong> raise minimum grade to <span class="g g-elite">ELITE</span>, or widen FVG filters.</p><div class="callout gate"><div class="c-lead"><span class="ic">◆</span>Gate 4a</div><div class="c-body">100-trade backtest, PF ≥ 1.3, max DD inside prop limits, max losing streak survivable.</div></div><h2 id="s4-2"><span class="num">4.2</span> Forward test on sim (Weeks 12–13)</h2><p>20 trades, real-time, sim account, no exceptions. Backtests flatter you; live bar-close timing does not.</p><p class="label">Track the Path Integrity stats specifically:</p><ul><li>% of signals that hit PATH CONFIRM (TP1 touched first)</li><li>% that hit PATH BREAK (close beyond stop before TP1)</li><li>If BREAK rate &gt; 45%, your entries are too late or your stops too tight.</li></ul><div class="callout gate"><div class="c-lead"><span class="ic">◆</span>Gate 4b</div><div class="c-body">20 forward trades with forward-test PF within 25% of backtest PF. Divergence beyond that means curve-fitting.</div></div><h2 id="s4-3"><span class="num">4.3</span> Evaluation (Week 14)</h2><p class="label">Non-negotiable evaluation rules:</p><div class="tbl-wrap "><table><thead><tr><th>Rule</th><th>Setting</th></tr></thead><tbody><tr><td>Minimum grade</td><td><span class="g g-prime">PRIME</span> (never <span class="g g-watch">WATCH</span> live)</td></tr><tr><td>Max contracts</td><td>From the 40% formula</td></tr><tr><td>Max trades/day</td><td>3</td></tr><tr><td>Stop trading for the day</td><td>After 2 consecutive losses or −1.5%</td></tr><tr><td>Sessions traded</td><td>08:00–12:00 ET only</td></tr><tr><td>Instrument</td><td>One. Do not switch.</td></tr></tbody></table></div><p><strong>Consistency rule handling:</strong> If your firm requires "no day &gt; 50% of total profit," your daily profit cap must be ≈ 50% of the target. Example: $6,000 target → stop the day at $3,000.</p><div class="callout gate"><div class="c-lead"><span class="ic">◆</span>Gate 4c</div><div class="c-body">Evaluation passed.</div></div></section><section class="phase" id="phase-5"><header class="phase-head"><div class="eyebrow">Phase 5 · Ongoing</div><h1>Funded Account Management</h1></header><p>Passing is the easy part. The failure mode is doubling size after funding.</p><h2 id="s5-1"><span class="num">5.1</span> The first 10 funded days</h2><ul><li>Trade the same contract count you used in the evaluation</li><li>No new setups</li><li>Same sessions, same minimum grade</li><li>Re-log everything</li></ul><h2 id="s5-2"><span class="num">5.2</span> Scale-up ladder</h2><div class="tbl-wrap "><table><thead><tr><th>Milestone</th><th>Action</th></tr></thead><tbody><tr><td>10 funded days, no rule breach</td><td>+25% size</td></tr><tr><td>30 funded days, no breach, PF ≥ 1.3</td><td>+25% size</td></tr><tr><td>Any rule breach</td><td>Reset to evaluation size for 10 days</td></tr><tr><td>Payout taken</td><td>Reset to evaluation size for 5 days</td></tr></tbody></table></div><p>Size increases only ever follow rule adherence — never follow a winning streak.</p></section><section class="phase" id="failure-modes-kill-switches"><header class="phase-head"><h1>Failure Modes &amp; Kill Switches</h1></header><div class="tbl-wrap "><table><thead><tr><th>Failure mode</th><th>Kill switch</th></tr></thead><tbody><tr><td>Revenge trading after a BREAK</td><td>Hard stop after 2 losses. Close the platform.</td></tr><tr><td>Trading TRANSITION regime "just this once"</td><td>Engine demands denser lattice — so do you. No exceptions.</td></tr><tr><td>Chasing entries in TREND</td><td>No-chase blocks stretched entries. If the label didn't print, there's no trade.</td></tr><tr><td>Overtrading low-grade setups</td><td>Min grade <span class="g g-prime">PRIME</span>. Lock it in settings.</td></tr><tr><td>Trading <span class="tag px">·px</span> proxy stacks as if they're <span class="tag fp">·FP</span></td><td>Tag every read in the journal. Discount proxy reads by one grade mentally.</td></tr><tr><td>Ignoring the consistency rule</td><td>Daily profit cap = 50% of target. Automate the stop.</td></tr><tr><td>Switching instruments mid-evaluation</td><td>One instrument. One playbook.</td></tr><tr><td>Conflicting signals</td><td>Engine's mutual exclusion already handles it — take the higher-density side or stand aside.</td></tr></tbody></table></div></section><section class="phase" id="mastery-timeline-summary"><header class="phase-head"><h1>Mastery Timeline Summary</h1></header><div class="tbl-wrap "><table><thead><tr><th>Phase</th><th>Weeks</th><th>Focus</th><th>Graduation Gate</th></tr></thead><tbody><tr><td>0</td><td>0</td><td>Infrastructure, firm rules, sizing, journal</td><td>Rules documented, <span class="tag fp">·FP</span> confirmed</td></tr><tr><td>1</td><td>1–3</td><td>Regime, Liquidity Map, 3-Gate, Lattice</td><td>15/20 gate sequences pre-called</td></tr><tr><td>2</td><td>4–6</td><td>CVD, Absorption, Imbalance, Stacked Imbalance</td><td>20/20 stack reads, <span class="tag fp">·FP</span> vs <span class="tag px">·px</span></td></tr><tr><td>3</td><td>7–9</td><td>Integration, 3 written setups, cadence</td><td>Setups written + replayed 20× each</td></tr><tr><td>4</td><td>10–14</td><td>Backtest → forward → evaluation</td><td>PF ≥ 1.3, eval passed</td></tr><tr><td>5</td><td>Ongoing</td><td>Funded management, scale ladder</td><td>Adherence-based sizing only</td></tr></tbody></table></div></section><section class="phase" id="the-one-paragraph-version"><header class="phase-head"><h1>The One-Paragraph Version</h1></header><p><strong>Weeks 1–3:</strong> Meridian Engine v2 Mastery — learn regime, liquidity magnets, and the 3-gate sequence until you can narrate a chart without the OFI layer. Weeks 4–6: Meridian OFI Stacked Imbalance — add CVD, absorption, imbalance, and the native diagonal footprint stack (type 10), the strongest initiative signal in the system. Weeks 7–9: write three setups and a daily cadence. Weeks 10–14: 100-trade backtest (PF ≥ 1.3), 20-trade forward test, then evaluation at <span class="g g-prime">PRIME</span> minimum grade, one instrument, 08:00–12:00 ET, 40%-of-daily-limit sizing. Then manage the funded account with an adherence-based scale ladder — never a streak-based one.</p><p>The engine gives you regime, grade, and a tracked path from entry to TP3. It does not give you discipline. That's the part you're actually building.</p></section>
+
+<section class="phase toolkit" id="toolkit">
+<header class="phase-head"><div class="eyebrow">Interactive</div><h1>Toolkit</h1></header>
+<p>Working tools built on the plan's own numbers. Inputs are saved in this browser (localStorage). Nothing leaves your machine.</p>
+<h2 id="calc"><span class="num">T1</span> Sizing &amp; Prop Rules Calculator</h2>
+<div class="calc card">
+  <div class="calc-grid">
+    <div class="inputs">
+      <label>Daily loss limit ($)<input type="number" id="c_dl" min="0" step="50" value="1500"></label>
+      <label>Risk % of daily limit<input type="number" id="c_risk" min="1" max="100" step="1" value="40"></label>
+      <label>Instrument<select id="c_inst"><option value="NQ" data-ppt="20">NQ — $20/pt</option><option value="ES" data-ppt="50">ES — $50/pt</option><option value="YM" data-ppt="5">YM — $5/pt</option><option value="GC" data-ppt="100">GC — $100/pt</option><option value="MNQ" data-ppt="2">MNQ — $2/pt (micro)</option><option value="MES" data-ppt="5">MES — $5/pt (micro)</option><option value="MYM" data-ppt="0.5">MYM — $0.50/pt (micro)</option><option value="MGC" data-ppt="10">MGC — $10/pt (micro)</option></select></label>
+      <label>Stop (points)<input type="number" id="c_stop" min="0" step="0.25" value="12"></label>
+      <label>Profit target ($)<input type="number" id="c_target" min="0" step="100" value="6000"></label>
+      <label>Consistency % (max share of profit in one day)<input type="number" id="c_cons" min="1" max="100" step="1" value="50"></label>
+      <label>Trailing drawdown ($) <em>enter your firm's number</em><input type="number" id="c_tdd" min="0" step="100" value="2500"></label>
+      <button class="btn ghost" id="c_reset" type="button">Reset to plan example</button>
+    </div>
+    <div class="outputs">
+      <div class="big"><div class="k">Max contracts <small>(rounded down)</small></div><div class="v" id="o_contracts">–</div><div class="f" id="o_formula"></div></div>
+      <div class="row"><span>$ risk per trade (at max contracts)</span><b id="o_risk">–</b></div>
+      <div class="row"><span>Risk budget per trade (limit × risk %)</span><b id="o_budget">–</b></div>
+      <div class="row"><span>Full-risk losses before hitting the daily limit</span><b id="o_losses">–</b></div>
+      <div class="row"><span>Daily profit cap (consistency % × target)</span><b id="o_cap">–</b></div>
+      <div class="row"><span>Backtest max-DD ceiling (60% of trailing DD)</span><b id="o_ddc">–</b></div>
+      <div class="warn" id="o_warn" hidden></div>
+    </div>
+  </div>
+  <p class="fine">Defaults reproduce the plan's worked examples ($1,500 / NQ / 12-pt stop → 2 contracts; $6,000 target → $3,000 daily cap). The trailing DD default is only a placeholder. Micros are one-tenth the $/pt, so the formula allows ten times the contract count. Evaluation rules (4.3): max 3 trades/day; stop after 2 consecutive losses or −1.5%; 08:00–12:00 ET only; one instrument.</p>
+</div>
+
+<h2 id="tracker"><span class="num">T2</span> Gate Progress Tracker</h2>
+<div class="tracker card">
+  <div class="tr-top">
+    <div class="tr-sum"><div class="k">Gates passed</div><div class="v"><span id="t_passed">0</span>/<span>10</span></div></div>
+    <div class="bar big"><div id="t_bar"></div></div>
+    <div class="tr-btns"><button class="btn ghost" id="t_export" type="button">Export JSON</button>
+      <label class="btn ghost file">Import<input type="file" id="t_import" accept="application/json" hidden></label>
+      <button class="btn danger" id="t_reset" type="button">Reset</button></div>
+  </div>
+  <p class="fine">You don't advance because you "feel ready" — you advance because you passed the gate. Metrics light up when the numeric criterion is met; tick <b>Gate passed</b> only when you've genuinely met the full criterion.</p>
+  <div id="t_gates" class="gates"></div>
+</div>
+</section>
+<footer class="end">The Meridian Masterplan — From Zero to Funded. Indicators referenced: Meridian Engine v2, Meridian OFI Stacked Imbalance (TradingView).</footer>
+</main></div><button class="btn toc-toggle" type="button">☰ Contents</button>
+<script>
+(function(){
+const GATES = [{"id": "0", "phase": "Phase 0", "title": "Infrastructure", "criterion": "Firm rules documented, sizing formula calculated for your instrument, journal built, footprint data confirmed working (·FP tag visible in the dashboard).", "metrics": [["rules", "Firm rules documented", "check", 1, "ge"], ["sizing", "Sizing formula calculated for your instrument", "check", 1, "ge"], ["journal", "Journal built", "check", 1, "ge"], ["fp", "·FP tag visible in the dashboard", "check", 1, "ge"]]}, {"id": "1a", "phase": "Phase 1", "title": "Regime reads", "criterion": "20 consecutive correct regime reads with correct reasoning.", "metrics": [["reads", "Consecutive correct regime reads", "num", 20, "ge"]]}, {"id": "1b", "phase": "Phase 1", "title": "Liquidity pools", "criterion": "You can point to the 3 most magnetically significant pools on any chart and justify each.", "metrics": [["pools", "Top pools identified and justified", "num", 3, "ge"]]}, {"id": "1c", "phase": "Phase 1", "title": "Gate sequences", "criterion": "In Bar Replay, pre-write the trade (direction, entry, SL, TP1–3) before the BUY/SELL label prints. Hit 15/20 correct gate sequences.", "metrics": [["seq", "Correct gate sequences (out of 20)", "num", 15, "ge"]]}, {"id": "2a", "phase": "Phase 2", "title": "Stack reads", "criterion": "20 consecutive correct ·FP (native) stack reads. You must distinguish them from ·px (proxy) fallback reads and know the difference in reliability.", "metrics": [["stack", "Consecutive correct ·FP stack reads", "num", 20, "ge"]]}, {"id": "2b", "phase": "Phase 2", "title": "Written explanation", "criterion": "Explain in writing why a stack that aligns with the lattice is stronger than a stack in isolation.", "metrics": [["written", "Written explanation completed", "check", 1, "ge"]]}, {"id": "3", "phase": "Phase 3", "title": "Playbook", "criterion": "You have 3 written setups, you've executed each in Bar Replay 20+ times, and your journal shows you can fill every field without thinking.", "metrics": [["setups", "Setups written", "num", 3, "ge"], ["repA", "Setup A — Bar Replay executions", "num", 20, "ge"], ["repB", "Setup B — Bar Replay executions", "num", 20, "ge"], ["repC", "Setup C — Bar Replay executions", "num", 20, "ge"], ["fields", "Journal: every field filled without thinking", "check", 1, "ge"]]}, {"id": "4a", "phase": "Phase 4", "title": "Backtest", "criterion": "100-trade backtest, PF ≥ 1.3, max DD inside prop limits, max losing streak survivable.", "metrics": [["trades", "Backtest trades (per configuration)", "num", 100, "ge"], ["pf", "Backtest profit factor", "num", 1.3, "ge"], ["dd", "Backtest max drawdown $ (≤ 60% of trailing DD)", "num", null, "le"], ["streak", "Max losing streak survivable", "check", 1, "ge"]]}, {"id": "4b", "phase": "Phase 4", "title": "Forward test", "criterion": "20 forward trades with forward-test PF within 25% of backtest PF. Divergence beyond that means curve-fitting.", "metrics": [["fwd", "Forward (sim) trades", "num", 20, "ge"], ["div", "Forward PF divergence from backtest PF", "num", 0.25, "le"]]}, {"id": "4c", "phase": "Phase 4", "title": "Evaluation", "criterion": "Evaluation passed.", "metrics": [["eval", "Evaluation passed", "check", 1, "ge"]]}];
+const $ = id => document.getElementById(id);
+const fmt$ = v => isFinite(v) ? v.toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:2}) : '–';
+/* ---------- calculator ---------- */
+const CK='meridian.calc.v1', DEF={c_dl:1500,c_risk:40,c_inst:'NQ',c_stop:12,c_target:6000,c_cons:50,c_tdd:2500};
+const ids=Object.keys(DEF);
+function loadCalc(){let s={};try{s=JSON.parse(localStorage.getItem(CK))||{}}catch(e){} ids.forEach(k=>{$(k).value=(s[k]!==undefined?s[k]:DEF[k]);});}
+function calc(){
+  const st={}; ids.forEach(k=>st[k]=$(k).value); try{localStorage.setItem(CK,JSON.stringify(st))}catch(e){}
+  const dl=+$('c_dl').value, rp=+$('c_risk').value/100, stop=+$('c_stop').value, tg=+$('c_target').value, cons=+$('c_cons').value/100, tdd=+$('c_tdd').value;
+  const opt=$('c_inst').selectedOptions[0], ppt=+opt.dataset.ppt, inst=opt.value;
+  const budget=dl*rp, raw=(stop>0&&ppt>0)?budget/(stop*ppt):NaN, n=isFinite(raw)?Math.floor(raw+1e-9):NaN;
+  const risk=n*stop*ppt;
+  $('o_contracts').textContent=isFinite(n)?n:'–';
+  $('o_formula').textContent=isFinite(raw)?`(${dl.toLocaleString()} × ${rp.toFixed(2)}) / (${stop} × ${ppt}) = ${(Math.round(raw*100)/100)} → ${n} ${inst}`:'Enter a stop > 0';
+  $('o_budget').textContent=fmt$(budget);
+  $('o_risk').textContent=isFinite(risk)?fmt$(risk):'–';
+  $('o_losses').textContent=(risk>0)?Math.floor(dl/risk+1e-9)+`  (${fmt$(Math.floor(dl/risk+1e-9)*risk)} of ${fmt$(dl)})`:'–';
+  $('o_cap').textContent=fmt$(cons*tg);
+  $('o_ddc').textContent=fmt$(0.6*tdd);
+  const w=$('o_warn');
+  if(isFinite(n)&&n===0){w.hidden=false;w.textContent='0 contracts: this stop is too wide for '+inst+' at this risk %. The formula does not allow a position.';}
+  else w.hidden=true;
+}
+function initCalc(){loadCalc(); ids.forEach(k=>{$(k).addEventListener('input',calc);$(k).addEventListener('change',calc);});
+  $('c_reset').onclick=()=>{ids.forEach(k=>$(k).value=DEF[k]);calc();}; calc();}
+/* ---------- tracker ---------- */
+const TK='meridian.gates.v1';
+let S={};
+function load(){try{S=JSON.parse(localStorage.getItem(TK))||{}}catch(e){S={}} GATES.forEach(g=>{S[g.id]=S[g.id]||{m:{},passed:false,date:'',notes:''};}); S._x=S._x||{tdd:'',btpf:'',fwdpf:''};}
+function save(){try{localStorage.setItem(TK,JSON.stringify(S))}catch(e){} }
+function metricTarget(g,m){ if(m[0]==='dd'){const t=+S._x.tdd;return t>0?0.6*t:null;} return m[3]; }
+function metricValue(g,m){
+  if(m[0]==='div'){const b=+S._x.btpf,f=+S._x.fwdpf; return (b>0&&f>0)?Math.abs(f-b)/b:null;}
+  const v=S[g.id].m[m[0]]; if(m[2]==='check') return v?1:0; return (v===''||v===undefined||v===null)?null:+v;
+}
+function met(g,m){const t=metricTarget(g,m),v=metricValue(g,m); if(v===null||t===null)return false; return m[4]==='ge'?v>=t-1e-12:v<=t+1e-12;}
+function prog(g,m){const t=metricTarget(g,m),v=metricValue(g,m); if(v===null||t===null)return 0; if(m[4]==='ge')return Math.max(0,Math.min(1,v/t)); return v<=t?1:Math.max(0,t/v);}
+function build(){
+  const box=$('t_gates'); box.innerHTML='';
+  GATES.forEach(g=>{
+    const el=document.createElement('div'); el.className='gate'; el.id='gate-'+g.id;
+    let rows='';
+    g.metrics.forEach(m=>{
+      const key=g.id+'.'+m[0]; let inp='', tgt='';
+      if(m[2]==='check'){inp=`<input type="checkbox" data-k="${key}">`;}
+      else if(m[0]==='div'){inp=`<span class="duo"><input type="number" step="0.01" min="0" placeholder="Backtest PF" data-x="btpf"><input type="number" step="0.01" min="0" placeholder="Forward PF" data-x="fwdpf"></span><output data-o="${key}">–</output>`; tgt='≤ 25%';}
+      else if(m[0]==='dd'){inp=`<span class="duo"><input type="number" step="1" min="0" placeholder="Backtest max DD $" data-k="${key}"><input type="number" step="1" min="0" placeholder="Firm trailing DD $" data-x="tdd"></span>`; tgt='<span data-t="'+key+'">≤ 60% of DD</span>';}
+      else {inp=`<input type="number" step="${m[3]<5?'0.01':'1'}" min="0" data-k="${key}">`; tgt=(m[4]==='ge'?'/ ':'≤ ')+m[3];}
+      rows+=`<div class="metric" data-m="${key}"><span class="ml">${m[1]}</span><span class="mi">${inp}<span class="mt">${tgt}</span></span><span class="mb"><i></i></span><span class="mk">✓</span></div>`;
+    });
+    el.innerHTML=`<div class="gh"><span class="gid">GATE ${g.id}</span><span class="gt">${g.title}</span><span class="gp">${g.phase}</span><span class="pill" data-pill></span></div>
+      <p class="gc">${g.criterion.replace('·FP','<span class="tag fp">·FP</span>').replace('·px','<span class="tag px">·px</span>')}</p>
+      <div class="metrics">${rows}</div>
+      <div class="gf"><label class="pass"><input type="checkbox" data-pass="${g.id}"> Gate passed</label>
+      <label class="dt">Date <input type="date" data-date="${g.id}"></label>
+      <textarea data-notes="${g.id}" rows="1" placeholder="Notes / evidence"></textarea></div>`;
+    box.appendChild(el);
+  });
+  // populate values
+  box.querySelectorAll('[data-k]').forEach(i=>{const [gid,k]=i.dataset.k.split('.'); const v=S[gid].m[k]; if(i.type==='checkbox')i.checked=!!v; else i.value=(v===undefined?'':v);
+    i.addEventListener(i.type==='checkbox'?'change':'input',()=>{S[gid].m[k]=i.type==='checkbox'?i.checked:i.value;save();refresh();});});
+  box.querySelectorAll('[data-x]').forEach(i=>{i.value=S._x[i.dataset.x]||''; i.addEventListener('input',()=>{S._x[i.dataset.x]=i.value; box.querySelectorAll(`[data-x="${i.dataset.x}"]`).forEach(o=>{if(o!==i)o.value=i.value}); save();refresh();});});
+  box.querySelectorAll('[data-pass]').forEach(i=>{const gid=i.dataset.pass;i.checked=!!S[gid].passed; i.addEventListener('change',()=>{S[gid].passed=i.checked; if(i.checked&&!S[gid].date){S[gid].date=new Date().toLocaleDateString('en-CA');box.querySelector(`[data-date="${gid}"]`).value=S[gid].date;} save();refresh();});});
+  box.querySelectorAll('[data-date]').forEach(i=>{const gid=i.dataset.date;i.value=S[gid].date||''; i.addEventListener('change',()=>{S[gid].date=i.value;save();});});
+  box.querySelectorAll('[data-notes]').forEach(i=>{const gid=i.dataset.notes;i.value=S[gid].notes||''; i.addEventListener('input',()=>{S[gid].notes=i.value;save();});});
+  refresh();
+}
+function refresh(){
+  let passed=0;
+  GATES.forEach(g=>{
+    const el=$('gate-'+g.id); let all=true;
+    g.metrics.forEach(m=>{const key=g.id+'.'+m[0], row=el.querySelector(`[data-m="${key}"]`); const ok=met(g,m); all=all&&ok;
+      row.classList.toggle('ok',ok); row.querySelector('.mb i').style.width=(prog(g,m)*100).toFixed(0)+'%';
+      if(m[0]==='div'){const v=metricValue(g,m); row.querySelector('output').textContent=v===null?'–':(v*100).toFixed(1)+'%';}
+      if(m[0]==='dd'){const t=metricTarget(g,m); row.querySelector('[data-t]').textContent=t===null?'≤ 60% of DD':'≤ '+fmt$(t);}
+    });
+    const p=!!S[g.id].passed; if(p)passed++;
+    el.classList.toggle('passed',p);
+    const pill=el.querySelector('[data-pill]'); pill.className='pill '+(p?'p-pass':(all?'p-ready':'p-prog'));
+    pill.textContent=p?'PASSED':(all?'CRITERIA MET':'IN PROGRESS');
+  });
+  $('t_passed').textContent=passed; $('t_bar').style.width=(passed/GATES.length*100)+'%';
+}
+function initTracker(){load();build();
+  $('t_reset').onclick=()=>{if(confirm('Clear all gate progress?')){localStorage.removeItem(TK);load();build();}};
+  $('t_export').onclick=()=>{const b=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='meridian-gates.json';a.click();};
+  $('t_import').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{S=JSON.parse(t);save();load();build();}catch(err){alert('Invalid file');}});};
+}
+/* ---------- TOC scrollspy ---------- */
+function initToc(){
+  const links=[...document.querySelectorAll('.toc a')], map=new Map(links.map(a=>[a.getAttribute('href').slice(1),a]));
+  const obs=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){links.forEach(l=>l.classList.remove('active'));const a=map.get(e.target.id);if(a){a.classList.add('active');const p=a.closest('li.top');if(p)p.querySelector(':scope > a').classList.add('active');}}});},{rootMargin:'-10% 0px -80% 0px'});
+  document.querySelectorAll('section.phase, h2[id]').forEach(s=>obs.observe(s));
+  const btn=document.querySelector('.toc-toggle'); if(btn)btn.onclick=()=>document.body.classList.toggle('toc-open');
+  links.forEach(a=>a.addEventListener('click',()=>document.body.classList.remove('toc-open')));
+}
+document.addEventListener('DOMContentLoaded',()=>{initCalc();initTracker();initToc();});
+})();
+</script></body></html>
