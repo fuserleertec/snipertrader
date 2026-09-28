@@ -194,6 +194,37 @@ body.light .hero-bg .grid{background-image:linear-gradient(rgba(10,31,23,.045) 1
 .hero-sub strong{color:var(--text2);font-weight:600;}
 .hero-cta{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:42px;}
 
+/* ── Hero video block ─────────────────────────────────────── */
+.video-block{
+  display:flex; flex-direction:column; gap:14px; align-items:flex-start;
+  margin: 6px 0 42px;
+  padding: 22px;
+  border:1px solid var(--border); border-radius:20px;
+  background:var(--card);
+  max-width: 880px;
+}
+.video-block .vb-label{
+  font-family:var(--ff-m); font-size:.66rem; letter-spacing:.18em;
+  text-transform:uppercase; color:var(--brand);
+  display:flex; align-items:center; gap:8px;
+}
+.video-block .vb-meta{
+  font-family:var(--ff-m); font-size:.74rem; color:var(--text3);
+}
+.video-block .vb-meta strong{color:var(--text2); font-weight:600;}
+.video-block .vb-frame{
+  position:relative; width:100%; max-width:380px; aspect-ratio:9/16;
+  border-radius:14px; overflow:hidden;
+  border:1px solid var(--border2);
+  background:#04120D;
+  box-shadow: 0 12px 38px rgba(0,0,0,.35);
+}
+.video-block video{display:block; width:100%; height:100%;}
+@media(max-width:760px){
+  .video-block{ padding:18px; }
+  .video-block .vb-frame{ max-width:280px; }
+}
+
 /* ── Mental model intro block ───────────────────────────── */
 .intro{border-left:3px solid var(--brand);background:var(--card);border-radius:0 16px 16px 0;padding:26px 30px;margin-bottom:44px;}
 .intro .intro-label{font-family:var(--ff-m);font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--brand);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
@@ -441,6 +472,17 @@ footer{background:var(--bg2);border-top:1px solid var(--border);padding:70px 0 4
     <div class="hero-cta">
       <a class="btn btn-primary" href="#modules">Start reading the modules</a>
       <a class="btn btn-outline" href="#broker">Set up paper trading</a>
+    </div>
+
+    <div class="video-block">
+      <div class="vb-label"><span class="hp-dot"></span>2-Minute Tutorial · 1080×1920</div>
+      <div class="vb-meta"><strong>Vertical · AI voice · 2:50.</strong> The whole tour — Regime → 3-Gate → Lattice → OFI → Liquidity → Signal → Broker → Alerts — in a single reel. Narrated by a synthetic voice; the dashboard itself is real.</div>
+      <div class="vb-frame">
+        <video controls preload="metadata" playsinline poster="">
+          <source src="/assets/Meridian_Dashboard_Tutorial.mp4" type="video/mp4">
+          Your browser does not support inline video. <a href="/assets/Meridian_Dashboard_Tutorial.mp4">Download the tutorial MP4 (4 MB, 1080×1920)</a>.
+        </video>
+      </div>
     </div>
 
     <div class="intro reveal">
