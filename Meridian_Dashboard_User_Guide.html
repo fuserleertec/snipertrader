@@ -973,29 +973,66 @@ footer{background:var(--bg2);border-top:1px solid var(--border);padding:70px 0 4
   <div class="container">
     <div class="eyebrow reveal">3 · How to use alerts</div>
     <h2 class="reveal">Alerts — <em>fire the instant it prints.</em></h2>
-    <p class="lede reveal">Bell button → settings. Alerts fire the instant the engine prints BUY/SELL (same as journal capture), deduped per signal.</p>
+    <p class="lede reveal">Bell button → settings. Alerts fire the instant the engine prints BUY/SELL (same trigger as journal capture), deduped per signal — so you don't get spammed when the WS re-broadcasts a stale state.</p>
 
     <div class="module reveal">
       <div class="module-head">
         <span class="m-n">🔔</span>
         <div class="m-title"><h3>Alert settings</h3><p>Master switch, browser popups, and a webhook.</p></div>
-        <div class="m-tags"><span class="tag brand">BUY/SELL</span></div>
+        <div class="m-tags"><span class="tag brand">BUY/SELL</span><span class="tag">PRIME+</span></div>
       </div>
       <div class="module-body full">
         <div class="mb-table">
           <table class="fields">
             <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
             <tbody>
-              <tr><td class="f">Alerts enabled</td><td>Master switch.</td></tr>
-              <tr><td class="f">Browser notification</td><td>Requests permission, then toggles desktop popups.</td></tr>
-              <tr><td class="f">Webhook URL</td><td>Discord/Slack webhook → POSTs <code>{ content, signal }</code>.</td></tr>
-              <tr><td class="f">Send test alert</td><td>Fires one now to verify.</td></tr>
+              <tr><td class="f">Alerts enabled</td><td>Master switch. Off = nothing fires, anywhere.</td></tr>
+              <tr><td class="f">Min grade</td><td>Only fire on <strong>PRIME+</strong> by default. Set to <code>WATCH</code> for noisy symbols you want every read on; <code>SINGULAR</code> to silence everything except rare setups.</td></tr>
+              <tr><td class="f">Browser notification</td><td>Requests OS permission on first toggle, then desktop popups fire on each new signal.</td></tr>
+              <tr><td class="f">Webhook URL</td><td>Discord / Slack / any endpoint that accepts <code>POST application/json</code>. Body is <code>{ content, signal }</code> — see payload below.</td></tr>
+              <tr><td class="f">Per-symbol</td><td>Comma-separated allow-list (e.g. <code>NVDA,SPY,QQQ</code>). Empty = all symbols.</td></tr>
+              <tr><td class="f">Cooldown</td><td>Per-symbol cooldown in seconds (default 60). Prevents the same symbol alerting twice on back-to-back bars.</td></tr>
+              <tr><td class="f">Send test alert</td><td>Fires one now to verify the webhook + browser permission. Doesn't count against the cooldown.</td></tr>
             </tbody>
           </table>
           <div class="alert-sample"><span class="a-meta">Meridian</span> <span class="a-buy">BUY</span> <span class="a-meta">NVDA·5m —</span> <span style="color:var(--bull)">PRIME</span> <span class="a-meta">· TREND · E 123.45 SL 122.10 TP1 124.80 (RR 2.0)</span></div>
+
+          <h3 style="margin:26px 0 12px;font-size:1.1rem;">Webhook payload (what your endpoint receives)</h3>
+          <pre><span class="c"># Content — Discord/Slack-style human-readable summary</span>
+<span class="k">content</span>: <span class="s">":zap: **BUY NVDA · 5m** — PRIME · TREND · E 123.45 SL 122.10 TP1 124.80 (RR 2.0)"</span>
+
+<span class="c"># signal — structured payload, parse on your side</span>
+<span class="k">signal</span>: {
+  side:      <span class="s">"BUY"</span>,
+  symbol:    <span class="s">"NVDA"</span>,
+  timeframe: <span class="s">"5m"</span>,
+  grade:     <span class="s">"PRIME"</span>,      <span class="c"># WATCH · PRIME · ELITE · SINGULAR</span>
+  regime:    <span class="s">"TREND"</span>,
+  entry:     <span class="n">123.45</span>,
+  sl:        <span class="n">122.10</span>,
+  tp1:       <span class="n">124.80</span>,
+  tp2:       <span class="n">126.15</span>,        <span class="c"># journal-only target</span>
+  tp3:       <span class="n">128.40</span>,        <span class="c"># journal-only target, aimed at top magnet</span>
+  rr:        <span class="n">2.0</span>,
+  bias:      <span class="s">"bull"</span>,
+  stacked:   <span class="k">true</span>,          <span class="c"># stacked imbalance fired this bar</span>
+  source:    <span class="s">"px"</span>,          <span class="c"># stacked source: "px" (CVD proxy) or "FP" (footprint, when wired)</span>
+  ts:        <span class="n">1727728400000</span>
+}</pre>
+
+          <h3 style="margin:26px 0 12px;font-size:1.1rem;">How the alert pipeline actually works</h3>
+          <p style="font-size:.92rem;color:var(--text2);line-height:1.75;margin-bottom:12px;">Five steps, in order. Each step is short-circuitable — if any fails, the alert just doesn't fire. There's no retry queue.</p>
+          <ol style="font-size:.92rem;color:var(--text2);line-height:1.78;margin:0 0 16px 22px;">
+            <li><strong>Signal prints.</strong> Backend evaluates the 3-Gate + Lattice + OFI on the latest bar. If side + grade clear the floor, the engine emits a signal frame on the WebSocket.</li>
+            <li><strong>Frontend dedupes.</strong> The dashboard keeps a per-symbol <code>lastSignalId</code> map. Re-broadcasts from the WS that match the last signal within <code>cooldown</code> are dropped.</li>
+            <li><strong>Browser notification fires.</strong> If the user enabled it and OS permission is granted, a desktop popup appears with the same one-line summary as the in-dashboard alert chip.</li>
+            <li><strong>Webhook fires.</strong> One POST to the configured URL with the payload above. <strong>Timeouts at 4s</strong> — a slow webhook doesn't queue, it drops.</li>
+            <li><strong>Journal captures.</strong> Independently of any of the above, the signal is captured to the journal (forward-only, no edits). This is why alerts and journal entries are always 1:1 — same trigger, same timestamp.</li>
+          </ol>
+
           <div class="callout warn">
             <span class="c-ico">ⓘ</span>
-            <p><strong>Honest caveats:</strong> alerts are <strong>frontend-side</strong> (tab must be open), ~10s latency (WS 3s + cache), not bar-by-bar like native Pine <code>alert()</code>.</p>
+            <p><strong>Honest caveats:</strong> alerts are <strong>frontend-side</strong> (the tab must be open), ~10s latency floor (WS 3s + cache + browser wakeup), not bar-by-bar like native Pine <code>alert()</code>. For at-the-bell execution on every signal, wire a backend-side alert dispatcher (a future capability, not in scope today). Don't point an alert at a destination that requires a guarantee — alerts are best-effort, not contractual.</p>
           </div>
         </div>
       </div>
@@ -1008,23 +1045,83 @@ footer{background:var(--bg2);border-top:1px solid var(--border);padding:70px 0 4
   <div class="container">
     <div class="eyebrow reveal">4–5 · Journal &amp; Watchlist</div>
     <h2 class="reveal">The other <em>two buttons.</em></h2>
-    <p class="lede reveal">Journal scores every signal forward-only; Watchlist pins the symbols you keep coming back to.</p>
+    <p class="lede reveal">The Journal button captures every signal forward-only and scores it CONFIRM/BREAK as it resolves. The Watchlist button pins the symbols you keep coming back to. Both live entirely in your browser — nothing leaves unless you export it.</p>
 
-    <div class="recipes">
-      <div class="recipe reveal">
-        <div class="rc-n">Journal</div>
-        <h3>Auto-capture, forward-only</h3>
-        <p>Every signal is captured automatically (forward-only), scored <strong>CONFIRM</strong>/<strong>BREAK</strong>, and surfaced as <strong>Confirm %</strong> and <strong>Profit Factor (R)</strong>. Export to JSON/CSV.</p>
+    <!-- Module 04 · Journal -->
+    <div class="module reveal">
+      <div class="module-head">
+        <span class="m-n">📓</span>
+        <div class="m-title"><h3>Journal — auto-capture, forward-only</h3><p>Every signal is captured the moment it prints. You can only score it — never edit it.</p></div>
+        <div class="m-tags"><span class="tag brand">CONFIRM %</span><span class="tag">Profit Factor (R)</span></div>
       </div>
-      <div class="recipe reveal">
-        <div class="rc-n">Watchlist</div>
-        <h3>Pin what you watch</h3>
-        <p>☆ pins the current symbol; chips jump to it or remove it. Stored in <strong>localStorage</strong> — nothing leaves your browser.</p>
+      <div class="module-body full">
+        <div class="mb-table">
+          <table class="fields">
+            <thead><tr><th>Column</th><th>What it shows</th></tr></thead>
+            <tbody>
+              <tr><td class="f">Time</td><td>When the signal printed (bar close timestamp).</td></tr>
+              <tr><td class="f">Symbol / TF</td><td>What you were watching at the moment of the signal.</td></tr>
+              <tr><td class="f">Side</td><td><strong>BUY</strong> or <strong>SELL</strong> — the direction the engine committed to.</td></tr>
+              <tr><td class="f">Grade</td><td><code>WATCH</code> / <code>PRIME</code> / <code>ELITE</code> / <code>SINGULAR</code> at the time of the signal. <em>Not</em> updated retroactively when the grade changes later.</td></tr>
+              <tr><td class="f">Entry / SL / TP1</td><td>Engine-priced levels at signal time. <em>Locked</em> — they don't drift even if you change timeframe.</td></tr>
+              <tr><td class="f">Path</td><td><strong style="color:var(--amber)">OPEN</strong> until TP1 or stop is hit; then <strong style="color:var(--bull)">CONFIRM</strong> or <strong style="color:var(--bear)">BREAK</strong>. Updated live as the path resolves.</td></tr>
+              <tr><td class="f">R</td><td>Result in R-multiples. TP1 hit = +1R (the bracket's take-profit). SL hit = -1R (the stop distance you accepted).</td></tr>
+              <tr><td class="f">Notes</td><td>Free text you can add — your own read on the setup. The engine never sees this.</td></tr>
+            </tbody>
+          </table>
+
+          <h3 style="margin:24px 0 12px;font-size:1.1rem;">How the scorecard is computed</h3>
+          <p style="font-size:.92rem;color:var(--text2);line-height:1.75;margin-bottom:14px;">Two numbers summarize every signal on the symbol:</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+            <div style="padding:16px 18px;border:1px solid var(--border);border-radius:12px;background:var(--card);">
+              <div style="font-family:var(--ff-m);font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--text4);margin-bottom:6px;">Confirm %</div>
+              <div style="font-family:var(--ff-d);font-weight:600;font-size:1.06rem;color:var(--text);margin-bottom:8px;">Hit rate on resolved signals</div>
+              <div style="font-size:.86rem;color:var(--text3);line-height:1.6;">CONFIRM ÷ (CONFIRM + BREAK). OPEN signals are excluded from the denominator. A symbol with 12 CONFIRM, 5 BREAK, 8 OPEN = 70.6%.</div>
+            </div>
+            <div style="padding:16px 18px;border:1px solid var(--border);border-radius:12px;background:var(--card);">
+              <div style="font-family:var(--ff-m);font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--text4);margin-bottom:6px;">Profit Factor (R)</div>
+              <div style="font-family:var(--ff-d);font-weight:600;font-size:1.06rem;color:var(--text);margin-bottom:8px;">Sum R wins ÷ |Sum R losses|</div>
+              <div style="font-size:.86rem;color:var(--text3);line-height:1.6;">≥ 1.0 means the engine is net-positive in R-terms on that symbol. Below 1.0 = the engine is paying out less than it costs. Use as a "should I keep trading this" filter.</div>
+            </div>
+          </div>
+
+          <div class="callout warn">
+            <span class="c-ico">ⓘ</span>
+            <p><strong>Forward-only is the point.</strong> The journal will not let you delete, edit, or "re-grade" a captured signal — that's the whole honesty guarantee. If you don't like a result, your only option is to add a note explaining why, or to stop trading the symbol. The CSV/JSON export keeps the same schema, so what you see is what you ship.</p>
+          </div>
+        </div>
       </div>
-      <div class="recipe reveal">
-        <div class="rc-n">Both together</div>
-        <h3>Study → trade → review</h3>
-        <p>Watch a symbol, let the engine grade it, trade the paper bracket when it aligns, then read the journal to see if the path confirmed or broke.</p>
+    </div>
+
+    <!-- Module 05 · Watchlist -->
+    <div class="module reveal">
+      <div class="module-head">
+        <span class="m-n">☆</span>
+        <div class="m-title"><h3>Watchlist — pin what you watch</h3><p>Local-only. ☆ on the top bar saves the symbol; chips jump to it; × removes it.</p></div>
+        <div class="m-tags"><span class="tag brand">localStorage</span><span class="tag">Browser-only</span></div>
+      </div>
+      <div class="module-body full">
+        <div class="mb-table">
+          <table class="fields">
+            <thead><tr><th>Action</th><th>What it does</th></tr></thead>
+            <tbody>
+              <tr><td class="f">☆ (top bar)</td><td>Adds the current symbol to your watchlist. Re-clicking removes it.</td></tr>
+              <tr><td class="f">Chip click</td><td>Switches the dashboard to that symbol — same timeframe, same min-grade. Restores the saved settings for that ticker.</td></tr>
+              <tr><td class="f">× on a chip</td><td>Removes the symbol from the watchlist. No confirmation — undo by re-typing the symbol and ☆-ing again.</td></tr>
+              <tr><td class="f">Drag (if enabled)</td><td>Reorder. Order is purely cosmetic — no implied priority or sorting weight.</td></tr>
+              <tr><td class="f">Storage</td><td><code>localStorage</code> under <code>sn-watchlist</code>. Survives refreshes, tab close, browser restart. <strong>Not synced across devices</strong> — each browser has its own list.</td></tr>
+            </tbody>
+          </table>
+
+          <h3 style="margin:24px 0 12px;font-size:1.1rem;">A clean workflow</h3>
+          <p style="font-size:.92rem;color:var(--text2);line-height:1.75;margin-bottom:14px;">The two buttons are designed to chain together — watch a symbol, let the engine grade it, trade the paper bracket when it aligns, then read the journal to see if the path confirmed or broke.</p>
+          <div class="rc-flow" style="font-family:var(--ff-m);font-size:.84rem;color:var(--text2);background:var(--brand-dim);border:1px solid var(--border2);border-radius:10px;padding:14px 16px;line-height:1.9;">☆ pin → switch via chip → wait for PRIME+ → click ▶ Execute paper bracket → Positions tab to close → Journal tab to review</div>
+
+          <div class="callout">
+            <span class="c-ico">🔒</span>
+            <p><strong>Privacy by design.</strong> Your watchlist, journal, and alerts settings all live in your browser's <code>localStorage</code>. Nothing is sent to any backend until you trigger an explicit action (place a trade, send a webhook, export the journal). Closing the tab, switching browsers, or using a different device starts a fresh empty state — that's intentional, not a bug.</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1275,6 +1372,126 @@ depth = min(min_stack_rows + <span class="n">2</span>, <span class="n">8</span>)
     <div class="callout warn reveal" style="margin-top:36px;">
       <span class="c-ico">⚠</span>
       <p><strong>If your symptom isn't here, capture this first:</strong> <code>GET /api/meta</code> (provider, simulation flag, data source, symbol, timeframe, preset, footprint capability), <code>GET /api/health</code> (provider + engine status), and the last <strong>3 bars</strong> from the chart's CVD series. With those three things, the underlying issue is usually one curl away from identified.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 10 — FAQ (genuinely new content only) -->
+<section id="faq" class="alt">
+  <div class="container">
+    <div class="eyebrow reveal">10 · FAQ</div>
+    <h2 class="reveal">The <em>fine print.</em></h2>
+    <p class="lede reveal">Four points the rest of the guide doesn't cover in plain English. The §1 / §3 / §8 sections already explain the alert pipeline, the settings table, and the 3-gate test — this section is the things that sit underneath those, especially the conditions that <em>prevent</em> a signal from firing and the realistic signal frequency you should expect.</p>
+
+    <!-- 10.1 — The 3 vetoes -->
+    <h3 class="reveal" style="font-family:var(--ff-d);font-weight:600;font-size:1.5rem;line-height:1.25;margin:34px 0 14px;color:var(--text);">A. The three <em style="color:var(--brand);font-style:italic;">vetoes</em> that suppress otherwise-valid signals</h3>
+    <p class="reveal">The 3-gate test (covered in §1 mod-gates) is necessary but not sufficient. On top of the three gates, the engine runs <strong>three additional vetoes</strong> per side. A signal can have all three gates clear and still not print, because one of these vetoes vetoed it. They're the most common "the gates were all green, why didn't it fire?" answer.</p>
+
+    <div class="ofi-matrix reveal" style="grid-template-columns:1fr 1fr 1fr;">
+      <div class="ofi-cell imb">
+        <div class="ol">Veto 1</div>
+        <div class="oh">chase_ok</div>
+        <div class="ob"><strong>Refuses to chase.</strong> If price is already 2+ ATR extended from VWAP in the direction of the signal, the veto flips false. A long signal that fires 3 ATRs above VWAP doesn't get printed — you're not adding a position at the top of an overextended move, no matter how clean the gate logic reads. The threshold scales with the preset — 2 ATR on 5m is a different distance than 2 ATR on 4h.</div>
+      </div>
+      <div class="ofi-cell imb">
+        <div class="ol">Veto 2</div>
+        <div class="oh">range_fade</div>
+        <div class="ob"><strong>Refuses the wrong side of the cloud in RANGE.</strong> In a RANGE regime, the cloud is the operational boundary. A long signal below the cloud is a fade candidate, not a breakout — the veto refuses to print it. Mirrors for shorts above the cloud. The veto is silent in TREND and TRANSITION regimes where the cloud isn't the operative boundary.</div>
+      </div>
+      <div class="ofi-cell imb">
+        <div class="ol">Veto 3</div>
+        <div class="oh">confirmation</div>
+        <div class="ob"><strong>Requires structural confirmation.</strong> At least one of these must be true on the same bar: band touch (price tested the ±1σ / ±2σ band), FVG retest (the zone gate is satisfied, which already implies this), BOS (break of structure), or CHoCH (change of character). Without at least one, the engine refuses the signal — even if the three gates are technically all true.</div>
+      </div>
+    </div>
+
+    <div class="callout reveal" style="margin-top:22px;">
+      <span class="c-ico">ⓘ</span>
+      <p><strong>How to read the panel.</strong> When a signal doesn't print and the gates all look green, scroll to the bottom of the gates panel and check the per-side veto indicators. Each one has a small dot: green = vetoed false (OK to print), amber = vetoed true (the side is suppressed). The dashboard surfaces all six states (3 vetoes × 2 sides) on every bar. If a side is "all green" and still no signal, the issue is downstream — chase_ok or the grade filter, not the gate.</p>
+    </div>
+
+    <!-- 10.2 — The tiebreaker -->
+    <h3 class="reveal" style="font-family:var(--ff-d);font-weight:600;font-size:1.5rem;line-height:1.25;margin:42px 0 14px;color:var(--text);">B. The <em style="color:var(--brand);font-style:italic;">tiebreaker</em> — when both sides gate, the engine doesn't commit</h3>
+    <p class="reveal">It's possible for the engine to compute <code>buy_raw = true</code> AND <code>sell_raw = true</code> on the same bar. This happens in tight ranges where ribbon bias is mixed, both sides have FVG zones near price, and the OFI read is ambiguous. When both raw signals are true, the engine doesn't print either — it would be guessing.</p>
+    <p class="reveal">The full tiebreaker rule, in priority order:</p>
+    <ol style="font-size:.94rem;color:var(--text2);line-height:1.78;margin:0 0 18px 22px;">
+      <li><strong>One side is true, the other is false.</strong> The true side prints. Standard case — most signals come through this path.</li>
+      <li><strong>Both sides are true, lattice grades differ.</strong> The side with the <em>higher</em> lattice grade wins. PRIME+ on the long side beats WATCH on the short side, even if both raw signals fired. The dashboard's "winning" side will be the one with the higher grade — and the tiebreaker is silent: a PRIME+ long with WATCH short just looks like a normal PRIME+ long.</li>
+      <li><strong>Both sides are true, lattice grades are equal.</strong> <strong>No signal prints.</strong> The engine refuses to commit to a direction it can't distinguish. This is the rare-but-important case — a "phantom" bar where the setup looked ready on both sides but the engine didn't fire. It's not a bug; it's the filter saying "I can't tell which one is real right now."</li>
+    </ol>
+    <div class="callout warn reveal">
+      <span class="c-ico">ⓘ</span>
+      <p><strong>What to do on a phantom bar.</strong> Wait. The next bar (or two) will usually resolve the ambiguity one way or the other as the OFI read firms up. If you force a trade on a phantom bar, you're betting against the engine's tiebreaker — sometimes right, often wrong. The phantom is information: the market hasn't picked a side yet, and the trade isn't there.</p>
+    </div>
+
+    <!-- 10.3 — armed_bars derivation -->
+    <h3 class="reveal" style="font-family:var(--ff-d);font-weight:600;font-size:1.5rem;line-height:1.25;margin:42px 0 14px;color:var(--text);">C. The <em style="color:var(--brand);font-style:italic;">armed window</em> scales with your timeframe</h3>
+    <p class="reveal">When a trigger fires (sweep, VWAP reclaim, or CHoCH), the engine marks the bar as <code>bull_armed</code> or <code>bear_armed</code>. The "armed" state expires after a number of bars — the <strong>armed window</strong>. A long signal has to print while the side is still armed, otherwise the gate fails on the timing alone.</p>
+    <p class="reveal">The armed window is <em>not</em> a constant. It's automatically derived from the active preset:</p>
+    <pre style="margin-top:6px;"><span class="c"># meridian.py:146 — auto-derives from the preset's sweep length</span>
+<span class="k">armed_bars</span> = max(<span class="n">3</span>, self.sweep_len // <span class="n">2</span>)
+
+<span class="c"># preset -> sweep_len -> armed window</span>
+<span class="k">Scalp</span>:    sweep_len=<span class="n">6</span>   →  armed window = <span class="n">3</span> bars   (5m, 15m)
+<span class="k">Intraday</span>: sweep_len=<span class="n">10</span>  →  armed window = <span class="n">5</span> bars   (5m, 15m, 30m)
+<span class="k">Swing</span>:    sweep_len=<span class="n">12</span>  →  armed window = <span class="n">6</span> bars   (1h, 4h)
+<span class="k">Position</span>: sweep_len=<span class="n">15</span>  →  armed window = <span class="n">7</span> bars   (1d)</pre>
+
+    <p class="reveal">Why this matters: on a 5m Scalp preset, a trigger fires and the engine has <strong>3 bars</strong> to confirm the signal before the armed state expires. On a 1d Position preset, you have <strong>7 bars</strong> — which on daily is 7 trading days. A trigger that fires on Monday has until the following Monday to be confirmed. Same trigger, radically different windows.</p>
+    <p class="reveal">The <code>max(3, ...)</code> floor exists so even the shortest preset gives the signal a real chance to set up. A 1-bar armed window would mean "trigger and confirm on the same bar" — which collapses the gate into noise. Three bars is the minimum the engine considers a valid setup window.</p>
+
+    <!-- 10.4 — Signal frequency -->
+    <h3 class="reveal" style="font-family:var(--ff-d);font-weight:600;font-size:1.5rem;line-height:1.25;margin:42px 0 14px;color:var(--text);">D. Realistic <em style="color:var(--brand);font-style:italic;">signal frequency</em> — what to expect</h3>
+    <p class="reveal">The honest expectation for a liquid US equity (SPY, NVDA, QQQ, AAPL) on a 5m chart, with the default PRIME grade floor, in a normal US-session day:</p>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:18px 0 24px;">
+      <div style="padding:18px 20px;border:1px solid var(--border);border-radius:14px;background:var(--card);text-align:center;">
+        <div style="font-family:var(--ff-m);font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--text4);margin-bottom:6px;">PRIME+</div>
+        <div style="font-family:var(--ff-d);font-weight:600;font-size:1.8rem;color:var(--bull);line-height:1;margin-bottom:6px;">1-3</div>
+        <div style="font-size:.84rem;color:var(--text3);line-height:1.5;">per symbol per session on 5m, with PRIME floor</div>
+      </div>
+      <div style="padding:18px 20px;border:1px solid var(--border);border-radius:14px;background:var(--card);text-align:center;">
+        <div style="font-family:var(--ff-m);font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--text4);margin-bottom:6px;">ELITE / SINGULAR</div>
+        <div style="font-family:var(--ff-d);font-weight:600;font-size:1.8rem;color:var(--amber);line-height:1;margin-bottom:6px;">0-1</div>
+        <div style="font-size:.84rem;color:var(--text3);line-height:1.5;">per symbol per session — rare by design</div>
+      </div>
+      <div style="padding:18px 20px;border:1px solid var(--border);border-radius:14px;background:var(--card);text-align:center;">
+        <div style="font-family:var(--ff-m);font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--text4);margin-bottom:6px;">Quiet days</div>
+        <div style="font-family:var(--ff-d);font-weight:600;font-size:1.8rem;color:var(--text2);line-height:1;margin-bottom:6px;">0</div>
+        <div style="font-size:.84rem;color:var(--text3);line-height:1.5;">no PRIME+ signals. That is the engine working, not broken.</div>
+      </div>
+      <div style="padding:18px 20px;border:1px solid var(--border);border-radius:14px;background:var(--card);text-align:center;">
+        <div style="font-family:var(--ff-m);font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--text4);margin-bottom:6px;">1d position</div>
+        <div style="font-family:var(--ff-d);font-weight:600;font-size:1.8rem;color:var(--text2);line-height:1;margin-bottom:6px;">~1-2</div>
+        <div style="font-size:.84rem;color:var(--text3);line-height:1.5;">PRIME+ per symbol per week on daily</div>
+      </div>
+    </div>
+
+    <div class="reveal" style="margin:24px 0 8px;">
+      <span style="font-family:var(--ff-m);font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--brand);display:flex;align-items:center;gap:8px;">
+        <span style="width:18px;height:1px;background:var(--brand);display:inline-block;"></span>See the alignment happen · 5.7s loop
+      </span>
+      <div style="margin-top:14px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#0A1F17;box-shadow:0 12px 36px rgba(10,31,23,.18);">
+        <video controls loop muted playsinline preload="metadata" poster="" style="display:block;width:100%;height:auto;">
+          <source src="/assets/aligned_target.mp4" type="video/mp4">
+          Your browser does not support inline video. <a href="/assets/aligned_target.mp4">Download the alignment animation (299 KB, 1600×900)</a>.
+        </video>
+      </div>
+      <p style="margin-top:10px;font-size:.86rem;color:var(--text3);line-height:1.6;">Six panels, in the order the engine evaluates them. The final frame shows what the dashboard looks like the moment the BUY signal prints with TP1, TP2, and TP3 all visible — entry at bar close, SL at the swept low padded by <code>0.35·stopATR·ATR</code>, TP1 at 1R, TP2 at the regime-adjusted R:R, TP3 aimed at the top magnet.</p>
+    </div>
+
+    <p class="reveal">These are realistic, not aspirational. If you're seeing 10+ PRIME+ per symbol per session on 5m, the grade floor is too loose, the symbol is in a strong regime, or something is misconfigured (a non-default value for <code>min_grade</code> dropping to WATCH). The engine deliberately underfires — the goal is signal quality over signal count.</p>
+
+    <h4 class="reveal" style="font-family:var(--ff-m);font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--brand);margin:28px 0 10px;">Why the asymmetry between BUY and SELL</h4>
+    <p class="reveal">In a typical US session, you'll see roughly <strong>1.5-2× more BUY signals than SELL signals</strong> on 5m SPY/NVDA charts. The asymmetry comes from two compounding factors:</p>
+    <ul style="font-size:.94rem;color:var(--text2);line-height:1.72;margin:0 0 16px 22px;">
+      <li><strong>Default skew in the OFI source.</strong> The CVD proxy biases toward aggressive buyers because flat bars split volume 50/50 to <code>up_vol</code>, and the equity market trends to have more flat-to-up bars than flat-to-down over time.</li>
+      <li><strong>Longer hold times favor continuations.</strong> BUY signals that fire on a strong bar tend to run further than SELL signals at the same grade, because the structural support below is denser (more resting bids, more visible stops on the other side). The engine's TP2/TP3 levels reflect this implicitly — TP2 is priced higher in TREND.</li>
+    </ul>
+    <p class="reveal">If you're trading both sides and the ratio is significantly off (say, 4-5× more of one side), check the regime chip. TRANSITION regime is structurally harder for the engine to commit to a side; most phantom bars (the tiebreaker case above) cluster in TRANSITION, and the engine will print fewer of either side as a result.</p>
+
+    <div class="callout reveal" style="margin-top:24px;">
+      <span class="c-ico">ⓘ</span>
+      <p><strong>Don't lower the bar to get more signals.</strong> The grade filter is the dial. If you want more signals, drop to <code>WATCH</code> and expect roughly 3-5× more prints — but at the cost of grade quality. The Confirm % on the journal will reflect this: WATCH-grade signals have a lower hit rate than PRIME+. If your Confirm % drops after lowering the floor, that's the data telling you the lower-grade signals weren't edge. Raise the floor again.</p>
     </div>
   </div>
 </section>
