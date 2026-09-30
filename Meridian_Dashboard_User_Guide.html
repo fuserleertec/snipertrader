@@ -96,6 +96,13 @@ button{font-family:inherit;cursor:none;border:none;background:none;color:inherit
 ::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:8px;}
 img,svg{display:block;max-width:100%;}
 code{font-family:var(--ff-m);font-size:.9em;color:var(--brand);background:var(--brand-dim);padding:1px 6px;border-radius:5px;}
+pre{font-family:var(--ff-m);background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;overflow-x:auto;font-size:.86rem;line-height:1.72;color:var(--text2);margin:14px 0 18px;}
+pre .c{color:var(--text4);font-style:italic;}
+pre .k{color:var(--brand);}
+pre .n{color:var(--amber);}
+pre .s{color:var(--text3);}
+body.light pre{background:#FFFFFF;color:#1C2823;border-color:rgba(16,185,129,.22);}
+body.light pre .c{color:#5A7567;}
 
 /* ── Precision scope cursor ─────────────────────────────── */
 #scope{position:fixed;top:0;left:0;pointer-events:none;z-index:9990;width:240px;height:240px;transform:translate(-50%,-50%);will-change:transform;}
@@ -323,6 +330,49 @@ body.light .hero-bg .grid{background-image:linear-gradient(rgba(10,31,23,.045) 1
 .callout p{font-size:.9rem;color:var(--text2);line-height:1.65;}
 .callout p strong{color:var(--text);font-weight:600;}
 
+/* ── Engines (§8) — engine cards, OFI matrix, comparison table ─────────────── */
+.engine-card{padding:28px 30px;border:1px solid var(--border);border-radius:18px;background:var(--card);margin:24px 0;}
+.engine-card .eh{font-family:var(--ff-m);font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--brand);margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+.engine-card .et{font-family:var(--ff-d);font-weight:600;font-size:1.5rem;line-height:1.25;margin-bottom:10px;color:var(--text);}
+.engine-card .et em{color:var(--brand);font-style:italic;font-weight:500;}
+.engine-card .em{font-size:1rem;color:var(--text3);line-height:1.72;}
+
+.ofi-matrix{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0;}
+.ofi-cell{padding:18px 22px;border:1px solid var(--border);border-radius:14px;background:var(--card);}
+.ofi-cell.empty{opacity:.55;background:transparent;border-style:dashed;}
+.ofi-cell .ol{font-family:var(--ff-m);font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--text4);margin-bottom:6px;}
+.ofi-cell .oh{font-family:var(--ff-d);font-weight:600;font-size:1.06rem;margin-bottom:8px;color:var(--text);}
+.ofi-cell .ob{font-size:.86rem;color:var(--text3);line-height:1.62;}
+.ofi-cell.just-bar{border-left:3px solid var(--text4);}
+.ofi-cell.imb{border-left:3px solid var(--ofi-imb-up);}
+.ofi-cell.imb .ob strong{color:var(--ofi-imb-up);}
+.ofi-cell.absorb{border-left:3px solid var(--amber);}
+.ofi-cell.absorb .ob strong{color:var(--amber);}
+.ofi-cell.contradict{border-left:3px solid var(--bear);}
+.ofi-cell.contradict .ob strong{color:var(--bear);}
+
+/* ── Troubleshooting (§9) — issue cards ───────────────────────────── */
+.ts-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin:18px 0 0;}
+.ts-card{padding:24px 26px;border:1px solid var(--border);border-radius:16px;background:var(--card);display:flex;flex-direction:column;gap:10px;}
+.ts-card .ts-tag{display:inline-block;font-family:var(--ff-m);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;padding:3px 9px;border-radius:6px;align-self:flex-start;}
+.ts-card .ts-tag.engine{color:var(--brand);border:1px solid var(--border2);background:var(--brand-dim);}
+.ts-card .ts-tag.broker{color:var(--amber);border:1px solid var(--amber);background:var(--amber-dim);}
+.ts-card .ts-tag.data{color:var(--bull);border:1px solid var(--bull);background:var(--bull-dim);}
+.ts-card .ts-tag.ui{color:var(--text3);border:1px solid var(--border);}
+.ts-card h3{color:var(--text);font-size:1.08rem;line-height:1.3;margin:2px 0 0;}
+.ts-card .ts-symptom{font-family:var(--ff-m);font-size:.78rem;color:var(--bear);background:var(--bear-dim);border-radius:8px;padding:8px 12px;line-height:1.5;}
+.ts-card .ts-cause{font-size:.9rem;color:var(--text2);line-height:1.65;}
+.ts-card .ts-cause strong{color:var(--text);font-weight:600;}
+.ts-card .ts-fix{font-size:.9rem;color:var(--text2);line-height:1.65;border-top:1px dashed var(--border);padding-top:10px;margin-top:2px;}
+.ts-card .ts-fix code{font-size:.84rem;}
+.ts-card .ts-prevent{font-family:var(--ff-m);font-size:.76rem;color:var(--text4);line-height:1.55;border-top:1px solid var(--border);padding-top:10px;}
+.ts-card .ts-prevent::before{content:"PREVENT  ";color:var(--brand);letter-spacing:.14em;}
+
+@media(max-width:880px){
+  .ofi-matrix{grid-template-columns:1fr;}
+  .ts-grid{grid-template-columns:1fr;}
+}
+
 /* ── Footer ─────────────────────────────────────────────── */
 footer{background:var(--bg2);border-top:1px solid var(--border);padding:70px 0 44px;margin-top:40px;}
 .footer-grid{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr 1fr;gap:34px;margin-bottom:44px;}
@@ -514,7 +564,7 @@ footer{background:var(--bg2);border-top:1px solid var(--border);padding:70px 0 4
       <a href="#mod-lattice"><b>04</b> Lattice</a>
       <a href="#mod-ofi"><b>05</b> Order Flow</a>
       <a href="#mod-liquidity"><b>06</b> Liquidity</a>
-      <a href="#mod-signal"><b>07</b> Signal &amp; Path</a>
+      <a href="#mod-signal"><b>07</b> Signal & Path</a>
       <a href="#mod-chart"><b>08</b> VWAP σ chart</a>
     </div>
 
@@ -1023,6 +1073,208 @@ footer{background:var(--bg2);border-top:1px solid var(--border);padding:70px 0 4
         <p>The full loop: wait for a signal, click <strong>▶ Execute paper bracket</strong>, watch the legs in the Orders tab, then close from Positions.</p>
         <div class="rc-flow">signal → Execute → Positions → Orders → close</div>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 8 — ENGINES -->
+<section id="engines" class="alt">
+  <div class="container">
+    <div class="eyebrow reveal">8 · Engines</div>
+    <h2 class="reveal">Under the <em>hood.</em></h2>
+    <p class="lede reveal">Two engines share the dashboard. The <strong>Vol-Arb engine</strong> prices volatility — it screens options for IV vs RV mispricings and emits delta-neutral structures. The <strong>OFI engine</strong> prices direction — it reads Smart Money Concepts, VWAP, and Order Flow on top of OHLCV bars as a confirmation filter. Same dashboard, fundamentally different jobs.</p>
+
+    <div class="engine-card reveal">
+      <div class="eh">Engine 1 · Volatility Arbitrage</div>
+      <div class="et">Sell vol when IV > RV. Buy vol when IV < RV.</div>
+      <div class="em">Options price <em>implied</em> vol; stocks <em>realize</em> vol. The mispricing between them is the edge. When IV is rich, the engine sells vol and collects premium as IV mean-reverts toward RV. When IV is cheap, it buys vol and pays up because realized vol will likely exceed what options currently price in.</div>
+    </div>
+
+    <div class="engine-card reveal">
+      <div class="eh">Engine 2 · Order Flow Intelligence (OFI)</div>
+      <div class="et">A confirmation filter, not a signal generator.</div>
+      <div class="em">The engine reads OHLCV bars and derives four order-flow primitives — <strong>CVD</strong> (the running delta sum), <strong>absorption</strong> (one side pushing but price disagreeing — reversal hint), <strong>imbalance</strong> (strong delta + structural confirmation — continuation hint), and <strong>stacked imbalance</strong> (3+ consecutive bars of one-sided aggression — the rarest, most-aggressive read). Most bars print no read at all — that is the engine honestly saying "no aligned setup."</div>
+    </div>
+
+    <h3 class="reveal" style="font-family:var(--ff-d);font-weight:600;font-size:1.4rem;margin:36px 0 12px;color:var(--text);">The vol-arb signal, <em style="color:var(--brand);font-style:italic;">in one block.</em></h3>
+    <p class="reveal">Strike-level IV is <em>smile premium</em> — tail-insurance pricing, a market structure, not mispricing. Using it to rank signals would systematically over-rank deep-OTM puts. Only ATM IV vs the matching-tenor realized-vol forecast counts.</p>
+    <pre class="reveal"><span class="c"># backend/app/engines.py — SignalEngine.compute()</span>
+<span class="k">edge</span>      = round(atm_iv - rv_i, <span class="n">2</span>)          <span class="c"># vol points (apples-to-apples)</span>
+<span class="k">z</span>         = edge / cls.SIGMA_SPREAD                  <span class="c"># SIGMA_SPREAD = 2.5 vol pts</span>
+<span class="k">side</span>      = "SELL VOL" <span class="k">if</span> edge > <span class="n">0</span> <span class="k">else</span> "BUY VOL"
+<span class="k">confidence</span> = "high" <span class="k">if</span> |z| ≥ <span class="n">1.5</span> <span class="k">else</span> ("medium" <span class="k">if</span> |z| ≥ <span class="n">1.0</span> <span class="k">else</span> "low")
+<span class="k">edge_cost</span> = round(|edge| × VEGA_PER_LOT - ROUND_TRIP_COST, <span class="n">2</span>)
+               <span class="c"># VEGA_PER_LOT = $40/vol-pt · ROUND_TRIP_COST = $8/contract</span></pre>
+    <p class="reveal">A signal with <code>|edge| < 0.01</code> vol points is dropped — that's "no real edge in this expiry," and the engine returns empty rather than fabricating a fill. The ranking is <strong>edge first, then ATM-first, then nearest-to-money</strong> — explicitly pushing deep-OTM put skew to the bottom of the list (it's expensive for a reason, not mispriced).</p>
+
+    <h3 class="reveal" style="font-family:var(--ff-d);font-weight:600;font-size:1.4rem;margin:36px 0 12px;color:var(--text);">The OFI reads, <em style="color:var(--brand);font-style:italic;">as a 2 × 2 matrix.</em></h3>
+    <p class="reveal">The four OFI types are not arbitrary names — they form a clean matrix. Two axes: <strong>price-vs-delta agreement</strong> and <strong>structural confirmation</strong>.</p>
+
+    <div class="ofi-matrix reveal">
+      <div class="ofi-cell just-bar">
+        <div class="ol">Cell 1</div>
+        <div class="oh">Just a green bar</div>
+        <div class="ob">Price up, delta up, no structure. Not an OFI signal — the engine treats this as noise and emits nothing.</div>
+      </div>
+      <div class="ofi-cell imb">
+        <div class="ol">Cell 2 · Imbalance</div>
+        <div class="oh">Continuation hint</div>
+        <div class="ob"><strong>strong_up + cvd_rising + (BOS · VWAP_reclaim · in_FVG_zone · CHoCH)</strong> — strong delta with a structure break behind it. The most tradeable OFI signal. Drawn as a <strong>diamond</strong> on the chart.</div>
+      </div>
+      <div class="ofi-cell absorb">
+        <div class="ol">Cell 3 · Absorption</div>
+        <div class="oh">Reversal hint</div>
+        <div class="ob"><strong>strong_dn + c > o + near_bull_level + (cvd_falling · delta<0)</strong> — sellers pushing but the bar still closed green near a bull level. The opposite side is absorbing. Drawn as a <strong>circle</strong>.</div>
+      </div>
+      <div class="ofi-cell contradict">
+        <div class="ol">Cell 4 · Bear absorption</div>
+        <div class="oh">Bear-mirror reversal</div>
+        <div class="ob"><strong>strong_up + c < o + near_bear_level</strong> — buyers pushing into a bearish bar that still closed down near a bear level. Mirror of Cell 3. Same circle, opposite direction.</div>
+      </div>
+    </div>
+
+    <h3 class="reveal" style="font-family:var(--ff-d);font-weight:600;font-size:1.4rem;margin:36px 0 12px;color:var(--text);">Why <em style="color:var(--brand);font-style:italic;">stacked imbalance</em> is the rarest read.</h3>
+    <p class="reveal">A single bar of strong delta is common. A run of 3+ consecutive bars where the delta is <em>both</em> large (<strong>1.5× its 20-bar SMA of |delta|</strong>) <em>and</em> persistent (no bar in the run is allowed to fail the test) is statistically unusual. Random walks produce 3-bar runs around 12% of the time; the magnitude+persistence combo cuts that much further.</p>
+    <pre class="reveal"><span class="c"># backend/app/meridian.py — stacked imbalance (CVD proxy fallback, source="px")</span>
+depth = min(min_stack_rows + <span class="n">2</span>, <span class="n">8</span>)             <span class="c"># walk back 5-8 bars</span>
+<span class="k">for</span> k <span class="k">in</span> range(depth):
+    idx = i - k
+    d   = delta[idx]
+    avg = avg_abs_delta[idx]
+    <span class="k">if</span>   avg > <span class="n">0</span> <span class="k">and</span> d >  avg * ofi_delta_mult:  run_buy  += <span class="n">1</span>; run_sell = <span class="n">0</span>
+    <span class="k">elif</span> avg > <span class="n">0</span> <span class="k">and</span> d < -avg * ofi_delta_mult:  run_sell += <span class="n">1</span>; run_buy  = <span class="n">0</span>
+    <span class="k">else</span>:                                       <span class="k">break</span>   <span class="c"># any failed bar ends the run</span>
+<span class="k">if</span> run_buy  ≥ min_stack_rows: stack_bull = True    <span class="c"># default min = 3</span>
+<span class="k">if</span> run_sell ≥ min_stack_rows: stack_bear = True</pre>
+    <p class="reveal">Stacked also pushes a <strong>liquidity magnet</strong>: when it fires, the engine runs <code>push_pool(l, 1, count × 1.5 × vol_ratio)</code> — the swing extreme of the stacked run becomes a magnet that decays ×0.92 per bar, exactly like a sweep-pool. A self-reinforcing loop: the signal that fires hardest also creates the target TP3 will later aim at.</p>
+
+    <div class="callout reveal">
+      <span class="c-ico">ⓘ</span>
+      <p><strong>Two engines, two strategies.</strong> Vol-arb is continuous-position, multi-leg, delta-neutral, held days-to-weeks. OFI is event-driven, single bracket per signal, minutes-to-hours. <strong>What pays</strong> for vol-arb is theta + IV mean-reversion; for OFI, it's momentum or mean-reversion confirmed by structure + flow. Don't conflate them — they share a dashboard but neither shares the other's logic.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 9 — TROUBLESHOOTING -->
+<section id="troubleshooting">
+  <div class="container">
+    <div class="eyebrow reveal">9 · Troubleshooting</div>
+    <h2 class="reveal">When <em>something is off.</em></h2>
+    <p class="lede reveal">Symptom → root cause → fix → how to prevent it. Each card is one known issue with the smallest honest path to a working dashboard. If your symptom isn't listed, <code>GET /api/meta</code> tells you provider / simulation / data — that's the first thing to capture.</p>
+
+    <div class="ts-grid">
+      <div class="ts-card reveal">
+        <span class="ts-tag engine">ENGINE</span>
+        <h3>"Nothing prints — every bar shows grade — and no signal."</h3>
+        <div class="ts-symptom">grade: —  signal: null  on every bar, all symbols, all timeframes</div>
+        <div class="ts-cause"><strong>Cause:</strong> min grade is set to <strong>SINGULAR</strong> or <strong>ELITE</strong>, or you're outside market hours on a quiet symbol. The lattice needs 2+ distinct event types within ~12 bars and ~1.5×ATR to even register <code>WATCH</code>.</div>
+        <div class="ts-fix"><strong>Fix:</strong> drop <code>min grade</code> to <code>WATCH</code> in the top bar. If still nothing, try <code>NVDA · 5m</code> during market hours — denser bars cluster more event types. A blank dashboard on every symbol and timeframe means the engine is genuinely saying "no aligned setup anywhere" — that's the filter doing its job.</div>
+        <div class="ts-prevent">Set <code>min grade = WATCH</code> by default; bump up to PRIME only after you've calibrated your read on a symbol.</div>
+      </div>
+
+      <div class="ts-card reveal">
+        <span class="ts-tag engine">ENGINE</span>
+        <h3>"Stacked imbalance prints on almost every bar."</h3>
+        <div class="ts-symptom">stack_bull or stack_bear nearly always = true</div>
+        <div class="ts-cause"><strong>Cause:</strong> <code>ofi_delta_mult</code> is too low. Default is <strong>1.5× the 20-bar SMA of |delta|</strong>. Lower values fire the strong-delta condition too easily, so the 3-bar run threshold is met by random walk alone.</div>
+        <div class="ts-fix"><strong>Fix:</strong> raise <code>ofi_delta_mult</code> to <strong>2.0 or 2.5</strong> in <code>meridian.py</code> (line 136), or pass it in the engine config. Re-test on the same symbol — stacked should become rare (a few per session, not every bar).</div>
+        <div class="ts-prevent">Default of 1.5 is calibrated for liquid 5m SPY/NQ. Raise it to 2.0+ for less-liquid symbols or higher timeframes where delta variance is naturally wider.</div>
+      </div>
+
+      <div class="ts-card reveal">
+        <span class="ts-tag broker">BROKER</span>
+        <h3>"Broker badge says SIMULATED · no key — Execute is greyed out."</h3>
+        <div class="ts-symptom">broker badge: <code>SIMULATED · no key</code>, Execute button disabled</div>
+        <div class="ts-cause"><strong>Cause:</strong> <code>backend/.env</code> is missing <code>ALPACA_API_KEY</code> / <code>ALPACA_SECRET_KEY</code>, or the broker can't reach Alpaca's paper endpoint. The dashboard runs without a broker — but you can't place orders.</div>
+        <div class="ts-fix"><strong>Fix:</strong> copy <code>backend/.env.example</code> → <code>backend/.env</code>, paste your paper keys (get them at alpaca.markets → Paper Account), restart the backend. The badge should flip to <code>PAPER · connected</code>.</div>
+        <div class="ts-prevent">Don't deploy without keys wired. The dashboard <em>appears</em> to work — it just won't execute. Always smoke-test with a fake paper trade before sharing with a user.</div>
+      </div>
+
+      <div class="ts-card reveal">
+        <span class="ts-tag broker">BROKER</span>
+        <h3>"Order rejected with 409 — no signal to execute."</h3>
+        <div class="ts-symptom">HTTP 409 on <code>POST /api/broker/order</code></div>
+        <div class="ts-cause"><strong>Cause:</strong> the engine state has no live signal — either the signal expired (a few bars after the trigger, by design) or you're between signals. The endpoint refuses to fabricate a fill, by design.</div>
+        <div class="ts-fix"><strong>Fix:</strong> wait for a fresh signal (side + grade visible in the Signal & Path panel), then click Execute within the same bar window. If the signal disappeared mid-click, refresh — the WS stream resends a fresh state.</div>
+        <div class="ts-prevent">Don't poll Execute from a script faster than the 3-second WS broadcast. You'll waste calls on expired signals.</div>
+      </div>
+
+      <div class="ts-card reveal">
+        <span class="ts-tag data">DATA</span>
+        <h3>"Tape shows ○stale, ●LIVE never lights up."</h3>
+        <div class="ts-symptom">tape badge: <code>○stale</code> · live indicator grey</div>
+        <div class="ts-cause"><strong>Cause:</strong> market is closed, or Alpaca's IEX endpoint isn't reachable. The tape is the live last-trade from Alpaca (IEX); it's freshest during market hours (9:30-16:00 ET).</div>
+        <div class="ts-fix"><strong>Fix:</strong> during market hours, check that <code>ALPACA_API_KEY</code> is the <em>paper</em> key (live keys don't work for paper, paper keys work for paper). After-hours, ○stale is correct.</div>
+        <div class="ts-prevent">Don't trade on a stale tape. The engine still computes on the delayed Polygon close, so reads are honest — but executing on stale prices is the fastest way to lose money.</div>
+      </div>
+
+      <div class="ts-card reveal">
+        <span class="ts-tag data">DATA</span>
+        <h3>"LIVE · DELAYED badge never shows — always SIMULATION."</h3>
+        <div class="ts-symptom">data badge: <code>SIMULATION</code> permanently</div>
+        <div class="ts-cause"><strong>Cause:</strong> the engine is on the default SimulatedProvider because <code>MERIDIAN_LIVE=1</code> isn't set in the backend environment, or the Polygon key is missing/invalid. The SimulatedProvider is honest — it tells you it's running on synthetic OHLCV.</div>
+        <div class="ts-fix"><strong>Fix:</strong> set <code>MERIDIAN_LIVE=1</code> and add a valid <code>POLYGON_API_KEY</code> to <code>backend/.env</code>. Restart the backend. <code>GET /api/meta</code> should now report <code>simulation: false</code>, <code>data: "delayed"</code>.</div>
+        <div class="ts-prevent">Polygon stocks entitlement covers SPY/QQQ/IWM/NVDA/etc. Futures ES/NQ/YM/GC require a separate Polygon futures key. If the key is valid but the badge stays SIM, you're trying a non-stocks symbol.</div>
+      </div>
+
+      <div class="ts-card reveal">
+        <span class="ts-tag engine">ENGINE</span>
+        <h3>"Bias is FLAT but ADX says TREND."</h3>
+        <div class="ts-symptom">regime = TREND · bias = FLAT · no signals</div>
+        <div class="ts-cause"><strong>Cause:</strong> ADX ≥ 25 (trend threshold) but the ribbon is mixed (EMA9/21/50 not aligned). TREND needs <em>both</em> strong ADX <em>and</em> an aligned ribbon. Gate 1's bias is ribbon-aware, so a mixed ribbon neutralizes bias even in a trending regime.</div>
+        <div class="ts-fix"><strong>Fix:</strong> this is correct behavior, not a bug. Wait for the ribbon to align (one side gets all three EMAs stacked) — that takes a bar or two after a regime shift. Or switch timeframe to get a cleaner read.</div>
+        <div class="ts-prevent">Don't equate regime = TREND with a guaranteed long or short. The ribbon filter is what makes the bias chip meaningful.</div>
+      </div>
+
+      <div class="ts-card reveal">
+        <span class="ts-tag ui">UI</span>
+        <h3>"Lattice shows WATC instead of WATCH."</h3>
+        <div class="ts-symptom">lattice grade chip: <code>WATC</code></div>
+        <div class="ts-cause"><strong>Cause:</strong> the chip is intentionally truncated to fit the panel — <code>WATC</code> = <code>WATCH</code>. Same for <code>PRIM</code>, <code>ELIT</code>, <code>SING</code>.</div>
+        <div class="ts-fix"><strong>Fix:</strong> hover the chip for the full label, or read the tooltip in the panel header.</div>
+        <div class="ts-prevent">Don't "fix" the truncated chip — it's a layout constraint, not a bug.</div>
+      </div>
+
+      <div class="ts-card reveal">
+        <span class="ts-tag engine">ENGINE</span>
+        <h3>"TP2 / TP3 don't execute when the signal fills."</h3>
+        <div class="ts-symptom">bracket fills TP1 only · TP2/TP3 never trigger</div>
+        <div class="ts-cause"><strong>Cause:</strong> by design. An Alpaca bracket order is one take-profit leg + one stop-loss leg (OCO). TP2 and TP3 are <strong>journal-only scale-out targets</strong> — they show in the journal/positions view but don't have order legs attached.</div>
+        <div class="ts-fix"><strong>Fix:</strong> to scale out, manually close partial size at TP1 and trail the rest with a stop. Or: build a custom bracket adapter that submits multiple legs (not in scope of the current broker module).</div>
+        <div class="ts-prevent">TP2/TP3 are <em>analysis targets</em>, not executable orders. The dashboard surfaces them so you can decide to scale — not so the engine auto-fires.</div>
+      </div>
+
+      <div class="ts-card reveal">
+        <span class="ts-tag data">DATA</span>
+        <h3>"Liquidity pools never decay — same number all session."</h3>
+        <div class="ts-symptom">active_count stays at the cap (20) for hours</div>
+        <div class="ts-cause"><strong>Cause:</strong> the magnet decay (×0.92 per bar) only kicks in once price <em>moves away</em> from the pool level. If price keeps revisiting the same swing high/low, the pools re-charge each reaction and never fully decay.</div>
+        <div class="ts-fix"><strong>Fix:</strong> check <code>top_magnet.magnet</code> over time — if it's not decaying, the pool is the <em>active</em> level, not a stale one. The top magnet is what TP3 aims at; if it's stuck, you're in a consolidation.</div>
+        <div class="ts-prevent">Decay ×0.92 is per-bar, but only after price leaves. A range-bound symbol will show stable pools — that's not a bug, it's the math.</div>
+      </div>
+
+      <div class="ts-card reveal">
+        <span class="ts-tag ui">UI</span>
+        <h3>"WebSocket disconnects every few minutes — state freezes."</h3>
+        <div class="ts-symptom">WS goes silent · last update timestamp stale · no new grades</div>
+        <div class="ts-cause"><strong>Cause:</strong> the backend WS broadcasts every 3 seconds, but long-lived connections through corporate proxies / VPNs sometimes idle out at 5-10 minutes. Not a bug in the engine — a network-layer timeout.</div>
+        <div class="ts-fix"><strong>Fix:</strong> the dashboard auto-reconnects, but if it doesn't, refresh the page. The next REST snapshot re-syncs to the current bar, then WS resumes.</div>
+        <div class="ts-prevent">For long sessions, hit the page every 10 minutes or keep a tab-active script. The WS has no keepalive because the snapshot REST endpoint is the source of truth — the WS is just an overlay.</div>
+      </div>
+
+      <div class="ts-card reveal">
+        <span class="ts-tag engine">ENGINE</span>
+        <h3>"Stacked imbalance fires on the same bar as absorption / imbalance."</h3>
+        <div class="ts-symptom">all four OFI types true on one bar</div>
+        <div class="ts-cause"><strong>Cause:</strong> the four predicates are <em>independent</em> — they're not mutually exclusive. A single bar can show absorption, imbalance, and the start of a stacked run if conditions overlap. That's the dashboard telling you a lot is happening at once.</div>
+        <div class="ts-fix"><strong>Fix:</strong> nothing to fix — the dashboard tags stacked with <code>source="px"</code> in the meta so you can distinguish the CVD proxy from a real footprint (when wired).</div>
+        <div class="ts-prevent">Don't dedupe by hand. The four reads represent different things; co-firing is information, not noise.</div>
+      </div>
+    </div>
+
+    <div class="callout warn reveal" style="margin-top:36px;">
+      <span class="c-ico">⚠</span>
+      <p><strong>If your symptom isn't here, capture this first:</strong> <code>GET /api/meta</code> (provider, simulation flag, data source, symbol, timeframe, preset, footprint capability), <code>GET /api/health</code> (provider + engine status), and the last <strong>3 bars</strong> from the chart's CVD series. With those three things, the underlying issue is usually one curl away from identified.</p>
     </div>
   </div>
 </section>
