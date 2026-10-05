@@ -4,20 +4,25 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: 'var(--bg)',
-        bg2: 'var(--bg2)',
-        bg3: 'var(--bg3)',
-        ink: 'var(--text)',
-        muted: 'var(--text3)',
-        dim: 'var(--text4)',
-        brand: 'var(--brand)',
-        bull: 'var(--bull)',
-        bear: 'var(--bear)',
-        amber: 'var(--amber)',
+        signal: {
+          buy: 'rgb(var(--signal-buy) / <alpha-value>)',
+          sell: 'rgb(var(--signal-sell) / <alpha-value>)',
+          neutral: 'rgb(var(--signal-neutral) / <alpha-value>)',
+          amber: 'rgb(var(--signal-amber) / <alpha-value>)',
+        },
+        term: {
+          bg: 'rgb(var(--term-bg) / <alpha-value>)',
+          surface: 'rgb(var(--term-surface) / <alpha-value>)',
+          surface2: 'rgb(var(--term-surface2) / <alpha-value>)',
+          line: 'rgb(var(--term-line) / <alpha-value>)',
+          text: 'rgb(var(--term-text) / <alpha-value>)',
+          muted: 'rgb(var(--term-muted) / <alpha-value>)',
+          faint: 'rgb(var(--term-faint) / <alpha-value>)',
+        },
       },
       fontFamily: {
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        mono: ['"Space Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
       },
     },
   },

@@ -17,14 +17,14 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5174,
-    strictPort: true,
     host: true,
+    strictPort: true,
     proxy: { '/market': yahooProxy },
   },
   preview: {
     port: 5174,
-    strictPort: true,
     host: true,
+    strictPort: true,
     proxy: { '/market': yahooProxy },
   },
 });

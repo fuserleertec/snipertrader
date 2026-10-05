@@ -1,274 +1,143 @@
-import type { Bar, DeskQuote, NewsItem, ScanRow, Timeframe } from './types';
-import { shapeBars } from './lib/bars';
-import { nyParts } from './lib/ny';
-import { UNIVERSE, universeName } from './universe';
+import type { EngineState, Meta, NewsResponse, Quote, ScanResponse, ScanRow } from './types';
+import { BOOK, bookName } from './types';
+import { yahooNews, yahooScan, yahooState } from './fallback';
 
 /**
- * Stock data sources, in order:
- * 1. Existing SniperTrader equities routes on VITE_API_BASE (default
- *    http://127.0.0.1:8787 from `node api/_server.js`):
- *      GET /api/stocks/klines?symbol=&timeframe=&limit=
- *      GET /api/news/catalyst?symbol=
- *    There is no meridian-dashboard/backend and no stock websocket in this repo.
- *    Alpaca IEX bars replace the Yahoo chart only for regular hours.
- * 2. Yahoo Finance via the Vite `/market` proxy so the desk still runs
- *    without Alpaca keys. Quotes from that feed are delayed.
+ * Stock client. Same shape as the futures dashboard client.
+ * VITE_API_URL defaults to the FastAPI app on :8010.
+ *
+ *   GET /api/health
+ *   GET /api/meta?symbol=&timeframe=
+ *   GET /api/symbols
+ *   GET /api/state?symbol=&timeframe=&min_grade=
+ *   GET /api/quote?symbol=
+ *   GET /api/broker  ·  POST /api/broker/deploy  ·  POST /api/broker/disconnect
+ *   GET /api/broker/positions
+ *   WS  /ws
+ *
+ * There is no stock news route. Headlines use the Yahoo /market proxy.
+ * If /api/state is unreachable, the chart falls back to that proxy too.
+ * /api/state updates the backend WS "current" symbol, so a scan always
+ * re-reads the active symbol last.
  */
 
-const API_BASE = (import.meta.env.VITE_API_BASE ?? 'http://127.0.0.1:8787').replace(/\/$/, '');
+export const BASE = (import.meta.env.VITE_API_URL as string | undefined) || 'http://127.0.0.1:8010';
 
-/** Skip repeat probes after a network failure so the console is not spammed. Refresh to retry. */
-let stocksApiDown = false;
-let newsApiDown = false;
+export function wsUrl(): string {
+  const explicit = import.meta.env.VITE_WS_URL as string | undefined;
+  if (explicit) return explicit.endsWith('/ws') ? explicit : `${explicit.replace(/\/$/, '')}/ws`;
+  const http = BASE.replace(/\/$/, '');
+  return `${http.replace(/^http/, 'ws')}/ws`;
+}
 
-const YAHOO_TF: Record<Timeframe, { interval: string; range: string }> = {
-  '1m': { interval: '1m', range: '1d' },
-  '5m': { interval: '5m', range: '5d' },
-  '15m': { interval: '15m', range: '1mo' },
-  '1h': { interval: '60m', range: '3mo' },
-  '4h': { interval: '60m', range: '6mo' },
-  '1d': { interval: '1d', range: '2y' },
-};
-
-const ALPACA_TF: Record<Timeframe, string> = {
-  '1m': '1m',
-  '5m': '5m',
-  '15m': '15m',
-  '1h': '1h',
-  '4h': '1h',
-  '1d': '1d',
-};
-
-async function fetchTimeout(url: string, ms: number): Promise<Response> {
+async function get<T>(path: string, timeoutMs = 20000): Promise<T> {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), ms);
+  const timer = window.setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    return await fetch(url, { signal: ctrl.signal });
+    const r = await fetch(`${BASE}${path}`, { signal: ctrl.signal });
+    if (!r.ok) {
+      let detail = '';
+      try {
+        detail = (await r.json()).detail || '';
+      } catch {
+        /* non-JSON */
+      }
+      throw new Error(detail || `${path} -> ${r.status}`);
+    }
+    return r.json() as Promise<T>;
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      throw new Error(`${path} timed out`);
+    }
+    throw e;
   } finally {
-    clearTimeout(timer);
+    window.clearTimeout(timer);
   }
 }
 
-function num(value: unknown): number | null {
-  const n = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
-  return Number.isFinite(n) ? n : null;
+export function fetchHealth(): Promise<{ ok: boolean; provider: string; simulation: boolean; engine: string }> {
+  return get('/api/health', 4000);
 }
 
-function quoteFromMeta(symbol: string, meta: Record<string, unknown>, bars: Bar[]): DeskQuote {
-  const lastBar = bars[bars.length - 1];
-  const last = num(meta.regularMarketPrice) ?? lastBar?.close ?? 0;
-  const prevClose = num(meta.previousClose) ?? num(meta.chartPreviousClose) ?? last;
-  const change = last - prevClose;
-  const dayHigh = num(meta.regularMarketDayHigh) ?? Math.max(...bars.map((b) => b.high));
-  const dayLow = num(meta.regularMarketDayLow) ?? Math.min(...bars.map((b) => b.low));
-  return {
-    symbol,
-    name: String(meta.shortName || meta.longName || universeName(symbol)),
-    exchange: String(meta.fullExchangeName || meta.exchangeName || ''),
-    instrument: String(meta.instrumentType || 'EQUITY'),
-    last,
-    prevClose,
-    change,
-    changePct: prevClose ? (change / prevClose) * 100 : 0,
-    dayHigh,
-    dayLow,
-    volume: num(meta.regularMarketVolume) ?? bars.reduce((sum, bar) => sum + bar.volume, 0),
-    week52High: num(meta.fiftyTwoWeekHigh),
-    week52Low: num(meta.fiftyTwoWeekLow),
-  };
+export function fetchMeta(symbol: string, timeframe: string): Promise<Meta> {
+  const q = new URLSearchParams({ symbol, timeframe });
+  return get<Meta>(`/api/meta?${q}`);
 }
 
-export function overlayBars(quote: DeskQuote, bars: Bar[]): DeskQuote {
-  const lastBar = bars[bars.length - 1];
-  if (!lastBar) return quote;
-  const day = nyParts(lastBar.time * 1000).ymd;
-  const today = bars.filter((bar) => nyParts(bar.time * 1000).ymd === day);
-  const last = lastBar.close;
-  const prev = quote.prevClose || last;
-  const change = last - prev;
-  return {
-    ...quote,
-    last,
-    change,
-    changePct: prev ? (change / prev) * 100 : 0,
-    dayHigh: today.length ? Math.max(...today.map((bar) => bar.high)) : quote.dayHigh,
-    dayLow: today.length ? Math.min(...today.map((bar) => bar.low)) : quote.dayLow,
-    volume: today.reduce((sum, bar) => sum + bar.volume, 0) || quote.volume,
-  };
+export function fetchState(symbol: string, timeframe: string, minGrade: string): Promise<EngineState> {
+  const q = new URLSearchParams({ symbol, timeframe, min_grade: minGrade });
+  return get<EngineState>(`/api/state?${q}`);
 }
 
-export async function fetchYahooChart(
-  symbol: string,
-  timeframe: Timeframe,
-  extended: boolean,
-): Promise<{ bars: Bar[]; quote: DeskQuote }> {
-  const spec = YAHOO_TF[timeframe];
-  const url =
-    `/market/v8/finance/chart/${encodeURIComponent(symbol)}` +
-    `?interval=${spec.interval}&range=${spec.range}&includePrePost=${extended ? 'true' : 'false'}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Chart request failed (${res.status})`);
-  const body = (await res.json()) as {
-    chart?: {
-      result?: Array<{
-        meta?: Record<string, unknown>;
-        timestamp?: number[];
-        indicators?: { quote?: Array<Record<string, Array<number | null>>> };
-      }> | null;
-      error?: { description?: string };
-    };
-  };
-  if (body.chart?.error) throw new Error(body.chart.error.description || 'No chart data');
-  const result = body.chart?.result?.[0];
-  const times = result?.timestamp;
-  const q = result?.indicators?.quote?.[0];
-  if (!result || !times || !q) throw new Error(`No bars for ${symbol}`);
-  const raw: Bar[] = [];
-  for (let i = 0; i < times.length; i++) {
-    const open = q.open?.[i];
-    const high = q.high?.[i];
-    const low = q.low?.[i];
-    const close = q.close?.[i];
-    if (open == null || high == null || low == null || close == null) continue;
-    raw.push({
-      time: times[i],
-      open,
-      high,
-      low,
-      close,
-      volume: q.volume?.[i] ?? 0,
-    });
-  }
-  const bars = shapeBars(raw, timeframe, extended);
-  if (!bars.length) throw new Error(`No ${extended ? 'extended' : 'regular'} session bars for ${symbol}`);
-  return { bars, quote: quoteFromMeta(symbol, result.meta ?? {}, bars) };
-}
-
-export async function fetchAlpacaBars(symbol: string, timeframe: Timeframe, extended: boolean): Promise<Bar[] | null> {
-  if (!API_BASE || extended || stocksApiDown) return null;
-  const limit = timeframe === '1d' ? 400 : 512;
-  const url = `${API_BASE}/api/stocks/klines?symbol=${encodeURIComponent(symbol)}&timeframe=${ALPACA_TF[timeframe]}&limit=${limit}`;
+export async function fetchStateOrFallback(symbol: string, timeframe: string, minGrade: string): Promise<EngineState> {
   try {
-    const res = await fetchTimeout(url, 2500);
-    if (!res.ok) return null;
-    const data: unknown = await res.json();
-    if (!Array.isArray(data)) return null;
-    const raw: Bar[] = [];
-    for (const row of data) {
-      if (!row || typeof row !== 'object') continue;
-      const rec = row as Record<string, unknown>;
-      const parsed = Date.parse(String(rec.timestamp ?? ''));
-      const open = num(rec.open);
-      const high = num(rec.high);
-      const low = num(rec.low);
-      const close = num(rec.close);
-      if (!Number.isFinite(parsed) || open == null || high == null || low == null || close == null) continue;
-      raw.push({
-        time: Math.floor(parsed / 1000),
-        open,
-        high,
-        low,
-        close,
-        volume: num(rec.volume) ?? 0,
+    const st = await fetchState(symbol, timeframe, minGrade);
+    return { ...st, feed: 'meridian' };
+  } catch {
+    return yahooState(symbol, timeframe);
+  }
+}
+
+export function fetchQuote(symbol: string): Promise<{ quote: Quote }> {
+  const q = new URLSearchParams({ symbol });
+  return get<{ quote: Quote }>(`/api/quote?${q}`, 5000);
+}
+
+function rowFromState(st: EngineState): ScanRow {
+  return {
+    symbol: st.symbol,
+    name: bookName(st.symbol),
+    regime: st.regime?.name ?? null,
+    bias: st.bias?.dir ?? null,
+    grade_l: st.lattice?.grade_l ?? null,
+    grade_s: st.lattice?.grade_s ?? null,
+    path_status: st.path?.status ?? null,
+    signal: st.signal?.side ?? null,
+    signal_grade: st.signal?.grade ?? null,
+    close: st.close ?? null,
+    error: null,
+  };
+}
+
+export async function fetchScan(timeframe: string, minGrade: string, active: string): Promise<ScanResponse> {
+  let symbols = BOOK.map((row) => row.symbol);
+  try {
+    const res = await get<{ symbols: string[] }>('/api/symbols', 4000);
+    if (res.symbols?.length) symbols = res.symbols.map((s) => s.toUpperCase());
+  } catch {
+    return yahooScan(symbols);
+  }
+  if (active && !symbols.includes(active)) symbols = [active, ...symbols];
+  const ordered = [...symbols.filter((s) => s !== active), active].filter(Boolean);
+  const rows: ScanRow[] = [];
+  let feed = 'meridian';
+  for (const symbol of ordered) {
+    try {
+      const st = await fetchState(symbol, timeframe, minGrade);
+      rows.push(rowFromState(st));
+    } catch (e) {
+      feed = 'yahoo';
+      rows.push({
+        symbol,
+        name: bookName(symbol),
+        regime: null,
+        bias: null,
+        grade_l: null,
+        grade_s: null,
+        path_status: null,
+        signal: null,
+        signal_grade: null,
+        close: null,
+        error: e instanceof Error ? e.message : 'state failed',
       });
     }
-    const bars = shapeBars(raw, timeframe, false);
-    return bars.length ? bars : null;
-  } catch {
-    stocksApiDown = true;
-    return null;
   }
-}
-
-interface SparkEntry {
-  symbol?: string;
-  close?: Array<number | null>;
-  previousClose?: number;
-  chartPreviousClose?: number;
-  fulldayPrice?: number;
-  fulldayChangePercent?: number;
-}
-
-export async function fetchScan(extra?: string): Promise<ScanRow[]> {
-  const symbols = [...UNIVERSE.map((row) => row.symbol)];
-  if (extra && !symbols.includes(extra)) symbols.unshift(extra);
-  const url = `/market/v8/finance/spark?symbols=${encodeURIComponent(symbols.join(','))}&range=1d&interval=5m`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Scan request failed (${res.status})`);
-  const body = (await res.json()) as Record<string, SparkEntry>;
-  return symbols.map((symbol) => {
-    const entry = body[symbol];
-    const spark = (entry?.close ?? []).filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
-    const prev = entry?.previousClose ?? entry?.chartPreviousClose ?? null;
-    const last = entry?.fulldayPrice ?? (spark.length ? spark[spark.length - 1] : null);
-    const changePct =
-      entry?.fulldayChangePercent ??
-      (last != null && prev ? ((last - prev) / prev) * 100 : null);
-    return {
-      symbol,
-      name: universeName(symbol),
-      last,
-      changePct,
-      spark: spark.slice(-36),
-    };
-  });
-}
-
-export async function fetchYahooNews(symbol: string): Promise<NewsItem[]> {
-  const url = `/market/v1/finance/search?q=${encodeURIComponent(symbol)}&newsCount=10&quotesCount=0`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`News request failed (${res.status})`);
-  const body = (await res.json()) as {
-    news?: Array<{ uuid?: string; title?: string; publisher?: string; link?: string; providerPublishTime?: number }>;
-  };
-  return (body.news ?? [])
-    .filter((item) => item.title && item.link)
-    .slice(0, 8)
-    .map((item, index) => ({
-      id: item.uuid || `${symbol}-${index}`,
-      title: item.title || '',
-      source: item.publisher || 'Yahoo',
-      url: item.link || '',
-      publishedAt: item.providerPublishTime ?? null,
-    }));
-}
-
-export async function fetchCatalyst(
-  symbol: string,
-): Promise<{ items: NewsItem[]; sentiment: string | null } | null> {
-  if (!API_BASE || newsApiDown) return null;
-  try {
-    const res = await fetchTimeout(`${API_BASE}/api/news/catalyst?symbol=${encodeURIComponent(symbol)}`, 8000);
-    if (!res.ok) return null;
-    const data = (await res.json()) as {
-      sentiment_bias?: string;
-      headlines?: string[];
-      catalysts?: Array<{ headline?: string; executive_summary?: string; sentiment_bias?: string }>;
-    };
-    const catalysts = Array.isArray(data.catalysts) ? data.catalysts : [];
-    const items: NewsItem[] = catalysts.length
-      ? catalysts
-          .filter((item) => item.headline)
-          .slice(0, 6)
-          .map((item, index) => ({
-            id: `cat-${symbol}-${index}`,
-            title: item.headline || '',
-            source: 'Catalyst',
-            url: '',
-            publishedAt: null,
-            summary: item.executive_summary,
-          }))
-      : (data.headlines ?? []).slice(0, 8).map((title, index) => ({
-          id: `hd-${symbol}-${index}`,
-          title,
-          source: 'Headline',
-          url: '',
-          publishedAt: null,
-        }));
-    if (!items.length) return null;
-    return { items, sentiment: data.sentiment_bias ?? null };
-  } catch {
-    newsApiDown = true;
-    return null;
+  if (feed === 'yahoo' && rows.every((row) => row.error)) {
+    return yahooScan(symbols);
   }
+  return { timeframe, min_grade: minGrade, rows, feed };
+}
+
+export function fetchNews(symbol: string): Promise<NewsResponse> {
+  return yahooNews(symbol);
 }
