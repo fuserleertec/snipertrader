@@ -290,30 +290,46 @@ export default function App() {
   useEffect(() => {
     let ws: WebSocket | null = null;
     let stop = false;
-    try {
-      ws = new WebSocket(wsUrl());
-    } catch {
-      return undefined;
-    }
-    ws.onmessage = (ev) => {
+    let retry = 0;
+    const open = () => {
       if (stop) return;
       try {
-        const msg = JSON.parse(ev.data as string) as EngineState & { type?: string };
-        if (msg.type === 'state' && msg.symbol === symbolRef.current && msg.series) {
-          setState({ ...msg, feed: 'meridian', fallback: false });
-          setStateError(null);
-        }
+        ws = new WebSocket(wsUrl());
       } catch {
-        /* ignore malformed frames */
+        retry = window.setTimeout(open, 5000);
+        return;
       }
+      ws.onmessage = (ev) => {
+        if (stop) return;
+        try {
+          const msg = JSON.parse(ev.data as string) as EngineState & { type?: string };
+          if (msg.type === 'state' && msg.symbol === symbolRef.current && msg.series) {
+            setState({ ...msg, feed: 'meridian', fallback: false });
+            setStateError(null);
+          }
+        } catch {
+          /* ignore malformed frames */
+        }
+      };
+      ws.onclose = () => {
+        if (!stop) retry = window.setTimeout(open, 5000);
+      };
     };
+    open();
     return () => {
       stop = true;
+      window.clearTimeout(retry);
       ws?.close();
     };
   }, [symbol]);
 
   useEffect(() => {
+    // /api/quote imports Alpaca. With no keys it 500s. The broker badge already
+    // says the adapter is simulated, so skip the tape instead of polling the error.
+    if (!broker || (broker.mode === 'simulated' && !broker.connected)) {
+      setQuote(null);
+      return undefined;
+    }
     let stop = false;
     const load = () => {
       fetchQuote(symbol)
@@ -323,7 +339,7 @@ export default function App() {
     load();
     const id = window.setInterval(load, 10000);
     return () => { stop = true; window.clearInterval(id); };
-  }, [symbol]);
+  }, [symbol, broker]);
 
   useEffect(() => {
     if (!brokerConnected) {

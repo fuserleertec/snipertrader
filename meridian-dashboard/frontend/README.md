@@ -21,7 +21,7 @@ Timeframes match the futures desk: 5m, 15m, 1h. Grades: WATCH, PRIME, ELITE, SIN
 ## Data
 
 - `GET /api/state?symbol=&timeframe=&min_grade=` — engine document (regime, lattice, gates, CVD, OFI, liquidity, VWAP, signal, path, series).
-- `GET /api/meta`, `GET /api/health`, `GET /api/quote`.
+- `GET /api/meta`, `GET /api/health`, `GET /api/quote` (Alpaca IEX). With no Alpaca keys the quote route errors, so the desk skips it and uses the engine close. The positions badge stays `SIMULATED · no key`.
 - `GET /api/broker`, `POST /api/broker/deploy`, `POST /api/broker/disconnect`, `GET /api/broker/positions`.
 - `WS /ws` — state push for the symbol last read by `/api/state`.
 - Headlines come from Yahoo Finance. The stock API has no news route. If `:8010` is down, the chart also falls back to Yahoo and the engine panels stay empty.
