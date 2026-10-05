@@ -17,6 +17,10 @@ import { UNIVERSE, universeName } from './universe';
 
 const API_BASE = (import.meta.env.VITE_API_BASE ?? 'http://127.0.0.1:8787').replace(/\/$/, '');
 
+/** Skip repeat probes after a network failure so the console is not spammed. Refresh to retry. */
+let stocksApiDown = false;
+let newsApiDown = false;
+
 const YAHOO_TF: Record<Timeframe, { interval: string; range: string }> = {
   '1m': { interval: '1m', range: '1d' },
   '5m': { interval: '5m', range: '5d' },
@@ -141,7 +145,7 @@ export async function fetchYahooChart(
 }
 
 export async function fetchAlpacaBars(symbol: string, timeframe: Timeframe, extended: boolean): Promise<Bar[] | null> {
-  if (!API_BASE || extended) return null;
+  if (!API_BASE || extended || stocksApiDown) return null;
   const limit = timeframe === '1d' ? 400 : 512;
   const url = `${API_BASE}/api/stocks/klines?symbol=${encodeURIComponent(symbol)}&timeframe=${ALPACA_TF[timeframe]}&limit=${limit}`;
   try {
@@ -171,6 +175,7 @@ export async function fetchAlpacaBars(symbol: string, timeframe: Timeframe, exte
     const bars = shapeBars(raw, timeframe, false);
     return bars.length ? bars : null;
   } catch {
+    stocksApiDown = true;
     return null;
   }
 }
@@ -210,7 +215,7 @@ export async function fetchScan(extra?: string): Promise<ScanRow[]> {
 }
 
 export async function fetchYahooNews(symbol: string): Promise<NewsItem[]> {
-  const url = `/market/v1/finance/search?q=${encodeURIComponent(symbol + ' stock')}&newsCount=10&quotesCount=0`;
+  const url = `/market/v1/finance/search?q=${encodeURIComponent(symbol)}&newsCount=10&quotesCount=0`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`News request failed (${res.status})`);
   const body = (await res.json()) as {
@@ -231,7 +236,7 @@ export async function fetchYahooNews(symbol: string): Promise<NewsItem[]> {
 export async function fetchCatalyst(
   symbol: string,
 ): Promise<{ items: NewsItem[]; sentiment: string | null } | null> {
-  if (!API_BASE) return null;
+  if (!API_BASE || newsApiDown) return null;
   try {
     const res = await fetchTimeout(`${API_BASE}/api/news/catalyst?symbol=${encodeURIComponent(symbol)}`, 8000);
     if (!res.ok) return null;
@@ -263,6 +268,7 @@ export async function fetchCatalyst(
     if (!items.length) return null;
     return { items, sentiment: data.sentiment_bias ?? null };
   } catch {
+    newsApiDown = true;
     return null;
   }
 }

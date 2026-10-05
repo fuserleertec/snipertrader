@@ -36,8 +36,8 @@ export function filterSession(bars: Bar[], mode: SessionFilter): Bar[] {
   return bars.filter((bar) => {
     const ny = nyParts(bar.time * 1000);
     if (ny.weekend) return false;
-    if (mode === 'rth') return ny.minutes >= 9 * 60 + 30 && ny.minutes < 16 * 60;
-    return ny.minutes >= 4 * 60 && ny.minutes < 20 * 60;
+    if (mode === 'rth') return ny.minutes >= 9 * 60 + 30 && ny.minutes <= 16 * 60;
+    return ny.minutes >= 4 * 60 && ny.minutes <= 20 * 60;
   });
 }
 

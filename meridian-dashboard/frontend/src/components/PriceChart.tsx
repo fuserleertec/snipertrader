@@ -20,6 +20,7 @@ interface PriceChartProps {
   theme: ThemeName;
   feed: Feed;
   loading: boolean;
+  fitKey: string;
 }
 
 function cssVar(name: string, fallback: string): string {
@@ -31,12 +32,13 @@ function stamp(time: number): UTCTimestamp {
   return time as UTCTimestamp;
 }
 
-export function PriceChart({ bars, study, quote, timeframe, theme, feed, loading }: PriceChartProps) {
+export function PriceChart({ bars, study, quote, timeframe, theme, feed, loading, fitKey }: PriceChartProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const volumeRef = useRef<ISeriesApi<'Histogram'> | null>(null);
   const linesRef = useRef<Array<ISeriesApi<'Line'>> | null>(null);
+  const fittedRef = useRef('');
 
   useEffect(() => {
     const host = hostRef.current;
@@ -143,8 +145,11 @@ export function PriceChart({ bars, study, quote, timeframe, theme, feed, loading
     sets.forEach((series, index) => {
       lines[index].setData(series.map((point) => ({ time: stamp(point.time), value: point.value })));
     });
-    chart.timeScale().fitContent();
-  }, [bars, study, theme, timeframe]);
+    if (fittedRef.current !== fitKey) {
+      chart.timeScale().fitContent();
+      fittedRef.current = fitKey;
+    }
+  }, [bars, study, theme, timeframe, fitKey]);
 
   const last = study.last;
 

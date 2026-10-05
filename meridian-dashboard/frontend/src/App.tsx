@@ -173,6 +173,7 @@ export default function App() {
           theme={theme}
           feed={feed}
           loading={chartLoading}
+          fitKey={`${symbol}-${timeframe}-${extended}-${feed}`}
         />
         <NewsPanel symbol={symbol} items={news} sentiment={sentiment} loading={newsLoading} />
         <aside className="rail">
